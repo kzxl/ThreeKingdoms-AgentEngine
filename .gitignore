@@ -1,4 +1,28 @@
-# Prerequisites & Scratch
+# ThreeKingdoms-AgentEngine: Git Ignore Rules
+# The Git repository contains ONLY the core engine skeleton, rules, master seed data, and tools.
+# All active play sessions, character progress, and database files are isolated locally.
+
+# 1. Playthrough Databases & Saves (Local SQLite sessions & snapshots)
+saves/
+game/saves/
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.db-wal
+*.db-shm
+
+# 2. Dynamic Playthrough State & Progress (Rendered session projections)
+game/PROGRESS.md
+game/TURN_STATE.md
+game/PLAYER.md
+game/RELATIONS.md
+game/ledger/
+game/chronicle/0184.md
+game/military/campaigns.md
+game/characters/player.md
+
+# 3. Scratch & Temporary Files
 scratch/
 *.tmp
 *.log

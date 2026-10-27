@@ -1,6 +1,6 @@
 # ThreeKingdoms-AgentEngine
 
-An autonomous, deterministic, markdown-backed simulation engine modeling the Three Kingdoms era (beginning 184 AD). Powered by agentic workflows, strict accounting ledgers, and causational event propagation.
+An autonomous, deterministic simulation engine modeling the Three Kingdoms era (beginning 184 AD). Powered by agentic workflows, an embedded ACID-compliant SQLite session database, immutable master seed data, and causational event propagation.
 
 For comprehensive technical specifications, data flows, and state machine diagrams, refer to [**ARCHITECTURE.md**](ARCHITECTURE.md).
 
@@ -10,19 +10,20 @@ For comprehensive technical specifications, data flows, and state machine diagra
 1. [Core Philosophy](#core-philosophy)
 2. [Player Guide & Career Paths](#player-guide--career-paths)
 3. [Command Syntax & How to Play](#command-syntax--how-to-play)
-4. [3-Tier Memory Architecture & Storage Schema](#3-tier-memory-architecture--storage-schema)
-5. [Deterministic Verification Tools & CLI](#deterministic-verification-tools--cli)
-6. [Economic, Production & Military Formulas](#economic-production--military-formulas)
-7. [Resuming Across Sessions & Multi-Agent Collaboration](#resuming-across-sessions--multi-agent-collaboration)
+4. [Engine Framework vs. Playthrough Decoupling](#engine-framework-vs-playthrough-decoupling)
+5. [Storage Architecture & SQLite Session Engine](#storage-architecture--sqlite-session-engine)
+6. [CLI Verification & Database Tools](#cli-verification--database-tools)
+7. [Economic, Production & Military Formulas](#economic-production--military-formulas)
+8. [Starting a New Campaign or Resuming](#starting-a-new-campaign-or-resuming)
 
 ---
 
 ## Core Philosophy
 
-- **Zero Ephemeral Hallucination**: No wealth, weapon, army, relationship, or historical event exists unless it is substantiated in the `game/` markdown files or generated via verified simulation formulas.
+- **Engine Skeleton on Git**: The Git repository contains strictly the immutable rules, mathematical formulas, master world seeds (Year 184 AD initial state), and verification tools. Active player saves and database files are isolated locally and ignored by Git.
+- **Zero Ephemeral Hallucination**: No wealth, weapon, army, relationship, or historical event exists unless it is substantiated in the database/ledger and verified via deterministic formulas.
+- **Immutable Master Canvas**: Master NPC and world dossiers (`game/master/`) are strictly read-only. All character development, sentiment changes, and territorial conquests are recorded as session deltas.
 - **Auditable Double-Entry Bookkeeping**: Money and inventory are strictly conserved. Every copper coin (`Qian`) and bundle of grain (`Dan`) is tracked via unique transaction IDs (`TXN-`) and stock movements (`MOV-`).
-- **Autonomous NPC Ecosystem**: Every notable figure (e.g. Liu Bei, Guan Yu, Zhang Fei, local magistrates, merchants) possesses independent attributes (8 core attributes), acquired skills (5 tiers), innate talents, psychological profiles, and evolving sentiment scores.
-- **Causal Historical Divergence**: Historical events serve as starting baselines. Player actions and NPC decisions produce butterfly effects, organically altering history without narrative railroading.
 
 ---
 
@@ -30,106 +31,86 @@ For comprehensive technical specifications, data flows, and state machine diagra
 
 You begin in Year 184 AD (Month 2 / Early Spring) during the outbreak of the Yellow Turban Rebellion. Your default character is **Liang Yan** (Lương Nhan / 梁彦, styled *Zhiyuan*), a 21-year-old scholar-artisan owning a small workshop in Zhuo County, Youzhou.
 
-You are completely free to pursue any lifestyle, strategy, or ambition:
-
-### 1. The Merchant Tycoon (Thương Nghiệp Cự Phách)
-- **Core Loop**: Procure raw materials (bamboo, timber, iron, leather) -> Supervise workshop production -> Optimize Bill of Materials (BOM) & reduce defect rates -> Form distribution partnerships with caravan traders -> Establish branch workshops across commanderies -> Amass grain and gold.
-- **Winning Strategy**: Exploit regional price discrepancies during wartime, secure army supply contracts, and fund private transport guards.
-
-### 2. The Frontier Warlord (Chư Hầu Quân Phiệt)
-- **Core Loop**: Spend commercial profits or estate grain to recruit volunteer militia (Nghĩa binh) -> Appoint officers and drill infantry -> Acquire horses from northern traders (Zhang Shiping) -> Secure blacksmith supply contracts for weapons -> Suppress local banditry or Yellow Turban contingents -> Gain official rank from the Imperial Court.
-- **Winning Strategy**: High Leadership (`LDR`) and Logistics (`LOG`) keep troop morale high and avoid starvation routs during prolonged sieges.
-
-### 3. The Imperial Courtier & Bureaucrat (Chính Khách Quan Trường)
-- **Core Loop**: Pass imperial examinations or secure recommendation from local elders (Master Lu) -> Enter county administration under Magistrate Liu Xuan -> Administer land surveys, tax grain collection, and civil order -> Navigate court factionalism (Eunuchs vs. Scholar-Gentry).
-- **Winning Strategy**: High Politics (`POL`) and Diplomacy (`DIP`) unlock provincial appointments and royal favor.
-
-### 4. The Clan Patriarch (Gia Tộc Thế Lực)
-- **Core Loop**: Purchase fertile agricultural estates -> Build fortified manors (Ô bảo) -> Educate younger kinsmen in martial arts and classics -> Form marriage alliances with local gentry -> Maintain private security forces to safeguard family heritage amidst realm-wide anarchy.
+You can pursue any lifestyle or strategy:
+- **The Merchant Tycoon**: Procure materials, manage workshop SOPs, execute inter-provincial arbitrage (e.g. coastal salt trade), amass grain and gold.
+- **The Frontier Warlord**: Fund volunteer militia, secure iron weapons, drill infantry, suppress warlords, gain imperial rank.
+- **The Imperial Courtier**: Pass imperial exams, navigate court politics (Eunuchs vs. Scholar-Gentry), secure provincial governorships.
+- **The Clan Patriarch**: Build fortified manors (Ô bảo), educate kinsmen, maintain private security forces.
 
 ---
 
 ## Command Syntax & How to Play
 
-You can command the engine using natural language (Vietnamese or English). Below are standard command templates:
+You can command the engine using natural language (Vietnamese or English):
 
-### General & Time Simulation Commands
+### General & Simulation Commands
 | Command (VN) | Command (EN) | Effect |
 |---|---|---|
 | `mô phỏng 1 tháng` | `simulate 1 month` | Executes 1 standard monthly business, production, payroll, and geopolitical cycle. |
 | `mô phỏng 1 ngày` | `simulate 1 day` | Resolves micro-actions, local meetings, or tactical negotiations. |
-| `tiếp tục` | `continue` | Reads `saves/latest.md` and resumes the game from the current checkpoint. |
-| `kiểm toán` | `audit` | Performs a full mathematical reconciliation of cash, inventory, and cross-references. |
-| `lưu` | `save` | Writes a verified snapshot to `saves/snapshots/SNAP-xxxx.md` and updates `saves/latest.md`. |
-
-### Inspection & Query Commands
-| Command (VN) | Command (EN) | Effect |
-|---|---|---|
-| `xem tiến trình` | `view progress` | Inspects `game/PROGRESS.md` for live executive dashboard, active turn, and dilemma options. |
-| `xem trạng thái` | `status` | Displays player summary, liquid cash, grain reserve, net worth, and macro indicators. |
-| `xem BIZ-0001` | `view BIZ-0001` | Inspects workshop P&L, stock, labor hours, and product lines. |
-| `xem NPC-0001` | `view NPC-0001` | Reads full dossier of Liu Bei (attributes, skills, morale, sentiment toward player). |
-| `xem thị trường` | `view market` | Displays current commodity price index in `ECONOMY.md`. |
-
-### Action & Roleplay Commands
-You can issue customized tactical, commercial, diplomatic, or personal directives:
-- *“Gặp Lưu Bị và Trương Phi tại quán rượu, chúc mừng lễ kết nghĩa và bàn về việc cung ứng giỏ lương cho đội quân tình nguyện.”*
-- *“Chi 2.000 tiền mua thêm tre nứa và da thuộc để tăng gấp đôi sản lượng giỏ bọc da trong tháng tới.”*
-- *“Thuê thêm 2 thợ phụ từ hội thợ mộc của Lư lão bá để mở rộng công suất xưởng.”*
-- *“Tổ chức đội tuần tra tự vệ 5 người bảo vệ kho hàng xưởng Lương thị tại khu Đông Môn.”*
+| `kiểm toán` | `audit` | Performs a full mathematical reconciliation of cash, inventory, and invariants. |
+| `xem trạng thái` | `status` | Displays character dashboard, liquid cash, grain reserve, net worth, and location. |
+| `xuất tiến trình` | `export progress` | Compiles active SQLite state to `game/PROGRESS.md` for human viewing. |
 
 ---
 
-## 3-Tier Memory Architecture & Storage Schema
+## Engine Framework vs. Playthrough Decoupling
 
-To avoid context explosion and arithmetic drift, the engine operates on a decoupled 3-tier memory model (detailed in [**ARCHITECTURE.md**](ARCHITECTURE.md)):
+The repository is strictly decoupled between the **Engine Framework** (versioned in Git) and **Playthrough Sessions** (local only):
 
 ```text
 ThreeKingdoms-AgentEngine/
 ├── ARCHITECTURE.md             # Complete technical architecture specification
 ├── README.md                   # Operational manual & gameplay guide
+├── .gitignore                  # Prevents playthrough databases & saves from touching Git
 │
-├── tools/                      # Deterministic CLI Verification & Checkpoint Layer
+├── tools/                      # Deterministic CLI Verification & SQLite Layer
+│   ├── sim-db.js               # SQLite CLI session manager & query bridge
+│   ├── schema.sql              # Database DDL schema (ACID tables & invariants)
 │   ├── sim-audit.js            # Independent double-entry accounting auditor
-│   └── sim-checkpoint.js       # State archiver, validator & safe commit orchestrator
+│   └── sim-checkpoint.js       # Snapshot creator & local archiver
 │
 └── game/
-    ├── PROGRESS.md             # [L1 HOT] Rolling Campaign Progress Journal (Primary high-frequency state)
-    ├── TURN_STATE.md           # Step-by-step turn execution pipeline
-    ├── WORLD_STATE.md          # Macro indicators, calendar & global crises
-    ├── PLAYER.md               # Player dashboard & active objectives
+    ├── RULES.md                # [IMMUTABLE] Dice check DCs, combat & production formulas
+    ├── ECONOMY.md              # [IMMUTABLE] Currency standards, 184 AD commodity price index
+    ├── TECHNIQUES.md           # [IMMUTABLE] 5-tier skill progression trees
+    ├── FACTIONS.md             # [IMMUTABLE] Realm factions baseline
+    ├── WORLD_STATE.md          # [IMMUTABLE] Year 184 AD macro indicators
+    ├── PROGRESS.template.md    # Blank template blueprint for new campaigns
     │
-    ├── ledger/                 # [L2 LEDGER] Append-only financial & inventory transactions
-    │   ├── cashflow.md         # Double-entry cash movements (TXN-xxxx)
-    │   ├── inventory.md        # Physical stock movements & scrap records (MOV-xxxx)
-    │   ├── contracts.md        # Commercial supply contracts & fulfillment (CTR-xxxx)
-    │   └── audit.md            # Reconciled balance sheet snapshots
+    ├── master/                 # [IMMUTABLE MASTER SEED WORLD]
+    │   ├── characters/         # Pristine 184 AD character sheets (Liu Bei, Guan Yu, etc.)
+    │   ├── locations/          # Pristine commandery dossiers (Zhuo, Luoyang, Julu, Qingzhou)
+    │   ├── businesses/         # Starting workshop baseline (BIZ-0001)
+    │   └── organizations/      # Guilds & magistrate bureaus
     │
-    ├── [L3 COLD ARCHIVES]      # Low-frequency reference entities & rules
-    │   ├── RULES.md            # (Read-Only) Dice check DCs, combat & production formulas
-    │   ├── ECONOMY.md          # (Read-Only) Currency standards, 184 AD commodity price index
-    │   ├── TECHNIQUES.md       # (Read-Only) 5-tier skill progression trees
-    │   ├── chronicle/          # Yearly realm chronicle (0184.md, ...)
-    │   ├── characters/         # Entity dossiers (player.md, NPC-xxxx.md)
-    │   ├── factions/           # Faction cards (FACTION-xxxx.md)
-    │   ├── locations/          # Geographical dossiers (LOC-xxxx.md)
-    │   ├── organizations/      # Guilds & magistrate bureaus (ORG-xxxx.md)
-    │   ├── businesses/         # Enterprise operating sheets (BIZ-xxxx.md)
-    │   ├── military/           # Armies & campaigns (armies.md, campaigns.md)
-    │   └── events/             # Crisis cards (active.md, archive.md)
-    │
-    └── saves/                  # Immutable state checkpoints
-        ├── latest.md           # Latest verified checkpoint pointer
-        └── snapshots/          # Timestamped state snapshots (SNAP-0000.md ...)
+    └── [LOCAL PLAYTHROUGH ONLY - IGNORED BY GIT]
+        ├── saves/session.db    # Live SQLite database for active campaign
+        └── game/PROGRESS.md    # Auto-projected hot buffer for player & AI agent
 ```
 
 ---
 
-## Deterministic Verification Tools & CLI
+## CLI Verification & Database Tools
 
-The engine includes native Node.js tools in `tools/` that guarantee mathematical integrity without burning LLM inference tokens:
+The engine provides native Node.js tools in `tools/` that guarantee mathematical integrity and enable rapid querying:
 
-### 1. Invariant Auditor (`tools/sim-audit.js`)
+### 1. Session Database Manager (`tools/sim-db.js`)
+```bash
+# Initialize a new game campaign
+node tools/sim-db.js init CMP-0001 "Liang Yan"
+
+# Check campaign summary and total net worth
+node tools/sim-db.js status
+
+# Query state via SQL (sub-millisecond, zero token waste)
+node tools/sim-db.js query "SELECT * FROM inventory_items WHERE quantity > 0;"
+
+# Re-compile and export game/PROGRESS.md
+node tools/sim-db.js export-progress
+```
+
+### 2. Invariant Auditor (`tools/sim-audit.js`)
 Audits all double-entry cashflow transactions, physical inventory movements, and hot buffer synchronization.
 ```bash
 node tools/sim-audit.js
@@ -137,16 +118,6 @@ node tools/sim-audit.js
 - Validates that $Cash_{\text{End}} = Cash_{\text{Start}} + \sum Inflow - \sum Outflow$.
 - Verifies physical stock conservation (materials purchased/produced = materials consumed/stored).
 - Exits with code `0` on 100% reconciliation; fails loudly if any balance discrepancy is detected.
-
-### 2. State Checkpointer (`tools/sim-checkpoint.js`)
-Runs pre-save audits, parses active progress headers, archives state snapshots, and performs atomic git commits.
-```bash
-# Verify integrity, increment snapshot SNAP-xxxx.md, and update latest.md
-node tools/sim-checkpoint.js "Turn 3 Victory at Qingzhou"
-
-# Verify integrity and automatically commit & push to GitHub
-node tools/sim-checkpoint.js --commit --push "Turn 3 Victory at Qingzhou"
-```
 
 ---
 
@@ -169,10 +140,13 @@ $$\text{Defect Rate (\%)} = \max\left(2\%,\; \text{Base Defect} - (\text{Lead Ar
 
 ---
 
-## Resuming Across Sessions & Multi-Agent Collaboration
+## Starting a New Campaign or Resuming
 
-To continue a campaign in a new AI conversation or with another agent:
-1. Provide the agent with the repository or clone this workspace.
-2. Instruct the agent:
-   > *"Read `game/PROGRESS.md`, `game/saves/latest.md`, and `game/TURN_STATE.md`. Act as the Simulation Engine and await my command."*
-3. The agent will read the verified state and continue the world seamlessly with zero context loss.
+1. **To Start a New Campaign**:
+   ```bash
+   node tools/sim-db.js init CMP-184-CUSTOM "Your Character Name"
+   node tools/sim-db.js export-progress
+   ```
+2. **To Resume Playing**:
+   Instruct the AI Agent:
+   > *"Read `game/PROGRESS.md` and check `node tools/sim-db.js status`. Act as the Three Kingdoms Engine and await my command."*
