@@ -72,92 +72,55 @@
         </div>
       </div>
 
-      <!-- 2. Hero Encounter Stage & Deterministic Dice Check -->
-      <div class="hero-dice-stage">
-        <!-- NPC Hero Card -->
-        <div class="npc-hero-card">
-          <div class="npc-hero-avatar" id="npc-hero-avatar">張</div>
-          <div class="npc-hero-info">
-            <div class="npc-hero-title" id="npc-hero-title">Đang xác định danh tướng...</div>
-            <div class="npc-hero-name" id="npc-hero-name">Đang tải...</div>
-            <div class="npc-hero-sentiment">
-              <span class="badge-sentiment" id="npc-hero-sentiment">Hảo cảm: --</span>
+      <!-- 2. Story Chronicle / Interactive Chat Stream (Continuous History) -->
+      <div class="story-chronicle" id="story-chronicle">
+        <!-- Message turns appended dynamically here -->
+      </div>
+
+      <!-- 3. Docked Action Console & Decision Deck (Always accessible) -->
+      <div class="action-dock" id="action-dock">
+        <!-- Quick Action Suggestion Chips -->
+        <div class="quick-prompt-chips" id="quick-prompt-chips">
+          <button class="quick-chip" onclick="quickFillPrompt('Mua sỉ 8 tấm da thuộc của Trương Phi')">🛒 Mua 8 Da</button>
+          <button class="quick-chip" onclick="quickFillPrompt('Thỉnh giáo Trương Phi đấu thương thực chiến')">⚔️ Đấu Thương</button>
+          <button class="quick-chip" onclick="quickFillPrompt('Xuất bán 10 đấu muối biển cho Ký Châu')">🧂 Bán 10 Muối</button>
+          <button class="quick-chip" onclick="quickFillPrompt('Thu mua 5 thạch lương dự trữ')">🌾 Mua 5 Lương</button>
+          <button class="quick-chip" onclick="quickFillPrompt('Khởi động ca sản xuất chế tạo khiên trúc')">🛡️ Đóng Khiên</button>
+          <button class="quick-chip" onclick="quickFillPrompt('Khen thưởng 100 tiền cho thợ cả Trần Bảo')">🎁 Thưởng Thợ</button>
+          <button class="quick-chip" onclick="quickFillPrompt('Mời Quan Vũ uống trà đàm đạo binh pháp')">🍵 Đàm Đạo</button>
+        </div>
+
+        <!-- 4 Contextual Branching Choice Cards (2x2 Grid) -->
+        <div class="choices-container">
+          <div class="choices-header">
+            <span class="choices-label">QUYẾT SÁCH BỐI CẢNH (CHIẾN LƯỢC HÀNH TRÌNH):</span>
+            <span class="choices-sub">Chế độ: <strong>Text-Based RPG + SimCore</strong></span>
+          </div>
+
+          <div class="choices-grid" id="choices-grid">
+            <!-- Populated dynamically based on location & narrative context -->
+            <div style="grid-column: span 2; padding: 10px; text-align: center; color: var(--text-muted); font-size: 11px;">
+              Đang tổng hợp các phương án hành động...
             </div>
           </div>
         </div>
 
-        <!-- Deterministic Dice Check Result Card -->
-        <div class="dice-check-card" id="dice-check-card">
-          <div class="dice-check-header">
-            <span class="dice-tag-type" id="dice-check-type">KIỂM TRA NĂNG LỰC</span>
-            <span class="dice-tag-status success" id="dice-check-status">ĐỐI SOÁT LUẬT D20</span>
-          </div>
-          <div class="dice-check-title" id="dice-check-title">Đang tính toán thử thách...</div>
-          <div class="dice-check-formula" id="dice-check-formula">
-            Đang tải công thức kiểm tra thuộc tính và kỹ năng...
-          </div>
+        <!-- Omni Command Input Bar (Freeform Player Agency) -->
+        <div class="omni-command-bar">
+          <input 
+            type="text" 
+            id="omni-input" 
+            class="omni-input" 
+            placeholder="Lương Diễn hành động (hoặc đối thoại)... [Nhấn Enter để gửi]"
+            onkeydown="if(event.key==='Enter') dispatchOmniCommand('ai');"
+          />
+          <button class="btn-omni-ai" onclick="dispatchOmniCommand('ai')">
+            <span class="icon">💬</span> Gửi AI Core
+          </button>
+          <button class="btn-omni-instant" onclick="dispatchOmniCommand('instant')">
+            <span class="icon">⚡</span> Tức Thì
+          </button>
         </div>
-      </div>
-
-      <!-- 3. Narrative Dialogue Box & Agent Simulation HUD -->
-      <div class="narrative-box">
-        <div class="narrative-header">
-          <div class="narrative-label">DIỄN BIẾN & ĐỐI THOẠI BỐI CẢNH</div>
-          <div class="ai-agent-indicator">
-            <span class="icon">🤖</span> AI Bridge Dynamic Context
-          </div>
-        </div>
-        <div class="narrative-body" id="narrative-text">
-          Đang kết nối bối cảnh và đồng bộ dữ liệu SQLite...
-        </div>
-
-        <!-- Real-Time Agent Simulation Feedback & Invariant Verification -->
-        <div class="agent-simulation-hud" id="agent-simulation-hud">
-          <div class="agent-thought-header">
-            <span class="agent-thought-tag">🧠 PHÂN TÍCH CHIẾN LƯỢC TỪ AGENT</span>
-            <span class="agent-audit-tag" id="hud-audit-tag">✅ INVARIANTS: 70/70 KHỚP</span>
-          </div>
-          <div class="agent-thought-body" id="agent-thought-body">
-            Hệ thống mô phỏng sẵn sàng. Lựa chọn điều lệnh cơ học hoặc gửi chỉ thị tự do để Agent suy luận và cập nhật trực tiếp vào SQLite.
-          </div>
-          <div class="agent-delta-chips" id="agent-delta-chips">
-            <span class="agent-delta-pill cash-plus">🪙 Tiền: Sẵn sàng</span>
-            <span class="agent-delta-pill inv">📦 Kho: 12 SKUs</span>
-            <span class="agent-delta-pill rel">⚖️ Sổ cái: Cân bằng</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- 4. Interactive Branching Choice Cards (4 Options) -->
-      <div class="choices-container">
-        <div class="choices-header">
-          <span class="choices-label">LỰA CHỌN ĐỀ XUẤT THEO BỐI CẢNH:</span>
-          <span class="choices-sub">Chế độ: <strong>Dynamic Context + SimCore Actions</strong></span>
-        </div>
-
-        <div class="choices-grid" id="choices-grid">
-          <!-- Populated dynamically based on location & narrative context -->
-          <div style="padding: 16px; text-align: center; color: var(--text-muted); font-size: 11px;">
-            Đang tổng hợp các phương án hành động phù hợp với bối cảnh...
-          </div>
-        </div>
-      </div>
-
-      <!-- 5. Omni Command Input Bar (Freeform Player Agency) -->
-      <div class="omni-command-bar">
-        <input 
-          type="text" 
-          id="omni-input" 
-          class="omni-input" 
-          placeholder="Nhập hành động bất kỳ để gửi cho Antigravity AI (VD: 'Mời Quan Vũ đấu cờ và lắng trà quý', 'Mua 10 thạch lương')..."
-          onkeydown="if(event.key==='Enter') dispatchOmniCommand('ai');"
-        />
-        <button class="btn-omni-ai" onclick="dispatchOmniCommand('ai')">
-          <span class="icon">💬</span> Gửi AI Core
-        </button>
-        <button class="btn-omni-instant" onclick="dispatchOmniCommand('instant')">
-          <span class="icon">⚡</span> Tức Thì
-        </button>
       </div>
     </section>
 
@@ -166,6 +129,75 @@
     <!-- ============================================================== -->
     <aside class="right-deck">
       
+      <!-- 0. Protagonist Vitals Sheet (Nhân Vật Chính) -->
+      <div class="deck-card protagonist-card" id="protagonist-card">
+        <div class="protagonist-header">
+          <div class="protagonist-avatar" id="protagonist-avatar">梁</div>
+          <div class="protagonist-main-info">
+            <div class="protagonist-name-row">
+              <span class="protagonist-name" id="protagonist-name">Lương Diễn</span>
+              <span class="protagonist-style" id="protagonist-style">(Chí Viễn)</span>
+              <span class="protagonist-age-badge" id="protagonist-age">21 Tuổi</span>
+            </div>
+            <div class="protagonist-title" id="protagonist-title">Thế Gia Thương Nhân • Trác Huyện</div>
+          </div>
+        </div>
+
+        <!-- Vitals Bars: HP / Sĩ khí -->
+        <div class="protagonist-vitals-grid">
+          <div class="vital-item">
+            <div class="vital-label-row">
+              <span class="vital-name">❤️ Sinh Lực</span>
+              <span class="vital-val green-text" id="protagonist-hp">100/100</span>
+            </div>
+            <div class="vital-bar"><div class="vital-bar-fill green" id="bar-hp" style="width: 100%;"></div></div>
+          </div>
+          <div class="vital-item">
+            <div class="vital-label-row">
+              <span class="vital-name">⚡ Sĩ Khí</span>
+              <span class="vital-val gold-text" id="protagonist-morale">100%</span>
+            </div>
+            <div class="vital-bar"><div class="vital-bar-fill gold" id="bar-morale" style="width: 100%;"></div></div>
+          </div>
+        </div>
+
+        <!-- RPG Attributes 4x2 Mini-Grid -->
+        <div class="protagonist-attrs-grid">
+          <div class="attr-pill" title="Trí Lực (INT): 80 — Mưu lược, sách lược">
+            <span class="attr-name">Trí</span>
+            <span class="attr-num cyan-text" id="attr-int">80</span>
+          </div>
+          <div class="attr-pill" title="Thương Nghiệp (COM): 78 — Mua bán, định giá">
+            <span class="attr-name">Thương</span>
+            <span class="attr-num gold-text" id="attr-com">78</span>
+          </div>
+          <div class="attr-pill" title="Ngoại Giao (DIP): 74 — Thuyết phục hào kiệt">
+            <span class="attr-name">Ngoại</span>
+            <span class="attr-num orange-text" id="attr-dip">74</span>
+          </div>
+          <div class="attr-pill" title="Thống Soái (LDR): 70 — Chỉ huy gia đinh">
+            <span class="attr-name">Soái</span>
+            <span class="attr-num" id="attr-ldr">70</span>
+          </div>
+          <div class="attr-pill" title="Hậu Cần (LOG): 70 — Vận lương, kế toán">
+            <span class="attr-name">Hậu</span>
+            <span class="attr-num" id="attr-log">70</span>
+          </div>
+          <div class="attr-pill" title="Chính Trị (POL): 68 — Quan phủ, giấy phép">
+            <span class="attr-name">Chính</span>
+            <span class="attr-num" id="attr-pol">68</span>
+          </div>
+          <div class="attr-pill" title="Khéo Léo (CRA): 62 — Giám định, rèn đúc">
+            <span class="attr-name">Khéo</span>
+            <span class="attr-num" id="attr-cra">62</span>
+          </div>
+          <div class="attr-pill" title="Võ Lực (WAR): 58 — Tự vệ, cưỡi ngựa">
+            <span class="attr-name">Võ</span>
+            <span class="attr-num red-text" id="attr-war">58</span>
+          </div>
+        </div>
+      </div>
+
       <!-- 1. Milestone Target Card (RELATIONS.md) -->
       <div class="deck-card relations-card">
         <div class="deck-card-header">

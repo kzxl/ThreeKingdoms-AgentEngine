@@ -14,11 +14,13 @@ const API_BASE = '';
 
 // Global Application State
 let activeSubLocation = 'Vườn Đào';
+let lastEncounterSubLocation = null;
 let currentScene = null;
 let currentInventory = [];
 let currentStatus = null;
 let selectedChoiceId = null;
 let isProcessingAction = false; // Anti-Piling Guard
+const storyChronicle = []; // History of dialogue and action turns
 
 // DOM Ready Initialization
 document.addEventListener('DOMContentLoaded', () => {
@@ -76,6 +78,54 @@ async function loadStatus() {
 
     const valNetworth = document.getElementById('top-val-networth');
     if (valNetworth) valNetworth.innerText = `${(f.netWorth || 0).toLocaleString()} Tiền`;
+
+    // Protagonist Card Fields
+    if (p) {
+      const nameEl = document.getElementById('protagonist-name');
+      if (nameEl) nameEl.innerText = p.name === 'Liang Yan' ? 'Lương Diễn' : p.name;
+
+      const styleEl = document.getElementById('protagonist-style');
+      if (styleEl) styleEl.innerText = p.style_name ? `(${p.style_name === 'Zhiyuan' ? 'Chí Viễn' : p.style_name})` : '';
+
+      const ageEl = document.getElementById('protagonist-age');
+      if (ageEl) ageEl.innerText = `${p.age || 21} Tuổi`;
+
+      const hpEl = document.getElementById('protagonist-hp');
+      if (hpEl) hpEl.innerText = `${p.health || 100}/100`;
+
+      const barHp = document.getElementById('bar-hp');
+      if (barHp) barHp.style.width = `${p.health || 100}%`;
+
+      const moraleEl = document.getElementById('protagonist-morale');
+      if (moraleEl) moraleEl.innerText = `${p.morale || 100}%`;
+
+      const barMorale = document.getElementById('bar-morale');
+      if (barMorale) barMorale.style.width = `${p.morale || 100}%`;
+
+      const attrInt = document.getElementById('attr-int');
+      if (attrInt) attrInt.innerText = p.int_attr || 80;
+
+      const attrCom = document.getElementById('attr-com');
+      if (attrCom) attrCom.innerText = p.com_attr || 78;
+
+      const attrDip = document.getElementById('attr-dip');
+      if (attrDip) attrDip.innerText = p.dip_attr || 74;
+
+      const attrLdr = document.getElementById('attr-ldr');
+      if (attrLdr) attrLdr.innerText = p.ldr_attr || 70;
+
+      const attrLog = document.getElementById('attr-log');
+      if (attrLog) attrLog.innerText = p.log_attr || 70;
+
+      const attrPol = document.getElementById('attr-pol');
+      if (attrPol) attrPol.innerText = p.pol_attr || 68;
+
+      const attrCra = document.getElementById('attr-cra');
+      if (attrCra) attrCra.innerText = p.cra_attr || 62;
+
+      const attrWar = document.getElementById('attr-war');
+      if (attrWar) attrWar.innerText = p.war_attr || 58;
+    }
 
   } catch (err) {
     console.error('Failed to load status:', err);
@@ -148,40 +198,30 @@ function renderSceneFromData(data, customNarrative = null) {
     }).join('');
   }
 
-  // Hero Encounter Card
-  if (data.npc) {
-    const npcHeroName = document.getElementById('npc-hero-name');
-    const npcHeroTitle = document.getElementById('npc-hero-title');
-    const npcHeroSentiment = document.getElementById('npc-hero-sentiment');
-    const npcHeroAvatar = document.getElementById('npc-hero-avatar') || document.querySelector('.npc-hero-avatar');
+  // Story Chronicle Stream: Append encounter turn if chronicle is empty, location changed, or custom narrative supplied
+  const shouldAppendTurn = storyChronicle.length === 0 || 
+                           lastEncounterSubLocation !== activeSubLocation || 
+                           Boolean(customNarrative);
 
-    if (npcHeroName) npcHeroName.innerText = data.npc.name;
-    if (npcHeroTitle) npcHeroTitle.innerText = data.npc.title;
-    if (npcHeroSentiment) npcHeroSentiment.innerText = data.npc.sentimentStatus;
-    if (npcHeroAvatar) npcHeroAvatar.innerText = data.npc.name ? data.npc.name.charAt(0) : '漢';
-  }
-
-  // Transparent Deterministic Dice Check
-  if (data.lastCheck) {
-    const checkType = document.getElementById('dice-check-type');
-    const checkStatus = document.getElementById('dice-check-status');
-    const checkTitle = document.getElementById('dice-check-title');
-    const checkFormula = document.getElementById('dice-check-formula');
-
-    if (checkType) checkType.innerText = data.lastCheck.type;
-    if (checkStatus) {
-      checkStatus.className = `dice-tag-status ${data.lastCheck.status === 'THÀNH CÔNG' ? 'success' : 'failed'}`;
-      checkStatus.innerText = `TỔNG ${data.lastCheck.score} — ${data.lastCheck.status}`;
-    }
-    if (checkTitle) checkTitle.innerText = data.lastCheck.title;
-    if (checkFormula) checkFormula.innerText = data.lastCheck.formula;
-  }
-
-  // Narrative Dialogue Text
-  const narrativeEl = document.getElementById('narrative-text');
-  if (narrativeEl) {
+  if (shouldAppendTurn) {
     const textToShow = customNarrative || data.narrative || '';
-    narrativeEl.innerHTML = formatNarrativeQuotes(textToShow);
+    if (textToShow) {
+      const npcName = data.npc ? data.npc.name : 'Người Dẫn Chuyện';
+      const npcTitle = data.npc ? data.npc.title : (data.campaign ? data.campaign.location : '');
+      const npcAvatar = data.npc && data.npc.name ? data.npc.name.charAt(0) : '漢';
+
+      appendStoryTurn({
+        type: 'npc',
+        speaker: npcName,
+        title: npcTitle,
+        avatar: npcAvatar,
+        text: textToShow,
+        diceBadge: data.lastCheck,
+        deltas: null,
+        reasoning: null
+      });
+      lastEncounterSubLocation = activeSubLocation;
+    }
   }
 
   // 4 Branching Choices Grid
@@ -191,7 +231,123 @@ function renderSceneFromData(data, customNarrative = null) {
   renderRelations(data.relations || []);
 }
 
-// 1.5 Render Choice Cards
+// 1.5 Story Chronicle Stream Helpers & Formatting
+function formatStoryText(text) {
+  if (!text) return '';
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/"([^"]+)"/g, '<em>"$1"</em>')
+    .replace(/\n\n/g, '<br><br>')
+    .replace(/\n/g, '<br>');
+}
+
+function renderDiceBadgeHtml(check) {
+  if (!check || !check.type) return '';
+  const isSuccess = check.status === 'THÀNH CÔNG';
+  const statusClass = isSuccess ? 'success' : 'failed';
+  return `
+    <div class="story-dice-badge">
+      <span>🎲 <strong>${check.type}</strong>: ${check.formula || ''}</span>
+      <span class="${statusClass}">TỔNG ${check.score ?? ''} [${check.status || 'THÀNH CÔNG'}]</span>
+    </div>
+  `;
+}
+
+function renderDeltaBarHtml(delta) {
+  if (!delta || Object.keys(delta).length === 0) return '';
+  const pills = [];
+  if (delta.cash) {
+    const isPositive = String(delta.cash).startsWith('+');
+    pills.push(`<span class="agent-delta-pill ${isPositive ? 'cash-plus' : 'cash-minus'}">🪙 ${delta.cash}</span>`);
+  }
+  if (delta.inventory) {
+    pills.push(`<span class="agent-delta-pill inv">📦 ${delta.inventory}</span>`);
+  }
+  if (delta.relations || delta.npc) {
+    pills.push(`<span class="agent-delta-pill rel">🤝 ${delta.relations || delta.npc}</span>`);
+  }
+  if (delta.location) {
+    pills.push(`<span class="agent-delta-pill rel">📍 ${delta.location}</span>`);
+  }
+  if (delta.action) {
+    pills.push(`<span class="agent-delta-pill rel">⚡ ${delta.action}</span>`);
+  }
+  if (delta.audit) {
+    pills.push(`<span class="agent-delta-pill rel">⚖️ ${delta.audit}</span>`);
+  }
+  if (pills.length === 0) return '';
+  return `<div class="story-delta-bar">${pills.join('')}</div>`;
+}
+
+function renderReasoningHtml(reasoning) {
+  if (!reasoning) return '';
+  return `<div class="story-reasoning">🧠 <strong>Agent Reasoning:</strong> ${reasoning}</div>`;
+}
+
+function renderTurnHtml(turn) {
+  const diceHtml = renderDiceBadgeHtml(turn.diceBadge);
+  const deltaHtml = renderDeltaBarHtml(turn.deltas);
+  const reasoningHtml = renderReasoningHtml(turn.reasoning);
+  const formattedText = formatStoryText(turn.text);
+
+  return `
+    <div class="story-turn ${turn.type || 'npc'}" id="turn-${turn.id}">
+      <div class="story-turn-avatar">${turn.avatar || (turn.type === 'player' ? '梁' : '漢')}</div>
+      <div class="story-turn-content">
+        <div class="story-turn-header">
+          <div>
+            <span class="story-speaker-name">${turn.speaker || 'Nhân Vật'}</span>
+            ${turn.title ? `<span class="story-speaker-title">• ${turn.title}</span>` : ''}
+          </div>
+          <span class="story-time">${turn.time || '184-05-02'}</span>
+        </div>
+        <div class="story-text">${formattedText}</div>
+        ${diceHtml}
+        ${deltaHtml}
+        ${reasoningHtml}
+      </div>
+    </div>
+  `;
+}
+
+function appendStoryTurn(turn) {
+  turn.id = turn.id || `turn_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`;
+  if (!turn.time) {
+    const curDate = currentStatus?.meta?.current_date || '184-05-02';
+    const now = new Date();
+    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    turn.time = `${curDate} • ${timeStr}`;
+  }
+  storyChronicle.push(turn);
+
+  const chronicle = document.getElementById('story-chronicle');
+  if (chronicle) {
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = renderTurnHtml(turn).trim();
+    const node = wrapper.firstElementChild;
+    chronicle.appendChild(node);
+    chronicle.scrollTop = chronicle.scrollHeight;
+  }
+}
+
+function renderStoryChronicle() {
+  const chronicle = document.getElementById('story-chronicle');
+  if (!chronicle) return;
+  chronicle.innerHTML = storyChronicle.map(t => renderTurnHtml(t)).join('');
+  chronicle.scrollTop = chronicle.scrollHeight;
+}
+
+// 1.6 Quick Prompt Chip Fill Helper
+function quickFillPrompt(text) {
+  const input = document.getElementById('omni-input');
+  if (!input) return;
+  input.value = text;
+  input.focus();
+  showToast(`Đã nạp chỉ thị: "${text}"`);
+}
+
+// 1.7 Render Choice Cards
 function renderChoices(options) {
   const container = document.getElementById('choices-grid');
   if (!container) return;
@@ -436,11 +592,25 @@ function setProcessingLock(busy, targetElement = null, statusText = '') {
     targetElement.classList.toggle('executing', busy);
   }
 
+  const chronicle = document.getElementById('story-chronicle');
+  let indicator = document.getElementById('story-computing-indicator');
+
   if (busy && statusText) {
-    const narrativeEl = document.getElementById('narrative-text');
-    if (narrativeEl) {
-      narrativeEl.innerHTML = `<span style="color: #34d399;">🤖 Agent đang đối soát quy tắc: <em>"${statusText}"</em>...</span>`;
+    if (!indicator && chronicle) {
+      indicator = document.createElement('div');
+      indicator.id = 'story-computing-indicator';
+      indicator.className = 'story-turn system';
+      indicator.innerHTML = `
+        <div class="story-turn-avatar">🤖</div>
+        <div class="story-turn-content" style="padding: 6px 10px; font-size: 11px; color: #34d399;">
+          <span class="pulse-dot"></span> Agent Core đang phân tích chiến thuật & đối soát SQLite: <em>"${statusText}"</em>...
+        </div>
+      `;
+      chronicle.appendChild(indicator);
+      chronicle.scrollTop = chronicle.scrollHeight;
     }
+  } else {
+    if (indicator) indicator.remove();
   }
 }
 
@@ -527,6 +697,15 @@ async function executeChoiceDirect(optId) {
   const cardEl = document.getElementById(`choice-card-${optId}`);
   selectChoice(optId);
 
+  // Append Player Action Turn into Story Chronicle
+  appendStoryTurn({
+    type: 'player',
+    speaker: 'Lương Diễn',
+    title: 'Quyết Sách Trực Tiếp',
+    avatar: '梁',
+    text: `**${opt.title}**\n\n*Ý đồ chiến thuật:* ${opt.desc}`
+  });
+
   setProcessingLock(true, cardEl, opt.title);
 
   try {
@@ -536,6 +715,16 @@ async function executeChoiceDirect(optId) {
       opt.action.idempotency_key = `OPT_${optId}_${Date.now()}`;
       await dispatchDirectAction(opt.action);
       activeSubLocation = opt.action.new_location;
+
+      appendStoryTurn({
+        type: 'system',
+        speaker: 'Hành Trình',
+        title: 'Chuyển Đổi Địa Điểm',
+        avatar: '📍',
+        text: `Lương Diễn đã rời bước, đặt chân tới **${opt.action.new_location}**. Bối cảnh xung quanh bắt đầu thay đổi.`,
+        deltas: { location: activeSubLocation, audit: 'Cập nhật tọa độ' }
+      });
+
       await loadScene(activeSubLocation);
       renderAgentSimulationFeedback(`Cơ động tới ${activeSubLocation}. Thiết lập vị trí chiến dịch mới.`, { location: activeSubLocation, audit: '70/70 Khớp' });
       return;
@@ -547,8 +736,19 @@ async function executeChoiceDirect(optId) {
       opt.action.idempotency_key = `OPT_${optId}_${Date.now()}`;
       const result = await dispatchDirectAction(opt.action);
 
+      // Append result into chronicle
+      appendStoryTurn({
+        type: 'system',
+        speaker: 'SimCore Kiểm Toán',
+        title: 'Ghi Nhận Sổ Cái SQLite',
+        avatar: '⚖️',
+        text: `Điều lệnh **${opt.title}** đã thực thi thành công và ghi sổ bất biến.`,
+        deltas: result && result.delta ? result.delta : { action: opt.action.type, audit: '70/70 Khớp' },
+        reasoning: `Bất biến SQLite kiểm toán bảo toàn tuyệt đối.`
+      });
+
       // Refresh scene and right deck
-      await loadScene(activeSubLocation, `${opt.title} đã hoàn tất và ghi nhận vào sổ cái SQLite.`);
+      await loadScene(activeSubLocation);
       renderAgentSimulationFeedback(`Thực thi thành công điều lệnh "${opt.title}". Kiểm toán bất biến bảo toàn hoàn hảo.`, { action: opt.action.type, audit: '70/70 Khớp' });
       await Promise.all([loadStatus(), loadDeckInventory(), loadDeckNpcs(), loadDeckLedger()]);
     } else {
@@ -576,6 +776,15 @@ async function executeChoiceAi(optId) {
   const cardEl = document.getElementById(`choice-card-${optId}`);
   selectChoice(optId);
 
+  // Append Player Action Turn into Story Chronicle
+  appendStoryTurn({
+    type: 'player',
+    speaker: 'Lương Diễn',
+    title: 'Thỉnh Cầu AI Core',
+    avatar: '梁',
+    text: `Đề xuất phương án: **${opt.title}**`
+  });
+
   setProcessingLock(true, cardEl, `Gửi "${opt.title}" cho AI Core`);
   showToast(`Gửi lựa chọn "${opt.title}" qua AI Bridge...`);
 
@@ -593,10 +802,23 @@ async function executeChoiceAi(optId) {
       if (result.updatedScene.campaign && result.updatedScene.campaign.activeSubLocation) {
         activeSubLocation = result.updatedScene.campaign.activeSubLocation;
       }
-      renderSceneFromData(result.updatedScene, result.narrative);
+      renderSceneFromData(result.updatedScene);
     } else {
-      await loadScene(activeSubLocation, result.narrative);
+      await loadScene(activeSubLocation);
     }
+
+    // Append AI / NPC Response into Story Chronicle
+    const npc = result.updatedScene?.npc || currentScene?.npc;
+    appendStoryTurn({
+      type: 'npc',
+      speaker: npc?.name || 'Hào Kiệt Huyện Trác',
+      title: npc?.title || 'Phản Hồi Chiến Thuật',
+      avatar: npc?.name ? npc.name.charAt(0) : '漢',
+      text: result.narrative,
+      diceBadge: result.updatedScene?.lastCheck,
+      deltas: result.delta,
+      reasoning: result.reasoning
+    });
 
     // Render Agent Reasoning & Simulation Delta
     renderAgentSimulationFeedback(result.reasoning, result.delta);
@@ -629,6 +851,16 @@ async function dispatchOmniCommand(mode = 'ai') {
     return;
   }
 
+  // Append Player Action Turn into Story Chronicle
+  appendStoryTurn({
+    type: 'player',
+    speaker: 'Lương Diễn',
+    title: mode === 'instant' ? 'Mệnh Lệnh Tức Thì' : 'Mệnh Lệnh & Đối Thoại',
+    avatar: '梁',
+    text: promptText
+  });
+
+  inputEl.value = '';
   setProcessingLock(true, null, promptText);
   showToast(mode === 'instant' ? 'Đang thực thi lệnh tức thì...' : 'Đang gửi cho AI Agent Core...');
 
@@ -645,15 +877,27 @@ async function dispatchOmniCommand(mode = 'ai') {
       if (result.updatedScene.campaign && result.updatedScene.campaign.activeSubLocation) {
         activeSubLocation = result.updatedScene.campaign.activeSubLocation;
       }
-      renderSceneFromData(result.updatedScene, result.narrative);
+      renderSceneFromData(result.updatedScene);
     } else {
-      await loadScene(activeSubLocation, result.narrative);
+      await loadScene(activeSubLocation);
     }
+
+    // Append AI / NPC Response into Story Chronicle
+    const npc = result.updatedScene?.npc || currentScene?.npc;
+    appendStoryTurn({
+      type: 'npc',
+      speaker: npc?.name || 'Hào Kiệt Huyện Trác',
+      title: npc?.title || 'Phản Hồi Chiến Thuật',
+      avatar: npc?.name ? npc.name.charAt(0) : '漢',
+      text: result.narrative,
+      diceBadge: result.updatedScene?.lastCheck,
+      deltas: result.delta,
+      reasoning: result.reasoning
+    });
 
     // Render Agent Reasoning & Simulation Delta
     renderAgentSimulationFeedback(result.reasoning, result.delta);
 
-    inputEl.value = '';
     showToast('Điều lệnh đã thực thi thành công!');
     await Promise.all([loadStatus(), loadDeckInventory(), loadDeckNpcs(), loadDeckLedger()]);
 
@@ -694,6 +938,14 @@ async function rewardNpc(npcId, amount = 100) {
     return;
   }
 
+  appendStoryTurn({
+    type: 'player',
+    speaker: 'Lương Diễn',
+    title: 'Khen Thưởng Gia Nhân',
+    avatar: '梁',
+    text: `Ban thưởng **${amount} Tiền** cho nhân sĩ ${npcId} để khích lệ sĩ khí trung thành!`
+  });
+
   setProcessingLock(true, null, `Thưởng ${amount} Tiền cho NPC ${npcId}`);
   showToast(`Ban thưởng ${amount} Tiền cho NPC ${npcId}...`);
 
@@ -705,6 +957,17 @@ async function rewardNpc(npcId, amount = 100) {
       game_date: '184-05-02',
       idempotency_key: `RWD_${npcId}_${Date.now()}`
     });
+
+    appendStoryTurn({
+      type: 'npc',
+      speaker: 'Trần Bảo (Thợ Cả)',
+      title: 'Lương Thị Chức Tác Phường',
+      avatar: '陳',
+      text: `Trần Bảo cảm kích khôn xiết cúi đầu bái tạ: *"Đa tạ Thiếu gia trọng thưởng! Thuộc hạ và anh em thợ xưởng nguyện dốc toàn lực chế tạo quân trang phòng thủ tốt nhất!"*`,
+      deltas: { cash: `-${amount} Qian`, npc: 'Sĩ khí 100% • Trung thành +2', audit: '70/70 Khớp' },
+      reasoning: `Khen thưởng ${amount} Tiền động viên NPC ${npcId}. Sĩ khí tối đa.`
+    });
+
     renderAgentSimulationFeedback(`Khen thưởng ${amount} Tiền động viên NPC ${npcId}. Sĩ khí tối đa.`, { cash: `-${amount} Qian`, npc: 'Sĩ khí 100% • Trung thành +2', audit: '70/70 Khớp' });
     await Promise.all([loadStatus(), loadDeckNpcs(), loadDeckLedger()]);
   } finally {
@@ -773,6 +1036,15 @@ async function submitModalTrade() {
   }
 
   closeTradeModal();
+
+  appendStoryTurn({
+    type: 'player',
+    speaker: 'Lương Diễn',
+    title: mode === 'SELL' ? 'Xuất Bán Hàng Hóa' : 'Thu Mua Vật Tư',
+    avatar: '梁',
+    text: `${mode === 'SELL' ? 'Xuất bán' : 'Thu mua'} **${qty} ${itemCode}** với đối tác **${counterparty}** theo giá **${price} Tiền/đơn vị** (Tổng: ${(qty * price).toLocaleString()} Tiền).`
+  });
+
   setProcessingLock(true, null, `${mode === 'SELL' ? 'Xuất bán' : 'Thu mua'} ${qty} ${itemCode}`);
 
   const payload = {
@@ -790,6 +1062,17 @@ async function submitModalTrade() {
     const totalAmt = qty * price;
     const deltaCash = mode === 'SELL' ? `+${totalAmt} Qian` : `-${totalAmt} Qian`;
     const deltaStock = mode === 'SELL' ? `-${qty} ${itemCode}` : `+${qty} ${itemCode}`;
+
+    appendStoryTurn({
+      type: 'system',
+      speaker: 'Thương Nghiệp Lương Gia',
+      title: 'Hoàn Tất Giao Dịch Sổ Cái',
+      avatar: '📦',
+      text: `Giao dịch thương nghiệp đã giao nhận thành công. Hàng hóa và dòng tiền được đối soát tự động trong cơ sở dữ liệu SQLite.`,
+      deltas: { cash: deltaCash, inventory: deltaStock, audit: '70/70 Khớp' },
+      reasoning: `Hoàn tất giao dịch thương nghiệp ${mode} cho ${itemCode}.`
+    });
+
     renderAgentSimulationFeedback(`Hoàn tất giao dịch thương nghiệp ${mode} cho ${itemCode}.`, { cash: deltaCash, inventory: deltaStock, audit: '70/70 Khớp' });
     await Promise.all([loadStatus(), loadDeckInventory(), loadDeckLedger()]);
   } finally {
