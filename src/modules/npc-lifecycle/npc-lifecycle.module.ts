@@ -257,7 +257,167 @@ export class NpcLifecycleModule implements IFeatureModule {
 
     // 5. Publish to EventBus
     this.ctx.eventBus.publish('NPC_JOURNEY_STEP_COMPLETED', log);
+
+    // 6. Check Career Paradigm Shift (Đột phá thân phận)
+    this.checkAndExecuteCareerShift(npcId, turnNumber, gameDate, prog);
+
     return log;
+  }
+
+  /**
+   * Evaluates and executes a Career Paradigm Shift if thresholds are met
+   */
+  public checkAndExecuteCareerShift(
+    npcId: CharacterId,
+    turnNumber: number,
+    gameDate: string,
+    prog: any
+  ): any | null {
+    let shiftCategory = '';
+    let oldTier = '';
+    let newTier = '';
+    let oldRole = '';
+    let newRole = '';
+    let titleVi = '';
+    let narrativeVi = '';
+    let newMilestoneTitle = '';
+    let wageUpdate = 0;
+
+    if (npcId === 'NPC-0007' && prog.prestige >= 90 && prog.personal_cash >= 1800 && prog.milestone_title !== 'U Châu Thần Tượng Sư') {
+      shiftCategory = 'MASTERWORK_ELEVATION';
+      oldRole = 'FOREMAN';
+      newRole = 'CHIEF_ARTISAN_PARTNER';
+      oldTier = 'Cấp Bậc: Quản Đốc';
+      newTier = 'Cấp Bậc: Đại Tượng Sư Đối Tác';
+      newMilestoneTitle = 'U Châu Thần Tượng Sư';
+      titleVi = 'Trần Bảo đột phá thân phận: Thăng tọa Đại Tượng Sư U Châu';
+      narrativeVi = 'Tích lũy đủ 1,800 Tiền riêng và danh tiếng vang dội, Trần Bảo hoàn thiện phương pháp rèn bí truyền, chính thức được tôn vinh là Đại Tượng Sư bậc thầy của xưởng Lương Gia.';
+      wageUpdate = 1000;
+    } else if (npcId === 'NPC-0003' && prog.personal_troops >= 80 && prog.prestige >= 190 && prog.milestone_title !== 'Biệt Đội Tư Mã') {
+      shiftCategory = 'WARLORD_COMMISSION';
+      oldRole = 'HISTORICAL';
+      newRole = 'FRONTIER_MAJOR';
+      oldTier = 'Cấp Bậc: Dân Binh Thủ Lĩnh';
+      newTier = 'Cấp Bậc: Biệt Đội Tư Mã';
+      newMilestoneTitle = 'Biệt Đội Tư Mã';
+      titleVi = 'Trương Phi thăng quan: Thứ sử U Châu ban sắc phong Biệt Đội Tư Mã';
+      narrativeVi = 'Với chiến tích tiễu trừ sơn tặc và 80 dũng sĩ tinh nhuệ thiện chiến, Trương Phi được triều đình sắc phong làm Biệt Đội Tư Mã, thống lĩnh tiền quân phòng thủ Trác Huyện.';
+    } else if (npcId === 'NPC-0008' && prog.personal_cash >= 900 && prog.milestone_title !== 'Chưởng Quản Lò Luyện') {
+      shiftCategory = 'PROMOTION';
+      oldRole = 'SENIOR_ARTISAN';
+      newRole = 'FOUNDRY_MASTER';
+      oldTier = 'Cấp Bậc: Thợ Rèn Bậc Cao';
+      newTier = 'Cấp Bậc: Chưởng Quản Lò Luyện';
+      newMilestoneTitle = 'Chưởng Quản Lò Luyện';
+      titleVi = 'Triệu An thăng tọa Chưởng Quản Lò Luyện Thép Lương Gia';
+      narrativeVi = 'Nhờ làm chủ kỹ thuật tôi nguội và tích lũy uy tín vững vàng, Triệu An chính thức đảm nhiệm chức vụ Chưởng Quản phụ trách chất lượng phôi thép toàn xưởng.';
+      wageUpdate = 850;
+    } else if (npcId === 'NPC-0001' && prog.personal_troops >= 120 && prog.prestige >= 250 && prog.milestone_title !== 'Nghĩa Quân Thống Soái') {
+      shiftCategory = 'WARLORD_COMMISSION';
+      oldRole = 'HISTORICAL';
+      newRole = 'HEGEMON_COMMANDER';
+      oldTier = 'Cấp Bậc: Hào Kiệt Áo Vải';
+      newTier = 'Cấp Bậc: Nghĩa Quân Thống Soái';
+      newMilestoneTitle = 'Nghĩa Quân Thống Soái';
+      titleVi = 'Lưu Bị đăng đàn thụ phong: Vạn dân suy tôn Nghĩa Quân Thống Soái';
+      narrativeVi = 'Lưu Bị chiêu tập hơn trăm tráng sĩ dũng lược, lập nên quân đoàn nghĩa dũng thanh thế lừng lẫy, chuẩn bị xuất sư bình định giặc Khăn Vàng.';
+    }
+
+    if (!shiftCategory) return null;
+
+    const shiftId = `SFT-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    const consequences = { newRole, wageUpdate, newMilestoneTitle };
+
+    this.runSqlRaw(`
+      INSERT INTO npc_career_shifts (shift_id, npc_id, turn_number, game_date, shift_category, old_tier, new_tier, old_role, new_role, title_vi, narrative_vi, consequences_json)
+      VALUES ('${shiftId}', '${npcId}', ${turnNumber}, '${gameDate}', '${shiftCategory}', '${oldTier}', '${newTier}', '${oldRole}', '${newRole}',
+              '${titleVi.replace(/'/g, "''")}', '${narrativeVi.replace(/'/g, "''")}', '${JSON.stringify(consequences).replace(/'/g, "''")}');
+
+      UPDATE npc_personal_progression
+      SET milestone_title = '${newMilestoneTitle}'
+      WHERE npc_id = '${npcId}';
+    `);
+
+    if (wageUpdate > 0) {
+      this.runSqlRaw(`
+        UPDATE npc_state
+        SET assigned_role = '${newRole}', monthly_wage = ${wageUpdate}
+        WHERE npc_id = '${npcId}';
+      `);
+    }
+
+    const shiftData = { shiftId, npcId, turnNumber, gameDate, shiftCategory, oldTier, newTier, titleVi, narrativeVi };
+    this.ctx.eventBus.publish('NPC_CAREER_PARADIGM_SHIFT', shiftData);
+    return shiftData;
+  }
+
+  /**
+   * Simulates dynamic cross-NPC interactions (Peer-to-Peer Bonds, Synergy & Rivalry)
+   */
+  public simulateCrossNpcInteractions(turnNumber: number, gameDate: string): any[] {
+    const peerPairs: Array<{
+      idA: string;
+      idB: string;
+      affinity: number;
+      respect: number;
+      relationType: string;
+      notesVi: string;
+    }> = [
+      {
+        idA: 'NPC-0002',
+        idB: 'NPC-0003',
+        affinity: 98,
+        respect: 96,
+        relationType: 'SWORN_BROTHERS',
+        notesVi: 'Quan Vũ và Trương Phi cùng giao lưu võ nghệ tại đào viên, đao mâu tung hoành, tâm ý tương thông, thề cùng sinh tử.'
+      },
+      {
+        idA: 'NPC-0001',
+        idB: 'NPC-0002',
+        affinity: 95,
+        respect: 98,
+        relationType: 'SWORN_BROTHERS',
+        notesVi: 'Lưu Bị đàm đạo đại nghĩa phục hưng Hán thất cùng Quan Vũ dưới đêm trăng, Quan Vũ chắp tay nguyện đem cả tính mạng phò tá.'
+      },
+      {
+        idA: 'NPC-0007',
+        idB: 'NPC-0008',
+        affinity: 82,
+        respect: 85,
+        relationType: 'COMRADES',
+        notesVi: 'Trần Bảo chia sẻ bí quyết trui phôi thép nguội cho Triệu An, hai người thức trắng đêm hoàn thiện dây chuyền rèn, kết làm tri kỷ thợ rèn.'
+      },
+      {
+        idA: 'NPC-0009',
+        idB: 'NPC-0010',
+        affinity: 72,
+        respect: 60,
+        relationType: 'COMRADES',
+        notesVi: 'Hà Đại giúp Thẩm Phúc khiêng gỗ vác củi tại kho dệt, Thẩm Phúc tặng Hà Đại tấm vải mây ấm áp, tình nghĩa xưởng thợ đậm đà.'
+      }
+    ];
+
+    const results = [];
+    for (const p of peerPairs) {
+      const pairKey = p.idA < p.idB ? `${p.idA}:${p.idB}` : `${p.idB}:${p.idA}`;
+      const id = `PEER-${pairKey}`;
+      const history = JSON.stringify([{ turnNumber, gameDate, notes: p.notesVi }]);
+
+      this.runSqlRaw(`
+        INSERT INTO npc_peer_relations (id, npc_id_a, npc_id_b, affinity, respect, relation_type, interaction_history_json)
+        VALUES ('${id}', '${p.idA}', '${p.idB}', ${p.affinity}, ${p.respect}, '${p.relationType}', '${history.replace(/'/g, "''")}')
+        ON CONFLICT(npc_id_a, npc_id_b) DO UPDATE SET
+          affinity = ${p.affinity},
+          respect = ${p.respect},
+          relation_type = '${p.relationType}',
+          interaction_history_json = '${history.replace(/'/g, "''")}',
+          updated_at = CURRENT_TIMESTAMP;
+      `);
+      results.push({ id, ...p });
+    }
+
+    this.ctx.eventBus.publish('CROSS_NPC_INTERACTIONS_SIMULATED', { turnNumber, gameDate, results });
+    return results;
   }
 
   /**
@@ -272,7 +432,45 @@ export class NpcLifecycleModule implements IFeatureModule {
       if (log) logs.push(log);
     }
 
+    // Also simulate peer relationships between NPCs
+    this.simulateCrossNpcInteractions(turnNumber, gameDate);
+
     return logs;
+  }
+
+  /**
+   * Queries career paradigm shifts
+   */
+  public getCareerShifts(npcId?: CharacterId, limit = 20): any[] {
+    const where = npcId ? `WHERE s.npc_id = '${npcId}'` : '';
+    return this.runSql(`
+      SELECT s.*, coalesce(n.name, m.name_vi, s.npc_id) as npc_name
+      FROM npc_career_shifts s
+      LEFT JOIN npc_state n ON s.npc_id = n.npc_id
+      LEFT JOIN master_characters m ON s.npc_id = m.npc_id
+      ${where}
+      ORDER BY s.rowid DESC
+      LIMIT ${limit};
+    `);
+  }
+
+  /**
+   * Queries cross-NPC peer relationships
+   */
+  public getPeerRelations(npcId?: CharacterId): any[] {
+    const where = npcId ? `WHERE p.npc_id_a = '${npcId}' OR p.npc_id_b = '${npcId}'` : '';
+    return this.runSql(`
+      SELECT p.*,
+             coalesce(na.name, ma.name_vi, p.npc_id_a) as name_a,
+             coalesce(nb.name, mb.name_vi, p.npc_id_b) as name_b
+      FROM npc_peer_relations p
+      LEFT JOIN npc_state na ON p.npc_id_a = na.npc_id
+      LEFT JOIN master_characters ma ON p.npc_id_a = ma.npc_id
+      LEFT JOIN npc_state nb ON p.npc_id_b = nb.npc_id
+      LEFT JOIN master_characters mb ON p.npc_id_b = mb.npc_id
+      ${where}
+      ORDER BY p.affinity DESC;
+    `);
   }
 
   /**

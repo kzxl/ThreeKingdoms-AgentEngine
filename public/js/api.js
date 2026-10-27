@@ -198,6 +198,20 @@ async function apiSimulateNpcJourney() {
   return data;
 }
 
+async function apiFetchCareerShifts() {
+  const res = await fetch(`${API_BASE}/api/npcs/career-shifts`);
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Failed to fetch career shifts');
+  return data;
+}
+
+async function apiFetchPeerRelations() {
+  const res = await fetch(`${API_BASE}/api/npcs/peer-relations`);
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Failed to fetch peer relations');
+  return data;
+}
+
 // Global exposure
 window.apiFetchStatus = apiFetchStatus;
 window.apiFetchAudit = apiFetchAudit;
@@ -222,3 +236,5 @@ window.apiFetchStrategyModules = apiFetchStrategyModules;
 window.apiFetchNpcJourney = apiFetchNpcJourney;
 window.apiFetchNpcProgression = apiFetchNpcProgression;
 window.apiSimulateNpcJourney = apiSimulateNpcJourney;
+window.apiFetchCareerShifts = apiFetchCareerShifts;
+window.apiFetchPeerRelations = apiFetchPeerRelations;

@@ -235,6 +235,36 @@ CREATE TABLE IF NOT EXISTS npc_journey_logs (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 17. NPC Career Paradigm Shifts (Đột Phá Thân Phận & Bước Ngoặt Cuộc Đời)
+CREATE TABLE IF NOT EXISTS npc_career_shifts (
+    shift_id TEXT PRIMARY KEY,
+    npc_id TEXT NOT NULL,
+    turn_number INTEGER NOT NULL,
+    game_date TEXT NOT NULL,
+    shift_category TEXT NOT NULL, -- 'PROMOTION', 'INDEPENDENCE', 'WARLORD_COMMISSION', 'DEFECT_RIVAL', 'MASTERWORK_ELEVATION'
+    old_tier TEXT NOT NULL,
+    new_tier TEXT NOT NULL,
+    old_role TEXT NOT NULL,
+    new_role TEXT NOT NULL,
+    title_vi TEXT NOT NULL,
+    narrative_vi TEXT NOT NULL,
+    consequences_json TEXT DEFAULT '{}',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 18. Cross-NPC Peer Relationships (Mạng Lưới Tương Tác Chéo Giữa Các NPC)
+CREATE TABLE IF NOT EXISTS npc_peer_relations (
+    id TEXT PRIMARY KEY,
+    npc_id_a TEXT NOT NULL,
+    npc_id_b TEXT NOT NULL,
+    affinity INTEGER NOT NULL DEFAULT 0 CHECK (affinity >= -100 AND affinity <= 100),
+    respect INTEGER NOT NULL DEFAULT 10 CHECK (respect >= 0 AND respect <= 100),
+    relation_type TEXT NOT NULL DEFAULT 'ACQUAINTANCE', -- 'SWORN_BROTHERS', 'COMRADES', 'INTERNAL_RIVAL', 'MASTER_DISCIPLE', 'BITTER_FEUD', 'DEBTOR_CREDITOR'
+    interaction_history_json TEXT DEFAULT '[]',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(npc_id_a, npc_id_b)
+);
+
 -- Indices for rapid querying & integrity checks
 CREATE INDEX IF NOT EXISTS idx_cashflow_date ON cashflow_ledger(game_date);
 CREATE INDEX IF NOT EXISTS idx_stock_mov_item ON stock_movements(item_code);
@@ -246,3 +276,5 @@ CREATE INDEX IF NOT EXISTS idx_npc_skills_npc ON npc_skills(npc_id);
 CREATE INDEX IF NOT EXISTS idx_session_events_status ON session_events(status);
 CREATE INDEX IF NOT EXISTS idx_journey_npc ON npc_journey_logs(npc_id);
 CREATE INDEX IF NOT EXISTS idx_journey_turn ON npc_journey_logs(turn_number);
+CREATE INDEX IF NOT EXISTS idx_shifts_npc ON npc_career_shifts(npc_id);
+CREATE INDEX IF NOT EXISTS idx_peer_rel_pair ON npc_peer_relations(npc_id_a, npc_id_b);

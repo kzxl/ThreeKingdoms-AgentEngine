@@ -310,6 +310,46 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // 4e. GET /api/npcs/career-shifts - Career Paradigm Shifts (Đột Phá Thân Phận)
+  if (req.method === 'GET' && pathname === '/api/npcs/career-shifts') {
+    try {
+      const gsm = globalThis.__GRAND_STRATEGY_MODULES__;
+      const shifts = gsm && gsm.npcLifecycle ? gsm.npcLifecycle.getCareerShifts() : runSqlJson(`
+        SELECT s.*, coalesce(n.name, m.name_vi, s.npc_id) as npc_name
+        FROM npc_career_shifts s
+        LEFT JOIN npc_state n ON s.npc_id = n.npc_id
+        LEFT JOIN master_characters m ON s.npc_id = m.npc_id
+        ORDER BY s.rowid DESC LIMIT 30;
+      `);
+      sendJson(res, 200, { success: true, shifts });
+    } catch (err) {
+      sendJson(res, 500, { success: false, error: err.message });
+    }
+    return;
+  }
+
+  // 4f. GET /api/npcs/peer-relations - Cross-NPC Peer Relational Mesh (Tương Tác Chéo)
+  if (req.method === 'GET' && pathname === '/api/npcs/peer-relations') {
+    try {
+      const gsm = globalThis.__GRAND_STRATEGY_MODULES__;
+      const relations = gsm && gsm.npcLifecycle ? gsm.npcLifecycle.getPeerRelations() : runSqlJson(`
+        SELECT p.*,
+               coalesce(na.name, ma.name_vi, p.npc_id_a) as name_a,
+               coalesce(nb.name, mb.name_vi, p.npc_id_b) as name_b
+        FROM npc_peer_relations p
+        LEFT JOIN npc_state na ON p.npc_id_a = na.npc_id
+        LEFT JOIN master_characters ma ON p.npc_id_a = ma.npc_id
+        LEFT JOIN npc_state nb ON p.npc_id_b = nb.npc_id
+        LEFT JOIN master_characters mb ON p.npc_id_b = mb.npc_id
+        ORDER BY p.affinity DESC;
+      `);
+      sendJson(res, 200, { success: true, relations });
+    } catch (err) {
+      sendJson(res, 500, { success: false, error: err.message });
+    }
+    return;
+  }
+
   // 5. GET /api/audit - Comprehensive Invariant Audit
   if (req.method === 'GET' && pathname === '/api/audit') {
     try {

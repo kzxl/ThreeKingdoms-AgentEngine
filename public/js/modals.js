@@ -628,20 +628,29 @@ async function submitEventChoice(eventId, choiceId) {
 // 7. Living World NPC Progression & Chronicles Renderer
 async function loadAndRenderNpcLife() {
   const grid = document.getElementById('gm-npc-progression-grid');
+  const shiftsContainer = document.getElementById('gm-npc-career-shifts-container');
+  const peersContainer = document.getElementById('gm-npc-peer-relations-container');
   const timeline = document.getElementById('gm-npc-journey-timeline');
+
   if (grid) grid.innerHTML = '<div style="color:#94a3b8; padding:10px;">Đang nạp dữ liệu chí hướng nhân vật...</div>';
+  if (shiftsContainer) shiftsContainer.innerHTML = '<div style="color:#94a3b8; padding:10px;">Đang kiểm tra các bước ngoặt thân phận...</div>';
+  if (peersContainer) peersContainer.innerHTML = '<div style="color:#94a3b8; padding:10px;">Đang nạp mạng lưới quan hệ chéo...</div>';
   if (timeline) timeline.innerHTML = '<div style="color:#94a3b8; padding:10px;">Đang nạp nhật ký hành trình...</div>';
 
   try {
-    const [progRes, logsRes] = await Promise.all([
+    const [progRes, shiftsRes, peersRes, logsRes] = await Promise.all([
       apiFetchNpcProgression(),
+      apiFetchCareerShifts(),
+      apiFetchPeerRelations(),
       apiFetchNpcJourney(null, 30)
     ]);
 
     const progs = progRes.progressions || [];
+    const shifts = shiftsRes.shifts || [];
+    const peers = peersRes.relations || [];
     const logs = logsRes.logs || [];
 
-    // Render Progression Grid
+    // 1. Render Progression Grid
     if (grid) {
       if (progs.length === 0) {
         grid.innerHTML = '<div style="color:#64748b;">Chưa có dữ liệu tiến trình tự thân. Hãy bấm nút Vận Hành để kích hoạt.</div>';
@@ -689,7 +698,79 @@ async function loadAndRenderNpcLife() {
       }
     }
 
-    // Render Journey Timeline
+    // 2. Render Career Paradigm Shifts
+    if (shiftsContainer) {
+      if (shifts.length === 0) {
+        shiftsContainer.innerHTML = '<div style="color:#64748b; padding:10px; background:rgba(15,23,42,0.4); border-radius:6px;">Chưa có bước ngoặt thân phận nào diễn ra. Khi NPC đạt đủ danh vọng và tích lũy thực lực, họ sẽ đột phá thân phận.</div>';
+      } else {
+        shiftsContainer.innerHTML = shifts.map(s => `
+          <div style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.08), rgba(15, 23, 42, 0.8)); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 8px; padding: 12px 16px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+              <span style="font-size:12px; font-weight:700; color:#fbbf24; text-transform:uppercase; letter-spacing:0.5px;">⚡ ĐỘT PHÁ THÂN PHẬN • LƯỢT ${s.turn_number}</span>
+              <span style="font-size:11px; color:#94a3b8; background:rgba(255,255,255,0.05); padding:2px 8px; border-radius:4px;">${s.old_tier} ➔ <strong style="color:#38bdf8;">${s.new_tier}</strong></span>
+            </div>
+            <h4 style="margin:0 0 6px 0; color:#f8fafc; font-size:15px; font-weight:700;">${s.title_vi}</h4>
+            <p style="margin:0; font-size:13px; color:#cbd5e1; line-height:1.5;">${s.narrative_vi}</p>
+          </div>
+        `).join('');
+      }
+    }
+
+    // 3. Render Cross-NPC Peer Relations
+    if (peersContainer) {
+      if (peers.length === 0) {
+        peersContainer.innerHTML = '<div style="color:#64748b; padding:10px;">Chưa có dữ liệu quan hệ chéo giữa các NPC.</div>';
+      } else {
+        peersContainer.innerHTML = peers.map(rel => {
+          const typeBadgeMap = {
+            SWORN_BROTHERS: { label: '🤝 Sinh Tử Kết Nghĩa', color: '#ec4899', bg: 'rgba(236,72,153,0.15)' },
+            COMRADES: { label: '🛡️ Tri Kỷ Đồng Liêu', color: '#38bdf8', bg: 'rgba(56,189,248,0.15)' },
+            INTERNAL_RIVAL: { label: '⚔️ Đối Thủ Cạnh Tranh', color: '#f59e0b', bg: 'rgba(245,158,11,0.15)' },
+            MASTER_DISCIPLE: { label: '📜 Sư Đồ Chân Truyền', color: '#10b981', bg: 'rgba(16,185,129,0.15)' },
+            DEBTOR_CREDITOR: { label: '💰 Ân Nghĩa Vay Mượn', color: '#a855f7', bg: 'rgba(168,85,247,0.15)' }
+          };
+          const tb = typeBadgeMap[rel.relation_type] || { label: rel.relation_type, color: '#94a3b8', bg: 'rgba(255,255,255,0.05)' };
+
+          let notes = '';
+          try {
+            const hist = JSON.parse(rel.interaction_history_json || '[]');
+            if (hist.length > 0) notes = hist[hist.length - 1].notes || '';
+          } catch (e) {}
+
+          return `
+            <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px; display:flex; flex-direction:column; gap:8px;">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-weight:700; color:#f8fafc; font-size:14px;">${rel.name_a} ⟷ ${rel.name_b}</span>
+                <span style="font-size:11px; font-weight:600; padding:2px 8px; border-radius:4px; color:${tb.color}; background:${tb.bg};">${tb.label}</span>
+              </div>
+              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; font-size:12px;">
+                <div>
+                  <div style="display:flex; justify-content:space-between; color:#94a3b8; margin-bottom:2px;">
+                    <span>Thiện cảm</span>
+                    <span style="color:#f43f5e; font-weight:600;">${rel.affinity > 0 ? '+' : ''}${rel.affinity}</span>
+                  </div>
+                  <div style="height:4px; background:rgba(255,255,255,0.1); border-radius:2px; overflow:hidden;">
+                    <div style="height:100%; width:${Math.max(0, Math.min(100, (rel.affinity + 100) / 2))}%; background:#f43f5e;"></div>
+                  </div>
+                </div>
+                <div>
+                  <div style="display:flex; justify-content:space-between; color:#94a3b8; margin-bottom:2px;">
+                    <span>Tôn kính</span>
+                    <span style="color:#38bdf8; font-weight:600;">${rel.respect}/100</span>
+                  </div>
+                  <div style="height:4px; background:rgba(255,255,255,0.1); border-radius:2px; overflow:hidden;">
+                    <div style="height:100%; width:${rel.respect}%; background:#38bdf8;"></div>
+                  </div>
+                </div>
+              </div>
+              ${notes ? `<div style="font-size:12px; color:#cbd5e1; font-style:italic; border-top:1px solid rgba(255,255,255,0.05); padding-top:6px;">"${notes}"</div>` : ''}
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    // 4. Render Journey Timeline
     if (timeline) {
       if (logs.length === 0) {
         timeline.innerHTML = '<div style="color:#64748b; padding:15px; text-align:center;">Chưa có nhật ký hành trình. Bấm "Vận Hành 1 Lượt Tự Thân" để NPC bắt đầu chuỗi sự kiện.</div>';
