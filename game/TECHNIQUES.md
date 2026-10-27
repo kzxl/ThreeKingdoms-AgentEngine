@@ -13,7 +13,7 @@ Skills represent acquired competencies developed through study, labor, mentorshi
 
 ## 2. Commerce & Enterprise Skills
 
-### `SKL-COM-BOOK` — Bookkeeping & Ledger Audit (Kê toán)
+### `SKL-COM-BOOK` — Bookkeeping & Ledger Audit (Kê toán & Kiểm toán)
 - **Primary Attribute**: Intelligence (`INT`) / Commerce (`COM`)
 - **Effects**:
   - Tier 1: Prevents basic fraud and arithmetic blunders in business ledgers.
@@ -30,6 +30,15 @@ Skills represent acquired competencies developed through study, labor, mentorshi
   - Tier 3: +10% profit margin when selling wholesale to distant markets.
   - Tier 4: Negotiate 10% discount on raw material procurement contracts.
   - Tier 5: Master monopolistic pricing; manipulate local commodity supply.
+
+### `SKL-MGT-ENTERPRISE` — Enterprise Management & Delegation (Quản lý Doanh nghiệp & Phân quyền)
+- **Primary Attribute**: Commerce (`COM`) / Politics (`POL`) / Leadership (`LDR`)
+- **Effects**:
+  - Tier 1 (Novice): Understands task scheduling, workflow assignment, and basic inventory tracking. Reduces employee idling time by 10%.
+  - Tier 2 (Competent): Standardized Operating Procedures (SOP); unlocks workshop foreman delegation (workshop operates at 85% capacity without player daily oversight).
+  - Tier 3 (Proficient): Incentive structures & performance pay; +15% worker productivity, increases retainer loyalty gain rate, and cuts scrap rate by 2%.
+  - Tier 4 (Expert): Multi-branch governance; allows opening and managing remote branch workshops or stores in other counties without operational collapse.
+  - Tier 5 (Master): Autonomous enterprise ecosystem; capable of managing large syndicates, thousands of artisans, state-level monopoly salt/iron workshops, or commandery-wide logistics grids.
 
 ### `SKL-CRA-WEAVE` — Reed, Bamboo & Mat Weaving (Biên dệt)
 - **Primary Attribute**: Craftsmanship (`CRA`)
@@ -65,6 +74,15 @@ Skills represent acquired competencies developed through study, labor, mentorshi
 ---
 
 ## 4. Governance & Military Leadership
+
+### `SKL-POL-ADMIN` — Civil Administration & Bureaucracy (Hành chính & Trị lý)
+- **Primary Attribute**: Politics (`POL`) / Intelligence (`INT`)
+- **Effects**:
+  - Tier 1: Comprehends official imperial statutes, land tax codes, and yamen registry procedures.
+  - Tier 2: Reduces local corruption and tax leakage in governed estates or districts by 15%.
+  - Tier 3: Enables rapid public order restoration (+5 order per month) and efficient corvée labor mobilization.
+  - Tier 4: Capable of administering entire counties (Huyện lệnh) or commanderies with optimal grain yields.
+  - Tier 5: High statesman competence; enacts realm-level legal, fiscal, and land reforms.
 
 ### `SKL-LDR-DRILL` — Troop Drill & Discipline (Huấn luyện Quân đội)
 - **Primary Attribute**: Leadership (`LDR`)

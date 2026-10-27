@@ -24,19 +24,19 @@
 | **Martial Prowess** | `WAR` | **54** | Trained in northern staff and basic short sword fencing; durable physique |
 | **Leadership** | `LDR` | **64** | Clear communicator; commands loyalty through fairness and discipline |
 | **Diplomacy** | `DIP` | **68** | Articulate, persuasive bargainer; respected by town elders and merchants |
-| **Commerce** | `COM` | **76** (+1 EXP from trade) | Keen commercial instincts; excels at price arbitrage and supply management |
+| **Commerce** | `COM` | **76** | Keen commercial instincts; excels at price arbitrage and supply management |
 | **Logistics** | `LOG` | **65** | Methodical planner; tracks grain rations, pack beasts, and transit losses |
 | **Craftsmanship** | `CRA` | **62** | Competent weaver, woodworker, and basic leathercraft supervisor |
 
 ---
 
-## 3. Financial & Asset Dashboard (As of Month 3 Day 1, 184 AD)
+## 3. Financial & Asset Dashboard (Month 3, 184 AD)
 
-- **Liquid Cash on Hand**: **13,610 Qian** (Safe at `BIZ-0001`).
+- **Liquid Cash on Hand**: **13,310 Qian** (Safe at `BIZ-0001`).
 - **Strategic Food Reserve**: **9.60 Dan grain** (Secures 16+ months of workshop rations).
 - **Warehouse Inventory**: Valued at **3,548 Qian** (Raw materials + finished mats/baskets).
 - **Fixed Assets**: **19,400 Qian** (Workshop compound, looms, tools, handcart).
-- **Total Net Worth**: **36,558 Qian**.
+- **Total Net Worth**: **36,258 Qian**.
 - **Accounts Receivable (AR)**: 0 Qian.
 - **Accounts Payable (AP)**: 0 Qian.
 - **Direct Retainers**:
@@ -48,6 +48,7 @@
 ## 4. Current Objectives
 
 - [x] **Procure Strategic Grain**: Purchased 10 Dan @ 160 Qian before wartime price spikes.
-- [ ] **Objective 1 (Commercial)**: Restock bamboo/reed supply and expand production of reinforced grain baskets (`PROD-BASK`) for escalating troop mobilization.
-- [ ] **Objective 2 (Alliances / Network)**: Leverage positive relations with Zhang Fei (+20) and Zhang Shiping (+40) to attend Liu Bei's gathering and offer logistic supply support.
-- [ ] **Objective 3 (Security)**: Formulate workshop defense plan as Yellow Turban unrest spreads toward Youzhou borders.
+- [x] **Acquire Management Competency**: Mentored by Master Lu Zhirong (`NPC-0006`); unlocked `SKL-MGT-ENTERPRISE` Tier 1 (18/20 EXP).
+- [ ] **Objective 1 (Commercial)**: Implement new piece-rate and batch-scheduling workflow at `BIZ-0001` to push `SKL-MGT-ENTERPRISE` to Tier 2 (Delegation).
+- [ ] **Objective 2 (Supply / Network)**: Restock bamboo/reed supply and negotiate grain basket logistics contract with Liu Bei's volunteer militia.
+- [ ] **Objective 3 (Security)**: Support Master Lu and Merchant Guild in organizing East Gate district night watch against refugee unrest.

@@ -35,7 +35,8 @@
 ---
 
 ## 4. Skills & Progression
-- **`SKL-COM-BOOK` (Bookkeeping)**: Tier 2 (Competent) — 28 / 40 EXP
+- **`SKL-MGT-ENTERPRISE` (Enterprise Management & Delegation)**: **Tier 1 (Novice) — 18 / 20 EXP** *(Newly Acquired from Master Lu)*
+- **`SKL-COM-BOOK` (Bookkeeping & Audit)**: Tier 2 (Competent) — 28 / 40 EXP
 - **`SKL-COM-APPRAISE` (Appraisal & Arbitrage)**: Tier 2 (Competent) — 34 / 40 EXP
 - **`SKL-CRA-WEAVE` (Mat & Fiber Weaving)**: Tier 2 (Competent) — 25 / 40 EXP
 - **`SKL-WAR-SPEAR` (Spear Combat)**: Tier 1 (Novice) — 18 / 20 EXP
@@ -57,13 +58,14 @@
 ## 6. Personal Possessions & Equipment
 - **Attire**: Scholar-artisan durable hemp robes (Clean, well-maintained).
 - **Weaponry**: 1 Quality Ashwood spear with iron head (Well-oiled).
-- **Tools**: Bamboo abacus, brush set, ink stone, seal stamp, bronze balance scales.
-- **Personal Coin Pouch**: 250 Qian (for daily minor market purchases; remaining funds kept in workshop safe).
+- **Tools**: Bamboo abacus, brush set, ink stone, seal stamp, bronze balance scales, Master Lu's workshop assignment templates.
+- **Liquid Cash Float**: **13,310 Qian** (Workshop iron chest).
+- **Personal Coin Pouch**: 250 Qian (for daily minor market purchases).
 
 ---
 
 ## 7. Physical & Mental Status
 - **Health**: 95 / 100 (Robust youth; well-nourished).
 - **Injuries / Afflictions**: None.
-- **Fatigue**: 15 / 100 (Well-rested).
-- **Morale**: 80 / 100 (Optimistic yet vigilant regarding border rumors).
+- **Fatigue**: 18 / 100 (Slightly tired from intensive study sessions with Master Lu).
+- **Morale**: 85 / 100 (Enlightened by management principles; confident in workshop scaling).
