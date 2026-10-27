@@ -155,15 +155,15 @@ function main() {
 
   if (shouldCommit) {
     const commitMsg = `checkpoint(${snapshotId}): ${metadata.gameDate} - ${note}`;
-    console.log(`\n[GIT] Executing git safe commit: "${commitMsg}"...`);
+    console.log(`\n[GIT] Creating local git commit: "${commitMsg}"...`);
     try {
-      execSync(`node E:\\Tools\\SemanticBrain\\tools\\git-safe-commit.js -m "${commitMsg}" game`, { stdio: 'inherit' });
+      execSync(`git add "${snapPath}" "${LATEST_PATH}" && git commit -m "${commitMsg}"`, { stdio: 'inherit' });
       if (shouldPush) {
-        console.log(`[GIT] Pushing to remote origin main...`);
+        console.log(`[GIT] Push requested: Pushing to origin main...`);
         execSync(`git push origin main`, { stdio: 'inherit' });
       }
     } catch (e) {
-      console.error(`[GIT] Commit/Push error: ${e.message}`);
+      console.error(`[GIT] Commit error: ${e.message}`);
     }
   }
 }
