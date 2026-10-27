@@ -201,6 +201,71 @@ function auditDoubleEntryJournal() {
   };
 }
 
+function auditNpcAndBusinesses() {
+  const errors = [];
+  let checksCount = 0;
+
+  const bizTable = runSqlJson(`SELECT name FROM sqlite_master WHERE type='table' AND name='businesses';`);
+  if (!bizTable || bizTable.length === 0) {
+    return { passed: true, checksCount: 0, errors: [], installed: false, bizCount: 0, npcCount: 0 };
+  }
+
+  const businesses = runSqlJson(`SELECT * FROM businesses;`);
+  const npcs = runSqlJson(`SELECT * FROM npc_state;`);
+  const npcMap = {};
+  for (const n of npcs) {
+    npcMap[n.npc_id] = n;
+  }
+
+  for (const b of businesses) {
+    checksCount++;
+    if (Number(b.safe_cash) < 0) {
+      errors.push(`Business ${b.business_id} has negative safe cash: ${b.safe_cash}`);
+    }
+    if (b.manager_npc_id && !npcMap[b.manager_npc_id]) {
+      errors.push(`Business ${b.business_id} has non-existent manager: ${b.manager_npc_id}`);
+    }
+    if (Number(b.efficiency_multiplier) <= 0) {
+      errors.push(`Business ${b.business_id} has non-positive efficiency: ${b.efficiency_multiplier}`);
+    }
+    if (Number(b.current_workforce) < 0) {
+      errors.push(`Business ${b.business_id} has negative workforce count: ${b.current_workforce}`);
+    }
+  }
+
+  for (const n of npcs) {
+    checksCount++;
+    if (n.loyalty < 0 || n.loyalty > 100) errors.push(`NPC ${n.npc_id} loyalty out of bounds: ${n.loyalty}`);
+    if (n.morale < 0 || n.morale > 100) errors.push(`NPC ${n.npc_id} morale out of bounds: ${n.morale}`);
+    if (n.fatigue < 0 || n.fatigue > 100) errors.push(`NPC ${n.npc_id} fatigue out of bounds: ${n.fatigue}`);
+    if (n.monthly_wage < 0) errors.push(`NPC ${n.npc_id} monthly wage negative: ${n.monthly_wage}`);
+    if (n.assigned_business_id && !businesses.some(b => b.business_id === n.assigned_business_id)) {
+      errors.push(`NPC ${n.npc_id} assigned to non-existent business: ${n.assigned_business_id}`);
+    }
+  }
+
+  const skillTable = runSqlJson(`SELECT name FROM sqlite_master WHERE type='table' AND name='npc_skills';`);
+  if (skillTable && skillTable.length > 0) {
+    const skills = runSqlJson(`SELECT * FROM npc_skills;`);
+    for (const s of skills) {
+      checksCount++;
+      if (s.tier < 1 || s.tier > 5) errors.push(`NPC ${s.npc_id} skill ${s.skill_code} tier out of bounds: ${s.tier}`);
+      if (s.current_exp < 0) errors.push(`NPC ${s.npc_id} skill ${s.skill_code} exp negative: ${s.current_exp}`);
+      if (s.max_exp <= 0) errors.push(`NPC ${s.npc_id} skill ${s.skill_code} max_exp non-positive: ${s.max_exp}`);
+      if (!npcMap[s.npc_id]) errors.push(`NPC skill refers to missing NPC: ${s.npc_id}`);
+    }
+  }
+
+  return {
+    passed: errors.length === 0,
+    checksCount,
+    errors,
+    installed: true,
+    bizCount: businesses.length,
+    npcCount: npcs.length
+  };
+}
+
 function auditProjectionSync(cashResult, invResult) {
   const errors = [];
   let checksCount = 0;
@@ -322,6 +387,21 @@ function runAudit() {
       console.log(`    ✅ Passed: PROGRESS.md matches SQLite state across all metrics.`);
     }
 
+    // 5. NPC & Business Enterprise Audit
+    const npcBizResult = auditNpcAndBusinesses();
+    totalChecks += npcBizResult.checksCount;
+    if (npcBizResult.installed) {
+      console.log(`\n[${journalResult.installed ? 5 : 4}] NPC & ENTERPRISE STATE (P4 Integrity):`);
+      console.log(`    Enterprises Verified  : ${npcBizResult.bizCount}`);
+      console.log(`    Active NPCs Verified  : ${npcBizResult.npcCount}`);
+      if (!npcBizResult.passed) {
+        allPassed = false;
+        npcBizResult.errors.forEach(e => { console.error(`    ❌ ${e}`); allErrors.push(e); });
+      } else {
+        console.log(`    ✅ Passed: NPC attributes, skills, and business safe cash verified.`);
+      }
+    }
+
     console.log('\n====================================================');
     if (allPassed) {
       console.log(` 🟢 AUDIT VERDICT: PASSED`);
@@ -351,5 +431,6 @@ module.exports = {
   auditSqliteInventory,
   auditDoubleEntryJournal,
   auditProjectionSync,
+  auditNpcAndBusinesses,
   runAudit
 };

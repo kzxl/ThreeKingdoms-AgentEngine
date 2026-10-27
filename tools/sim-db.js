@@ -285,9 +285,64 @@ function main() {
       exportProgress(dbPath, outPath);
       break;
 
+    case 'list-npcs': {
+      const npcs = runSql(dbPath, `SELECT * FROM npc_state ORDER BY npc_id ASC;`);
+      const skills = runSql(dbPath, `SELECT * FROM npc_skills;`);
+      console.log('====================================================');
+      console.log(` 👥 Active NPCs & Retainers (${npcs.length})`);
+      console.log('====================================================');
+      for (const n of npcs) {
+        const nSkills = skills.filter(s => s.npc_id === n.npc_id).map(s => `${s.skill_name} (T${s.tier} ${s.current_exp}/${s.max_exp})`).join(', ') || 'None';
+        console.log(`[${n.npc_id}] ${n.name} | Role: ${n.assigned_role} @ ${n.assigned_business_id || 'UNASSIGNED'}`);
+        console.log(`     Personality: ${n.personality} | Motivation: ${n.motivation} | Talents: ${n.talents}`);
+        console.log(`     Attributes : CRA:${n.cra_attr} LOG:${n.log_attr} INT:${n.int_attr} POL:${n.pol_attr} LDR:${n.ldr_attr}`);
+        console.log(`     Status     : Morale:${n.morale}% Loyalty:${n.loyalty}% Fatigue:${n.fatigue}% Wage:${n.monthly_wage} Qian`);
+        console.log(`     Skills     : ${nSkills}`);
+        console.log('----------------------------------------------------');
+      }
+      break;
+    }
+
+    case 'show-business': {
+      const bizId = args[1] || 'BIZ-0001';
+      const biz = runSql(dbPath, `SELECT * FROM businesses WHERE business_id = '${bizId}' LIMIT 1;`)[0];
+      if (!biz) {
+        console.error(`Business ${bizId} not found.`);
+        break;
+      }
+      const workforce = runSql(dbPath, `SELECT npc_id, name, assigned_role, monthly_wage FROM npc_state WHERE assigned_business_id = '${bizId}';`);
+      console.log('====================================================');
+      console.log(` 🏭 Enterprise: ${biz.name} (${biz.business_id})`);
+      console.log('====================================================');
+      console.log(` Location    : ${biz.location_id}`);
+      console.log(` Manager     : ${biz.manager_npc_id}`);
+      console.log(` Safe Cash   : ${biz.safe_cash.toLocaleString()} Qian`);
+      console.log(` Delegation  : Level ${biz.delegation_level} (Autonomous SOP)`);
+      console.log(` Capacity    : ${biz.monthly_capacity_hours} hrs/mo (Efficiency: ${Math.round(biz.efficiency_multiplier * 100)}%)`);
+      console.log(` Overhead    : Rent ${biz.monthly_rent} Qian/mo | Workforce: ${workforce.length} persons`);
+      console.log(' Workforce   :');
+      for (const w of workforce) {
+        console.log(`   - [${w.npc_id}] ${w.name}: ${w.assigned_role} (Wage: ${w.monthly_wage} Qian)`);
+      }
+      console.log('====================================================');
+      break;
+    }
+
+    case 'simulate-workshop': {
+      const { WorkshopEngine } = require('../engine/workshop-engine');
+      const bizId = args[1] || 'BIZ-0001';
+      const date = args[2] || '184-05-30';
+      const seed = parseInt(args[3] || '1840501', 10);
+      const outProgress = path.join(GAME_DIR, 'PROGRESS.md');
+      const engine = new WorkshopEngine(dbPath, outProgress);
+      const res = engine.simulateMonth(bizId, date, seed);
+      console.log(JSON.stringify(res, null, 2));
+      break;
+    }
+
     default:
       console.log(`Unknown command: ${command}`);
-      console.log('Available commands: init, import-legacy, status, query, export-progress');
+      console.log('Available commands: init, import-legacy, status, query, export-progress, list-npcs, show-business, simulate-workshop');
   }
 }
 

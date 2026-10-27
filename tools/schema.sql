@@ -66,10 +66,6 @@ CREATE TABLE IF NOT EXISTS cashflow_ledger (
 );
 
 -- 5. True Double-Entry Account Journal (Pure Debit == Credit Accounting)
--- Chart of Accounts:
--- 1001_CASH_MOBILE, 1002_CASH_SAFE, 1201_INVENTORY, 1501_FIXED_ASSETS,
--- 2001_ACCOUNTS_PAYABLE, 3001_OWNER_EQUITY, 4001_SALES_REVENUE,
--- 5001_COST_OF_GOODS_SOLD, 6001_OPERATING_EXPENSE, 7001_BOUNTY_INCOME
 CREATE TABLE IF NOT EXISTS account_journal (
     entry_id INTEGER PRIMARY KEY AUTOINCREMENT,
     txn_id TEXT NOT NULL,
@@ -144,9 +140,67 @@ CREATE TABLE IF NOT EXISTS turn_log (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 11. NPC Active State (Attributes, Loyalty, Roles, Work Assignments)
+CREATE TABLE IF NOT EXISTS npc_state (
+    npc_id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    loyalty INTEGER NOT NULL DEFAULT 75 CHECK (loyalty >= 0 AND loyalty <= 100),
+    morale INTEGER NOT NULL DEFAULT 80 CHECK (morale >= 0 AND morale <= 100),
+    fatigue INTEGER NOT NULL DEFAULT 0 CHECK (fatigue >= 0 AND fatigue <= 100),
+    int_attr INTEGER NOT NULL DEFAULT 50,
+    pol_attr INTEGER NOT NULL DEFAULT 50,
+    war_attr INTEGER NOT NULL DEFAULT 50,
+    ldr_attr INTEGER NOT NULL DEFAULT 50,
+    dip_attr INTEGER NOT NULL DEFAULT 50,
+    com_attr INTEGER NOT NULL DEFAULT 50,
+    log_attr INTEGER NOT NULL DEFAULT 50,
+    cra_attr INTEGER NOT NULL DEFAULT 50,
+    talents TEXT DEFAULT '[]',
+    personality TEXT NOT NULL DEFAULT 'PRAGMATIC',
+    motivation TEXT NOT NULL DEFAULT 'SECURITY',
+    assigned_business_id TEXT,
+    assigned_role TEXT NOT NULL DEFAULT 'UNASSIGNED',
+    monthly_wage INTEGER NOT NULL DEFAULT 750 CHECK (monthly_wage >= 0),
+    management_exp INTEGER NOT NULL DEFAULT 0,
+    craft_exp INTEGER NOT NULL DEFAULT 0,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 12. NPC Skills Ladder (Tiers, EXP, Upgrades)
+CREATE TABLE IF NOT EXISTS npc_skills (
+    npc_id TEXT NOT NULL,
+    skill_code TEXT NOT NULL,
+    skill_name TEXT NOT NULL,
+    tier INTEGER NOT NULL DEFAULT 1 CHECK (tier >= 1 AND tier <= 5),
+    current_exp INTEGER NOT NULL DEFAULT 0 CHECK (current_exp >= 0),
+    max_exp INTEGER NOT NULL DEFAULT 40 CHECK (max_exp > 0),
+    notes TEXT,
+    PRIMARY KEY (npc_id, skill_code),
+    FOREIGN KEY(npc_id) REFERENCES npc_state(npc_id)
+);
+
+-- 13. Businesses & Autonomous Enterprise Facilities
+CREATE TABLE IF NOT EXISTS businesses (
+    business_id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    location_id TEXT NOT NULL DEFAULT 'LOC-0001',
+    manager_npc_id TEXT,
+    safe_cash INTEGER NOT NULL DEFAULT 3000 CHECK (safe_cash >= 0),
+    delegation_level INTEGER NOT NULL DEFAULT 2, -- 1: Routine, 2: Autonomous SOP, 3: Full Strategic
+    efficiency_multiplier REAL NOT NULL DEFAULT 0.85,
+    current_workforce INTEGER NOT NULL DEFAULT 4,
+    monthly_capacity_hours INTEGER NOT NULL DEFAULT 800,
+    monthly_rent INTEGER NOT NULL DEFAULT 200,
+    auto_procure INTEGER NOT NULL DEFAULT 1,
+    status TEXT NOT NULL DEFAULT 'ACTIVE',
+    FOREIGN KEY(manager_npc_id) REFERENCES npc_state(npc_id)
+);
+
 -- Indices for rapid querying & integrity checks
 CREATE INDEX IF NOT EXISTS idx_cashflow_date ON cashflow_ledger(game_date);
 CREATE INDEX IF NOT EXISTS idx_stock_mov_item ON stock_movements(item_code);
 CREATE INDEX IF NOT EXISTS idx_npc_delta_npc ON npc_relationship_deltas(npc_id);
 CREATE INDEX IF NOT EXISTS idx_account_journal_txn ON account_journal(txn_id);
 CREATE INDEX IF NOT EXISTS idx_action_idempotency ON action_log(idempotency_key);
+CREATE INDEX IF NOT EXISTS idx_npc_business ON npc_state(assigned_business_id);
+CREATE INDEX IF NOT EXISTS idx_npc_skills_npc ON npc_skills(npc_id);

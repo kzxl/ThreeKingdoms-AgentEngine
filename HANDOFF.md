@@ -6,7 +6,8 @@ The `ThreeKingdoms-AgentEngine` has been upgraded to an industrial-grade, determ
 - **Human & Agent View**: Auto-projected Markdown (`game/PROGRESS.md`).
 - **Core Engine Skeleton**: Git tracks rules, master seed data (`game/master/`), tools, and tests. Playthrough data is completely isolated in local SQLite and excluded from Git by `.gitignore`.
 - **Validation Pipeline**: Full Simulation Core (`engine/sim-core.js`) with condition checking, atomic SQLite transactions, and idempotency protection.
-- **Independent Auditor**: `tools/sim-audit.js` verifies 52 invariants directly against SQLite.
+- **Independent Auditor**: `tools/sim-audit.js` verifies 63 invariants directly against SQLite.
+- **Autonomous NPC & Workshop Engine**: `engine/workshop-engine.js` simulates monthly background operations using zero-token utility AI with full BOM material consumption, payroll disbursements, double-entry accounting, and NPC skill leveling.
 
 ---
 
@@ -17,19 +18,21 @@ ThreeKingdoms-AgentEngine/
 │   ├── rules.js                # Mathematical formulas (DCs, BOM, scrap rate, prices)
 │   ├── random.js               # Seeded Mulberry32 PRNG for deterministic replay
 │   ├── sim-core.js             # Action dispatcher, condition checks, atomic SQLite transactions
+│   ├── workshop-engine.js      # Zero-token utility AI for autonomous workshop operations & NPC progression
 │   └── projector.js            # Auto-renders game/PROGRESS.md from SQLite
 │
 ├── tools/                      # Tooling & Maintenance
-│   ├── schema.sql              # Master DDL with double-entry journal & action log
-│   ├── sim-audit.js            # Invariant & state auditor
+│   ├── schema.sql              # Master DDL with double-entry journal, action log, NPC state, skills, businesses
+│   ├── sim-audit.js            # Invariant & state auditor (63 checks)
 │   ├── sim-checkpoint.js       # Local snapshot archiver
-│   └── sim-db.js               # SQLite CLI query bridge
+│   └── sim-db.js               # SQLite CLI query bridge & management console
 │
-├── tests/                      # Automated Test Suite (100% Passing)
+├── tests/                      # Automated Test Suite (100% Passing - 20/20 Tests)
 │   ├── test-audit.js           # Tests positive reconciliation & negative failure detections
 │   ├── test-core-actions.js    # Tests trade, production BOM, insufficient funds, idempotency
 │   ├── test-reproducibility.js # Tests seed determinism & replay across isolated databases
-│   └── run-all-tests.js        # Central runner
+│   ├── test-npc-ai.js          # Tests autonomous workshop cycle, BOM, payroll, promotions, solvency guard
+│   └── run-all-tests.js        # Central runner (executes all 4 suites)
 │
 ├── game/
 │   ├── master/                 # Strictly READ-ONLY 184 AD master seed world
@@ -46,16 +49,25 @@ ThreeKingdoms-AgentEngine/
 
 ## 3. Essential Verification Commands
 ```bash
-# 1. Run full test suite across all modules (14 tests total)
+# 1. Run full test suite across all modules (20 tests total)
 node tests/run-all-tests.js
 
-# 2. Run independent invariant audit on active database
+# 2. Run independent invariant audit on active database (63 invariants)
 node tools/sim-audit.js
 
 # 3. Check active campaign status from SQLite
 node tools/sim-db.js status
 
-# 4. Re-compile projection view
+# 4. View active NPCs and their skill tiers
+node tools/sim-db.js list-npcs
+
+# 5. Inspect autonomous enterprise facility
+node tools/sim-db.js show-business BIZ-0001
+
+# 6. Run autonomous monthly workshop simulation (test cycle)
+node tools/sim-db.js simulate-workshop BIZ-0001 184-05-30 1840501
+
+# 7. Re-compile projection view
 node tools/sim-db.js export-progress
 ```
 
@@ -67,7 +79,13 @@ node tools/sim-db.js export-progress
   - Location: Guangzong Citadel (`LOC-0003`).
   - Cash: **24,200 Qian** (21,200 mobile + 3,000 safe).
   - Inventory: **47,577.5 Qian** (12 SKUs).
+  - Fixed Capital: **19,600 Qian**.
   - Net Worth: **91,378 Qian**.
   - All 17 transactions verified for double-entry parity.
-- **Next Phase (P4)**:
-  - Implement utility-based autonomous dispatch for Foreman Chen Bao (`NPC-0007`) to manage monthly workshop cycles in Zhuo County without LLM inference overhead.
+- **Autonomous Retainers & Workshop**:
+  - `BIZ-0001` (Liang Clan Workshop) in Zhuo County actively managed by Foreman Chen Bao (`NPC-0007`).
+  - 4 active retainers assigned (`NPC-0007` to `NPC-0010`).
+  - Safe cash float: 3,000 Qian dedicated to Zhuo Workshop safe.
+- **Engine Evolution**:
+  - Phases P0, P1, P2, P3, and P4 are complete and mathematically verified.
+  - The engine is fully primed for high-agency narrative gameplay, strategic salt trading, and military campaign maneuvers.

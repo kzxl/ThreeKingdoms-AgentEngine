@@ -11,7 +11,8 @@ const path = require('path');
 const testFiles = [
   'test-audit.js',
   'test-core-actions.js',
-  'test-reproducibility.js'
+  'test-reproducibility.js',
+  'test-npc-ai.js'
 ];
 
 console.log('====================================================');

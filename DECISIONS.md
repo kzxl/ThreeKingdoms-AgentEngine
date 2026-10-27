@@ -57,3 +57,20 @@ This document records the architectural choices, rationale, and alternatives con
   `Action Proposal -> Validate Schema -> Condition Check -> Rule Resolver -> Atomic SQLite -> Invariant Check -> Event Log`
 - **Consequences**:
   - Positive: Deterministic simulation rules are authoritatively enforced. Invalid actions are rejected with clear error codes.
+
+---
+
+## ADR-005: Zero-Token Autonomous NPC & Enterprise Utility Engine with Strategic Escalation
+
+- **Date**: 2026-10-27
+- **Context**: In a long-running campaign, background workshops, artisan retainers, and apprentice staff perform repetitive monthly operations (purchasing bamboo/twine, manufacturing mats/baskets/shields, disbursing wages, paying rent). Invoking LLM inference prompts for routine administrative operations wastes tokens, introduces non-deterministic variance, and creates latency.
+- **Decision**:
+  - Implement a deterministic utility AI scoring engine (`engine/workshop-engine.js`) to handle monthly background enterprise operations with zero LLM token cost.
+  - Product mix targets are calculated based on labor capacity, hourly margin yields, warehouse inventory levels, and foreman artisan traits (`Master Artisan`, `Meticulous`, `Frugal`).
+  - Differentiate routine operations from strategic dilemmas: the engine autonomously runs routine cycles, but escalates to the player/LLM via a dilemma event if critical thresholds are met:
+    1. Critical Liquidity Warning: Safe cash < 500 Qian.
+    2. Labor Discontent: Workforce morale < 55%.
+    3. Rare Strategic Requisitions: Garrison military procurement contracts.
+- **Consequences**:
+  - Positive: High-speed, 100% reproducible background simulation. Zero token waste for routine workshop cycles.
+  - Positive: High-agency gameplay where the player only intervenes when meaningful strategic decisions are required.
