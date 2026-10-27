@@ -19,7 +19,7 @@ An autonomous, deterministic, markdown-backed simulation engine modeling the Thr
 - **Zero Ephemeral Hallucination**: No wealth, weapon, army, relationship, or historical event exists unless it is substantiated in the `game/` markdown files or generated via verified simulation formulas.
 - **Auditable Double-Entry Bookkeeping**: Money and inventory are strictly conserved. Every copper coin (`Qian`) and bundle of grain (`Dan`) is tracked via unique transaction IDs (`TXN-`) and stock movements (`MOV-`).
 - **Autonomous NPC Ecosystem**: Every notable figure (e.g. Liu Bei, Guan Yu, Zhang Fei, local magistrates, merchants) possesses independent attributes (8 core attributes), acquired skills (5 tiers), innate talents, psychological profiles, and evolving sentiment scores.
-- **Causal Historical Divergence**: Historical events (e.g. Yellow Turban rebellion, Peach Garden Oath, Dong Zhuo's entry into Luoyang) serve as starting baselines. Player actions and NPC decisions produce butterfly effects, organically altering history without narrative railroading.
+- **Causal Historical Divergence**: Historical events serve as starting baselines. Player actions and NPC decisions produce butterfly effects, organically altering history without narrative railroading.
 
 ---
 
@@ -62,6 +62,7 @@ You can command the engine using natural language (Vietnamese or English). Below
 ### Inspection & Query Commands
 | Command (VN) | Command (EN) | Effect |
 |---|---|---|
+| `xem tiến trình` | `view progress` | Inspects `game/PROGRESS.md` for live executive dashboard, active turn, and dilemma options. |
 | `xem trạng thái` | `status` | Displays player summary, liquid cash, grain reserve, net worth, and macro indicators. |
 | `xem BIZ-0001` | `view BIZ-0001` | Inspects workshop P&L, stock, labor hours, and product lines. |
 | `xem NPC-0001` | `view NPC-0001` | Reads full dossier of Liu Bei (attributes, skills, morale, sentiment toward player). |
@@ -78,19 +79,21 @@ You can issue customized tactical, commercial, diplomatic, or personal directive
 
 ## Memory Architecture & Storage Schema
 
+The memory architecture strictly separates **Immutable Engine Definitions** from **Dynamic Game Session State**:
+
 ```text
 game/
-├── README.md               # Operational manual & agent pipeline
-├── RULES.md                # Formulas, DCs, combat & production resolution
+├── PROGRESS.md             # ★ Rolling Campaign Progress Journal (Primary high-frequency operational tracker)
+├── TURN_STATE.md           # Active turn execution tracker & step-by-step pipeline
 ├── WORLD_STATE.md          # Macro indicators, calendar & global crises
 ├── PLAYER.md               # Player dashboard & active objectives
-├── ECONOMY.md              # Currency benchmarks, commodity price index
-├── TECHNIQUES.md           # Skill ladders & progression trees
-├── FACTIONS.md             # Major & regional warlords registry
-├── RELATIONS.md            # Diplomatic matrix & NPC sentiment tracker
-├── TURN_STATE.md           # Turn execution pipeline tracker
-├── TASKS.md                # Active project & operation queues
-├── CHANGELOG.md            # Version history & simulation logs
+│
+├── [READ-ONLY CORE RULES]  # Strictly read-only during standard gameplay turns
+│   ├── RULES.md            # Formulas, DCs, combat & production resolution
+│   ├── ECONOMY.md          # Currency benchmarks, commodity price index
+│   ├── TECHNIQUES.md       # Skill ladders & progression trees
+│   └── README.md           # Operational manual & agent pipeline
+│
 ├── chronicle/              # Chronological realm history by year (0184.md, ...)
 ├── characters/             # Detailed character sheets (player.md, NPC-xxxx.md)
 ├── factions/               # Faction dossiers (FACTION-xxxx.md)
@@ -98,7 +101,7 @@ game/
 ├── organizations/          # Guilds & sects (ORG-xxxx.md)
 ├── businesses/             # Enterprise dossiers (BIZ-xxxx.md)
 ├── military/               # Armies & campaigns (armies.md, campaigns.md)
-├── events/                 # Active event cards & archive (active.md, archive.md)
+├── events/                 # Active crisis cards & archive (active.md, archive.md)
 ├── ledger/                 # Cashflow, inventory, contracts & audits
 └── saves/                  # Latest save & historical snapshots
 ```
@@ -129,5 +132,5 @@ $$\text{Defect Rate (\%)} = \max\left(2\%,\; \text{Base Defect} - (\text{Lead Ar
 To continue a campaign in a new AI conversation or with another agent:
 1. Provide the agent with the repository or clone this workspace.
 2. Instruct the agent:
-   > *"Read `game/README.md`, `game/saves/latest.md`, and `game/TURN_STATE.md`. Act as the Simulation Engine and await my command."*
+   > *"Read `game/PROGRESS.md`, `game/saves/latest.md`, and `game/TURN_STATE.md`. Act as the Simulation Engine and await my command."*
 3. The agent will read the verified state and continue the world seamlessly with zero context loss.

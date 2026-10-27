@@ -5,15 +5,32 @@ The **Agentic Three Kingdoms Simulation Engine** is a deterministic, auditable, 
 
 ---
 
+## Architecture: Core Rules vs. Dynamic State Separation
+
+To prevent constant churn and accidental mutation of core system mechanics, the engine enforces strict separation:
+
+1. **Immutable Core Engine Laws (Read-Only during gameplay)**:
+   - `RULES.md`: Attribute formulas, skill checks, combat resolution, defect rates.
+   - `ECONOMY.md`: Currency definitions, commodity price index, labor benchmarks.
+   - `TECHNIQUES.md`: Catalog of skills, tiers, and progression paths.
+   - `README.md`: System manual and operational pipeline.
+2. **High-Frequency Gameplay Tracker**:
+   - `PROGRESS.md`: **★ Live rolling operational journal** recording current status, milestone logs, active dilemmas, and turn choices.
+   - `TURN_STATE.md`: Execution status of the 7-step turn pipeline.
+   - `ledger/`: Verified cashflow, physical inventory movements, and discrepancy audits.
+   - `saves/`: Complete state snapshots and rollback recovery points.
+
+---
+
 ## Operating Protocol for Agents & Game Master
 
 Every turn cycle must strictly adhere to the 7-step pipeline:
 
-1. **Step 1: Read State**: Inspect `WORLD_STATE.md`, `TURN_STATE.md`, `PLAYER.md`, and relevant target entity dossiers.
+1. **Step 1: Read State**: Inspect `PROGRESS.md`, `TURN_STATE.md`, and relevant target entity dossiers.
 2. **Step 2: Validate Prerequisites**: Check resource limits, time constraints, authority, tool availability, and conflict checks.
 3. **Step 3: Plan Simulation**: Deconstruct user mandates into atomic sub-actions and predict NPC/faction reactive behaviors.
 4. **Step 4: Resolve Outcomes**: Apply math formulas from `RULES.md` and `ECONOMY.md`. Explicitly separate deterministic outcomes, skill-check roll outcomes, and NPC independent decisions.
-5. **Step 5: Write State**: Update dossiers, ledger entries, and chronicles. Never write narrative without updating underlying ledger numbers.
+5. **Step 5: Write State**: Update `PROGRESS.md`, dossiers, ledger entries, and chronicles. Never write narrative without updating underlying ledger numbers.
 6. **Step 6: Audit Consistency**:
    - `Cash_End = Cash_Start + Inflows - Outflows`
    - `Inventory_End = Inventory_Start + Produced + Purchased - Consumed - Sold - Spoilage`
@@ -51,13 +68,11 @@ Players interact with the engine using natural language commands:
 - `lưu`: Create a verified snapshot in `saves/snapshots/` and update `saves/latest.md`.
 
 ### Inspection Commands
+- `xem tiến trình`: View `PROGRESS.md` for live executive dashboard, active turn, and dilemma options.
 - `xem trạng thái`: Display current character stats, cash on hand, grain reserves, enterprise P&L, and world crisis level.
 - `xem BIZ-0001`: Inspect the operations, workers, bill of materials (BOM), and stock of Liang Clan Workshop.
 - `xem NPC-xxxx`: View dossier for target character (e.g., `xem NPC-0001` for Liu Bei, `xem NPC-0002` for Zhang Fei).
 - `xem thị trường`: Inspect the latest commodity price index in `ECONOMY.md`.
 
 ### Roleplay & Directive Commands
-- `hành động [mô tả chi tiết]`: Direct the protagonist to negotiate, buy/sell, recruit, travel, or fight. Examples:
-  - *"Đến gặp Lưu Bị tại Đào Viên, tặng 10 giỏ lương và thương lượng hợp đồng cung cấp vật tư độc quyền cho nghĩa binh."*
-  - *"Chi 1.500 tiền mua thêm da bò từ lò mổ của Trương Phi để chuẩn bị sản xuất giáp da sơ cấp."*
-  - *"Tuyển thêm 3 thợ dệt từ Thương hội của Lư lão bá để nâng công suất xưởng lên 600 giờ/tháng."*
+- `hành động [mô tả chi tiết]`: Direct the protagonist to negotiate, buy/sell, recruit, travel, or fight.
