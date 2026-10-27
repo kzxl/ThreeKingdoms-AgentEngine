@@ -76,7 +76,7 @@ class SimulationCore {
   }
 
   _getLastBalance(defaultLiquid = 0) {
-    const lastTxn = runSqlJson(this.dbPath, `SELECT balance FROM cashflow_ledger ORDER BY rowid DESC LIMIT 1;`)[0];
+    const lastTxn = runSqlJson(this.dbPath, `SELECT balance FROM cashflow_ledger ORDER BY game_date DESC, rowid DESC LIMIT 1;`)[0];
     return lastTxn ? Number(lastTxn.balance) : defaultLiquid;
   }
 

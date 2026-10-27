@@ -384,10 +384,10 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
       },
       {
         id: 'OPT_4',
-        icon: '🏭',
-        title: 'Trở về Lương Thị Chức Tác Phường điều hành sản xuất',
-        desc: 'Quản lý thợ dệt Trần Bảo, đóng gói bồ lương đan & khiên trúc',
-        action: { type: 'MOVE_LOCATION', new_location: 'Xưởng Lương Thị', game_date: meta.current_date || '184-05-02' }
+        icon: '✉️',
+        title: 'Phi thư về Xưởng Lương Thị: Chỉ đạo đóng 5 Khiên trúc quân dụng',
+        desc: 'Phái gia nhân phi ngựa mang mật lệnh về xưởng • Tiêu hao BOM Tre & Da',
+        action: { type: 'PRODUCTION_BATCH', recipe: 'PROD-SHIELD-BAM', batch_size: 5, game_date: meta.current_date || '184-05-02' }
       }
     ];
   } else if (currentLocKey === 'Chợ Đông Môn') {
@@ -566,7 +566,7 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
     return;
   }
 
-  // 9. POST /api/agent/prompt - Agent Bridge Natural Language Dispatcher
+  // 9. POST /api/agent/prompt - Agent Bridge Natural Language Dispatcher (With Locality & Courier Logic)
   if (req.method === 'POST' && pathname === '/api/agent/prompt') {
     let body = '';
     req.on('data', chunk => { body += chunk; });
@@ -579,24 +579,49 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
 
         let actionToRun = null;
         let replyNarrative = '';
+        let dispatchType = null; // 'LOCAL' | 'COURIER' | 'TRAVEL'
+        let targetLoc = null;
 
-        if (userPrompt.includes('đông môn') || userPrompt.includes('chợ')) {
+        const isTravelIntent = (userPrompt.includes('đi') || 
+                                userPrompt.includes('đến') || 
+                                userPrompt.includes('tới') || 
+                                userPrompt.includes('rời') || 
+                                userPrompt.includes('sang') || 
+                                userPrompt.includes('về') || 
+                                userPrompt.includes('travel') || 
+                                userPrompt.includes('move')) && 
+                               !userPrompt.includes('thư') && 
+                               !userPrompt.includes('mua') && 
+                               !userPrompt.includes('bán') && 
+                               !userPrompt.includes('sản xuất') &&
+                               !userPrompt.includes('thưởng');
+
+        // 1. PHYSICAL TRAVEL / RELOCATION ACTIONS
+        if (isTravelIntent && (userPrompt.includes('đông môn') || userPrompt.includes('chợ'))) {
           subLocation = 'Chợ Đông Môn';
           actionToRun = { type: 'MOVE_LOCATION', new_location: 'Chợ Đông Môn', game_date: '184-05-02' };
-          replyNarrative = 'Lương Diễn thu xếp hành lý, rời Vườn Đào rảo bước tới Chợ Đông Môn Huyện Trác. Nơi đây tiếng rao hàng của thương nhân Ký Châu và binh sĩ nghĩa quân vang vọng nhộn nhịp!';
-        } else if (userPrompt.includes('xưởng') || userPrompt.includes('chức tác')) {
+          replyNarrative = 'Lương Diễn thu xếp hành lý, rời bước rảo sang Chợ Đông Môn Huyện Trác. Nơi đây tiếng rao hàng của thương nhân Ký Châu và binh sĩ nghĩa quân vang vọng nhộn nhịp!';
+          dispatchType = 'TRAVEL';
+        } else if (isTravelIntent && (userPrompt.includes('xưởng') || userPrompt.includes('chức tác'))) {
           subLocation = 'Xưởng Lương Thị';
           actionToRun = { type: 'MOVE_LOCATION', new_location: 'Xưởng Lương Thị', game_date: '184-05-02' };
           replyNarrative = 'Lương Diễn trở về Lương Thị Chức Tác Phường. Tiếng đan tre, lách cách dệt chiếu và mùi thuộc da của các gia nhân thợ dệt tràn ngập không khí!';
-        } else if (userPrompt.includes('quảng tông') || userPrompt.includes('doanh trại') || userPrompt.includes('lư thực')) {
+          dispatchType = 'TRAVEL';
+        } else if (isTravelIntent && (userPrompt.includes('quảng tông') || userPrompt.includes('doanh trại') || userPrompt.includes('lư thực'))) {
           subLocation = 'Quảng Tông Quân Doanh';
           actionToRun = { type: 'MOVE_LOCATION', new_location: 'Quảng Tông Quân Doanh', game_date: '184-05-02' };
           replyNarrative = 'Đoàn xe theo đường hành quân tiến thẳng về tiền tuyến Quảng Tông. Cờ xí Bắc Quân của Lư Thực tung bay trong gió cát!';
-        } else if (userPrompt.includes('vườn đào') || userPrompt.includes('trương phi')) {
+          dispatchType = 'TRAVEL';
+        } else if (isTravelIntent && (userPrompt.includes('vườn đào') || userPrompt.includes('trương phi'))) {
           subLocation = 'Vườn Đào';
           actionToRun = { type: 'MOVE_LOCATION', new_location: 'Vườn Đào', game_date: '184-05-02' };
           replyNarrative = 'Lương Diễn quay về Trang viên Vườn Đào. Trương Phi vẫn đang ngồi sảng khoái dưới gốc đào uống rượu chờ đợi!';
-        } else if (userPrompt.includes('mua') && (userPrompt.includes('da') || userPrompt.includes('leather'))) {
+          dispatchType = 'TRAVEL';
+        }
+
+        // 2. ECONOMIC & LOGISTICAL ACTIONS (With Locality & Courier Rules)
+        else if (userPrompt.includes('mua') && (userPrompt.includes('da') || userPrompt.includes('leather'))) {
+          targetLoc = 'Vườn Đào';
           actionToRun = {
             type: 'TRADE_BUY',
             item_code: 'COM-LEATH',
@@ -605,8 +630,15 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
             counterparty: 'Trương Phi (Lò mổ Trác Quận)',
             game_date: '184-05-02'
           };
-          replyNarrative = 'Trương Phi sảng khoái vỗ đùi: "Tốt lắm! 8 tấm da trâu hảo hạng này giao cho đệ, lát nữa sai gia nhân chuyển thẳng về xưởng Lương Thị!"';
+          if (subLocation === 'Vườn Đào') {
+            replyNarrative = 'Trương Phi sảng khoái vỗ đùi: "Tốt lắm! 8 tấm da trâu hảo hạng này giao cho đệ, lát nữa sai gia nhân chuyển thẳng về xưởng Lương Thị!"';
+            dispatchType = 'LOCAL';
+          } else {
+            replyNarrative = `Lương Diễn đang tại ${subLocation}, liền phi thư gửi sang Trang Viên Vườn Đào nhờ Trương Phi gom hộ 8 tấm da thuộc hảo hạng lò mổ. Trương Phi nhận thư cười to, lập tức cho thuộc hạ áp tải da chuyển thẳng về xưởng!`;
+            dispatchType = 'COURIER';
+          }
         } else if (userPrompt.includes('mua') && (userPrompt.includes('lương') || userPrompt.includes('gạo') || userPrompt.includes('grain'))) {
+          targetLoc = 'Chợ Đông Môn';
           actionToRun = {
             type: 'TRADE_BUY',
             item_code: 'COM-GRAIN',
@@ -615,8 +647,15 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
             counterparty: 'Lương thương Huyện Trác',
             game_date: '184-05-02'
           };
-          replyNarrative = 'Đoàn xe vận lương đã nhập thêm 5 Thạch tiểu mạch vào kho dự trữ. Quân lương sung túc!';
+          if (subLocation === 'Chợ Đông Môn') {
+            replyNarrative = 'Đoàn xe vận lương tại Chợ Đông Môn đã giao dịch và nhập thêm 5 Thạch tiểu mạch vào kho dự trữ. Quân lương sung túc!';
+            dispatchType = 'LOCAL';
+          } else {
+            replyNarrative = `Lương Diễn đang tại ${subLocation}, liền sai gia đinh mang lệnh bài và ngân phiếu phi ngựa ra Chợ Đông Môn thu mua 5 Thạch tiểu mạch dự trữ áp tải về kho!`;
+            dispatchType = 'COURIER';
+          }
         } else if (userPrompt.includes('bán') && (userPrompt.includes('muối') || userPrompt.includes('salt'))) {
+          targetLoc = 'Chợ Đông Môn';
           actionToRun = {
             type: 'TRADE_SELL',
             item_code: 'COM-SALT',
@@ -625,32 +664,60 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
             counterparty: 'Thương nhân Ký Châu',
             game_date: '184-05-02'
           };
-          replyNarrative = 'Thương nhân Ký Châu trao ngay 850 đồng tiền thanh toán cho 10 Đấu muối biển. Tiền mặt lưu động tăng mạnh!';
+          if (subLocation === 'Chợ Đông Môn') {
+            replyNarrative = 'Thương nhân Ký Châu trao ngay 850 đồng tiền thanh toán cho 10 Đấu muối biển. Tiền mặt lưu động tăng mạnh!';
+            dispatchType = 'LOCAL';
+          } else {
+            replyNarrative = `Lương Diễn đang tại ${subLocation}, liền viết khoán ước giao thương, phái gia nhân cưỡi ngựa áp tải 10 Đấu muối biển ra Chợ Đông Môn giao cho Thương nhân Ký Châu. Thương đoàn kiểm tra muối rồi gửi đủ 850 tiền mang về!`;
+            dispatchType = 'COURIER';
+          }
         } else if (userPrompt.includes('sản xuất') || userPrompt.includes('khiên')) {
+          targetLoc = 'Xưởng Lương Thị';
           actionToRun = {
             type: 'PRODUCTION_BATCH',
             recipe: 'PROD-SHIELD-BAM',
             batch_size: 5,
             game_date: '184-05-02'
           };
-          replyNarrative = 'Trần Bảo lập tức hạ lệnh khởi động ca làm việc! 5 chiếc khiên trúc bọc da đã được hoàn thiện chắc chắn, sẵn sàng trang bị.';
+          if (subLocation === 'Xưởng Lương Thị') {
+            replyNarrative = 'Trần Bảo lập tức hạ lệnh khởi động ca làm việc! 5 chiếc khiên trúc bọc da đã được hoàn thiện chắc chắn, sẵn sàng trang bị.';
+            dispatchType = 'LOCAL';
+          } else {
+            replyNarrative = `Lương Diễn đang tại ${subLocation}, liền viết mật thư lệnh bài giao cho gia đinh phi ngựa về Xưởng Lương Thị. Thợ cả Trần Bảo mở thư tuân lệnh, hạ lệnh thợ xưởng hoàn thiện 5 chiếc khiên trúc bọc da!`;
+            dispatchType = 'COURIER';
+          }
         } else if (userPrompt.includes('chiếu')) {
+          targetLoc = 'Xưởng Lương Thị';
           actionToRun = {
             type: 'PRODUCTION_BATCH',
             recipe: 'PROD-MAT',
             batch_size: 10,
             game_date: '184-05-02'
           };
-          replyNarrative = '10 tấm Chiếu Trúc Lương Gia vừa ra lò phẳng phiu thơm mùi cói trúc mới.';
+          if (subLocation === 'Xưởng Lương Thị') {
+            replyNarrative = '10 tấm Chiếu Trúc Lương Gia vừa ra lò phẳng phiu thơm mùi cói trúc mới.';
+            dispatchType = 'LOCAL';
+          } else {
+            replyNarrative = `Lương Diễn từ ${subLocation} phi thư về xưởng chỉ đạo ca làm việc. 10 tấm Chiếu Trúc Lương Gia đã được đan hoàn tất phẳng phiu!`;
+            dispatchType = 'COURIER';
+          }
         } else if (userPrompt.includes('thưởng') || userPrompt.includes('tiền')) {
+          targetLoc = 'Xưởng Lương Thị';
           actionToRun = {
             type: 'REWARD_NPC',
             npc_id: 'NPC-0007',
             amount: 100,
             game_date: '184-05-02'
           };
-          replyNarrative = 'Trần Bảo nhận 100 Tiền thưởng công, cảm kích khôn xiết, nguyện hết lòng dốc sức vì Lương gia!';
+          if (subLocation === 'Xưởng Lương Thị') {
+            replyNarrative = 'Trần Bảo nhận 100 Tiền thưởng công tại xưởng, cảm kích khôn xiết, nguyện hết lòng dốc sức vì Lương gia!';
+            dispatchType = 'LOCAL';
+          } else {
+            replyNarrative = `Lương Diễn từ ${subLocation} gửi gắm gia nhân mang phong bao 100 Tiền thưởng công về xưởng trao tận tay thợ cả Trần Bảo. Trần Bảo rưng rưng cảm tạ đức độ của đông gia!`;
+            dispatchType = 'COURIER';
+          }
         } else if (userPrompt.includes('quân công') || userPrompt.includes('bounty') || userPrompt.includes('lập công')) {
+          targetLoc = 'Quảng Tông Quân Doanh';
           actionToRun = {
             type: 'RECORD_BOUNTY',
             counterparty: 'Bắc Quân Tướng Quân Lư Thực',
@@ -658,10 +725,22 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
             memo: 'Thưởng quân công phá giặc',
             game_date: '184-05-02'
           };
-          replyNarrative = 'Lư Thực trao bằng khen quân công cùng 2000 Tiền quân nhu thưởng cho sách lược tiếp tế xuất sắc!';
+          if (subLocation === 'Quảng Tông Quân Doanh') {
+            replyNarrative = 'Lư Thực trao bằng khen quân công cùng 2000 Tiền quân nhu thưởng cho sách lược tiếp tế xuất sắc!';
+            dispatchType = 'LOCAL';
+          } else {
+            replyNarrative = `Sứ giả tiền tuyến Quảng Tông phi ngựa hỏa tốc mang công văn khen thưởng của Lư Thực cùng 2000 Tiền quân nhu trao tận tay Lương Diễn tại ${subLocation}!`;
+            dispatchType = 'COURIER';
+          }
         } else {
           // General dialogue / consultation response
-          replyNarrative = `Lương Diễn trầm ngâm đàm đạo: "${payload.prompt}". Các nhân sĩ nghe xong đều gật gù khen ngợi kiến giải sâu sắc, nhuệ khí tăng cao!`;
+          let heroName = 'Trương Phi (Dực Đức)';
+          if (subLocation === 'Chợ Đông Môn') heroName = 'Quan Vũ (Vân Trường)';
+          else if (subLocation === 'Xưởng Lương Thị') heroName = 'Trần Bảo (Thợ Cả)';
+          else if (subLocation === 'Quảng Tông Quân Doanh') heroName = 'Lư Thực (Trung Lang Tướng)';
+
+          replyNarrative = `Lương Diễn tại ${subLocation} trầm ngâm đàm đạo cùng ${heroName}: "${payload.prompt}". Các nhân sĩ nghe xong đều gật gù khen ngợi kiến giải sâu sắc, nhuệ khí tăng cao!`;
+          dispatchType = 'LOCAL';
         }
 
         let execResult = null;
@@ -674,26 +753,59 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
         let delta = {};
 
         if (actionToRun && actionToRun.type === 'TRADE_BUY') {
-          tacticalReasoning = `Thu mua ${actionToRun.quantity} đơn vị ${actionToRun.item_code} từ ${actionToRun.counterparty}. Tăng tích trữ nguyên liệu/quân lương cho chiến dịch.`;
-          delta = { cash: `-${actionToRun.quantity * actionToRun.unit_price} Qian`, inventory: `+${actionToRun.quantity} ${actionToRun.item_code}`, audit: 'Khớp Nợ Tồn Kho / Có Tiền Mặt' };
+          tacticalReasoning = dispatchType === 'COURIER'
+            ? `Phái sứ giả/gia nhân từ ${subLocation} tới ${targetLoc} thu mua ${actionToRun.quantity} ${actionToRun.item_code}. Điều phối kho từ xa.`
+            : `Thu mua trực tiếp ${actionToRun.quantity} ${actionToRun.item_code} từ ${actionToRun.counterparty} tại ${subLocation}. Tăng tích trữ nguyên liệu.`;
+          delta = { 
+            cash: `-${actionToRun.quantity * actionToRun.unit_price} Qian`, 
+            inventory: `+${actionToRun.quantity} ${actionToRun.item_code}`, 
+            dispatch: dispatchType === 'COURIER' ? `✉️ Phi thư tới ${targetLoc}` : '📍 Trực tiếp tại chỗ',
+            audit: 'Khớp Nợ Tồn Kho / Có Tiền Mặt' 
+          };
         } else if (actionToRun && actionToRun.type === 'TRADE_SELL') {
-          tacticalReasoning = `Xuất bán ${actionToRun.quantity} đơn vị ${actionToRun.item_code} cho ${actionToRun.counterparty}. Chuyển hóa thặng dư hàng hóa thành tiền mặt lưu động.`;
-          delta = { cash: `+${actionToRun.quantity * actionToRun.unit_price} Qian`, inventory: `-${actionToRun.quantity} ${actionToRun.item_code}`, audit: 'Khớp Nợ Tiền Mặt / Có Doanh Thu' };
+          tacticalReasoning = dispatchType === 'COURIER'
+            ? `Phái gia nhân từ ${subLocation} ra ${targetLoc} xuất bán ${actionToRun.quantity} ${actionToRun.item_code}. Chuyển hóa thặng dư hàng hóa thành tiền mặt.`
+            : `Xuất bán trực tiếp ${actionToRun.quantity} ${actionToRun.item_code} cho ${actionToRun.counterparty} tại ${subLocation}.`;
+          delta = { 
+            cash: `+${actionToRun.quantity * actionToRun.unit_price} Qian`, 
+            inventory: `-${actionToRun.quantity} ${actionToRun.item_code}`, 
+            dispatch: dispatchType === 'COURIER' ? `✉️ Áp tải ra ${targetLoc}` : '📍 Trực tiếp tại chỗ',
+            audit: 'Khớp Nợ Tiền Mặt / Có Doanh Thu' 
+          };
         } else if (actionToRun && actionToRun.type === 'PRODUCTION_BATCH') {
-          tacticalReasoning = `Hoàn thành lô sản xuất ${actionToRun.recipe} số lượng ${actionToRun.batch_size}. Khấu trừ nguyên vật liệu theo định mức BOM.`;
-          delta = { cash: '0 Qian (Tiêu hao nguyên liệu)', inventory: `+${actionToRun.batch_size} thành phẩm`, audit: 'Bảo toàn BOM định mức' };
+          tacticalReasoning = dispatchType === 'COURIER'
+            ? `Phi thư lệnh bài từ ${subLocation} về ${targetLoc} chỉ đạo lô sản xuất ${actionToRun.recipe} SL ${actionToRun.batch_size}.`
+            : `Trực tiếp giám sát thợ xưởng hoàn thành lô sản xuất ${actionToRun.recipe} SL ${actionToRun.batch_size} tại ${subLocation}.`;
+          delta = { 
+            cash: '0 Qian (Tiêu hao nguyên liệu)', 
+            inventory: `+${actionToRun.batch_size} thành phẩm`, 
+            dispatch: dispatchType === 'COURIER' ? `✉️ Mật lệnh về ${targetLoc}` : '📍 Trực tiếp tại xưởng',
+            audit: 'Bảo toàn BOM định mức' 
+          };
         } else if (actionToRun && actionToRun.type === 'REWARD_NPC') {
           tacticalReasoning = `Khen thưởng ${actionToRun.amount} Tiền củng cố lòng trung thành và sĩ khí của danh tướng/thợ xưởng.`;
-          delta = { cash: `-${actionToRun.amount} Qian`, inventory: 'Bảo toàn', npc: 'Sĩ khí 100% • Trung thành +2', audit: 'Khớp Nợ Chi Phí / Có Tiền Mặt' };
+          delta = { 
+            cash: `-${actionToRun.amount} Qian`, 
+            inventory: 'Bảo toàn', 
+            npc: 'Sĩ khí 100% • Trung thành +2', 
+            dispatch: dispatchType === 'COURIER' ? `✉️ Gửi thưởng tới ${targetLoc}` : '📍 Ban thưởng tại chỗ',
+            audit: 'Khớp Nợ Chi Phí / Có Tiền Mặt' 
+          };
         } else if (actionToRun && actionToRun.type === 'MOVE_LOCATION') {
           tacticalReasoning = `Cơ động tới ${actionToRun.new_location} mở rộng mạng lưới giao thương và tiếp xúc các thế lực Tam Quốc.`;
-          delta = { cash: '0 Qian', inventory: 'Bảo toàn', location: actionToRun.new_location, audit: 'Cập nhật vị trí chiến dịch' };
+          delta = { cash: '0 Qian', inventory: 'Bảo toàn', location: actionToRun.new_location, dispatch: '🏇 Di chuyển thực tế', audit: 'Cập nhật vị trí chiến dịch' };
         } else if (actionToRun && actionToRun.type === 'RECORD_BOUNTY') {
           tacticalReasoning = `Ghi nhận quân thưởng quân công từ tiền tuyến phá giặc Khăn Vàng.`;
-          delta = { cash: `+${actionToRun.amount} Qian`, inventory: 'Bảo toàn', relations: 'Quân huân Bắc Quân +20', audit: 'Khớp Nợ Tiền Mặt / Có Thu Nhập Khác' };
+          delta = { 
+            cash: `+${actionToRun.amount} Qian`, 
+            inventory: 'Bảo toàn', 
+            relations: 'Quân huân Bắc Quân +20', 
+            dispatch: dispatchType === 'COURIER' ? '✉️ Công văn tiền tuyến' : '📍 Trực diện tại soái trướng',
+            audit: 'Khớp Nợ Tiền Mặt / Có Thu Nhập Khác' 
+          };
         } else {
           tacticalReasoning = `Đàm đạo chiến lược và thăm dò tình hình thời cuộc cùng các hào kiệt tại ${subLocation}.`;
-          delta = { cash: '0 Qian', inventory: 'Bảo toàn', relations: 'Hảo cảm +5', audit: 'Bảo toàn trạng thái' };
+          delta = { cash: '0 Qian', inventory: 'Bảo toàn', relations: 'Hảo cảm +5', dispatch: '📍 Đối thoại trực diện', audit: 'Bảo toàn trạng thái' };
         }
 
         logAgentSimulationEvent({

@@ -12,7 +12,7 @@
 
 const API_BASE = '';
 
-// Global Application State
+// Global Application State & i18n
 let activeSubLocation = 'Vườn Đào';
 let lastEncounterSubLocation = null;
 let currentScene = null;
@@ -21,10 +21,213 @@ let currentStatus = null;
 let selectedChoiceId = null;
 let isProcessingAction = false; // Anti-Piling Guard
 const storyChronicle = []; // History of dialogue and action turns
+let currentLang = localStorage.getItem('sim_lang') || 'vi';
+
+// ==========================================================================
+// 0. I18N BILINGUAL DICTIONARY & LOCALITY CHIPS REGISTRY
+// ==========================================================================
+const I18N_DICT = {
+  vi: {
+    appTitle: 'TAM QUỐC CHÍ • LƯƠNG THỊ PHONG VÂN LỤC',
+    mainMenu: 'Menu Chính',
+    dateChip: 'Ngày 2 Tháng 5 Năm 184 SCN (Lượt 6)',
+    cashLabel: 'Tiền Mặt:',
+    grainLabel: 'Lương Thảo:',
+    invLabel: 'Giá Trị Kho:',
+    netWorthLabel: 'Tài Sản Ròng:',
+    bridgeLive: 'AI Bridge: LIVE',
+    auditPassed: '100% Khớp',
+    logsBtn: 'Logs',
+    langToggle: 'VI',
+    // Action Console
+    localityPresence: '📍 HIỆN DIỆN:',
+    localityCourierHint: '✉️ <em>(Muốn điều phối nơi khác: Phái sứ giả / Phi thư tín)</em>',
+    choiceHeader: 'QUYẾT SÁCH BỐI CẢNH (CHIẾN LƯỢC HÀNH TRÌNH):',
+    choiceMode: 'Chế độ: <strong>Text-Based RPG + SimCore</strong>',
+    btnSelect: '+ Chọn -',
+    btnAi: 'AI',
+    btnOmniAi: 'Gửi AI Core',
+    btnOmniInstant: 'Tức Thì',
+    // Protagonist Card
+    protagSubtitle: 'Thế Gia Thương Nhân • Trác Huyện',
+    ageUnit: 'Tuổi',
+    hpLabel: '❤️ Sinh Lực',
+    moraleLabel: '⚡ Sĩ Khí',
+    attrInt: 'Trí',
+    attrCom: 'Thương',
+    attrDip: 'Ngoại',
+    attrLdr: 'Soái',
+    attrLog: 'Hậu',
+    attrPol: 'Chính',
+    attrCra: 'Khéo',
+    attrWar: 'Võ',
+    // Milestone
+    milestoneTitle: 'Tiến Độ Kết Nghĩa Vườn Đào (RELATIONS.md)',
+    milestoneDeadline: 'Hạn: 10/02/184',
+    milestoneHint: 'Gặp đủ 3 Hào Kiệt dưới đây để mở khóa đại lễ "Đào Viên Kết Nghĩa" Lưu - Quan - Trương.',
+    completedTag: '(Đạt)',
+    // Tabs
+    tabInv: '📦 Kho Xưởng',
+    tabNpc: '👥 Lương Nhân',
+    tabLedger: '📜 Sổ Cái TXN',
+    tabAiFeed: '🤖 AI Feed',
+    // Table
+    thSku: 'Mã SKU',
+    thDesc: 'Mô tả',
+    thQty: 'SL',
+    thPrice: 'Đơn giá',
+    thAction: 'Thao tác',
+    btnSell: 'Bán',
+    btnBuy: 'Mua',
+    btnReward: '🎁 Thưởng 100 Tiền',
+    // Modal
+    modalTradeTitle: 'Giao Dịch Vật Phẩm',
+    modalSkuLabel: 'Mã Mặt Hàng (SKU Code)',
+    modalQtyLabel: 'Số Lượng Giao Dịch',
+    modalPriceLabel: 'Đơn Giá (Qian / Đơn vị)',
+    modalPartnerLabel: 'Đối Tác Giao Dịch (Counterparty)',
+    modalTotalLabel: 'Tổng Giá Trị Giao Dịch:',
+    btnCancel: 'Hủy Bỏ',
+    btnConfirm: 'Xác Nhận Thực Thi'
+  },
+  en: {
+    appTitle: 'THREE KINGDOMS • LIANG CHRONICLES',
+    mainMenu: 'Main Menu',
+    dateChip: 'May 2, 184 AD (Turn 6)',
+    cashLabel: 'Cash:',
+    grainLabel: 'Grain:',
+    invLabel: 'Warehouse:',
+    netWorthLabel: 'Net Worth:',
+    bridgeLive: 'AI Bridge: LIVE',
+    auditPassed: '100% Match',
+    logsBtn: 'Logs',
+    langToggle: 'EN',
+    // Action Console
+    localityPresence: '📍 PRESENCE:',
+    localityCourierHint: '✉️ <em>(To direct elsewhere: Dispatch courier / Send letter)</em>',
+    choiceHeader: 'CONTEXTUAL STRATEGY DECISIONS:',
+    choiceMode: 'Mode: <strong>Text-Based RPG + SimCore</strong>',
+    btnSelect: '+ Select -',
+    btnAi: 'AI',
+    btnOmniAi: 'Send AI Core',
+    btnOmniInstant: 'Instant',
+    // Protagonist Card
+    protagSubtitle: 'Merchant Gentry • Zhuo County',
+    ageUnit: 'Y/O',
+    hpLabel: '❤️ Health',
+    moraleLabel: '⚡ Morale',
+    attrInt: 'INT',
+    attrCom: 'COM',
+    attrDip: 'DIP',
+    attrLdr: 'LDR',
+    attrLog: 'LOG',
+    attrPol: 'POL',
+    attrCra: 'CRA',
+    attrWar: 'WAR',
+    // Milestone
+    milestoneTitle: 'Peach Garden Oath Progress (RELATIONS.md)',
+    milestoneDeadline: 'Due: 184-05-10',
+    milestoneHint: 'Rendezvous with all 3 Heroes to unlock the Oath of the Peach Garden ceremony.',
+    completedTag: '(Achieved)',
+    // Tabs
+    tabInv: '📦 Warehouse',
+    tabNpc: '👥 Retainers',
+    tabLedger: '📜 TXN Ledger',
+    tabAiFeed: '🤖 AI Feed',
+    // Table
+    thSku: 'SKU Code',
+    thDesc: 'Description',
+    thQty: 'Qty',
+    thPrice: 'Unit Price',
+    thAction: 'Actions',
+    btnSell: 'Sell',
+    btnBuy: 'Buy',
+    btnReward: '🎁 Reward 100 Qian',
+    // Modal
+    modalTradeTitle: 'Trade Commodities',
+    modalSkuLabel: 'Item Code (SKU)',
+    modalQtyLabel: 'Trade Quantity',
+    modalPriceLabel: 'Unit Price (Qian / Unit)',
+    modalPartnerLabel: 'Counterparty',
+    modalTotalLabel: 'Total Transaction Value:',
+    btnCancel: 'Cancel',
+    btnConfirm: 'Confirm Execution'
+  }
+};
+
+const QUICK_CHIPS_DATA = {
+  'Vườn Đào': {
+    presenceVi: 'Trang Viên Vườn Đào (Trực diện: Trương Phi • Dực Đức)',
+    presenceEn: 'Peach Garden Manor (In-person: Zhang Fei • Yide)',
+    placeholderVi: 'Lương Diễn đối thoại với Trương Phi... (hoặc gõ: "Phi thư về xưởng đóng khiên...")',
+    placeholderEn: 'Liang Yan talks to Zhang Fei... (or type: "Send courier to workshop...")',
+    chips: [
+      { type: 'local', icon: '⚔️', labelVi: 'Đấu Thương Trương Phi', labelEn: 'Spar with Zhang Fei', promptVi: 'Thỉnh giáo Trương Phi đấu thương thực chiến đợt 2', promptEn: 'Spar with Zhang Fei in spear combat round 2' },
+      { type: 'local', icon: '🛒', labelVi: 'Mua 8 Da Bò', labelEn: 'Buy 8 Leather', promptVi: 'Mua sỉ 8 tấm da thuộc của Trương Phi', promptEn: 'Buy 8 leather hides from Zhang Fei' },
+      { type: 'local', icon: '🍷', labelVi: 'Rượu Đào Viên', labelEn: 'Peach Wine', promptVi: 'Cùng Trương Phi uống rượu Đào Viên đàm đạo hào kiệt', promptEn: 'Drink wine with Zhang Fei discussing heroes' },
+      { divider: true },
+      { type: 'courier', icon: '✉️', labelVi: 'Phi thư về Xưởng', labelEn: 'Courier to Workshop', promptVi: 'Phái gia nhân phi thư về Xưởng Lương Thị lệnh đóng 5 khiên trúc', promptEn: 'Send courier to Workshop ordering 5 shields' },
+      { type: 'courier', icon: '✉️', labelVi: 'Phái người ra Chợ', labelEn: 'Retainer to Market', promptVi: 'Sai gia đinh mang thư ra Chợ Đông Môn xuất bán 10 đấu muối', promptEn: 'Dispatch retainer to East Gate Market to sell 10 salt' },
+      { divider: true },
+      { type: 'travel', icon: '🏇', labelVi: 'Đến Chợ Đông Môn', labelEn: 'Go to Market', promptVi: 'Rời Vườn Đào, rảo bước đi tới Chợ Đông Môn', promptEn: 'Leave Peach Garden and travel to East Gate Market' },
+      { type: 'travel', icon: '🏇', labelVi: 'Đến Xưởng Lương Thị', labelEn: 'Go to Workshop', promptVi: 'Rời Vườn Đào, đi tới Lương Thị Chức Tác Phường', promptEn: 'Travel to Liang Textile & Craft Workshop' }
+    ]
+  },
+  'Chợ Đông Môn': {
+    presenceVi: 'Chợ Đông Môn & Sạp Trà (Trực diện: Quan Vũ • Vân Trường)',
+    presenceEn: 'East Gate Market & Tea Stall (In-person: Guan Yu • Yunchang)',
+    placeholderVi: 'Lương Diễn đàm đạo tại Chợ... (hoặc gõ: "Phái gia nhân sang Vườn Đào...")',
+    placeholderEn: 'Liang Yan dialogues at Market... (or type: "Dispatch messenger to Peach Garden...")',
+    chips: [
+      { type: 'local', icon: '🧂', labelVi: 'Bán 10 Muối Ký Châu', labelEn: 'Sell 10 Salt', promptVi: 'Xuất bán 10 đấu muối biển cho Thương đoàn Ký Châu', promptEn: 'Sell 10 sea salt to Jizhou merchant caravan' },
+      { type: 'local', icon: '🌾', labelVi: 'Mua 5 Lương Thảo', labelEn: 'Buy 5 Grain', promptVi: 'Thu mua 5 thạch lương tiểu mạch dự trữ', promptEn: 'Purchase 5 piculs of strategic grain' },
+      { type: 'local', icon: '🍵', labelVi: 'Đàm Đạo Quan Vũ', labelEn: 'Tea with Guan Yu', promptVi: 'Mời Quan Vũ uống trà đàm đạo binh pháp Xuân Thu', promptEn: 'Invite Guan Yu for tea discussing strategy' },
+      { divider: true },
+      { type: 'courier', icon: '✉️', labelVi: 'Báo tin Trương Phi', labelEn: 'Courier to Zhang Fei', promptVi: 'Phái gia nhân sang Vườn Đào báo tin cho Trương Phi', promptEn: 'Send courier to Peach Garden to inform Zhang Fei' },
+      { type: 'courier', icon: '✉️', labelVi: 'Lệnh nhập kho Xưởng', labelEn: 'Stock order to Workshop', promptVi: 'Viết thư lệnh vận chuyển nguyên liệu tre da về Xưởng Lương Thị', promptEn: 'Dispatch letter to transfer raw materials to Workshop' },
+      { divider: true },
+      { type: 'travel', icon: '🏇', labelVi: 'Về Vườn Đào', labelEn: 'To Peach Garden', promptVi: 'Rời Chợ Đông Môn, tới Trang Viên Vườn Đào', promptEn: 'Return to Peach Garden Manor' },
+      { type: 'travel', icon: '🏇', labelVi: 'Đến Quảng Tông', labelEn: 'To Guangzong', promptVi: 'Khởi hành đoàn xe tiến thẳng tới Quảng Tông Quân Doanh', promptEn: 'Depart to Guangzong Military Encampment' }
+    ]
+  },
+  'Xưởng Lương Thị': {
+    presenceVi: 'Lương Thị Chức Tác Phường (Trực diện: Thợ Cả Trần Bảo)',
+    presenceEn: 'Liang Craft Workshop (In-person: Master Chen Bao)',
+    placeholderVi: 'Lương Diễn chỉ đạo tại Xưởng... (hoặc gõ: "Phái xe hàng ra chợ bán...")',
+    placeholderEn: 'Liang Yan manages Workshop... (or type: "Dispatch wagon to market...")',
+    chips: [
+      { type: 'local', icon: '🛡️', labelVi: 'Đóng 5 Khiên Trúc', labelEn: 'Craft 5 Shields', promptVi: 'Chỉ đạo thợ cả Trần Bảo khởi động đóng 5 khiên trúc', promptEn: 'Direct Chen Bao to craft 5 bamboo shields' },
+      { type: 'local', icon: '🎋', labelVi: 'Dệt 10 Chiếu Trúc', labelEn: 'Weave 10 Mats', promptVi: 'Khởi ca dệt 10 tấm Chiếu Trúc Lương Gia', promptEn: 'Start batch weaving 10 bamboo mats' },
+      { type: 'local', icon: '🎁', labelVi: 'Thưởng 100 Tiền', labelEn: 'Reward 100 Qian', promptVi: 'Khen thưởng 100 tiền cho thợ cả Trần Bảo động viên thợ', promptEn: 'Reward 100 Qian to master craftsman Chen Bao' },
+      { divider: true },
+      { type: 'courier', icon: '✉️', labelVi: 'Xe hàng ra Chợ', labelEn: 'Wagon to Market', promptVi: 'Phái gia nhân áp tải xe hàng chiếu trúc ra Chợ Đông Môn', promptEn: 'Dispatch retainer wagon with mats to East Gate Market' },
+      { type: 'courier', icon: '✉️', labelVi: 'Báo Bắc Quân', labelEn: 'Report to Army', promptVi: 'Phi thư báo cho Bắc Quân Đại Doanh về tiến độ khiên giáp', promptEn: 'Send courier to Northern Army on shield readiness' },
+      { divider: true },
+      { type: 'travel', icon: '🏇', labelVi: 'Ra Chợ Đông Môn', labelEn: 'To Market', promptVi: 'Rời xưởng Lương Thị, đi tới Chợ Đông Môn', promptEn: 'Leave workshop and head to East Gate Market' },
+      { type: 'travel', icon: '🏇', labelVi: 'Về Vườn Đào', labelEn: 'To Peach Garden', promptVi: 'Rời xưởng Lương Thị, quay về Trang Viên Vườn Đào', promptEn: 'Return to Peach Garden Manor' }
+    ]
+  },
+  'Quảng Tông Quân Doanh': {
+    presenceVi: 'Bắc Quân Soái Trướng (Trực diện: Trung Lang Tướng Lư Thực)',
+    presenceEn: 'Northern Army Headquarters (In-person: General Lu Zhi)',
+    placeholderVi: 'Lương Diễn tham vấn tại Quân Doanh... (hoặc gõ: "Phi thư về Trác Huyện...")',
+    placeholderEn: 'Liang Yan confers with General... (or type: "Send courier to Zhuo County...")',
+    chips: [
+      { type: 'local', icon: '🎖️', labelVi: 'Yết Kiến Lư Thực', labelEn: 'Audience Lu Zhi', promptVi: 'Yết kiến Trung Lang Tướng Lư Thực nhận thưởng quân công', promptEn: 'Audience with General Lu Zhi to claim bounty' },
+      { type: 'local', icon: '🌾', labelVi: 'Tiếp Tế Quân Lương', labelEn: 'Supply Grain', promptVi: 'Tiếp tế 5 thạch lương tiểu mạch cho Quân Nhu Cục', promptEn: 'Deliver 5 piculs of grain to supply depot' },
+      { type: 'local', icon: '🗺️', labelVi: 'Tham Mưu Sa Bàn', labelEn: 'Strategy Map', promptVi: 'Cùng Lư Thực tham mưu sa bàn phá vỡ vòng vây Khăn Vàng', promptEn: 'Consult strategy battle map with Lu Zhi' },
+      { divider: true },
+      { type: 'courier', icon: '✉️', labelVi: 'Phi thư về Huyện Trác', labelEn: 'Courier to Zhuo County', promptVi: 'Phi thư hỏa tốc về Huyện Trác chuẩn bị thêm 20 xe quân lương', promptEn: 'Send urgent courier to Zhuo County for 20 grain wagons' },
+      { divider: true },
+      { type: 'travel', icon: '🏇', labelVi: 'Về Lại Huyện Trác', labelEn: 'Return to Zhuo County', promptVi: 'Rời quân doanh Quảng Tông, quay trở về Huyện Trác', promptEn: 'Leave Guangzong and return to Zhuo County' }
+    ]
+  }
+};
 
 // DOM Ready Initialization
 document.addEventListener('DOMContentLoaded', () => {
   initUIEventListeners();
+  applyLanguage();
   loadAllData();
 });
 
@@ -198,6 +401,9 @@ function renderSceneFromData(data, customNarrative = null) {
     }).join('');
   }
 
+  // Dynamic Contextual Quick Chips & Locality Banner
+  renderDynamicQuickChips(activeSubLocation);
+
   // Story Chronicle Stream: Append encounter turn if chronicle is empty, location changed, or custom narrative supplied
   const shouldAppendTurn = storyChronicle.length === 0 || 
                            lastEncounterSubLocation !== activeSubLocation || 
@@ -344,16 +550,122 @@ function quickFillPrompt(text) {
   if (!input) return;
   input.value = text;
   input.focus();
-  showToast(`Đã nạp chỉ thị: "${text}"`);
+  showToast(currentLang === 'en' ? `Loaded command: "${text}"` : `Đã nạp chỉ thị: "${text}"`);
 }
 
-// 1.7 Render Choice Cards
+// 1.7 Dynamic Locality & Quick Prompt Chips Renderer
+function renderDynamicQuickChips(location = activeSubLocation) {
+  const container = document.getElementById('quick-prompt-chips');
+  const targetEl = document.getElementById('locality-target');
+  const omniInput = document.getElementById('omni-input');
+  const locData = QUICK_CHIPS_DATA[location] || QUICK_CHIPS_DATA['Vườn Đào'];
+
+  if (targetEl) {
+    targetEl.innerText = currentLang === 'en' ? locData.presenceEn : locData.presenceVi;
+  }
+
+  if (omniInput && !omniInput.value) {
+    omniInput.placeholder = currentLang === 'en' ? locData.placeholderEn : locData.placeholderVi;
+  }
+
+  if (!container) return;
+
+  container.innerHTML = locData.chips.map(chip => {
+    if (chip.divider) {
+      return `<span class="chip-divider"></span>`;
+    }
+    const label = currentLang === 'en' ? chip.labelEn : chip.labelVi;
+    const promptText = currentLang === 'en' ? chip.promptEn : chip.promptVi;
+    const promptEsc = promptText.replace(/'/g, "\\'");
+    return `
+      <button class="quick-chip ${chip.type}" onclick="quickFillPrompt('${promptEsc}')">
+        ${chip.icon} ${label}
+      </button>
+    `;
+  }).join('');
+}
+
+// 1.8 Bilingual Language Manager (i18n)
+function applyLanguage() {
+  const dict = I18N_DICT[currentLang] || I18N_DICT.vi;
+
+  // Header Title & Chips
+  const titleEl = document.querySelector('.main-title');
+  if (titleEl) titleEl.innerText = dict.appTitle;
+
+  const btnMenu = document.getElementById('btn-main-menu');
+  if (btnMenu) btnMenu.innerHTML = `<span class="icon">🏛️</span> ${dict.mainMenu}`;
+
+  const langLabel = document.getElementById('lang-label');
+  if (langLabel) langLabel.innerText = dict.langToggle;
+
+  const txtBridge = document.getElementById('txt-bridge-status');
+  if (txtBridge) txtBridge.innerText = dict.bridgeLive;
+
+  const btnLogs = document.getElementById('btn-toggle-logs');
+  if (btnLogs) btnLogs.innerText = dict.logsBtn;
+
+  // Locality Banner
+  const locTag = document.getElementById('locality-tag');
+  if (locTag) locTag.innerText = dict.localityPresence;
+
+  const locHint = document.getElementById('locality-courier-hint');
+  if (locHint) locHint.innerHTML = dict.localityCourierHint;
+
+  // Choices Header & Omni Buttons
+  const choicesLabel = document.getElementById('choices-label');
+  if (choicesLabel) choicesLabel.innerText = dict.choiceHeader;
+
+  const choicesSub = document.getElementById('choices-sub');
+  if (choicesSub) choicesSub.innerHTML = `${dict.choiceMode}`;
+
+  const txtOmniAi = document.getElementById('txt-omni-ai');
+  if (txtOmniAi) txtOmniAi.innerText = dict.btnOmniAi;
+
+  const txtOmniInstant = document.getElementById('txt-omni-instant');
+  if (txtOmniInstant) txtOmniInstant.innerText = dict.btnOmniInstant;
+
+  // Protagonist Card
+  const protagTitle = document.getElementById('protagonist-title');
+  if (protagTitle) protagTitle.innerText = dict.protagSubtitle;
+
+  const ageEl = document.getElementById('protagonist-age');
+  if (ageEl && currentStatus?.player) ageEl.innerText = `${currentStatus.player.age || 21} ${dict.ageUnit}`;
+
+  // Tabs Header
+  document.querySelectorAll('.deck-tab-btn').forEach(btn => {
+    const tabId = btn.getAttribute('data-subtab');
+    if (tabId === 'subtab-inventory') btn.innerText = dict.tabInv;
+    if (tabId === 'subtab-npcs') btn.innerText = dict.tabNpc;
+    if (tabId === 'subtab-ledger') btn.innerText = dict.tabLedger;
+    if (tabId === 'subtab-agent-log') btn.innerText = dict.tabAiFeed;
+  });
+
+  // Re-render Dynamic Chips
+  renderDynamicQuickChips(activeSubLocation);
+
+  // If scene is loaded, re-render choices
+  if (currentScene && currentScene.options) {
+    renderChoices(currentScene.options);
+  }
+}
+
+function toggleLanguage() {
+  currentLang = currentLang === 'vi' ? 'en' : 'vi';
+  localStorage.setItem('sim_lang', currentLang);
+  applyLanguage();
+  showToast(currentLang === 'vi' ? 'Đã chuyển sang Tiếng Việt' : 'Switched to English');
+}
+
+// 1.9 Render Choice Cards
 function renderChoices(options) {
   const container = document.getElementById('choices-grid');
   if (!container) return;
 
+  const dict = I18N_DICT[currentLang] || I18N_DICT.vi;
+
   if (!options || options.length === 0) {
-    container.innerHTML = `<div style="padding: 16px; text-align: center; color: var(--text-muted); font-size: 11px;">Không có đề xuất hành động cho bối cảnh hiện tại.</div>`;
+    container.innerHTML = `<div style="padding: 16px; text-align: center; color: var(--text-muted); font-size: 11px;">${currentLang === 'en' ? 'No action proposals for current context.' : 'Không có đề xuất hành động cho bối cảnh hiện tại.'}</div>`;
     return;
   }
 
@@ -367,8 +679,8 @@ function renderChoices(options) {
           <div class="choice-desc">${opt.desc}</div>
         </div>
         <div class="choice-actions">
-          <button class="btn-choice-select" id="btn-select-${opt.id}" onclick="event.stopPropagation(); executeChoiceDirect('${opt.id}')">+ Chọn -</button>
-          <button class="btn-choice-ai" id="btn-ai-${opt.id}" onclick="event.stopPropagation(); executeChoiceAi('${opt.id}')">AI</button>
+          <button class="btn-choice-select" id="btn-select-${opt.id}" onclick="event.stopPropagation(); executeChoiceDirect('${opt.id}')">${dict.btnSelect}</button>
+          <button class="btn-choice-ai" id="btn-ai-${opt.id}" onclick="event.stopPropagation(); executeChoiceAi('${opt.id}')">${dict.btnAi}</button>
         </div>
       </div>
     `;

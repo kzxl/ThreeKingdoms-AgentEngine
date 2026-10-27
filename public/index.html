@@ -46,9 +46,12 @@
       </div>
 
       <div class="badge-bridge-live" id="badge-bridge-status">
-        <span class="pulse-dot"></span> AI Bridge: LIVE
+        <span class="pulse-dot"></span> <span id="txt-bridge-status">AI Bridge: LIVE</span>
       </div>
       <div class="badge-audit" id="badge-top-audit">100% Khớp</div>
+      <button class="btn-lang-toggle" id="btn-lang-toggle" onclick="toggleLanguage()" title="Chuyển đổi ngôn ngữ / Switch Language">
+        🌐 <span id="lang-label">VI</span>
+      </button>
       <button class="btn-logs" id="btn-toggle-logs" title="Xem nhật ký hệ thống">Logs</button>
     </div>
   </header>
@@ -79,22 +82,27 @@
 
       <!-- 3. Docked Action Console & Decision Deck (Always accessible) -->
       <div class="action-dock" id="action-dock">
-        <!-- Quick Action Suggestion Chips -->
+        <!-- Locality & Physical Presence Banner -->
+        <div class="dock-locality-banner" id="dock-locality-banner">
+          <div class="dock-locality-left">
+            <span class="dock-locality-tag" id="locality-tag">📍 HIỆN DIỆN:</span>
+            <span class="dock-locality-target" id="locality-target">Trang Viên Vườn Đào (Trực diện: Trương Phi)</span>
+          </div>
+          <div class="dock-locality-courier-hint" id="locality-courier-hint">
+            ✉️ <em>(Muốn điều phối nơi khác: Phái sứ giả / Phi thư tín)</em>
+          </div>
+        </div>
+
+        <!-- Dynamic Contextual Action Suggestion Chips (Local vs Courier vs Travel) -->
         <div class="quick-prompt-chips" id="quick-prompt-chips">
-          <button class="quick-chip" onclick="quickFillPrompt('Mua sỉ 8 tấm da thuộc của Trương Phi')">🛒 Mua 8 Da</button>
-          <button class="quick-chip" onclick="quickFillPrompt('Thỉnh giáo Trương Phi đấu thương thực chiến')">⚔️ Đấu Thương</button>
-          <button class="quick-chip" onclick="quickFillPrompt('Xuất bán 10 đấu muối biển cho Ký Châu')">🧂 Bán 10 Muối</button>
-          <button class="quick-chip" onclick="quickFillPrompt('Thu mua 5 thạch lương dự trữ')">🌾 Mua 5 Lương</button>
-          <button class="quick-chip" onclick="quickFillPrompt('Khởi động ca sản xuất chế tạo khiên trúc')">🛡️ Đóng Khiên</button>
-          <button class="quick-chip" onclick="quickFillPrompt('Khen thưởng 100 tiền cho thợ cả Trần Bảo')">🎁 Thưởng Thợ</button>
-          <button class="quick-chip" onclick="quickFillPrompt('Mời Quan Vũ uống trà đàm đạo binh pháp')">🍵 Đàm Đạo</button>
+          <!-- Dynamically populated based on activeSubLocation -->
         </div>
 
         <!-- 4 Contextual Branching Choice Cards (2x2 Grid) -->
         <div class="choices-container">
           <div class="choices-header">
-            <span class="choices-label">QUYẾT SÁCH BỐI CẢNH (CHIẾN LƯỢC HÀNH TRÌNH):</span>
-            <span class="choices-sub">Chế độ: <strong>Text-Based RPG + SimCore</strong></span>
+            <span class="choices-label" id="choices-label">QUYẾT SÁCH BỐI CẢNH (CHIẾN LƯỢC HÀNH TRÌNH):</span>
+            <span class="choices-sub" id="choices-sub">Chế độ: <strong>Text-Based RPG + SimCore</strong></span>
           </div>
 
           <div class="choices-grid" id="choices-grid">
@@ -114,11 +122,11 @@
             placeholder="Lương Diễn hành động (hoặc đối thoại)... [Nhấn Enter để gửi]"
             onkeydown="if(event.key==='Enter') dispatchOmniCommand('ai');"
           />
-          <button class="btn-omni-ai" onclick="dispatchOmniCommand('ai')">
-            <span class="icon">💬</span> Gửi AI Core
+          <button class="btn-omni-ai" id="btn-omni-ai" onclick="dispatchOmniCommand('ai')">
+            <span class="icon">💬</span> <span id="txt-omni-ai">Gửi AI Core</span>
           </button>
-          <button class="btn-omni-instant" onclick="dispatchOmniCommand('instant')">
-            <span class="icon">⚡</span> Tức Thì
+          <button class="btn-omni-instant" id="btn-omni-instant" onclick="dispatchOmniCommand('instant')">
+            <span class="icon">⚡</span> <span id="txt-omni-instant">Tức Thì</span>
           </button>
         </div>
       </div>
