@@ -25,7 +25,13 @@ ThreeKingdoms-AgentEngine/
 │   ├── schema.sql              # Master DDL with double-entry journal, action log, NPC state, skills, businesses
 │   ├── sim-audit.js            # Invariant & state auditor (63 checks)
 │   ├── sim-checkpoint.js       # Local snapshot archiver
-│   └── sim-db.js               # SQLite CLI query bridge & management console
+│   ├── sim-db.js               # SQLite CLI query bridge & management console
+│   └── sim-web.js              # Zero-dependency Web UI HTTP Server & REST API
+│
+├── public/                     # Modern Dark-Theme Web UI Dashboard
+│   ├── index.html              # Single Page Application
+│   ├── styles.css              # Han martial strategy & imperial ledger aesthetic
+│   └── app.js                  # Reactive state, charts, action dispatchers, live audit
 │
 ├── tests/                      # Automated Test Suite (100% Passing - 20/20 Tests)
 │   ├── test-audit.js           # Tests positive reconciliation & negative failure detections
@@ -67,8 +73,9 @@ node tools/sim-db.js show-business BIZ-0001
 # 6. Run autonomous monthly workshop simulation (test cycle)
 node tools/sim-db.js simulate-workshop BIZ-0001 184-05-30 1840501
 
-# 7. Re-compile projection view
-node tools/sim-db.js export-progress
+# 8. Start interactive Web UI server (Default port: 3300)
+node tools/sim-web.js 3300
+# Open in browser: http://localhost:3300
 ```
 
 ---

@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ThreeKingdoms-AgentEngine | Chiến Lược & Mô Phỏng Tam Quốc</title>
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Top Navigation Header -->
+  <header class="top-nav">
+    <div class="nav-brand">
+      <div class="brand-crest">漢</div>
+      <div>
+        <h1 class="brand-title">ThreeKingdoms-AgentEngine</h1>
+        <div class="brand-subtitle">HỆ THỐNG MÔ PHỎNG & ĐIỀU LỆNH TAM QUỐC (184 AD)</div>
+      </div>
+    </div>
+
+    <!-- Live Status Indicators -->
+    <div class="campaign-status-bar">
+      <div class="status-pill">
+        <span class="pill-label">CHIẾN DỊCH</span>
+        <span class="pill-val" id="val-campaign">CMP-184-ZHOU-01</span>
+      </div>
+      <div class="status-pill">
+        <span class="pill-label">THỜI ĐIỂM</span>
+        <span class="pill-val" id="val-date">184-05-02</span>
+      </div>
+      <div class="status-pill">
+        <span class="pill-label">LƯỢT</span>
+        <span class="pill-val" id="val-turn">Lượt 6</span>
+      </div>
+      <div class="status-pill highlight">
+        <span class="pill-label">VỊ TRÍ</span>
+        <span class="pill-val" id="val-loc">Quảng Tông (Doanh trại Lư Thực)</span>
+      </div>
+    </div>
+
+    <!-- Quick Utility Actions -->
+    <div class="header-actions">
+      <button class="btn btn-outline" id="btn-refresh" title="Tải lại dữ liệu từ SQLite">
+        <span class="icon">🔄</span> Làm mới
+      </button>
+      <button class="btn btn-gold" id="btn-quick-audit" title="Kiểm toán toàn bộ invariant">
+        <span class="icon">🛡️</span> Kiểm toán
+      </button>
+      <button class="btn btn-primary" id="btn-quick-sim" title="Chạy mô phỏng 1 tháng tự hành">
+        <span class="icon">⚡</span> Tháng Tự Hành
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Application Container -->
+  <div class="app-layout">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <nav class="nav-menu">
+        <button class="nav-item active" data-tab="tab-overview">
+          <span class="nav-icon">🏛️</span>
+          <span class="nav-text">Tổng quan Nhân vật</span>
+        </button>
+        <button class="nav-item" data-tab="tab-inventory">
+          <span class="nav-icon">📦</span>
+          <span class="nav-text">Kho hàng & Quân bị</span>
+          <span class="badge" id="badge-sku-count">12</span>
+        </button>
+        <button class="nav-item" data-tab="tab-workshop">
+          <span class="nav-icon">🏭</span>
+          <span class="nav-text">Phân xưởng & Nhân sự</span>
+          <span class="badge badge-accent" id="badge-npc-count">4</span>
+        </button>
+        <button class="nav-item" data-tab="tab-ledger">
+          <span class="nav-icon">📜</span>
+          <span class="nav-text">Sổ cái & Kế toán kép</span>
+        </button>
+        <button class="nav-item" data-tab="tab-actions">
+          <span class="nav-icon">⚔️</span>
+          <span class="nav-text">Điều lệnh & Giao dịch</span>
+        </button>
+        <button class="nav-item" data-tab="tab-audit">
+          <span class="nav-icon">🛡️</span>
+          <span class="nav-text">Giám sát Invariants</span>
+          <span class="badge badge-success" id="badge-audit-status">OK</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="footer-engine-info">
+          <div class="engine-ver">Simulation Core v1.1.0</div>
+          <div class="engine-sub">SQLite Single Truth Engine</div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="content-panel">
+      <!-- ============================================================== -->
+      <!-- TAB 1: TỔNG QUAN (OVERVIEW) -->
+      <!-- ============================================================== -->
+      <section id="tab-overview" class="tab-pane active">
+        <!-- Financial Summary Banner -->
+        <div class="financial-grid">
+          <div class="kpi-card gold-border">
+            <div class="kpi-title">TỔNG TÀI SẢN RÒNG (NET WORTH)</div>
+            <div class="kpi-value gold-text" id="kpi-net-worth">— Qian</div>
+            <div class="kpi-sub">Gồm Tiền mặt + Tồn kho + Cơ sở cố định</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-title">TIỀN MẶT LƯU ĐỘNG (MOBILE)</div>
+            <div class="kpi-value green-text" id="kpi-liquid-cash">— Qian</div>
+            <div class="kpi-sub">Theo đoàn quân Lương Diễn (Hòm sắt trên la)</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-title">KÉT SẮT PHÂN XƯỞNG (SAFE)</div>
+            <div class="kpi-value cyan-text" id="kpi-safe-cash">— Qian</div>
+            <div class="kpi-sub">Lưu trữ tại Xưởng Dệt Trác Quận (Cơ sở)</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-title">GIÁ TRỊ HÀNG TỒN KHO</div>
+            <div class="kpi-value purple-text" id="kpi-inv-val">— Qian</div>
+            <div class="kpi-sub" id="kpi-inv-sub">12 Mặt hàng quy chuẩn</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-title">VỐN CỐ ĐỊNH PHÂN XƯỞNG</div>
+            <div class="kpi-value amber-text" id="kpi-fixed-cap">19,600 Qian</div>
+            <div class="kpi-sub">Khuôn dệt, xưởng, xe thồ, kho chứa</div>
+          </div>
+        </div>
+
+        <!-- Protagonist Dossier Card -->
+        <div class="overview-body-grid">
+          <!-- Left Column: Character Sheet -->
+          <div class="card protagonist-card">
+            <div class="card-header">
+              <div class="character-identity">
+                <div class="char-avatar">梁</div>
+                <div>
+                  <h2 class="char-name" id="char-name">Lương Diễn (Liang Yan)</h2>
+                  <div class="char-meta">
+                    Tự: <strong>Trí Viễn (Zhiyuan)</strong> | Tuổi: <strong>21</strong> | Thân phận: <strong>Quân tư hiệp lý / Thương nhân Trác Quận</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Vital Meters -->
+            <div class="vitals-row">
+              <div class="vital-item">
+                <div class="vital-header">
+                  <span>Sức khỏe (Health)</span>
+                  <span id="vital-health-text">100/100</span>
+                </div>
+                <div class="progress-bar"><div class="progress-fill green" style="width: 100%;"></div></div>
+              </div>
+              <div class="vital-item">
+                <div class="vital-header">
+                  <span>Mệt mỏi (Fatigue)</span>
+                  <span id="vital-fatigue-text">0/100</span>
+                </div>
+                <div class="progress-bar"><div class="progress-fill orange" style="width: 0%;"></div></div>
+              </div>
+              <div class="vital-item">
+                <div class="vital-header">
+                  <span>Sĩ khí (Morale)</span>
+                  <span id="vital-morale-text">100/100</span>
+                </div>
+                <div class="progress-bar"><div class="progress-fill gold" style="width: 100%;"></div></div>
+              </div>
+              <div class="vital-item">
+                <div class="vital-header">
+                  <span>Lương dự trữ</span>
+                  <span id="vital-grain-text">9.60 Thạch</span>
+                </div>
+                <div class="progress-bar"><div class="progress-fill cyan" style="width: 65%;"></div></div>
+              </div>
+            </div>
+
+            <!-- 8 Core Attributes Octagon Matrix -->
+            <h3 class="section-title">Bát Diện Thuộc Tính (Core Attributes)</h3>
+            <div class="attributes-grid" id="attributes-grid">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- Right Column: Skills & Retainer Highlights -->
+          <div class="card skills-card">
+            <div class="card-header">
+              <h3 class="card-title">Nấc Thang Kỹ Năng (Player Skills)</h3>
+            </div>
+            <div class="skills-list" id="player-skills-list">
+              <!-- Dynamically populated -->
+            </div>
+
+            <div class="card-header" style="margin-top: 20px;">
+              <h3 class="card-title">Cơ Sở Trực Thuộc (Active Facilities)</h3>
+            </div>
+            <div class="quick-biz-card">
+              <div class="biz-quick-icon">🏭</div>
+              <div class="biz-quick-info">
+                <div class="biz-quick-name">Lương Thị Chức Tác Phường (BIZ-0001)</div>
+                <div class="biz-quick-details">Trác Quận | Giám công: <strong>Trần Bảo</strong> | 4 Thợ | Năng lực: 800h/tháng</div>
+              </div>
+              <button class="btn btn-sm btn-outline" id="btn-goto-workshop">Chi tiết</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================== -->
+      <!-- TAB 2: KHO HÀNG & QUÂN BỊ (INVENTORY) -->
+      <!-- ============================================================== -->
+      <section id="tab-inventory" class="tab-pane">
+        <div class="card">
+          <div class="card-header flex-between">
+            <div>
+              <h2 class="card-title">Kho Hàng & Quân Bị Hiện Tại</h2>
+              <div class="card-desc">Dữ liệu nguồn sự thật SQLite (`inventory_items`) bảo toàn số lượng chính xác</div>
+            </div>
+            <div class="filter-group">
+              <button class="btn-filter active" data-filter="ALL">Tất cả</button>
+              <button class="btn-filter" data-filter="Raw Material">Nguyên liệu</button>
+              <button class="btn-filter" data-filter="Finished Good">Thành phẩm</button>
+              <button class="btn-filter" data-filter="Military Spoils">Chiến lợi phẩm</button>
+              <button class="btn-filter" data-filter="Livestock">Gia súc / Ngựa</button>
+            </div>
+          </div>
+
+          <div class="table-container">
+            <table class="data-table" id="inventory-table">
+              <thead>
+                <tr>
+                  <th>Mã SKU</th>
+                  <th>Phân loại</th>
+                  <th>Tên mặt hàng & Mô tả</th>
+                  <th class="num-col">Số lượng</th>
+                  <th class="num-col">Giá vốn (Qian)</th>
+                  <th class="num-col">Tổng định giá</th>
+                  <th>Vị trí kho</th>
+                </tr>
+              </thead>
+              <tbody id="inventory-tbody">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Stock Movements History -->
+        <div class="card" style="margin-top: 20px;">
+          <div class="card-header">
+            <h2 class="card-title">Nhật Ký Biến Động Kho (Stock Movements Ledger)</h2>
+            <div class="card-desc">Bảo đảm tính bảo toàn vật lý: $\text{Số dư sau} = \text{Số dư trước} \pm \Delta$</div>
+          </div>
+          <div class="table-container">
+            <table class="data-table" id="movements-table">
+              <thead>
+                <tr>
+                  <th>Mã Phiếu</th>
+                  <th>Ngày</th>
+                  <th>Mặt hàng</th>
+                  <th>Loại biến động</th>
+                  <th class="num-col">Biến động</th>
+                  <th class="num-col">Số dư sau</th>
+                  <th>Mã chứng từ tham chiếu</th>
+                </tr>
+              </thead>
+              <tbody id="movements-tbody">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================== -->
+      <!-- TAB 3: PHÂN XƯỞNG & NHÂN SỰ (WORKSHOP & NPCS) -->
+      <!-- ============================================================== -->
+      <section id="tab-workshop" class="tab-pane">
+        <!-- Workshop Facility Summary Banner -->
+        <div class="card workshop-summary-card">
+          <div class="card-header flex-between">
+            <div class="ws-header-left">
+              <span class="ws-tag">DOANH NGHIỆP TỰ HÀNH</span>
+              <h2 class="card-title">Lương Thị Chức Tác Phường & Điểm Buôn Trác Quận (BIZ-0001)</h2>
+              <div class="card-desc">Đông Môn, Huyện Trác, U Châu | Trạng thái: <strong>SOP Cấp 2 (Vận hành tự chủ hoàn toàn)</strong></div>
+            </div>
+            <div class="ws-action-area">
+              <button class="btn btn-primary btn-lg" id="btn-run-workshop-cycle">
+                <span class="icon">⚡</span> Chạy Mô Phỏng 1 Tháng Tự Hành
+              </button>
+            </div>
+          </div>
+
+          <div class="ws-stats-grid">
+            <div class="ws-stat">
+              <div class="stat-label">Két Sắt Phân Xưởng</div>
+              <div class="stat-val green-text" id="ws-safe-cash">3,000 Qian</div>
+              <div class="stat-sub">Quỹ quay vòng vật tư & lương</div>
+            </div>
+            <div class="ws-stat">
+              <div class="stat-label">Năng Lực Lao Động</div>
+              <div class="stat-val gold-text" id="ws-capacity">800 giờ/tháng</div>
+              <div class="stat-sub">Hiệu suất định mức: 85%</div>
+            </div>
+            <div class="ws-stat">
+              <div class="stat-label">Chi Phí Cố Định (Thuê Xưởng)</div>
+              <div class="stat-val" id="ws-rent">200 Qian/tháng</div>
+              <div class="stat-sub">Hợp đồng dài hạn Huyện Trác</div>
+            </div>
+            <div class="ws-stat">
+              <div class="stat-label">Tổng Nhân Lực</div>
+              <div class="stat-val" id="ws-headcount">4 Thợ</div>
+              <div class="stat-sub">1 Giám công, 1 Thợ cả, 2 Học việc</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- NPC Workforce Roster -->
+        <div class="card" style="margin-top: 20px;">
+          <div class="card-header">
+            <h2 class="card-title">Đội Ngũ Thợ Thủ Công & Nhân Sự Gia Đình</h2>
+            <div class="card-desc">Quản lý thuộc tính, thiên phú, sĩ khí, lòng trung thành và nấc thang kỹ năng NPC</div>
+          </div>
+
+          <div class="npc-cards-grid" id="npc-cards-grid">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+        <!-- Workshop Output Log (After simulation) -->
+        <div class="card" id="workshop-log-card" style="margin-top: 20px; display: none;">
+          <div class="card-header">
+            <h2 class="card-title">Kết Quả Vận Hành Tháng Gần Nhất (Zero-Token Simulation)</h2>
+          </div>
+          <div class="workshop-log-content" id="workshop-log-content">
+            <!-- Dynamic JSON report rendered -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================== -->
+      <!-- TAB 4: SỔ CÁI & KẾ TOÁN KÉP (LEDGER) -->
+      <!-- ============================================================== -->
+      <section id="tab-ledger" class="tab-pane">
+        <!-- Single-Entry Cash Flow -->
+        <div class="card">
+          <div class="card-header flex-between">
+            <div>
+              <h2 class="card-title">Sổ Dòng Tiền Thời Gian Thực (`cashflow_ledger`)</h2>
+              <div class="card-desc">Kiểm chứng liên tục phương trình: $\text{Số dư}_i = \text{Số dư}_{i-1} + \text{Vào} - \text{Ra}$</div>
+            </div>
+            <div class="ledger-balance-badge" id="ledger-closing-badge">
+              Số dư hiện thời: <strong>24,200 Qian</strong>
+            </div>
+          </div>
+          <div class="table-container">
+            <table class="data-table" id="cashflow-table">
+              <thead>
+                <tr>
+                  <th>Mã Giao Dịch</th>
+                  <th>Ngày</th>
+                  <th>Đối tác</th>
+                  <th>Danh mục</th>
+                  <th class="num-col">Thu (+)</th>
+                  <th class="num-col">Chi (-)</th>
+                  <th class="num-col">Số dư quỹ</th>
+                  <th>Diễn giải</th>
+                </tr>
+              </thead>
+              <tbody id="cashflow-tbody">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Double-Entry Journal -->
+        <div class="card" style="margin-top: 20px;">
+          <div class="card-header flex-between">
+            <div>
+              <h2 class="card-title">Sổ Nhật Ký Chung Kế Toán Kép (`account_journal`)</h2>
+              <div class="card-desc">Đảm bảo cân bằng kế toán tuyệt đối: $\sum \text{Debit} = \sum \text{Credit}$ trên mọi giao dịch</div>
+            </div>
+            <div class="badge badge-success" id="badge-dr-cr-parity">ĐỐI SOÁT CÂN BẰNG: 100%</div>
+          </div>
+          <div class="table-container">
+            <table class="data-table" id="journal-table">
+              <thead>
+                <tr>
+                  <th>Mã Bút Toán</th>
+                  <th>Mã GD</th>
+                  <th>Ngày</th>
+                  <th>Tài khoản</th>
+                  <th class="num-col">Nợ (Debit)</th>
+                  <th class="num-col">Có (Credit)</th>
+                  <th>Nội dung nghiệp vụ</th>
+                </tr>
+              </thead>
+              <tbody id="journal-tbody">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================== -->
+      <!-- TAB 5: ĐIỀU LỆNH & GIAO DỊCH (ACTION DISPATCHER) -->
+      <!-- ============================================================== -->
+      <section id="tab-actions" class="tab-pane">
+        <div class="actions-split-grid">
+          <!-- Action Dispatch Form -->
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">Thực Thi Điều Lệnh Simulation Core</h2>
+              <div class="card-desc">Tất cả hành động đều đi qua luồng: Kiểm tra Schema → Điều kiện → Luật → Transaction SQLite → Invariant</div>
+            </div>
+
+            <form id="action-dispatch-form" class="action-form">
+              <div class="form-group">
+                <label>Loại Hành Động</label>
+                <select id="action-type-select" class="form-control">
+                  <option value="TRADE_BUY">TRADE_BUY (Mua vật phẩm / nguyên liệu)</option>
+                  <option value="TRADE_SELL">TRADE_SELL (Bán hàng tồn kho)</option>
+                  <option value="PRODUCTION_BATCH">PRODUCTION_BATCH (Sản xuất gia công theo BOM)</option>
+                  <option value="PAY_WAGES">PAY_WAGES (Phát lương giữ chân nhân sự)</option>
+                  <option value="RECORD_BOUNTY">RECORD_BOUNTY (Ghi nhận thưởng công huân / chiến tích)</option>
+                </select>
+              </div>
+
+              <div id="dynamic-form-fields">
+                <!-- Dynamically updated based on selected action -->
+              </div>
+
+              <div class="form-group">
+                <label>Idempotency Key (Chống lặp lại)</label>
+                <input type="text" id="action-idempotency" class="form-control" placeholder="Tự động tạo hoặc nhập chuỗi duy nhất...">
+              </div>
+
+              <div class="form-actions">
+                <button type="submit" class="btn btn-primary btn-block">
+                  <span class="icon">🚀</span> Xác Nhận Thực Thi Hành Động
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Live Execution Console / Feedback -->
+          <div class="card console-card">
+            <div class="card-header flex-between">
+              <h2 class="card-title">Nhật Ký Thực Thi Simulation Core</h2>
+              <button class="btn btn-sm btn-outline" id="btn-clear-console">Xóa console</button>
+            </div>
+            <div class="console-body" id="console-output">
+              <div class="console-line system">[SYSTEM] Simulation Core pipeline kết nối sẵn sàng.</div>
+              <div class="console-line system">[SYSTEM] SQLite source of truth: saves/session.db</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================== -->
+      <!-- TAB 6: GIÁM SÁT KIỂM TOÁN (AUDIT) -->
+      <!-- ============================================================== -->
+      <section id="tab-audit" class="tab-pane">
+        <div class="card">
+          <div class="card-header flex-between">
+            <div>
+              <h2 class="card-title">Kiểm Toán Toán Học & Bất Biến (Invariant Auditor)</h2>
+              <div class="card-desc">Đối soát SQLite trực tiếp không qua regex, loại bỏ false-green và phát hiện trôi lệch tức thì</div>
+            </div>
+            <button class="btn btn-gold btn-lg" id="btn-trigger-audit">
+              <span class="icon">🛡️</span> Kích Hoạt Kiểm Toán Toàn Diện
+            </button>
+          </div>
+
+          <div class="audit-summary-boxes" id="audit-summary-boxes">
+            <!-- Dynamically populated -->
+          </div>
+
+          <div class="audit-details-container" id="audit-details-container">
+            <div class="placeholder-text">Nhấn nút "Kích Hoạt Kiểm Toán Toàn Diện" để bắt đầu đối soát 63 bất biến...</div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Notification Toast -->
+  <div id="toast" class="toast hidden"></div>
+
+  <!-- Scripts -->
+  <script src="/app.js"></script>
+</body>
+</html>
