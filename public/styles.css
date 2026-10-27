@@ -302,10 +302,32 @@ body.tactical-body {
   color: #eff6ff;
 }
 
+.story-turn.courier .story-turn-avatar {
+  background: linear-gradient(135deg, #312e81, #4338ca);
+  border-color: #818cf8;
+  color: #e0e7ff;
+  font-size: 15px;
+}
+
+.story-turn.action .story-turn-avatar {
+  background: linear-gradient(135deg, #064e3b, #047857);
+  border-color: #34d399;
+  color: #ecfdf5;
+  font-size: 15px;
+}
+
+.story-turn.travel .story-turn-avatar {
+  background: linear-gradient(135deg, #7c2d12, #c2410c);
+  border-color: #fb923c;
+  color: #fff;
+  font-size: 15px;
+}
+
 .story-turn.system .story-turn-avatar {
-  background: var(--bg-surface-elevated);
-  border-color: var(--border-subtle);
-  font-size: 13px;
+  background: linear-gradient(135deg, #1e293b, #334155);
+  border-color: #94a3b8;
+  color: #f1f5f9;
+  font-size: 14px;
 }
 
 .story-turn-content {
@@ -324,6 +346,26 @@ body.tactical-body {
   border-color: rgba(96, 165, 250, 0.35);
 }
 
+.story-turn.courier .story-turn-content {
+  background-color: rgba(49, 46, 129, 0.22);
+  border-color: rgba(129, 140, 248, 0.35);
+}
+
+.story-turn.action .story-turn-content {
+  background-color: rgba(6, 78, 59, 0.2);
+  border-color: rgba(52, 211, 153, 0.35);
+}
+
+.story-turn.travel .story-turn-content {
+  background-color: rgba(124, 45, 18, 0.2);
+  border-color: rgba(251, 146, 60, 0.35);
+}
+
+.story-turn.system .story-turn-content {
+  background-color: rgba(30, 41, 59, 0.35);
+  border-color: rgba(148, 163, 184, 0.3);
+}
+
 .story-turn-header {
   display: flex;
   align-items: center;
@@ -340,6 +382,22 @@ body.tactical-body {
 
 .story-turn.player .story-speaker-name {
   color: #93c5fd;
+}
+
+.story-turn.courier .story-speaker-name {
+  color: #a5b4fc;
+}
+
+.story-turn.action .story-speaker-name {
+  color: #6ee7b7;
+}
+
+.story-turn.travel .story-speaker-name {
+  color: #fdba74;
+}
+
+.story-turn.system .story-speaker-name {
+  color: #cbd5e1;
 }
 
 .story-speaker-title {

@@ -840,6 +840,7 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
           targetLoc = 'Xưởng Lương Thị';
           actionToRun = {
             type: 'PRODUCTION_BATCH',
+            product_code: 'PROD-SHIELD-BAM',
             recipe: 'PROD-SHIELD-BAM',
             batch_size: 5,
             game_date: '184-05-02'
@@ -855,6 +856,7 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
           targetLoc = 'Xưởng Lương Thị';
           actionToRun = {
             type: 'PRODUCTION_BATCH',
+            product_code: 'PROD-MAT',
             recipe: 'PROD-MAT',
             batch_size: 10,
             game_date: '184-05-02'
@@ -984,6 +986,81 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
 
         const updatedScene = generateDynamicScene(DB_PATH, subLocation, actionToRun, replyNarrative);
 
+        // Determine authentic speaker and turn metadata
+        let turnType = 'npc';
+        let speakerName = 'Hệ Thống Phản Hồi';
+        let speakerTitle = 'Mô Phỏng & Đối Soát';
+        let avatarChar = '⚙️';
+        let diceCheck = null;
+
+        if (dispatchType === 'COURIER') {
+          turnType = 'courier';
+          speakerName = 'Gia Nhân Tiếp Vận (Phi Thư)';
+          speakerTitle = targetLoc ? `Mật Thư Tới ${targetLoc}` : 'Chỉ Đạo Từ Xa';
+          avatarChar = '✉️';
+          diceCheck = null;
+        } else if (dispatchType === 'TRAVEL') {
+          turnType = 'travel';
+          speakerName = 'Lữ Trình Quan Đạo';
+          speakerTitle = `Chuyển Cảnh Tới ${subLocation}`;
+          avatarChar = '🏇';
+          diceCheck = null;
+        } else if (actionToRun && actionToRun.type === 'PRODUCTION_BATCH') {
+          turnType = 'action';
+          speakerName = 'Trần Bảo (Thợ Cả Lương Gia)';
+          speakerTitle = 'Lương Thị Chức Tác Phường';
+          avatarChar = '陳';
+          diceCheck = null;
+        } else if (actionToRun && actionToRun.type === 'TRADE_SELL' && subLocation === 'Chợ Đông Môn') {
+          turnType = 'action';
+          speakerName = 'Thương Đoàn Ký Châu';
+          speakerTitle = 'Sạp Muối Chợ Đông Môn';
+          avatarChar = '🧂';
+          diceCheck = null;
+        } else if (actionToRun && actionToRun.type === 'TRADE_BUY' && subLocation === 'Chợ Đông Môn') {
+          turnType = 'action';
+          speakerName = 'Lương Thương Huyện Trác';
+          speakerTitle = 'Kho Lương Chợ Đông Môn';
+          avatarChar = '🌾';
+          diceCheck = null;
+        } else if (actionToRun && actionToRun.type === 'TRADE_BUY' && subLocation === 'Vườn Đào') {
+          turnType = 'npc';
+          speakerName = 'Trương Phi (Dực Đức)';
+          speakerTitle = 'Lò Mổ Huyện Trác — WAR 97';
+          avatarChar = '張';
+          diceCheck = null;
+        } else if (actionToRun && actionToRun.type === 'RECORD_BOUNTY') {
+          turnType = 'npc';
+          speakerName = actionToRun.counterparty || 'Lư Thực (Tử Cán)';
+          speakerTitle = 'Quân Huân Tiền Tuyến';
+          avatarChar = '🎖️';
+          diceCheck = null;
+        } else if (actionToRun && actionToRun.type === 'REWARD_NPC') {
+          turnType = 'action';
+          speakerName = 'Trần Bảo (Thợ Cả)';
+          speakerTitle = 'Lương Thị Chức Tác Phường';
+          avatarChar = '陳';
+          diceCheck = null;
+        } else {
+          turnType = 'npc';
+          const sceneNpc = updatedScene?.npc;
+          if (sceneNpc && sceneNpc.name) {
+            speakerName = sceneNpc.name;
+            speakerTitle = sceneNpc.title || 'Đối Thoại Trực Diện';
+            avatarChar = sceneNpc.name.charAt(0);
+          } else {
+            speakerName = 'Hào Kiệt Bản Địa';
+            speakerTitle = 'Bối Cảnh Chiến Lược';
+            avatarChar = '漢';
+          }
+          const pLower = (payload.prompt || '').toLowerCase();
+          if (pLower.includes('đấu') || pLower.includes('thương') || pLower.includes('võ') || pLower.includes('giá') || pLower.includes('so tài') || pLower.includes('chiến')) {
+            diceCheck = updatedScene?.lastCheck;
+          } else {
+            diceCheck = null;
+          }
+        }
+
         sendJson(res, 200, {
           success: true,
           narrative: replyNarrative,
@@ -991,6 +1068,14 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
           delta,
           executedAction: execResult,
           updatedScene,
+          dispatchType,
+          turnInfo: {
+            type: turnType,
+            speaker: speakerName,
+            title: speakerTitle,
+            avatar: avatarChar,
+            diceBadge: diceCheck
+          },
           timestamp: new Date().toISOString()
         });
       } catch (err) {

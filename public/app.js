@@ -1674,13 +1674,47 @@ async function executeChoiceDirect(optId) {
       opt.action.idempotency_key = `OPT_${optId}_${Date.now()}`;
       const result = await dispatchDirectAction(opt.action);
 
+      let turnType = 'system';
+      let speaker = 'SimCore Kiểm Toán';
+      let title = 'Ghi Nhận Sổ Cái SQLite';
+      let avatar = '⚖️';
+      let turnText = `Điều lệnh **${opt.title}** đã thực thi thành công và ghi sổ bất biến.`;
+
+      if (opt.action.type === 'PRODUCTION_BATCH') {
+        if (activeSubLocation === 'Xưởng Lương Thị') {
+          turnType = 'action';
+          speaker = 'Trần Bảo (Thợ Cả Lương Gia)';
+          title = 'Hoàn Thành Chế Tác';
+          avatar = '陳';
+          turnText = `Thợ cả Trần Bảo báo cáo: Lô sản xuất ${opt.action.batch_size} thành phẩm đã hoàn thành theo đúng định mức BOM!`;
+        } else {
+          turnType = 'courier';
+          speaker = 'Gia Nhân Tiếp Vận (Phi Thư)';
+          title = 'Mật Lệnh Sản Xuất Tới Xưởng';
+          avatar = '✉️';
+          turnText = `Gia nhân phi ngựa mang mật lệnh bài về Xưởng Lương Thị. Thợ cả Trần Bảo mở thư tuân lệnh, hạ lệnh thợ xưởng hoàn thiện ${opt.action.batch_size} thành phẩm!`;
+        }
+      } else if (opt.action.type === 'TRADE_BUY' || opt.action.type === 'TRADE_SELL') {
+        turnType = 'action';
+        speaker = opt.action.counterparty || 'Thương Vụ Lương Gia';
+        title = opt.action.type === 'TRADE_BUY' ? 'Thu Mua Vật Tư' : 'Xuất Bán Hàng Hóa';
+        avatar = '📦';
+        turnText = `Giao dịch thương nghiệp **${opt.title}** đã hoàn tất giao nhận và đối ứng ngân khố.`;
+      } else if (opt.action.type === 'REWARD_NPC') {
+        turnType = 'npc';
+        speaker = currentScene?.npc?.name || 'Hào Kiệt';
+        title = 'Cảm Kích Ban Thưởng';
+        avatar = currentScene?.npc?.name ? currentScene.npc.name.charAt(0) : '🎁';
+        turnText = `Nhận ban thưởng ${opt.action.amount} Tiền, tâm tình phấn khởi, trung thành và sĩ khí tăng vọt!`;
+      }
+
       // Append result into chronicle
       appendStoryTurn({
-        type: 'system',
-        speaker: 'SimCore Kiểm Toán',
-        title: 'Ghi Nhận Sổ Cái SQLite',
-        avatar: '⚖️',
-        text: `Điều lệnh **${opt.title}** đã thực thi thành công và ghi sổ bất biến.`,
+        type: turnType,
+        speaker: speaker,
+        title: title,
+        avatar: avatar,
+        text: turnText,
         deltas: result && result.delta ? result.delta : { action: opt.action.type, audit: '70/70 Khớp' },
         reasoning: `Bất biến SQLite kiểm toán bảo toàn tuyệt đối.`
       });
@@ -1745,18 +1779,8 @@ async function executeChoiceAi(optId) {
       await loadScene(activeSubLocation);
     }
 
-    // Append AI / NPC Response into Story Chronicle
-    const npc = result.updatedScene?.npc || currentScene?.npc;
-    appendStoryTurn({
-      type: 'npc',
-      speaker: npc?.name || 'Hào Kiệt Huyện Trác',
-      title: npc?.title || 'Phản Hồi Chiến Thuật',
-      avatar: npc?.name ? npc.name.charAt(0) : '漢',
-      text: result.narrative,
-      diceBadge: result.updatedScene?.lastCheck,
-      deltas: result.delta,
-      reasoning: result.reasoning
-    });
+    // Append Authentic Agent / NPC / Courier Response into Story Chronicle
+    appendAgentResultTurn(result);
 
     // Render Agent Reasoning & Simulation Delta
     renderAgentSimulationFeedback(result.reasoning, result.delta);
@@ -1770,6 +1794,58 @@ async function executeChoiceAi(optId) {
   } finally {
     setProcessingLock(false, cardEl);
   }
+}
+
+// Helper: Append Agent Result Turn with authentic speaker & response type
+function appendAgentResultTurn(result) {
+  const turnInfo = result.turnInfo || {};
+  const isEn = (currentLang === 'en');
+
+  let type = turnInfo.type || (result.dispatchType === 'COURIER' ? 'courier' : (result.dispatchType === 'TRAVEL' ? 'travel' : 'action'));
+  let speaker = turnInfo.speaker;
+  let title = turnInfo.title;
+  let avatar = turnInfo.avatar;
+  let diceBadge = turnInfo.diceBadge !== undefined ? turnInfo.diceBadge : null;
+
+  // Fallbacks if turnInfo is missing
+  if (!speaker) {
+    if (result.dispatchType === 'COURIER') {
+      type = 'courier';
+      speaker = isEn ? 'Courier Dispatch (Messenger)' : 'Gia Nhân Tiếp Vận (Phi Thư)';
+      title = isEn ? 'Remote Order / Dispatch' : 'Mật Thư Điều Phối Từ Xa';
+      avatar = '✉️';
+      diceBadge = null;
+    } else if (result.dispatchType === 'TRAVEL') {
+      type = 'travel';
+      speaker = isEn ? 'Post Road Journey' : 'Lữ Trình Quan Đạo';
+      title = isEn ? 'Scene Relocation' : 'Chuyển Cảnh Địa Lý';
+      avatar = '🏇';
+      diceBadge = null;
+    } else if (result.executedAction && result.executedAction.type === 'PRODUCTION_BATCH') {
+      type = 'action';
+      speaker = isEn ? 'Master Chen Bao (Artisan)' : 'Trần Bảo (Thợ Cả Lương Gia)';
+      title = isEn ? 'Liang Workshop' : 'Lương Thị Chức Tác Phường';
+      avatar = '陳';
+      diceBadge = null;
+    } else {
+      type = 'npc';
+      const npc = result.updatedScene?.npc || currentScene?.npc;
+      speaker = npc?.name || (isEn ? 'Local Figure' : 'Hào Kiệt Bản Địa');
+      title = npc?.title || (isEn ? 'Direct Dialogue' : 'Đối Thoại Trực Diện');
+      avatar = npc?.name ? npc.name.charAt(0) : '漢';
+    }
+  }
+
+  appendStoryTurn({
+    type,
+    speaker,
+    title,
+    avatar,
+    text: result.narrative,
+    diceBadge,
+    deltas: result.delta,
+    reasoning: result.reasoning
+  });
 }
 
 // 3.6 Omni Command Bar Dispatcher (Anti-Piling Guarded)
@@ -1820,18 +1896,8 @@ async function dispatchOmniCommand(mode = 'ai') {
       await loadScene(activeSubLocation);
     }
 
-    // Append AI / NPC Response into Story Chronicle
-    const npc = result.updatedScene?.npc || currentScene?.npc;
-    appendStoryTurn({
-      type: 'npc',
-      speaker: npc?.name || 'Hào Kiệt Huyện Trác',
-      title: npc?.title || 'Phản Hồi Chiến Thuật',
-      avatar: npc?.name ? npc.name.charAt(0) : '漢',
-      text: result.narrative,
-      diceBadge: result.updatedScene?.lastCheck,
-      deltas: result.delta,
-      reasoning: result.reasoning
-    });
+    // Append Authentic Agent / NPC / Courier Response into Story Chronicle
+    appendAgentResultTurn(result);
 
     // Render Agent Reasoning & Simulation Delta
     renderAgentSimulationFeedback(result.reasoning, result.delta);

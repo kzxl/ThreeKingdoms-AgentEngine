@@ -306,7 +306,8 @@ class SimulationCore {
 
   // PRODUCTION_BATCH: Manufacture goods from BOM materials
   _executeProduction(action) {
-    const { product_code, batch_size, craftsmanship = 60, fatigue = 0, game_date, idempotency_key } = action;
+    const product_code = action.product_code || action.recipe;
+    const { batch_size, craftsmanship = 60, fatigue = 0, game_date, idempotency_key } = action;
 
     const bom = BILL_OF_MATERIALS[product_code];
     if (!bom) {
