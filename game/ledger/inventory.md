@@ -1,18 +1,18 @@
 # Physical Inventory & Stock Ledger (ledger/inventory.md)
 
-## 1. Current Warehouse Stock (`BIZ-0001` East Storeroom - Month 3 Day 10, 184 AD)
+## 1. Current Warehouse Stock (`BIZ-0001` East Storeroom - Month 3 Day 17, 184 AD)
 
 | Item Code | Category | Description | Quantity | Unit Cost Basis (Qian) | Total Value (Qian) | Minimum Threshold |
 |---|---|---|---|---|---|---|
-| `COM-BAMBOO` | Raw Material | Bundles of cured bamboo & river reeds | 95 bundles | 15 | 1,425 | 20 |
-| `COM-TWINE`  | Raw Material | Spools of durable spun hemp twine | 15 spools | 20 | 300 | 5 |
-| `COM-LEATH`  | Raw Material | Tanned sheep & cattle hide cuttings | 20 hides | 100 | 2,000 | 2 |
-| `COM-TIMBER` | Raw Material | Cured hardwood timber planks | 5 bundles | 40 | 200 | 2 |
+| `COM-BAMBOO` | Raw Material | Bundles of cured bamboo & river reeds | 35 bundles | 15 | 525 | 20 |
+| `COM-TWINE`  | Raw Material | Spools of durable spun hemp twine | 12 spools | 20 | 240 | 5 |
+| `COM-LEATH`  | Raw Material | Tanned sheep & cattle hide cuttings | 14 hides | 100 | 1,400 | 2 |
+| `COM-TIMBER` | Raw Material | Cured hardwood timber planks | 2.5 bundles | 40 | 100 | 2 |
 | `COM-GRAIN`  | Provisions | Unmilled millet & wheat (Strategic Reserve)| 9.60 Dan | 160 | 1,536 | 5.00 |
-| `PROD-MAT`   | Finished Good | Standard woven straw sleeping mats | 19 units | 17 | 323 | 10 |
-| `PROD-BASK`  | Finished Good | Reinforced military grain pack baskets | 9 units | 35 | 315 | 5 |
-| `PROD-SHIELD-BAM`| Finished Good | Prototype leather-bound bamboo shields | 0 units | 76 | 0 | 0 |
-| **Total Inventory Value** | | | | | **6,099 Qian** | |
+| `PROD-MAT`   | Finished Good | Standard woven straw sleeping mats | 2 units | 17 | 34 | 10 |
+| `PROD-BASK`  | Finished Good | Reinforced military grain pack baskets | 1 unit | 35 | 35 | 5 |
+| `PROD-SHIELD-BAM`| Finished Good | Leather-bound bamboo shields | 0 units | 76 | 0 | 0 |
+| **Total Inventory Value** | | | | | **3,870 Qian** | |
 
 ---
 
@@ -43,3 +43,13 @@
 | `MOV-01840309-0021` | 184-03-09 | `COM-TWINE`  | Purchase (Balanced) | +8 | 20 | 15 | TXN-01840309-0002 |
 | `MOV-01840309-0022` | 184-03-09 | `COM-LEATH`  | Purchase (Zhang Fei)| +10 | 100 | 20 | TXN-01840309-0003 |
 | `MOV-01840309-0023` | 184-03-09 | `COM-TIMBER` | Purchase (Master Lu)| +5 | 40 | 5 | TXN-01840309-0004 |
+| `MOV-01840315-0024` | 184-03-15 | `COM-BAMBOO` | Batch Production Out| -60 | 15 | 35 | BATCH-018403-01 |
+| `MOV-01840315-0025` | 184-03-15 | `COM-LEATH`  | Batch Production Out| -6 | 100 | 14 | BATCH-018403-01 |
+| `MOV-01840315-0026` | 184-03-15 | `COM-TIMBER` | Batch Production Out| -2.5 | 40 | 2.5 | BATCH-018403-01 |
+| `MOV-01840315-0027` | 184-03-15 | `COM-TWINE`  | Batch Production Out| -3 | 20 | 12 | BATCH-018403-01 |
+| `MOV-01840316-0028` | 184-03-16 | `PROD-SHIELD-BAM`| Production In | +10 | 76 | 10 | BATCH-018403-01 |
+| `MOV-01840316-0029` | 184-03-16 | `PROD-BASK`  | Production In | +22 | 35 | 31 | BATCH-018403-01 |
+| `MOV-01840316-0030` | 184-03-16 | `PROD-MAT`   | Production In | +3 | 17 | 22 | BATCH-018403-01 |
+| `MOV-01840317-0031` | 184-03-17 | `PROD-SHIELD-BAM`| Delivery (Liu Bei) | -10 | 76 | 0 | CTR-01840311-0001 |
+| `MOV-01840317-0032` | 184-03-17 | `PROD-BASK`  | Delivery (Liu Bei) | -30 | 35 | 1 | CTR-01840311-0001 |
+| `MOV-01840317-0033` | 184-03-17 | `PROD-MAT`   | Delivery (Liu Bei) | -20 | 17 | 2 | CTR-01840311-0001 |

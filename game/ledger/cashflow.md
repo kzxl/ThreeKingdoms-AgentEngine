@@ -4,7 +4,7 @@
 - **Entity**: Liang Yan (`player`) & Liang Clan Workshop (`BIZ-0001`)
 - **Initial Capital (Turn 0)**: 15,000 Qian
 - **Turn 1 Closing Balance**: 13,610 Qian
-- **Current Balance (Month 3 Day 11, 184 AD)**: **11,750 Qian**
+- **Current Balance (Month 3 Day 17, 184 AD)**: **11,690 Qian**
 
 ---
 
@@ -26,4 +26,5 @@
 | `TXN-01840309-0002` | 184-03-09 | River Reed Guild | Procurement | 0 | 1,360 | 11,950 | Purchased 80 bamboo bundles (1,200) + 8 twine spools (160) | Confirmed |
 | `TXN-01840309-0003` | 184-03-09 | Zhang Fei (`NPC-0002`) | Procurement | 0 | 1,000 | 10,950 | Purchased 10 cured hides @ 100 Qian from Zhang butchery | Confirmed |
 | `TXN-01840309-0004` | 184-03-09 | Master Lu (`NPC-0006`) | Procurement | 0 | 200 | 10,750 | Purchased 5 cured hardwood timber bundles @ 40 Qian | Confirmed |
-| `TXN-01840311-0005` | 184-03-11 | Liu Bei (`NPC-0001`) | Revenue/Deposit | 1,000 | 0 | **11,750** | Cash advance deposit for military supply contract `CTR-01840311-0001` | Confirmed |
+| `TXN-01840311-0005` | 184-03-11 | Liu Bei (`NPC-0001`) | Revenue/Deposit | 1,000 | 0 | 11,750 | Cash advance deposit for military supply contract `CTR-01840311-0001` | Confirmed |
+| `TXN-01840316-0006` | 184-03-16 | Workshop Retainers | OPEX/Bonus | 0 | 60 | **11,690** | Piece-rate performance incentives: Chen Bao (40) & Zhao An (20) | Confirmed |

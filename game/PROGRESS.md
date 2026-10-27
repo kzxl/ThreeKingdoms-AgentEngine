@@ -12,15 +12,15 @@
 |---|---|
 | **Campaign ID** | `CMP-184-ZHOU-01` |
 | **Protagonist** | Liang Yan (`player` / `PLY-0001`), Age 21 |
-| **Current In-Game Date** | **Year 184 AD, Month 3, Day 11** (Late Spring) |
-| **Active Turn** | **Turn 2 in progress (Contract Signed $\rightarrow$ Production Fulfillment Next)** |
+| **Current In-Game Date** | **Year 184 AD, Month 3, Day 17** (Late Spring) |
+| **Active Turn** | **Turn 2 in progress (Contract Delivered $\rightarrow$ Battle of Daxing Mountain Imminent)** |
 | **Location** | Zhuo County (`LOC-0001`), Youzhou |
-| **Liquid Capital** | **11,750 Qian** (Workshop safe, includes +1,000 Qian deposit from Liu Bei) |
-| **Accounts Receivable (AR)**| **1,950 Qian** (Payable by Liu Bei upon victory under `CTR-01840311-0001`) |
+| **Liquid Capital** | **11,690 Qian** (Workshop iron safe, post-incentives) |
+| **Accounts Receivable (AR)**| **1,950 Qian** (Payable by Liu Bei upon victory bounty under `CTR-01840311-0001`) |
 | **Strategic Grain** | **9.60 Dan** (~288 kg, secured in workshop storeroom) |
-| **Inventory Valuation** | **6,099 Qian** (95 bamboo, 20 hides, 15 twine, 5 timber, 19 mats, 9 baskets) |
+| **Inventory Valuation** | **3,870 Qian** (35 bamboo, 14 hides, 12 twine, 2.5 timber, 1 basket, 2 mats) |
 | **Fixed Capital** | **19,400 Qian** (Workshop compound, tools, looms, handcart) |
-| **Total Net Worth** | **39,199 Qian** (Assets: 11,750 cash + 1,950 AR + 6,099 stock + 19,400 fixed) |
+| **Total Net Worth** | **36,910 Qian** (Reflects +740 Qian net contract operating margin realized) |
 | **Latest Snapshot** | [`saves/snapshots/SNAP-0001.md`](saves/snapshots/SNAP-0001.md) |
 | **Audit Status** | **100% Reconciled (0 discrepancy)** |
 
@@ -30,17 +30,21 @@
 
 ### [Turn 2 (In Progress)] — Month 3, 184 AD
 - **184-03-03 to 184-03-08**:
-  - Mentorship at Master Lu's Estate: Check Score 65 vs DC 45. Unlocked `SKL-MGT-ENTERPRISE` Tier 1 (18/20 EXP).
+  - Mentorship at Master Lu's Estate: Unlocked `SKL-MGT-ENTERPRISE` Tier 1. Master Lu sentiment reaches +48.
 - **184-03-09 to 184-03-10**:
   - Balanced Procurement (2,560 Qian): 80 bamboo, 10 prime hides from Zhang Fei, 8 twine, 5 timber from Master Lu.
-  - Formalized Product Line C: `PROD-SHIELD-BAM` (Leather-Bound Bamboo Shield).
 - **184-03-11**:
-  - **Milestone Military Supply Contract Sealed (`CTR-01840311-0001`)**:
-    - Liang Yan met Liu Bei, Guan Yu, and Zhang Fei at South Gate camp.
-    - Negotiation Check Score: **91 vs DC 60** (Formidable Acclaim).
-    - Deliverables: 30 pack baskets (`PROD-BASK`), 10 bamboo shields (`PROD-SHIELD-BAM`), 20 mats (`PROD-MAT`) for total 2,950 Qian.
-    - Payment: 1,000 Qian cash advance (`TXN-01840311-0005`) received; 1,950 Qian deferred as AR backed by victory spoils.
-    - Sentiments: Liu Bei $\rightarrow$ **+38**, Zhang Fei $\rightarrow$ **+35**, Guan Yu $\rightarrow$ **+26**.
+  - Milestone Contract `CTR-01840311-0001` sealed with Liu Bei (2,950 Qian). Collected 1,000 Qian cash advance.
+- **184-03-12 to 184-03-16**:
+  - **Production Surge (Batch `BATCH-018403-01`)**: Produced 10 bamboo shields, 22 baskets, 3 mats. Paid 60 Qian incentives.
+  - **Skill Breakthrough**:
+    - `SKL-MGT-ENTERPRISE` advanced to **Tier 2 (Competent — Delegation SOP)**. Chen Bao promoted to Foreman; workshop can now produce autonomously!
+    - `SKL-WAR-SPEAR` advanced to **Tier 2 (Competent — Brace against Charge unlocked)**.
+    - Researched Daxing Mountain topography; pinpointed narrow gorge as prime ambush sector.
+- **184-03-17**:
+  - **Full Delivery of Contract `CTR-01840311-0001`**:
+    - Delivered 10 shields, 30 baskets, 20 mats to Liu Bei's militia camp.
+    - Volunteer militia morale surged to 85/100; vanguard equipped with shields.
 
 ### [Turn 1] — Month 2, 184 AD: Strategic Stockpiling & Outbreak
 - Acquired 10 Dan grain hedge. Produced 49 mats & 29 baskets. Sold wholesale to Zhang Shiping and Yamen. Reconciled net worth 36,558 Qian.
@@ -52,15 +56,10 @@
 
 ## 3. Immediate Crossroads & Tactical Dilemmas (Turn 2 / Month 3, 184 AD)
 
-1. **Fulfill Contract `CTR-01840311-0001`**:
-   - Deadline: 184-03-18 (7 days to deliver).
-   - Workshop stock already has: 9 baskets, 19 mats.
-   - Net production required to fulfill order:
-     - Produce 21 more baskets (to reach 30).
-     - Produce 10 bamboo shields.
-     - Produce 1 more mat (to reach 20).
-     - Material needed: ~52 bamboo bundles, 5.1 hides, 2 timber bundles, twine.
-     - Materials on hand: 95 bamboo, 20 hides, 5 timber. **(Plenty of excess material!)**
-2. **Rebel Threat Imminent**:
-   - Cheng Yuanzhi's vanguard (~50,000 insurgents) is estimated to collide with Youzhou defenses near Daxing Mountain (Đại Hưng Sơn) within 5-7 days!
-   - Delivering shields on time will directly boost the combat effectiveness and survival rate of Liu Bei's militia in this battle!
+1. **Battle of Daxing Mountain (Trận Núi Đại Hưng)**:
+   - Rebel vanguard of 50,000 under Cheng Yuanzhi and Deng Mao is entering the Daxing Mountain pass.
+   - Colonel Zou Jing and Liu Bei's volunteer force (~300 men + 500 government troops) are deploying to meet them!
+2. **Liang Yan's Tactical Choice**:
+   - **Lựa chọn 1 (Tham chiến / Quân nhu Tiền tuyến)**: Theo đoàn quân làm Quân nhu quan / Hậu cần, mang bản đồ khe núi hiến kế phục kích cho Lưu Bị và Quan Vũ. Trực tiếp lập chiến công quân sự.
+   - **Lựa chọn 2 (Ở lại Trác Huyện điều phối phòng vệ)**: Gửi bản đồ địa hình cho Lưu Bị, còn Lương Nhan ở lại Trác Huyện cùng Lư lão bá và Thương hội tổ chức đội dân binh bảo vệ kho bãi và cửa ngõ thành thị.
+   - **Lựa chọn 3 (Khai thác Thương cơ Hậu phương)**: Tận dụng quyền tự chủ của Trần Bảo để xưởng tự sản xuất thêm khiên tre và bao tải lương bán cho huyện nha với giá cao trong lúc chiến trận nổ ra.
