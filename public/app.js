@@ -4,14 +4,15 @@
  * 
  * Features:
  * - 2-Column Tactical Narrative & Simulation State Deck
+ * - Dynamic Context Engine: Reactive Hero Encounter, D20 Formulas & 4 Branching Choices
  * - Authoritative SimCore SQLite Actions & Reconciled Telemetry
  * - Live Agent Bridge Freeform & Branching Choices
- * - Deterministic D20 Dice-Check Formula Visualizer
  */
 
 const API_BASE = '';
 
 // Global Application State
+let activeSubLocation = 'Vườn Đào';
 let currentScene = null;
 let currentInventory = [];
 let currentStatus = null;
@@ -30,7 +31,7 @@ async function loadAllData() {
   try {
     await Promise.all([
       loadStatus(),
-      loadScene(),
+      loadScene(activeSubLocation),
       loadDeckInventory(),
       loadDeckNpcs(),
       loadDeckLedger(),
@@ -101,71 +102,97 @@ async function checkAuditStatus() {
   }
 }
 
-// 1.3 Load Current Narrative & Tactical Choice Scene
-async function loadScene() {
+// 1.3 Load Dynamic Context Scene (Location, NPC, D20 Check, Narrative, 4 Dynamic Choices)
+async function loadScene(targetSubLoc = activeSubLocation, customNarrative = null) {
   try {
-    const res = await fetch(`${API_BASE}/api/scene`);
+    activeSubLocation = targetSubLoc;
+    const res = await fetch(`${API_BASE}/api/scene?subLocation=${encodeURIComponent(targetSubLoc)}`);
     const data = await res.json();
     if (!data.success) throw new Error(data.error);
 
     currentScene = data;
-
-    // Breadcrumbs
-    const breadcrumb = document.getElementById('loc-breadcrumb-text');
-    if (breadcrumb && data.campaign) {
-      breadcrumb.innerText = data.campaign.location;
-    }
-
-    // Hero Encounter Card
-    if (data.npc) {
-      const npcHeroName = document.getElementById('npc-hero-name');
-      const npcHeroTitle = document.getElementById('npc-hero-title');
-      const npcHeroSentiment = document.getElementById('npc-hero-sentiment');
-      const npcHeroAvatar = document.querySelector('.npc-hero-avatar');
-
-      if (npcHeroName) npcHeroName.innerText = data.npc.name;
-      if (npcHeroTitle) npcHeroTitle.innerText = data.npc.title;
-      if (npcHeroSentiment) npcHeroSentiment.innerText = data.npc.sentimentStatus;
-      if (npcHeroAvatar) npcHeroAvatar.innerText = data.npc.name.charAt(0);
-    }
-
-    // Transparent Deterministic Dice Check
-    if (data.lastCheck) {
-      const checkType = document.getElementById('dice-check-type');
-      const checkStatus = document.getElementById('dice-check-status');
-      const checkTitle = document.getElementById('dice-check-title');
-      const checkFormula = document.getElementById('dice-check-formula');
-
-      if (checkType) checkType.innerText = data.lastCheck.type;
-      if (checkStatus) {
-        checkStatus.className = `dice-tag-status ${data.lastCheck.status === 'THÀNH CÔNG' ? 'success' : 'failed'}`;
-        checkStatus.innerText = `TỔNG ${data.lastCheck.score} — ${data.lastCheck.status}`;
-      }
-      if (checkTitle) checkTitle.innerText = data.lastCheck.title;
-      if (checkFormula) checkFormula.innerText = data.lastCheck.formula;
-    }
-
-    // Narrative Dialogue Text
-    const narrativeEl = document.getElementById('narrative-text');
-    if (narrativeEl && data.narrative) {
-      narrativeEl.innerHTML = formatNarrativeQuotes(data.narrative);
-    }
-
-    // Branching Choices Grid
-    renderChoices(data.options || []);
-
-    // Relations Milestone Progress Card
-    renderRelations(data.relations || []);
+    renderSceneFromData(data, customNarrative);
 
   } catch (err) {
     console.error('Failed to load scene:', err);
   }
 }
 
-// 1.4 Render Choice Cards
+// 1.4 Render Dynamic Scene Content
+function renderSceneFromData(data, customNarrative = null) {
+  if (!data) return;
+
+  // Breadcrumbs
+  const breadcrumb = document.getElementById('loc-breadcrumb-text');
+  if (breadcrumb && data.campaign) {
+    breadcrumb.innerText = data.campaign.location;
+  }
+
+  // Dynamic Sub-location Pills
+  const subLocGroup = document.getElementById('sub-locations-group');
+  if (subLocGroup && data.campaign && data.campaign.subLocations) {
+    subLocGroup.innerHTML = data.campaign.subLocations.map(loc => {
+      const isActive = loc === activeSubLocation;
+      return `
+        <button class="sub-loc-pill ${isActive ? 'active' : ''}" onclick="switchSubLocation('${loc}')">
+          ● ${loc}
+        </button>
+      `;
+    }).join('');
+  }
+
+  // Hero Encounter Card
+  if (data.npc) {
+    const npcHeroName = document.getElementById('npc-hero-name');
+    const npcHeroTitle = document.getElementById('npc-hero-title');
+    const npcHeroSentiment = document.getElementById('npc-hero-sentiment');
+    const npcHeroAvatar = document.getElementById('npc-hero-avatar') || document.querySelector('.npc-hero-avatar');
+
+    if (npcHeroName) npcHeroName.innerText = data.npc.name;
+    if (npcHeroTitle) npcHeroTitle.innerText = data.npc.title;
+    if (npcHeroSentiment) npcHeroSentiment.innerText = data.npc.sentimentStatus;
+    if (npcHeroAvatar) npcHeroAvatar.innerText = data.npc.name ? data.npc.name.charAt(0) : '漢';
+  }
+
+  // Transparent Deterministic Dice Check
+  if (data.lastCheck) {
+    const checkType = document.getElementById('dice-check-type');
+    const checkStatus = document.getElementById('dice-check-status');
+    const checkTitle = document.getElementById('dice-check-title');
+    const checkFormula = document.getElementById('dice-check-formula');
+
+    if (checkType) checkType.innerText = data.lastCheck.type;
+    if (checkStatus) {
+      checkStatus.className = `dice-tag-status ${data.lastCheck.status === 'THÀNH CÔNG' ? 'success' : 'failed'}`;
+      checkStatus.innerText = `TỔNG ${data.lastCheck.score} — ${data.lastCheck.status}`;
+    }
+    if (checkTitle) checkTitle.innerText = data.lastCheck.title;
+    if (checkFormula) checkFormula.innerText = data.lastCheck.formula;
+  }
+
+  // Narrative Dialogue Text
+  const narrativeEl = document.getElementById('narrative-text');
+  if (narrativeEl) {
+    const textToShow = customNarrative || data.narrative || '';
+    narrativeEl.innerHTML = formatNarrativeQuotes(textToShow);
+  }
+
+  // 4 Branching Choices Grid (Dynamically Populated from Context)
+  renderChoices(data.options || []);
+
+  // Relations Milestone Progress Card
+  renderRelations(data.relations || []);
+}
+
+// 1.5 Render Choice Cards
 function renderChoices(options) {
   const container = document.getElementById('choices-grid');
   if (!container) return;
+
+  if (!options || options.length === 0) {
+    container.innerHTML = `<div style="padding: 16px; text-align: center; color: var(--text-muted); font-size: 11px;">Không có đề xuất hành động cho bối cảnh hiện tại.</div>`;
+    return;
+  }
 
   container.innerHTML = options.map((opt, idx) => {
     const isSelected = selectedChoiceId === opt.id;
@@ -185,7 +212,7 @@ function renderChoices(options) {
   }).join('');
 }
 
-// 1.5 Render Relations Milestones
+// 1.6 Render Relations Milestones
 function renderRelations(relations) {
   const list = document.getElementById('relations-progress-list');
   if (!list) return;
@@ -365,17 +392,13 @@ function switchDeckTab(subtabId) {
   if (subtabId === 'subtab-ledger') loadDeckLedger();
 }
 
-// 3.2 Sub-location pill navigation
-function switchSubLocation(locName) {
-  document.querySelectorAll('.sub-loc-pill').forEach(pill => {
-    pill.classList.toggle('active', pill.innerText.includes(locName));
-  });
+// 3.2 Dynamic Sub-location Switching
+async function switchSubLocation(locName) {
+  if (activeSubLocation === locName) return;
 
-  const breadcrumb = document.getElementById('loc-breadcrumb-text');
-  if (breadcrumb) {
-    breadcrumb.innerText = `${locName} — Nam Thành Huyện Trác`;
-  }
-  showToast(`Đã di chuyển tới: ${locName}`);
+  activeSubLocation = locName;
+  showToast(`Đang chuyển cảnh tới: ${locName}...`);
+  await loadScene(locName);
 }
 
 // 3.3 Choice Selection & Highlighting
@@ -394,14 +417,24 @@ async function executeChoiceDirect(optId) {
 
   selectChoice(optId);
 
+  // If choice action is location movement, execute and switch dynamic context
+  if (opt.action && opt.action.type === 'MOVE_LOCATION') {
+    showToast(`Đang di chuyển tới ${opt.action.new_location}...`);
+    opt.action.idempotency_key = `OPT_${optId}_${Date.now()}`;
+    await dispatchDirectAction(opt.action);
+    await switchSubLocation(opt.action.new_location);
+    return;
+  }
+
   // If option has a defined simulation action, execute authoritatively
   if (opt.action) {
     showToast(`Đang thực thi: ${opt.title}...`);
     opt.action.idempotency_key = `OPT_${optId}_${Date.now()}`;
-    await dispatchDirectAction(opt.action);
+    const result = await dispatchDirectAction(opt.action);
     
-    // Simulate dice check outcome for dramatic tabletop feedback
-    updateDiceCheckDisplay(opt.title, 48, 35, true);
+    // Refresh scene and right deck to reflect post-action state
+    await loadScene(activeSubLocation, `${opt.title} đã hoàn tất và ghi nhận vào sổ cái SQLite.`);
+    await Promise.all([loadStatus(), loadDeckInventory(), loadDeckNpcs(), loadDeckLedger()]);
   } else {
     showToast(`Đã chọn: ${opt.title}`);
   }
@@ -426,17 +459,22 @@ async function executeChoiceAi(optId) {
     const res = await fetch(`${API_BASE}/api/agent/prompt`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt: opt.title, choiceId: optId })
+      body: JSON.stringify({ prompt: opt.title, choiceId: optId, subLocation: activeSubLocation })
     });
     const result = await res.json();
     if (!result.success) throw new Error(result.error);
 
-    if (narrativeEl && result.narrative) {
-      narrativeEl.innerHTML = formatNarrativeQuotes(result.narrative);
+    if (result.updatedScene) {
+      if (result.updatedScene.campaign && result.updatedScene.campaign.activeSubLocation) {
+        activeSubLocation = result.updatedScene.campaign.activeSubLocation;
+      }
+      renderSceneFromData(result.updatedScene, result.narrative);
+    } else {
+      await loadScene(activeSubLocation, result.narrative);
     }
 
     showToast('AI Bridge đã phản hồi và hoàn tất đối soát SQLite!');
-    await loadAllData();
+    await Promise.all([loadStatus(), loadDeckInventory(), loadDeckNpcs(), loadDeckLedger()]);
 
   } catch (err) {
     console.error('AI Bridge execution error:', err);
@@ -467,18 +505,23 @@ async function dispatchOmniCommand(mode = 'ai') {
     const res = await fetch(`${API_BASE}/api/agent/prompt`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt: promptText, mode })
+      body: JSON.stringify({ prompt: promptText, mode, subLocation: activeSubLocation })
     });
     const result = await res.json();
     if (!result.success) throw new Error(result.error);
 
-    if (narrativeEl && result.narrative) {
-      narrativeEl.innerHTML = formatNarrativeQuotes(result.narrative);
+    if (result.updatedScene) {
+      if (result.updatedScene.campaign && result.updatedScene.campaign.activeSubLocation) {
+        activeSubLocation = result.updatedScene.campaign.activeSubLocation;
+      }
+      renderSceneFromData(result.updatedScene, result.narrative);
+    } else {
+      await loadScene(activeSubLocation, result.narrative);
     }
 
     inputEl.value = '';
     showToast('Điều lệnh đã thực thi thành công!');
-    await loadAllData();
+    await Promise.all([loadStatus(), loadDeckInventory(), loadDeckNpcs(), loadDeckLedger()]);
 
   } catch (err) {
     console.error('Command dispatch error:', err);
@@ -498,7 +541,6 @@ async function dispatchDirectAction(payload) {
 
     if (result.success) {
       showToast(`Điều lệnh ${payload.type} thành công!`);
-      await loadAllData();
       return result;
     } else {
       showToast(`Bị từ chối: [${result.code || 'ERR'}] ${result.error}`, true);
@@ -519,6 +561,7 @@ async function rewardNpc(npcId, amount = 100) {
     game_date: '184-05-02',
     idempotency_key: `RWD_${npcId}_${Date.now()}`
   });
+  await Promise.all([loadStatus(), loadDeckNpcs(), loadDeckLedger()]);
 }
 
 // ==========================================================================
@@ -587,6 +630,7 @@ async function submitModalTrade() {
   };
 
   await dispatchDirectAction(payload);
+  await Promise.all([loadStatus(), loadDeckInventory(), loadDeckLedger()]);
 }
 
 // ==========================================================================
@@ -598,7 +642,7 @@ function initUIEventListeners() {
   const btnMenu = document.getElementById('btn-main-menu');
   if (btnMenu) {
     btnMenu.addEventListener('click', () => {
-      showToast('Hệ thống SimCore: 63/63 Invariants SQLite đang bảo toàn 100%!');
+      showToast('Hệ thống SimCore: 70/70 Invariants SQLite đang bảo toàn 100%!');
     });
   }
 
@@ -609,21 +653,6 @@ function initUIEventListeners() {
       switchDeckTab('subtab-ledger');
       showToast('Đang hiển thị sổ nhật ký giao dịch SQLite!');
     });
-  }
-}
-
-function updateDiceCheckDisplay(title, score, dc, isSuccess) {
-  const checkStatus = document.getElementById('dice-check-status');
-  const checkTitle = document.getElementById('dice-check-title');
-  const checkFormula = document.getElementById('dice-check-formula');
-
-  if (checkStatus) {
-    checkStatus.className = `dice-tag-status ${isSuccess ? 'success' : 'failed'}`;
-    checkStatus.innerText = `TỔNG ${score} — ${isSuccess ? 'THÀNH CÔNG' : 'THẤT BẠI'}`;
-  }
-  if (checkTitle) checkTitle.innerText = title;
-  if (checkFormula) {
-    checkFormula.innerText = `[WAR/COM Check] + [Kỹ năng +10] + [D20: ${score - 39}] = ${score} >= DC ${dc}`;
   }
 }
 

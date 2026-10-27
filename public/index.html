@@ -68,9 +68,7 @@
           <span class="loc-text" id="loc-breadcrumb-text">Trang Viên Vườn Đào Hạ Trạch — Nam Thành Huyện Trác</span>
         </div>
         <div class="sub-locations-group" id="sub-locations-group">
-          <button class="sub-loc-pill active" onclick="switchSubLocation('Vườn Đào')">● Vườn Đào</button>
-          <button class="sub-loc-pill" onclick="switchSubLocation('Chợ Đông Môn')">● Chợ Đông Môn</button>
-          <button class="sub-loc-pill" onclick="switchSubLocation('Xưởng Lương Thị')">● Xưởng Lương Thị</button>
+          <!-- Populated dynamically based on campaign locations -->
         </div>
       </div>
 
@@ -78,12 +76,12 @@
       <div class="hero-dice-stage">
         <!-- NPC Hero Card -->
         <div class="npc-hero-card">
-          <div class="npc-hero-avatar">張</div>
+          <div class="npc-hero-avatar" id="npc-hero-avatar">張</div>
           <div class="npc-hero-info">
-            <div class="npc-hero-title" id="npc-hero-title">Hào Kiệt Huyện Trác — WAR 97</div>
-            <div class="npc-hero-name" id="npc-hero-name">Trương Phi (Dực Đức)</div>
+            <div class="npc-hero-title" id="npc-hero-title">Đang xác định danh tướng...</div>
+            <div class="npc-hero-name" id="npc-hero-name">Đang tải...</div>
             <div class="npc-hero-sentiment">
-              <span class="badge-sentiment" id="npc-hero-sentiment">Hảo cảm: +25 (Gắn kết +50)</span>
+              <span class="badge-sentiment" id="npc-hero-sentiment">Hảo cảm: --</span>
             </div>
           </div>
         </div>
@@ -91,12 +89,12 @@
         <!-- Deterministic Dice Check Result Card -->
         <div class="dice-check-card" id="dice-check-card">
           <div class="dice-check-header">
-            <span class="dice-tag-type" id="dice-check-type">KIỂM TRA XẢO ĐẢO (WAR/COM)</span>
-            <span class="dice-tag-status success" id="dice-check-status">TỔNG 48 — THÀNH CÔNG</span>
+            <span class="dice-tag-type" id="dice-check-type">KIỂM TRA NĂNG LỰC</span>
+            <span class="dice-tag-status success" id="dice-check-status">ĐỐI SOÁT LUẬT D20</span>
           </div>
-          <div class="dice-check-title" id="dice-check-title">Đấu Thương Thực Chiến Cùng Trương Phi</div>
+          <div class="dice-check-title" id="dice-check-title">Đang tính toán thử thách...</div>
           <div class="dice-check-formula" id="dice-check-formula">
-            [WAR 58 * 0.5 = 29] + [Kỹ năng Thương Pháp +10] + [D20: 9] = 48 &gt;= DC 35
+            Đang tải công thức kiểm tra thuộc tính và kỹ năng...
           </div>
         </div>
       </div>
@@ -104,75 +102,27 @@
       <!-- 3. Narrative Dialogue Box -->
       <div class="narrative-box">
         <div class="narrative-header">
-          <div class="narrative-label">DIỄN BIẾN & ĐỐI THOẠI</div>
+          <div class="narrative-label">DIỄN BIẾN & ĐỐI THOẠI BỐI CẢNH</div>
           <div class="ai-agent-indicator">
-            <span class="icon">🤖</span> Nhớ AI Đọc Tác Nhân Mới
+            <span class="icon">🤖</span> AI Bridge Dynamic Context
           </div>
         </div>
         <div class="narrative-body" id="narrative-text">
-          Trương Phi đặt vò rượu Trác Thành Trán Nương xuống gốc đào, lau miệng cười vang: 
-          <em>"Lương Chí Viễn dệt đường thương vừa rồi đệ lĩnh ngộ nhanh lắm! Lò mổ của lão Trương hôm nay vừa lột được 10 tấm da trâu, da bò thượng hạng (100 Tiền/tấm). Đệ có muốn mua về xưởng làm giáp lương quân dụng không? Hay muốn cùng Trương đấu thêm vài hiệp thương pháp nữa trước khi ra chợ gặp Lưu Huyền Đức và Quan Vân Trường?"</em>
+          Đang kết nối bối cảnh và đồng bộ dữ liệu SQLite...
         </div>
       </div>
 
       <!-- 4. Interactive Branching Choice Cards (4 Options) -->
       <div class="choices-container">
         <div class="choices-header">
-          <span class="choices-label">LỰA CHỌN CỦA LƯƠNG CHÍ VIỄN:</span>
-          <span class="choices-sub">Chế độ: <strong>Live Agent Bridge + Instant Engine</strong></span>
+          <span class="choices-label">LỰA CHỌN ĐỀ XUẤT THEO BỐI CẢNH:</span>
+          <span class="choices-sub">Chế độ: <strong>Dynamic Context + SimCore Actions</strong></span>
         </div>
 
         <div class="choices-grid" id="choices-grid">
-          <!-- Option 1 -->
-          <div class="choice-card" onclick="selectChoice('OPT_1')">
-            <div class="choice-icon">🛒</div>
-            <div class="choice-details">
-              <div class="choice-title">Mua sỉ 8 tấm da thuộc của Trương Phi (Chi 800 Tiền)</div>
-              <div class="choice-desc">+8 COM-LEATH vào kho • Hảo cảm Trương Phi +2 • COM Check DC 35</div>
-            </div>
-            <div class="choice-actions">
-              <button class="btn-choice-select" onclick="event.stopPropagation(); executeChoiceDirect('OPT_1')">+ Chọn -</button>
-              <button class="btn-choice-ai" onclick="event.stopPropagation(); executeChoiceAi('OPT_1')">AI</button>
-            </div>
-          </div>
-
-          <!-- Option 2 -->
-          <div class="choice-card" onclick="selectChoice('OPT_2')">
-            <div class="choice-icon">⚔️</div>
-            <div class="choice-details">
-              <div class="choice-title">Thỉnh giáo Trương Phi đấu thương thực chiến đợt 2 (Miễn phí)</div>
-              <div class="choice-desc">Luyện Thương Pháp (+8 EXP SKL-WAR-SPEAR, WAR +1) • Hảo cảm Trương Phi +5 • WAR Check DC 45</div>
-            </div>
-            <div class="choice-actions">
-              <button class="btn-choice-select" onclick="event.stopPropagation(); executeChoiceDirect('OPT_2')">+ Chọn -</button>
-              <button class="btn-choice-ai" onclick="event.stopPropagation(); executeChoiceAi('OPT_2')">AI</button>
-            </div>
-          </div>
-
-          <!-- Option 3 -->
-          <div class="choice-card" onclick="selectChoice('OPT_3')">
-            <div class="choice-icon">🌸</div>
-            <div class="choice-details">
-              <div class="choice-title">Rời Vườn Đào, đi tới Chợ Đông Môn tìm gặp Lưu Bị & Quan Vũ</div>
-              <div class="choice-desc">Chuyển cảnh sang Chợ Huyện Trác & Kho Lương (Mất 0 ngày)</div>
-            </div>
-            <div class="choice-actions">
-              <button class="btn-choice-select" onclick="event.stopPropagation(); executeChoiceDirect('OPT_3')">+ Chọn -</button>
-              <button class="btn-choice-ai" onclick="event.stopPropagation(); executeChoiceAi('OPT_3')">AI</button>
-            </div>
-          </div>
-
-          <!-- Option 4 -->
-          <div class="choice-card" onclick="selectChoice('OPT_4')">
-            <div class="choice-icon">🏭</div>
-            <div class="choice-details">
-              <div class="choice-title">Trở về Lương Thị Chức Tác Phường điều hành sản xuất</div>
-              <div class="choice-desc">Quản lý thợ dệt Trần Bảo, đóng gói bồ lương đan & khiên trúc</div>
-            </div>
-            <div class="choice-actions">
-              <button class="btn-choice-select" onclick="event.stopPropagation(); executeChoiceDirect('OPT_4')">+ Chọn -</button>
-              <button class="btn-choice-ai" onclick="event.stopPropagation(); executeChoiceAi('OPT_4')">AI</button>
-            </div>
+          <!-- Populated dynamically based on location & narrative context -->
+          <div style="padding: 16px; text-align: center; color: var(--text-muted); font-size: 11px;">
+            Đang tổng hợp các phương án hành động phù hợp với bối cảnh...
           </div>
         </div>
       </div>
