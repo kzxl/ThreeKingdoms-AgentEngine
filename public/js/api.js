@@ -212,6 +212,78 @@ async function apiFetchPeerRelations() {
   return data;
 }
 
+async function apiFetchFactions() {
+  const res = await fetch(`${API_BASE}/api/factions`);
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Failed to fetch factions');
+  return data;
+}
+
+async function apiFetchFactionOfficers(factionId = null) {
+  const url = factionId ? `${API_BASE}/api/factions/officers?factionId=${encodeURIComponent(factionId)}` : `${API_BASE}/api/factions/officers`;
+  const res = await fetch(url);
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Failed to fetch officers');
+  return data;
+}
+
+async function apiFetchSettlements() {
+  const res = await fetch(`${API_BASE}/api/factions/settlements`);
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Failed to fetch settlements');
+  return data;
+}
+
+async function apiFetchFactionEvents(limit = 15) {
+  const res = await fetch(`${API_BASE}/api/factions/events?limit=${limit}`);
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Failed to fetch political events');
+  return data;
+}
+
+async function apiAppointGovernor(settlementId, officerId, factionId) {
+  const res = await fetch(`${API_BASE}/api/factions/appoint-governor`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ settlementId, officerId, factionId })
+  });
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Failed to appoint governor');
+  return data;
+}
+
+async function apiInvestTitle(officerId, factionId, newRank) {
+  const res = await fetch(`${API_BASE}/api/factions/invest-title`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ officerId, factionId, newRank })
+  });
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Failed to invest title');
+  return data;
+}
+
+async function apiGrantReward(officerId, factionId, amount = 300) {
+  const res = await fetch(`${API_BASE}/api/factions/grant-reward`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ officerId, factionId, amount })
+  });
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Failed to grant reward');
+  return data;
+}
+
+async function apiSimulatePolitics() {
+  const res = await fetch(`${API_BASE}/api/factions/simulate-politics`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' }
+  });
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Failed to simulate politics');
+  return data;
+}
+
 // Global exposure
 window.apiFetchStatus = apiFetchStatus;
 window.apiFetchAudit = apiFetchAudit;
@@ -238,3 +310,12 @@ window.apiFetchNpcProgression = apiFetchNpcProgression;
 window.apiSimulateNpcJourney = apiSimulateNpcJourney;
 window.apiFetchCareerShifts = apiFetchCareerShifts;
 window.apiFetchPeerRelations = apiFetchPeerRelations;
+window.apiFetchFactions = apiFetchFactions;
+window.apiFetchFactionOfficers = apiFetchFactionOfficers;
+window.apiFetchSettlements = apiFetchSettlements;
+window.apiFetchFactionEvents = apiFetchFactionEvents;
+window.apiAppointGovernor = apiAppointGovernor;
+window.apiInvestTitle = apiInvestTitle;
+window.apiGrantReward = apiGrantReward;
+window.apiSimulatePolitics = apiSimulatePolitics;
+

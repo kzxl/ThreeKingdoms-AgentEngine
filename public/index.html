@@ -417,6 +417,9 @@
         <button class="gm-tab-btn" id="gm-tab-npc-life" onclick="switchGameManagerTab('npc-life')">
           👥 Hành Trình Nhân Vật (Living World)
         </button>
+        <button class="gm-tab-btn" id="gm-tab-factions" onclick="switchGameManagerTab('factions')">
+          👑 Bàn Cờ Chính Trị (Faction Politics)
+        </button>
       </div>
 
       <div class="modal-body gm-modal-body">
@@ -520,6 +523,48 @@
           <!-- Timeline of Autonomous Logs -->
           <h5 style="color:#e2e8f0; margin:15px 0 10px 0; font-size:14px; font-weight:600;">📜 Nhật Ký Chiến Tích & Sự Kiện Tự Thân Gần Đây:</h5>
           <div class="gm-events-timeline" id="gm-npc-journey-timeline">
+            <!-- Rendered dynamically via JS -->
+          </div>
+        </div>
+
+        <!-- 5. View: Faction Politics & Dynastic Lineage -->
+        <div class="gm-tab-content hidden" id="gm-view-factions">
+          <div class="gm-chronicles-header" style="margin-bottom:15px;">
+            <div>
+              <h4 class="gm-sec-title">👑 Bàn Cờ Chính Trị, Cát Cứ & Nguy Cơ Phản Trắc</h4>
+              <p class="gm-sec-desc">Quản lý các thế lực chư hầu, phong tước tiến vị, bổ nhiệm Thái thú trấn thủ và kiểm soát tham vọng quyền lực nội bộ.</p>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button class="btn btn-primary" onclick="triggerSimulatePolitics()" style="background:#b45309; border-color:#d97706;">
+                ⚡ Mô Phỏng Chính Trị Nội Bộ
+              </button>
+              <button class="btn btn-outline" onclick="loadAndRenderFactions()">
+                🔄 Làm Mới
+              </button>
+            </div>
+          </div>
+
+          <!-- Factions Overview Cards -->
+          <h5 style="color:#e2e8f0; margin:10px 0 8px 0; font-size:13px; font-weight:600;">⚔️ Các Thế Lực Cát Cứ Tam Quốc (Factions Overview):</h5>
+          <div id="gm-factions-cards-container" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:12px; margin-bottom:20px;">
+            <!-- Rendered dynamically via JS -->
+          </div>
+
+          <!-- Officers & Betrayal Risk Section -->
+          <h5 style="color:#e2e8f0; margin:15px 0 8px 0; font-size:13px; font-weight:600;">👥 Tướng Lĩnh, Lòng Trung Thành & Nguy Cơ Phản Nghịch (Officer Tension):</h5>
+          <div id="gm-officers-tension-container" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap:12px; margin-bottom:20px;">
+            <!-- Rendered dynamically via JS -->
+          </div>
+
+          <!-- Regional Citadels & Governance Control -->
+          <h5 style="color:#e2e8f0; margin:15px 0 8px 0; font-size:13px; font-weight:600;">🏛️ 18 Trọng Trấn & Bổ Nhiệm Thái Thú Trấn Thủ (Regional Citadels):</h5>
+          <div id="gm-settlements-container" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:10px; margin-bottom:20px;">
+            <!-- Rendered dynamically via JS -->
+          </div>
+
+          <!-- Political Chronicles & Intrigues -->
+          <h5 style="color:#e2e8f0; margin:15px 0 8px 0; font-size:13px; font-weight:600;">📜 Ký Sự Biến Chính & Mưu Đồ Cát Cứ (Political Intrigues):</h5>
+          <div class="gm-events-timeline" id="gm-political-events-timeline">
             <!-- Rendered dynamically via JS -->
           </div>
         </div>

@@ -350,6 +350,223 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // 4g. GET /api/factions - Grand Strategy Factions & Territory Overview
+  if (req.method === 'GET' && pathname === '/api/factions') {
+    try {
+      const gsm = globalThis.__GRAND_STRATEGY_MODULES__;
+      const factions = gsm && gsm.factionPolitics ? gsm.factionPolitics.getFactionOverview() : runSqlJson(`
+        SELECT 
+          f.faction_id as factionId,
+          f.name_vi as nameVi,
+          f.name_en as nameEn,
+          f.leader_id as leaderId,
+          f.capital_settlement_id as capitalSettlementId,
+          f.treasury_cash as treasuryCash,
+          f.granary_grain as granaryGrain,
+          f.military_power as militaryPower,
+          f.prestige,
+          f.ideology,
+          f.color_hex as colorHex,
+          COUNT(DISTINCT s.settlement_id) as settlementCount,
+          COUNT(DISTINCT o.officer_id) as officerCount
+        FROM session_factions f
+        LEFT JOIN session_settlements s ON f.faction_id = s.ruler_faction_id
+        LEFT JOIN faction_officers o ON f.faction_id = o.faction_id
+        GROUP BY f.faction_id
+        ORDER BY f.prestige DESC;
+      `);
+      sendJson(res, 200, { success: true, factions });
+    } catch (err) {
+      sendJson(res, 500, { success: false, error: err.message });
+    }
+    return;
+  }
+
+  // 4h. GET /api/factions/officers - Faction Officers, Loyalty & Ambition Tension
+  if (req.method === 'GET' && pathname === '/api/factions/officers') {
+    try {
+      const gsm = globalThis.__GRAND_STRATEGY_MODULES__;
+      const factionId = parsedUrl.query.factionId;
+      const officers = gsm && gsm.factionPolitics ? gsm.factionPolitics.getOfficers(factionId) : runSqlJson(`
+        SELECT 
+          fo.officer_id as officerId,
+          fo.faction_id as factionId,
+          sf.name_vi as factionNameVi,
+          fo.court_rank as courtRank,
+          fo.loyalty,
+          fo.ambition,
+          fo.appointed_settlement_id as appointedSettlementId,
+          ss.name_vi as appointedSettlementName,
+          fo.betrayal_risk as betrayalRisk,
+          CASE 
+            WHEN fo.officer_id = 'PLY-0001' THEN 'Lương Diễn (Người Chơi)'
+            ELSE COALESCE(mc.name_vi, ns.name, fo.officer_id)
+          END as officerName,
+          coalesce(np.prestige, 50) as personalPrestige,
+          coalesce(np.personal_troops, 0) as personalTroops
+        FROM faction_officers fo
+        JOIN session_factions sf ON fo.faction_id = sf.faction_id
+        LEFT JOIN session_settlements ss ON fo.appointed_settlement_id = ss.settlement_id
+        LEFT JOIN npc_state ns ON fo.officer_id = ns.npc_id
+        LEFT JOIN master_characters mc ON fo.officer_id = mc.npc_id
+        LEFT JOIN npc_personal_progression np ON fo.officer_id = np.npc_id
+        ${factionId ? `WHERE fo.faction_id = '${factionId.replace(/'/g, "''")}'` : ''}
+        ORDER BY fo.betrayal_risk DESC;
+      `);
+      sendJson(res, 200, { success: true, officers });
+    } catch (err) {
+      sendJson(res, 500, { success: false, error: err.message });
+    }
+    return;
+  }
+
+  // 4i. GET /api/factions/settlements - 18 Regional Citadels & Governance
+  if (req.method === 'GET' && pathname === '/api/factions/settlements') {
+    try {
+      const gsm = globalThis.__GRAND_STRATEGY_MODULES__;
+      const settlements = gsm && gsm.factionPolitics ? gsm.factionPolitics.getSettlements() : runSqlJson(`
+        SELECT 
+          s.settlement_id as settlementId,
+          s.name_vi as nameVi,
+          s.name_en as nameEn,
+          s.province_vi as provinceVi,
+          s.ruler_faction_id as rulerFactionId,
+          f.name_vi as factionNameVi,
+          f.color_hex as factionColor,
+          s.governor_id as governorId,
+          coalesce(ns.name, 'Chưa bổ nhiệm') as governorName,
+          s.public_order as publicOrder,
+          s.garrison_troops as garrisonTroops,
+          s.agriculture,
+          s.commerce,
+          s.defense
+        FROM session_settlements s
+        JOIN session_factions f ON s.ruler_faction_id = f.faction_id
+        LEFT JOIN npc_state ns ON s.governor_id = ns.npc_id
+        ORDER BY s.province_vi, s.name_vi;
+      `);
+      sendJson(res, 200, { success: true, settlements });
+    } catch (err) {
+      sendJson(res, 500, { success: false, error: err.message });
+    }
+    return;
+  }
+
+  // 4j. GET /api/factions/events - Political Intrigues & Historical Crises
+  if (req.method === 'GET' && pathname === '/api/factions/events') {
+    try {
+      const gsm = globalThis.__GRAND_STRATEGY_MODULES__;
+      const limit = parseInt(parsedUrl.query.limit || '15', 10);
+      const events = gsm && gsm.factionPolitics ? gsm.factionPolitics.getPoliticalEvents(limit) : runSqlJson(`
+        SELECT * FROM faction_political_events ORDER BY created_at DESC LIMIT ${limit};
+      `);
+      sendJson(res, 200, { success: true, events });
+    } catch (err) {
+      sendJson(res, 500, { success: false, error: err.message });
+    }
+    return;
+  }
+
+  // 4k. POST /api/factions/appoint-governor - Appoint Governor
+  if (req.method === 'POST' && pathname === '/api/factions/appoint-governor') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        const { settlementId, officerId, factionId } = payload;
+        if (!settlementId || !officerId || !factionId) {
+          sendJson(res, 400, { success: false, error: 'settlementId, officerId, and factionId are required' });
+          return;
+        }
+        const gsm = globalThis.__GRAND_STRATEGY_MODULES__;
+        if (gsm && gsm.factionPolitics) {
+          const meta = runSqlJson(`SELECT active_turn, current_date FROM campaign_meta LIMIT 1;`)[0] || { active_turn: 6, current_date: '184-05-01' };
+          const result = gsm.factionPolitics.appointGovernor(settlementId, officerId, factionId, meta.active_turn, meta.current_date);
+          sendJson(res, 200, { success: true, result });
+        } else {
+          sendJson(res, 500, { success: false, error: 'FactionPolitics module not initialized' });
+        }
+      } catch (err) {
+        sendJson(res, 500, { success: false, error: err.message });
+      }
+    });
+    return;
+  }
+
+  // 4l. POST /api/factions/invest-title - Invest Title & Promote Rank
+  if (req.method === 'POST' && pathname === '/api/factions/invest-title') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        const { officerId, factionId, newRank } = payload;
+        if (!officerId || !factionId || !newRank) {
+          sendJson(res, 400, { success: false, error: 'officerId, factionId, and newRank are required' });
+          return;
+        }
+        const gsm = globalThis.__GRAND_STRATEGY_MODULES__;
+        if (gsm && gsm.factionPolitics) {
+          const meta = runSqlJson(`SELECT active_turn, current_date FROM campaign_meta LIMIT 1;`)[0] || { active_turn: 6, current_date: '184-05-01' };
+          const result = gsm.factionPolitics.investTitle(officerId, factionId, newRank, meta.active_turn, meta.current_date);
+          sendJson(res, 200, { success: true, result });
+        } else {
+          sendJson(res, 500, { success: false, error: 'FactionPolitics module not initialized' });
+        }
+      } catch (err) {
+        sendJson(res, 500, { success: false, error: err.message });
+      }
+    });
+    return;
+  }
+
+  // 4m. POST /api/factions/grant-reward - Grant Treasury Reward to Assuage Ambition
+  if (req.method === 'POST' && pathname === '/api/factions/grant-reward') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        const { officerId, factionId, amount } = payload;
+        const rewardAmount = parseInt(amount || '300', 10);
+        if (!officerId || !factionId) {
+          sendJson(res, 400, { success: false, error: 'officerId and factionId are required' });
+          return;
+        }
+        const gsm = globalThis.__GRAND_STRATEGY_MODULES__;
+        if (gsm && gsm.factionPolitics) {
+          const meta = runSqlJson(`SELECT active_turn, current_date FROM campaign_meta LIMIT 1;`)[0] || { active_turn: 6, current_date: '184-05-01' };
+          const result = gsm.factionPolitics.grantReward(officerId, factionId, rewardAmount, meta.active_turn, meta.current_date);
+          sendJson(res, 200, { success: true, result });
+        } else {
+          sendJson(res, 500, { success: false, error: 'FactionPolitics module not initialized' });
+        }
+      } catch (err) {
+        sendJson(res, 500, { success: false, error: err.message });
+      }
+    });
+    return;
+  }
+
+  // 4n. POST /api/factions/simulate-politics - Simulate Internal Political Cycle
+  if (req.method === 'POST' && pathname === '/api/factions/simulate-politics') {
+    try {
+      const gsm = globalThis.__GRAND_STRATEGY_MODULES__;
+      if (gsm && gsm.factionPolitics) {
+        const meta = runSqlJson(`SELECT active_turn, current_date FROM campaign_meta LIMIT 1;`)[0] || { active_turn: 6, current_date: '184-05-01' };
+        const events = gsm.factionPolitics.simulatePoliticalCycle(meta.active_turn, meta.current_date);
+        sendJson(res, 200, { success: true, count: events.length, events });
+      } else {
+        sendJson(res, 500, { success: false, error: 'FactionPolitics module not initialized' });
+      }
+    } catch (err) {
+      sendJson(res, 500, { success: false, error: err.message });
+    }
+    return;
+  }
+
+
   // 5. GET /api/audit - Comprehensive Invariant Audit
   if (req.method === 'GET' && pathname === '/api/audit') {
     try {

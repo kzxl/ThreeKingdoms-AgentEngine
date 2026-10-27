@@ -208,6 +208,10 @@ async function switchGameManagerTab(tabId) {
   if (tabId === 'npc-life') {
     await loadAndRenderNpcLife();
   }
+
+  if (tabId === 'factions') {
+    await loadAndRenderFactions();
+  }
 }
 
 async function loadAndRenderRotkEvents() {
@@ -829,6 +833,299 @@ async function triggerSimulateNpcJourney() {
   }
 }
 
+// -------------------------------------------------------------
+// Faction Politics & Dynastic Lineage Functions (Phase 1)
+// -------------------------------------------------------------
+async function loadAndRenderFactions() {
+  const factionsContainer = document.getElementById('gm-factions-cards-container');
+  const officersContainer = document.getElementById('gm-officers-tension-container');
+  const settlementsContainer = document.getElementById('gm-settlements-container');
+  const eventsTimeline = document.getElementById('gm-political-events-timeline');
+
+  if (factionsContainer) {
+    factionsContainer.innerHTML = '<div style="color:#94a3b8; padding:15px; text-align:center;">Đang tải danh sách thế lực cát cứ...</div>';
+  }
+
+  try {
+    const [factionsRes, officersRes, settlementsRes, eventsRes] = await Promise.all([
+      apiFetchFactions(),
+      apiFetchFactionOfficers(),
+      apiFetchSettlements(),
+      apiFetchFactionEvents()
+    ]);
+
+    const factions = factionsRes.factions || [];
+    const officers = officersRes.officers || [];
+    const settlements = settlementsRes.settlements || [];
+    const events = eventsRes.events || [];
+
+    // 1. Render Factions Overview Cards
+    if (factionsContainer) {
+      if (factions.length === 0) {
+        factionsContainer.innerHTML = '<div style="color:#94a3b8;">Chưa có dữ liệu thế lực.</div>';
+      } else {
+        const ideologyLabels = {
+          ROYALIST: '👑 Phò Hán',
+          REBEL: '⚡ Khăn Vàng Khởi Nghĩa',
+          WARLORD: '⚔️ Quân Phiệt Cát Cứ',
+          MERCHANT_GUILD: '💎 Thương Bang Nghiệp Hộ'
+        };
+
+        factionsContainer.innerHTML = factions.map(f => `
+          <div class="gm-npc-card" style="border-top: 3px solid ${f.colorHex};">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+              <div>
+                <h4 style="color:#f8fafc; font-size:15px; font-weight:700; margin:0;">${f.nameVi}</h4>
+                <span style="font-size:11px; color:#94a3b8;">${f.nameEn}</span>
+              </div>
+              <span style="font-size:11px; padding:2px 8px; border-radius:10px; background:rgba(255,255,255,0.08); color:#facc15; border:1px solid rgba(250,204,21,0.3);">
+                ${ideologyLabels[f.ideology] || f.ideology}
+              </span>
+            </div>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:6px; font-size:12px; margin-bottom:10px; background:rgba(0,0,0,0.25); padding:8px; border-radius:4px;">
+              <div><span style="color:#94a3b8;">Uy thế:</span> <b style="color:#e2e8f0;">${f.prestige}</b></div>
+              <div><span style="color:#94a3b8;">Binh lực:</span> <b style="color:#38bdf8;">${f.militaryPower?.toLocaleString()}</b></div>
+              <div><span style="color:#94a3b8;">Quân khố:</span> <b style="color:#4ade80;">${f.treasuryCash?.toLocaleString()}</b> đ</div>
+              <div><span style="color:#94a3b8;">Lương thảo:</span> <b style="color:#fbbf24;">${f.granaryGrain}</b> thạch</div>
+              <div><span style="color:#94a3b8;">Trọng trấn:</span> <b style="color:#e2e8f0;">${f.settlementCount || 0} thành</b></div>
+              <div><span style="color:#94a3b8;">Tướng soái:</span> <b style="color:#c084fc;">${f.officerCount || 0} người</b></div>
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+
+    // 2. Render Officers Tension & Betrayal Risk
+    if (officersContainer) {
+      if (officers.length === 0) {
+        officersContainer.innerHTML = '<div style="color:#94a3b8;">Chưa có danh sách tướng lĩnh.</div>';
+      } else {
+        const rankLabels = {
+          RULER: '👑 Chúa Công',
+          CHIEF_COMMANDER: '🎖️ Đại Đô Đốc',
+          CHIEF_ADVISOR: '📜 Quân Sư',
+          GOVERNOR: '🏛️ Thái Thú',
+          GENERAL: '⚔️ Tiền Phong',
+          OFFICER: '🛡️ Hiệu Úy',
+          RETAINER: '👤 Môn Khách'
+        };
+
+        officersContainer.innerHTML = officers.map(off => {
+          const riskPercent = Math.round((off.betrayalRisk || 0) * 100);
+          let riskBadge = '';
+          if (off.courtRank === 'RULER') {
+            riskBadge = `<span style="font-size:11px; padding:2px 8px; border-radius:4px; background:rgba(59,130,246,0.2); color:#60a5fa; border:1px solid #3b82f6;">👑 Lãnh Tụ Thế Lực</span>`;
+          } else if (riskPercent >= 65) {
+            riskBadge = `<span style="font-size:11px; padding:2px 8px; border-radius:4px; background:rgba(239,68,68,0.25); color:#f87171; border:1px solid #ef4444; animation:pulse 1.5s infinite;">⚠️ Nguy Cơ Phản Nghịch: ${riskPercent}%</span>`;
+          } else if (riskPercent >= 40) {
+            riskBadge = `<span style="font-size:11px; padding:2px 8px; border-radius:4px; background:rgba(234,179,8,0.2); color:#facc15; border:1px solid #eab308;">⚡ Dao Động: ${riskPercent}%</span>`;
+          } else {
+            riskBadge = `<span style="font-size:11px; padding:2px 8px; border-radius:4px; background:rgba(34,197,94,0.15); color:#4ade80; border:1px solid rgba(34,197,94,0.3);">🛡️ Trung Thành: ${riskPercent}%</span>`;
+          }
+
+          const isGovernor = !!off.appointedSettlementName;
+
+          return `
+            <div class="gm-npc-card" style="border-left: 3px solid ${riskPercent >= 65 ? '#ef4444' : '#6366f1'};">
+              <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+                <div>
+                  <h4 style="color:#f8fafc; font-size:14px; font-weight:700; margin:0;">${off.officerName}</h4>
+                  <span style="font-size:11px; color:#cbd5e1;">${off.factionNameVi} • ${rankLabels[off.courtRank] || off.courtRank}</span>
+                </div>
+                ${riskBadge}
+              </div>
+
+              ${isGovernor ? `
+                <div style="font-size:11px; color:#38bdf8; margin-bottom:6px; background:rgba(56,189,248,0.1); padding:3px 6px; border-radius:3px;">
+                  🏛️ Trấn thủ: <b>${off.appointedSettlementName}</b>
+                </div>
+              ` : ''}
+
+              <!-- Dual Tension Bars: Loyalty vs Ambition -->
+              <div style="display:flex; flex-direction:column; gap:5px; margin-bottom:10px; font-size:11px;">
+                <div>
+                  <div style="display:flex; justify-content:space-between; color:#94a3b8; margin-bottom:2px;">
+                    <span>Lòng Trung Thành:</span>
+                    <span style="color:#4ade80; font-weight:600;">${off.loyalty}/100</span>
+                  </div>
+                  <div style="height:4px; background:rgba(255,255,255,0.1); border-radius:2px; overflow:hidden;">
+                    <div style="height:100%; width:${off.loyalty}%; background:#22c55e;"></div>
+                  </div>
+                </div>
+
+                <div>
+                  <div style="display:flex; justify-content:space-between; color:#94a3b8; margin-bottom:2px;">
+                    <span>Dã Tâm / Tham Vọng:</span>
+                    <span style="color:#f59e0b; font-weight:600;">${off.ambition}/100</span>
+                  </div>
+                  <div style="height:4px; background:rgba(255,255,255,0.1); border-radius:2px; overflow:hidden;">
+                    <div style="height:100%; width:${off.ambition}%; background:#f59e0b;"></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Action buttons -->
+              ${off.courtRank !== 'RULER' ? `
+                <div style="display:flex; gap:6px; margin-top:8px; border-top:1px solid rgba(255,255,255,0.06); padding-top:8px;">
+                  <button class="btn btn-outline" style="font-size:11px; padding:4px 8px; flex:1;" onclick="handleGrantReward('${off.officerId}', '${off.factionId}')">
+                    💰 Thưởng 300 Tiền
+                  </button>
+                  <button class="btn btn-outline" style="font-size:11px; padding:4px 8px; flex:1;" onclick="handleInvestTitle('${off.officerId}', '${off.factionId}')">
+                    🎖️ Phong Tước
+                  </button>
+                </div>
+              ` : ''}
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    // 3. Render Settlements Control
+    if (settlementsContainer) {
+      if (settlements.length === 0) {
+        settlementsContainer.innerHTML = '<div style="color:#94a3b8;">Chưa có dữ liệu thành trì.</div>';
+      } else {
+        settlementsContainer.innerHTML = settlements.map(s => `
+          <div class="gm-npc-card" style="padding:10px; font-size:12px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+              <b style="color:#f8fafc; font-size:13px;">${s.nameVi}</b>
+              <span style="font-size:11px; padding:1px 6px; border-radius:3px; background:${s.factionColor}33; color:${s.factionColor}; border:1px solid ${s.factionColor}66;">
+                ${s.factionNameVi}
+              </span>
+            </div>
+            <div style="color:#94a3b8; font-size:11px; margin-bottom:4px;">
+              Thái thú: <b style="color:#e2e8f0;">${s.governorName}</b>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:11px; color:#cbd5e1; margin-bottom:8px;">
+              <span>Trị an: ${s.publicOrder}%</span>
+              <span>Đồn trú: ${s.garrisonTroops?.toLocaleString()} binh</span>
+            </div>
+            <button class="btn btn-outline" style="width:100%; font-size:11px; padding:3px 6px;" onclick="handleAppointGovernor('${s.settlementId}', '${s.rulerFactionId}')">
+              🏛️ Bổ Nhiệm Thái Thú Mới
+            </button>
+          </div>
+        `).join('');
+      }
+    }
+
+    // 4. Render Political Events Timeline
+    if (eventsTimeline) {
+      if (events.length === 0) {
+        eventsTimeline.innerHTML = '<div style="color:#64748b; padding:15px; text-align:center;">Chưa có biến cố chính trị nội bộ. Bấm "Mô Phỏng Chính Trị Nội Bộ" để kiểm tra dã tâm của các tướng lĩnh.</div>';
+      } else {
+        eventsTimeline.innerHTML = events.map(e => `
+          <div class="event-card" style="border-left-color: ${e.eventType === 'SECESSION_WARLORD' ? '#ef4444' : '#eab308'};">
+            <div class="event-header">
+              <span class="event-year-badge" style="background:${e.eventType === 'SECESSION_WARLORD' ? '#ef4444' : '#d97706'};">
+                Lượt ${e.turnNumber} • ${e.gameDate}
+              </span>
+              <span class="event-loc-badge">Thế Lực: ${e.sourceFactionId}</span>
+              <span style="font-size:11px; color:#cbd5e1; margin-left:auto;">${e.eventType}</span>
+            </div>
+            <h4 class="event-title" style="color:${e.eventType === 'SECESSION_WARLORD' ? '#f87171' : '#facc15'};">
+              ${e.titleVi}
+            </h4>
+            <p class="event-narrative">${e.narrativeVi}</p>
+          </div>
+        `).join('');
+      }
+    }
+  } catch (err) {
+    console.error('loadAndRenderFactions error:', err);
+    if (factionsContainer) factionsContainer.innerHTML = `<div style="color:#ef4444;">Lỗi: ${err.message}</div>`;
+  }
+}
+
+async function triggerSimulatePolitics() {
+  try {
+    showToast('Đang phân tích dã tâm và nguy cơ phản trắc của các tướng lĩnh...', false);
+    const res = await apiSimulatePolitics();
+    if (res.success) {
+      showToast(`Hoàn tất chu trình chính trị! Đã sinh ra ${res.count || 0} biến cố nội bộ.`, false);
+      await loadAndRenderFactions();
+    }
+  } catch (err) {
+    showToast(`Lỗi: ${err.message}`, true);
+  }
+}
+
+async function handleGrantReward(officerId, factionId) {
+  try {
+    showToast(`Đang xuất 300 tiền từ quân khố ban thưởng...`, false);
+    const res = await apiGrantReward(officerId, factionId, 300);
+    if (res.success) {
+      showToast(res.result?.message || 'Ban thưởng thành công!', false);
+      await loadAndRenderFactions();
+    }
+  } catch (err) {
+    showToast(`Lỗi ban thưởng: ${err.message}`, true);
+  }
+}
+
+async function handleInvestTitle(officerId, factionId) {
+  const ranks = [
+    { code: 'CHIEF_COMMANDER', label: '🎖️ Đại Đô Đốc / Thống Soái' },
+    { code: 'CHIEF_ADVISOR', label: '📜 Quân Sư / Đại Quân Mưu' },
+    { code: 'GOVERNOR', label: '🏛️ Thái Thú / Thứ Sử' },
+    { code: 'GENERAL', label: '⚔️ Tiền Phong Tướng Quân' }
+  ];
+
+  const choiceStr = ranks.map((r, i) => `${i + 1}. ${r.label}`).join('\n');
+  const input = prompt(`Chọn tước hàm muốn tấn phong cho tướng lĩnh:\n${choiceStr}\nNhập số 1-${ranks.length}:`, '1');
+  if (!input) return;
+
+  const idx = parseInt(input.trim(), 10) - 1;
+  if (isNaN(idx) || idx < 0 || idx >= ranks.length) {
+    showToast('Lựa chọn không hợp lệ.', true);
+    return;
+  }
+
+  const selectedRank = ranks[idx].code;
+  try {
+    showToast(`Đang ban chiếu sắc phong...`, false);
+    const res = await apiInvestTitle(officerId, factionId, selectedRank);
+    if (res.success) {
+      showToast(res.result?.message || 'Sắc phong thành công!', false);
+      await loadAndRenderFactions();
+    }
+  } catch (err) {
+    showToast(`Lỗi phong tước: ${err.message}`, true);
+  }
+}
+
+async function handleAppointGovernor(settlementId, factionId) {
+  try {
+    const officersRes = await apiFetchFactionOfficers(factionId);
+    const officers = (officersRes.officers || []).filter(o => o.courtRank !== 'RULER');
+    if (officers.length === 0) {
+      showToast('Thế lực chưa có tướng lĩnh nào khả dụng để bổ nhiệm.', true);
+      return;
+    }
+
+    const choiceStr = officers.map((o, i) => `${i + 1}. ${o.officerName} (Trung thành: ${o.loyalty}, Dã tâm: ${o.ambition})`).join('\n');
+    const input = prompt(`Chọn tướng lĩnh bổ nhiệm làm Thái thú trấn thủ:\n${choiceStr}\nNhập số 1-${officers.length}:`, '1');
+    if (!input) return;
+
+    const idx = parseInt(input.trim(), 10) - 1;
+    if (isNaN(idx) || idx < 0 || idx >= officers.length) {
+      showToast('Lựa chọn không hợp lệ.', true);
+      return;
+    }
+
+    const selectedOfficerId = officers[idx].officerId;
+    showToast(`Đang ban cờ tiết bổ nhiệm Thái thú...`, false);
+    const res = await apiAppointGovernor(settlementId, selectedOfficerId, factionId);
+    if (res.success) {
+      showToast(res.result?.message || 'Bổ nhiệm thành công!', false);
+      await loadAndRenderFactions();
+    }
+  } catch (err) {
+    showToast(`Lỗi bổ nhiệm: ${err.message}`, true);
+  }
+}
+
 // Global exposure
 window.isProcessingAction = isProcessingAction;
 window.showToast = showToast;
@@ -852,3 +1149,9 @@ window.closeEventParticipationModal = closeEventParticipationModal;
 window.submitEventChoice = submitEventChoice;
 window.loadAndRenderNpcLife = loadAndRenderNpcLife;
 window.triggerSimulateNpcJourney = triggerSimulateNpcJourney;
+window.loadAndRenderFactions = loadAndRenderFactions;
+window.triggerSimulatePolitics = triggerSimulatePolitics;
+window.handleGrantReward = handleGrantReward;
+window.handleInvestTitle = handleInvestTitle;
+window.handleAppointGovernor = handleAppointGovernor;
+

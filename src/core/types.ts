@@ -119,3 +119,63 @@ export interface IFeatureModule {
   init(ctx: ModuleContext): Promise<void> | void;
   destroy?(): Promise<void> | void;
 }
+
+// -------------------------------------------------------------
+// Faction Politics & Dynastic Lineage Interfaces (Phase 1)
+// -------------------------------------------------------------
+export type CourtRank =
+  | 'RULER'
+  | 'CHIEF_COMMANDER'
+  | 'CHIEF_ADVISOR'
+  | 'GOVERNOR'
+  | 'GENERAL'
+  | 'OFFICER'
+  | 'RETAINER';
+
+export type FactionIdeology =
+  | 'ROYALIST'
+  | 'REBEL'
+  | 'WARLORD'
+  | 'MERCHANT_GUILD';
+
+export interface FactionState {
+  factionId: FactionId;
+  nameVi: string;
+  nameEn: string;
+  leaderId: CharacterId;
+  capitalSettlementId: SettlementId;
+  treasuryCash: number;
+  granaryGrain: number;
+  militaryPower: number;
+  prestige: number;
+  ideology: FactionIdeology;
+  colorHex: string;
+  isActive: boolean;
+  controlledSettlements?: SettlementState[];
+  officers?: FactionOfficerState[];
+}
+
+export interface FactionOfficerState {
+  officerId: CharacterId;
+  factionId: FactionId;
+  courtRank: CourtRank;
+  loyalty: number;        // 0 - 100
+  ambition: number;       // 0 - 100
+  appointedSettlementId?: SettlementId | null;
+  betrayalRisk: number;   // 0.0 - 1.0
+  secretFactionSympathy?: FactionId | null;
+}
+
+export interface FactionPoliticalEvent {
+  eventId: string;
+  turnNumber: number;
+  gameDate: string;
+  eventType: 'COUP_ATTEMPT' | 'SECESSION_WARLORD' | 'OFFICER_DEFECT' | 'GOVERNOR_APPOINTED' | 'TITLE_INVESTED' | 'ASSASSINATION_PLOT' | 'FACTION_FOUNDED';
+  sourceFactionId: FactionId;
+  targetFactionId?: FactionId | null;
+  instigatorOfficerId: CharacterId;
+  titleVi: string;
+  narrativeVi: string;
+  consequences: Record<string, any>;
+}
+

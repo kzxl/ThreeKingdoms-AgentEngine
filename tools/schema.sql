@@ -265,6 +265,74 @@ CREATE TABLE IF NOT EXISTS npc_peer_relations (
     UNIQUE(npc_id_a, npc_id_b)
 );
 
+-- 19. Session Factions & Warlord Domains
+CREATE TABLE IF NOT EXISTS session_factions (
+    faction_id TEXT PRIMARY KEY,
+    name_vi TEXT NOT NULL,
+    name_en TEXT NOT NULL,
+    leader_id TEXT NOT NULL,
+    capital_settlement_id TEXT NOT NULL,
+    treasury_cash INTEGER NOT NULL DEFAULT 50000 CHECK (treasury_cash >= 0),
+    granary_grain REAL NOT NULL DEFAULT 2000.0 CHECK (granary_grain >= 0),
+    military_power INTEGER NOT NULL DEFAULT 1000 CHECK (military_power >= 0),
+    prestige INTEGER NOT NULL DEFAULT 100 CHECK (prestige >= 0),
+    ideology TEXT NOT NULL DEFAULT 'WARLORD', -- 'ROYALIST', 'REBEL', 'WARLORD', 'MERCHANT_GUILD'
+    color_hex TEXT NOT NULL DEFAULT '#c53030',
+    is_active INTEGER NOT NULL DEFAULT 1,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 20. Session Settlement Control & Regional Governance
+CREATE TABLE IF NOT EXISTS session_settlements (
+    settlement_id TEXT PRIMARY KEY,
+    name_vi TEXT NOT NULL,
+    name_en TEXT NOT NULL,
+    province_vi TEXT NOT NULL,
+    province_en TEXT NOT NULL,
+    ruler_faction_id TEXT NOT NULL,
+    governor_id TEXT,
+    public_order INTEGER NOT NULL DEFAULT 80 CHECK (public_order >= 0 AND public_order <= 100),
+    garrison_troops INTEGER NOT NULL DEFAULT 500 CHECK (garrison_troops >= 0),
+    agriculture INTEGER NOT NULL DEFAULT 60 CHECK (agriculture >= 0 AND agriculture <= 100),
+    commerce INTEGER NOT NULL DEFAULT 60 CHECK (commerce >= 0 AND commerce <= 100),
+    defense INTEGER NOT NULL DEFAULT 70 CHECK (defense >= 0 AND defense <= 100),
+    granary_grain REAL NOT NULL DEFAULT 500.0 CHECK (granary_grain >= 0),
+    treasury_cash INTEGER NOT NULL DEFAULT 10000 CHECK (treasury_cash >= 0),
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(ruler_faction_id) REFERENCES session_factions(faction_id)
+);
+
+-- 21. Faction Officers & Ambition / Loyalty Mechanics
+CREATE TABLE IF NOT EXISTS faction_officers (
+    officer_id TEXT NOT NULL,
+    faction_id TEXT NOT NULL,
+    court_rank TEXT NOT NULL DEFAULT 'OFFICER', -- 'RULER', 'CHIEF_COMMANDER', 'CHIEF_ADVISOR', 'GOVERNOR', 'GENERAL', 'OFFICER', 'RETAINER'
+    loyalty INTEGER NOT NULL DEFAULT 75 CHECK (loyalty >= 0 AND loyalty <= 100),
+    ambition INTEGER NOT NULL DEFAULT 50 CHECK (ambition >= 0 AND ambition <= 100),
+    appointed_settlement_id TEXT,
+    betrayal_risk REAL NOT NULL DEFAULT 0.0 CHECK (betrayal_risk >= 0.0 AND betrayal_risk <= 1.0),
+    secret_faction_sympathy TEXT,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (officer_id, faction_id),
+    FOREIGN KEY(faction_id) REFERENCES session_factions(faction_id)
+);
+
+-- 22. Faction Political Intrigues & Historical Crises
+CREATE TABLE IF NOT EXISTS faction_political_events (
+    event_id TEXT PRIMARY KEY,
+    turn_number INTEGER NOT NULL,
+    game_date TEXT NOT NULL,
+    event_type TEXT NOT NULL, -- 'COUP_ATTEMPT', 'SECESSION_WARLORD', 'OFFICER_DEFECT', 'GOVERNOR_APPOINTED', 'TITLE_INVESTED', 'ASSASSINATION_PLOT', 'FACTION_FOUNDED'
+    source_faction_id TEXT NOT NULL,
+    target_faction_id TEXT,
+    instigator_officer_id TEXT NOT NULL,
+    title_vi TEXT NOT NULL,
+    narrative_vi TEXT NOT NULL,
+    consequences_json TEXT DEFAULT '{}',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(source_faction_id) REFERENCES session_factions(faction_id)
+);
+
 -- Indices for rapid querying & integrity checks
 CREATE INDEX IF NOT EXISTS idx_cashflow_date ON cashflow_ledger(game_date);
 CREATE INDEX IF NOT EXISTS idx_stock_mov_item ON stock_movements(item_code);
@@ -278,3 +346,8 @@ CREATE INDEX IF NOT EXISTS idx_journey_npc ON npc_journey_logs(npc_id);
 CREATE INDEX IF NOT EXISTS idx_journey_turn ON npc_journey_logs(turn_number);
 CREATE INDEX IF NOT EXISTS idx_shifts_npc ON npc_career_shifts(npc_id);
 CREATE INDEX IF NOT EXISTS idx_peer_rel_pair ON npc_peer_relations(npc_id_a, npc_id_b);
+CREATE INDEX IF NOT EXISTS idx_settlement_faction ON session_settlements(ruler_faction_id);
+CREATE INDEX IF NOT EXISTS idx_officer_faction ON faction_officers(faction_id);
+CREATE INDEX IF NOT EXISTS idx_officer_risk ON faction_officers(betrayal_risk);
+CREATE INDEX IF NOT EXISTS idx_political_turn ON faction_political_events(turn_number);
+
