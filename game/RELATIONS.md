@@ -15,11 +15,11 @@
 
 | NPC ID | Name | Affiliation / Role | Sentiment (-100 to +100) | Relationship Type | Notes |
 |---|---|---|---|---|---|
-| `NPC-0001` | Liu Bei (Xuande) | Volunteer Militia Leader | **+22** (Warm Respect) | Fellow townsman & respected merchant | Heard of Liang Yan's fair business dealings; preparing volunteer militia |
-| `NPC-0002` | Zhang Fei (Yide) | Butcher & Militia Co-founder | **+20** (Cordial Partner) | Commercial supplier & acquaintance | Pleased with prompt 800 Qian payment for butchery hides (`TXN-01840207-0003`) |
-| `NPC-0003` | Guan Yu (Yunchang) | Militia Co-founder | **+12** (Reserved Respect) | Regular acquaintance | Observed Liang Yan's dignified treatment of retainers |
+| `NPC-0001` | Liu Bei (Xuande) | Volunteer Militia Leader | **+24** (+2) (Warm Respect) | Fellow townsman & respected merchant | Noticed Liang Yan preparing military shields and pack baskets for militia |
+| `NPC-0002` | Zhang Fei (Yide) | Butcher & Militia Co-founder | **+24** (+4) (Trusted Trade Brother) | Commercial supplier & ally | Extremely pleased with prompt 1,000 Qian cash payment for 10 prime hides |
+| `NPC-0003` | Guan Yu (Yunchang) | Militia Co-founder | **+14** (+2) (Reserved Respect) | Regular acquaintance | Approves of local merchants aiding neighborhood defense rather than fleeing |
 | `NPC-0004` | Zhang Jue | Taiping Dao Celestial Master | **0** (Unknown) | Target of imperial suppression | Unaware of player's existence |
-| `NPC-0005` | Zhang Shiping | Zhongshan Horse Merchant | **+40** (Valued Trading Partner) | Commercial associate | Highly satisfied with timely delivery of 35 reinforced pack baskets |
-| `NPC-0006` | Master Lu Zhirong | Senior Woodwright / Elder | **+48** (+8) (Devoted Elder Mentor) | Guild Elder & Mentor | Honored by Liang Yan's formal apprenticeship in enterprise management |
-| `NPC-0007` | Chen Bao | Senior Workshop Craftsman | **+68** (Loyal Employee) | Chief Artisan | Gratified by prompt monthly wage and grain ration disbursement |
-| `NPC-0008` | Zhao An | Workshop Apprentice / Porter | **+58** (Obedient Apprentice) | Retainer | Proud of mastering basket lining and cart transport |
+| `NPC-0005` | Zhang Shiping | Zhongshan Horse Merchant | **+40** (Valued Trading Partner) | Commercial associate | Awaiting next caravan stop; satisfied with previous supply delivery |
+| `NPC-0006` | Master Lu Zhirong | Senior Woodwright / Elder | **+50** (+2) (Devoted Elder Mentor) | Guild Elder & Mentor | Pleased to see Liang Yan immediately put timber into productive shield-craft |
+| `NPC-0007` | Chen Bao | Senior Workshop Craftsman | **+70** (+2) (Loyal Employee) | Chief Artisan | Excited to lead production of prototype bamboo shields with bonus incentives |
+| `NPC-0008` | Zhao An | Workshop Apprentice / Porter | **+60** (+2) (Obedient Apprentice) | Retainer | Diligently hauling 80 bamboo bundles and cutting timber braces |

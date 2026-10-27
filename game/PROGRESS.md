@@ -12,14 +12,14 @@
 |---|---|
 | **Campaign ID** | `CMP-184-ZHOU-01` |
 | **Protagonist** | Liang Yan (`player` / `PLY-0001`), Age 21 |
-| **Current In-Game Date** | **Year 184 AD, Month 3, Day 8** (Late Spring) |
-| **Active Turn** | **Turn 2 in progress (Mentorship Action Resolved)** |
+| **Current In-Game Date** | **Year 184 AD, Month 3, Day 10** (Late Spring) |
+| **Active Turn** | **Turn 2 in progress (Procurement Complete $\rightarrow$ Production Ready)** |
 | **Location** | Zhuo County (`LOC-0001`), Youzhou |
-| **Liquid Capital** | **13,310 Qian** (Workshop iron chest) |
+| **Liquid Capital** | **10,750 Qian** (Workshop safe, after 2,560 Qian material buy) |
 | **Strategic Grain** | **9.60 Dan** (~288 kg, secured in workshop storeroom) |
-| **Inventory Valuation** | **3,548 Qian** (Raw materials & finished goods) |
+| **Inventory Valuation** | **6,099 Qian** (95 bamboo, 20 hides, 15 twine, 5 timber, 19 mats, 9 baskets) |
 | **Fixed Capital** | **19,400 Qian** (Workshop compound, tools, looms, handcart) |
-| **Total Net Worth** | **36,258 Qian** |
+| **Total Net Worth** | **36,249 Qian** |
 | **Latest Snapshot** | [`saves/snapshots/SNAP-0001.md`](saves/snapshots/SNAP-0001.md) |
 | **Audit Status** | **100% Reconciled (0 discrepancy)** |
 
@@ -29,36 +29,33 @@
 
 ### [Turn 2 (In Progress)] — Month 3, 184 AD
 - **184-03-03 to 184-03-08**:
-  - **Mentorship at Master Lu's Estate**: Liang Yan brought fine wine and tea (300 Qian, `TXN-01840303-0001`) to consult Elder Lu Zhirong (`NPC-0006`).
-  - **Check Score**: INT 72 + COM 76 + LDR 64 + POL 60 basis + Mentor Bonus (+15) + d20 roll (16) = **Score 65 vs DC 45** (Resounding Success).
-  - **Outcome**: Unlocked `SKL-MGT-ENTERPRISE` at Tier 1 (18/20 EXP). Master Lu sentiment reached **+48**.
-  - **Next Step in Management**: Applying these principles in the workshop (piece-rate reward system for Chen Bao & Zhao An) will instantly advance the skill to **Tier 2 (Competent - Delegation SOP)**, enabling the workshop to run without full-time player presence!
+  - **Mentorship at Master Lu's Estate**: Liang Yan brought fine wine and tea (300 Qian, `TXN-01840303-0001`).
+  - **Check Score 65 vs DC 45**: Unlocked `SKL-MGT-ENTERPRISE` at Tier 1 (18/20 EXP).
+- **184-03-09 to 184-03-10**:
+  - **Balanced Material Procurement (2,560 Qian total)**:
+    - 80 bamboo bundles + 8 twine spools from Reed Guild (`TXN-01840309-0002`: 1,360 Qian).
+    - 10 prime cured hides from Zhang Fei's butchery (`TXN-01840309-0003`: 1,000 Qian). Zhang Fei sentiment $\rightarrow$ **+24**.
+    - 5 cured timber bundles from Master Lu (`TXN-01840309-0004`: 200 Qian). Master Lu sentiment $\rightarrow$ **+50**.
+  - **Workshop Expansion**: Added Product Line C: `PROD-SHIELD-BAM` (Leather-Bound Bamboo Shield / Lao Thuẫn).
+  - **Planned Production Run**:
+    - 35 Military Pack Baskets (`PROD-BASK`).
+    - 10 Prototype Leather-Bound Bamboo Shields (`PROD-SHIELD-BAM`).
+    - 20 Standard Woven Mats (`PROD-MAT`).
 
 ### [Turn 1] — Month 2, 184 AD: Strategic Stockpiling & Outbreak
-- **Date**: 184-02-01 to 184-02-28
-- **Player Actions**:
-  - Acquired 10 Dan grain @ 160 Qian (`TXN-01840205-0001`) as famine/war hedge.
-  - Acquired 50 bamboo bundles and 8 cured hides from Zhang Fei's butchery.
-  - Produced 49 mats and 29 leather-reinforced baskets at `BIZ-0001` (2 scrap units accounted).
-  - Wholesale sold 35 baskets to horse trader Zhang Shiping (`NPC-0005`) for 1,750 Qian.
-  - Sold 50 mats retail (1,250 Qian) and 20 mats to county yamen barracks (440 Qian).
-  - Paid retainers Chen Bao & Zhao An wages (1,500 Qian) and grain rations (0.25 Dan).
-- **World Shift**:
-  - Yellow Turban rebellion erupts under Zhang Jue.
-  - Liu Bei, Guan Yu, and Zhang Fei complete the Peach Garden Oath in Zhuo County and raise ~300 volunteer militia.
-  - Zhang Shiping sentiment climbs to +40; Zhang Fei to +20.
-- **Turn 1 Closing Audit**: Net cash -1,390 Qian (reinvested into stock); Net worth 36,558 Qian. Passed.
+- Acquired 10 Dan grain hedge. Produced 49 mats & 29 baskets. Sold wholesale to Zhang Shiping and Yamen. Reconciled net worth 36,558 Qian.
 
 ### [Turn 0] — 184-02-01: Baseline Initialization
-- Initialized core memory files, starting float (15,000 Qian), workshop `BIZ-0001`, and verified clean state.
+- Initialized core memory files, starting float (15,000 Qian), workshop `BIZ-0001`, verified clean state.
 
 ---
 
 ## 3. Immediate Crossroads & Tactical Dilemmas (Turn 2 / Month 3, 184 AD)
 
-1. **Procurement vs. Supply Depletion**:
-   - Kho trúc cói chỉ còn 15 bó. Cần nhập vật tư (tre nứa, da bò) để triển khai quy chế sản xuất mới cho thợ cả Trần Bảo.
-2. **Nghĩa binh Lưu Bị chuẩn bị xuất trận**:
-   - Lưu Bị, Quan Vũ, Trương Phi đang tập luyện 300 nghĩa dũng ngoài cổng nam, thiếu hụt giỏ đựng lương cơ động và lều bạt.
-3. **Thương hội Trác Huyện lập đội tuần tra**:
-   - Lư lão bá ngỏ ý muốn Lương Nhan cùng Thương hội đóng góp và điều phối đội dân binh tuần phòng khu phố Đông Môn.
+1. **Production & Delegation Execution**:
+   - Kho xưởng đã đầy đủ vật tư (95 trúc, 20 da, 5 gỗ).
+   - Triển khai quy chế phân đoạn và trả công theo định ngạch sẽ kích hoạt thăng cấp `SKL-MGT-ENTERPRISE` lên **Tier 2 (Thành thạo - Trao quyền SOP)**.
+2. **Tiếp cận Đội quân Tình nguyện Lưu Bị**:
+   - Khi 10 khiên tre bọc da và 35 giỏ lương hoàn thành, Lương Nhan có thể trực tiếp mang sản phẩm mẫu đến doanh trại cổng nam để Lưu Bị, Quan Vũ và Trương Phi kiểm định.
+3. **Phòng vệ Trác Huyện**:
+   - Tin thám mã báo về: Quân Khăn Vàng Trình Viễn Chí đã vượt qua biên giới Ký Châu, cách Trác Huyện chưa đầy 120 dặm (khoảng 3-4 ngày hành quân).

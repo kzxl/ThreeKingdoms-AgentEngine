@@ -1,16 +1,18 @@
 # Physical Inventory & Stock Ledger (ledger/inventory.md)
 
-## 1. Current Warehouse Stock (`BIZ-0001` East Storeroom - Month 3 Day 1, 184 AD)
+## 1. Current Warehouse Stock (`BIZ-0001` East Storeroom - Month 3 Day 10, 184 AD)
 
 | Item Code | Category | Description | Quantity | Unit Cost Basis (Qian) | Total Value (Qian) | Minimum Threshold |
 |---|---|---|---|---|---|---|
-| `COM-BAMBOO` | Raw Material | Bundles of cured bamboo & river reeds | 15 bundles | 15 | 225 | 20 |
-| `COM-TWINE`  | Raw Material | Spools of durable spun hemp twine | 7 spools | 20 | 140 | 5 |
-| `COM-LEATH`  | Raw Material | Tanned sheep & cattle hide cuttings | 10 hides | 100 | 1,000 | 2 |
+| `COM-BAMBOO` | Raw Material | Bundles of cured bamboo & river reeds | 95 bundles | 15 | 1,425 | 20 |
+| `COM-TWINE`  | Raw Material | Spools of durable spun hemp twine | 15 spools | 20 | 300 | 5 |
+| `COM-LEATH`  | Raw Material | Tanned sheep & cattle hide cuttings | 20 hides | 100 | 2,000 | 2 |
+| `COM-TIMBER` | Raw Material | Cured hardwood timber planks | 5 bundles | 40 | 200 | 2 |
 | `COM-GRAIN`  | Provisions | Unmilled millet & wheat (Strategic Reserve)| 9.60 Dan | 160 | 1,536 | 5.00 |
 | `PROD-MAT`   | Finished Good | Standard woven straw sleeping mats | 19 units | 17 | 323 | 10 |
-| `PROD-BASK`  | Finished Good | Reinforced military grain pack baskets | 9 units | 36 | 324 | 5 |
-| **Total Inventory Value** | | | | | **3,548 Qian** | |
+| `PROD-BASK`  | Finished Good | Reinforced military grain pack baskets | 9 units | 35 | 315 | 5 |
+| `PROD-SHIELD-BAM`| Finished Good | Prototype leather-bound bamboo shields | 0 units | 76 | 0 | 0 |
+| **Total Inventory Value** | | | | | **6,099 Qian** | |
 
 ---
 
@@ -37,3 +39,7 @@
 | `MOV-01840220-0017` | 184-02-20 | `PROD-BASK` | Wholesale Sale | -35 | 36 | 9 | TXN-01840220-0005 |
 | `MOV-01840225-0018` | 184-02-25 | `PROD-MAT` | Yamen Militia Sale | -20 | 17 | 19 | TXN-01840225-0006 |
 | `MOV-01840228-0019` | 184-02-28 | `COM-GRAIN` | Rations Paid/Consumed| -0.40 | 160 | 9.60 | TXN-01840228-0007 |
+| `MOV-01840309-0020` | 184-03-09 | `COM-BAMBOO` | Purchase (Balanced) | +80 | 15 | 95 | TXN-01840309-0002 |
+| `MOV-01840309-0021` | 184-03-09 | `COM-TWINE`  | Purchase (Balanced) | +8 | 20 | 15 | TXN-01840309-0002 |
+| `MOV-01840309-0022` | 184-03-09 | `COM-LEATH`  | Purchase (Zhang Fei)| +10 | 100 | 20 | TXN-01840309-0003 |
+| `MOV-01840309-0023` | 184-03-09 | `COM-TIMBER` | Purchase (Master Lu)| +5 | 40 | 5 | TXN-01840309-0004 |

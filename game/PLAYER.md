@@ -30,13 +30,13 @@
 
 ---
 
-## 3. Financial & Asset Dashboard (Month 3, 184 AD)
+## 3. Financial & Asset Dashboard (Month 3 Day 10, 184 AD)
 
-- **Liquid Cash on Hand**: **13,310 Qian** (Safe at `BIZ-0001`).
+- **Liquid Cash on Hand**: **10,750 Qian** (Safe at `BIZ-0001`).
 - **Strategic Food Reserve**: **9.60 Dan grain** (Secures 16+ months of workshop rations).
-- **Warehouse Inventory**: Valued at **3,548 Qian** (Raw materials + finished mats/baskets).
+- **Warehouse Inventory**: Valued at **6,099 Qian** (95 bamboo, 15 twine, 20 hides, 5 timber, 19 mats, 9 baskets).
 - **Fixed Assets**: **19,400 Qian** (Workshop compound, looms, tools, handcart).
-- **Total Net Worth**: **36,258 Qian**.
+- **Total Net Worth**: **36,249 Qian**.
 - **Accounts Receivable (AR)**: 0 Qian.
 - **Accounts Payable (AP)**: 0 Qian.
 - **Direct Retainers**:
@@ -49,6 +49,7 @@
 
 - [x] **Procure Strategic Grain**: Purchased 10 Dan @ 160 Qian before wartime price spikes.
 - [x] **Acquire Management Competency**: Mentored by Master Lu Zhirong (`NPC-0006`); unlocked `SKL-MGT-ENTERPRISE` Tier 1 (18/20 EXP).
-- [ ] **Objective 1 (Commercial)**: Implement new piece-rate and batch-scheduling workflow at `BIZ-0001` to push `SKL-MGT-ENTERPRISE` to Tier 2 (Delegation).
-- [ ] **Objective 2 (Supply / Network)**: Restock bamboo/reed supply and negotiate grain basket logistics contract with Liu Bei's volunteer militia.
-- [ ] **Objective 3 (Security)**: Support Master Lu and Merchant Guild in organizing East Gate district night watch against refugee unrest.
+- [x] **Procure Materials for Military Production**: Acquired 80 bamboo, 10 leather hides (Zhang Fei), 8 twine, 5 timber planks (Master Lu) for 2,560 Qian.
+- [ ] **Objective 1 (Production)**: Produce Batch of 35 Reinforced Baskets (`PROD-BASK`) and 10 Prototype Bamboo Shields (`PROD-SHIELD-BAM`).
+- [ ] **Objective 2 (Supply / Network)**: Pitch military shields and pack baskets to Liu Bei (`NPC-0001`) and Zhang Fei (`NPC-0002`) for their 300 volunteer militia.
+- [ ] **Objective 3 (Management Mastery)**: Enforce new SOP and piece-rate rewards during shield crafting to advance `SKL-MGT-ENTERPRISE` to Tier 2 (Delegation).

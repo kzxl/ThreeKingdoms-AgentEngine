@@ -4,7 +4,7 @@
 - **Entity**: Liang Yan (`player`) & Liang Clan Workshop (`BIZ-0001`)
 - **Initial Capital (Turn 0)**: 15,000 Qian
 - **Turn 1 Closing Balance**: 13,610 Qian
-- **Current Balance (Month 3 Day 5, 184 AD)**: **13,310 Qian**
+- **Current Balance (Month 3 Day 10, 184 AD)**: **10,750 Qian**
 
 ---
 
@@ -22,4 +22,7 @@
 | `TXN-01840228-0007` | 184-02-28 | Workshop Retainers | OPEX/Wages | 0 | 1,500 | 13,790 | Monthly wages: Chen Bao (1,000) & Zhao An (500) | Confirmed |
 | `TXN-01840228-0008` | 184-02-28 | Merchant Guild (`ORG-0001`)| OPEX/Dues | 0 | 100 | 13,690 | Monthly guild dues & night watch contribution | Confirmed |
 | `TXN-01840228-0009` | 184-02-28 | Workshop Overhead | OPEX/Maint | 0 | 80 | 13,610 | Lamp oil, twine wax, and handcart axle grease | Confirmed |
-| `TXN-01840303-0001` | 184-03-03 | Master Lu (`NPC-0006`) | Education/Gift | 0 | 300 | **13,310** | Fine vintage wine and tea gift for enterprise management mentorship | Confirmed |
+| `TXN-01840303-0001` | 184-03-03 | Master Lu (`NPC-0006`) | Education/Gift | 0 | 300 | 13,310 | Fine wine and tea gift for management mentorship | Confirmed |
+| `TXN-01840309-0002` | 184-03-09 | River Reed Guild | Procurement | 0 | 1,360 | 11,950 | Purchased 80 bamboo bundles (1,200) + 8 twine spools (160) | Confirmed |
+| `TXN-01840309-0003` | 184-03-09 | Zhang Fei (`NPC-0002`) | Procurement | 0 | 1,000 | 10,950 | Purchased 10 cured hides @ 100 Qian from Zhang butchery | Confirmed |
+| `TXN-01840309-0004` | 184-03-09 | Master Lu (`NPC-0006`) | Procurement | 0 | 200 | **10,750** | Purchased 5 cured hardwood timber bundles @ 40 Qian | Confirmed |
