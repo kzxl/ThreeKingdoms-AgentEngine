@@ -188,7 +188,9 @@ function closeGameManagerModal() {
   if (modal) modal.classList.add('hidden');
 }
 
-function switchGameManagerTab(tabId) {
+let cachedRotkEvents = [];
+
+async function switchGameManagerTab(tabId) {
   activeGameModalTab = tabId;
   document.querySelectorAll('.gm-tab-btn').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.gm-tab-content').forEach(c => c.classList.add('hidden'));
@@ -198,6 +200,110 @@ function switchGameManagerTab(tabId) {
 
   const activeContent = document.getElementById(`gm-view-${tabId}`);
   if (activeContent) activeContent.classList.remove('hidden');
+
+  if (tabId === 'chronicles' && cachedRotkEvents.length === 0) {
+    await loadAndRenderRotkEvents();
+  }
+}
+
+async function loadAndRenderRotkEvents() {
+  const container = document.getElementById('gm-events-timeline-container');
+  const badge = document.getElementById('gm-events-count-badge');
+  if (container) container.innerHTML = '<div style="padding:20px;text-align:center;color:#94a3b8;">Đang nạp dữ liệu biên niên sử từ Master Database...</div>';
+  
+  try {
+    const res = await fetch('/api/game/events');
+    const json = await res.json();
+    if (json.success && json.events) {
+      cachedRotkEvents = json.events;
+      renderRotkEvents(cachedRotkEvents);
+    } else {
+      throw new Error(json.error || 'Lỗi tải sự kiện');
+    }
+  } catch (err) {
+    if (container) container.innerHTML = `<div style="padding:20px;text-align:center;color:#ef4444;">Không thể tải sự kiện: ${err.message}</div>`;
+  }
+}
+
+function renderRotkEvents(events) {
+  const container = document.getElementById('gm-events-timeline-container');
+  const badge = document.getElementById('gm-events-count-badge');
+  if (!container) return;
+
+  if (badge) {
+    badge.innerText = `Hiển thị ${events.length} / ${cachedRotkEvents.length} thiên sự kiện ROTK`;
+  }
+
+  if (events.length === 0) {
+    container.innerHTML = '<div style="padding:30px;text-align:center;color:#94a3b8;">Không tìm thấy sự kiện phù hợp với bộ lọc.</div>';
+    return;
+  }
+
+  const seasonMap = {
+    'SPRING': 'Mùa Xuân',
+    'SUMMER': 'Mùa Hạ',
+    'AUTUMN': 'Mùa Thu',
+    'WINTER': 'Mùa Đông'
+  };
+
+  container.innerHTML = events.map(ev => {
+    let effectsStr = '';
+    try {
+      const eff = JSON.parse(ev.gameplay_effects || '{}');
+      const effParts = [];
+      if (eff.sentiment_boost) effParts.push(`Hảo cảm +${eff.sentiment_boost}`);
+      if (eff.rep_gain) effParts.push(`Danh vọng +${eff.rep_gain}`);
+      if (eff.exp) effParts.push(`Chiến công +${eff.exp}`);
+      if (eff.item_reward) effParts.push(`Bảo vật: ${eff.item_reward}`);
+      if (eff.arrows_acquired) effParts.push(`Mũi tên: +${eff.arrows_acquired.toLocaleString()}`);
+      if (eff.treasury_boost) effParts.push(`Ngân khố +${eff.treasury_boost.toLocaleString()} Tiền`);
+      if (effParts.length > 0) effectsStr = effParts.join(' • ');
+    } catch (e) {}
+
+    return `
+      <div class="gm-event-card">
+        <div class="gm-event-header">
+          <div class="gm-event-title">📜 ${ev.name_vi}</div>
+          <span class="gm-event-badge">${ev.historical_year} SCN • ${seasonMap[ev.season] || ev.season}</span>
+        </div>
+        <div class="gm-event-sub">${ev.name_en}</div>
+        <div class="gm-event-summary">${ev.summary_vi}</div>
+        <div class="gm-event-meta">
+          <div class="gm-event-meta-item">📍 Địa điểm: <strong>${ev.location_id || 'Trung Nguyên'}</strong></div>
+          <div class="gm-event-meta-item">👤 Nhân vật chính: <strong>${ev.primary_character_id || 'Chư Hầu'}</strong></div>
+          ${effectsStr ? `<div class="gm-event-meta-item" style="color:#fbbf24;">⚡ Thưởng/Hiệu ứng: <strong>${effectsStr}</strong></div>` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function filterRotkEvents() {
+  const query = (document.getElementById('gm-event-search')?.value || '').toLowerCase().trim();
+  const era = document.getElementById('gm-event-era-filter')?.value || 'ALL';
+
+  let filtered = cachedRotkEvents.filter(ev => {
+    // Era filter
+    if (era !== 'ALL') {
+      const [start, end] = era.split('-').map(Number);
+      if (ev.historical_year < start || ev.historical_year > end) return false;
+    }
+
+    // Query filter
+    if (query) {
+      const matchNameVi = (ev.name_vi || '').toLowerCase().includes(query);
+      const matchNameEn = (ev.name_en || '').toLowerCase().includes(query);
+      const matchSummary = (ev.summary_vi || '').toLowerCase().includes(query);
+      const matchLoc = (ev.location_id || '').toLowerCase().includes(query);
+      const matchChar = (ev.primary_character_id || '').toLowerCase().includes(query);
+      if (!matchNameVi && !matchNameEn && !matchSummary && !matchLoc && !matchChar) {
+        return false;
+      }
+    }
+    return true;
+  });
+
+  renderRotkEvents(filtered);
 }
 
 function renderGameManagerModalContent(data) {
@@ -384,3 +490,4 @@ window.selectGameArchetype = selectGameArchetype;
 window.submitStartNewGame = submitStartNewGame;
 window.submitSaveSlot = submitSaveSlot;
 window.submitLoadSlot = submitLoadSlot;
+window.filterRotkEvents = filterRotkEvents;

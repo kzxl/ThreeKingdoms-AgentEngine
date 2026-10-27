@@ -388,13 +388,16 @@
         <button class="modal-close-btn" onclick="closeGameManagerModal()">&times;</button>
       </div>
 
-      <!-- Navigation Tabs: Continue vs New Game -->
+      <!-- Navigation Tabs: Continue vs New Game vs Chronicles -->
       <div class="gm-tabs-bar">
         <button class="gm-tab-btn active" id="gm-tab-continue" onclick="switchGameManagerTab('continue')">
           ⚔️ Chơi Tiếp (Active Session)
         </button>
         <button class="gm-tab-btn" id="gm-tab-new" onclick="switchGameManagerTab('new')">
           🌟 Tạo Màn Chơi Mới (New Campaign)
+        </button>
+        <button class="gm-tab-btn" id="gm-tab-chronicles" onclick="switchGameManagerTab('chronicles')">
+          📜 Biên Niên Sử Tam Quốc (ROTK Chronicles)
         </button>
       </div>
 
@@ -438,6 +441,29 @@
             <button class="btn-primary" onclick="submitStartNewGame()" style="width: 100%; padding: 10px;">
               🚀 Khởi Tạo Tân Du Hý (Bắt Đầu Chiến Dịch Mới)
             </button>
+          </div>
+        </div>
+
+        <!-- 3. View: ROTK Chronicles & Historical Events -->
+        <div class="gm-tab-content hidden" id="gm-view-chronicles">
+          <div class="gm-chronicles-header">
+            <div class="gm-filter-bar">
+              <input type="text" id="gm-event-search" class="modal-input" placeholder="🔍 Tìm kiếm sự kiện, nhân vật, địa danh..." oninput="filterRotkEvents()" />
+              <select id="gm-event-era-filter" class="modal-input" onchange="filterRotkEvents()">
+                <option value="ALL">Toàn Bộ Niên Đại (184 - 234 SCN)</option>
+                <option value="184-189">184 - 189: Khởi Nghĩa Khăn Vàng</option>
+                <option value="190-199">190 - 199: Chư Hầu Tranh Hùng & Phạt Đổng</option>
+                <option value="200-207">200 - 207: Quan Độ Chi Chiến & Bắc Phương</option>
+                <option value="208-219">208 - 219: Xích Bích & Tam Phân Thiên Hạ</option>
+                <option value="220-234">220 - 234: Di Lăng, Xuất Sư Biểu & Ngũ Trượng</option>
+              </select>
+            </div>
+            <div class="gm-chronicles-stats" id="gm-events-count-badge">
+              Đang nạp 40+ thiên sự kiện ROTK...
+            </div>
+          </div>
+          <div class="gm-events-timeline" id="gm-events-timeline-container">
+            <!-- Rendered dynamically via JS -->
           </div>
         </div>
       </div>

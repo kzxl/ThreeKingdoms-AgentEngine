@@ -406,7 +406,7 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // 5h. GET /api/master/catalog - Fast Query Catalog for Items, Recipes, Citadels, Characters
+  // 5h. GET /api/master/catalog - Fast Query Catalog for Items, Recipes, Citadels, Characters, Events
   if (req.method === 'GET' && pathname === '/api/master/catalog') {
     try {
       const items = runSqlJson(`SELECT * FROM master_items;`);
@@ -417,7 +417,26 @@ const server = http.createServer((req, res) => {
       const skills = runSqlJson(`SELECT * FROM master_skills;`);
       const talents = runSqlJson(`SELECT * FROM master_talents;`);
       const routes = runSqlJson(`SELECT * FROM master_routes;`);
-      sendJson(res, 200, { success: true, catalog: { items, recipes, locations, characters, factions, skills, talents, routes } });
+      const events = runSqlJson(`SELECT * FROM master_events ORDER BY historical_year ASC, event_id ASC;`);
+      sendJson(res, 200, { success: true, catalog: { items, recipes, locations, characters, factions, skills, talents, routes, events } });
+    } catch (err) {
+      sendJson(res, 500, { success: false, error: err.message });
+    }
+    return;
+  }
+
+  // 5k. GET /api/game/events - Query ROTK Historical Events with Optional Year Filter
+  if (req.method === 'GET' && pathname === '/api/game/events') {
+    try {
+      const query = parsedUrl.query || {};
+      const year = query.year ? parseInt(query.year, 10) : null;
+      let sql = `SELECT * FROM master_events`;
+      if (year) {
+        sql += ` WHERE historical_year <= ${year}`;
+      }
+      sql += ` ORDER BY historical_year ASC, event_id ASC;`;
+      const events = runSqlJson(sql);
+      sendJson(res, 200, { success: true, count: events.length, events });
     } catch (err) {
       sendJson(res, 500, { success: false, error: err.message });
     }

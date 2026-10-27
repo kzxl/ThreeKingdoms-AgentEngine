@@ -221,6 +221,26 @@ CREATE TABLE IF NOT EXISTS master_routes (
     description_en TEXT
 );
 
+-- 13. Master Historical Events & ROTK Chronicles
+CREATE TABLE IF NOT EXISTS master_events (
+    event_id TEXT PRIMARY KEY,
+    name_vi TEXT NOT NULL,
+    name_en TEXT NOT NULL,
+    historical_year INTEGER NOT NULL,
+    season TEXT NOT NULL DEFAULT 'SPRING', -- 'SPRING', 'SUMMER', 'AUTUMN', 'WINTER'
+    location_id TEXT,
+    primary_character_id TEXT,
+    secondary_character_id TEXT,
+    involved_factions TEXT, -- JSON array of faction IDs
+    prerequisites TEXT,
+    summary_vi TEXT NOT NULL,
+    summary_en TEXT NOT NULL,
+    historical_outcome_vi TEXT,
+    historical_outcome_en TEXT,
+    gameplay_trigger_type TEXT DEFAULT 'STORY_MILESTONE', -- 'STORY_MILESTONE', 'CHOICE_EVENT', 'BATTLE_DUEL', 'DIPLOMACY'
+    gameplay_effects TEXT -- JSON object with reputation, sentiment deltas, item rewards
+);
+
 -- Master Indices for Rapid Lookups
 CREATE INDEX IF NOT EXISTS idx_master_char_loc ON master_characters(baseline_location);
 CREATE INDEX IF NOT EXISTS idx_master_loc_prov ON master_locations(province_vi);
@@ -230,3 +250,6 @@ CREATE INDEX IF NOT EXISTS idx_master_chips_loc ON master_quick_chips(location_k
 CREATE INDEX IF NOT EXISTS idx_master_routes_src ON master_routes(source_location_id);
 CREATE INDEX IF NOT EXISTS idx_master_routes_tgt ON master_routes(target_location_id);
 CREATE INDEX IF NOT EXISTS idx_master_talents_npc ON master_talents(exclusive_to_npc_id);
+CREATE INDEX IF NOT EXISTS idx_master_events_year ON master_events(historical_year);
+CREATE INDEX IF NOT EXISTS idx_master_events_loc ON master_events(location_id);
+CREATE INDEX IF NOT EXISTS idx_master_events_char ON master_events(primary_character_id);
