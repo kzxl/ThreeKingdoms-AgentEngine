@@ -36,7 +36,7 @@
 
 ## 4. Skills & Progression
 - **`SKL-MGT-ENTERPRISE` (Enterprise Management & Delegation)**: **Tier 1 (Novice) — 18 / 20 EXP**
-- **`SKL-COM-BOOK` (Bookkeeping & Audit)**: Tier 2 (Competent) — 28 / 40 EXP
+- **`SKL-COM-BOOK` (Bookkeeping & Audit)**: Tier 2 (Competent) — 29 / 40 EXP (+1)
 - **`SKL-COM-APPRAISE` (Appraisal & Arbitrage)**: Tier 2 (Competent) — 34 / 40 EXP
 - **`SKL-CRA-WEAVE` (Mat & Fiber Weaving)**: Tier 2 (Competent) — 25 / 40 EXP
 - **`SKL-WAR-SPEAR` (Spear Combat)**: Tier 1 (Novice) — 18 / 20 EXP
@@ -59,13 +59,14 @@
 - **Attire**: Scholar-artisan durable hemp robes (Clean, well-maintained).
 - **Weaponry**: 1 Quality Ashwood spear with iron head (Well-oiled).
 - **Tools**: Bamboo abacus, brush set, ink stone, seal stamp, bronze balance scales, Master Lu's workshop assignment templates.
-- **Liquid Cash Float**: **10,750 Qian** (Workshop iron chest).
-- **Personal Coin Pouch**: 250 Qian (for daily minor market purchases).
+- **Contracts**: Sealed original scroll of `CTR-01840311-0001` bearing Liu Bei's personal seal.
+- **Liquid Cash Float**: **11,750 Qian** (Workshop iron chest).
+- **Personal Coin Pouch**: 250 Qian.
 
 ---
 
 ## 7. Physical & Mental Status
-- **Health**: 95 / 100 (Robust youth; well-nourished).
+- **Health**: 95 / 100.
 - **Injuries / Afflictions**: None.
-- **Fatigue**: 15 / 100.
-- **Morale**: 88 / 100 (Excited for production expansion into defense gear).
+- **Fatigue**: 14 / 100.
+- **Morale**: 92 / 100 (Exhilarated by historic contract and solid brotherhood alliance with Liu, Guan, and Zhang).
