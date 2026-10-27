@@ -1,0 +1,30 @@
+{
+  "name": "sim_calculate_price",
+  "description": "Tính toán giá cả hàng hóa co giãn theo cung cầu thực tế tại một khu vực theo nguyên lý Thermodynamic Economy.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "commodity": {
+        "type": "string",
+        "description": "Tên hàng hóa: GRAIN, RAW_IRON, TIMBER, SALT, LEATHER, WEAPON_SWORD, v.v."
+      },
+      "basePrice": {
+        "type": "number",
+        "description": "Giá gốc quy chuẩn"
+      },
+      "stockUnits": {
+        "type": "number",
+        "description": "Số lượng tồn kho hiện tại tại địa phương"
+      },
+      "demandUnits": {
+        "type": "number",
+        "description": "Số lượng nhu cầu tiêu thụ tại địa phương"
+      },
+      "priceElasticity": {
+        "type": "number",
+        "description": "Độ co giãn giá cả (0.5 đến 4.0)"
+      }
+    },
+    "required": ["commodity", "basePrice", "stockUnits", "demandUnits"]
+  }
+}

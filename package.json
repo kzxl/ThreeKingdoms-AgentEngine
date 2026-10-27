@@ -10,6 +10,8 @@
     "dev": "tsx watch src/server/main.ts",
     "build:client": "vite build",
     "typecheck": "tsc --noEmit",
+    "mcp": "tsx src/mcp/server.ts",
+    "test:mcp": "tsx tests/test-mcp.ts",
     "start": "node tools/sim-web.js"
   },
   "devDependencies": {

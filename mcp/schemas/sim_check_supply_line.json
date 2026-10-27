@@ -1,0 +1,22 @@
+{
+  "name": "sim_check_supply_line",
+  "description": "Kiểm tra đường tiếp tế quân lương hoặc lộ trình thông thương giữa 2 cứ điểm (BFS Pathfinding trên đồ thị chiến lược).",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "fromNode": {
+        "type": "string",
+        "description": "Mã cứ điểm xuất phát, ví dụ LOC-0001 (Trác Quận)"
+      },
+      "supplyHub": {
+        "type": "string",
+        "description": "Mã trung tâm tiếp tế hậu cần, ví dụ LOC-0002 (Lạc Dương) hoặc LOC-0003 (Cự Lộc)"
+      },
+      "maxHops": {
+        "type": "number",
+        "description": "Số chặng tối đa cho phép tiếp tế (mặc định 10)"
+      }
+    },
+    "required": ["fromNode", "supplyHub"]
+  }
+}

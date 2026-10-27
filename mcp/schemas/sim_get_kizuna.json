@@ -1,0 +1,18 @@
+{
+  "name": "sim_get_kizuna",
+  "description": "Tra cứu mạng lưới quan hệ 2 trục (Thiện cảm -100..+100 & Tôn kính 0..100) giữa 2 nhân vật, trạng thái Kết Nghĩa và Nợ ân nghĩa (Hooks).",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "charA": {
+        "type": "string",
+        "description": "Mã nhân vật thứ nhất, ví dụ PLY-0001"
+      },
+      "charB": {
+        "type": "string",
+        "description": "Mã nhân vật thứ hai, ví dụ NPC-0001 (Lưu Bị) hoặc NPC-0002 (Quan Vũ)"
+      }
+    },
+    "required": ["charA", "charB"]
+  }
+}

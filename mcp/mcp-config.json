@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "threekingdoms-sim": {
+      "command": "npx",
+      "args": ["tsx", "src/mcp/server.ts"],
+      "cwd": "E:\\15. Other\\Simulation",
+      "env": {
+        "SIM_DB_PATH": "E:\\15. Other\\Simulation\\saves\\session.db"
+      }
+    }
+  }
+}

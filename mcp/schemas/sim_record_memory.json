@@ -1,0 +1,31 @@
+{
+  "name": "sim_record_memory",
+  "description": "Thu hoạch và ghi lại ký ức tự học (Episodic Memory) cho một NPC sau các biến cố/giao dịch lớn, giúp NPC tự tiến hóa và có chiều sâu đối thoại.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "npcId": {
+        "type": "string",
+        "description": "Mã NPC ghi nhận ký ức, ví dụ NPC-0001, NPC-0002"
+      },
+      "turnNumber": {
+        "type": "number",
+        "description": "Lượt chơi hiện tại"
+      },
+      "topic": {
+        "type": "string",
+        "description": "Chủ đề của ký ức (VD: TRADE_SALT, DUEL_SPAR, PEACH_GARDEN)"
+      },
+      "emotionalValence": {
+        "type": "string",
+        "enum": ["POSITIVE", "NEUTRAL", "NEGATIVE"],
+        "description": "Cảm xúc ghi nhận đối với nhân vật"
+      },
+      "lessonLearned": {
+        "type": "string",
+        "description": "Bài học đúc kết chi tiết (bằng tiếng Việt chuẩn xác)"
+      }
+    },
+    "required": ["npcId", "topic", "lessonLearned"]
+  }
+}

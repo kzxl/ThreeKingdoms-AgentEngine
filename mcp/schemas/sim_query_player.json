@@ -1,0 +1,13 @@
+{
+  "name": "sim_query_player",
+  "description": "Truy vấn trạng thái toàn diện của nhân vật chính (tiền mặt, kho hàng, kỹ năng, vị trí hiện tại, chỉ số).",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "playerId": {
+        "type": "string",
+        "description": "ID của nhân vật chính, mặc định là PLY-0001 (Lương Diễn)"
+      }
+    }
+  }
+}

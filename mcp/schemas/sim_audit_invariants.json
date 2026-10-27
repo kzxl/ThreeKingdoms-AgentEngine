@@ -1,0 +1,8 @@
+{
+  "name": "sim_audit_invariants",
+  "description": "Thực thi kiểm toán độc lập 80/80 Invariants của SQLite (Dr == Cr, bảo toàn kho, dòng tiền, không thất thoát ngân lượng).",
+  "parameters": {
+    "type": "object",
+    "properties": {}
+  }
+}
