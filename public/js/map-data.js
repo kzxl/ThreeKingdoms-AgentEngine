@@ -26,7 +26,7 @@ const QUICK_CHIPS_DATA = {
     placeholderVi: 'Lương Diễn đàm đạo tại Chợ... (hoặc gõ: "Phái gia nhân sang Vườn Đào...")',
     placeholderEn: 'Liang Yan dialogues at Market... (or type: "Dispatch messenger to Peach Garden...")',
     chips: [
-      { type: 'local', icon: '🧂', labelVi: 'Bán 10 Muối Ký Châu', labelEn: 'Sell 10 Salt', promptVi: 'Xuất bán 10 đấu muối biển cho Thương đoàn Ký Châu', promptEn: 'Sell 10 sea salt to Jizhou merchant caravan' },
+      { type: 'local', icon: '🎋', labelVi: 'Bán 10 Chiếu Trúc', labelEn: 'Sell 10 Mats', promptVi: 'Xuất bán 10 tấm Chiếu Trúc Lương Gia cho Thương đoàn Ký Châu', promptEn: 'Sell 10 bamboo mats to Jizhou merchant caravan' },
       { type: 'local', icon: '🌾', labelVi: 'Mua 5 Lương Thảo', labelEn: 'Buy 5 Grain', promptVi: 'Thu mua 5 thạch lương tiểu mạch dự trữ', promptEn: 'Purchase 5 piculs of strategic grain' },
       { type: 'local', icon: '🍵', labelVi: 'Đàm Đạo Quan Vũ', labelEn: 'Tea with Guan Yu', promptVi: 'Mời Quan Vũ uống trà đàm đạo binh pháp Xuân Thu', promptEn: 'Invite Guan Yu for tea discussing strategy' },
       { divider: true },
@@ -34,7 +34,7 @@ const QUICK_CHIPS_DATA = {
       { type: 'courier', icon: '✉️', labelVi: 'Lệnh nhập kho Xưởng', labelEn: 'Stock order to Workshop', promptVi: 'Viết thư lệnh vận chuyển nguyên liệu tre da về Xưởng Lương Thị', promptEn: 'Dispatch letter to transfer raw materials to Workshop' },
       { divider: true },
       { type: 'travel', icon: '🏇', labelVi: 'Về Vườn Đào', labelEn: 'To Peach Garden', promptVi: 'Rời Chợ Đông Môn, tới Trang Viên Vườn Đào', promptEn: 'Return to Peach Garden Manor' },
-      { type: 'travel', icon: '🏇', labelVi: 'Đến Quảng Tông', labelEn: 'To Guangzong', promptVi: 'Khởi hành đoàn xe tiến thẳng tới Quảng Tông Quân Doanh', promptEn: 'Depart to Guangzong Military Encampment' }
+      { type: 'travel', icon: '🏇', labelVi: 'Đến Xưởng Lương Thị', labelEn: 'To Workshop', promptVi: 'Rời Chợ Đông Môn, tới Lương Thị Chức Tác Phường', promptEn: 'Travel to Liang Craft Workshop' }
     ]
   },
   'Xưởng Lương Thị': {

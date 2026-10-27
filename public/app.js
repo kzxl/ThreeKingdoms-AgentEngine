@@ -202,7 +202,11 @@ async function executeChoiceDirect(optId) {
     if (opt.action && opt.action.type === 'MOVE_LOCATION') {
       showToast(`Đang di chuyển tới ${opt.action.new_location}...`);
       opt.action.idempotency_key = `OPT_${optId}_${Date.now()}`;
-      await dispatchDirectAction(opt.action);
+      const moveRes = await dispatchDirectAction(opt.action);
+      if (!moveRes || !moveRes.success) {
+        showToast(`Không thể di chuyển: ${moveRes?.error || 'Lỗi không xác định'}`, true);
+        return;
+      }
       activeSubLocation = opt.action.new_location;
 
       appendStoryTurn({
@@ -214,7 +218,10 @@ async function executeChoiceDirect(optId) {
         deltas: { location: activeSubLocation, audit: 'Cập nhật tọa độ' }
       });
 
-      await loadScene(activeSubLocation);
+      await Promise.all([loadStatus(), loadScene(activeSubLocation)]);
+      if (typeof renderLocalPoiNav === 'function') {
+        renderLocalPoiNav(activeSubLocation);
+      }
       renderAgentSimulationFeedback(`Cơ động tới ${activeSubLocation}. Thiết lập vị trí chiến dịch mới.`, { location: activeSubLocation, audit: '70/70 Khớp' });
       return;
     }
@@ -224,6 +231,10 @@ async function executeChoiceDirect(optId) {
       showToast(`Đang thực thi: ${opt.title}...`);
       opt.action.idempotency_key = `OPT_${optId}_${Date.now()}`;
       const result = await dispatchDirectAction(opt.action);
+      if (!result || !result.success) {
+        showToast(`Điều lệnh bị từ chối: ${result?.error || 'Lỗi điều lệnh'}`, true);
+        return;
+      }
 
       let turnType = 'system';
       let speaker = 'SimCore Kiểm Toán';
@@ -249,14 +260,23 @@ async function executeChoiceDirect(optId) {
         turnType = 'action';
         speaker = opt.action.counterparty || 'Thương Vụ Lương Gia';
         title = opt.action.type === 'TRADE_BUY' ? 'Thu Mua Vật Tư' : 'Xuất Bán Hàng Hóa';
-        avatar = '📦';
+        avatar = opt.icon || '📦';
         turnText = `Giao dịch thương nghiệp **${opt.title}** đã hoàn tất giao nhận và đối ứng ngân khố.`;
       } else if (opt.action.type === 'REWARD_NPC') {
         turnType = 'npc';
-        speaker = currentScene?.npc?.name || 'Hào Kiệt';
-        title = 'Cảm Kích Ban Thưởng';
-        avatar = currentScene?.npc?.name ? currentScene.npc.name.charAt(0) : '🎁';
-        turnText = `Nhận ban thưởng ${opt.action.amount} Tiền, tâm tình phấn khởi, trung thành và sĩ khí tăng vọt!`;
+        const sceneNpc = currentScene?.npc;
+        speaker = sceneNpc?.name || opt.action.counterparty || 'Hào Kiệt';
+        title = sceneNpc?.title || 'Đàm Đạo & Ban Thưởng';
+        avatar = sceneNpc?.name ? sceneNpc.name.charAt(0) : '🎁';
+        if (speaker.includes('Quan Vũ')) {
+          turnText = `Quan Vân Trường vuốt ròm râu dài, nâng chén trà thơm mỉm cười: *"Đa tạ Chí Viễn thịnh tình! Đại trượng phu gặp được tri kỷ cùng chung chí hướng binh pháp như đệ quả là đại hạnh!"*`;
+        } else if (speaker.includes('Trương Phi')) {
+          turnText = `Trương Phi vỗ đùi cười vang: *"Khá lắm Lương Chí Viễn! Hôm nay đệ đãi rượu thịt, lão Trương ta nhận tấm lòng này, nguyện cùng đệ kề vai sát cánh!"*`;
+        } else if (speaker.includes('Lư Thực')) {
+          turnText = `Trung lang tướng Lư Thực gật đầu tán thưởng: *"Chí Viễn kiến giải sâu sắc, nhìn thấu thế cục, quả không hổ là đệ tử đắc ý của lão phu!"*`;
+        } else {
+          turnText = `${speaker} cảm kích khôn xiết: *"Đa tạ công tử trọng thưởng! Xin dốc toàn lực vì đại nghiệp!"*`;
+        }
       }
 
       // Append result into chronicle
@@ -485,19 +505,33 @@ async function rewardNpc(npcId, amount = 100) {
     return;
   }
 
+  const npcNameMap = {
+    'NPC-0002': { name: 'Trương Phi (Dực Đức)', title: 'Hào Kiệt Huyện Trác', avatar: '張', quote: 'Trương Phi sảng khoái vỗ đùi: *"Đa tạ Chí Viễn đệ! Ta nhận tấm lòng này, nguyện cùng đệ kề vai sát cánh!"*' },
+    'NPC-0003': { name: 'Quan Vũ (Vân Trường)', title: 'Hào Kiệt Giải Lương', avatar: '關', quote: 'Quan Vân Trường vuốt râu dài mỉm cười: *"Đa tạ Chí Viễn thịnh tình! Đại trượng phu gặp tri kỷ quả là đại hạnh!"*' },
+    'NPC-0004': { name: 'Lư Thực (Tử Cán)', title: 'Bắc Quân Trung Lang Tướng', avatar: '盧', quote: 'Lư Thực gật đầu khen ngợi: *"Chí Viễn kiến giải sâu sắc, quả không hổ là đệ tử đắc ý của lão phu!"*' },
+    'NPC-0007': { name: 'Trần Bảo (Thợ Cả)', title: 'Lương Thị Chức Tác Phường', avatar: '陳', quote: 'Trần Bảo cảm kích cúi đầu bái tạ: *"Đa tạ Thiếu gia trọng thưởng! Thuộc hạ và anh em thợ nguyện dốc toàn lực chế tạo quân trang tốt nhất!"*' },
+    'NPC-0008': { name: 'Triệu An (Thợ Đan)', title: 'Lương Thị Chức Tác Phường', avatar: '趙', quote: 'Triệu An cung kính tạ lễ: *"Đa tạ đông gia! Con sẽ đan thêm nhiều khiên trúc chắc chắn!"*' }
+  };
+  const npcInfo = npcNameMap[npcId] || { 
+    name: currentScene?.npc?.name || npcId, 
+    title: currentScene?.npc?.title || 'Nhân Sĩ', 
+    avatar: currentScene?.npc?.name ? currentScene.npc.name.charAt(0) : '🎁', 
+    quote: `${currentScene?.npc?.name || npcId} nhận ban thưởng phấn khởi: *"Đa tạ công tử hậu đãi!"*` 
+  };
+
   appendStoryTurn({
     type: 'player',
     speaker: 'Lương Diễn',
     title: 'Khen Thưởng Gia Nhân',
     avatar: '梁',
-    text: `Ban thưởng **${amount} Tiền** cho nhân sĩ ${npcId} để khích lệ sĩ khí trung thành!`
+    text: `Ban thưởng **${amount} Tiền** cho ${npcInfo.name} để khích lệ sĩ khí trung thành!`
   });
 
-  setProcessingLock(true, null, `Thưởng ${amount} Tiền cho NPC ${npcId}`);
-  showToast(`Ban thưởng ${amount} Tiền cho NPC ${npcId}...`);
+  setProcessingLock(true, null, `Thưởng ${amount} Tiền cho ${npcInfo.name}`);
+  showToast(`Ban thưởng ${amount} Tiền cho ${npcInfo.name}...`);
 
   try {
-    await dispatchDirectAction({
+    const res = await dispatchDirectAction({
       type: 'REWARD_NPC',
       npc_id: npcId,
       amount,
@@ -505,17 +539,22 @@ async function rewardNpc(npcId, amount = 100) {
       idempotency_key: `RWD_${npcId}_${Date.now()}`
     });
 
+    if (!res || !res.success) {
+      showToast(`Không thể ban thưởng: ${res?.error || 'Lỗi không xác định'}`, true);
+      return;
+    }
+
     appendStoryTurn({
       type: 'npc',
-      speaker: 'Trần Bảo (Thợ Cả)',
-      title: 'Lương Thị Chức Tác Phường',
-      avatar: '陳',
-      text: `Trần Bảo cảm kích khôn xiết cúi đầu bái tạ: *"Đa tạ Thiếu gia trọng thưởng! Thuộc hạ và anh em thợ xưởng nguyện dốc toàn lực chế tạo quân trang phòng thủ tốt nhất!"*`,
+      speaker: npcInfo.name,
+      title: npcInfo.title,
+      avatar: npcInfo.avatar,
+      text: npcInfo.quote,
       deltas: { cash: `-${amount} Qian`, npc: 'Sĩ khí 100% • Trung thành +2', audit: '70/70 Khớp' },
-      reasoning: `Khen thưởng ${amount} Tiền động viên NPC ${npcId}. Sĩ khí tối đa.`
+      reasoning: `Khen thưởng ${amount} Tiền động viên ${npcInfo.name}. Sĩ khí tối đa.`
     });
 
-    renderAgentSimulationFeedback(`Khen thưởng ${amount} Tiền động viên NPC ${npcId}. Sĩ khí tối đa.`, { cash: `-${amount} Qian`, npc: 'Sĩ khí 100% • Trung thành +2', audit: '70/70 Khớp' });
+    renderAgentSimulationFeedback(`Khen thưởng ${amount} Tiền động viên ${npcInfo.name}. Sĩ khí tối đa.`, { cash: `-${amount} Qian`, npc: 'Sĩ khí 100% • Trung thành +2', audit: '70/70 Khớp' });
     await Promise.all([loadStatus(), loadDeckNpcs(), loadDeckLedger()]);
   } finally {
     setProcessingLock(false, null);
