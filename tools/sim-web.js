@@ -2282,6 +2282,16 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
             replyNarrative = `Lương Diễn đang tại ${subLocation}, liền viết mật thư lệnh bài giao cho gia đinh phi ngựa về Xưởng Lương Thị. Thợ cả Trần Bảo mở thư tuân lệnh, hạ lệnh thợ xưởng hoàn thiện 5 chiếc khiên trúc bọc da!`;
             dispatchType = 'COURIER';
           }
+        } else if (userPrompt.includes('uống rượu') || userPrompt.includes('nghỉ ngơi') || userPrompt.includes('tĩnh dưỡng') || userPrompt.includes('rượu đào viên')) {
+          targetLoc = subLocation;
+          runSqlJson(`UPDATE player_state SET fatigue = MAX(0, fatigue - 40), health = MIN(100, health + 10) WHERE player_id = 'PLY-0001';`);
+          replyNarrative = 'Lương Diễn dừng bước nghỉ ngơi, nâng chén rượu ấm đàm đạo phong vân thiên hạ. Thân tâm thư thái, khí lực hồi phục dồi dào (-40 Thể lực, +10 Khí huyết)!';
+          dispatchType = 'LOCAL';
+        } else if (userPrompt.includes('hồi nguyên hoàn') || userPrompt.includes('uống thuốc') || userPrompt.includes('trị thương')) {
+          targetLoc = subLocation;
+          runSqlJson(`UPDATE player_state SET fatigue = 0, health = 100 WHERE player_id = 'PLY-0001';`);
+          replyNarrative = 'Lương Diễn uống một viên Hồi Nguyên Hoàn luyện từ chu sa và thảo dược quý. Đan dược tan trong miệng, khí huyết toàn thân bừng sáng, thể lực hồi phục toàn diện (Thể lực về 0, Khí huyết 100%)!';
+          dispatchType = 'LOCAL';
         } else if (userPrompt.includes('chiếu')) {
           targetLoc = 'Xưởng Lương Thị';
           actionToRun = {
