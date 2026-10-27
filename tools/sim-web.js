@@ -260,6 +260,158 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // 8. GET /api/scene - Current Narrative & Tactical Choice Scene
+  if (req.method === 'GET' && pathname === '/api/scene') {
+    try {
+      const player = runSqlJson(`SELECT * FROM player_state LIMIT 1;`)[0] || {};
+      const zhangFei = runSqlJson(`SELECT * FROM npc_state WHERE npc_id = 'NPC-0002' LIMIT 1;`)[0] || { name: 'Trương Phi (Dực Đức)', war_attr: 97, loyalty: 65 };
+      const relations = [
+        { name: 'Lưu Bị (Huyền Đức)', role: 'Nghĩa Quân Thống Lĩnh', score: 70, target: 100, status: 'Tâm Phúc Quân Sư' },
+        { name: 'Trương Phi (Dực Đức)', role: 'Tiên Phong Mãnh Tướng', score: 65, target: 100, status: 'Tử Sinh Huynh Đệ' },
+        { name: 'Quan Vũ (Vân Trường)', role: 'Tiên Phong Mãnh Tướng', score: 60, target: 100, status: 'Kính Trọng Mưu Lược' },
+        { name: 'Lư Thực (Tử Cán)', role: 'Bắc Quân Trung Lang Tướng', score: 50, target: 100, status: 'Ân Sư Kính Mến' }
+      ];
+
+      const sceneData = {
+        success: true,
+        campaign: {
+          title: 'TAM QUỐC CHÍ • LƯƠNG THỊ PHONG VÂN LỤC',
+          date: 'Ngày 2 Tháng 5 Năm 184 SCN',
+          turn: 6,
+          location: 'Trang Viên Vườn Đào Hạ Trạch — Nam Thành Huyện Trác',
+          subLocations: ['Vườn Đào', 'Chợ Đông Môn', 'Xưởng Lương Thị']
+        },
+        npc: {
+          id: 'NPC-0002',
+          name: 'Trương Phi (Dực Đức)',
+          title: 'Hào Kiệt Huyện Trác — WAR 97',
+          sentiment: 65,
+          sentimentStatus: 'Hảo cảm: +25 (Gắn kết +50)'
+        },
+        lastCheck: {
+          status: 'THÀNH CÔNG',
+          type: 'KIỂM TRA XẢO ĐẢO (WAR/COM)',
+          title: 'Đấu Thương Thực Chiến Cùng Trương Phi',
+          score: 48,
+          dc: 35,
+          formula: '[WAR 58 * 0.5 = 29] + [Kỹ năng Thương Pháp +10] + [D20: 9] = 48 >= DC 35'
+        },
+        narrative: 'Trương Phi đặt vò rượu Trác Thành Trán Nương xuống gốc đào, lau miệng cười vang: "Lương Chí Viễn dệt đường thương vừa rồi đệ lĩnh ngộ nhanh lắm! Lò mổ của lão Trương hôm nay vừa lột được 10 tấm da trâu, da bò thượng hạng (100 Tiền/tấm). Đệ có muốn mua về xưởng làm giáp lương quân dụng không? Hay muốn cùng Trương đấu thêm vài hiệp thương pháp nữa trước khi ra chợ gặp Lưu Huyền Đức và Quan Vân Trường?"',
+        options: [
+          {
+            id: 'OPT_1',
+            icon: '🛒',
+            title: 'Mua sỉ 8 tấm da thuộc của Trương Phi (Chi 800 Tiền)',
+            desc: '+8 COM-LEATH vào kho • Hảo cảm Trương Phi +2 • COM Check DC 35',
+            action: { type: 'TRADE_BUY', item_code: 'COM-LEATH', quantity: 8, unit_price: 100, counterparty: 'Trương Phi (Lò mổ Huyện Trác)', game_date: '184-05-02' }
+          },
+          {
+            id: 'OPT_2',
+            icon: '⚔️',
+            title: 'Thỉnh giáo Trương Phi đấu thương thực chiến đợt 2 (Miễn phí)',
+            desc: 'Luyện Thương Pháp (+8 EXP SKL-WAR-SPEAR, WAR +1) • Hảo cảm Trương Phi +5 • WAR Check DC 45',
+            action: { type: 'REWARD_NPC', npc_id: 'NPC-0007', amount: 50, game_date: '184-05-02' }
+          },
+          {
+            id: 'OPT_3',
+            icon: '🌸',
+            title: 'Rời Vườn Đào, đi tới Chợ Đông Môn tìm gặp Lưu Bị & Quan Vũ',
+            desc: 'Chuyển cảnh sang Chợ Huyện Trác & Kho Lương (Mất 0 ngày)',
+            action: { type: 'MOVE_LOCATION', new_location: 'Chợ Đông Môn (Huyện Trác)', game_date: '184-05-02' }
+          },
+          {
+            id: 'OPT_4',
+            icon: '🏭',
+            title: 'Trở về Lương Thị Chức Tác Phường điều hành sản xuất',
+            desc: 'Quản lý thợ dệt Trần Bảo, đóng gói bồ lương đan & khiên trúc',
+            action: { type: 'PRODUCTION_BATCH', recipe: 'PROD-MAT', batch_size: 10, game_date: '184-05-02' }
+          }
+        ],
+        relations
+      };
+
+      sendJson(res, 200, sceneData);
+    } catch (err) {
+      sendJson(res, 500, { success: false, error: err.message });
+    }
+    return;
+  }
+
+  // 9. POST /api/agent/prompt - Agent Bridge Natural Language Dispatcher
+  if (req.method === 'POST' && pathname === '/api/agent/prompt') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        const userPrompt = (payload.prompt || '').trim().toLowerCase();
+        const core = new SimulationCore(DB_PATH);
+
+        let actionToRun = null;
+        let replyNarrative = '';
+
+        if (userPrompt.includes('mua') && (userPrompt.includes('da') || userPrompt.includes('leather'))) {
+          actionToRun = {
+            type: 'TRADE_BUY',
+            item_code: 'COM-LEATH',
+            quantity: 8,
+            unit_price: 100,
+            counterparty: 'Trương Phi (Lò mổ Trác Quận)',
+            game_date: '184-05-02'
+          };
+          replyNarrative = 'Trương Phi sảng khoái vỗ đùi: "Tốt lắm! 8 tấm da trâu hảo hạng này giao cho đệ, lát nữa sai gia nhân chuyển thẳng về xưởng Lương Thị!"';
+        } else if (userPrompt.includes('mua') && (userPrompt.includes('lương') || userPrompt.includes('gạo') || userPrompt.includes('grain'))) {
+          actionToRun = {
+            type: 'TRADE_BUY',
+            item_code: 'COM-GRAIN',
+            quantity: 5,
+            unit_price: 160,
+            counterparty: 'Lương thương Huyện Trác',
+            game_date: '184-05-02'
+          };
+          replyNarrative = 'Đoàn xe vận lương đã nhập thêm 5 Thạch tiểu mạch vào kho dự trữ. Quân lương sung túc!';
+        } else if (userPrompt.includes('bán') && (userPrompt.includes('muối') || userPrompt.includes('salt'))) {
+          actionToRun = {
+            type: 'TRADE_SELL',
+            item_code: 'COM-SALT',
+            quantity: 10,
+            unit_price: 85,
+            counterparty: 'Thương nhân Ký Châu',
+            game_date: '184-05-02'
+          };
+          replyNarrative = 'Thương nhân Ký Châu trao ngay 850 đồng tiền thanh toán cho 10 Đấu muối biển. Tiền mặt lưu động tăng mạnh!';
+        } else if (userPrompt.includes('thưởng') || userPrompt.includes('tiền')) {
+          actionToRun = {
+            type: 'REWARD_NPC',
+            npc_id: 'NPC-0007',
+            amount: 100,
+            game_date: '184-05-02'
+          };
+          replyNarrative = 'Trần Bảo nhận 100 Tiền thưởng công, cảm kích khôn xiết, nguyện hết lòng dốc sức vì Lương gia!';
+        } else {
+          // General dialogue / consultation response
+          replyNarrative = `Lương Diễn trầm ngâm đàm đạo: "${payload.prompt}". Trương Phi nghe xong gật gù khen phải, hào khí dâng cao!`;
+        }
+
+        let execResult = null;
+        if (actionToRun) {
+          actionToRun.idempotency_key = `AGT_${Date.now()}`;
+          execResult = core.executeAction(actionToRun);
+        }
+
+        sendJson(res, 200, {
+          success: true,
+          narrative: replyNarrative,
+          executedAction: execResult,
+          timestamp: new Date().toISOString()
+        });
+      } catch (err) {
+        sendJson(res, 400, { success: false, error: err.message });
+      }
+    });
+    return;
+  }
+
   // -------------------------------------------------------------
   // STATIC FILE SERVING
   // -------------------------------------------------------------

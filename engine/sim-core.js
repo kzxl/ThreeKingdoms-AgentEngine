@@ -103,6 +103,10 @@ class SimulationCore {
         return this._executePayWages(action);
       case 'RECORD_BOUNTY':
         return this._executeRecordBounty(action);
+      case 'REWARD_NPC':
+        return this._executeRewardNpc(action);
+      case 'MOVE_LOCATION':
+        return this._executeMoveLocation(action);
       default:
         return { success: false, code: 'UNKNOWN_ACTION', error: `Unknown action type: ${action.type}` };
     }
@@ -470,6 +474,103 @@ class SimulationCore {
         txnId,
         bountyAmount: amount,
         newCashBalance: newBal
+      }
+    };
+  }
+
+  // REWARD_NPC: Reward a retainer or artisan with cash, boosting loyalty and morale
+  _executeRewardNpc(action) {
+    const { npc_id, amount = 100, game_date = '184-05-02', idempotency_key } = action;
+
+    if (!npc_id || amount <= 0) {
+      return { success: false, code: 'INVALID_PARAMS', error: 'Invalid npc_id or amount.' };
+    }
+
+    const playerRows = runSqlJson(this.dbPath, `SELECT liquid_cash FROM player_state LIMIT 1;`)[0];
+    if (!playerRows || Number(playerRows.liquid_cash) < amount) {
+      return { success: false, code: 'INSUFFICIENT_FUNDS', error: `Insufficient cash to reward NPC.` };
+    }
+
+    const npcRows = runSqlJson(this.dbPath, `SELECT name, morale, loyalty FROM npc_state WHERE npc_id = '${npc_id}' LIMIT 1;`);
+    if (!npcRows || npcRows.length === 0) {
+      return { success: false, code: 'NPC_NOT_FOUND', error: `NPC ${npc_id} not found.` };
+    }
+    const npc = npcRows[0];
+
+    const txnId = `TXN-${game_date.replace(/-/g, '')}-${Date.now().toString().slice(-4)}`;
+    const actionId = `ACT-${Date.now()}`;
+    const lastTxn = runSqlJson(this.dbPath, `SELECT balance FROM cashflow_ledger ORDER BY game_date DESC, txn_id DESC LIMIT 1;`)[0];
+    const newBal = (lastTxn ? Number(lastTxn.balance) : Number(playerRows.liquid_cash)) - amount;
+
+    const newMorale = Math.min(100, Number(npc.morale) + 10);
+    const newLoyalty = Math.min(100, Number(npc.loyalty) + 5);
+
+    const sql = `
+      UPDATE player_state SET liquid_cash = liquid_cash - ${amount};
+
+      UPDATE npc_state SET
+        morale = ${newMorale},
+        loyalty = ${newLoyalty}
+      WHERE npc_id = '${npc_id}';
+
+      INSERT INTO cashflow_ledger (txn_id, game_date, counterparty, category, inflow, outflow, balance, memo, status)
+      VALUES ('${txnId}', '${game_date}', '${npc.name.replace(/'/g, "''")}', 'Retainer Reward', 0, ${amount}, ${newBal}, 'Rewarded ${amount} Qian bonus to ${npc.name}', 'Confirmed');
+
+      INSERT INTO account_journal (txn_id, game_date, account_code, debit, credit, memo)
+      VALUES
+        ('${txnId}', '${game_date}', '6001_OPERATING_EXPENSE', ${amount}, 0, 'Bonus reward to ${npc.name}'),
+        ('${txnId}', '${game_date}', '1001_CASH_MOBILE', 0, ${amount}, 'Cash bonus disbursed');
+
+      INSERT INTO action_log (action_id, idempotency_key, turn_number, game_date, action_type, payload, result, status)
+      VALUES ('${actionId}', ${idempotency_key ? `'${idempotency_key}'` : 'NULL'}, (SELECT active_turn FROM campaign_meta LIMIT 1), '${game_date}', 'REWARD_NPC', '${JSON.stringify(action).replace(/'/g, "''")}', '{"npc": "${npc.name}", "morale": ${newMorale}, "loyalty": ${newLoyalty}}', 'SUCCESS');
+    `;
+
+    const batchRes = runSqlBatch(this.dbPath, sql);
+    if (!batchRes.success) {
+      return { success: false, code: 'REWARD_FAILED', error: batchRes.error };
+    }
+
+    this._project();
+
+    return {
+      success: true,
+      data: {
+        npcId: npc_id,
+        name: npc.name,
+        rewardAmount: amount,
+        newMorale,
+        newLoyalty,
+        newCashBalance: newBal
+      }
+    };
+  }
+
+  // MOVE_LOCATION: Advance to a new destination or camp
+  _executeMoveLocation(action) {
+    const { new_location, game_date = '184-05-02', idempotency_key } = action;
+
+    if (!new_location) {
+      return { success: false, code: 'INVALID_PARAMS', error: 'new_location is required.' };
+    }
+
+    const actionId = `ACT-${Date.now()}`;
+    const sql = `
+      UPDATE player_state SET current_location = '${new_location.replace(/'/g, "''")}';
+      INSERT INTO action_log (action_id, idempotency_key, turn_number, game_date, action_type, payload, result, status)
+      VALUES ('${actionId}', ${idempotency_key ? `'${idempotency_key}'` : 'NULL'}, (SELECT active_turn FROM campaign_meta LIMIT 1), '${game_date}', 'MOVE_LOCATION', '${JSON.stringify(action).replace(/'/g, "''")}', '{"new_location": "${new_location.replace(/'/g, "''")}"}', 'SUCCESS');
+    `;
+
+    const batchRes = runSqlBatch(this.dbPath, sql);
+    if (!batchRes.success) {
+      return { success: false, code: 'MOVE_FAILED', error: batchRes.error };
+    }
+
+    this._project();
+
+    return {
+      success: true,
+      data: {
+        newLocation: new_location
       }
     };
   }

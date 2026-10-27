@@ -290,8 +290,8 @@ class WorkshopEngine {
     }
 
     const dateStamp = gameDate.replace(/-/g, '');
-    const txnRevId = `TXN-${dateStamp}-WS_REV`;
-    const txnExpId = `TXN-${dateStamp}-WS_EXP`;
+    const txnRevId = `TXN-${dateStamp}-01_WS_REV`;
+    const txnExpId = `TXN-${dateStamp}-02_WS_EXP`;
     const actionId = `ACT-WS-${dateStamp}`;
 
     // Get current global cash balance

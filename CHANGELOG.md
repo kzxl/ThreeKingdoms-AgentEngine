@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.0] - 2026-10-27
+
+### Added
+- **Tactical Narrative & Simulation Deck Web UI (`public/`, `tools/sim-web.js`)**: Implemented a responsive 2-column layout (70% Left Tabletop Narrative & Choices, 30% Right State Deck & SQLite Ledger) conforming to Anti-AI-Slop and AgentOption UI design standards.
+- **Live Agent Bridge (`/api/scene`, `/api/agent/prompt`)**: Natural language tactical dispatcher routing player agency commands directly to `SimulationCore` while maintaining literary narrative context.
+- **Deterministic D20 Dice-Check Formula Visualizer**: Transparent breakdown of player attributes, skill proficiencies, d20 rolls, and target DC thresholds (e.g. `[WAR 58 * 0.5 = 29] + [Kỹ năng +10] + [D20: 9] = 48 >= DC 35`).
+- **Interactive Branching Choice Cards**: 4 responsive decision cards with dual-dispatch modes (`+ Chọn -` for instant mechanical execution, `AI` for narrative agent evaluation).
+- **Omni Command Prompt Bar**: Freeform natural language tactical input for unconstrained player agency.
+- **SimulationCore Actions**: Added `REWARD_NPC` (retainer morale/loyalty boost with double-entry balancing) and `MOVE_LOCATION` (geographic movement).
+
+### Changed
+- **Workshop Engine Transaction Chronology**: Transaction IDs in `engine/workshop-engine.js` prefixed with `01_WS_REV` and `02_WS_EXP` ensuring chronological revenue-before-expense audit sorting.
+
+---
+
 ## [1.1.0] - 2026-10-27
 
 ### Added
