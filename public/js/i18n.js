@@ -1,0 +1,276 @@
+/**
+ * ThreeKingdoms-AgentEngine: Bilingual i18n Dictionary & Manager (public/js/i18n.js)
+ */
+
+const I18N_DICT = {
+  vi: {
+    appTitle: 'TAM QUỐC CHÍ • LƯƠNG THỊ PHONG VÂN LỤC',
+    mainMenu: 'Menu Chính',
+    dateChip: 'Ngày 2 Tháng 5 Năm 184 SCN (Lượt 6)',
+    cashLabel: 'Tiền Mặt:',
+    grainLabel: 'Lương Thảo:',
+    invLabel: 'Giá Trị Kho:',
+    netWorthLabel: 'Tài Sản Ròng:',
+    bridgeLive: 'AI Bridge: LIVE',
+    auditPassed: '100% Khớp',
+    logsBtn: 'Logs',
+    langToggle: 'VI',
+    // Action Console
+    localityPresence: '📍 HIỆN DIỆN:',
+    localityCourierHint: '✉️ <em>(Muốn điều phối nơi khác: Phái sứ giả / Phi thư tín)</em>',
+    choiceHeader: 'QUYẾT SÁCH BỐI CẢNH (CHIẾN LƯỢC HÀNH TRÌNH):',
+    choiceMode: 'Chế độ: <strong>Text-Based RPG + SimCore</strong>',
+    btnSelect: '+ Chọn -',
+    btnAi: 'AI',
+    btnOmniAi: 'Gửi AI Core',
+    btnOmniInstant: 'Tức Thì',
+    // Protagonist Card
+    protagSubtitle: 'Thế Gia Thương Nhân • Trác Huyện',
+    ageUnit: 'Tuổi',
+    hpLabel: '❤️ Sinh Lực',
+    moraleLabel: '⚡ Sĩ Khí',
+    attrInt: 'Trí',
+    attrCom: 'Thương',
+    attrDip: 'Ngoại',
+    attrLdr: 'Soái',
+    attrLog: 'Hậu',
+    attrPol: 'Chính',
+    attrCra: 'Khéo',
+    attrWar: 'Võ',
+    // Milestone
+    milestoneTitle: 'Tiến Độ Kết Nghĩa Vườn Đào (RELATIONS.md)',
+    milestoneDeadline: 'Hạn: 10/02/184',
+    milestoneHint: 'Gặp đủ 3 Hào Kiệt dưới đây để mở khóa đại lễ "Đào Viên Kết Nghĩa" Lưu - Quan - Trương.',
+    completedTag: '(Đạt)',
+    // Tabs
+    tabInv: '📦 Kho Xưởng',
+    tabNpc: '👥 Lương Nhân',
+    tabLedger: '📜 Sổ Cái TXN',
+    tabAiFeed: '🤖 AI Feed',
+    // Table
+    thSku: 'Mã SKU',
+    thDesc: 'Mô tả',
+    thQty: 'SL',
+    thPrice: 'Đơn giá',
+    thAction: 'Thao tác',
+    btnSell: 'Bán',
+    btnBuy: 'Mua',
+    btnReward: '🎁 Thưởng 100 Tiền',
+    // Modal
+    modalTradeTitle: 'Giao Dịch Vật Phẩm',
+    modalSkuLabel: 'Mã Mặt Hàng (SKU Code)',
+    modalQtyLabel: 'Số Lượng Giao Dịch',
+    modalPriceLabel: 'Đơn Giá (Qian / Đơn vị)',
+    modalPartnerLabel: 'Đối Tác Giao Dịch (Counterparty)',
+    modalTotalLabel: 'Tổng Giá Trị Giao Dịch:',
+    btnCancel: 'Hủy Bỏ',
+    btnConfirm: 'Xác Nhận Thực Thi',
+    // Location & World Map
+    btnWorldMap: 'Dư Đồ Tam Quốc',
+    worldMapTitle: '🗺️ Dư Đồ Tam Quốc • Chiến Tuyến Khởi Nghĩa Khăn Vàng (184 SCN)',
+    worldMapSub: 'Khảo sát lộ trình hành quân, cự ly dịch trạm, an ninh và quân lương tiêu hao',
+    lblDist: 'Cự Ly Hành Quân',
+    lblDuration: 'Thời Gian Di Chuyển',
+    lblGrainCost: 'Quân Lương Hao Phí',
+    lblThreat: 'Tình Trạng An Ninh',
+    lblIntel: 'Quân Tình & Bối Cảnh',
+    lblFigures: 'Hào Kiệt & Quan Binh Hiện Diện',
+    btnCurrentPos: '📍 Đang Ở Khu Vực Này',
+    btnMarchTo: '🏇 Khởi Hành Hành Quân Đến',
+    legendCurrent: 'Vị trí hiện tại',
+    legendBattle: 'Chiến trường giao tranh',
+    legendSafe: 'Trọng trấn an định',
+    btnCloseMap: 'Đóng Dư Đồ'
+  },
+  en: {
+    appTitle: 'THREE KINGDOMS • LIANG CHRONICLES',
+    mainMenu: 'Main Menu',
+    dateChip: 'May 2, 184 AD (Turn 6)',
+    cashLabel: 'Cash:',
+    grainLabel: 'Grain:',
+    invLabel: 'Warehouse:',
+    netWorthLabel: 'Net Worth:',
+    bridgeLive: 'AI Bridge: LIVE',
+    auditPassed: '100% Match',
+    logsBtn: 'Logs',
+    langToggle: 'EN',
+    // Action Console
+    localityPresence: '📍 PRESENCE:',
+    localityCourierHint: '✉️ <em>(To direct elsewhere: Dispatch courier / Send letter)</em>',
+    choiceHeader: 'CONTEXTUAL STRATEGY DECISIONS:',
+    choiceMode: 'Mode: <strong>Text-Based RPG + SimCore</strong>',
+    btnSelect: '+ Select -',
+    btnAi: 'AI',
+    btnOmniAi: 'Send AI Core',
+    btnOmniInstant: 'Instant',
+    // Protagonist Card
+    protagSubtitle: 'Merchant Gentry • Zhuo County',
+    ageUnit: 'Y/O',
+    hpLabel: '❤️ Health',
+    moraleLabel: '⚡ Morale',
+    attrInt: 'INT',
+    attrCom: 'COM',
+    attrDip: 'DIP',
+    attrLdr: 'LDR',
+    attrLog: 'LOG',
+    attrPol: 'POL',
+    attrCra: 'CRA',
+    attrWar: 'WAR',
+    // Milestone
+    milestoneTitle: 'Peach Garden Oath Progress (RELATIONS.md)',
+    milestoneDeadline: 'Due: 184-05-10',
+    milestoneHint: 'Rendezvous with all 3 Heroes to unlock the Oath of the Peach Garden ceremony.',
+    completedTag: '(Achieved)',
+    // Tabs
+    tabInv: '📦 Warehouse',
+    tabNpc: '👥 Retainers',
+    tabLedger: '📜 TXN Ledger',
+    tabAiFeed: '🤖 AI Feed',
+    // Table
+    thSku: 'SKU Code',
+    thDesc: 'Description',
+    thQty: 'Qty',
+    thPrice: 'Unit Price',
+    thAction: 'Actions',
+    btnSell: 'Sell',
+    btnBuy: 'Buy',
+    btnReward: '🎁 Reward 100 Qian',
+    // Modal
+    modalTradeTitle: 'Trade Commodities',
+    modalSkuLabel: 'Item Code (SKU)',
+    modalQtyLabel: 'Trade Quantity',
+    modalPriceLabel: 'Unit Price (Qian / Unit)',
+    modalPartnerLabel: 'Counterparty',
+    modalTotalLabel: 'Total Transaction Value:',
+    btnCancel: 'Cancel',
+    btnConfirm: 'Confirm Execution',
+    // Location & World Map
+    btnWorldMap: 'Three Kingdoms Map',
+    worldMapTitle: '🗺️ Three Kingdoms Cartography • Yellow Turban Frontlines (184 AD)',
+    worldMapSub: 'Inspect march routes, relay station distances, threats, and grain provisions',
+    lblDist: 'March Distance',
+    lblDuration: 'March Duration',
+    lblGrainCost: 'Grain & Provisions',
+    lblThreat: 'Security & Threat',
+    lblIntel: 'Strategic Intelligence',
+    lblFigures: 'Key Figures Present',
+    btnCurrentPos: '📍 Currently Located Here',
+    btnMarchTo: '🏇 March Expedition to',
+    legendCurrent: 'Current Location',
+    legendBattle: 'Active Battlefield',
+    legendSafe: 'Secured Stronghold',
+    btnCloseMap: 'Close Map'
+  }
+};
+
+function applyLanguage() {
+  const dict = I18N_DICT[currentLang] || I18N_DICT.vi;
+
+  // Header Title & Chips
+  const titleEl = document.querySelector('.main-title');
+  if (titleEl) titleEl.innerText = dict.appTitle;
+
+  const btnMenu = document.getElementById('btn-main-menu');
+  if (btnMenu) btnMenu.innerHTML = `<span class="icon">🏛️</span> ${dict.mainMenu}`;
+
+  const langLabel = document.getElementById('lang-label');
+  if (langLabel) langLabel.innerText = dict.langToggle;
+
+  const txtBridge = document.getElementById('txt-bridge-status');
+  if (txtBridge) txtBridge.innerText = dict.bridgeLive;
+
+  const btnLogs = document.getElementById('btn-toggle-logs');
+  if (btnLogs) btnLogs.innerText = dict.logsBtn;
+
+  // Locality Banner
+  const locTag = document.getElementById('locality-tag');
+  if (locTag) locTag.innerText = dict.localityPresence;
+
+  const locHint = document.getElementById('locality-courier-hint');
+  if (locHint) locHint.innerHTML = dict.localityCourierHint;
+
+  // Choices Header & Omni Buttons
+  const choicesLabel = document.getElementById('choices-label');
+  if (choicesLabel) choicesLabel.innerText = dict.choiceHeader;
+
+  const choicesSub = document.getElementById('choices-sub');
+  if (choicesSub) choicesSub.innerHTML = `${dict.choiceMode}`;
+
+  const txtOmniAi = document.getElementById('txt-omni-ai');
+  if (txtOmniAi) txtOmniAi.innerText = dict.btnOmniAi;
+
+  const txtOmniInstant = document.getElementById('txt-omni-instant');
+  if (txtOmniInstant) txtOmniInstant.innerText = dict.btnOmniInstant;
+
+  // Protagonist Card
+  const protagTitle = document.getElementById('protagonist-title');
+  if (protagTitle) protagTitle.innerText = dict.protagSubtitle;
+
+  const ageEl = document.getElementById('protagonist-age');
+  if (ageEl && currentStatus?.player) ageEl.innerText = `${currentStatus.player.age || 21} ${dict.ageUnit}`;
+
+  // Tabs Header
+  document.querySelectorAll('.deck-tab-btn').forEach(btn => {
+    const tabId = btn.getAttribute('data-subtab');
+    if (tabId === 'subtab-inventory') btn.innerText = dict.tabInv;
+    if (tabId === 'subtab-npcs') btn.innerText = dict.tabNpc;
+    if (tabId === 'subtab-ledger') btn.innerText = dict.tabLedger;
+    if (tabId === 'subtab-agent-log') btn.innerText = dict.tabAiFeed;
+  });
+
+  // World Map Button & Modal
+  const btnWorldMap = document.getElementById('txt-btn-worldmap');
+  if (btnWorldMap) btnWorldMap.innerText = dict.btnWorldMap;
+
+  const mapTitle = document.getElementById('world-map-title');
+  if (mapTitle) mapTitle.innerText = dict.worldMapTitle;
+
+  const mapSub = document.getElementById('world-map-sub');
+  if (mapSub) mapSub.innerText = dict.worldMapSub;
+
+  const mapLegend = document.getElementById('world-map-legend');
+  if (mapLegend) {
+    mapLegend.innerHTML = `
+      <span><span class="legend-dot current"></span> ${dict.legendCurrent}</span>
+      <span><span class="legend-dot battle"></span> ${dict.legendBattle}</span>
+      <span><span class="legend-dot safe"></span> ${dict.legendSafe}</span>
+    `;
+  }
+
+  const btnCloseMap = document.querySelector('#world-map-modal .modal-footer .btn-outline');
+  if (btnCloseMap) btnCloseMap.innerText = dict.btnCloseMap;
+
+  // Re-render Dynamic Chips & Local POI Navigation if available
+  if (typeof renderDynamicQuickChips === 'function') {
+    renderDynamicQuickChips(activeSubLocation);
+  }
+  if (typeof renderLocalPoiNav === 'function') {
+    renderLocalPoiNav(activeSubLocation);
+  }
+
+  // If World Map modal is open, re-render SVG & Intel
+  const mapModal = document.getElementById('world-map-modal');
+  if (mapModal && !mapModal.classList.contains('hidden')) {
+    if (typeof renderWorldMapSvg === 'function') renderWorldMapSvg();
+    if (typeof renderWorldMapIntel === 'function') renderWorldMapIntel(selectedMapNodeId);
+  }
+
+  // If scene is loaded, re-render choices
+  if (currentScene && currentScene.options && typeof renderChoices === 'function') {
+    renderChoices(currentScene.options);
+  }
+}
+
+function toggleLanguage() {
+  currentLang = currentLang === 'vi' ? 'en' : 'vi';
+  localStorage.setItem('sim_lang', currentLang);
+  applyLanguage();
+  if (typeof showToast === 'function') {
+    showToast(currentLang === 'vi' ? 'Đã chuyển sang Tiếng Việt' : 'Switched to English');
+  }
+}
+
+// Global exports
+window.I18N_DICT = I18N_DICT;
+window.applyLanguage = applyLanguage;
+window.toggleLanguage = toggleLanguage;
