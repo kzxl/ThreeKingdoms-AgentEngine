@@ -61,6 +61,11 @@ async function loadAllData() {
       loadDeckAgentLogs(),
       checkAuditStatus()
     ]);
+
+    // 5. Check and render active historical event alert banner
+    if (typeof checkAndRenderActiveEventBanner === 'function') {
+      await checkAndRenderActiveEventBanner();
+    }
   } catch (err) {
     console.error('Error during initial load:', err);
     showToast(`Lỗi khởi tạo: ${err.message}`, true);

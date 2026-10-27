@@ -260,11 +260,22 @@ function renderRotkEvents(events) {
       if (effParts.length > 0) effectsStr = effParts.join(' • ');
     } catch (e) {}
 
+    let actionBtn = '';
+    if (ev.sessionStatus === 'RESOLVED') {
+      const isAlt = ev.outcomeType === 'ALTERNATE';
+      actionBtn = `<span class="event-choice-badge ${isAlt ? 'alternate' : 'canon'}">✅ Đã Tham Gia (${isAlt ? 'Dị Bản What-If' : 'Chính Sử'})</span>`;
+    } else if (ev.isLocal) {
+      actionBtn = `<button class="btn-select-choice" onclick="openEventParticipationModal('${ev.event_id}')">⚡ Tham Gia Ngay</button>`;
+    }
+
     return `
       <div class="gm-event-card">
         <div class="gm-event-header">
           <div class="gm-event-title">📜 ${ev.name_vi}</div>
-          <span class="gm-event-badge">${ev.historical_year} SCN • ${seasonMap[ev.season] || ev.season}</span>
+          <div style="display:flex;align-items:center;gap:6px;">
+            ${actionBtn}
+            <span class="gm-event-badge">${ev.historical_year} SCN • ${seasonMap[ev.season] || ev.season}</span>
+          </div>
         </div>
         <div class="gm-event-sub">${ev.name_en}</div>
         <div class="gm-event-summary">${ev.summary_vi}</div>
@@ -474,6 +485,142 @@ async function submitLoadSlot(slotName = 'slot_manual') {
   }
 }
 
+let currentActiveLocalEvent = null;
+
+async function checkAndRenderActiveEventBanner() {
+  const banner = document.getElementById('historical-event-banner');
+  if (!banner) return;
+
+  try {
+    const data = await apiFetchActiveEvents();
+    if (!data.success || !data.events) {
+      banner.classList.add('hidden');
+      return;
+    }
+
+    // Find local event that has not yet been resolved
+    const localActive = data.events.find(e => e.isLocal && !e.isResolved);
+    if (localActive) {
+      currentActiveLocalEvent = localActive;
+      const titleEl = document.getElementById('event-banner-title');
+      const descEl = document.getElementById('event-banner-desc');
+      if (titleEl) titleEl.innerText = `${localActive.name_vi} (${localActive.historical_year} SCN)`;
+      if (descEl) descEl.innerText = localActive.summary_vi;
+      banner.classList.remove('hidden');
+    } else {
+      currentActiveLocalEvent = null;
+      banner.classList.add('hidden');
+    }
+  } catch (err) {
+    banner.classList.add('hidden');
+  }
+}
+
+function openEventParticipationModal(eventId = null) {
+  let targetEvent = currentActiveLocalEvent;
+  if (eventId && cachedRotkEvents.length > 0) {
+    const found = cachedRotkEvents.find(e => e.event_id === eventId);
+    if (found) targetEvent = found;
+  }
+
+  if (!targetEvent) {
+    showToast('Không có biến cố lịch sử khả dụng tại địa bàn hiện tại.', true);
+    return;
+  }
+
+  const modal = document.getElementById('event-participation-modal');
+  if (!modal) return;
+
+  document.getElementById('ep-modal-title').innerText = `📜 Biến Cố Lịch Sử: ${targetEvent.name_vi}`;
+  document.getElementById('ep-modal-subtitle').innerText = `${targetEvent.historical_year} SCN • ${targetEvent.location_id || 'Trung Nguyên'} • ${targetEvent.name_en}`;
+  document.getElementById('ep-modal-summary').innerText = targetEvent.summary_vi;
+  
+  const metaEl = document.getElementById('ep-modal-meta');
+  if (metaEl) {
+    metaEl.innerHTML = `
+      <div>📍 Địa bàn: <strong>${targetEvent.location_id || 'Trung Nguyên'}</strong></div>
+      <div>👤 Nhân vật then chốt: <strong>${targetEvent.primary_character_id || 'Chư Hầu'}</strong></div>
+      <div>⚖️ Diễn biến lịch sử: <em>${targetEvent.historical_outcome_vi || 'Đang diễn ra'}</em></div>
+    `;
+  }
+
+  const choicesContainer = document.getElementById('ep-modal-choices');
+  const resultBox = document.getElementById('ep-modal-result');
+  if (resultBox) resultBox.classList.add('hidden');
+
+  if (choicesContainer) {
+    const choices = targetEvent.choices || [];
+    if (choices.length === 0) {
+      choicesContainer.innerHTML = '<div style="color:#94a3b8;padding:10px;">Không có quyết sách tương tác nào cho sự kiện này.</div>';
+    } else {
+      choicesContainer.innerHTML = choices.map(c => {
+        let costStr = '';
+        if (c.required_cost && c.required_cost.cash) {
+          costStr += `Chi phí: <strong>${c.required_cost.cash.toLocaleString()} Tiền</strong> `;
+        }
+        if (c.required_stat) {
+          const statKey = Object.keys(c.required_stat)[0];
+          costStr += `Yêu cầu chỉ số: <strong>${statKey.toUpperCase()} ≥ ${c.required_stat[statKey]}</strong>`;
+        }
+
+        const isAlternate = c.outcome_type === 'ALTERNATE';
+        const badgeClass = isAlternate ? 'alternate' : 'canon';
+        const badgeText = isAlternate ? 'Dị Bản (What-If)' : 'Chính Sử (Canon)';
+
+        return `
+          <div class="event-choice-card">
+            <div class="event-choice-header">
+              <span class="event-choice-title">👉 ${c.title_vi}</span>
+              <span class="event-choice-badge ${badgeClass}">${badgeText}</span>
+            </div>
+            <div class="event-choice-narrative">${c.narrative_vi}</div>
+            <div class="event-choice-footer">
+              <span class="event-choice-cost">${costStr || 'Không đòi hỏi tài nguyên'}</span>
+              <button class="btn-select-choice" onclick="submitEventChoice('${targetEvent.event_id}', '${c.choice_id}')">
+                ⚔️ Quyết Định Hành Động
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+  }
+
+  modal.classList.remove('hidden');
+}
+
+function closeEventParticipationModal() {
+  const modal = document.getElementById('event-participation-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+async function submitEventChoice(eventId, choiceId) {
+  try {
+    showToast('Đang thực thi quyết sách lịch sử...');
+    const result = await apiParticipateInEvent(eventId, choiceId);
+    if (!result.success) throw new Error(result.error);
+
+    const resultBox = document.getElementById('ep-modal-result');
+    if (resultBox) {
+      resultBox.innerHTML = `
+        <div style="font-weight:700;margin-bottom:4px;color:#34d399;">✅ ĐÃ HOÀN TẤT THAM GIA BIẾN CỐ LỊCH SỬ!</div>
+        <div style="margin-bottom:6px;"><strong>Quyết Sách:</strong> ${result.choiceTitleVi} (${result.outcomeType === 'ALTERNATE' ? 'Dị Bản What-If' : 'Chính Sử'})</div>
+        <div style="margin-bottom:6px;">${result.resolutionNarrative}</div>
+        <div style="font-size:11px;color:#94a3b8;">${result.netCashDelta !== 0 ? `Biến động ngân lượng: ${result.netCashDelta > 0 ? '+' : ''}${result.netCashDelta.toLocaleString()} Tiền (Đã hạch toán vào Sổ cái kép)` : 'Không thay đổi số dư tiền mặt.'}</div>
+      `;
+      resultBox.classList.remove('hidden');
+    }
+
+    showToast(`Đã tham gia sự kiện thành công!`);
+    await checkAndRenderActiveEventBanner();
+    if (typeof loadAllData === 'function') {
+      await loadAllData();
+    }
+  } catch (err) {
+    showToast(`Lỗi tham gia sự kiện: ${err.message}`, true);
+  }
+}
+
 // Global exposure
 window.isProcessingAction = isProcessingAction;
 window.showToast = showToast;
@@ -491,3 +638,7 @@ window.submitStartNewGame = submitStartNewGame;
 window.submitSaveSlot = submitSaveSlot;
 window.submitLoadSlot = submitLoadSlot;
 window.filterRotkEvents = filterRotkEvents;
+window.checkAndRenderActiveEventBanner = checkAndRenderActiveEventBanner;
+window.openEventParticipationModal = openEventParticipationModal;
+window.closeEventParticipationModal = closeEventParticipationModal;
+window.submitEventChoice = submitEventChoice;

@@ -238,7 +238,8 @@ CREATE TABLE IF NOT EXISTS master_events (
     historical_outcome_vi TEXT,
     historical_outcome_en TEXT,
     gameplay_trigger_type TEXT DEFAULT 'STORY_MILESTONE', -- 'STORY_MILESTONE', 'CHOICE_EVENT', 'BATTLE_DUEL', 'DIPLOMACY'
-    gameplay_effects TEXT -- JSON object with reputation, sentiment deltas, item rewards
+    gameplay_effects TEXT, -- JSON object with reputation, sentiment deltas, item rewards
+    choices_json TEXT -- JSON array of interactive choices [{ choice_id, title_vi, title_en, required_cost, required_stat, outcome_type, rewards, narrative_vi, narrative_en }]
 );
 
 -- Master Indices for Rapid Lookups

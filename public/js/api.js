@@ -148,6 +148,24 @@ async function apiFetchMasterCatalog() {
   return data.catalog;
 }
 
+async function apiFetchActiveEvents() {
+  const res = await fetch(`${API_BASE}/api/game/events/active`);
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Failed to fetch active events');
+  return data;
+}
+
+async function apiParticipateInEvent(eventId, choiceId, customNarrative = null) {
+  const res = await fetch(`${API_BASE}/api/game/events/participate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ eventId, choiceId, customNarrative })
+  });
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Failed to participate in event');
+  return data;
+}
+
 // Global exposure
 window.apiFetchStatus = apiFetchStatus;
 window.apiFetchAudit = apiFetchAudit;
@@ -166,3 +184,5 @@ window.apiStartNewGame = apiStartNewGame;
 window.apiSaveSlot = apiSaveSlot;
 window.apiLoadSlot = apiLoadSlot;
 window.apiFetchMasterCatalog = apiFetchMasterCatalog;
+window.apiFetchActiveEvents = apiFetchActiveEvents;
+window.apiParticipateInEvent = apiParticipateInEvent;

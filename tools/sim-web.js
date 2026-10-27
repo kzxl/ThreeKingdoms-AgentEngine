@@ -15,6 +15,7 @@ const { execSync } = require('child_process');
 const { SimulationCore } = require('../engine/sim-core');
 const { WorkshopEngine } = require('../engine/workshop-engine');
 const { GameplayManager } = require('../engine/gameplay-manager');
+const { EventManager } = require('../engine/event-manager');
 const {
   auditSqliteCashflow,
   auditSqliteInventory,
@@ -30,6 +31,7 @@ const DB_PATH = process.env.SIM_DB_PATH || path.join(SAVES_DIR, 'session.db');
 const DEFAULT_PORT = parseInt(process.env.PORT || process.argv[2] || '3300', 10);
 
 const gameplayManager = new GameplayManager(DB_PATH);
+const eventManager = new EventManager(DB_PATH);
 
 // In-Memory Agent Simulation Activity Stream
 const agentActivityStream = [
@@ -440,6 +442,51 @@ const server = http.createServer((req, res) => {
     } catch (err) {
       sendJson(res, 500, { success: false, error: err.message });
     }
+    return;
+  }
+
+  // 5l. GET /api/game/events/active - Active Events for current location & date with choices
+  if (req.method === 'GET' && pathname === '/api/game/events/active') {
+    try {
+      const player = runSqlJson(`SELECT * FROM player_state LIMIT 1;`)[0] || {};
+      const meta = runSqlJson(`SELECT * FROM campaign_meta LIMIT 1;`)[0] || {};
+      const locationId = player.current_location || 'LOC-0001';
+      const gameDate = meta.current_date || '184-02-01';
+      const activeTurn = meta.active_turn || 1;
+
+      const events = eventManager.getActiveEvents(locationId, gameDate, activeTurn);
+      sendJson(res, 200, {
+        success: true,
+        locationId,
+        gameDate,
+        activeTurn,
+        events
+      });
+    } catch (err) {
+      sendJson(res, 500, { success: false, error: err.message });
+    }
+    return;
+  }
+
+  // 5m. POST /api/game/events/participate - Submit player's choice in a historical event
+  if (req.method === 'POST' && pathname === '/api/game/events/participate') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        const { eventId, choiceId, customNarrative } = payload;
+        if (!eventId || !choiceId) {
+          sendJson(res, 400, { success: false, error: 'Thiếu eventId hoặc choiceId.' });
+          return;
+        }
+
+        const result = eventManager.participateInEvent({ eventId, choiceId, customNarrative });
+        sendJson(res, 200, result);
+      } catch (err) {
+        sendJson(res, 500, { success: false, error: err.message });
+      }
+    });
     return;
   }
 

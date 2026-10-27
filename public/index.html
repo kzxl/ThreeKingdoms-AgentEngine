@@ -93,6 +93,18 @@
         </div>
       </div>
 
+      <!-- Historical Event Alert Banner (Prompts player to intervene in historic moments) -->
+      <div id="historical-event-banner" class="historical-event-banner hidden">
+        <div class="event-banner-content">
+          <div class="event-banner-badge">⚡ ĐẠI BIẾN CỐ LỊCH SỬ TAM QUỐC</div>
+          <div class="event-banner-title" id="event-banner-title">Đang quét sự kiện lịch sử...</div>
+          <div class="event-banner-desc" id="event-banner-desc">Địa điểm và thời khắc phù hợp để can thiệp lịch sử.</div>
+        </div>
+        <button class="btn-event-participate" id="btn-event-participate" onclick="openEventParticipationModal()">
+          ⚔️ Tham Gia Quyết Sách
+        </button>
+      </div>
+
       <!-- 2. Story Chronicle / Interactive Chat Stream (Continuous History) -->
       <div class="story-chronicle" id="story-chronicle">
         <!-- Message turns appended dynamically here -->
@@ -470,6 +482,47 @@
 
       <div class="modal-footer">
         <button class="btn btn-outline" onclick="closeGameManagerModal()">Đóng Cửa Sổ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Interactive Historical Event Participation Modal -->
+  <div id="event-participation-modal" class="modal-backdrop hidden">
+    <div class="modal-card event-modal-card">
+      <div class="modal-header">
+        <div class="event-modal-header-left">
+          <h3 class="modal-title" id="ep-modal-title">📜 Biến Cố Lịch Sử: Đào Viên Kết Nghĩa</h3>
+          <span class="event-modal-subtitle" id="ep-modal-subtitle">184 SCN • Trác Quận • Tam Phân Thiên Hạ Khởi Điểm</span>
+        </div>
+        <button class="modal-close-btn" onclick="closeEventParticipationModal()">&times;</button>
+      </div>
+
+      <div class="modal-body event-modal-body">
+        <!-- Event Lore & Narrative Context -->
+        <div class="event-lore-box">
+          <div class="event-lore-text" id="ep-modal-summary">
+            <!-- Dynamically populated -->
+          </div>
+          <div class="event-stake-meta" id="ep-modal-meta">
+            <!-- Location, Figures, Threat -->
+          </div>
+        </div>
+
+        <h4 class="event-choices-heading">🎯 Lựa Chọn Quyết Định Của Bạn (Player Agency & Alternate History):</h4>
+        
+        <!-- Options Grid -->
+        <div class="event-choices-list" id="ep-modal-choices">
+          <!-- Dynamically populated choices -->
+        </div>
+
+        <!-- Resolution Feedback Panel (when submitted) -->
+        <div id="ep-modal-result" class="event-resolution-box hidden">
+          <!-- Dynamically populated after choice -->
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeEventParticipationModal()">Đóng Cửa Sổ</button>
       </div>
     </div>
   </div>

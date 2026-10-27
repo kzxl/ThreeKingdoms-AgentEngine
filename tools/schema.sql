@@ -196,6 +196,19 @@ CREATE TABLE IF NOT EXISTS businesses (
     FOREIGN KEY(manager_npc_id) REFERENCES npc_state(npc_id)
 );
 
+-- 14. Session Historical Events & Player Choice Chronicle
+CREATE TABLE IF NOT EXISTS session_events (
+    event_id TEXT PRIMARY KEY,
+    triggered_turn INTEGER NOT NULL,
+    status TEXT NOT NULL DEFAULT 'AVAILABLE', -- 'AVAILABLE', 'RESOLVED', 'IGNORED'
+    player_choice TEXT,                      -- 'OPTION_A', 'OPTION_B', 'OPTION_C'
+    outcome_type TEXT DEFAULT 'CANON',       -- 'CANON', 'ALTERNATE'
+    choice_narrative TEXT,
+    resolution_narrative TEXT,
+    rewards_claimed TEXT,
+    resolved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Indices for rapid querying & integrity checks
 CREATE INDEX IF NOT EXISTS idx_cashflow_date ON cashflow_ledger(game_date);
 CREATE INDEX IF NOT EXISTS idx_stock_mov_item ON stock_movements(item_code);
@@ -204,3 +217,4 @@ CREATE INDEX IF NOT EXISTS idx_account_journal_txn ON account_journal(txn_id);
 CREATE INDEX IF NOT EXISTS idx_action_idempotency ON action_log(idempotency_key);
 CREATE INDEX IF NOT EXISTS idx_npc_business ON npc_state(assigned_business_id);
 CREATE INDEX IF NOT EXISTS idx_npc_skills_npc ON npc_skills(npc_id);
+CREATE INDEX IF NOT EXISTS idx_session_events_status ON session_events(status);
