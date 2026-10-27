@@ -11,7 +11,7 @@
 | **Social Origin** | Fallen Gentry / Minor Merchant Lineage of Zhuo County |
 | **Current Location** | Zhuo County Town (`LOC-0001`), Youzhou |
 | **Primary Base** | Liang Clan Workshop (`BIZ-0001`), East Gate Quarter |
-| **Social Standing** | Respected Master Artisan & Military Logistics Partner |
+| **Social & Military Title**| Victorious Volunteer Staff Advisor & Logistics Officer (Nghĩa Dũng Quân Nhu Tham Mưu) |
 
 ---
 
@@ -19,38 +19,41 @@
 
 | Attribute | Code | Value | Tier / Description |
 |---|---|---|---|
-| **Intelligence** | `INT` | **72** | Sharp analytical mind; strategic terrain mapping and tactical planning |
-| **Politics** | `POL` | **60** | Familiar with county bureaucratic procedures and imperial tax statutes |
-| **Martial Prowess** | `WAR` | **54** | Spear combat upgraded to Competent; learned defensive brace technique |
-| **Leadership** | `LDR` | **64** | Clear communicator; commands loyalty through fairness and discipline |
-| **Diplomacy** | `DIP` | **68** | Articulate, persuasive bargainer; trusted ally of Liu Bei, Guan Yu, Zhang Fei |
-| **Commerce** | `COM` | **76** | Keen commercial instincts; excels at price arbitrage and supply contracts |
-| **Logistics** | `LOG` | **65** | Methodical planner; tracks grain rations, pack beasts, and transit losses |
-| **Craftsmanship** | `CRA` | **62** | Competent weaver, woodworker, and basic leathercraft supervisor |
+| **Intelligence** | `INT` | **74** (+2) | Strategic terrain mapping proved decisive in Battle of Daxing Mountain |
+| **Politics** | `POL` | **62** (+2) | Successfully organized merchant guild municipal defense with Master Lu |
+| **Martial Prowess** | `WAR` | **56** (+2) | Proven frontline spear skill; repelled rebel flankers guarding the baggage train |
+| **Leadership** | `LDR` | **66** (+2) | Commanded baggage escort and volunteer supply lines under battle stress |
+| **Diplomacy** | `DIP` | **68** | Trusted ally of Liu Bei, Guan Yu, Zhang Fei, Master Lu, and Zhang Shiping |
+| **Commerce** | `COM` | **76** | Commercial contracts seamlessly integrated with military operations |
+| **Logistics** | `LOG` | **68** (+3) | Flawless forward supply train; zero food spoilage or gear shortages during march |
+| **Craftsmanship** | `CRA` | **62** | Designed durable leather-bound bamboo shields that absorbed rebel volleys |
 
 ---
 
-## 3. Financial & Asset Dashboard (Month 3 Day 17, 184 AD)
+## 3. Financial & Asset Dashboard (Month 3 Day 24, 184 AD)
 
-- **Liquid Cash on Hand**: **11,690 Qian** (Safe at `BIZ-0001`).
-- **Accounts Receivable (AR)**: **1,950 Qian** (Payable by Liu Bei upon defense victory / bounty under `CTR-01840311-0001`).
-- **Strategic Food Reserve**: **9.60 Dan grain** (Secures 16+ months of workshop rations).
-- **Warehouse Inventory**: Valued at **3,870 Qian** (35 bamboo, 14 hides, 12 twine, 2.5 timber, 1 basket, 2 mats).
-- **Fixed Assets**: **19,400 Qian** (Workshop compound, looms, tools, handcart).
-- **Total Net Worth**: **36,910 Qian**.
-- **Accounts Payable (AP)**: 0 Qian.
+- **Liquid Cash on Hand**: **13,940 Qian** (Workshop safe, includes contract full settlement + 500 bounty).
+- **Accounts Receivable (AR)**: **0 Qian** (Contract `CTR-01840311-0001` 100% paid and settled).
+- **Accounts Payable (AP)**: **0 Qian**.
+- **Strategic Food Reserve**: **9.60 Dan grain** (~288 kg, secured in workshop storeroom).
+- **Warehouse Inventory**: Valued at **21,058 Qian** (Includes 15 spears, 5 swords, 2 pack mules, mats, baskets, hides, bamboo).
+- **Fixed Assets**: **19,400 Qian** (Workshop compound, tools, looms, handcart).
+- **Total Net Worth**: **54,398 Qian** (Dramatic wealth accumulation through trade, manufacturing & war spoils).
 - **Direct Retainers**:
-  - `NPC-0007`: Chen Bao (Workshop Foreman — Authorized for Autonomous Production).
+  - `NPC-0007`: Chen Bao (Workshop Foreman — Successfully ran autonomous batch production).
   - `NPC-0008`: Zhao An (Apprentice & Porter).
 
 ---
 
 ## 4. Current Objectives
 
-- [x] **Procure Strategic Grain**: Purchased 10 Dan @ 160 Qian before wartime price spikes.
-- [x] **Acquire Management Competency**: Unlocked `SKL-MGT-ENTERPRISE` Tier 2 (Delegation SOP).
-- [x] **Procure Defense Materials**: Acquired 80 bamboo, 10 leather hides (Zhang Fei), 8 twine, 5 timber planks (Master Lu).
-- [x] **Fulfill Contract CTR-01840311-0001**: Produced and delivered 10 bamboo shields, 30 baskets, 20 mats to Liu Bei's militia.
-- [x] **Combat & Tactical Research**: Advanced `SKL-WAR-SPEAR` to Tier 2 (Brace technique); scouted Daxing Mountain gorge topography.
-- [ ] **Objective 1 (Battle Intervention)**: Decide whether to accompany Liu Bei's militia as logistics quartermaster, stay to defend Zhuo County with the Merchant Guild, or dispatch tactical map intelligence to Liu Bei.
-- [ ] **Objective 2 (Post-Battle AR Settlement)**: Collect 1,950 Qian balance from victory bounty following the battle of Daxing Mountain.
+- [x] **Procure Strategic Grain**: Purchased 10 Dan @ 160 Qian.
+- [x] **Acquire Management Competency**: Unlocked `SKL-MGT-ENTERPRISE` Tier 2.
+- [x] **Procure Defense Materials**: Acquired bamboo, leather, timber.
+- [x] **Fulfill Contract CTR-01840311-0001**: 100% delivered to Liu Bei's militia.
+- [x] **Execute Combined Strategy (A + B)**:
+  - Rear-guard municipal defense established with Master Lu at East Gate.
+  - Frontline topographic intelligence & baggage escort led to decisive victory at Daxing Mountain.
+  - Contract AR fully settled + 500 cash bounty + 20 weapons + 2 pack mules captured.
+- [ ] **Objective 1 (Commercial / Expansion)**: Decide how to utilize captured military weapons and 2 pack mules (sell weapons to Zhuo Yamen for cash, or equip a private Liang Clan Armed Guard?).
+- [ ] **Objective 2 (Regional Crisis - Qingzhou Calling)**: Governor Liu Yan receives urgent plea from Qingzhou (Thanh Châu) under siege by Yellow Turbans; Colonel Zou Jing and Liu Bei are ordered to relieve Qingzhou. Decide whether to accompany them as official Chief Quartermaster!
