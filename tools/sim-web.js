@@ -415,7 +415,9 @@ const server = http.createServer((req, res) => {
       const characters = runSqlJson(`SELECT * FROM master_characters;`);
       const factions = runSqlJson(`SELECT * FROM master_factions;`);
       const skills = runSqlJson(`SELECT * FROM master_skills;`);
-      sendJson(res, 200, { success: true, catalog: { items, recipes, locations, characters, factions, skills } });
+      const talents = runSqlJson(`SELECT * FROM master_talents;`);
+      const routes = runSqlJson(`SELECT * FROM master_routes;`);
+      sendJson(res, 200, { success: true, catalog: { items, recipes, locations, characters, factions, skills, talents, routes } });
     } catch (err) {
       sendJson(res, 500, { success: false, error: err.message });
     }

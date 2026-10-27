@@ -195,9 +195,38 @@ CREATE TABLE IF NOT EXISTS master_quick_chips (
     display_order INTEGER DEFAULT 0
 );
 
+-- 11. Master Innate Talents & Hero Traits
+CREATE TABLE IF NOT EXISTS master_talents (
+    talent_code TEXT PRIMARY KEY,
+    name_vi TEXT NOT NULL,
+    name_en TEXT NOT NULL,
+    category TEXT NOT NULL, -- 'LEADERSHIP', 'MARTIAL', 'STRATEGY', 'COMMERCE', 'GOVERNANCE'
+    rarity TEXT NOT NULL DEFAULT 'RARE', -- 'COMMON', 'RARE', 'EPIC', 'LEGENDARY'
+    effect_vi TEXT NOT NULL,
+    effect_en TEXT NOT NULL,
+    exclusive_to_npc_id TEXT
+);
+
+-- 12. Master Inter-Citadel Geographic & March Routes
+CREATE TABLE IF NOT EXISTS master_routes (
+    route_id TEXT PRIMARY KEY,
+    source_location_id TEXT NOT NULL,
+    target_location_id TEXT NOT NULL,
+    distance_li INTEGER NOT NULL,
+    terrain_type TEXT NOT NULL, -- 'PLAINS', 'MOUNTAIN_PASS', 'RIVER_WATERWAY', 'PLANK_ROAD'
+    standard_march_days REAL NOT NULL,
+    grain_provision_cost REAL NOT NULL,
+    ambush_risk_level TEXT NOT NULL DEFAULT 'LOW', -- 'LOW', 'MODERATE', 'HIGH', 'EXTREME'
+    description_vi TEXT,
+    description_en TEXT
+);
+
 -- Master Indices for Rapid Lookups
 CREATE INDEX IF NOT EXISTS idx_master_char_loc ON master_characters(baseline_location);
 CREATE INDEX IF NOT EXISTS idx_master_loc_prov ON master_locations(province_vi);
 CREATE INDEX IF NOT EXISTS idx_master_items_cat ON master_items(category);
 CREATE INDEX IF NOT EXISTS idx_master_recipes_prod ON master_recipes(product_item_code);
 CREATE INDEX IF NOT EXISTS idx_master_chips_loc ON master_quick_chips(location_key);
+CREATE INDEX IF NOT EXISTS idx_master_routes_src ON master_routes(source_location_id);
+CREATE INDEX IF NOT EXISTS idx_master_routes_tgt ON master_routes(target_location_id);
+CREATE INDEX IF NOT EXISTS idx_master_talents_npc ON master_talents(exclusive_to_npc_id);
