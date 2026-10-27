@@ -13,6 +13,7 @@ import { EconomyModule } from '../modules/economy/economy.module';
 import { KizunaModule } from '../modules/social-kizuna/kizuna.module';
 import { AgentBridgeModule } from '../modules/agent-bridge/agent-bridge.module';
 import { UtilityAiModule } from '../modules/utility-ai/utility-ai.module';
+import { NpcLifecycleModule } from '../modules/npc-lifecycle/npc-lifecycle.module';
 
 const ROOT_DIR = path.resolve(__dirname, '../..');
 const DB_PATH = process.env.SIM_DB_PATH || path.join(ROOT_DIR, 'saves', 'session.db');
@@ -44,6 +45,7 @@ function getModules() {
   let kizuna = registry.get<KizunaModule>('module.social-kizuna');
   let bridge = registry.get<AgentBridgeModule>('module.agent-bridge');
   let ai = registry.get<UtilityAiModule>('module.utility-ai');
+  let life = registry.get<NpcLifecycleModule>('module.npc-lifecycle');
 
   if (!mil) {
     mil = new MilitaryModule();
@@ -51,16 +53,18 @@ function getModules() {
     kizuna = new KizunaModule();
     bridge = new AgentBridgeModule();
     ai = new UtilityAiModule();
+    life = new NpcLifecycleModule();
 
     registry.register(ai);
     registry.register(mil);
     registry.register(econ);
     registry.register(kizuna);
     registry.register(bridge);
+    registry.register(life);
     registry.initAll(DB_PATH);
   }
 
-  return { mil: mil!, econ: econ!, kizuna: kizuna!, bridge: bridge!, ai: ai! };
+  return { mil: mil!, econ: econ!, kizuna: kizuna!, bridge: bridge!, ai: ai!, life: life! };
 }
 
 // 1. Tool Definitions Catalog
@@ -186,12 +190,29 @@ export const MCP_TOOL_DEFINITIONS: McpToolDefinition[] = [
       type: 'object',
       properties: {}
     }
+  },
+  {
+    name: 'sim_get_npc_journey',
+    description: 'Tra cứu hành trình phát triển tự thân, chí hướng cuộc đời, danh vọng, quân tư và nhật ký chiến tích của một NPC trong thế giới sống.',
+    parameters: {
+      type: 'object',
+      properties: {
+        npcId: {
+          type: 'string',
+          description: 'Mã NPC, ví dụ NPC-0001 (Lưu Bị), NPC-0002 (Quan Vũ), NPC-0003 (Trương Phi), NPC-0007 (Trần Bảo)'
+        },
+        limit: {
+          type: 'number',
+          description: 'Số lượng nhật ký hành trình cần lấy (mặc định 10)'
+        }
+      }
+    }
   }
 ];
 
 // 2. Tool Execution Dispatcher
 export async function executeMcpTool(name: string, args: any): Promise<any> {
-  const { mil, econ, kizuna, bridge } = getModules();
+  const { mil, econ, kizuna, bridge, life } = getModules();
 
   switch (name) {
     case 'sim_query_player': {
@@ -283,6 +304,21 @@ export async function executeMcpTool(name: string, args: any): Promise<any> {
         closingCash: cashResult.finalBalance,
         totalInventoryValue: invResult.totalValue,
         journalBalanced: journalResult.passed
+      };
+    }
+
+    case 'sim_get_npc_journey': {
+      const npcId = args.npcId || 'NPC-0003';
+      const limit = args.limit || 10;
+      const logs = life.getJourneyLogs(npcId, limit);
+      const overview = life.getProgressionOverview();
+      const npcOverview = overview.find((p: any) => p.npc_id === npcId) || null;
+      return {
+        success: true,
+        npcId,
+        progressionOverview: npcOverview,
+        journeyLogsCount: logs.length,
+        recentMilestones: logs
       };
     }
 

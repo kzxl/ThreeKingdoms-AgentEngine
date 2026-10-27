@@ -1,0 +1,17 @@
+{
+  "name": "sim_get_npc_journey",
+  "description": "Tra cứu hành trình phát triển tự thân, chí hướng cuộc đời, danh vọng, quân tư và nhật ký chiến tích của một NPC trong thế giới sống.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "npcId": {
+        "type": "string",
+        "description": "Mã NPC, ví dụ NPC-0001 (Lưu Bị), NPC-0002 (Quan Vũ), NPC-0003 (Trương Phi), NPC-0007 (Trần Bảo)"
+      },
+      "limit": {
+        "type": "number",
+        "description": "Số lượng nhật ký hành trình cần lấy (mặc định 10)"
+      }
+    }
+  }
+}

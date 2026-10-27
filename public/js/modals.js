@@ -204,6 +204,10 @@ async function switchGameManagerTab(tabId) {
   if (tabId === 'chronicles' && cachedRotkEvents.length === 0) {
     await loadAndRenderRotkEvents();
   }
+
+  if (tabId === 'npc-life') {
+    await loadAndRenderNpcLife();
+  }
 }
 
 async function loadAndRenderRotkEvents() {
@@ -621,6 +625,129 @@ async function submitEventChoice(eventId, choiceId) {
   }
 }
 
+// 7. Living World NPC Progression & Chronicles Renderer
+async function loadAndRenderNpcLife() {
+  const grid = document.getElementById('gm-npc-progression-grid');
+  const timeline = document.getElementById('gm-npc-journey-timeline');
+  if (grid) grid.innerHTML = '<div style="color:#94a3b8; padding:10px;">Đang nạp dữ liệu chí hướng nhân vật...</div>';
+  if (timeline) timeline.innerHTML = '<div style="color:#94a3b8; padding:10px;">Đang nạp nhật ký hành trình...</div>';
+
+  try {
+    const [progRes, logsRes] = await Promise.all([
+      apiFetchNpcProgression(),
+      apiFetchNpcJourney(null, 30)
+    ]);
+
+    const progs = progRes.progressions || [];
+    const logs = logsRes.logs || [];
+
+    // Render Progression Grid
+    if (grid) {
+      if (progs.length === 0) {
+        grid.innerHTML = '<div style="color:#64748b;">Chưa có dữ liệu tiến trình tự thân. Hãy bấm nút Vận Hành để kích hoạt.</div>';
+      } else {
+        grid.innerHTML = progs.map(p => {
+          const ambitionMap = {
+            HEGEMON_UNIFIER: { label: '👑 Tranh Bá Đồ Vương', color: '#f59e0b' },
+            RIGHTEOUS_VANGUARD: { label: '⚔️ Chiến Thần Cái Thế', color: '#ef4444' },
+            LOYAL_BROTHERHOOD: { label: '🛡️ Vạn Nhân Địch', color: '#3b82f6' },
+            MASTER_ARTISAN: { label: '🔨 Thần Tượng Đúc Khí', color: '#10b981' },
+            COMMERCE_TYCOON: { label: '💰 Phú Khả Địch Quốc', color: '#eab308' },
+            DEVOTED_RETAINER: { label: '🤝 Tận Tụy Chức Trách', color: '#8b5cf6' }
+          };
+          const amb = ambitionMap[p.life_ambition] || { label: p.life_ambition, color: '#94a3b8' };
+
+          return `
+            <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 6px;">
+              <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                <span style="font-weight: 700; color: #f8fafc; font-size: 15px;">${p.npc_name}</span>
+                <span style="font-size: 11px; padding: 2px 6px; border-radius: 4px; background: rgba(255,255,255,0.05); color: #cbd5e1;">${p.milestone_title || 'Hào Hiệp'}</span>
+              </div>
+              <div style="display: inline-block; font-size: 12px; font-weight: 600; color: ${amb.color};">
+                ${amb.label}
+              </div>
+              <div style="font-size: 12px; color: #94a3b8; font-style: italic;">
+                Đang chú tâm: "${p.current_focus}"
+              </div>
+              <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.05); font-size: 11px; text-align: center;">
+                <div>
+                  <div style="color: #64748b;">Tiền riêng</div>
+                  <div style="color: #facc15; font-weight: 600;">${(p.personal_cash || 0).toLocaleString()} Tiền</div>
+                </div>
+                <div>
+                  <div style="color: #64748b;">Danh vọng</div>
+                  <div style="color: #38bdf8; font-weight: 600;">${p.prestige || 0} Điểm</div>
+                </div>
+                <div>
+                  <div style="color: #64748b;">Quân tư</div>
+                  <div style="color: #f43f5e; font-weight: 600;">${p.personal_troops || 0} Dũng sĩ</div>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    // Render Journey Timeline
+    if (timeline) {
+      if (logs.length === 0) {
+        timeline.innerHTML = '<div style="color:#64748b; padding:15px; text-align:center;">Chưa có nhật ký hành trình. Bấm "Vận Hành 1 Lượt Tự Thân" để NPC bắt đầu chuỗi sự kiện.</div>';
+      } else {
+        timeline.innerHTML = logs.map(l => {
+          const actionIcons = {
+            MARTIAL_DRILL: '🗡️ Khổ Luyện Võ Nghệ',
+            STRATEGY_STUDY: '📜 Nghiên Cứu Binh Thư',
+            COMMERCE_ARBITRAGE: '💰 Giao Thương Tích Lũy',
+            BANDIT_EXPEDITION: '⚔️ Tiễu Phỉ Dẹp Cướp',
+            BANQUET_NETWORKING: '🍷 Hội Ngộ Bằng Hữu',
+            CRAFT_BREAKTHROUGH: '🔨 Đột Phá Kỹ Nghệ'
+          };
+          const iconLabel = actionIcons[l.actionType] || l.actionType;
+
+          let badgeHtml = '';
+          if (l.statChanges && Object.keys(l.statChanges).length > 0) {
+            badgeHtml = Object.entries(l.statChanges).map(([k, v]) => `
+              <span style="font-size:11px; padding:2px 6px; border-radius:3px; background:rgba(34,197,94,0.15); color:#4ade80; border:1px solid rgba(34,197,94,0.3);">
+                ${v}
+              </span>
+            `).join(' ');
+          }
+
+          return `
+            <div class="event-card" style="border-left-color: #8b5cf6;">
+              <div class="event-header">
+                <span class="event-year-badge" style="background:#8b5cf6;">Lượt ${l.turnNumber} • ${l.gameDate}</span>
+                <span class="event-loc-badge">👤 ${l.npcName}</span>
+                <span style="font-size:12px; color:#cbd5e1; margin-left:auto;">${iconLabel}</span>
+              </div>
+              <h4 class="event-title" style="color:#c084fc;">${l.titleVi}</h4>
+              <p class="event-narrative">${l.narrativeVi}</p>
+              ${badgeHtml ? `<div style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap;">${badgeHtml}</div>` : ''}
+            </div>
+          `;
+        }).join('');
+      }
+    }
+  } catch (err) {
+    console.error('loadAndRenderNpcLife error:', err);
+    if (grid) grid.innerHTML = `<div style="color:#ef4444;">Lỗi nạp tiến trình: ${err.message}</div>`;
+  }
+}
+
+async function triggerSimulateNpcJourney() {
+  try {
+    showToast('Đang mô phỏng chu trình tăng trưởng tự thân của các hào kiệt...', false);
+    const res = await apiSimulateNpcJourney();
+    if (res.success) {
+      showToast(`Hoàn tất! ${res.generatedLogsCount} nhân vật đã hoàn thành mục tiêu tháng.`, false);
+      await loadAndRenderNpcLife();
+    }
+  } catch (err) {
+    showToast(`Lỗi vận hành: ${err.message}`, true);
+  }
+}
+
 // Global exposure
 window.isProcessingAction = isProcessingAction;
 window.showToast = showToast;
@@ -642,3 +769,5 @@ window.checkAndRenderActiveEventBanner = checkAndRenderActiveEventBanner;
 window.openEventParticipationModal = openEventParticipationModal;
 window.closeEventParticipationModal = closeEventParticipationModal;
 window.submitEventChoice = submitEventChoice;
+window.loadAndRenderNpcLife = loadAndRenderNpcLife;
+window.triggerSimulateNpcJourney = triggerSimulateNpcJourney;

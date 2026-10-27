@@ -414,6 +414,9 @@
         <button class="gm-tab-btn" id="gm-tab-chronicles" onclick="switchGameManagerTab('chronicles')">
           📜 Biên Niên Sử Tam Quốc (ROTK Chronicles)
         </button>
+        <button class="gm-tab-btn" id="gm-tab-npc-life" onclick="switchGameManagerTab('npc-life')">
+          👥 Hành Trình Nhân Vật (Living World)
+        </button>
       </div>
 
       <div class="modal-body gm-modal-body">
@@ -478,6 +481,33 @@
             </div>
           </div>
           <div class="gm-events-timeline" id="gm-events-timeline-container">
+            <!-- Rendered dynamically via JS -->
+          </div>
+        </div>
+
+        <!-- 4. View: Living World NPC Progression & Chronicles -->
+        <div class="gm-tab-content hidden" id="gm-view-npc-life">
+          <div class="gm-chronicles-header">
+            <div>
+              <h4 class="gm-sec-title">👥 Hành Trình Phát Triển Tự Thân Của Hào Kiệt & Môn Hạ</h4>
+              <p class="gm-sec-desc">Mỗi nhân vật tự rèn luyện võ nghệ, tích lũy tiền riêng, mưu cầu chí hướng và đạt các cột mốc trong thế giới sống.</p>
+            </div>
+            <div style="display:flex; gap:10px; align-items:center;">
+              <button class="btn btn-primary" onclick="triggerSimulateNpcJourney()" style="background:#8b5cf6; border-color:#7c3aed;">
+                ⚡ Vận Vành 1 Lượt Tự Thân (Simulate Month)
+              </button>
+            </div>
+          </div>
+
+          <!-- Active Progression Cards Grid -->
+          <h5 style="color:#e2e8f0; margin:15px 0 10px 0; font-size:14px; font-weight:600;">🌟 Chí Hướng & Thực Lực Hiện Tại:</h5>
+          <div id="gm-npc-progression-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:12px; margin-bottom:20px;">
+            <!-- Rendered dynamically via JS -->
+          </div>
+
+          <!-- Timeline of Autonomous Logs -->
+          <h5 style="color:#e2e8f0; margin:15px 0 10px 0; font-size:14px; font-weight:600;">📜 Nhật Ký Chiến Tích & Sự Kiện Tự Thân Gần Đây:</h5>
+          <div class="gm-events-timeline" id="gm-npc-journey-timeline">
             <!-- Rendered dynamically via JS -->
           </div>
         </div>

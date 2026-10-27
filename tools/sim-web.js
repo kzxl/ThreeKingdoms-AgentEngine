@@ -251,6 +251,65 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // 4b. GET /api/npcs/journey - NPC Autonomous Journey Logs & Milestones
+  if (req.method === 'GET' && pathname === '/api/npcs/journey') {
+    try {
+      const npcId = parsedUrl.query.npcId;
+      const limit = parseInt(parsedUrl.query.limit || '25', 10);
+      const where = npcId ? `WHERE j.npc_id = '${npcId.replace(/'/g, "''")}'` : '';
+      const logs = runSqlJson(`
+        SELECT j.*, coalesce(n.name, m.name_vi, j.npc_id) as npc_name
+        FROM npc_journey_logs j
+        LEFT JOIN npc_state n ON j.npc_id = n.npc_id
+        LEFT JOIN master_characters m ON j.npc_id = m.npc_id
+        ${where}
+        ORDER BY j.rowid DESC
+        LIMIT ${limit};
+      `);
+      sendJson(res, 200, { success: true, logs });
+    } catch (err) {
+      sendJson(res, 500, { success: false, error: err.message });
+    }
+    return;
+  }
+
+  // 4c. GET /api/npcs/progression - Living World Ambitions & Personal Growth
+  if (req.method === 'GET' && pathname === '/api/npcs/progression') {
+    try {
+      const progressions = runSqlJson(`
+        SELECT p.*, coalesce(n.name, m.name_vi, p.npc_id) as npc_name,
+               coalesce(n.assigned_role, 'HISTORICAL') as role,
+               coalesce(n.war_attr, m.war_attr, 50) as war_attr,
+               coalesce(n.int_attr, m.int_attr, 50) as int_attr
+        FROM npc_personal_progression p
+        LEFT JOIN npc_state n ON p.npc_id = n.npc_id
+        LEFT JOIN master_characters m ON p.npc_id = m.npc_id
+        ORDER BY p.prestige DESC;
+      `);
+      sendJson(res, 200, { success: true, progressions });
+    } catch (err) {
+      sendJson(res, 500, { success: false, error: err.message });
+    }
+    return;
+  }
+
+  // 4d. POST /api/npcs/simulate-journey - Trigger Autonomous Monthly Living World Progression
+  if (req.method === 'POST' && pathname === '/api/npcs/simulate-journey') {
+    try {
+      const gsm = globalThis.__GRAND_STRATEGY_MODULES__;
+      if (gsm && gsm.npcLifecycle) {
+        const meta = runSqlJson(`SELECT active_turn, current_date FROM campaign_meta LIMIT 1;`)[0] || { active_turn: 6, current_date: '184-05-01' };
+        const logs = gsm.npcLifecycle.simulateAllActiveNpcs(meta.active_turn, meta.current_date);
+        sendJson(res, 200, { success: true, generatedLogsCount: logs.length, logs });
+      } else {
+        sendJson(res, 400, { success: false, error: 'NPC Lifecycle Module not active' });
+      }
+    } catch (err) {
+      sendJson(res, 500, { success: false, error: err.message });
+    }
+    return;
+  }
+
   // 5. GET /api/audit - Comprehensive Invariant Audit
   if (req.method === 'GET' && pathname === '/api/audit') {
     try {

@@ -209,6 +209,32 @@ CREATE TABLE IF NOT EXISTS session_events (
     resolved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 15. NPC Personal Progression & Living World Ambitions
+CREATE TABLE IF NOT EXISTS npc_personal_progression (
+    npc_id TEXT PRIMARY KEY,
+    life_ambition TEXT NOT NULL DEFAULT 'VANGUARD_HERO',
+    current_focus TEXT NOT NULL DEFAULT 'MARTIAL_TRAINING',
+    personal_cash INTEGER NOT NULL DEFAULT 500,
+    prestige INTEGER NOT NULL DEFAULT 50,
+    personal_troops INTEGER NOT NULL DEFAULT 0,
+    milestone_title TEXT DEFAULT 'Trác Huyện Hào Hiệp',
+    growth_stats_json TEXT DEFAULT '{}',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 16. NPC Autonomous Journey Chronicle & Life Events
+CREATE TABLE IF NOT EXISTS npc_journey_logs (
+    id TEXT PRIMARY KEY,
+    npc_id TEXT NOT NULL,
+    turn_number INTEGER NOT NULL,
+    game_date TEXT NOT NULL,
+    action_type TEXT NOT NULL,
+    title_vi TEXT NOT NULL,
+    narrative_vi TEXT NOT NULL,
+    stat_changes_json TEXT DEFAULT '{}',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Indices for rapid querying & integrity checks
 CREATE INDEX IF NOT EXISTS idx_cashflow_date ON cashflow_ledger(game_date);
 CREATE INDEX IF NOT EXISTS idx_stock_mov_item ON stock_movements(item_code);
@@ -218,3 +244,5 @@ CREATE INDEX IF NOT EXISTS idx_action_idempotency ON action_log(idempotency_key)
 CREATE INDEX IF NOT EXISTS idx_npc_business ON npc_state(assigned_business_id);
 CREATE INDEX IF NOT EXISTS idx_npc_skills_npc ON npc_skills(npc_id);
 CREATE INDEX IF NOT EXISTS idx_session_events_status ON session_events(status);
+CREATE INDEX IF NOT EXISTS idx_journey_npc ON npc_journey_logs(npc_id);
+CREATE INDEX IF NOT EXISTS idx_journey_turn ON npc_journey_logs(turn_number);

@@ -89,6 +89,24 @@ async function runMcpTests() {
   const auditText = JSON.parse(auditCall?.result?.content[0]?.text);
   console.log('✅ 6. sim_audit_invariants result:', auditText.verdict);
 
+  // 7. Test Tool Call: sim_get_npc_journey (Living World)
+  const journeyCall = await server.handleRequest({
+    jsonrpc: '2.0',
+    id: 7,
+    method: 'tools/call',
+    params: {
+      name: 'sim_get_npc_journey',
+      arguments: { npcId: 'NPC-0003', limit: 5 }
+    }
+  });
+  const journeyText = JSON.parse(journeyCall?.result?.content[0]?.text);
+  console.log('✅ 7. sim_get_npc_journey result:', {
+    npcId: journeyText.npcId,
+    ambition: journeyText.progressionOverview?.life_ambition,
+    personalCash: journeyText.progressionOverview?.personal_cash,
+    prestige: journeyText.progressionOverview?.prestige
+  });
+
   console.log('🎉 All MCP Server protocols tested and verified successfully!');
   process.exit(0);
 }

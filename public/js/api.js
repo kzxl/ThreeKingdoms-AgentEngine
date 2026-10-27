@@ -176,6 +176,28 @@ async function apiFetchStrategyModules() {
   }
 }
 
+async function apiFetchNpcJourney(npcId = null, limit = 25) {
+  const query = npcId ? `?npcId=${encodeURIComponent(npcId)}&limit=${limit}` : `?limit=${limit}`;
+  const res = await fetch(`${API_BASE}/api/npcs/journey${query}`);
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Failed to fetch NPC journey logs');
+  return data;
+}
+
+async function apiFetchNpcProgression() {
+  const res = await fetch(`${API_BASE}/api/npcs/progression`);
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Failed to fetch NPC progression');
+  return data;
+}
+
+async function apiSimulateNpcJourney() {
+  const res = await fetch(`${API_BASE}/api/npcs/simulate-journey`, { method: 'POST' });
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Failed to simulate NPC journey');
+  return data;
+}
+
 // Global exposure
 window.apiFetchStatus = apiFetchStatus;
 window.apiFetchAudit = apiFetchAudit;
@@ -197,3 +219,6 @@ window.apiFetchMasterCatalog = apiFetchMasterCatalog;
 window.apiFetchActiveEvents = apiFetchActiveEvents;
 window.apiParticipateInEvent = apiParticipateInEvent;
 window.apiFetchStrategyModules = apiFetchStrategyModules;
+window.apiFetchNpcJourney = apiFetchNpcJourney;
+window.apiFetchNpcProgression = apiFetchNpcProgression;
+window.apiSimulateNpcJourney = apiSimulateNpcJourney;
