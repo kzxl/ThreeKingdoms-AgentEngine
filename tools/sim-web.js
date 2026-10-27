@@ -427,6 +427,76 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // 5i. GRAND STRATEGY MODULAR ENGINE (Universe Architecture v4.0)
+  if (pathname.startsWith('/api/strategy/')) {
+    const gsm = globalThis.__GRAND_STRATEGY_MODULES__;
+    if (!gsm) {
+      sendJson(res, 200, {
+        success: true,
+        modularEngineActive: false,
+        message: 'Grand Strategy Modular Engine available via: npm run dev:server'
+      });
+      return;
+    }
+
+    // 5i-1. GET /api/strategy/modules
+    if (req.method === 'GET' && pathname === '/api/strategy/modules') {
+      const modules = gsm.registry.getAll().map(m => ({ id: m.id, name: m.name, version: m.version }));
+      sendJson(res, 200, { success: true, modularEngineActive: true, modules });
+      return;
+    }
+
+    // 5i-2. POST /api/strategy/supply-check
+    if (req.method === 'POST' && pathname === '/api/strategy/supply-check') {
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', () => {
+        try {
+          const payload = JSON.parse(body || '{}');
+          const fromNode = payload.fromNode || 'LOC-0001';
+          const supplyHub = payload.supplyHub || 'LOC-0002';
+          const maxHops = payload.maxHops || 10;
+          const hasSupply = gsm.military.graph.hasUnbrokenSupplyPath(fromNode, supplyHub, maxHops);
+          sendJson(res, 200, { success: true, fromNode, supplyHub, hasSupply });
+        } catch (err) {
+          sendJson(res, 400, { success: false, error: err.message });
+        }
+      });
+      return;
+    }
+
+    // 5i-3. POST /api/strategy/price-check
+    if (req.method === 'POST' && pathname === '/api/strategy/price-check') {
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', () => {
+        try {
+          const payload = JSON.parse(body || '{}');
+          const dynamicPrice = gsm.economy.calculateDynamicPrice({
+            commodity: payload.commodity || 'GRAIN',
+            basePrice: payload.basePrice || 50,
+            currentPrice: payload.currentPrice || 50,
+            stockUnits: payload.stockUnits || 100,
+            demandUnits: payload.demandUnits || 300,
+            priceElasticity: payload.priceElasticity || 1.5
+          });
+          sendJson(res, 200, { success: true, dynamicPrice });
+        } catch (err) {
+          sendJson(res, 400, { success: false, error: err.message });
+        }
+      });
+      return;
+    }
+
+    // 5i-4. GET /api/strategy/memories
+    if (req.method === 'GET' && pathname === '/api/strategy/memories') {
+      const npcId = parsedUrl.query.npcId || 'NPC-0002';
+      const memories = gsm.agentBridge.getNpcMemories(npcId, 10);
+      sendJson(res, 200, { success: true, npcId, memories });
+      return;
+    }
+  }
+
   // 5k. GET /api/game/events - Query ROTK Historical Events with Optional Year Filter
   if (req.method === 'GET' && pathname === '/api/game/events') {
     try {

@@ -166,6 +166,16 @@ async function apiParticipateInEvent(eventId, choiceId, customNarrative = null) 
   return data;
 }
 
+async function apiFetchStrategyModules() {
+  try {
+    const res = await fetch(`${API_BASE}/api/strategy/modules`);
+    const data = await res.json();
+    return data;
+  } catch (err) {
+    return { success: false, modularEngineActive: false };
+  }
+}
+
 // Global exposure
 window.apiFetchStatus = apiFetchStatus;
 window.apiFetchAudit = apiFetchAudit;
@@ -186,3 +196,4 @@ window.apiLoadSlot = apiLoadSlot;
 window.apiFetchMasterCatalog = apiFetchMasterCatalog;
 window.apiFetchActiveEvents = apiFetchActiveEvents;
 window.apiParticipateInEvent = apiParticipateInEvent;
+window.apiFetchStrategyModules = apiFetchStrategyModules;

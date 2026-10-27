@@ -23,6 +23,9 @@ game/military/campaigns.md
 game/characters/player.md
 
 # 3. Scratch & Temporary Files
+node_modules/
+dist/
+dist-server/
 scratch/
 *.tmp
 *.log

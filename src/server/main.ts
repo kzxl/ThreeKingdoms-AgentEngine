@@ -1,0 +1,71 @@
+/**
+ * ThreeKingdoms-AgentEngine: Server Composition Root (src/server/main.ts)
+ * Integrates AgentOption Universe Modular Architecture v4.0 with HTTP Server.
+ * Bootstraps feature modules, in-memory EventBus, and Grand Strategy endpoints.
+ */
+
+import path from 'path';
+import http from 'http';
+import { ModuleRegistry } from '../core/module-registry';
+import { UtilityAiModule } from '../modules/utility-ai/utility-ai.module';
+import { MilitaryModule } from '../modules/military/military.module';
+import { EconomyModule } from '../modules/economy/economy.module';
+import { KizunaModule } from '../modules/social-kizuna/kizuna.module';
+import { AgentBridgeModule } from '../modules/agent-bridge/agent-bridge.module';
+
+// Resolve database path
+const ROOT_DIR = path.resolve(__dirname, '../..');
+const DB_PATH = process.env.SIM_DB_PATH || path.join(ROOT_DIR, 'saves', 'session.db');
+
+export async function bootstrapGrandStrategy() {
+  console.log('[Bootstrap] Initializing AgentOption Universe Modular Engine...');
+  const registry = ModuleRegistry.getInstance();
+
+  const utilityAi = new UtilityAiModule();
+  const military = new MilitaryModule();
+  const economy = new EconomyModule();
+  const kizuna = new KizunaModule();
+  const agentBridge = new AgentBridgeModule();
+
+  registry.register(utilityAi);
+  registry.register(military);
+  registry.register(economy);
+  registry.register(kizuna);
+  registry.register(agentBridge);
+
+  await registry.initAll(DB_PATH);
+
+  console.log(`[Bootstrap] 🟢 ${registry.getAll().length} Feature Modules Active:`);
+  registry.getAll().forEach(m => console.log(`   ├─ [${m.id}] ${m.name} (v${m.version})`));
+
+  return {
+    registry,
+    utilityAi,
+    military,
+    economy,
+    kizuna,
+    agentBridge
+  };
+}
+
+// Start standalone or attach to sim-web
+async function main() {
+  const modules = await bootstrapGrandStrategy();
+
+  // Attach to global for Web Server route handlers
+  (globalThis as any).__GRAND_STRATEGY_MODULES__ = modules;
+
+  // Import existing web server
+  const simWeb = require('../../tools/sim-web.js');
+
+  const PORT = parseInt(process.env.PORT || '3300', 10);
+  console.log(`[Bootstrap] Starting Fullstack Server with Grand Strategy Modules on Port ${PORT}...`);
+  simWeb.startServer(PORT);
+}
+
+if (require.main === module || process.env.RUN_MAIN === 'true') {
+  main().catch(err => {
+    console.error('[Bootstrap] Fatal startup error:', err);
+    process.exit(1);
+  });
+}

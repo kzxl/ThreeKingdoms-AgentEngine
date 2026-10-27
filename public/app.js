@@ -66,6 +66,19 @@ async function loadAllData() {
     if (typeof checkAndRenderActiveEventBanner === 'function') {
       await checkAndRenderActiveEventBanner();
     }
+
+    // 6. Check Grand Strategy Universe Modular Status
+    try {
+      if (typeof apiFetchStrategyModules === 'function') {
+        const stratData = await apiFetchStrategyModules();
+        const badgeEl = document.getElementById('txt-modular-status');
+        if (badgeEl && stratData && stratData.modularEngineActive) {
+          badgeEl.innerText = `Universe TS: ${stratData.modules.length} Modules`;
+        }
+      }
+    } catch (e) {
+      // non-blocking
+    }
   } catch (err) {
     console.error('Error during initial load:', err);
     showToast(`Lỗi khởi tạo: ${err.message}`, true);

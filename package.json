@@ -1,0 +1,21 @@
+{
+  "name": "threekingdoms-simulation",
+  "version": "1.0.0",
+  "description": "Autonomous Grand Strategy Simulation Engine with AgentOption Modular Architecture",
+  "main": "src/server/main.ts",
+  "scripts": {
+    "audit": "node tools/sim-audit.js",
+    "dev:server": "tsx watch src/server/main.ts",
+    "dev:client": "vite",
+    "dev": "tsx watch src/server/main.ts",
+    "build:client": "vite build",
+    "typecheck": "tsc --noEmit",
+    "start": "node tools/sim-web.js"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "tsx": "^4.23.15",
+    "typescript": "^5.7.3",
+    "vite": "^5.4.14"
+  }
+}
