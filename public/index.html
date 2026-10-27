@@ -64,14 +64,26 @@
     <!-- ============================================================== -->
     <section class="left-stage">
       
-      <!-- 1. Location Breadcrumbs & Fast Routes -->
+      <!-- 1. Location Breadcrumbs, Local POIs & World Map Launcher -->
       <div class="location-banner">
         <div class="loc-name-group">
           <span class="loc-bullet">📍</span>
-          <span class="loc-text" id="loc-breadcrumb-text">Trang Viên Vườn Đào Hạ Trạch — Nam Thành Huyện Trác</span>
+          <span class="loc-region" id="loc-region-badge">U Châu • Trác Huyện</span>
+          <span class="loc-divider">/</span>
+          <span class="loc-text" id="loc-breadcrumb-text">Trang Viên Vườn Đào Hạ Trạch</span>
         </div>
-        <div class="sub-locations-group" id="sub-locations-group">
-          <!-- Populated dynamically based on campaign locations -->
+
+        <div class="location-nav-actions">
+          <!-- Dynamic Local Points of Interest (within walking distance) -->
+          <div class="local-poi-group" id="local-poi-group">
+            <!-- Populated dynamically based on activeSubLocation -->
+          </div>
+
+          <!-- World Map / Dư Đồ Tam Quốc Button -->
+          <button class="btn-world-map" id="btn-open-worldmap" onclick="openWorldMap()" title="Mở Dư Đồ Tam Quốc / Open Strategic Campaign Map">
+            <span class="icon">🗺️</span>
+            <span id="txt-btn-worldmap">Dư Đồ Tam Quốc</span>
+          </button>
         </div>
       </div>
 
@@ -343,6 +355,40 @@
       <div class="modal-footer">
         <button class="btn btn-outline" onclick="closeTradeModal()">Hủy Bỏ</button>
         <button class="btn btn-primary" id="modal-submit-btn" onclick="submitModalTrade()">Xác Nhận Thực Thi</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tactical World Map / Dư Đồ Tam Quốc Modal -->
+  <div id="world-map-modal" class="modal-backdrop hidden">
+    <div class="modal-card world-map-card">
+      <div class="modal-header world-map-header">
+        <div class="world-map-title-group">
+          <h3 class="modal-title" id="world-map-title">🗺️ Dư Đồ Tam Quốc • Chiến Tuyến Khởi Nghĩa Khăn Vàng (184 SCN)</h3>
+          <span class="world-map-sub" id="world-map-sub">Khảo sát lộ trình hành quân, cự ly dịch trạm, an ninh và quân lương tiêu hao</span>
+        </div>
+        <button class="modal-close-btn" onclick="closeWorldMap()">&times;</button>
+      </div>
+
+      <div class="world-map-body">
+        <!-- Left: Interactive Cartography SVG Map -->
+        <div class="world-map-canvas-container" id="world-map-canvas-container">
+          <!-- Rendered dynamically via SVG in app.js -->
+        </div>
+
+        <!-- Right: Route & Strategic Intel Briefing Panel -->
+        <div class="world-map-intel-panel" id="world-map-intel-panel">
+          <!-- Rendered dynamically when a node is selected in app.js -->
+        </div>
+      </div>
+
+      <div class="modal-footer world-map-footer">
+        <div class="world-map-legend" id="world-map-legend">
+          <span><span class="legend-dot current"></span> Vị trí hiện tại</span>
+          <span><span class="legend-dot battle"></span> Chiến trường giao tranh</span>
+          <span><span class="legend-dot safe"></span> Trọng trấn an định</span>
+        </div>
+        <button class="btn btn-outline" onclick="closeWorldMap()">Đóng Dư Đồ</button>
       </div>
     </div>
   </div>

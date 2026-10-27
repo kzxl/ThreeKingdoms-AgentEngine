@@ -318,6 +318,12 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
     currentLocKey = 'Xưởng Lương Thị';
   } else if (subLower.includes('quảng tông') || subLower.includes('camp') || subLower.includes('doanh')) {
     currentLocKey = 'Quảng Tông Quân Doanh';
+  } else if (subLower.includes('bình nguyên') || subLower.includes('pingyuan')) {
+    currentLocKey = 'Bình Nguyên Trọng Trấn';
+  } else if (subLower.includes('trường xã') || subLower.includes('changshe') || subLower.includes('dĩnh')) {
+    currentLocKey = 'Trường Xã Tiền Tuyến';
+  } else if (subLower.includes('lạc dương') || subLower.includes('luoyang') || subLower.includes('kinh đô')) {
+    currentLocKey = 'Kinh Đô Lạc Dương';
   } else {
     currentLocKey = 'Vườn Đào';
   }
@@ -534,6 +540,150 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
         action: { type: 'MOVE_LOCATION', new_location: 'Vườn Đào', game_date: meta.current_date || '184-05-02' }
       }
     ];
+  } else if (currentLocKey === 'Bình Nguyên Trọng Trấn') {
+    locationFull = 'Bình Nguyên Trọng Trấn — Yếu Tuyến Giao Thương Ký & Thanh Châu';
+    npc = {
+      id: 'NPC-0008',
+      name: 'Vương Triệt (Huyện Thừa Bình Nguyên)',
+      title: 'Quan Phụ Mẫu Bình Nguyên — POL 68 / INT 70',
+      sentiment: 65,
+      sentimentStatus: 'Độ tín nhiệm: +20 (Thiết lập dịch trạm)'
+    };
+    lastCheck = {
+      status: 'THÀNH CÔNG',
+      type: 'KIỂM TRA QUẢN TRỊ & ĐIỀU PHỐI VẬN TẢI (LOG/POL)',
+      title: 'Bố Trí Dịch Trạm Tiếp Vận Lương Thảo Tuyến Đông',
+      score: 56,
+      dc: 40,
+      formula: `[POL ${player.pol_attr || 70} * 0.5 = 35] + [Kỹ trị bang quốc +11] + [D20: 10] = 56 >= DC 40`
+    };
+    narrative = lastNarrative || 'Huyện Thừa Bình Nguyên đón Lương Diễn tại công đường: "Bình Nguyên Quốc là yết hầu giao thông nối liền Ký Châu và Thanh Châu. Dân binh các hương đang thiếu thốn khí giới phòng thủ giặc cướp tràn qua biên cảnh. Lương thương nhân mang vật phẩm tiếp viện tới quả là giải nguy kịp thời!"';
+    options = [
+      {
+        id: 'OPT_1',
+        icon: '🛡️',
+        title: 'Cung cấp 5 Khiên Trúc Lương Gia cho Dân Binh Xã Tắc (Thu 1,200 Tiền)',
+        desc: 'Hỗ trợ hương dũng Bình Nguyên phòng ngự • Tăng uy vọng địa phương',
+        action: { type: 'TRADE_SELL', item_code: 'PROD-SHIELD-BAM', quantity: 5, unit_price: 240, counterparty: 'Quan phủ Huyện Bình Nguyên', game_date: meta.current_date || '184-05-02' }
+      },
+      {
+        id: 'OPT_2',
+        icon: '🌾',
+        title: 'Thu mua lương thảo ngô khoai Thanh Châu tiếp tế (Chi 600 Tiền)',
+        desc: '+4 COM-GRAIN • Bổ sung quân nhu viễn chinh',
+        action: { type: 'TRADE_BUY', item_code: 'COM-GRAIN', quantity: 4, unit_price: 150, counterparty: 'Thương hội Thanh Châu', game_date: meta.current_date || '184-05-02' }
+      },
+      {
+        id: 'OPT_3',
+        icon: '📜',
+        title: 'Hiến kế thiết lập hệ thống phong hỏa đài cảnh giới liên hoàn',
+        desc: 'EXP Chính Trị & Binh Pháp +15 • Tín nhiệm Huyện Thừa +5',
+        action: { type: 'REWARD_NPC', npc_id: 'NPC-0007', amount: 100, game_date: meta.current_date || '184-05-02' }
+      },
+      {
+        id: 'OPT_4',
+        icon: '🐎',
+        title: 'Hành quân trở về Hậu Phương Trang Viên Vườn Đào Huyện Trác',
+        desc: 'Cơ động về bản doanh U Châu',
+        action: { type: 'MOVE_LOCATION', new_location: 'Vườn Đào', game_date: meta.current_date || '184-05-02' }
+      }
+    ];
+  } else if (currentLocKey === 'Trường Xã Tiền Tuyến') {
+    locationFull = 'Trường Xã Tiền Tuyến — Dự Châu Thống Soái Doanh Trại';
+    npc = {
+      id: 'NPC-0009',
+      name: 'Hoàng Phủ Tung (Nghĩa Chân)',
+      title: 'Tả Trung Lang Tướng — INT 88 / WAR 80 / LDR 89',
+      sentiment: 70,
+      sentimentStatus: 'Độ tín nhiệm: +40 (Cảm kích kỳ binh)'
+    };
+    lastCheck = {
+      status: 'THÀNH CÔNG',
+      type: 'KIỂM TRA BINH PHÁP HỎA CÔNG (TAC/INT)',
+      title: 'Quan Sát Hướng Gió Đêm Trường Xã & Phân Phối Dầu Hỏa',
+      score: 65,
+      dc: 45,
+      formula: `[INT ${player.int_attr || 80} * 0.5 = 40] + [Quan sát thiên thời +15] + [D20: 10] = 65 >= DC 45`
+    };
+    narrative = lastNarrative || 'Tướng quân Hoàng Phủ Tung đứng trên chòi canh quan sát trại cỏ bạt ngàn của tướng giặc Ba Cai: "Quân giặc nương vào đồng cỏ kết trại là tự tìm đường diệt vong. Chỉ cần gió nổi lên, một mồi lửa có thể thiêu rụi trăm dặm quân doanh! Lương Diễn, khí giới và quân nhu của ngươi chuyển tới đúng lúc gió đông sắp khởi!"';
+    options = [
+      {
+        id: 'OPT_1',
+        icon: '🔥',
+        title: 'Cung cấp 5 Khiên Trúc bọc da trợ chiến tiền phong hỏa công',
+        desc: 'Chi viện khiên giáp che chắn đội mồi lửa • Hào cảm Hoàng Phủ Tung +10',
+        action: { type: 'TRADE_SELL', item_code: 'PROD-SHIELD-BAM', quantity: 5, unit_price: 250, counterparty: 'Tả Quân Hoàng Phủ Tung', game_date: meta.current_date || '184-05-02' }
+      },
+      {
+        id: 'OPT_2',
+        icon: '🌾',
+        title: 'Tiếp tế 8 Thạch Lương thực khẩn cấp cho đại doanh Dự Châu (Thu 1,440 Tiền)',
+        desc: '-8 COM-GRAIN • Thu 1,440 Tiền mặt ngân sách quân đội',
+        action: { type: 'TRADE_SELL', item_code: 'COM-GRAIN', quantity: 8, unit_price: 180, counterparty: 'Quân nhu cục Dự Châu', game_date: meta.current_date || '184-05-02' }
+      },
+      {
+        id: 'OPT_3',
+        icon: '🐎',
+        title: 'Bắt liên lạc hiệp đồng kỵ binh cứu viện của Kỵ Đô Úy Tào Tháo',
+        desc: 'Mở rộng quan hệ thế lực Tào Tháo • EXP Quân sự +20',
+        action: { type: 'REWARD_NPC', npc_id: 'NPC-0007', amount: 100, game_date: meta.current_date || '184-05-02' }
+      },
+      {
+        id: 'OPT_4',
+        icon: '🐎',
+        title: 'Rút quân theo quan đạo trở về Hậu Phương Trang Viên Vườn Đào',
+        desc: 'Cơ động về Trác Huyện U Châu',
+        action: { type: 'MOVE_LOCATION', new_location: 'Vườn Đào', game_date: meta.current_date || '184-05-02' }
+      }
+    ];
+  } else if (currentLocKey === 'Kinh Đô Lạc Dương') {
+    locationFull = 'Kinh Đô Lạc Dương — Đại Tướng Quân Phủ Đệ (Tư Lệ Hiệu Úy Bộ)';
+    npc = {
+      id: 'NPC-0010',
+      name: 'Hà Tiến (Toại Cao)',
+      title: 'Đại Tướng Quân • Lục Thượng Thư Sự — Authority 95',
+      sentiment: 60,
+      sentimentStatus: 'Độ chú ý: +15 (Thương gia U Châu trợ quân)'
+    };
+    lastCheck = {
+      status: 'THÀNH CÔNG',
+      type: 'KIỂM TRA BIỆN THUYẾT & GIAO THIỆP TRIỀU ĐÌNH (DIP/POL)',
+      title: 'Yết Kiến Đại Tướng Quân & Trình Tấu Công Trạng Khăn Vàng',
+      score: 58,
+      dc: 45,
+      formula: `[DIP ${player.dip_attr || 75} * 0.5 = 37] + [Ngoại giao quý tộc +11] + [D20: 10] = 58 >= DC 45`
+    };
+    narrative = lastNarrative || 'Đại Tướng Quân Hà Tiến ngự trên ghế cẩm thạch phủ lụa gấm, liếc nhìn tấu chương của Thứ sử U Châu: "Lương gia các hạ bỏ tiền của chế tác khiên giáo tiếp trợ quân Lư Thực và Hoàng Phủ Tung, quả có lòng trung nghĩa. Triều đình thưởng phạt phân minh, ngươi muốn mở rộng thương hội tại Kinh Sư hay nhận ban thưởng tước vị?"';
+    options = [
+      {
+        id: 'OPT_1',
+        icon: '🎖️',
+        title: 'Nhận sắc phong Quân Nhu Tán Quan & Thưởng 2,500 Tiền từ Triều Đình',
+        desc: '+2,500 Tiền mặt ngân khố triều đình • Tăng danh vọng sĩ phu Lạc Dương',
+        action: { type: 'RECORD_BOUNTY', counterparty: 'Đại Tướng Quân Phủ Lạc Dương', amount: 2500, memo: 'Ban thưởng công huân vận trù quân lương bình Khăn Vàng', game_date: meta.current_date || '184-05-02' }
+      },
+      {
+        id: 'OPT_2',
+        icon: '🏛️',
+        title: 'Đăng ký môn bài chi nhánh Lương Gia Thương Hội tại Kinh Sư (Chi 1,000 Tiền)',
+        desc: 'Mở phân hiệu giao thương độc quyền kinh đô • Tăng tiềm năng thương vụ',
+        action: { type: 'REWARD_NPC', npc_id: 'NPC-0007', amount: 100, game_date: meta.current_date || '184-05-02' }
+      },
+      {
+        id: 'OPT_3',
+        icon: '🍵',
+        title: 'Biếu lễ vật tiếp xúc Binh Bộ Thượng Thư nắm bắt thời cuộc',
+        desc: 'Thu thập tin mật cung đình • EXP Chính Trị +25',
+        action: { type: 'REWARD_NPC', npc_id: 'NPC-0007', amount: 100, game_date: meta.current_date || '184-05-02' }
+      },
+      {
+        id: 'OPT_4',
+        icon: '🐎',
+        title: 'Rời Kinh Sư Lạc Dương, cất bước trở về Trang Viên Vườn Đào Huyện Trác',
+        desc: 'Cơ động về bản doanh U Châu',
+        action: { type: 'MOVE_LOCATION', new_location: 'Vườn Đào', game_date: meta.current_date || '184-05-02' }
+      }
+    ];
   }
 
   return {
@@ -611,6 +761,21 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
           subLocation = 'Quảng Tông Quân Doanh';
           actionToRun = { type: 'MOVE_LOCATION', new_location: 'Quảng Tông Quân Doanh', game_date: '184-05-02' };
           replyNarrative = 'Đoàn xe theo đường hành quân tiến thẳng về tiền tuyến Quảng Tông. Cờ xí Bắc Quân của Lư Thực tung bay trong gió cát!';
+          dispatchType = 'TRAVEL';
+        } else if (isTravelIntent && (userPrompt.includes('bình nguyên') || userPrompt.includes('pingyuan'))) {
+          subLocation = 'Bình Nguyên Trọng Trấn';
+          actionToRun = { type: 'MOVE_LOCATION', new_location: 'Bình Nguyên Trọng Trấn', game_date: '184-05-02' };
+          replyNarrative = 'Đoàn thương lữ Lương gia vượt qua quan ải biên giới Ký - Thanh, tiến vào Trọng Trấn Bình Nguyên. Binh mã các lộ nghĩa dũng rầm rộ qua lại!';
+          dispatchType = 'TRAVEL';
+        } else if (isTravelIntent && (userPrompt.includes('trường xã') || userPrompt.includes('changshe') || userPrompt.includes('dĩnh xuyên') || userPrompt.includes('hoàng phủ tung'))) {
+          subLocation = 'Trường Xã Tiền Tuyến';
+          actionToRun = { type: 'MOVE_LOCATION', new_location: 'Trường Xã Tiền Tuyến', game_date: '184-05-02' };
+          replyNarrative = 'Đoàn quân kỵ áp tải lương thảo vượt Hoàng Hà tiến sâu về phương nam tới Tiền Tuyến Trường Xã. Chiến trường hỏa công rực đỏ chân trời!';
+          dispatchType = 'TRAVEL';
+        } else if (isTravelIntent && (userPrompt.includes('lạc dương') || userPrompt.includes('luoyang') || userPrompt.includes('kinh đô') || userPrompt.includes('kinh sư'))) {
+          subLocation = 'Kinh Đô Lạc Dương';
+          actionToRun = { type: 'MOVE_LOCATION', new_location: 'Kinh Đô Lạc Dương', game_date: '184-05-02' };
+          replyNarrative = 'Đoàn kỵ sĩ vượt qua Hổ Lao Quan, chiêm ngưỡng tường thành đồ sộ tráng lệ của Kinh Đô Lạc Dương. Khí phái đế vương uy nghiêm!';
           dispatchType = 'TRAVEL';
         } else if (isTravelIntent && (userPrompt.includes('vườn đào') || userPrompt.includes('trương phi'))) {
           subLocation = 'Vườn Đào';

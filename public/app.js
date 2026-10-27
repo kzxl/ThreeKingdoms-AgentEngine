@@ -88,7 +88,23 @@ const I18N_DICT = {
     modalPartnerLabel: 'Đối Tác Giao Dịch (Counterparty)',
     modalTotalLabel: 'Tổng Giá Trị Giao Dịch:',
     btnCancel: 'Hủy Bỏ',
-    btnConfirm: 'Xác Nhận Thực Thi'
+    btnConfirm: 'Xác Nhận Thực Thi',
+    // Location & World Map
+    btnWorldMap: 'Dư Đồ Tam Quốc',
+    worldMapTitle: '🗺️ Dư Đồ Tam Quốc • Chiến Tuyến Khởi Nghĩa Khăn Vàng (184 SCN)',
+    worldMapSub: 'Khảo sát lộ trình hành quân, cự ly dịch trạm, an ninh và quân lương tiêu hao',
+    lblDist: 'Cự Ly Hành Quân',
+    lblDuration: 'Thời Gian Di Chuyển',
+    lblGrainCost: 'Quân Lương Hao Phí',
+    lblThreat: 'Tình Trạng An Ninh',
+    lblIntel: 'Quân Tình & Bối Cảnh',
+    lblFigures: 'Hào Kiệt & Quan Binh Hiện Diện',
+    btnCurrentPos: '📍 Đang Ở Khu Vực Này',
+    btnMarchTo: '🏇 Khởi Hành Hành Quân Đến',
+    legendCurrent: 'Vị trí hiện tại',
+    legendBattle: 'Chiến trường giao tranh',
+    legendSafe: 'Trọng trấn an định',
+    btnCloseMap: 'Đóng Dư Đồ'
   },
   en: {
     appTitle: 'THREE KINGDOMS • LIANG CHRONICLES',
@@ -151,7 +167,23 @@ const I18N_DICT = {
     modalPartnerLabel: 'Counterparty',
     modalTotalLabel: 'Total Transaction Value:',
     btnCancel: 'Cancel',
-    btnConfirm: 'Confirm Execution'
+    btnConfirm: 'Confirm Execution',
+    // Location & World Map
+    btnWorldMap: 'Three Kingdoms Map',
+    worldMapTitle: '🗺️ Three Kingdoms Cartography • Yellow Turban Frontlines (184 AD)',
+    worldMapSub: 'Inspect march routes, relay station distances, threats, and grain provisions',
+    lblDist: 'March Distance',
+    lblDuration: 'March Duration',
+    lblGrainCost: 'Grain & Provisions',
+    lblThreat: 'Security & Threat',
+    lblIntel: 'Strategic Intelligence',
+    lblFigures: 'Key Figures Present',
+    btnCurrentPos: '📍 Currently Located Here',
+    btnMarchTo: '🏇 March Expedition to',
+    legendCurrent: 'Current Location',
+    legendBattle: 'Active Battlefield',
+    legendSafe: 'Secured Stronghold',
+    btnCloseMap: 'Close Map'
   }
 };
 
@@ -221,8 +253,585 @@ const QUICK_CHIPS_DATA = {
       { divider: true },
       { type: 'travel', icon: '🏇', labelVi: 'Về Lại Huyện Trác', labelEn: 'Return to Zhuo County', promptVi: 'Rời quân doanh Quảng Tông, quay trở về Huyện Trác', promptEn: 'Leave Guangzong and return to Zhuo County' }
     ]
+  },
+  'Bình Nguyên Trọng Trấn': {
+    presenceVi: 'Bình Nguyên Trọng Trấn (Trực diện: Vương Triệt • Huyện Thừa)',
+    presenceEn: 'Pingyuan Stronghold (In-person: Wang Che • Magistrate)',
+    placeholderVi: 'Lương Diễn điều phối tại Bình Nguyên... (hoặc gõ: "Hành quân sang Quảng Tông...")',
+    placeholderEn: 'Liang Yan coordinates in Pingyuan... (or type: "March to Guangzong...")',
+    chips: [
+      { type: 'local', icon: '🛡️', labelVi: 'Bán 5 Khiên Trúc', labelEn: 'Sell 5 Shields', promptVi: 'Cung cấp 5 Khiên Trúc Lương Gia cho Dân Binh Xã Tắc', promptEn: 'Supply 5 Liang bamboo shields to local militia' },
+      { type: 'local', icon: '🌾', labelVi: 'Mua Lương Thanh Châu', labelEn: 'Buy Grain', promptVi: 'Thu mua lương thảo ngô khoai Thanh Châu tiếp tế', promptEn: 'Purchase provisions from Qingzhou merchants' },
+      { type: 'local', icon: '📜', labelVi: 'Kế Hoạch Dịch Trạm', labelEn: 'Post Relay Plan', promptVi: 'Hiến kế thiết lập hệ thống phong hỏa đài cảnh giới liên hoàn', promptEn: 'Advise on border beacon signaling network' },
+      { divider: true },
+      { type: 'courier', icon: '✉️', labelVi: 'Phi thư về Xưởng', labelEn: 'Courier to Workshop', promptVi: 'Phi thư về Xưởng Lương Thị chỉ đạo chuẩn bị thêm 10 khiên trúc', promptEn: 'Dispatch courier to Workshop for 10 shields' },
+      { divider: true },
+      { type: 'travel', icon: '🏇', labelVi: 'Sang Quảng Tông', labelEn: 'To Guangzong', promptVi: 'Hành quân sang đại doanh Quảng Tông hội quân cùng Lư Thực', promptEn: 'March to Guangzong army camp to rendezvous with Lu Zhi' },
+      { type: 'travel', icon: '🏇', labelVi: 'Về Huyện Trác', labelEn: 'To Zhuo County', promptVi: 'Hành quân trở về Hậu Phương Trang Viên Vườn Đào Huyện Trác', promptEn: 'Return to Peach Garden Manor in Zhuo County' }
+    ]
+  },
+  'Trường Xã Tiền Tuyến': {
+    presenceVi: 'Trường Xã Tiền Tuyến (Trực diện: Hoàng Phủ Tung • Tả Tướng Quân)',
+    presenceEn: 'Changshe Frontline (In-person: General Huangfu Song)',
+    placeholderVi: 'Lương Diễn tác chiến tại Trường Xã... (hoặc gõ: "Hiệp đồng kỵ binh...")',
+    placeholderEn: 'Liang Yan at Changshe... (or type: "Coordinate cavalry...")',
+    chips: [
+      { type: 'local', icon: '🔥', labelVi: 'Trợ Chiến Hỏa Công', labelEn: 'Support Fire Attack', promptVi: 'Cung cấp 5 Khiên Trúc bọc da trợ chiến tiền phong hỏa công', promptEn: 'Supply shields and oil for Changshe fire attack' },
+      { type: 'local', icon: '🌾', labelVi: 'Tiếp Tế 8 Thạch Lương', labelEn: 'Supply 8 Grain', promptVi: 'Tiếp tế 8 Thạch Lương thực khẩn cấp cho đại doanh Dự Châu', promptEn: 'Deliver 8 piculs of grain to Yuzhou command' },
+      { type: 'local', icon: '🐎', labelVi: 'Hiệp Đồng Tào Tháo', labelEn: 'Liaise Cao Cao', promptVi: 'Bắt liên lạc hiệp đồng kỵ binh cứu viện của Kỵ Đô Úy Tào Tháo', promptEn: 'Establish liaison with Cao Cao cavalry reinforcements' },
+      { divider: true },
+      { type: 'courier', icon: '✉️', labelVi: 'Báo tiệp Huyện Trác', labelEn: 'Dispatch to Zhuo', promptVi: 'Phái kỵ sĩ mang chiến báo thắng trận Trường Xã về Huyện Trác', promptEn: 'Dispatch courier with victory dispatch to Zhuo County' },
+      { divider: true },
+      { type: 'travel', icon: '🏇', labelVi: 'Tiến Vào Lạc Dương', labelEn: 'To Luoyang', promptVi: 'Rời Trường Xã, tiến về Kinh Sư Lạc Dương tấu tiệp', promptEn: 'Advance toward Imperial Luoyang to report victory' },
+      { type: 'travel', icon: '🏇', labelVi: 'Về Huyện Trác', labelEn: 'To Zhuo County', promptVi: 'Rút quân theo quan đạo trở về Hậu Phương Trang Viên Vườn Đào', promptEn: 'Return to Peach Garden Manor in Zhuo County' }
+    ]
+  },
+  'Kinh Đô Lạc Dương': {
+    presenceVi: 'Kinh Đô Lạc Dương (Trực diện: Hà Tiến • Đại Tướng Quân)',
+    presenceEn: 'Imperial Luoyang (In-person: General-in-Chief He Jin)',
+    placeholderVi: 'Lương Diễn yết kiến triều đình Lạc Dương... (hoặc gõ: "Dâng biểu quân công...")',
+    placeholderEn: 'Liang Yan at Imperial Court... (or type: "Submit memorial...")',
+    chips: [
+      { type: 'local', icon: '🎖️', labelVi: 'Nhận Sắc Phong Triều Đình', labelEn: 'Claim Imperial Bounty', promptVi: 'Nhận sắc phong Quân Nhu Tán Quan & Thưởng 2,500 Tiền từ Triều Đình', promptEn: 'Claim imperial commission and 2,500 Qian bounty' },
+      { type: 'local', icon: '🏛️', labelVi: 'Mở Phân Hiệu Kinh Đô', labelEn: 'Found Capital Branch', promptVi: 'Đăng ký môn bài chi nhánh Lương Gia Thương Hội tại Kinh Sư', promptEn: 'Register Liang Merchant Guild branch in the Capital' },
+      { type: 'local', icon: '🍵', labelVi: 'Gặp Binh Bộ Thượng Thư', labelEn: 'Court Networking', promptVi: 'Biếu lễ vật tiếp xúc Binh Bộ Thượng Thư nắm bắt thời cuộc', promptEn: 'Audience with Minister of War to discuss contracts' },
+      { divider: true },
+      { type: 'courier', icon: '✉️', labelVi: 'Chỉ đạo Xưởng Trác Huyện', labelEn: 'Direct Zhuo Workshop', promptVi: 'Phi thư về Huyện Trác chỉ đạo mở rộng quy mô xưởng dệt gấp đôi', promptEn: 'Dispatch instructions to Zhuo County to expand workshop' },
+      { divider: true },
+      { type: 'travel', icon: '🏇', labelVi: 'Về Huyện Trác', labelEn: 'To Zhuo County', promptVi: 'Rời Kinh Sư Lạc Dương, cất bước trở về Trang Viên Vườn Đào Huyện Trác', promptEn: 'Depart Luoyang and return to Peach Garden Manor in Zhuo County' }
+    ]
   }
 };
+
+const WORLD_MAP_NODES = {
+  'zhuo_xian': {
+    id: 'zhuo_xian',
+    nameVi: 'Trác Huyện (Trác Quận)',
+    nameEn: 'Zhuo County (Zhuo Commandery)',
+    provinceVi: 'U Châu',
+    provinceEn: 'Youzhou',
+    coords: { x: 280, y: 80 },
+    statusVi: 'An Định • Hậu Phương Lương Gia',
+    statusEn: 'Stable • Liang Clan Base',
+    threatVi: 'An toàn (Quan binh phòng thủ)',
+    threatEn: 'Safe (Garrison defense)',
+    distanceFromZhuo: 0,
+    daysRequired: 0,
+    grainCost: 0,
+    defaultSubLoc: 'Vườn Đào',
+    subLocations: ['Vườn Đào', 'Chợ Đông Môn', 'Xưởng Lương Thị'],
+    figuresVi: 'Lưu Bị (Huyền Đức), Trương Phi (Dực Đức), Quan Vũ (Vân Trường), Thợ cả Trần Bảo',
+    figuresEn: 'Liu Bei, Zhang Fei, Guan Yu, Master Chen Bao',
+    intelVi: 'Bản dinh và quê hương của gia tộc Lương Thị. Nơi khởi phát của Đào Viên Kết Nghĩa và xưởng dệt thủ công.',
+    intelEn: 'Home base of Liang Clan. Cradle of the Peach Garden Oath and textile craft workshop.'
+  },
+  'guang_zong': {
+    id: 'guang_zong',
+    nameVi: 'Quảng Tông (Cự Lộc)',
+    nameEn: 'Guangzong (Julu Commandery)',
+    provinceVi: 'Ký Châu',
+    provinceEn: 'Jizhou',
+    coords: { x: 310, y: 210 },
+    statusVi: 'Chiến Sự Ác Liệt • Khăn Vàng',
+    statusEn: 'Active Battlefield • Yellow Turbans',
+    threatVi: 'Hiểm nguy cao (Tàn quân phục kích)',
+    threatEn: 'High threat (Bandit ambushes)',
+    distanceFromZhuo: 280,
+    daysRequired: 1,
+    grainCost: 1.5,
+    defaultSubLoc: 'Quảng Tông Quân Doanh',
+    subLocations: ['Quảng Tông Quân Doanh'],
+    figuresVi: 'Lư Thực (Bắc Quân Trung Lang Tướng), Trương Giác, Trương Lương, Trương Bảo',
+    figuresEn: 'General Lu Zhi, Zhang Jue, Zhang Liang, Zhang Bao',
+    intelVi: 'Đại bản doanh của giáo phái Thái Bình Đạo. Thành trì Quảng Tông đang bị Bắc Quân của Lư Thực bao vây chặt chẽ.',
+    intelEn: 'Heart of the Yellow Turban Rebellion. Besieged by General Lu Zhi of the Northern Army.'
+  },
+  'ping_yuan': {
+    id: 'ping_yuan',
+    nameVi: 'Bình Nguyên (Bình Nguyên Quốc)',
+    nameEn: 'Pingyuan (Pingyuan State)',
+    provinceVi: 'Ký / Thanh Châu',
+    provinceEn: 'Jizhou / Qingzhou',
+    coords: { x: 430, y: 220 },
+    statusVi: 'Nghĩa Binh Tập Kết',
+    statusEn: 'Militia Muster Point',
+    threatVi: 'Trung bình (Biên giới bất an)',
+    threatEn: 'Moderate (Border skirmishes)',
+    distanceFromZhuo: 360,
+    daysRequired: 1.5,
+    grainCost: 2.0,
+    defaultSubLoc: 'Bình Nguyên Trọng Trấn',
+    subLocations: ['Bình Nguyên Trọng Trấn'],
+    figuresVi: 'Quan phủ địa phương, Thương đoàn Thanh Châu',
+    figuresEn: 'Local magistrates, Qingzhou merchants',
+    intelVi: 'Đầu mối giao thương giữa Ký Châu và Thanh Châu. Nơi nghĩa quân đang tập hợp lực lượng đẩy lùi giặc cỏ.',
+    intelEn: 'Crucial logistical crossroad between Jizhou and Qingzhou. Volunteer armies congregating.'
+  },
+  'chang_she': {
+    id: 'chang_she',
+    nameVi: 'Trường Xã & Dĩnh Xuyên',
+    nameEn: 'Changshe & Yingchuan',
+    provinceVi: 'Dự Châu',
+    provinceEn: 'Yuzhou',
+    coords: { x: 350, y: 380 },
+    statusVi: 'Hỏa Công Tiền Tuyến',
+    statusEn: 'Southern Frontline',
+    threatVi: 'Cực kỳ nguy hiểm (Hoàng Cân vây hãm)',
+    threatEn: 'Extreme danger (Besieged by Ba Cai)',
+    distanceFromZhuo: 620,
+    daysRequired: 2.5,
+    grainCost: 3.5,
+    defaultSubLoc: 'Trường Xã Tiền Tuyến',
+    subLocations: ['Trường Xã Tiền Tuyến'],
+    figuresVi: 'Hoàng Phủ Tung, Chu Tuấn, Kỵ Binh Tào Tháo',
+    figuresEn: 'Huangfu Song, Zhu Jun, Cao Cao',
+    intelVi: 'Tiền tuyến miền Nam nơi quân triều đình đang đối đầu dữ dội với tướng giặc Ba Cai. Nổi tiếng với trận hỏa công Trường Xã.',
+    intelEn: 'Southern frontline where Imperial armies clash with Yellow Turban General Ba Cai.'
+  },
+  'luo_yang': {
+    id: 'luo_yang',
+    nameVi: 'Lạc Dương (Kinh Sư)',
+    nameEn: 'Luoyang (Imperial Capital)',
+    provinceVi: 'Tư Lệ',
+    provinceEn: 'Sili',
+    coords: { x: 200, y: 360 },
+    statusVi: 'Hoàng Thành Giới Nghiêm',
+    statusEn: 'Imperial Capital • Martial Law',
+    threatVi: 'An ninh nghiêm ngặt',
+    threatEn: 'High security • Palace guards',
+    distanceFromZhuo: 750,
+    daysRequired: 3.0,
+    grainCost: 4.0,
+    defaultSubLoc: 'Kinh Đô Lạc Dương',
+    subLocations: ['Kinh Đô Lạc Dương'],
+    figuresVi: 'Hán Linh Đế, Đại Tướng Quân Hà Tiến, Thập Thường Thị',
+    figuresEn: 'Emperor Ling of Han, General He Jin, Ten Attendants',
+    intelVi: 'Kinh đô tráng lệ của Đế Chế Đại Hán. Nơi ban bố các chiếu thư phong tướng, ban thưởng quân công và quyết định đại cục thiên hạ.',
+    intelEn: 'Magnificent capital of the Han Empire. Seat of imperial decrees, court politics, and high governance.'
+  }
+};
+
+let selectedMapNodeId = 'guang_zong';
+
+// ==========================================================================
+// 0.1 LOCAL POINTS OF INTEREST (POIs) & REGIONAL GEOGRAPHY ENGINE
+// ==========================================================================
+
+function getPoiMeta(locName) {
+  const dict = {
+    'Vườn Đào': { vi: 'Trang Viên Vườn Đào Hạ Trạch', en: 'Peach Garden Manor', icon: '🌸', distFromZhuo: '0 dặm' },
+    'Chợ Đông Môn': { vi: 'Chợ Đông Môn & Sạp Trà', en: 'East Gate Market & Tea Stall', icon: '🏪', distFromZhuo: '1 dặm' },
+    'Xưởng Lương Thị': { vi: 'Lương Thị Chức Tác Phường', en: 'Liang Textile Workshop', icon: '🏭', distFromZhuo: '2 dặm' },
+    'Quảng Tông Quân Doanh': { vi: 'Bắc Quân Đại Doanh (Quảng Tông)', en: 'Northern Army Headquarters', icon: '⛺', distFromZhuo: '280 dặm' },
+    'Bình Nguyên Trọng Trấn': { vi: 'Bình Nguyên Trọng Trấn', en: 'Pingyuan Stronghold', icon: '🛡️', distFromZhuo: '360 dặm' },
+    'Trường Xã Tiền Tuyến': { vi: 'Trường Xã Tiền Tuyến (Dự Châu)', en: 'Changshe Frontline Camp', icon: '🔥', distFromZhuo: '620 dặm' },
+    'Kinh Đô Lạc Dương': { vi: 'Kinh Đô Lạc Dương (Đại Tướng Quân Phủ)', en: 'Imperial Capital Luoyang', icon: '👑', distFromZhuo: '750 dặm' }
+  };
+  return dict[locName] || { vi: locName, en: locName, icon: '📍', distFromZhuo: '1 dặm' };
+}
+
+function getLocalPoiDistance(fromLoc, toLoc) {
+  if (fromLoc === toLoc) return '0 dặm';
+  if ((fromLoc.includes('Đào') && toLoc.includes('Chợ')) || (fromLoc.includes('Chợ') && toLoc.includes('Đào'))) return '1 dặm';
+  if ((fromLoc.includes('Đào') && toLoc.includes('Xưởng')) || (fromLoc.includes('Xưởng') && toLoc.includes('Đào'))) return '2 dặm';
+  if ((fromLoc.includes('Chợ') && toLoc.includes('Xưởng')) || (fromLoc.includes('Xưởng') && toLoc.includes('Chợ'))) return '1.5 dặm';
+  return '1 dặm';
+}
+
+function getCurrentRegionNode(subLoc = activeSubLocation) {
+  if (!subLoc) return WORLD_MAP_NODES['zhuo_xian'];
+  for (const key of Object.keys(WORLD_MAP_NODES)) {
+    const node = WORLD_MAP_NODES[key];
+    if (node.subLocations && node.subLocations.includes(subLoc)) {
+      return node;
+    }
+  }
+  const lower = subLoc.toLowerCase();
+  if (lower.includes('trác') || lower.includes('đào') || lower.includes('chợ') || lower.includes('xưởng')) return WORLD_MAP_NODES['zhuo_xian'];
+  if (lower.includes('quảng tông')) return WORLD_MAP_NODES['guang_zong'];
+  if (lower.includes('bình nguyên')) return WORLD_MAP_NODES['ping_yuan'];
+  if (lower.includes('trường xã') || lower.includes('dĩnh')) return WORLD_MAP_NODES['chang_she'];
+  if (lower.includes('lạc dương')) return WORLD_MAP_NODES['luo_yang'];
+  return WORLD_MAP_NODES['zhuo_xian'];
+}
+
+function renderLocalPoiNav(loc = activeSubLocation) {
+  const regionBadge = document.getElementById('loc-region-badge');
+  const breadcrumbText = document.getElementById('loc-breadcrumb-text');
+  const localPoiGroup = document.getElementById('local-poi-group');
+  if (!regionBadge || !breadcrumbText || !localPoiGroup) return;
+
+  const currentRegion = getCurrentRegionNode(loc);
+  const isEn = (currentLang === 'en');
+
+  // 1. Region Badge
+  regionBadge.innerText = isEn 
+    ? `${currentRegion.provinceEn} • ${currentRegion.nameEn.split(' ')[0]}`
+    : `${currentRegion.provinceVi} • ${currentRegion.nameVi.split(' ')[0]}`;
+
+  // 2. Breadcrumb Text
+  const currentPoiMeta = getPoiMeta(loc);
+  breadcrumbText.innerText = isEn ? currentPoiMeta.en : currentPoiMeta.vi;
+
+  // 3. Dynamic Local Walking POIs
+  const localPois = (currentRegion.subLocations || []).filter(sl => sl !== loc);
+  if (localPois.length === 0) {
+    localPoiGroup.innerHTML = `<span style="font-size: 11px; color: var(--text-muted); font-style: italic;">${isEn ? '📍 Local outpost area' : '📍 Khu vực tiền tuyến'}</span>`;
+  } else {
+    localPoiGroup.innerHTML = localPois.map(targetLoc => {
+      const meta = getPoiMeta(targetLoc);
+      const name = isEn ? meta.en : meta.vi;
+      const dist = getLocalPoiDistance(loc, targetLoc);
+      const distLabel = isEn ? dist.replace('dặm', 'li') : dist;
+      return `
+        <button class="local-poi-btn" onclick="travelLocalPoi('${targetLoc}')" title="${isEn ? 'Walk to ' + name : 'Đi bộ tới ' + name}">
+          <span>🚶 ${meta.icon} ${name}</span>
+          <span style="font-size: 9.5px; opacity: 0.75; font-family: var(--font-mono);">(${distLabel})</span>
+        </button>
+      `;
+    }).join('');
+  }
+}
+
+async function travelLocalPoi(targetLoc) {
+  if (isProcessingAction) {
+    showToast(currentLang === 'en' ? '⚠️ Action in progress, please wait!' : '⚠️ Đang thực thi thao tác khác, vui lòng chờ!', true);
+    return;
+  }
+  if (activeSubLocation === targetLoc) return;
+
+  const fromLoc = activeSubLocation;
+  const isEn = (currentLang === 'en');
+  const fromMeta = getPoiMeta(fromLoc);
+  const toMeta = getPoiMeta(targetLoc);
+  const dist = getLocalPoiDistance(fromLoc, targetLoc);
+  const distLabel = isEn ? dist.replace('dặm', 'li') : dist;
+
+  // Append in-character walking journey turn into chronicle
+  const walkNarrativeVi = `Lương Diễn khoác trường bào, cất bước rời khỏi **${fromMeta.vi}**, đi bộ sang **${toMeta.vi}** (${dist}). Dọc đường quan đạo, gió xuân thổi qua rặng liễu, dân chúng và thương nhân tấp nập qua lại bàn tán thời sự...`;
+  const walkNarrativeEn = `Liang Yan dons his traveling cloak, departing on foot from **${fromMeta.en}** toward **${toMeta.en}** (${distLabel}). Along the post road, spring winds brush past willows as merchants and militia buzz with war rumors...`;
+
+  appendStoryTurn({
+    type: 'player',
+    speaker: isEn ? 'Liang Yan (On Foot)' : 'Lương Diễn (Bộ Hành)',
+    title: isEn ? 'Local Movement' : 'Cơ Động Cục Bộ',
+    avatar: 'Diễn',
+    text: isEn ? walkNarrativeEn : walkNarrativeVi,
+    deltas: { location: targetLoc, distance: distLabel, type: isEn ? 'Walk' : 'Đi bộ' }
+  });
+
+  showToast(isEn ? `Arrived at ${toMeta.en} (${distLabel})` : `Đã bước tới ${toMeta.vi} (${dist})...`);
+  activeSubLocation = targetLoc;
+
+  try {
+    setProcessingLock(true, isEn ? 'Walking...' : 'Đang di chuyển...');
+    await loadScene(targetLoc);
+    renderLocalPoiNav(targetLoc);
+  } finally {
+    setProcessingLock(false, null);
+  }
+}
+
+// ==========================================================================
+// 0.2 STRATEGIC WORLD MAP (DƯ ĐỒ TAM QUỐC) ENGINE
+// ==========================================================================
+
+function openWorldMap() {
+  const modal = document.getElementById('world-map-modal');
+  if (!modal) return;
+  modal.classList.remove('hidden');
+
+  const currentRegion = getCurrentRegionNode(activeSubLocation);
+  if (currentRegion && currentRegion.id === selectedMapNodeId) {
+    if (selectedMapNodeId === 'zhuo_xian') {
+      selectedMapNodeId = 'guang_zong';
+    }
+  }
+
+  renderWorldMapSvg();
+  renderWorldMapIntel(selectedMapNodeId);
+}
+
+function closeWorldMap() {
+  const modal = document.getElementById('world-map-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+function selectWorldMapNode(nodeId) {
+  if (!WORLD_MAP_NODES[nodeId]) return;
+  selectedMapNodeId = nodeId;
+  renderWorldMapSvg();
+  renderWorldMapIntel(nodeId);
+}
+
+function renderWorldMapSvg() {
+  const container = document.getElementById('world-map-canvas-container');
+  if (!container) return;
+
+  const currentRegion = getCurrentRegionNode(activeSubLocation);
+  const isEn = (currentLang === 'en');
+
+  // Route connections between tactical regional nodes
+  const routes = [
+    { from: 'zhuo_xian', to: 'guang_zong' },
+    { from: 'zhuo_xian', to: 'ping_yuan' },
+    { from: 'guang_zong', to: 'ping_yuan' },
+    { from: 'guang_zong', to: 'chang_she' },
+    { from: 'guang_zong', to: 'luo_yang' },
+    { from: 'luo_yang', to: 'chang_she' }
+  ];
+
+  let svgRoutes = routes.map(r => {
+    const f = WORLD_MAP_NODES[r.from].coords;
+    const t = WORLD_MAP_NODES[r.to].coords;
+    return `<line x1="${f.x}" y1="${f.y}" x2="${t.x}" y2="${t.y}" stroke="rgba(245, 158, 11, 0.35)" stroke-width="2" stroke-dasharray="4,4" />`;
+  }).join('');
+
+  let svgNodes = Object.keys(WORLD_MAP_NODES).map(key => {
+    const node = WORLD_MAP_NODES[key];
+    const isCurrent = (currentRegion.id === key);
+    const isSelected = (selectedMapNodeId === key);
+
+    let theme = { fill: '#0f172a', stroke: '#3b82f6', icon: '🛡️' };
+    if (isCurrent) {
+      theme = { fill: '#064e3b', stroke: '#10b981', icon: '📍' };
+    } else if (key === 'guang_zong') {
+      theme = { fill: '#450a0a', stroke: '#ef4444', icon: '⚔️' };
+    } else if (key === 'chang_she') {
+      theme = { fill: '#450a0a', stroke: '#ef4444', icon: '🔥' };
+    } else if (key === 'luo_yang') {
+      theme = { fill: '#451a03', stroke: '#f59e0b', icon: '👑' };
+    } else if (key === 'zhuo_xian') {
+      theme = { fill: '#064e3b', stroke: '#10b981', icon: '🌸' };
+    }
+
+    const displayName = isEn ? node.nameEn.split(' ')[0] : node.nameVi.split(' ')[0];
+    const displayProvince = isEn ? node.provinceEn : node.provinceVi;
+
+    return `
+      <g class="map-node ${isSelected ? 'active' : ''}" onclick="selectWorldMapNode('${key}')" style="cursor: pointer;">
+        ${isCurrent ? `
+          <circle cx="${node.coords.x}" cy="${node.coords.y}" r="23" fill="none" stroke="#10b981" stroke-width="2" opacity="0.8" class="map-pulse-ring" />
+          <rect x="${node.coords.x - 38}" y="${node.coords.y - 30}" width="76" height="14" rx="3" fill="#064e3b" stroke="#10b981" stroke-width="1" />
+          <text x="${node.coords.x}" y="${node.coords.y - 20}" fill="#34d399" font-size="8" font-weight="700" text-anchor="middle">📍 ${isEn ? 'CURRENT' : 'HIỆN TẠI'}</text>
+        ` : ''}
+
+        ${isSelected ? `
+          <circle cx="${node.coords.x}" cy="${node.coords.y}" r="22" fill="none" stroke="#fbbf24" stroke-width="2.5" stroke-dasharray="4,2" />
+        ` : ''}
+
+        <circle class="node-bg" cx="${node.coords.x}" cy="${node.coords.y}" r="15" fill="${theme.fill}" stroke="${isSelected ? '#fbbf24' : theme.stroke}" stroke-width="${isSelected ? '2.5' : '1.5'}" />
+        <text x="${node.coords.x}" y="${node.coords.y + 4.5}" font-size="11" text-anchor="middle">${theme.icon}</text>
+        
+        <text x="${node.coords.x}" y="${node.coords.y + 25}" text-anchor="middle" fill="${isSelected ? '#fbbf24' : '#f1f5f9'}" font-size="10.5" font-weight="${isSelected ? '700' : '600'}" letter-spacing="0.2px">${displayName}</text>
+        <text x="${node.coords.x}" y="${node.coords.y + 36}" text-anchor="middle" fill="#94a3b8" font-size="9">${displayProvince}</text>
+      </g>
+    `;
+  }).join('');
+
+  container.innerHTML = `
+    <svg viewBox="0 0 540 440" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <pattern id="tactical-grid" width="28" height="28" patternUnits="userSpaceOnUse">
+          <path d="M 28 0 L 0 0 0 28" fill="none" stroke="rgba(255, 255, 255, 0.03)" stroke-width="1"/>
+        </pattern>
+      </defs>
+
+      <!-- Background & Grid -->
+      <rect width="100%" height="100%" fill="#070a12"/>
+      <rect width="100%" height="100%" fill="url(#tactical-grid)"/>
+
+      <!-- Border Frame -->
+      <rect x="8" y="8" width="524" height="424" fill="none" stroke="rgba(245, 158, 11, 0.2)" stroke-width="1" stroke-dasharray="6,4"/>
+      <rect x="12" y="12" width="516" height="416" fill="none" stroke="rgba(255, 255, 255, 0.04)" stroke-width="0.5"/>
+
+      <!-- North Indicator -->
+      <g transform="translate(500, 36)" opacity="0.6">
+        <circle cx="0" cy="0" r="14" fill="none" stroke="rgba(255, 255, 255, 0.15)" stroke-width="1"/>
+        <polygon points="0,-12 4,0 0,-4 -4,0" fill="#f59e0b"/>
+        <text x="0" y="10" fill="#cbd5e1" font-size="7" font-weight="700" text-anchor="middle">BẮC</text>
+      </g>
+
+      <!-- Ancient Province Watermarks -->
+      <text x="280" y="55" fill="rgba(255, 255, 255, 0.08)" font-size="18" font-family="'Cinzel', serif" font-weight="700" letter-spacing="4px" text-anchor="middle">U CHÂU (YOUZHOU)</text>
+      <text x="255" y="165" fill="rgba(255, 255, 255, 0.08)" font-size="18" font-family="'Cinzel', serif" font-weight="700" letter-spacing="4px" text-anchor="middle">KÝ CHÂU (JIZHOU)</text>
+      <text x="460" y="165" fill="rgba(255, 255, 255, 0.07)" font-size="16" font-family="'Cinzel', serif" font-weight="700" letter-spacing="3px" text-anchor="middle">THANH CHÂU</text>
+      <text x="395" y="295" fill="rgba(255, 255, 255, 0.07)" font-size="16" font-family="'Cinzel', serif" font-weight="700" letter-spacing="3px" text-anchor="middle">DUYỆN CHÂU</text>
+      <text x="345" y="420" fill="rgba(255, 255, 255, 0.08)" font-size="18" font-family="'Cinzel', serif" font-weight="700" letter-spacing="4px" text-anchor="middle">DỰ CHÂU (YUZHOU)</text>
+      <text x="130" y="360" fill="rgba(255, 255, 255, 0.08)" font-size="18" font-family="'Cinzel', serif" font-weight="700" letter-spacing="4px" text-anchor="middle">TƯ LỆ (SILI)</text>
+
+      <!-- Hoàng Hà (The Yellow River) -->
+      <path d="M 20,355 C 110,345 170,325 230,320 C 300,315 360,275 430,260 C 475,250 510,240 540,235" 
+            stroke="#1d4ed8" stroke-width="8" stroke-linecap="round" fill="none" opacity="0.45" />
+      <path d="M 20,355 C 110,345 170,325 230,320 C 300,315 360,275 430,260 C 475,250 510,240 540,235" 
+            stroke="#60a5fa" stroke-width="2.5" stroke-dasharray="8,6" fill="none" opacity="0.8" />
+      <text x="330" y="280" fill="#93c5fd" font-size="9.5" font-style="italic" opacity="0.85" letter-spacing="0.5px">Hoàng Hà (Yellow River)</text>
+
+      <!-- Mountain Pass: Hổ Lao Quan -->
+      <g transform="translate(240, 342)">
+        <polygon points="-7,5 0,-6 7,5" fill="#ef4444" stroke="#f87171" stroke-width="1.2" opacity="0.9" />
+        <text x="0" y="14" fill="#fca5a5" font-size="8" text-anchor="middle" font-weight="600">Hổ Lao Quan</text>
+      </g>
+
+      <!-- Tactical Routes -->
+      ${svgRoutes}
+
+      <!-- Interactive Strategic Regional Nodes -->
+      ${svgNodes}
+    </svg>
+  `;
+}
+
+function renderWorldMapIntel(nodeId = selectedMapNodeId) {
+  const panel = document.getElementById('world-map-intel-panel');
+  if (!panel) return;
+
+  const node = WORLD_MAP_NODES[nodeId];
+  if (!node) return;
+
+  const currentRegion = getCurrentRegionNode(activeSubLocation);
+  const isCurrent = (currentRegion.id === nodeId);
+  const isEn = (currentLang === 'en');
+  const dict = I18N_DICT[currentLang] || I18N_DICT.vi;
+
+  const badgeClass = nodeId === 'luo_yang' ? 'capital' : (nodeId === 'guang_zong' || nodeId === 'chang_she' ? 'battle' : 'safe');
+  const badgeText = isEn ? node.statusEn : node.statusVi;
+
+  const dist = isCurrent ? 0 : node.distanceFromZhuo;
+  const distText = isEn ? `${dist} li` : `${dist} dặm`;
+  const daysText = isCurrent ? (isEn ? '0 days' : '0 ngày') : (isEn ? `${node.daysRequired} days` : `${node.daysRequired} ngày`);
+  const grainText = isCurrent ? (isEn ? '0 grain' : '0 thạch') : `${node.grainCost} ${isEn ? 'piculs' : 'thạch'}`;
+  const threatText = isEn ? node.threatEn : node.threatVi;
+  const threatColor = (nodeId === 'guang_zong' || nodeId === 'chang_she') ? '#f87171' : '#34d399';
+
+  const title = isEn ? node.nameEn : node.nameVi;
+  const prov = isEn ? node.provinceEn : node.provinceVi;
+  const intel = isEn ? node.intelEn : node.intelVi;
+  const figures = isEn ? node.figuresEn : node.figuresVi;
+
+  panel.innerHTML = `
+    <div class="intel-target-header">
+      <div>
+        <div class="intel-target-name">${title}</div>
+        <div class="intel-target-province">📍 ${prov}</div>
+      </div>
+      <span class="intel-status-badge ${badgeClass}">${badgeText}</span>
+    </div>
+
+    <div class="intel-metrics-grid">
+      <div class="intel-metric-box">
+        <div class="intel-metric-lbl">${dict.lblDist}</div>
+        <div class="intel-metric-val">${distText}</div>
+      </div>
+      <div class="intel-metric-box">
+        <div class="intel-metric-lbl">${dict.lblDuration}</div>
+        <div class="intel-metric-val">${daysText}</div>
+      </div>
+      <div class="intel-metric-box">
+        <div class="intel-metric-lbl">${dict.lblGrainCost}</div>
+        <div class="intel-metric-val">${grainText}</div>
+      </div>
+      <div class="intel-metric-box">
+        <div class="intel-metric-lbl">${dict.lblThreat}</div>
+        <div class="intel-metric-val" style="font-size: 10px; color: ${threatColor};">${threatText}</div>
+      </div>
+    </div>
+
+    <div class="intel-section">
+      <div class="intel-sec-title">📜 ${dict.lblIntel}</div>
+      <div class="intel-sec-body">${intel}</div>
+    </div>
+
+    <div class="intel-section">
+      <div class="intel-sec-title">👥 ${dict.lblFigures}</div>
+      <div class="intel-sec-body">${figures}</div>
+    </div>
+
+    ${isCurrent ? `
+      <button class="btn-march" disabled>
+        <span>📍 ${dict.btnCurrentPos}</span>
+      </button>
+    ` : `
+      <button class="btn-march" onclick="executeMarchToSelectedNode('${nodeId}')">
+        <span>🏇 ${dict.btnMarchTo} ${title}</span>
+      </button>
+    `}
+  `;
+}
+
+async function executeMarchToSelectedNode(nodeId) {
+  if (isProcessingAction) {
+    showToast(currentLang === 'en' ? '⚠️ Action in progress, please wait!' : '⚠️ Đang thực thi thao tác khác, vui lòng chờ!', true);
+    return;
+  }
+
+  const targetNode = WORLD_MAP_NODES[nodeId];
+  if (!targetNode) return;
+
+  const currentRegion = getCurrentRegionNode(activeSubLocation);
+  if (currentRegion.id === nodeId) {
+    showToast(currentLang === 'en' ? 'Already in this region.' : 'Đang ở khu vực này rồi.');
+    return;
+  }
+
+  const isEn = (currentLang === 'en');
+  const confirmMsg = isEn 
+    ? `Depart march expedition to ${targetNode.nameEn}?\nLogistical requirement: ${targetNode.grainCost} piculs of grain.`
+    : `Xác nhận khởi hành hành quân tới ${targetNode.nameVi}?\nTiêu hao ước tính: ${targetNode.grainCost} thạch lương lộ phí.`;
+
+  if (!confirm(confirmMsg)) {
+    return;
+  }
+
+  closeWorldMap();
+
+  try {
+    setProcessingLock(true, isEn ? 'Marching...' : 'Đang hành quân...');
+
+    // Append campaign expedition chronicle turn
+    const marchNarrativeVi = `Lương Diễn chỉnh đốn yên cương, dẫn đầu đoàn tùy tùng mang theo ${targetNode.grainCost} thạch quân lương, vượt dặm trường bão cát rời bước tiến về tiền tuyến **${targetNode.nameVi}**. Sau ${targetNode.daysRequired} ngày hành quân đêm ngày, cờ xí phe ta đã phất phới bên ngoài thành lũy!`;
+    const marchNarrativeEn = `Liang Yan straps his sword and leads his supply expedition carrying ${targetNode.grainCost} piculs of grain across windblown roads toward **${targetNode.nameEn}**. After ${targetNode.daysRequired} days of disciplined marching, banners flutter before the citadel gates!`;
+
+    appendStoryTurn({
+      type: 'player',
+      speaker: isEn ? 'Liang Yan (March Expedition)' : 'Lương Diễn (Hành Quân)',
+      title: isEn ? 'Campaign Expedition' : 'Chiến Tuyến Viễn Chinh',
+      avatar: 'Diễn',
+      text: isEn ? marchNarrativeEn : marchNarrativeVi,
+      deltas: {
+        location: targetNode.defaultSubLoc,
+        grainCost: `-${targetNode.grainCost} Thạch`,
+        marchDistance: `${targetNode.distanceFromZhuo} Dặm`,
+        threat: targetNode.threatVi
+      }
+    });
+
+    // Execute MOVE_LOCATION in SimCore
+    await dispatchDirectAction({
+      type: 'MOVE_LOCATION',
+      new_location: targetNode.defaultSubLoc,
+      game_date: '184-05-02'
+    });
+
+    activeSubLocation = targetNode.defaultSubLoc;
+    await loadScene(targetNode.defaultSubLoc);
+    renderLocalPoiNav(targetNode.defaultSubLoc);
+
+    renderAgentSimulationFeedback(
+      isEn ? `Expedition arrived at ${targetNode.nameEn}. Battlefield coordinates updated.` : `Quân đoàn đã tới ${targetNode.nameVi}. Tọa độ chiến trường cập nhật thành công.`,
+      { location: targetNode.defaultSubLoc, audit: '70/70 Khớp' }
+    );
+
+    await Promise.all([loadStatus(), loadDeckInventory(), loadDeckNpcs(), loadDeckLedger()]);
+    showToast(isEn ? `Arrived at ${targetNode.nameEn}` : `Đã đến ${targetNode.nameVi}!`);
+
+  } catch (err) {
+    console.error('March failed:', err);
+    showToast(`Hành quân thất bại: ${err.message}`, true);
+  } finally {
+    setProcessingLock(false, null);
+  }
+}
 
 // DOM Ready Initialization
 document.addEventListener('DOMContentLoaded', () => {
@@ -382,24 +991,11 @@ async function loadScene(targetSubLoc = activeSubLocation, customNarrative = nul
 function renderSceneFromData(data, customNarrative = null) {
   if (!data) return;
 
-  // Breadcrumbs
-  const breadcrumb = document.getElementById('loc-breadcrumb-text');
-  if (breadcrumb && data.campaign) {
-    breadcrumb.innerText = data.campaign.location;
+  // Dynamic Hierarchical Breadcrumb & Local Walking POIs Navigation
+  if (data.campaign && data.campaign.activeSubLocation) {
+    activeSubLocation = data.campaign.activeSubLocation;
   }
-
-  // Dynamic Sub-location Pills
-  const subLocGroup = document.getElementById('sub-locations-group');
-  if (subLocGroup && data.campaign && data.campaign.subLocations) {
-    subLocGroup.innerHTML = data.campaign.subLocations.map(loc => {
-      const isActive = loc === activeSubLocation;
-      return `
-        <button class="sub-loc-pill ${isActive ? 'active' : ''}" onclick="switchSubLocation('${loc}')">
-          ● ${loc}
-        </button>
-      `;
-    }).join('');
-  }
+  renderLocalPoiNav(activeSubLocation);
 
   // Dynamic Contextual Quick Chips & Locality Banner
   renderDynamicQuickChips(activeSubLocation);
@@ -641,8 +1237,38 @@ function applyLanguage() {
     if (tabId === 'subtab-agent-log') btn.innerText = dict.tabAiFeed;
   });
 
-  // Re-render Dynamic Chips
+  // World Map Button & Modal
+  const btnWorldMap = document.getElementById('txt-btn-worldmap');
+  if (btnWorldMap) btnWorldMap.innerText = dict.btnWorldMap;
+
+  const mapTitle = document.getElementById('world-map-title');
+  if (mapTitle) mapTitle.innerText = dict.worldMapTitle;
+
+  const mapSub = document.getElementById('world-map-sub');
+  if (mapSub) mapSub.innerText = dict.worldMapSub;
+
+  const mapLegend = document.getElementById('world-map-legend');
+  if (mapLegend) {
+    mapLegend.innerHTML = `
+      <span><span class="legend-dot current"></span> ${dict.legendCurrent}</span>
+      <span><span class="legend-dot battle"></span> ${dict.legendBattle}</span>
+      <span><span class="legend-dot safe"></span> ${dict.legendSafe}</span>
+    `;
+  }
+
+  const btnCloseMap = document.querySelector('#world-map-modal .modal-footer .btn-outline');
+  if (btnCloseMap) btnCloseMap.innerText = dict.btnCloseMap;
+
+  // Re-render Dynamic Chips & Local POI Navigation
   renderDynamicQuickChips(activeSubLocation);
+  renderLocalPoiNav(activeSubLocation);
+
+  // If World Map modal is open, re-render SVG & Intel
+  const mapModal = document.getElementById('world-map-modal');
+  if (mapModal && !mapModal.classList.contains('hidden')) {
+    renderWorldMapSvg();
+    renderWorldMapIntel(selectedMapNodeId);
+  }
 
   // If scene is loaded, re-render choices
   if (currentScene && currentScene.options) {
@@ -1411,6 +2037,22 @@ function initUIEventListeners() {
     btnLogs.addEventListener('click', () => {
       switchDeckTab('subtab-agent-log');
       showToast('Đang hiển thị Nhật ký mô phỏng từ Agent!');
+    });
+  }
+
+  // World Map Modal Keyboard & Backdrop Handlers
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      closeWorldMap();
+    }
+  });
+
+  const mapModal = document.getElementById('world-map-modal');
+  if (mapModal) {
+    mapModal.addEventListener('click', (e) => {
+      if (e.target === mapModal) {
+        closeWorldMap();
+      }
     });
   }
 }
