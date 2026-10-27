@@ -101,6 +101,53 @@ async function apiClearChatHistory() {
   return await res.json();
 }
 
+async function apiFetchGameSummary() {
+  const res = await fetch(`${API_BASE}/api/game/summary`);
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Failed to fetch game summary');
+  return data;
+}
+
+async function apiStartNewGame(payload) {
+  const res = await fetch(`${API_BASE}/api/game/new`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Failed to start new game');
+  return data;
+}
+
+async function apiSaveSlot(slotName) {
+  const res = await fetch(`${API_BASE}/api/game/save-slot`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ slot: slotName })
+  });
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Failed to export save slot');
+  return data;
+}
+
+async function apiLoadSlot(slotName) {
+  const res = await fetch(`${API_BASE}/api/game/load-slot`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ slot: slotName })
+  });
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Failed to load save slot');
+  return data;
+}
+
+async function apiFetchMasterCatalog() {
+  const res = await fetch(`${API_BASE}/api/master/catalog`);
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Failed to fetch master catalog');
+  return data.catalog;
+}
+
 // Global exposure
 window.apiFetchStatus = apiFetchStatus;
 window.apiFetchAudit = apiFetchAudit;
@@ -114,3 +161,8 @@ window.apiDispatchAction = apiDispatchAction;
 window.apiFetchChatHistory = apiFetchChatHistory;
 window.apiSaveChatTurn = apiSaveChatTurn;
 window.apiClearChatHistory = apiClearChatHistory;
+window.apiFetchGameSummary = apiFetchGameSummary;
+window.apiStartNewGame = apiStartNewGame;
+window.apiSaveSlot = apiSaveSlot;
+window.apiLoadSlot = apiLoadSlot;
+window.apiFetchMasterCatalog = apiFetchMasterCatalog;

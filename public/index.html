@@ -377,6 +377,77 @@
     </div>
   </div>
 
+  <!-- Game Manager & Playthrough Lifecycle Modal -->
+  <div id="game-manager-modal" class="modal-backdrop hidden">
+    <div class="modal-card gm-modal-card">
+      <div class="modal-header">
+        <div class="gm-header-left">
+          <h3 class="modal-title">🏛️ Quản Lý Màn Chơi & Chiến Dịch (Game Manager)</h3>
+          <span class="gm-header-sub">Tách biệt Master Blueprint (Bất biến) và Gameplay Session (Biến động)</span>
+        </div>
+        <button class="modal-close-btn" onclick="closeGameManagerModal()">&times;</button>
+      </div>
+
+      <!-- Navigation Tabs: Continue vs New Game -->
+      <div class="gm-tabs-bar">
+        <button class="gm-tab-btn active" id="gm-tab-continue" onclick="switchGameManagerTab('continue')">
+          ⚔️ Chơi Tiếp (Active Session)
+        </button>
+        <button class="gm-tab-btn" id="gm-tab-new" onclick="switchGameManagerTab('new')">
+          🌟 Tạo Màn Chơi Mới (New Campaign)
+        </button>
+      </div>
+
+      <div class="modal-body gm-modal-body">
+        <!-- 1. View: Continue Active Playthrough -->
+        <div class="gm-tab-content" id="gm-view-continue">
+          <div id="gm-continue-status">
+            <!-- Rendered dynamically via JS -->
+          </div>
+        </div>
+
+        <!-- 2. View: New Game Factory Creation -->
+        <div class="gm-tab-content hidden" id="gm-view-new">
+          <div class="gm-new-section">
+            <h4 class="gm-sec-title">1. Chọn Niên Đại & Bối Cảnh (Master Scenarios):</h4>
+            <div class="gm-scenario-grid" id="gm-scenario-selector">
+              <!-- Rendered dynamically via JS -->
+            </div>
+          </div>
+
+          <div class="gm-new-section">
+            <h4 class="gm-sec-title">2. Chọn Thân Phận Khởi Đầu (Player Archetypes):</h4>
+            <div class="gm-archetype-grid" id="gm-archetype-selector">
+              <!-- Rendered dynamically via JS -->
+            </div>
+          </div>
+
+          <div class="gm-new-section">
+            <h4 class="gm-sec-title">3. Tùy Biến Danh Xưng:</h4>
+            <div class="form-group">
+              <label>Tên Nhân Vật:</label>
+              <input type="text" id="gm-custom-player-name" class="modal-input" placeholder="Lương Diễn (để trống lấy mặc định theo thân phận)" />
+            </div>
+          </div>
+
+          <div class="gm-alert-box">
+            ⚠️ <strong>Lưu ý:</strong> Bắt đầu màn chơi mới sẽ khởi tạo lại toàn bộ số dư, kho hàng, và lượt chơi từ Master Blueprint gốc.
+          </div>
+
+          <div class="gm-actions-row" style="margin-top: 12px;">
+            <button class="btn-primary" onclick="submitStartNewGame()" style="width: 100%; padding: 10px;">
+              🚀 Khởi Tạo Tân Du Hý (Bắt Đầu Chiến Dịch Mới)
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeGameManagerModal()">Đóng Cửa Sổ</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Notification Toast -->
   <div id="toast" class="toast hidden"></div>
 

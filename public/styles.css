@@ -2193,4 +2193,234 @@ button:disabled,
   background-color: #f59e0b;
 }
 
+/* ==========================================================================
+   GAME MANAGER & PLAYTHROUGH LIFECYCLE MODAL
+   ========================================================================== */
+.gm-modal-card {
+  max-width: 660px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.gm-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.gm-header-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.gm-tabs-bar {
+  display: flex;
+  border-bottom: 1px solid var(--border-subtle);
+  background-color: var(--bg-surface-elevated);
+}
+
+.gm-tab-btn {
+  flex: 1;
+  padding: 10px 14px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s ease;
+}
+
+.gm-tab-btn:hover {
+  color: var(--text-heading);
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+.gm-tab-btn.active {
+  color: #fbbf24;
+  border-bottom-color: #fbbf24;
+  background-color: rgba(245, 158, 11, 0.05);
+}
+
+.gm-modal-body {
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-height: 60vh;
+}
+
+.gm-session-card {
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.gm-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.gm-card-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #fbbf24;
+}
+
+.gm-card-subtitle {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.gm-stat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 16px;
+  padding: 10px 12px;
+  background-color: var(--bg-surface);
+  border-radius: var(--radius-xs);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.gm-stat-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+}
+
+.gm-stat-item .label {
+  color: var(--text-muted);
+}
+
+.gm-stat-item .val {
+  color: var(--text-heading);
+  font-weight: 600;
+}
+
+.gm-actions-row {
+  display: flex;
+  gap: 10px;
+}
+
+.gm-new-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.gm-sec-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-heading);
+}
+
+.gm-scenario-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.gm-scenario-card {
+  padding: 10px;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--border-subtle);
+  background-color: var(--bg-canvas);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.gm-scenario-card:hover {
+  border-color: rgba(245, 158, 11, 0.5);
+}
+
+.gm-scenario-card.selected {
+  border-color: #f59e0b;
+  background-color: rgba(245, 158, 11, 0.1);
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.2);
+}
+
+.gm-scenario-card .title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #fbbf24;
+}
+
+.gm-scenario-card .epoch {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.gm-scenario-card .desc {
+  font-size: 10px;
+  color: var(--text-secondary);
+  line-height: 1.3;
+}
+
+.gm-archetype-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gm-archetype-card {
+  padding: 10px;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--border-subtle);
+  background-color: var(--bg-canvas);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.gm-archetype-card:hover {
+  border-color: rgba(52, 211, 153, 0.5);
+}
+
+.gm-archetype-card.selected {
+  border-color: #34d399;
+  background-color: rgba(52, 211, 153, 0.1);
+  box-shadow: 0 0 8px rgba(52, 211, 153, 0.2);
+}
+
+.gm-archetype-card .name {
+  font-size: 12px;
+  font-weight: 700;
+  color: #34d399;
+}
+
+.gm-archetype-card .attrs {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: #fbbf24;
+}
+
+.gm-archetype-card .desc {
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.3;
+}
+
+.gm-alert-box {
+  background-color: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: var(--radius-xs);
+  padding: 8px 12px;
+  font-size: 11px;
+  color: #fca5a5;
+}
+
+
 

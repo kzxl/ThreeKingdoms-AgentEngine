@@ -14,6 +14,7 @@ const { execSync } = require('child_process');
 
 const { SimulationCore } = require('../engine/sim-core');
 const { WorkshopEngine } = require('../engine/workshop-engine');
+const { GameplayManager } = require('../engine/gameplay-manager');
 const {
   auditSqliteCashflow,
   auditSqliteInventory,
@@ -27,6 +28,8 @@ const PUBLIC_DIR = path.join(ROOT_DIR, 'public');
 const SAVES_DIR = path.join(ROOT_DIR, 'saves');
 const DB_PATH = process.env.SIM_DB_PATH || path.join(SAVES_DIR, 'session.db');
 const DEFAULT_PORT = parseInt(process.env.PORT || process.argv[2] || '3300', 10);
+
+const gameplayManager = new GameplayManager(DB_PATH);
 
 // In-Memory Agent Simulation Activity Stream
 const agentActivityStream = [
@@ -371,6 +374,85 @@ const server = http.createServer((req, res) => {
     } catch (err) {
       sendJson(res, 500, { success: false, error: err.message });
     }
+    return;
+  }
+
+  // 5f. GET /api/game/summary - Active Playthrough Metadata & New Game Templates
+  if (req.method === 'GET' && pathname === '/api/game/summary') {
+    try {
+      const summary = gameplayManager.getSessionSummary();
+      const scenarios = gameplayManager.getMasterScenarios();
+      const archetypes = gameplayManager.getMasterArchetypes();
+      sendJson(res, 200, { success: true, summary, scenarios, archetypes });
+    } catch (err) {
+      sendJson(res, 500, { success: false, error: err.message });
+    }
+    return;
+  }
+
+  // 5g. POST /api/game/new - Start New Campaign Playthrough from Master Data
+  if (req.method === 'POST' && pathname === '/api/game/new') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        const result = gameplayManager.startNewGame(payload);
+        sendJson(res, 200, { success: true, result });
+      } catch (err) {
+        sendJson(res, 400, { success: false, error: err.message });
+      }
+    });
+    return;
+  }
+
+  // 5h. GET /api/master/catalog - Fast Query Catalog for Items, Recipes, Citadels, Characters
+  if (req.method === 'GET' && pathname === '/api/master/catalog') {
+    try {
+      const items = runSqlJson(`SELECT * FROM master_items;`);
+      const recipes = runSqlJson(`SELECT * FROM master_recipes;`);
+      const locations = runSqlJson(`SELECT * FROM master_locations;`);
+      const characters = runSqlJson(`SELECT * FROM master_characters;`);
+      const factions = runSqlJson(`SELECT * FROM master_factions;`);
+      const skills = runSqlJson(`SELECT * FROM master_skills;`);
+      sendJson(res, 200, { success: true, catalog: { items, recipes, locations, characters, factions, skills } });
+    } catch (err) {
+      sendJson(res, 500, { success: false, error: err.message });
+    }
+    return;
+  }
+
+  // 5i. POST /api/game/save-slot - Snapshot Active Playthrough
+  if (req.method === 'POST' && pathname === '/api/game/save-slot') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        const slot = payload.slot || `slot_${Date.now()}`;
+        const result = gameplayManager.exportSaveSlot(slot);
+        sendJson(res, 200, result);
+      } catch (err) {
+        sendJson(res, 500, { success: false, error: err.message });
+      }
+    });
+    return;
+  }
+
+  // 5j. POST /api/game/load-slot - Load Snapshot Playthrough
+  if (req.method === 'POST' && pathname === '/api/game/load-slot') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        const slot = payload.slot || 'slot_1';
+        const result = gameplayManager.loadSaveSlot(slot);
+        sendJson(res, 200, result);
+      } catch (err) {
+        sendJson(res, 500, { success: false, error: err.message });
+      }
+    });
     return;
   }
 

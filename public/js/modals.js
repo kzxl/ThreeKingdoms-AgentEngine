@@ -162,6 +162,212 @@ async function submitModalTrade() {
   }
 }
 
+// ==========================================================================
+// GAMEPLAY PLAYTHROUGH & MASTER DATA MANAGER MODAL
+// ==========================================================================
+
+let currentGameSummary = null;
+let activeGameModalTab = 'continue'; // 'continue' | 'new'
+
+async function openGameManagerModal() {
+  const modal = document.getElementById('game-manager-modal');
+  if (!modal) return;
+
+  try {
+    const data = await apiFetchGameSummary();
+    currentGameSummary = data;
+    renderGameManagerModalContent(data);
+    modal.classList.remove('hidden');
+  } catch (err) {
+    showToast(`Không thể tải thông tin màn chơi: ${err.message}`, true);
+  }
+}
+
+function closeGameManagerModal() {
+  const modal = document.getElementById('game-manager-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+function switchGameManagerTab(tabId) {
+  activeGameModalTab = tabId;
+  document.querySelectorAll('.gm-tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.gm-tab-content').forEach(c => c.classList.add('hidden'));
+
+  const activeBtn = document.getElementById(`gm-tab-${tabId}`);
+  if (activeBtn) activeBtn.classList.add('active');
+
+  const activeContent = document.getElementById(`gm-view-${tabId}`);
+  if (activeContent) activeContent.classList.remove('hidden');
+}
+
+function renderGameManagerModalContent(data) {
+  const summary = data.summary || {};
+  const scenarios = data.scenarios || [];
+  const archetypes = data.archetypes || [];
+
+  // 1. Continue Tab Render
+  const statusContainer = document.getElementById('gm-continue-status');
+  if (statusContainer) {
+    if (summary.canContinue) {
+      statusContainer.innerHTML = `
+        <div class="gm-session-card">
+          <div class="gm-card-header">
+            <div>
+              <div class="gm-card-title">${summary.campaignName || 'Chiến Dịch Đại Hán'}</div>
+              <div class="gm-card-subtitle">Mã: ${summary.campaignId} • Ngày ${summary.currentDate}</div>
+            </div>
+            <span class="badge-audit">Lượt ${summary.activeTurn || 1}</span>
+          </div>
+          <div class="gm-stat-grid">
+            <div class="gm-stat-item">
+              <span class="label">Chủ Công:</span>
+              <span class="val">${summary.playerName} (${summary.playerStyle || 'Tự'})</span>
+            </div>
+            <div class="gm-stat-item">
+              <span class="label">Vị Trí Hiện Tại:</span>
+              <span class="val">📍 ${summary.location || 'Huyện Trác'}</span>
+            </div>
+            <div class="gm-stat-item">
+              <span class="label">Tiền Mặt:</span>
+              <span class="val font-mono">🪙 ${(summary.liquidCash || 0).toLocaleString()} Tiền</span>
+            </div>
+            <div class="gm-stat-item">
+              <span class="label">Lương Thảo:</span>
+              <span class="val font-mono">🌾 ${Number(summary.strategicGrain || 0).toFixed(1)} Thạch</span>
+            </div>
+          </div>
+          <div class="gm-actions-row">
+            <button class="btn-primary" onclick="closeGameManagerModal(); showToast('Tiếp tục chiến dịch!')">
+              ⚔️ Tiếp Tục Màn Chơi Này
+            </button>
+            <button class="btn-outline" onclick="submitSaveSlot('slot_manual')">
+              💾 Lưu Slot Dự Phòng
+            </button>
+          </div>
+        </div>
+      `;
+    } else {
+      statusContainer.innerHTML = `
+        <div style="padding: 24px; text-align: center; color: var(--text-muted);">
+          Chưa có phiên chơi nào đang lưu trữ. Hãy bấm tab "Tạo Màn Chơi Mới" để bắt đầu!
+        </div>
+      `;
+    }
+  }
+
+  // 2. New Game Tab Render (Scenarios & Archetypes)
+  const scnContainer = document.getElementById('gm-scenario-selector');
+  if (scnContainer) {
+    scnContainer.innerHTML = scenarios.map((s, i) => `
+      <label class="gm-scenario-card ${i === 0 ? 'selected' : ''}" onclick="selectGameScenario('${s.scenario_id}', this)">
+        <input type="radio" name="gm_scenario" value="${s.scenario_id}" ${i === 0 ? 'checked' : ''} style="display:none">
+        <div class="title">${s.name_vi}</div>
+        <div class="epoch">${s.historical_epoch}</div>
+        <div class="desc">${s.description_vi}</div>
+      </label>
+    `).join('');
+  }
+
+  const archContainer = document.getElementById('gm-archetype-selector');
+  if (archContainer) {
+    archContainer.innerHTML = archetypes.map((a, i) => `
+      <label class="gm-archetype-card ${i === 0 ? 'selected' : ''}" onclick="selectGameArchetype('${a.archetype_id}', this)">
+        <input type="radio" name="gm_archetype" value="${a.archetype_id}" ${i === 0 ? 'checked' : ''} style="display:none">
+        <div class="name">${a.name_vi}</div>
+        <div class="attrs">INT ${a.int_attr} • WAR ${a.war_attr} • COM ${a.com_attr} • CRA ${a.cra_attr}</div>
+        <div class="desc">${a.bio_vi}</div>
+      </label>
+    `).join('');
+  }
+}
+
+function selectGameScenario(id, el) {
+  document.querySelectorAll('.gm-scenario-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  const radio = el.querySelector('input');
+  if (radio) radio.checked = true;
+}
+
+function selectGameArchetype(id, el) {
+  document.querySelectorAll('.gm-archetype-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  const radio = el.querySelector('input');
+  if (radio) radio.checked = true;
+}
+
+async function submitStartNewGame() {
+  const scnEl = document.querySelector('input[name="gm_scenario"]:checked');
+  const archEl = document.querySelector('input[name="gm_archetype"]:checked');
+  const nameEl = document.getElementById('gm-custom-player-name');
+
+  const scenarioId = scnEl ? scnEl.value : 'SCN-184-ZHOU';
+  const archetypeId = archEl ? archEl.value : 'ARCH-SCHOLAR-ARTISAN';
+  const customPlayerName = nameEl && nameEl.value.trim() ? nameEl.value.trim() : null;
+
+  const msg = currentLang === 'en'
+    ? 'Are you sure you want to start a New Game? This will reset active session tables using the Master Blueprint templates.'
+    : 'Bạn có chắc chắn muốn Khởi Tạo Màn Chơi Mới? Dữ liệu lượt chơi hiện tại sẽ được làm mới từ Master Blueprint gốc.';
+
+  if (!window.confirm(msg)) return;
+
+  try {
+    showToast('Đang khởi tạo Màn Chơi Mới từ Master Database...');
+    const res = await apiStartNewGame({
+      scenarioId,
+      archetypeId,
+      customPlayerName
+    });
+
+    if (res.success) {
+      if (typeof clearStoryChronicle === 'function') {
+        localStorage.removeItem('sim_story_chronicle');
+        localStorage.removeItem('sim_active_subloc');
+        localStorage.removeItem('sim_last_encounter_subloc');
+      }
+      closeGameManagerModal();
+      showToast('Khởi tạo Tân Du Hý thành công! Đang tải lại dữ liệu...');
+      await loadAllData();
+    }
+  } catch (err) {
+    showToast(`Không thể tạo game mới: ${err.message}`, true);
+  }
+}
+
+async function submitSaveSlot(slotName = 'slot_manual') {
+  try {
+    showToast(`Đang lưu bản ghi vào slot "${slotName}"...`);
+    const res = await apiSaveSlot(slotName);
+    if (res.success) {
+      showToast(`Đã lưu slot "${slotName}" thành công!`);
+    } else {
+      throw new Error(res.error);
+    }
+  } catch (err) {
+    showToast(`Lưu slot thất bại: ${err.message}`, true);
+  }
+}
+
+async function submitLoadSlot(slotName = 'slot_manual') {
+  const msg = currentLang === 'en'
+    ? `Restore playthrough from "${slotName}"?`
+    : `Khôi phục màn chơi từ bản lưu "${slotName}"?`;
+  if (!window.confirm(msg)) return;
+
+  try {
+    showToast(`Đang tải slot "${slotName}"...`);
+    const res = await apiLoadSlot(slotName);
+    if (res.success) {
+      closeGameManagerModal();
+      showToast(`Đã phục hồi màn chơi thành công!`);
+      await loadAllData();
+    } else {
+      throw new Error(res.error);
+    }
+  } catch (err) {
+    showToast(`Không thể tải slot: ${err.message}`, true);
+  }
+}
+
 // Global exposure
 window.isProcessingAction = isProcessingAction;
 window.showToast = showToast;
@@ -170,3 +376,11 @@ window.openQuickTrade = openQuickTrade;
 window.closeTradeModal = closeTradeModal;
 window.calcTradeTotal = calcTradeTotal;
 window.submitModalTrade = submitModalTrade;
+window.openGameManagerModal = openGameManagerModal;
+window.closeGameManagerModal = closeGameManagerModal;
+window.switchGameManagerTab = switchGameManagerTab;
+window.selectGameScenario = selectGameScenario;
+window.selectGameArchetype = selectGameArchetype;
+window.submitStartNewGame = submitStartNewGame;
+window.submitSaveSlot = submitSaveSlot;
+window.submitLoadSlot = submitLoadSlot;

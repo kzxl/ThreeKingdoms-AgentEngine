@@ -616,7 +616,11 @@ function initUIEventListeners() {
   const btnMenu = document.getElementById('btn-main-menu');
   if (btnMenu) {
     btnMenu.addEventListener('click', () => {
-      showToast('Hệ thống SimCore: 70/70 Invariants SQLite đang bảo toàn 100%!');
+      if (typeof openGameManagerModal === 'function') {
+        openGameManagerModal();
+      } else {
+        showToast('Hệ thống SimCore: 76/76 Invariants SQLite đang bảo toàn 100%!');
+      }
     });
   }
 
