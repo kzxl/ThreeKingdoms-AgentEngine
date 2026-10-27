@@ -2,15 +2,18 @@
 
 An autonomous, deterministic, markdown-backed simulation engine modeling the Three Kingdoms era (beginning 184 AD). Powered by agentic workflows, strict accounting ledgers, and causational event propagation.
 
+For comprehensive technical specifications, data flows, and state machine diagrams, refer to [**ARCHITECTURE.md**](ARCHITECTURE.md).
+
 ---
 
 ## Table of Contents
 1. [Core Philosophy](#core-philosophy)
 2. [Player Guide & Career Paths](#player-guide--career-paths)
 3. [Command Syntax & How to Play](#command-syntax--how-to-play)
-4. [Memory Architecture & Storage Schema](#memory-architecture--storage-schema)
-5. [Economic, Production & Military Formulas](#economic-production--military-formulas)
-6. [Resuming Across Sessions & Multi-Agent Collaboration](#resuming-across-sessions--multi-agent-collaboration)
+4. [3-Tier Memory Architecture & Storage Schema](#3-tier-memory-architecture--storage-schema)
+5. [Deterministic Verification Tools & CLI](#deterministic-verification-tools--cli)
+6. [Economic, Production & Military Formulas](#economic-production--military-formulas)
+7. [Resuming Across Sessions & Multi-Agent Collaboration](#resuming-across-sessions--multi-agent-collaboration)
 
 ---
 
@@ -77,33 +80,72 @@ You can issue customized tactical, commercial, diplomatic, or personal directive
 
 ---
 
-## Memory Architecture & Storage Schema
+## 3-Tier Memory Architecture & Storage Schema
 
-The memory architecture strictly separates **Immutable Engine Definitions** from **Dynamic Game Session State**:
+To avoid context explosion and arithmetic drift, the engine operates on a decoupled 3-tier memory model (detailed in [**ARCHITECTURE.md**](ARCHITECTURE.md)):
 
 ```text
-game/
-├── PROGRESS.md             # ★ Rolling Campaign Progress Journal (Primary high-frequency operational tracker)
-├── TURN_STATE.md           # Active turn execution tracker & step-by-step pipeline
-├── WORLD_STATE.md          # Macro indicators, calendar & global crises
-├── PLAYER.md               # Player dashboard & active objectives
+ThreeKingdoms-AgentEngine/
+├── ARCHITECTURE.md             # Complete technical architecture specification
+├── README.md                   # Operational manual & gameplay guide
 │
-├── [READ-ONLY CORE RULES]  # Strictly read-only during standard gameplay turns
-│   ├── RULES.md            # Formulas, DCs, combat & production resolution
-│   ├── ECONOMY.md          # Currency benchmarks, commodity price index
-│   ├── TECHNIQUES.md       # Skill ladders & progression trees
-│   └── README.md           # Operational manual & agent pipeline
+├── tools/                      # Deterministic CLI Verification & Checkpoint Layer
+│   ├── sim-audit.js            # Independent double-entry accounting auditor
+│   └── sim-checkpoint.js       # State archiver, validator & safe commit orchestrator
 │
-├── chronicle/              # Chronological realm history by year (0184.md, ...)
-├── characters/             # Detailed character sheets (player.md, NPC-xxxx.md)
-├── factions/               # Faction dossiers (FACTION-xxxx.md)
-├── locations/              # Geographic dossiers (LOC-xxxx.md)
-├── organizations/          # Guilds & sects (ORG-xxxx.md)
-├── businesses/             # Enterprise dossiers (BIZ-xxxx.md)
-├── military/               # Armies & campaigns (armies.md, campaigns.md)
-├── events/                 # Active crisis cards & archive (active.md, archive.md)
-├── ledger/                 # Cashflow, inventory, contracts & audits
-└── saves/                  # Latest save & historical snapshots
+└── game/
+    ├── PROGRESS.md             # [L1 HOT] Rolling Campaign Progress Journal (Primary high-frequency state)
+    ├── TURN_STATE.md           # Step-by-step turn execution pipeline
+    ├── WORLD_STATE.md          # Macro indicators, calendar & global crises
+    ├── PLAYER.md               # Player dashboard & active objectives
+    │
+    ├── ledger/                 # [L2 LEDGER] Append-only financial & inventory transactions
+    │   ├── cashflow.md         # Double-entry cash movements (TXN-xxxx)
+    │   ├── inventory.md        # Physical stock movements & scrap records (MOV-xxxx)
+    │   ├── contracts.md        # Commercial supply contracts & fulfillment (CTR-xxxx)
+    │   └── audit.md            # Reconciled balance sheet snapshots
+    │
+    ├── [L3 COLD ARCHIVES]      # Low-frequency reference entities & rules
+    │   ├── RULES.md            # (Read-Only) Dice check DCs, combat & production formulas
+    │   ├── ECONOMY.md          # (Read-Only) Currency standards, 184 AD commodity price index
+    │   ├── TECHNIQUES.md       # (Read-Only) 5-tier skill progression trees
+    │   ├── chronicle/          # Yearly realm chronicle (0184.md, ...)
+    │   ├── characters/         # Entity dossiers (player.md, NPC-xxxx.md)
+    │   ├── factions/           # Faction cards (FACTION-xxxx.md)
+    │   ├── locations/          # Geographical dossiers (LOC-xxxx.md)
+    │   ├── organizations/      # Guilds & magistrate bureaus (ORG-xxxx.md)
+    │   ├── businesses/         # Enterprise operating sheets (BIZ-xxxx.md)
+    │   ├── military/           # Armies & campaigns (armies.md, campaigns.md)
+    │   └── events/             # Crisis cards (active.md, archive.md)
+    │
+    └── saves/                  # Immutable state checkpoints
+        ├── latest.md           # Latest verified checkpoint pointer
+        └── snapshots/          # Timestamped state snapshots (SNAP-0000.md ...)
+```
+
+---
+
+## Deterministic Verification Tools & CLI
+
+The engine includes native Node.js tools in `tools/` that guarantee mathematical integrity without burning LLM inference tokens:
+
+### 1. Invariant Auditor (`tools/sim-audit.js`)
+Audits all double-entry cashflow transactions, physical inventory movements, and hot buffer synchronization.
+```bash
+node tools/sim-audit.js
+```
+- Validates that $Cash_{\text{End}} = Cash_{\text{Start}} + \sum Inflow - \sum Outflow$.
+- Verifies physical stock conservation (materials purchased/produced = materials consumed/stored).
+- Exits with code `0` on 100% reconciliation; fails loudly if any balance discrepancy is detected.
+
+### 2. State Checkpointer (`tools/sim-checkpoint.js`)
+Runs pre-save audits, parses active progress headers, archives state snapshots, and performs atomic git commits.
+```bash
+# Verify integrity, increment snapshot SNAP-xxxx.md, and update latest.md
+node tools/sim-checkpoint.js "Turn 3 Victory at Qingzhou"
+
+# Verify integrity and automatically commit & push to GitHub
+node tools/sim-checkpoint.js --commit --push "Turn 3 Victory at Qingzhou"
 ```
 
 ---
