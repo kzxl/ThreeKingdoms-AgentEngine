@@ -239,6 +239,37 @@ const QUICK_CHIPS_DATA = {
       { type: 'travel', icon: '🏇', labelVi: 'Về Vườn Đào', labelEn: 'To Peach Garden', promptVi: 'Rời xưởng Lương Thị, quay về Trang Viên Vườn Đào', promptEn: 'Return to Peach Garden Manor' }
     ]
   },
+  'Bắc Bình Soái Phủ': {
+    presenceVi: 'Bắc Bình Soái Phủ (Trực diện: Công Tôn Toản • Bạch Mã Tướng Quân)',
+    presenceEn: 'Beiping Headquarters (In-person: Gongsun Zan • White Horse General)',
+    placeholderVi: 'Lương Diễn đàm đạo cùng Công Tôn Toản... (hoặc gõ: "Mua ngựa chiến...")',
+    placeholderEn: 'Liang Yan negotiates with Gongsun Zan... (or type: "Buy warhorses...")',
+    chips: [
+      { type: 'local', icon: '🐎', labelVi: 'Mua 3 Ngựa Chiến U Châu', labelEn: 'Buy 3 Horses', promptVi: 'Thu mua 3 tuấn mã U Châu của Bạch Mã Nghĩa Tòng', promptEn: 'Purchase 3 Youzhou warhorses from White Horse Cavalry' },
+      { type: 'local', icon: '🛡️', labelVi: 'Tiếp Tế 10 Khiên Trúc', labelEn: 'Supply 10 Shields', promptVi: 'Cung cấp 10 Khiên Trúc Lương Gia chi viện quân biên cương', promptEn: 'Deliver 10 Liang shields to garrison border forces' },
+      { type: 'local', icon: '🤝', labelVi: 'Liên Minh Huyện Trác', labelEn: 'Alliance Pact', promptVi: 'Đàm phán hiệp ước tương trợ quân nhu Huyện Trác và Bắc Bình', promptEn: 'Negotiate mutual defense supply pact with Gongsun Zan' },
+      { divider: true },
+      { type: 'courier', icon: '✉️', labelVi: 'Báo tin Lưu Bị', labelEn: 'Courier to Liu Bei', promptVi: 'Phi thư về Huyện Trác báo cho Lưu Bị về tình hình Công Tôn Toản', promptEn: 'Dispatch courier to Liu Bei regarding Gongsun Zan alliance' },
+      { divider: true },
+      { type: 'travel', icon: '🏇', labelVi: 'Về Huyện Trác', labelEn: 'To Zhuo County', promptVi: 'Rời Bắc Bình, xuôi quan đạo trở về Huyện Trác', promptEn: 'Return along post road back to Zhuo County' }
+    ]
+  },
+  'Nghiệp Thành Đại Phủ': {
+    presenceVi: 'Nghiệp Thành Phủ Đệ (Trực diện: Viên Thiệu • Ký Châu Mục)',
+    presenceEn: 'Yecheng Grand Estate (In-person: Yuan Shao • Lord of Jizhou)',
+    placeholderVi: 'Lương Diễn yết kiến Viên Bản Sơ... (hoặc gõ: "Ký kết thương ước gấm lụa...")',
+    placeholderEn: 'Liang Yan confers with Yuan Shao... (or type: "Sign luxury textile pact...")',
+    chips: [
+      { type: 'local', icon: '🏛️', labelVi: 'Bán 20 Tấm Chiếu Trúc', labelEn: 'Sell 20 Mats', promptVi: 'Xuất bán 20 tấm Chiếu Trúc Lương Gia cho các đại tộc Nghiệp Thành', promptEn: 'Sell 20 Liang bamboo mats to Jizhou patricians' },
+      { type: 'local', icon: '🌾', labelVi: 'Mua 15 Thạch Lương Ký Châu', labelEn: 'Buy 15 Grain', promptVi: 'Gom mua 15 thạch lương Ký Châu giá sỉ từ đại thương nhân', promptEn: 'Wholesale purchase 15 piculs of prime Jizhou grain' },
+      { type: 'local', icon: '🍷', labelVi: 'Dự Yến Viên Bản Sơ', labelEn: 'Banquet Yuan Shao', promptVi: 'Tham gia dạ yến phủ Viên Thiệu đàm đạo thời thế', promptEn: 'Attend grand banquet at Yuan Shao estate discussing politics' },
+      { divider: true },
+      { type: 'courier', icon: '✉️', labelVi: 'Lệnh chuyển hàng về Xưởng', labelEn: 'Logistics Courier', promptVi: 'Phi thư lệnh chuyển nguyên liệu Ký Châu về Xưởng Huyện Trác', promptEn: 'Send logistical courier to route materials to Zhuo Workshop' },
+      { divider: true },
+      { type: 'travel', icon: '🏇', labelVi: 'Đến Quảng Tông', labelEn: 'To Guangzong', promptVi: 'Tiến về phía Đông Bắc đến tiền tuyến Quảng Tông', promptEn: 'March northeast toward Guangzong front' },
+      { type: 'travel', icon: '🏇', labelVi: 'Về Huyện Trác', labelEn: 'To Zhuo County', promptVi: 'Rời Nghiệp Thành, theo đường bắc tiến về Huyện Trác', promptEn: 'Return north back to Zhuo County' }
+    ]
+  },
   'Quảng Tông Quân Doanh': {
     presenceVi: 'Bắc Quân Soái Trướng (Trực diện: Trung Lang Tướng Lư Thực)',
     presenceEn: 'Northern Army Headquarters (In-person: General Lu Zhi)',
@@ -251,6 +282,7 @@ const QUICK_CHIPS_DATA = {
       { divider: true },
       { type: 'courier', icon: '✉️', labelVi: 'Phi thư về Huyện Trác', labelEn: 'Courier to Zhuo County', promptVi: 'Phi thư hỏa tốc về Huyện Trác chuẩn bị thêm 20 xe quân lương', promptEn: 'Send urgent courier to Zhuo County for 20 grain wagons' },
       { divider: true },
+      { type: 'travel', icon: '🏇', labelVi: 'Sang Bình Nguyên', labelEn: 'To Pingyuan', promptVi: 'Hành quân sang Trọng Trấn Bình Nguyên hội quân', promptEn: 'March to Pingyuan stronghold' },
       { type: 'travel', icon: '🏇', labelVi: 'Về Lại Huyện Trác', labelEn: 'Return to Zhuo County', promptVi: 'Rời quân doanh Quảng Tông, quay trở về Huyện Trác', promptEn: 'Leave Guangzong and return to Zhuo County' }
     ]
   },
@@ -270,20 +302,35 @@ const QUICK_CHIPS_DATA = {
       { type: 'travel', icon: '🏇', labelVi: 'Về Huyện Trác', labelEn: 'To Zhuo County', promptVi: 'Hành quân trở về Hậu Phương Trang Viên Vườn Đào Huyện Trác', promptEn: 'Return to Peach Garden Manor in Zhuo County' }
     ]
   },
-  'Trường Xã Tiền Tuyến': {
-    presenceVi: 'Trường Xã Tiền Tuyến (Trực diện: Hoàng Phủ Tung • Tả Tướng Quân)',
-    presenceEn: 'Changshe Frontline (In-person: General Huangfu Song)',
-    placeholderVi: 'Lương Diễn tác chiến tại Trường Xã... (hoặc gõ: "Hiệp đồng kỵ binh...")',
-    placeholderEn: 'Liang Yan at Changshe... (or type: "Coordinate cavalry...")',
+  'Hứa Xương Tướng Phủ': {
+    presenceVi: 'Hứa Xương Soái Phủ (Trực diện: Tào Tháo • Mạnh Đức)',
+    presenceEn: 'Xuchang Headquarters (In-person: Cao Cao • Mengde)',
+    placeholderVi: 'Lương Diễn đàm đạo cùng Tào Tháo... (hoặc gõ: "Tiếp tế quân bị...")',
+    placeholderEn: 'Liang Yan confers with Cao Cao... (or type: "Supply armaments...")',
     chips: [
-      { type: 'local', icon: '🔥', labelVi: 'Trợ Chiến Hỏa Công', labelEn: 'Support Fire Attack', promptVi: 'Cung cấp 5 Khiên Trúc bọc da trợ chiến tiền phong hỏa công', promptEn: 'Supply shields and oil for Changshe fire attack' },
-      { type: 'local', icon: '🌾', labelVi: 'Tiếp Tế 8 Thạch Lương', labelEn: 'Supply 8 Grain', promptVi: 'Tiếp tế 8 Thạch Lương thực khẩn cấp cho đại doanh Dự Châu', promptEn: 'Deliver 8 piculs of grain to Yuzhou command' },
-      { type: 'local', icon: '🐎', labelVi: 'Hiệp Đồng Tào Tháo', labelEn: 'Liaise Cao Cao', promptVi: 'Bắt liên lạc hiệp đồng kỵ binh cứu viện của Kỵ Đô Úy Tào Tháo', promptEn: 'Establish liaison with Cao Cao cavalry reinforcements' },
+      { type: 'local', icon: '⚔️', labelVi: 'Chi Viện Khí Giới', labelEn: 'Supply Arms', promptVi: 'Cung cấp 10 Khiên Trúc bọc da cho Hổ Báo Kỵ của Tào Tháo', promptEn: 'Supply 10 reinforced shields to Cao Cao Tiger-Leopard cavalry' },
+      { type: 'local', icon: '🌾', labelVi: 'Bán 10 Thạch Lương', labelEn: 'Sell 10 Grain', promptVi: 'Xuất bán 10 thạch lương tiếp tế đồn điền Dự Châu', promptEn: 'Sell 10 grain piculs for Yuzhou agricultural military camps' },
+      { type: 'local', icon: '📜', labelVi: 'Đàm Luận Anh Hùng', labelEn: 'Discuss Heroes', promptVi: 'Cùng Tào Tháo luận đàm anh hùng thiên hạ và thế cuộc', promptEn: 'Discuss grand strategy and contemporary heroes with Cao Cao' },
       { divider: true },
-      { type: 'courier', icon: '✉️', labelVi: 'Báo tiệp Huyện Trác', labelEn: 'Dispatch to Zhuo', promptVi: 'Phái kỵ sĩ mang chiến báo thắng trận Trường Xã về Huyện Trác', promptEn: 'Dispatch courier with victory dispatch to Zhuo County' },
+      { type: 'courier', icon: '✉️', labelVi: 'Báo tiệp Huyện Trác', labelEn: 'Courier to Zhuo', promptVi: 'Phi thư về Huyện Trác thông báo quan hệ hợp tác với Tào Tháo', promptEn: 'Send courier to Zhuo County reporting ties with Cao Cao' },
       { divider: true },
-      { type: 'travel', icon: '🏇', labelVi: 'Tiến Vào Lạc Dương', labelEn: 'To Luoyang', promptVi: 'Rời Trường Xã, tiến về Kinh Sư Lạc Dương tấu tiệp', promptEn: 'Advance toward Imperial Luoyang to report victory' },
-      { type: 'travel', icon: '🏇', labelVi: 'Về Huyện Trác', labelEn: 'To Zhuo County', promptVi: 'Rút quân theo quan đạo trở về Hậu Phương Trang Viên Vườn Đào', promptEn: 'Return to Peach Garden Manor in Zhuo County' }
+      { type: 'travel', icon: '🏇', labelVi: 'Tiến Vào Lạc Dương', labelEn: 'To Luoyang', promptVi: 'Vượt Hổ Lao Quan tiến về Kinh Sư Lạc Dương', promptEn: 'Pass Hulao Pass to Imperial Luoyang' },
+      { type: 'travel', icon: '🏇', labelVi: 'Đến Hạ Phì', labelEn: 'To Xiapi', promptVi: 'Hành quân về phía đông sang Từ Châu Hạ Phì', promptEn: 'March east to Xiapi in Xuzhou' }
+    ]
+  },
+  'Hạ Phì Thành Lũy': {
+    presenceVi: 'Hạ Phì Thành Phủ (Trực diện: Đào Khiêm • Thứ Sử Từ Châu)',
+    presenceEn: 'Xiapi Citadel (In-person: Tao Qian • Governor of Xuzhou)',
+    placeholderVi: 'Lương Diễn yết kiến Thứ Sử Từ Châu... (hoặc gõ: "Giao thương muối cá...")',
+    placeholderEn: 'Liang Yan negotiates in Xiapi... (or type: "Trade fishery & salt...")',
+    chips: [
+      { type: 'local', icon: '🐟', labelVi: 'Mua Muối & Thủy Sản', labelEn: 'Buy Salt & Fish', promptVi: 'Thu mua 15 đấu muối biển và hải sản Từ Châu', promptEn: 'Procure 15 sea salt and coastal rations from Xuzhou' },
+      { type: 'local', icon: '🛡️', labelVi: 'Hỗ Trợ Thành Phòng', labelEn: 'Citadel Defense', promptVi: 'Hiến kế củng cố tường lũy Hạ Phì phòng thủ giặc cướp', promptEn: 'Advise on fortification reinforcement against raiders' },
+      { type: 'local', icon: '🤝', labelVi: 'Kết Giao Mi Trúc', labelEn: 'Meet Mi Zhu', promptVi: 'Tiếp xúc cự phú Mi Trúc bàn kế hoạch liên minh thương hội', promptEn: 'Meet merchant magnate Mi Zhu to establish trade confederation' },
+      { divider: true },
+      { type: 'courier', icon: '✉️', labelVi: 'Phi thư về Huyện Trác', labelEn: 'Courier to Zhuo', promptVi: 'Gửi thư báo tin tình hình hải thương Từ Châu về Huyện Trác', promptEn: 'Dispatch merchant report to Zhuo County' },
+      { divider: true },
+      { type: 'travel', icon: '🏇', labelVi: 'Về Hứa Xương', labelEn: 'To Xuchang', promptVi: 'Rời Hạ Phì, hành quân về phía tây đến Hứa Xương', promptEn: 'March west back to Xuchang' }
     ]
   },
   'Kinh Đô Lạc Dương': {
@@ -298,7 +345,112 @@ const QUICK_CHIPS_DATA = {
       { divider: true },
       { type: 'courier', icon: '✉️', labelVi: 'Chỉ đạo Xưởng Trác Huyện', labelEn: 'Direct Zhuo Workshop', promptVi: 'Phi thư về Huyện Trác chỉ đạo mở rộng quy mô xưởng dệt gấp đôi', promptEn: 'Dispatch instructions to Zhuo County to expand workshop' },
       { divider: true },
+      { type: 'travel', icon: '🏇', labelVi: 'Sang Trường An', labelEn: 'To Changan', promptVi: 'Vượt Đồng Quan tiến sang Tây Đô Trường An', promptEn: 'Cross Tong Pass to Western Capital Changan' },
       { type: 'travel', icon: '🏇', labelVi: 'Về Huyện Trác', labelEn: 'To Zhuo County', promptVi: 'Rời Kinh Sư Lạc Dương, cất bước trở về Trang Viên Vườn Đào Huyện Trác', promptEn: 'Depart Luoyang and return to Peach Garden Manor in Zhuo County' }
+    ]
+  },
+  'Trường An Cung Phủ': {
+    presenceVi: 'Trường An Phủ Đệ (Trực diện: Tư Đồ Vương Doãn / Đổng Trác)',
+    presenceEn: 'Changan Palace Hall (In-person: Minister Wang Yun / Dong Zhuo)',
+    placeholderVi: 'Lương Diễn thị sát Tây Đô Trường An... (hoặc gõ: "Mua chiến mã Tây Lương...")',
+    placeholderEn: 'Liang Yan observes Changan... (or type: "Procure Xiliang steeds...")',
+    chips: [
+      { type: 'local', icon: '🐎', labelVi: 'Mua Ngựa Tây Lương', labelEn: 'Buy Xiliang Steeds', promptVi: 'Thu mua 5 tuấn mã Tây Lương dũng mãnh cho đoàn kỵ mã', promptEn: 'Procure 5 fierce Xiliang steeds for escort brigade' },
+      { type: 'local', icon: '🗡️', labelVi: 'Giao Tiếp Quan Trường', labelEn: 'Court Diplomacy', promptVi: 'Gặp gỡ Tư Đồ Vương Doãn tìm hiểu mật mưu triều chính', promptEn: 'Audience with Minister Wang Yun regarding court dynamics' },
+      { type: 'local', icon: '🌾', labelVi: 'Bán Lương Quan Trung', labelEn: 'Sell Grain', promptVi: 'Xuất bán 8 thạch lương thực cho kho đồn trú Trường An', promptEn: 'Supply 8 grain piculs to Changan garrison storehouses' },
+      { divider: true },
+      { type: 'courier', icon: '✉️', labelVi: 'Mật báo Lạc Dương', labelEn: 'Dispatch to Luoyang', promptVi: 'Phi thư mật bảo tình hình Tây Vực và Quan Trung về Lạc Dương', promptEn: 'Send confidential courier report to Luoyang' },
+      { divider: true },
+      { type: 'travel', icon: '🏇', labelVi: 'Qua Hán Trung', labelEn: 'To Hanzhong', promptVi: 'Vượt Tần Lĩnh sạn đạo tiến về phía nam đến Hán Trung', promptEn: 'Traverse Qinling mountain plank roads south to Hanzhong' },
+      { type: 'travel', icon: '🏇', labelVi: 'Về Lạc Dương', labelEn: 'To Luoyang', promptVi: 'Qua ải Đồng Quan quay trở lại Đông Đô Lạc Dương', promptEn: 'Return east through Tong Pass to Luoyang' }
+    ]
+  },
+  'Tương Dương Châu Phủ': {
+    presenceVi: 'Tương Dương Châu Phủ (Trực diện: Lưu Biểu • Kinh Châu Mục)',
+    presenceEn: 'Xiangyang Prefecture (In-person: Liu Biao • Governor of Jingzhou)',
+    placeholderVi: 'Lương Diễn diện kiến Lưu Biểu... (hoặc gõ: "Mua gỗ đóng thuyền...")',
+    placeholderEn: 'Liang Yan meets Liu Biao... (or type: "Procure shipbuilding timber...")',
+    chips: [
+      { type: 'local', icon: '🪵', labelVi: 'Mua Gỗ Đóng Thuyền', labelEn: 'Procure Timber', promptVi: 'Thu mua 10 khối gỗ Thiết Mộc Kinh Châu chuẩn bị đóng thuyền', promptEn: 'Purchase 10 bundles of Jingzhou ironwood for vessels' },
+      { type: 'local', icon: '📜', labelVi: 'Đàm Đạo Nho Sĩ', labelEn: 'Scholarly Discourse', promptVi: 'Đến Thủy Kính Trang đàm đạo cùng Tư Mã Huy về nhân tài', promptEn: 'Visit Water Mirror Manor to confer with Sima Hui on talents' },
+      { type: 'local', icon: '🌾', labelVi: 'Bán Muối Biển', labelEn: 'Sell Salt', promptVi: 'Xuất bán 12 đấu muối biển cho các thương đoàn Tương Dương', promptEn: 'Sell 12 sea salt units to Xiangyang river merchants' },
+      { divider: true },
+      { type: 'courier', icon: '✉️', labelVi: 'Phi thư về Huyện Trác', labelEn: 'Courier to Zhuo', promptVi: 'Gửi thư tín đường sông về Huyện Trác báo tin Kinh Châu yên bình', promptEn: 'Dispatch river relay courier to Zhuo County' },
+      { divider: true },
+      { type: 'travel', icon: '🏇', labelVi: 'Đến Giang Lăng', labelEn: 'To Jiangling', promptVi: 'Xuôi dòng Hán Thủy tiến về đại bản doanh Giang Lăng', promptEn: 'Travel down Han River toward Jiangling base' },
+      { type: 'travel', icon: '🏇', labelVi: 'Về Hứa Xương', labelEn: 'To Xuchang', promptVi: 'Hành quân ngược bắc trở lại Hứa Xương', promptEn: 'March north back toward Xuchang' }
+    ]
+  },
+  'Giang Lăng Thủy Doanh': {
+    presenceVi: 'Giang Lăng Thủy Doanh (Trực diện: Thủy Sư Đô Đốc / Quan Vũ)',
+    presenceEn: 'Jiangling Naval Base (In-person: Naval Commander / Guan Yu)',
+    placeholderVi: 'Lương Diễn thị sát chiến thuyền Giang Lăng... (hoặc gõ: "Tiếp tế thủy quân...")',
+    placeholderEn: 'Liang Yan inspects Jiangling naval dock... (or type: "Supply fleet...")',
+    chips: [
+      { type: 'local', icon: '⛵', labelVi: 'Đóng Thuyền Mông Xung', labelEn: 'Build War Galley', promptVi: 'Đầu tư đóng 1 thuyền lướt sóng Mông Xung tuần tra Trường Giang', promptEn: 'Commission fast Mengchong assault vessel on Yangtze' },
+      { type: 'local', icon: '🛡️', labelVi: 'Cung Cấp Khiên Chống Tên', labelEn: 'Archery Shields', promptVi: 'Cung cấp 10 Khiên Trúc bọc da chống tên lửa cho thủy binh', promptEn: 'Deliver 10 fire-resistant bamboo shields to marines' },
+      { type: 'local', icon: '🐟', labelVi: 'Gom Lương Thảo Ngư Phẩm', labelEn: 'Naval Rations', promptVi: 'Thu mua 10 thạch cá khô và gạo dự trữ cho hạm đội', promptEn: 'Stockpile 10 dried fish and grain provisions for fleet' },
+      { divider: true },
+      { type: 'travel', icon: '🏇', labelVi: 'Đến Xích Bích', labelEn: 'To Chibi', promptVi: 'Thuyền chiến xuôi dòng Trường Giang tiến tới Xích Bích', promptEn: 'Sail downriver along Yangtze to Chibi outpost' },
+      { type: 'travel', icon: '🏇', labelVi: 'Về Tương Dương', labelEn: 'To Xiangyang', promptVi: 'Ngược dòng tiến về phủ Tương Dương', promptEn: 'Return north to Xiangyang' }
+    ]
+  },
+  'Xích Bích Thủy Trại': {
+    presenceVi: 'Xích Bích Soái Thuyền (Trực diện: Chu Du • Công Cẩn)',
+    presenceEn: 'Chibi Flagship Command (In-person: Zhou Yu • Gongjin)',
+    placeholderVi: 'Lương Diễn tham vấn cùng Chu Du... (hoặc gõ: "Chuẩn bị hỏa công...")',
+    placeholderEn: 'Liang Yan confers with Zhou Yu... (or type: "Prepare fire ships...")',
+    chips: [
+      { type: 'local', icon: '🔥', labelVi: 'Tiếp Tế Dầu Hỏa Công', labelEn: 'Supply Fire Oil', promptVi: 'Vận chuyển 20 thùng dầu hỏa và lau sậy phục vụ hỏa công', promptEn: 'Transport 20 barrels of flammable pitch and reeds' },
+      { type: 'local', icon: '🏹', labelVi: 'Chế Tác Cung Nỏ', labelEn: 'Craft Crossbows', promptVi: 'Cung cấp vật liệu tre dẻo gia cố 10 bộ liên nỏ thủy chiến', promptEn: 'Supply high-grade bamboo for 10 repeating crossbows' },
+      { type: 'local', icon: '💨', labelVi: 'Quan Sát Hướng Gió', labelEn: 'Observe Wind', promptVi: 'Cùng mưu sĩ khảo sát thủy văn và quy luật gió đông Trường Giang', promptEn: 'Survey river hydrology and east wind patterns with tacticians' },
+      { divider: true },
+      { type: 'travel', icon: '🏇', labelVi: 'Tiến Vào Kiến Nghiệp', labelEn: 'To Jianye', promptVi: 'Xuôi hạ lưu Trường Giang tiến về Kinh Đô Kiến Nghiệp', promptEn: 'Sail down Yangtze estuary to Jianye capital' },
+      { type: 'travel', icon: '🏇', labelVi: 'Về Giang Lăng', labelEn: 'To Jiangling', promptVi: 'Ngược dòng Trường Giang trở lại Giang Lăng', promptEn: 'Sail upriver back to Jiangling' }
+    ]
+  },
+  'Kiến Nghiệp Đô Thành': {
+    presenceVi: 'Kiến Nghiệp Vương Phủ (Trực diện: Tôn Quyền • Trọng Mưu)',
+    presenceEn: 'Jianye Royal Court (In-person: Sun Quan • Zhongmou)',
+    placeholderVi: 'Lương Diễn yết kiến Giang Đông Chi Chủ... (hoặc gõ: "Mở thương hội Giang Đông...")',
+    placeholderEn: 'Liang Yan confers with Sun Quan... (or type: "Open Eastern Wu guild...")',
+    chips: [
+      { type: 'local', icon: '🍵', labelVi: 'Mua Trà & Gốm Sứ', labelEn: 'Buy Tea & Porcelain', promptVi: 'Thu mua 10 kiện Trà Giang Đông và gốm men xanh xuất sắc', promptEn: 'Procure 10 crates of Jiangnan tea and celadon porcelain' },
+      { type: 'local', icon: '🏛️', labelVi: 'Lập Hội Quán U - Ngô', labelEn: 'Found Trade Guild', promptVi: 'Thành lập phân hội thương gia kết nối giao thương Bắc Nam', promptEn: 'Establish North-South merchant lodge in Jianye' },
+      { type: 'local', icon: '🐅', labelVi: 'Yết Kiến Tôn Trọng Mưu', labelEn: 'Audience Sun Quan', promptVi: 'Yết kiến Tôn Quyền đàm đạo thế chân vạc giang sơn', promptEn: 'Audience with Sun Quan debating the tripartite balance' },
+      { divider: true },
+      { type: 'courier', icon: '✉️', labelVi: 'Phi thư về Huyện Trác', labelEn: 'Courier to Zhuo', promptVi: 'Phái thuyền buôn mang bạc trắng và đặc sản về Huyện Trác', promptEn: 'Dispatch trading boat with silver and specialties to Zhuo' },
+      { divider: true },
+      { type: 'travel', icon: '🏇', labelVi: 'Về Xích Bích', labelEn: 'To Chibi', promptVi: 'Ngược dòng Trường Giang tiến tới tiền đồn Xích Bích', promptEn: 'Sail up Yangtze to Chibi outpost' }
+    ]
+  },
+  'Hán Trung Thiên Sư Phủ': {
+    presenceVi: 'Hán Trung Đạo Phủ (Trực diện: Trương Lỗ • Thiên Sư Đạo)',
+    presenceEn: 'Hanzhong Daoist Hall (In-person: Zhang Lu • Celestial Master)',
+    placeholderVi: 'Lương Diễn đàm đạo tại Hán Trung... (hoặc gõ: "Thu mua dược liệu Tần Lĩnh...")',
+    placeholderEn: 'Liang Yan in Hanzhong... (or type: "Procure mountain herbs...")',
+    chips: [
+      { type: 'local', icon: '🌿', labelVi: 'Thu Mua Thảo Dược', labelEn: 'Buy Rare Herbs', promptVi: 'Thu mua 10 vị thảo dược quý Tần Lĩnh trị thương cho quân sĩ', promptEn: 'Purchase 10 rare mountain herbal remedies for wounded soldiers' },
+      { type: 'local', icon: '🌾', labelVi: 'Quyên Góp Nghĩa Mễ', labelEn: 'Donate Charity Rice', promptVi: 'Góp 5 thạch lương vào nghĩa xá tạo phúc đức và tăng danh vọng', promptEn: 'Contribute 5 grain piculs to communal charity lodges' },
+      { type: 'local', icon: '🏔️', labelVi: 'Khảo Sát Kiếm Các', labelEn: 'Scout Mountain Pass', promptVi: 'Khảo sát độ hiểm trở của hiểm quan Kiếm Các vào đất Thục', promptEn: 'Survey fortified mountain defile of Jiange pass into Shu' },
+      { divider: true },
+      { type: 'travel', icon: '🏇', labelVi: 'Vào Thành Đô', labelEn: 'To Chengdu', promptVi: 'Vượt Kiếm Các hiểm trở tiến vào Thiên Phủ Thành Đô', promptEn: 'Traverse treacherous Jiange pass into Chengdu' },
+      { type: 'travel', icon: '🏇', labelVi: 'Về Trường An', labelEn: 'To Changan', promptVi: 'Theo sạn đạo vượt Tần Lĩnh quay về Trường An', promptEn: 'Trek north across Qinling plank paths back to Changan' }
+    ]
+  },
+  'Thành Đô Ích Châu Phủ': {
+    presenceVi: 'Thành Đô Đại Phủ (Trực diện: Lưu Chương • Ích Châu Mục)',
+    presenceEn: 'Chengdu Grand Manor (In-person: Liu Zhang • Lord of Yizhou)',
+    placeholderVi: 'Lương Diễn chiêm ngưỡng Đất Thục... (hoặc gõ: "Mua Thục Cẩm thượng hạng...")',
+    placeholderEn: 'Liang Yan at Chengdu... (or type: "Procure Shu Brocade...")',
+    chips: [
+      { type: 'local', icon: '🎋', labelVi: 'Mua Thục Cẩm Thượng Hạng', labelEn: 'Buy Shu Brocade', promptVi: 'Thu mua 10 sấp Thục Cẩm lừng danh thiên hạ từ phường dệt', promptEn: 'Procure 10 bolts of world-renowned Shu brocade silks' },
+      { type: 'local', icon: '⛏️', labelVi: 'Mua Quặng Sắt Tây Thục', labelEn: 'Buy Iron Ore', promptVi: 'Thu mua 15 khối quặng sắt tinh khiết rèn đao kiếm', promptEn: 'Procure 15 units of high-grade Shu mountain iron ore' },
+      { type: 'local', icon: '🍷', labelVi: 'Dự Tiệc Tây Thục', labelEn: 'Shu Banquet', promptVi: 'Thưởng thức mỹ tửu và hòa tấu nhạc thục tại phủ Lưu Chương', promptEn: 'Attend festive court banquet enjoying Shu music and wine' },
+      { divider: true },
+      { type: 'courier', icon: '✉️', labelVi: 'Phi thư về Huyện Trác', labelEn: 'Courier to Zhuo', promptVi: 'Gửi thư tín đường bộ báo tin đã mở rộng mạng lưới vào đất Thục', promptEn: 'Dispatch courier dispatch to Zhuo confirming western route' },
+      { divider: true },
+      { type: 'travel', icon: '🏇', labelVi: 'Về Hán Trung', labelEn: 'To Hanzhong', promptVi: 'Vượt Kiếm Các quan ải quay trở lại Hán Trung', promptEn: 'Trek back through Jiange pass toward Hanzhong' }
     ]
   }
 };
@@ -310,7 +462,7 @@ const WORLD_MAP_NODES = {
     nameEn: 'Zhuo County (Zhuo Commandery)',
     provinceVi: 'U Châu',
     provinceEn: 'Youzhou',
-    coords: { x: 280, y: 80 },
+    coords: { x: 330, y: 70 },
     statusVi: 'An Định • Hậu Phương Lương Gia',
     statusEn: 'Stable • Liang Clan Base',
     threatVi: 'An toàn (Quan binh phòng thủ)',
@@ -325,19 +477,61 @@ const WORLD_MAP_NODES = {
     intelVi: 'Bản dinh và quê hương của gia tộc Lương Thị. Nơi khởi phát của Đào Viên Kết Nghĩa và xưởng dệt thủ công.',
     intelEn: 'Home base of Liang Clan. Cradle of the Peach Garden Oath and textile craft workshop.'
   },
+  'ji_cheng': {
+    id: 'ji_cheng',
+    nameVi: 'Kế Thành & Bắc Bình',
+    nameEn: 'Jicheng & Beiping',
+    provinceVi: 'U Châu',
+    provinceEn: 'Youzhou',
+    coords: { x: 440, y: 55 },
+    statusVi: 'Trọng Trấn Biên Cương • Bạch Mã Nghĩa Tòng',
+    statusEn: 'Border Bastion • White Horse Cavalry',
+    threatVi: 'Thấp (Biên thùy nghiêm mật)',
+    threatEn: 'Low (Heavy border garrison)',
+    distanceFromZhuo: 120,
+    daysRequired: 0.5,
+    grainCost: 0.8,
+    defaultSubLoc: 'Bắc Bình Soái Phủ',
+    subLocations: ['Bắc Bình Soái Phủ'],
+    figuresVi: 'Công Tôn Toản (Bá Khuê), Triệu Vân (Tử Long - thời kỳ đầu), Thiết Kỵ Bạch Mã',
+    figuresEn: 'Gongsun Zan, Zhao Yun (early), White Horse Cavalry',
+    intelVi: 'Căn cứ quân sự kiên cố trấn thủ biên giới phương Bắc Đại Hán, nổi tiếng với đoàn kỵ binh Bạch Mã Nghĩa Tòng thiện chiến vô song.',
+    intelEn: 'Northern bastion defending against northern tribes, famous for Gongsun Zan elite White Horse Volunteer Cavalry.'
+  },
+  'ye_cheng': {
+    id: 'ye_cheng',
+    nameVi: 'Nghiệp Thành (Ký Châu)',
+    nameEn: 'Yecheng (Jizhou Capital)',
+    provinceVi: 'Ký Châu',
+    provinceEn: 'Jizhou',
+    coords: { x: 320, y: 155 },
+    statusVi: 'Phồn Hoa Đô Hội • Thế Tộc Hà Bắc',
+    statusEn: 'Grand Metropolis • Hebei Aristocracy',
+    threatVi: 'Thấp (Quan phủ trấn áp tốt)',
+    threatEn: 'Low (Well policed by provincial guards)',
+    distanceFromZhuo: 330,
+    daysRequired: 1.2,
+    grainCost: 1.8,
+    defaultSubLoc: 'Nghiệp Thành Đại Phủ',
+    subLocations: ['Nghiệp Thành Đại Phủ'],
+    figuresVi: 'Viên Thiệu (Bản Sơ), Phùng Kỷ, Điền Phong, Thương nhân thế tộc Hà Bắc',
+    figuresEn: 'Yuan Shao, Feng Ji, Tian Feng, Jizhou merchant elites',
+    intelVi: 'Thủ phủ trù phú bậc nhất Hà Bắc, trung tâm lúa gạo và lụa là gấm vóc, bàn đạp hùng mạnh của các đại gia tộc cát cứ.',
+    intelEn: 'Wealthy heart of Hebei plains, thriving grain warehouses, silk crafts, and seat of aristocratic lords.'
+  },
   'guang_zong': {
     id: 'guang_zong',
     nameVi: 'Quảng Tông (Cự Lộc)',
     nameEn: 'Guangzong (Julu Commandery)',
     provinceVi: 'Ký Châu',
     provinceEn: 'Jizhou',
-    coords: { x: 310, y: 210 },
+    coords: { x: 375, y: 165 },
     statusVi: 'Chiến Sự Ác Liệt • Khăn Vàng',
     statusEn: 'Active Battlefield • Yellow Turbans',
     threatVi: 'Hiểm nguy cao (Tàn quân phục kích)',
     threatEn: 'High threat (Bandit ambushes)',
     distanceFromZhuo: 280,
-    daysRequired: 1,
+    daysRequired: 1.0,
     grainCost: 1.5,
     defaultSubLoc: 'Quảng Tông Quân Doanh',
     subLocations: ['Quảng Tông Quân Doanh'],
@@ -352,7 +546,7 @@ const WORLD_MAP_NODES = {
     nameEn: 'Pingyuan (Pingyuan State)',
     provinceVi: 'Ký / Thanh Châu',
     provinceEn: 'Jizhou / Qingzhou',
-    coords: { x: 430, y: 220 },
+    coords: { x: 460, y: 165 },
     statusVi: 'Nghĩa Binh Tập Kết',
     statusEn: 'Militia Muster Point',
     threatVi: 'Trung bình (Biên giới bất an)',
@@ -362,52 +556,220 @@ const WORLD_MAP_NODES = {
     grainCost: 2.0,
     defaultSubLoc: 'Bình Nguyên Trọng Trấn',
     subLocations: ['Bình Nguyên Trọng Trấn'],
-    figuresVi: 'Quan phủ địa phương, Thương đoàn Thanh Châu',
-    figuresEn: 'Local magistrates, Qingzhou merchants',
-    intelVi: 'Đầu mối giao thương giữa Ký Châu và Thanh Châu. Nơi nghĩa quân đang tập hợp lực lượng đẩy lùi giặc cỏ.',
+    figuresVi: 'Lưu Bị (khi làm Bình Nguyên Lệnh), Thương đoàn Thanh Châu, Dân binh xã tắc',
+    figuresEn: 'Liu Bei (as Magistrate), Qingzhou merchants, Village militia',
+    intelVi: 'Đầu mối giao thương giữa Ký Châu và Thanh Châu. Nơi nghĩa quân đang tập hợp lực lượng đẩy lùi giặc cỏ ven vịnh Bột Hải.',
     intelEn: 'Crucial logistical crossroad between Jizhou and Qingzhou. Volunteer armies congregating.'
-  },
-  'chang_she': {
-    id: 'chang_she',
-    nameVi: 'Trường Xã & Dĩnh Xuyên',
-    nameEn: 'Changshe & Yingchuan',
-    provinceVi: 'Dự Châu',
-    provinceEn: 'Yuzhou',
-    coords: { x: 350, y: 380 },
-    statusVi: 'Hỏa Công Tiền Tuyến',
-    statusEn: 'Southern Frontline',
-    threatVi: 'Cực kỳ nguy hiểm (Hoàng Cân vây hãm)',
-    threatEn: 'Extreme danger (Besieged by Ba Cai)',
-    distanceFromZhuo: 620,
-    daysRequired: 2.5,
-    grainCost: 3.5,
-    defaultSubLoc: 'Trường Xã Tiền Tuyến',
-    subLocations: ['Trường Xã Tiền Tuyến'],
-    figuresVi: 'Hoàng Phủ Tung, Chu Tuấn, Kỵ Binh Tào Tháo',
-    figuresEn: 'Huangfu Song, Zhu Jun, Cao Cao',
-    intelVi: 'Tiền tuyến miền Nam nơi quân triều đình đang đối đầu dữ dội với tướng giặc Ba Cai. Nổi tiếng với trận hỏa công Trường Xã.',
-    intelEn: 'Southern frontline where Imperial armies clash with Yellow Turban General Ba Cai.'
   },
   'luo_yang': {
     id: 'luo_yang',
-    nameVi: 'Lạc Dương (Kinh Sư)',
-    nameEn: 'Luoyang (Imperial Capital)',
+    nameVi: 'Kinh Đô Lạc Dương (Kinh Sư)',
+    nameEn: 'Imperial Capital Luoyang',
     provinceVi: 'Tư Lệ',
     provinceEn: 'Sili',
-    coords: { x: 200, y: 360 },
-    statusVi: 'Hoàng Thành Giới Nghiêm',
+    coords: { x: 260, y: 250 },
+    statusVi: 'Hoàng Thành Giới Nghiêm • Đế Đô Đại Hán',
     statusEn: 'Imperial Capital • Martial Law',
-    threatVi: 'An ninh nghiêm ngặt',
-    threatEn: 'High security • Palace guards',
+    threatVi: 'An ninh nghiêm ngặt (Cấm vệ quân)',
+    threatEn: 'High security (Imperial guards)',
     distanceFromZhuo: 750,
     daysRequired: 3.0,
     grainCost: 4.0,
     defaultSubLoc: 'Kinh Đô Lạc Dương',
     subLocations: ['Kinh Đô Lạc Dương'],
-    figuresVi: 'Hán Linh Đế, Đại Tướng Quân Hà Tiến, Thập Thường Thị',
-    figuresEn: 'Emperor Ling of Han, General He Jin, Ten Attendants',
+    figuresVi: 'Hán Linh Đế, Hà Tiến, Viên Thiệu, Tào Tháo, Thập Thường Thị',
+    figuresEn: 'Emperor Ling, He Jin, Yuan Shao, Cao Cao, Ten Attendants',
     intelVi: 'Kinh đô tráng lệ của Đế Chế Đại Hán. Nơi ban bố các chiếu thư phong tướng, ban thưởng quân công và quyết định đại cục thiên hạ.',
     intelEn: 'Magnificent capital of the Han Empire. Seat of imperial decrees, court politics, and high governance.'
+  },
+  'chang_an': {
+    id: 'chang_an',
+    nameVi: 'Tây Đô Trường An (Quan Trung)',
+    nameEn: 'Changan (Western Capital)',
+    provinceVi: 'Tư Lệ / Ung Châu',
+    provinceEn: 'Sili / Yongzhou',
+    coords: { x: 160, y: 250 },
+    statusVi: 'Tây Vực Hiểm Yếu • Cố Đô Hùng Vĩ',
+    statusEn: 'Strategic Redoubt • Ancient Capital',
+    threatVi: 'Trung bình (Tây Lương kỵ binh phòng ngự)',
+    threatEn: 'Moderate (Xiliang military control)',
+    distanceFromZhuo: 920,
+    daysRequired: 3.8,
+    grainCost: 5.0,
+    defaultSubLoc: 'Trường An Cung Phủ',
+    subLocations: ['Trường An Cung Phủ'],
+    figuresVi: 'Đổng Trác, Lữ Bố, Vương Doãn, Lý Thôi, Quách Dĩ',
+    figuresEn: 'Dong Zhuo, Lu Bu, Wang Yun, Li Jue, Guo Si',
+    intelVi: 'Cố đô ngàn năm được bao bọc bởi Hàm Cốc Quan và Đồng Quan hiểm trở. Đất đai phì nhiêu bát ngát ở bình nguyên Quan Trung.',
+    intelEn: 'Ancient capital guarded by Tongguan and Hangu passes. Vast agricultural basin and gateway to the Silk Road.'
+  },
+  'xu_chang': {
+    id: 'xu_chang',
+    nameVi: 'Hứa Xương & Dĩnh Xuyên',
+    nameEn: 'Xuchang & Yingchuan',
+    provinceVi: 'Dự Châu',
+    provinceEn: 'Yuzhou',
+    coords: { x: 350, y: 265 },
+    statusVi: 'Bàn Đạp Tào Ngụy • Đồn Điền Hưng Thịnh',
+    statusEn: 'Cao Cao Bastion • Prosperous Tuntian',
+    threatVi: 'Thấp (Quân doanh canh phòng)',
+    threatEn: 'Low (Strict martial administration)',
+    distanceFromZhuo: 580,
+    daysRequired: 2.2,
+    grainCost: 3.0,
+    defaultSubLoc: 'Hứa Xương Tướng Phủ',
+    subLocations: ['Hứa Xương Tướng Phủ'],
+    figuresVi: 'Tào Tháo (Mạnh Đức), Tuân Úc, Quách Gia, Hổ Báo Kỵ',
+    figuresEn: 'Cao Cao, Xun Yu, Guo Jia, Tiger & Leopard Cavalry',
+    intelVi: 'Trung tâm trù phú của vùng Dự Châu và Dĩnh Xuyên, nơi phát tích nhiều danh sĩ mưu lược và chính sách đồn điền tích cốc tích binh.',
+    intelEn: 'Prosperous core of Yuzhou, renowned for elite strategists and military agricultural colonies (Tuntian).'
+  },
+  'xia_pi': {
+    id: 'xia_pi',
+    nameVi: 'Hạ Phì (Từ Châu)',
+    nameEn: 'Xiapi (Xuzhou)',
+    provinceVi: 'Từ Châu',
+    provinceEn: 'Xuzhou',
+    coords: { x: 460, y: 275 },
+    statusVi: 'Ngư Diêm Phú Thứ • Trọng Trấn Hải Tân',
+    statusEn: 'Coastal Trade Hub • Salt & Fisheries',
+    threatVi: 'Trung bình (Tranh chấp chư hầu)',
+    threatEn: 'Moderate (Warlord disputes)',
+    distanceFromZhuo: 640,
+    daysRequired: 2.5,
+    grainCost: 3.5,
+    defaultSubLoc: 'Hạ Phì Thành Lũy',
+    subLocations: ['Hạ Phì Thành Lũy'],
+    figuresVi: 'Đào Khiêm, Mi Trúc (Cự phú Từ Châu), Lữ Bố, Trần Cung',
+    figuresEn: 'Tao Qian, Mi Zhu (Merchant Prince), Lu Bu, Chen Gong',
+    intelVi: 'Thương cảng duyên hải đông đúc nhiều muối biển, thủy sản và ngân lượng. Vựa của cải trù phú thường bị các lộ chư hầu dòm ngó.',
+    intelEn: 'Coastal commercial powerhouse with salt evaporation fields, sea trade, and wealth of the Mi merchant clan.'
+  },
+  'xiang_yang': {
+    id: 'xiang_yang',
+    nameVi: 'Tương Dương (Nam Dương)',
+    nameEn: 'Xiangyang (Jingzhou North)',
+    provinceVi: 'Kinh Châu',
+    provinceEn: 'Jingzhou',
+    coords: { x: 280, y: 355 },
+    statusVi: 'Thiên Hạ Yết Hầu • Văn Nhân Hội Tụ',
+    statusEn: 'Crossroad of China • Scholar Haven',
+    threatVi: 'Thấp (Kinh Châu ổn định thời Lưu Biểu)',
+    threatEn: 'Low (Peaceful under Liu Biao)',
+    distanceFromZhuo: 880,
+    daysRequired: 3.5,
+    grainCost: 4.8,
+    defaultSubLoc: 'Tương Dương Châu Phủ',
+    subLocations: ['Tương Dương Châu Phủ'],
+    figuresVi: 'Lưu Biểu (Cảnh Thăng), Khoái Lương, Sĩ phu Nam Dương, Hoàng Thừa Ngạn',
+    figuresEn: 'Liu Biao, Kuai Liang, Nanyang scholars, Huang Chengyan',
+    intelVi: 'Pháo đài kiên cố bên bờ sông Hán Thủy, yết hầu giao thông thủy lục nối liền Bắc Bộ và phương Nam. Trung tâm văn hóa học thuật thời loạn.',
+    intelEn: 'Impregnable river citadel on the Han River, connecting North and South. Sanctuary for scholars fleeing wars.'
+  },
+  'jiang_ling': {
+    id: 'jiang_ling',
+    nameVi: 'Giang Lăng (Nam Quận)',
+    nameEn: 'Jiangling (Nan Commandery)',
+    provinceVi: 'Kinh Châu',
+    provinceEn: 'Jingzhou',
+    coords: { x: 270, y: 430 },
+    statusVi: 'Thủy Sư Đại Bản Doanh • Trường Giang Thượng Lưu',
+    statusEn: 'Naval Bastion • Upper Yangtze',
+    threatVi: 'Trung bình (Chiến thuyền tuần tra nghiêm ngặt)',
+    threatEn: 'Moderate (Patrolled by war fleets)',
+    distanceFromZhuo: 1050,
+    daysRequired: 4.2,
+    grainCost: 5.5,
+    defaultSubLoc: 'Giang Lăng Thủy Doanh',
+    subLocations: ['Giang Lăng Thủy Doanh'],
+    figuresVi: 'Quan Vũ (sau này trấn thủ), Thủy quân Đô đốc, Thuyền buôn Trường Giang',
+    figuresEn: 'Guan Yu (later commander), Marine fleet captains, Yangtze merchants',
+    intelVi: 'Trọng trấn thủy quân kiểm soát toàn bộ dòng Trường Giang từ Ba Thục đổ xuống hạ lưu. Kho dự trữ thuyền bè và khí giới khổng lồ.',
+    intelEn: 'Massive naval dockyard and supply base controlling the Yangtze corridor between Sichuan and the East.'
+  },
+  'chi_bi': {
+    id: 'chi_bi',
+    nameVi: 'Xích Bích & Sài Tang',
+    nameEn: 'Chibi & Saitang',
+    provinceVi: 'Kinh / Kinh Đông',
+    provinceEn: 'Jingzhou / Jiangdong',
+    coords: { x: 380, y: 410 },
+    statusVi: 'Thủy Chiến Yếu Trùng • Bến Lửa Thiên Cổ',
+    statusEn: 'Historic Battleground • Great Fire River',
+    threatVi: 'Cao (Chiến tranh thủy bộ giằng co)',
+    threatEn: 'High (Intense naval skirmishing)',
+    distanceFromZhuo: 1150,
+    daysRequired: 4.6,
+    grainCost: 6.0,
+    defaultSubLoc: 'Xích Bích Thủy Trại',
+    subLocations: ['Xích Bích Thủy Trại'],
+    figuresVi: 'Chu Du (Công Cẩn), Lỗ Túc, Hoàng Cái, Hạm đội Liên Quân',
+    figuresEn: 'Zhou Yu, Lu Su, Huang Gai, Allied Fleet Commanders',
+    intelVi: 'Khúc sông hiểm trở vách đá dựng đứng trên Trường Giang. Nơi diễn ra trận thủy chiến hỏa công lừng lẫy định hình thế chân vạc Tam Quốc.',
+    intelEn: 'Steep red cliffs over the Yangtze. Legendary site of the naval fire attack that shattered northern invasion fleets.'
+  },
+  'jian_ye': {
+    id: 'jian_ye',
+    nameVi: 'Kiến Nghiệp & Ngô Quận (Giang Đông)',
+    nameEn: 'Jianye & Wu Commandery',
+    provinceVi: 'Dương Châu',
+    provinceEn: 'Yangzhou',
+    coords: { x: 490, y: 380 },
+    statusVi: 'Đô Thành Đông Ngô • Giang Nam Phú Thứ',
+    statusEn: 'Capital of Wu • Prosperous Southland',
+    threatVi: 'Thấp (Thiên hiểm Trường Giang chở che)',
+    threatEn: 'Low (Protected by Yangtze barrier)',
+    distanceFromZhuo: 1100,
+    daysRequired: 4.5,
+    grainCost: 5.8,
+    defaultSubLoc: 'Kiến Nghiệp Đô Thành',
+    subLocations: ['Kiến Nghiệp Đô Thành'],
+    figuresVi: 'Tôn Quyền, Trương Chiêu, Chu Thái, Thương thuyền biển Giang Đông',
+    figuresEn: 'Sun Quan, Zhang Zhao, Zhou Tai, Maritime merchant guild',
+    intelVi: 'Đô thành trù phú của Đông Ngô dựa lưng vào thiên hiểm sông lớn Trường Giang, vựa lúa gạo, trà ngon và nghề đóng thuyền đi biển phát triển.',
+    intelEn: 'Capital of Eastern Wu protected by the vast Yangtze river, epicenter of tea, shipbuilding, and maritime commerce.'
+  },
+  'han_zhong': {
+    id: 'han_zhong',
+    nameVi: 'Hán Trung (Hán Xuyên)',
+    nameEn: 'Hanzhong (Gateway to Shu)',
+    provinceVi: 'Ích Châu / Lương Châu',
+    provinceEn: 'Yizhou / Liangzhou',
+    coords: { x: 130, y: 345 },
+    statusVi: 'Cửa Ngõ Ba Thục • Thiên Sư Đạo',
+    statusEn: 'Northern Gate to Shu • Daoist Bastion',
+    threatVi: 'Trung bình (Đường sạn đạo hiểm trở)',
+    threatEn: 'Moderate (Mountain cliffs & rugged trails)',
+    distanceFromZhuo: 1250,
+    daysRequired: 5.0,
+    grainCost: 6.5,
+    defaultSubLoc: 'Hán Trung Thiên Sư Phủ',
+    subLocations: ['Hán Trung Thiên Sư Phủ'],
+    figuresVi: 'Trương Lỗ (Thiên Sư Đạo), Dương Bằng, Dương Tùng, Bào Dũng',
+    figuresEn: 'Zhang Lu (Five Pecks of Rice leader), Yang Song, Mountain guides',
+    intelVi: 'Thung lũng phì nhiêu nằm giữa dãy núi Tần Lĩnh và Đại Ba Sơn. Yết hầu quân sự sống còn kiểm soát con đường tiến quân vào đất Thục.',
+    intelEn: 'Fertile valley cradled by Qinling and Daba mountains. Indispensable strategic springboard into Shu.'
+  },
+  'cheng_du': {
+    id: 'cheng_du',
+    nameVi: 'Thành Đô (Thiên Phủ Chi Quốc)',
+    nameEn: 'Chengdu (Land of Abundance)',
+    provinceVi: 'Ích Châu',
+    provinceEn: 'Yizhou',
+    coords: { x: 75, y: 435 },
+    statusVi: 'Thiên Phủ Chi Quốc • Đô Thành Thục Hán',
+    statusEn: 'Land of Abundance • Shu Capital',
+    threatVi: 'Thấp (Bao bọc bởi vạn dặm non sông)',
+    threatEn: 'Low (Naturally shielded by mountain basins)',
+    distanceFromZhuo: 1550,
+    daysRequired: 6.5,
+    grainCost: 8.0,
+    defaultSubLoc: 'Thành Đô Ích Châu Phủ',
+    subLocations: ['Thành Đô Ích Châu Phủ'],
+    figuresVi: 'Lưu Yên, Lưu Chương (sau là Lưu Bị, Gia Cát Lượng), Thợ dệt Thục Cẩm',
+    figuresEn: 'Liu Yan, Liu Zhang (later Liu Bei, Zhuge Liang), Silk artisans',
+    intelVi: 'Đô thành Tây Nam trù phú màu mỡ, bốn bề núi non trùng điệp ngăn cách, công trình thủy lợi Đô Giang Yển nuôi sống vạn dân thiên hạ vô ưu.',
+    intelEn: 'Abundant basin of western China irrigated by Dujiangyan, self-sufficient in grain, iron, and famous Shu brocade silks.'
   }
 };
 
@@ -419,13 +781,27 @@ let selectedMapNodeId = 'guang_zong';
 
 function getPoiMeta(locName) {
   const dict = {
+    // Zhuo County
     'Vườn Đào': { vi: 'Trang Viên Vườn Đào Hạ Trạch', en: 'Peach Garden Manor', icon: '🌸', distFromZhuo: '0 dặm' },
     'Chợ Đông Môn': { vi: 'Chợ Đông Môn & Sạp Trà', en: 'East Gate Market & Tea Stall', icon: '🏪', distFromZhuo: '1 dặm' },
     'Xưởng Lương Thị': { vi: 'Lương Thị Chức Tác Phường', en: 'Liang Textile Workshop', icon: '🏭', distFromZhuo: '2 dặm' },
+    // 15 Historical Citadels
+    'Bắc Bình Soái Phủ': { vi: 'Bắc Bình Soái Phủ (U Châu)', en: 'Beiping Headquarters', icon: '🐎', distFromZhuo: '120 dặm' },
+    'Nghiệp Thành Đại Phủ': { vi: 'Nghiệp Thành Đại Phủ (Ký Châu)', en: 'Yecheng Grand Hall', icon: '🏛️', distFromZhuo: '330 dặm' },
     'Quảng Tông Quân Doanh': { vi: 'Bắc Quân Đại Doanh (Quảng Tông)', en: 'Northern Army Headquarters', icon: '⛺', distFromZhuo: '280 dặm' },
     'Bình Nguyên Trọng Trấn': { vi: 'Bình Nguyên Trọng Trấn', en: 'Pingyuan Stronghold', icon: '🛡️', distFromZhuo: '360 dặm' },
-    'Trường Xã Tiền Tuyến': { vi: 'Trường Xã Tiền Tuyến (Dự Châu)', en: 'Changshe Frontline Camp', icon: '🔥', distFromZhuo: '620 dặm' },
-    'Kinh Đô Lạc Dương': { vi: 'Kinh Đô Lạc Dương (Đại Tướng Quân Phủ)', en: 'Imperial Capital Luoyang', icon: '👑', distFromZhuo: '750 dặm' }
+    'Hứa Xương Tướng Phủ': { vi: 'Hứa Xương Tướng Phủ (Dự Châu)', en: 'Xuchang Headquarters', icon: '⚔️', distFromZhuo: '580 dặm' },
+    'Hạ Phì Thành Lũy': { vi: 'Hạ Phì Thành Lũy (Từ Châu)', en: 'Xiapi Citadel', icon: '🏰', distFromZhuo: '640 dặm' },
+    'Kinh Đô Lạc Dương': { vi: 'Kinh Đô Lạc Dương (Tư Lệ)', en: 'Imperial Capital Luoyang', icon: '👑', distFromZhuo: '750 dặm' },
+    'Trường An Cung Phủ': { vi: 'Trường An Cung Phủ (Quan Trung)', en: 'Changan Palace Hall', icon: '🏯', distFromZhuo: '920 dặm' },
+    'Tương Dương Châu Phủ': { vi: 'Tương Dương Châu Phủ (Kinh Châu)', en: 'Xiangyang Prefecture', icon: '🌊', distFromZhuo: '880 dặm' },
+    'Giang Lăng Thủy Doanh': { vi: 'Giang Lăng Thủy Doanh (Nam Quận)', en: 'Jiangling Naval Base', icon: '⛵', distFromZhuo: '1050 dặm' },
+    'Xích Bích Thủy Trại': { vi: 'Xích Bích Thủy Trại (Trường Giang)', en: 'Chibi Naval Base', icon: '🔥', distFromZhuo: '1150 dặm' },
+    'Kiến Nghiệp Đô Thành': { vi: 'Kiến Nghiệp Đô Thành (Giang Đông)', en: 'Jianye Capital of Wu', icon: '🐅', distFromZhuo: '1100 dặm' },
+    'Hán Trung Thiên Sư Phủ': { vi: 'Hán Trung Thiên Sư Phủ (Hán Xuyên)', en: 'Hanzhong Daoist Hall', icon: '🏔️', distFromZhuo: '1250 dặm' },
+    'Thành Đô Ích Châu Phủ': { vi: 'Thành Đô Ích Châu Phủ (Ba Thục)', en: 'Chengdu Capital of Shu', icon: '🎋', distFromZhuo: '1550 dặm' },
+    // Backwards Compatibility / Fallback
+    'Trường Xã Tiền Tuyến': { vi: 'Hứa Xương & Trường Xã Tiền Tuyến', en: 'Changshe & Xuchang Frontline', icon: '🔥', distFromZhuo: '580 dặm' }
   };
   return dict[locName] || { vi: locName, en: locName, icon: '📍', distFromZhuo: '1 dặm' };
 }
@@ -447,11 +823,21 @@ function getCurrentRegionNode(subLoc = activeSubLocation) {
     }
   }
   const lower = subLoc.toLowerCase();
+  if (lower.includes('bắc bình') || lower.includes('kế thành') || lower.includes('beiping')) return WORLD_MAP_NODES['ji_cheng'];
+  if (lower.includes('nghiệp thành') || lower.includes('yecheng')) return WORLD_MAP_NODES['ye_cheng'];
+  if (lower.includes('quảng tông') || lower.includes('guangzong')) return WORLD_MAP_NODES['guang_zong'];
+  if (lower.includes('bình nguyên') || lower.includes('pingyuan')) return WORLD_MAP_NODES['ping_yuan'];
+  if (lower.includes('hứa xương') || lower.includes('xuchang') || lower.includes('trường xã') || lower.includes('changshe') || lower.includes('dĩnh')) return WORLD_MAP_NODES['xu_chang'];
+  if (lower.includes('hạ phì') || lower.includes('xiapi') || lower.includes('từ châu')) return WORLD_MAP_NODES['xia_pi'];
+  if (lower.includes('lạc dương') || lower.includes('luoyang') || lower.includes('kinh đô')) return WORLD_MAP_NODES['luo_yang'];
+  if (lower.includes('trường an') || lower.includes('changan') || lower.includes('quan trung')) return WORLD_MAP_NODES['chang_an'];
+  if (lower.includes('tương dương') || lower.includes('xiangyang')) return WORLD_MAP_NODES['xiang_yang'];
+  if (lower.includes('giang lăng') || lower.includes('jiangling') || lower.includes('nam quận')) return WORLD_MAP_NODES['jiang_ling'];
+  if (lower.includes('xích bích') || lower.includes('chibi') || lower.includes('sài tang')) return WORLD_MAP_NODES['chi_bi'];
+  if (lower.includes('kiến nghiệp') || lower.includes('jianye') || lower.includes('giang đông') || lower.includes('ngô')) return WORLD_MAP_NODES['jian_ye'];
+  if (lower.includes('hán trung') || lower.includes('hanzhong')) return WORLD_MAP_NODES['han_zhong'];
+  if (lower.includes('thành đô') || lower.includes('chengdu') || lower.includes('thục')) return WORLD_MAP_NODES['cheng_du'];
   if (lower.includes('trác') || lower.includes('đào') || lower.includes('chợ') || lower.includes('xưởng')) return WORLD_MAP_NODES['zhuo_xian'];
-  if (lower.includes('quảng tông')) return WORLD_MAP_NODES['guang_zong'];
-  if (lower.includes('bình nguyên')) return WORLD_MAP_NODES['ping_yuan'];
-  if (lower.includes('trường xã') || lower.includes('dĩnh')) return WORLD_MAP_NODES['chang_she'];
-  if (lower.includes('lạc dương')) return WORLD_MAP_NODES['luo_yang'];
   return WORLD_MAP_NODES['zhuo_xian'];
 }
 
@@ -533,8 +919,121 @@ async function travelLocalPoi(targetLoc) {
 }
 
 // ==========================================================================
-// 0.2 STRATEGIC WORLD MAP (DƯ ĐỒ TAM QUỐC) ENGINE
+// 0.2 STRATEGIC WORLD MAP (DƯ ĐỒ TAM QUỐC) ENGINE & ZOOM / PAN SYSTEM
 // ==========================================================================
+
+let worldMapZoom = 1.0;
+let worldMapPanX = 0;
+let worldMapPanY = 0;
+let isWorldMapPanning = false;
+let mapPanStartX = 0;
+let mapPanStartY = 0;
+let hasAttachedMapEvents = false;
+
+function zoomWorldMap(delta) {
+  worldMapZoom = Math.min(3.0, Math.max(0.65, Number((worldMapZoom + delta).toFixed(2))));
+  applyWorldMapTransform();
+}
+
+function resetWorldMapZoom() {
+  worldMapZoom = 1.0;
+  worldMapPanX = 0;
+  worldMapPanY = 0;
+  applyWorldMapTransform();
+}
+
+function applyWorldMapTransform() {
+  const viewport = document.getElementById('world-map-viewport');
+  if (viewport) {
+    viewport.setAttribute('transform', `translate(${worldMapPanX}, ${worldMapPanY}) scale(${worldMapZoom})`);
+  }
+  const badge = document.getElementById('map-zoom-level-badge');
+  if (badge) {
+    badge.innerText = `${Math.round(worldMapZoom * 100)}%`;
+  }
+}
+
+function initWorldMapInteractions() {
+  const container = document.getElementById('world-map-canvas-container');
+  if (!container || hasAttachedMapEvents) return;
+  hasAttachedMapEvents = true;
+
+  // Mouse wheel zooming
+  container.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const delta = e.deltaY < 0 ? 0.15 : -0.15;
+    zoomWorldMap(delta);
+  }, { passive: false });
+
+  // Mouse drag-to-pan
+  container.addEventListener('mousedown', (e) => {
+    if (e.target.closest('.map-node') || e.target.closest('.map-zoom-toolbar')) return;
+    isWorldMapPanning = true;
+    mapPanStartX = e.clientX - worldMapPanX;
+    mapPanStartY = e.clientY - worldMapPanY;
+    container.style.cursor = 'grabbing';
+  });
+
+  window.addEventListener('mousemove', (e) => {
+    if (!isWorldMapPanning) return;
+    worldMapPanX = e.clientX - mapPanStartX;
+    worldMapPanY = e.clientY - mapPanStartY;
+    applyWorldMapTransform();
+  });
+
+  window.addEventListener('mouseup', () => {
+    if (isWorldMapPanning) {
+      isWorldMapPanning = false;
+      const c = document.getElementById('world-map-canvas-container');
+      if (c) c.style.cursor = 'grab';
+    }
+  });
+
+  // Touch drag and pinch-to-zoom
+  let lastTouchX = 0;
+  let lastTouchY = 0;
+  let lastPinchDist = 0;
+
+  container.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 1) {
+      if (e.target.closest('.map-node') || e.target.closest('.map-zoom-toolbar')) return;
+      isWorldMapPanning = true;
+      lastTouchX = e.touches[0].clientX;
+      lastTouchY = e.touches[0].clientY;
+    } else if (e.touches.length === 2) {
+      isWorldMapPanning = false;
+      lastPinchDist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+    }
+  }, { passive: true });
+
+  container.addEventListener('touchmove', (e) => {
+    if (e.touches.length === 1 && isWorldMapPanning) {
+      const dx = e.touches[0].clientX - lastTouchX;
+      const dy = e.touches[0].clientY - lastTouchY;
+      lastTouchX = e.touches[0].clientX;
+      lastTouchY = e.touches[0].clientY;
+      worldMapPanX += dx;
+      worldMapPanY += dy;
+      applyWorldMapTransform();
+    } else if (e.touches.length === 2 && lastPinchDist > 0) {
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      const diff = (dist - lastPinchDist) * 0.005;
+      lastPinchDist = dist;
+      zoomWorldMap(diff);
+    }
+  }, { passive: true });
+
+  container.addEventListener('touchend', () => {
+    isWorldMapPanning = false;
+    lastPinchDist = 0;
+  });
+}
 
 function openWorldMap() {
   const modal = document.getElementById('world-map-modal');
@@ -571,20 +1070,33 @@ function renderWorldMapSvg() {
   const currentRegion = getCurrentRegionNode(activeSubLocation);
   const isEn = (currentLang === 'en');
 
-  // Route connections between tactical regional nodes
+  // 18 Tactical connecting routes across the Three Kingdoms theater
   const routes = [
+    { from: 'zhuo_xian', to: 'ji_cheng' },
     { from: 'zhuo_xian', to: 'guang_zong' },
     { from: 'zhuo_xian', to: 'ping_yuan' },
+    { from: 'ji_cheng', to: 'ping_yuan' },
+    { from: 'guang_zong', to: 'ye_cheng' },
     { from: 'guang_zong', to: 'ping_yuan' },
-    { from: 'guang_zong', to: 'chang_she' },
-    { from: 'guang_zong', to: 'luo_yang' },
-    { from: 'luo_yang', to: 'chang_she' }
+    { from: 'ye_cheng', to: 'luo_yang' },
+    { from: 'ye_cheng', to: 'xu_chang' },
+    { from: 'ping_yuan', to: 'xia_pi' },
+    { from: 'luo_yang', to: 'chang_an' },
+    { from: 'luo_yang', to: 'xu_chang' },
+    { from: 'xu_chang', to: 'xia_pi' },
+    { from: 'xu_chang', to: 'xiang_yang' },
+    { from: 'chang_an', to: 'han_zhong' },
+    { from: 'han_zhong', to: 'cheng_du' },
+    { from: 'xiang_yang', to: 'jiang_ling' },
+    { from: 'jiang_ling', to: 'chi_bi' },
+    { from: 'chi_bi', to: 'jian_ye' }
   ];
 
   let svgRoutes = routes.map(r => {
-    const f = WORLD_MAP_NODES[r.from].coords;
-    const t = WORLD_MAP_NODES[r.to].coords;
-    return `<line x1="${f.x}" y1="${f.y}" x2="${t.x}" y2="${t.y}" stroke="rgba(245, 158, 11, 0.35)" stroke-width="2" stroke-dasharray="4,4" />`;
+    const f = WORLD_MAP_NODES[r.from]?.coords;
+    const t = WORLD_MAP_NODES[r.to]?.coords;
+    if (!f || !t) return '';
+    return `<line x1="${f.x}" y1="${f.y}" x2="${t.x}" y2="${t.y}" stroke="rgba(245, 158, 11, 0.32)" stroke-width="1.8" stroke-dasharray="4,4" />`;
   }).join('');
 
   let svgNodes = Object.keys(WORLD_MAP_NODES).map(key => {
@@ -592,17 +1104,27 @@ function renderWorldMapSvg() {
     const isCurrent = (currentRegion.id === key);
     const isSelected = (selectedMapNodeId === key);
 
-    let theme = { fill: '#0f172a', stroke: '#3b82f6', icon: '🛡️' };
+    const themeMap = {
+      'zhuo_xian': { fill: '#064e3b', stroke: '#10b981', icon: '🌸' },
+      'ji_cheng': { fill: '#0f172a', stroke: '#38bdf8', icon: '🐎' },
+      'ye_cheng': { fill: '#1e1b4b', stroke: '#818cf8', icon: '🏛️' },
+      'guang_zong': { fill: '#450a0a', stroke: '#ef4444', icon: '⚔️' },
+      'ping_yuan': { fill: '#0f172a', stroke: '#06b6d4', icon: '🛡️' },
+      'luo_yang': { fill: '#451a03', stroke: '#f59e0b', icon: '👑' },
+      'chang_an': { fill: '#3b0764', stroke: '#a855f7', icon: '🏯' },
+      'xu_chang': { fill: '#1e293b', stroke: '#3b82f6', icon: '⚔️' },
+      'xia_pi': { fill: '#042f2e', stroke: '#14b8a6', icon: '🏰' },
+      'xiang_yang': { fill: '#0c4a6e', stroke: '#0284c7', icon: '🌊' },
+      'jiang_ling': { fill: '#164e63', stroke: '#06b6d4', icon: '⛵' },
+      'chi_bi': { fill: '#450a0a', stroke: '#f97316', icon: '🔥' },
+      'jian_ye': { fill: '#14532d', stroke: '#22c55e', icon: '🐅' },
+      'han_zhong': { fill: '#292524', stroke: '#a8a29e', icon: '🏔️' },
+      'cheng_du': { fill: '#064e3b', stroke: '#10b981', icon: '🎋' }
+    };
+
+    let theme = themeMap[key] || { fill: '#0f172a', stroke: '#3b82f6', icon: '🛡️' };
     if (isCurrent) {
       theme = { fill: '#064e3b', stroke: '#10b981', icon: '📍' };
-    } else if (key === 'guang_zong') {
-      theme = { fill: '#450a0a', stroke: '#ef4444', icon: '⚔️' };
-    } else if (key === 'chang_she') {
-      theme = { fill: '#450a0a', stroke: '#ef4444', icon: '🔥' };
-    } else if (key === 'luo_yang') {
-      theme = { fill: '#451a03', stroke: '#f59e0b', icon: '👑' };
-    } else if (key === 'zhuo_xian') {
-      theme = { fill: '#064e3b', stroke: '#10b981', icon: '🌸' };
     }
 
     const displayName = isEn ? node.nameEn.split(' ')[0] : node.nameVi.split(' ')[0];
@@ -611,29 +1133,40 @@ function renderWorldMapSvg() {
     return `
       <g class="map-node ${isSelected ? 'active' : ''}" onclick="selectWorldMapNode('${key}')" style="cursor: pointer;">
         ${isCurrent ? `
-          <circle cx="${node.coords.x}" cy="${node.coords.y}" r="23" fill="none" stroke="#10b981" stroke-width="2" opacity="0.8" class="map-pulse-ring" />
-          <rect x="${node.coords.x - 38}" y="${node.coords.y - 30}" width="76" height="14" rx="3" fill="#064e3b" stroke="#10b981" stroke-width="1" />
-          <text x="${node.coords.x}" y="${node.coords.y - 20}" fill="#34d399" font-size="8" font-weight="700" text-anchor="middle">📍 ${isEn ? 'CURRENT' : 'HIỆN TẠI'}</text>
+          <circle cx="${node.coords.x}" cy="${node.coords.y}" r="22" fill="none" stroke="#10b981" stroke-width="2" opacity="0.8" class="map-pulse-ring" />
+          <rect x="${node.coords.x - 34}" y="${node.coords.y - 28}" width="68" height="13" rx="3" fill="#064e3b" stroke="#10b981" stroke-width="1" />
+          <text x="${node.coords.x}" y="${node.coords.y - 19}" fill="#34d399" font-size="7.5" font-weight="700" text-anchor="middle">📍 ${isEn ? 'CURRENT' : 'HIỆN TẠI'}</text>
         ` : ''}
 
         ${isSelected ? `
-          <circle cx="${node.coords.x}" cy="${node.coords.y}" r="22" fill="none" stroke="#fbbf24" stroke-width="2.5" stroke-dasharray="4,2" />
+          <circle cx="${node.coords.x}" cy="${node.coords.y}" r="20" fill="none" stroke="#fbbf24" stroke-width="2.5" stroke-dasharray="4,2" />
         ` : ''}
 
-        <circle class="node-bg" cx="${node.coords.x}" cy="${node.coords.y}" r="15" fill="${theme.fill}" stroke="${isSelected ? '#fbbf24' : theme.stroke}" stroke-width="${isSelected ? '2.5' : '1.5'}" />
-        <text x="${node.coords.x}" y="${node.coords.y + 4.5}" font-size="11" text-anchor="middle">${theme.icon}</text>
+        <circle class="node-bg" cx="${node.coords.x}" cy="${node.coords.y}" r="14" fill="${theme.fill}" stroke="${isSelected ? '#fbbf24' : theme.stroke}" stroke-width="${isSelected ? '2.5' : '1.5'}" />
+        <text x="${node.coords.x}" y="${node.coords.y + 4.5}" font-size="10.5" text-anchor="middle">${theme.icon}</text>
         
-        <text x="${node.coords.x}" y="${node.coords.y + 25}" text-anchor="middle" fill="${isSelected ? '#fbbf24' : '#f1f5f9'}" font-size="10.5" font-weight="${isSelected ? '700' : '600'}" letter-spacing="0.2px">${displayName}</text>
-        <text x="${node.coords.x}" y="${node.coords.y + 36}" text-anchor="middle" fill="#94a3b8" font-size="9">${displayProvince}</text>
+        <text x="${node.coords.x}" y="${node.coords.y + 24}" text-anchor="middle" fill="${isSelected ? '#fbbf24' : '#f1f5f9'}" font-size="9.5" font-weight="${isSelected ? '700' : '600'}" letter-spacing="0.2px">${displayName}</text>
+        <text x="${node.coords.x}" y="${node.coords.y + 34}" text-anchor="middle" fill="#94a3b8" font-size="8.5">${displayProvince}</text>
       </g>
     `;
   }).join('');
 
   container.innerHTML = `
-    <svg viewBox="0 0 540 440" xmlns="http://www.w3.org/2000/svg">
+    <!-- Floating Zoom Toolbar -->
+    <div class="map-zoom-toolbar">
+      <button class="map-zoom-btn" onclick="zoomWorldMap(0.25)" title="${isEn ? 'Zoom In' : 'Phóng to'}">➕</button>
+      <span class="map-zoom-level" id="map-zoom-level-badge">${Math.round(worldMapZoom * 100)}%</span>
+      <button class="map-zoom-btn" onclick="zoomWorldMap(-0.25)" title="${isEn ? 'Zoom Out' : 'Thu nhỏ'}">➖</button>
+      <button class="map-zoom-btn" onclick="resetWorldMapZoom()" title="${isEn ? 'Reset View' : 'Khôi phục'}">🎯</button>
+    </div>
+
+    <!-- Navigation Hint -->
+    <div class="map-nav-hint">${isEn ? '🖱️ Scroll to zoom • Drag to pan' : '🖱️ Cuộn chuột để zoom • Kéo chuột để di chuyển'}</div>
+
+    <svg viewBox="0 0 600 500" xmlns="http://www.w3.org/2000/svg">
       <defs>
-        <pattern id="tactical-grid" width="28" height="28" patternUnits="userSpaceOnUse">
-          <path d="M 28 0 L 0 0 0 28" fill="none" stroke="rgba(255, 255, 255, 0.03)" stroke-width="1"/>
+        <pattern id="tactical-grid" width="25" height="25" patternUnits="userSpaceOnUse">
+          <path d="M 25 0 L 0 0 0 25" fill="none" stroke="rgba(255, 255, 255, 0.03)" stroke-width="1"/>
         </pattern>
       </defs>
 
@@ -641,45 +1174,73 @@ function renderWorldMapSvg() {
       <rect width="100%" height="100%" fill="#070a12"/>
       <rect width="100%" height="100%" fill="url(#tactical-grid)"/>
 
-      <!-- Border Frame -->
-      <rect x="8" y="8" width="524" height="424" fill="none" stroke="rgba(245, 158, 11, 0.2)" stroke-width="1" stroke-dasharray="6,4"/>
-      <rect x="12" y="12" width="516" height="416" fill="none" stroke="rgba(255, 255, 255, 0.04)" stroke-width="0.5"/>
+      <!-- Border Frame (Fixed on Canvas) -->
+      <rect x="8" y="8" width="584" height="484" fill="none" stroke="rgba(245, 158, 11, 0.2)" stroke-width="1" stroke-dasharray="6,4"/>
+      <rect x="12" y="12" width="576" height="476" fill="none" stroke="rgba(255, 255, 255, 0.04)" stroke-width="0.5"/>
 
-      <!-- North Indicator -->
-      <g transform="translate(500, 36)" opacity="0.6">
+      <!-- North Indicator (Fixed on Canvas) -->
+      <g transform="translate(565, 34)" opacity="0.65">
         <circle cx="0" cy="0" r="14" fill="none" stroke="rgba(255, 255, 255, 0.15)" stroke-width="1"/>
         <polygon points="0,-12 4,0 0,-4 -4,0" fill="#f59e0b"/>
         <text x="0" y="10" fill="#cbd5e1" font-size="7" font-weight="700" text-anchor="middle">BẮC</text>
       </g>
 
-      <!-- Ancient Province Watermarks -->
-      <text x="280" y="55" fill="rgba(255, 255, 255, 0.08)" font-size="18" font-family="'Cinzel', serif" font-weight="700" letter-spacing="4px" text-anchor="middle">U CHÂU (YOUZHOU)</text>
-      <text x="255" y="165" fill="rgba(255, 255, 255, 0.08)" font-size="18" font-family="'Cinzel', serif" font-weight="700" letter-spacing="4px" text-anchor="middle">KÝ CHÂU (JIZHOU)</text>
-      <text x="460" y="165" fill="rgba(255, 255, 255, 0.07)" font-size="16" font-family="'Cinzel', serif" font-weight="700" letter-spacing="3px" text-anchor="middle">THANH CHÂU</text>
-      <text x="395" y="295" fill="rgba(255, 255, 255, 0.07)" font-size="16" font-family="'Cinzel', serif" font-weight="700" letter-spacing="3px" text-anchor="middle">DUYỆN CHÂU</text>
-      <text x="345" y="420" fill="rgba(255, 255, 255, 0.08)" font-size="18" font-family="'Cinzel', serif" font-weight="700" letter-spacing="4px" text-anchor="middle">DỰ CHÂU (YUZHOU)</text>
-      <text x="130" y="360" fill="rgba(255, 255, 255, 0.08)" font-size="18" font-family="'Cinzel', serif" font-weight="700" letter-spacing="4px" text-anchor="middle">TƯ LỆ (SILI)</text>
+      <!-- Scalable Map Viewport -->
+      <g id="world-map-viewport" transform="translate(${worldMapPanX}, ${worldMapPanY}) scale(${worldMapZoom})" transform-origin="300 250">
+        <!-- Ancient Province Watermarks -->
+        <text x="380" y="32" fill="rgba(255, 255, 255, 0.07)" font-size="15" font-family="'Cinzel', serif" font-weight="700" letter-spacing="3px" text-anchor="middle">U CHÂU (YOUZHOU)</text>
+        <text x="340" y="125" fill="rgba(255, 255, 255, 0.07)" font-size="15" font-family="'Cinzel', serif" font-weight="700" letter-spacing="3px" text-anchor="middle">KÝ CHÂU (JIZHOU)</text>
+        <text x="500" y="135" fill="rgba(255, 255, 255, 0.06)" font-size="14" font-family="'Cinzel', serif" font-weight="700" letter-spacing="2px" text-anchor="middle">THANH CHÂU</text>
+        <text x="210" y="215" fill="rgba(255, 255, 255, 0.07)" font-size="15" font-family="'Cinzel', serif" font-weight="700" letter-spacing="3px" text-anchor="middle">TƯ LỆ (SILI)</text>
+        <text x="375" y="305" fill="rgba(255, 255, 255, 0.06)" font-size="14" font-family="'Cinzel', serif" font-weight="700" letter-spacing="2px" text-anchor="middle">DỰ CHÂU & DUYỆN CHÂU</text>
+        <text x="500" y="260" fill="rgba(255, 255, 255, 0.06)" font-size="14" font-family="'Cinzel', serif" font-weight="700" letter-spacing="2px" text-anchor="middle">TỪ CHÂU (XUZHOU)</text>
+        <text x="275" y="395" fill="rgba(255, 255, 255, 0.07)" font-size="15" font-family="'Cinzel', serif" font-weight="700" letter-spacing="3px" text-anchor="middle">KINH CHÂU (JINGZHOU)</text>
+        <text x="475" y="435" fill="rgba(255, 255, 255, 0.07)" font-size="15" font-family="'Cinzel', serif" font-weight="700" letter-spacing="3px" text-anchor="middle">GIANG ĐÔNG (WU)</text>
+        <text x="95" y="475" fill="rgba(255, 255, 255, 0.07)" font-size="15" font-family="'Cinzel', serif" font-weight="700" letter-spacing="3px" text-anchor="middle">BA THỤC (BASHU)</text>
 
-      <!-- Hoàng Hà (The Yellow River) -->
-      <path d="M 20,355 C 110,345 170,325 230,320 C 300,315 360,275 430,260 C 475,250 510,240 540,235" 
-            stroke="#1d4ed8" stroke-width="8" stroke-linecap="round" fill="none" opacity="0.45" />
-      <path d="M 20,355 C 110,345 170,325 230,320 C 300,315 360,275 430,260 C 475,250 510,240 540,235" 
-            stroke="#60a5fa" stroke-width="2.5" stroke-dasharray="8,6" fill="none" opacity="0.8" />
-      <text x="330" y="280" fill="#93c5fd" font-size="9.5" font-style="italic" opacity="0.85" letter-spacing="0.5px">Hoàng Hà (Yellow River)</text>
+        <!-- Hoàng Hà (The Yellow River) -->
+        <path d="M 60,215 C 120,225 180,235 235,230 C 275,225 320,205 380,210 C 440,215 500,190 560,175" 
+              stroke="#1d4ed8" stroke-width="7" stroke-linecap="round" fill="none" opacity="0.38" />
+        <path d="M 60,215 C 120,225 180,235 235,230 C 275,225 320,205 380,210 C 440,215 500,190 560,175" 
+              stroke="#60a5fa" stroke-width="2" stroke-dasharray="8,5" fill="none" opacity="0.85" />
+        <text x="330" y="200" fill="#93c5fd" font-size="9" font-style="italic" opacity="0.85" letter-spacing="0.5px">Hoàng Hà (Yellow River)</text>
 
-      <!-- Mountain Pass: Hổ Lao Quan -->
-      <g transform="translate(240, 342)">
-        <polygon points="-7,5 0,-6 7,5" fill="#ef4444" stroke="#f87171" stroke-width="1.2" opacity="0.9" />
-        <text x="0" y="14" fill="#fca5a5" font-size="8" text-anchor="middle" font-weight="600">Hổ Lao Quan</text>
+        <!-- Trường Giang (The Yangtze River) -->
+        <path d="M 40,465 C 110,445 190,435 250,428 C 310,422 355,418 410,405 C 470,392 525,380 580,370" 
+              stroke="#0e7490" stroke-width="8" stroke-linecap="round" fill="none" opacity="0.38" />
+        <path d="M 40,465 C 110,445 190,435 250,428 C 310,422 355,418 410,405 C 470,392 525,380 580,370" 
+              stroke="#38bdf8" stroke-width="2" stroke-dasharray="8,5" fill="none" opacity="0.85" />
+        <text x="290" y="445" fill="#7dd3fc" font-size="9" font-style="italic" opacity="0.85" letter-spacing="0.5px">Trường Giang (Yangtze River)</text>
+
+        <!-- Mountain Pass: Hổ Lao Quan -->
+        <g transform="translate(295, 255)">
+          <polygon points="-6,4 0,-5 6,4" fill="#ef4444" stroke="#f87171" stroke-width="1.2" opacity="0.9" />
+          <text x="0" y="13" fill="#fca5a5" font-size="7.5" text-anchor="middle" font-weight="600">Hổ Lao Quan</text>
+        </g>
+
+        <!-- Mountain Pass: Đồng Quan -->
+        <g transform="translate(210, 248)">
+          <polygon points="-6,4 0,-5 6,4" fill="#ef4444" stroke="#f87171" stroke-width="1.2" opacity="0.9" />
+          <text x="0" y="13" fill="#fca5a5" font-size="7.5" text-anchor="middle" font-weight="600">Đồng Quan</text>
+        </g>
+
+        <!-- Mountain Pass: Kiếm Các -->
+        <g transform="translate(100, 390)">
+          <polygon points="-6,4 0,-5 6,4" fill="#ef4444" stroke="#f87171" stroke-width="1.2" opacity="0.9" />
+          <text x="0" y="13" fill="#fca5a5" font-size="7.5" text-anchor="middle" font-weight="600">Kiếm Các</text>
+        </g>
+
+        <!-- Tactical Connecting Routes -->
+        ${svgRoutes}
+
+        <!-- Interactive Strategic Regional Nodes (15 Citadels) -->
+        ${svgNodes}
       </g>
-
-      <!-- Tactical Routes -->
-      ${svgRoutes}
-
-      <!-- Interactive Strategic Regional Nodes -->
-      ${svgNodes}
     </svg>
   `;
+
+  initWorldMapInteractions();
+  applyWorldMapTransform();
 }
 
 function renderWorldMapIntel(nodeId = selectedMapNodeId) {
@@ -694,7 +1255,9 @@ function renderWorldMapIntel(nodeId = selectedMapNodeId) {
   const isEn = (currentLang === 'en');
   const dict = I18N_DICT[currentLang] || I18N_DICT.vi;
 
-  const badgeClass = nodeId === 'luo_yang' ? 'capital' : (nodeId === 'guang_zong' || nodeId === 'chang_she' ? 'battle' : 'safe');
+  const isCapital = (nodeId === 'luo_yang' || nodeId === 'chang_an' || nodeId === 'jian_ye' || nodeId === 'cheng_du');
+  const isBattle = (nodeId === 'guang_zong' || nodeId === 'chi_bi');
+  const badgeClass = isCapital ? 'capital' : (isBattle ? 'battle' : 'safe');
   const badgeText = isEn ? node.statusEn : node.statusVi;
 
   const dist = isCurrent ? 0 : node.distanceFromZhuo;
@@ -702,7 +1265,7 @@ function renderWorldMapIntel(nodeId = selectedMapNodeId) {
   const daysText = isCurrent ? (isEn ? '0 days' : '0 ngày') : (isEn ? `${node.daysRequired} days` : `${node.daysRequired} ngày`);
   const grainText = isCurrent ? (isEn ? '0 grain' : '0 thạch') : `${node.grainCost} ${isEn ? 'piculs' : 'thạch'}`;
   const threatText = isEn ? node.threatEn : node.threatVi;
-  const threatColor = (nodeId === 'guang_zong' || nodeId === 'chang_she') ? '#f87171' : '#34d399';
+  const threatColor = isBattle ? '#f87171' : ((nodeId === 'chang_an' || nodeId === 'ping_yuan' || nodeId === 'xia_pi' || nodeId === 'jiang_ling' || nodeId === 'han_zhong') ? '#fbbf24' : '#34d399');
 
   const title = isEn ? node.nameEn : node.nameVi;
   const prov = isEn ? node.provinceEn : node.provinceVi;

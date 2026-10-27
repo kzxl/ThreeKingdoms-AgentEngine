@@ -1839,10 +1839,10 @@ button:disabled,
    ========================================================================== */
 
 .world-map-card {
-  width: 95vw !important;
-  max-width: 980px !important;
-  height: 86vh !important;
-  max-height: 640px !important;
+  width: 96vw !important;
+  max-width: 1060px !important;
+  height: 88vh !important;
+  max-height: 680px !important;
   display: flex !important;
   flex-direction: column !important;
   border-color: #f59e0b !important;
@@ -1877,7 +1877,7 @@ button:disabled,
 }
 
 .world-map-canvas-container {
-  flex: 1.45;
+  flex: 1.6;
   background-color: #070a12;
   border-right: 1px solid var(--border-subtle);
   position: relative;
@@ -1886,6 +1886,74 @@ button:disabled,
   justify-content: center;
   overflow: hidden;
   user-select: none;
+  cursor: grab;
+}
+
+.world-map-canvas-container:active {
+  cursor: grabbing;
+}
+
+.map-zoom-toolbar {
+  position: absolute;
+  top: 14px;
+  left: 16px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  background: rgba(15, 23, 42, 0.88);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  border-radius: var(--radius-sm);
+  padding: 3px 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(6px);
+}
+
+.map-zoom-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-main);
+  border-radius: var(--radius-xs);
+  cursor: pointer;
+  padding: 3px 6px;
+  font-size: 11px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.map-zoom-btn:hover {
+  background: rgba(245, 158, 11, 0.2);
+  border-color: #f59e0b;
+  color: #fbbf24;
+}
+
+.map-zoom-level {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  color: #fbbf24;
+  min-width: 36px;
+  text-align: center;
+  padding: 0 4px;
+  user-select: none;
+}
+
+.map-nav-hint {
+  position: absolute;
+  bottom: 12px;
+  left: 16px;
+  z-index: 9;
+  font-size: 9.5px;
+  color: rgba(255, 255, 255, 0.5);
+  pointer-events: none;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 2px 8px;
+  border-radius: var(--radius-xs);
+  backdrop-filter: blur(4px);
 }
 
 .world-map-canvas-container svg {
