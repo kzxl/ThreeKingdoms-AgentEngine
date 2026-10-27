@@ -58,9 +58,18 @@ Skills represent acquired competencies developed through study, labor, mentorshi
 - **Effects**:
   - Tier 1: Formations resist basic cavalry charges (+5% defensive rating).
   - Tier 2: +10% hit chance in personal combat; unlocks brace tactic against chargers.
-  - Tier 3: +15% duel victory rate; capable of training militia into spear guards.
+  - Tier 3: +15% duel victory rate; unlocks "Coiled Serpent Counter" (Xà Mâu Toàn Phong Thích); capable of training militia into spear guards.
   - Tier 4: Lethal thrust technique; chance to unseat enemy commander in duel.
   - Tier 5: Unstoppable pike phalanx; commands frontline elite vanguard with high lethality.
+
+### `SKL-TAC-STRAT` — Tactical Stratagems & Military Deception (Binh Pháp Kế Mưu)
+- **Primary Attribute**: Intelligence (`INT`) / Leadership (`LDR`)
+- **Effects**:
+  - Tier 1: Detects obvious terrain traps and basic road ambushes.
+  - Tier 2: Devises feint attacks, false campfires, and pincers; +15% success chance on surprise maneuvers.
+  - Tier 3: Master of dynamic terrain exploitation; can induce enemy commanders into disordered pursuits.
+  - Tier 4: Strategic theater deception; hides movements of division-sized armies across entire provinces.
+  - Tier 5: Grand strategist mastery (comparable to Zhuge Liang / Guo Jia); turns absolute numerical inferiority into crushing envelope victories.
 
 ### `SKL-WAR-ARCH` — Archery & Marksmanship (Cung thuật)
 - **Primary Attribute**: Martial (`WAR`)
@@ -88,8 +97,8 @@ Skills represent acquired competencies developed through study, labor, mentorshi
 - **Primary Attribute**: Leadership (`LDR`)
 - **Effects**:
   - Tier 1: Reduces recruit training time by 10%.
-  - Tier 2: Prevents morale loss from rough marches.
-  - Tier 3: Unlocks advanced defensive formations (Square, Crane Wing).
+  - Tier 2: Prevents morale loss from rough marches; unlocks defensive square formation.
+  - Tier 3: Unlocks advanced offensive formations (Crane Wing, Arrowhead Shock).
   - Tier 4: Troopers maintain cohesion even during night attacks or ambushes.
   - Tier 5: Elite cadre forged; troops gain +20% combat morale resilience.
 
