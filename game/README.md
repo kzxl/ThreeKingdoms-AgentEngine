@@ -5,59 +5,12 @@ The **Agentic Three Kingdoms Simulation Engine** is a deterministic, auditable, 
 
 ---
 
-## Directory Structure & Memory Architecture
-
-```text
-game/
-├── README.md               # Engine operations, startup & command reference
-├── RULES.md                # System mechanics, formulas, DC thresholds & resolution rules
-├── WORLD_STATE.md          # Global calendar, era status, weather & macro indicators
-├── PLAYER.md               # Primary player dashboard, assets & active mandates
-├── ECONOMY.md              # Currency standards, baseline prices & macro indexes
-├── TECHNIQUES.md           # Skills, martial arts, crafts, tiers & progression trees
-├── FACTIONS.md             # Registry of regional and national factions
-├── RELATIONS.md            # Inter-character & inter-faction diplomacy/sentiment matrix
-├── TURN_STATE.md           # Active turn execution tracker & step-by-step pipeline
-├── TASKS.md                # Ongoing operations, background projects & work queues
-├── CHANGELOG.md            # Engine versioning, schema adjustments & rule revisions
-├── chronicle/              # Year-by-year historical event logs
-│   └── 0184.md
-├── characters/             # Character dossiers (Player & NPCs)
-│   ├── player.md
-│   ├── NPC-0001.md
-│   └── ...
-├── factions/               # Detailed faction dossiers
-│   └── FACTION-0001.md
-├── locations/              # Settlement, county & commandery dossiers
-│   └── LOC-0001.md
-├── organizations/          # Guilds, sects, clans & associations
-│   └── ORG-0001.md
-├── businesses/             # Enterprise dossiers (P&L, production, staff, BOM)
-│   └── BIZ-0001.md
-├── military/               # Armies, garrisons & military campaigns
-│   ├── armies.md
-│   └── campaigns.md
-├── events/                 # Active crisis/event cards and completed archive
-│   ├── active.md
-│   └── archive.md
-├── ledger/                 # Auditable financial & supply logs
-│   ├── cashflow.md
-│   ├── inventory.md
-│   ├── contracts.md
-│   └── audit.md
-└── saves/                  # Checkpoints and state snapshots
-    ├── latest.md
-    └── snapshots/
-```
-
----
-
 ## Operating Protocol for Agents & Game Master
 
 Every turn cycle must strictly adhere to the 7-step pipeline:
 
 1. **Step 1: Read State**: Inspect `WORLD_STATE.md`, `TURN_STATE.md`, `PLAYER.md`, and relevant target entity dossiers.
-2. **Step 2: Validate Prerequisite**: Check resource limits, time constraints, authority, tool availability, and conflict checks.
+2. **Step 2: Validate Prerequisites**: Check resource limits, time constraints, authority, tool availability, and conflict checks.
 3. **Step 3: Plan Simulation**: Deconstruct user mandates into atomic sub-actions and predict NPC/faction reactive behaviors.
 4. **Step 4: Resolve Outcomes**: Apply math formulas from `RULES.md` and `ECONOMY.md`. Explicitly separate deterministic outcomes, skill-check roll outcomes, and NPC independent decisions.
 5. **Step 5: Write State**: Update dossiers, ledger entries, and chronicles. Never write narrative without updating underlying ledger numbers.
@@ -71,27 +24,40 @@ Every turn cycle must strictly adhere to the 7-step pipeline:
 
 ## Entity ID Conventions
 - Player: `player` (or `PLY-0001`)
-- Non-Player Characters: `NPC-xxxx` (e.g. `NPC-0001`)
-- Locations / Settlements: `LOC-xxxx` (e.g. `LOC-0001`)
-- Factions / Warlord Clans: `FACTION-xxxx` (e.g. `FACTION-0001`)
-- Organizations / Guilds: `ORG-xxxx` (e.g. `ORG-0001`)
-- Businesses / Workshops: `BIZ-xxxx` (e.g. `BIZ-0001`)
-- Armies / Divisions: `ARMY-xxxx` (e.g. `ARMY-0001`)
+- Non-Player Characters: `NPC-xxxx` (e.g. `NPC-0001` Liu Bei)
+- Locations / Settlements: `LOC-xxxx` (e.g. `LOC-0001` Zhuo County)
+- Factions / Warlord Clans: `FACTION-xxxx` (e.g. `FACTION-0001` Han Court)
+- Organizations / Guilds: `ORG-xxxx` (e.g. `ORG-0001` Merchant Guild)
+- Businesses / Workshops: `BIZ-xxxx` (e.g. `BIZ-0001` Liang Clan Workshop)
+- Armies / Divisions: `ARMY-xxxx` (e.g. `ARMY-0001` Zhuo Garrison)
 - Transactions: `TXN-YYYYMMDD-xxxx` (e.g. `TXN-01840201-0001`)
 - Contracts: `CTR-xxxx` (e.g. `CTR-0001`)
+- Stock Movements: `MOV-YYYYMMDD-xxxx` (e.g. `MOV-01840201-0001`)
 - Snapshots: `SNAP-xxxx` (e.g. `SNAP-0001`)
 
 *Rule:* IDs are immutable once assigned. Do not reassign IDs of fallen or dissolved entities.
 
 ---
 
-## User Interaction Guide
-Players may issue natural language commands such as:
-- `mô phỏng 1 tháng` / `mô phỏng 1 kỳ`: Run 1 standard monthly business & geopolitical cycle.
+## Player Playbook & Command Reference
+
+Players interact with the engine using natural language commands:
+
+### Simulation & Lifecycle Commands
+- `mô phỏng 1 tháng` / `simulate 1 month`: Advance the world calendar by 1 month, resolving all business, agricultural, diplomatic, and military operations.
+- `mô phỏng 1 kỳ`: Synonym for standard 1-month turn cycle.
 - `tiếp tục`: Resume from current `saves/latest.md`.
-- `kiểm toán`: Execute a full financial, inventory, and cross-reference consistency audit.
-- `xem trạng thái`: Display current character, enterprise, and geopolitical overview.
-- `xem NPC-xxxx`: View complete dossier for target character.
-- `xem doanh nghiệp BIZ-xxxx`: View operations, finances, stock, and staff of an enterprise.
-- `hành động [mô tả]`: Issue custom tactical, diplomatic, or commercial actions.
-- `lưu`: Create a verified snapshot in `saves/snapshots/`.
+- `kiểm toán`: Run complete double-entry balance check across cashflow, inventory, and cross-references.
+- `lưu`: Create a verified snapshot in `saves/snapshots/` and update `saves/latest.md`.
+
+### Inspection Commands
+- `xem trạng thái`: Display current character stats, cash on hand, grain reserves, enterprise P&L, and world crisis level.
+- `xem BIZ-0001`: Inspect the operations, workers, bill of materials (BOM), and stock of Liang Clan Workshop.
+- `xem NPC-xxxx`: View dossier for target character (e.g., `xem NPC-0001` for Liu Bei, `xem NPC-0002` for Zhang Fei).
+- `xem thị trường`: Inspect the latest commodity price index in `ECONOMY.md`.
+
+### Roleplay & Directive Commands
+- `hành động [mô tả chi tiết]`: Direct the protagonist to negotiate, buy/sell, recruit, travel, or fight. Examples:
+  - *"Đến gặp Lưu Bị tại Đào Viên, tặng 10 giỏ lương và thương lượng hợp đồng cung cấp vật tư độc quyền cho nghĩa binh."*
+  - *"Chi 1.500 tiền mua thêm da bò từ lò mổ của Trương Phi để chuẩn bị sản xuất giáp da sơ cấp."*
+  - *"Tuyển thêm 3 thợ dệt từ Thương hội của Lư lão bá để nâng công suất xưởng lên 600 giờ/tháng."*

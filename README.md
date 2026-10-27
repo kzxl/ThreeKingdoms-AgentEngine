@@ -4,52 +4,130 @@ An autonomous, deterministic, markdown-backed simulation engine modeling the Thr
 
 ---
 
-## Highlights
-
-- **Markdown Memory Architecture**: Zero hidden state or ephemeral context reliance. All game states, balances, relationships, and history persist in transparent, version-controlled Markdown files under `game/`.
-- **Auditable Economic & Supply Ledger**: Double-entry cashflow tracking, inventory tracking with material bill-of-materials (BOM), scrap rates, and discrepancy audits.
-- **Autonomous NPC Ecosystem**: Every significant figure features independent attributes (8 core attributes), acquired skills (5 tiers), innate talents, psychological profiles, and evolving sentiment scores.
-- **Deep Geopolitical & Military Simulation**: Factions, armies, logistics consumption (grain per 1,000 soldiers), morale thresholds, and causal historical divergence.
+## Table of Contents
+1. [Core Philosophy](#core-philosophy)
+2. [Player Guide & Career Paths](#player-guide--career-paths)
+3. [Command Syntax & How to Play](#command-syntax--how-to-play)
+4. [Memory Architecture & Storage Schema](#memory-architecture--storage-schema)
+5. [Economic, Production & Military Formulas](#economic-production--military-formulas)
+6. [Resuming Across Sessions & Multi-Agent Collaboration](#resuming-across-sessions--multi-agent-collaboration)
 
 ---
 
-## Directory Architecture
+## Core Philosophy
+
+- **Zero Ephemeral Hallucination**: No wealth, weapon, army, relationship, or historical event exists unless it is substantiated in the `game/` markdown files or generated via verified simulation formulas.
+- **Auditable Double-Entry Bookkeeping**: Money and inventory are strictly conserved. Every copper coin (`Qian`) and bundle of grain (`Dan`) is tracked via unique transaction IDs (`TXN-`) and stock movements (`MOV-`).
+- **Autonomous NPC Ecosystem**: Every notable figure (e.g. Liu Bei, Guan Yu, Zhang Fei, local magistrates, merchants) possesses independent attributes (8 core attributes), acquired skills (5 tiers), innate talents, psychological profiles, and evolving sentiment scores.
+- **Causal Historical Divergence**: Historical events (e.g. Yellow Turban rebellion, Peach Garden Oath, Dong Zhuo's entry into Luoyang) serve as starting baselines. Player actions and NPC decisions produce butterfly effects, organically altering history without narrative railroading.
+
+---
+
+## Player Guide & Career Paths
+
+You begin in Year 184 AD (Month 2 / Early Spring) during the outbreak of the Yellow Turban Rebellion. Your default character is **Liang Yan** (Lương Nhan / 梁彦, styled *Zhiyuan*), a 21-year-old scholar-artisan owning a small workshop in Zhuo County, Youzhou.
+
+You are completely free to pursue any lifestyle, strategy, or ambition:
+
+### 1. The Merchant Tycoon (Thương Nghiệp Cự Phách)
+- **Core Loop**: Procure raw materials (bamboo, timber, iron, leather) -> Supervise workshop production -> Optimize Bill of Materials (BOM) & reduce defect rates -> Form distribution partnerships with caravan traders -> Establish branch workshops across commanderies -> Amass grain and gold.
+- **Winning Strategy**: Exploit regional price discrepancies during wartime, secure army supply contracts, and fund private transport guards.
+
+### 2. The Frontier Warlord (Chư Hầu Quân Phiệt)
+- **Core Loop**: Spend commercial profits or estate grain to recruit volunteer militia (Nghĩa binh) -> Appoint officers and drill infantry -> Acquire horses from northern traders (Zhang Shiping) -> Secure blacksmith supply contracts for weapons -> Suppress local banditry or Yellow Turban contingents -> Gain official rank from the Imperial Court.
+- **Winning Strategy**: High Leadership (`LDR`) and Logistics (`LOG`) keep troop morale high and avoid starvation routs during prolonged sieges.
+
+### 3. The Imperial Courtier & Bureaucrat (Chính Khách Quan Trường)
+- **Core Loop**: Pass imperial examinations or secure recommendation from local elders (Master Lu) -> Enter county administration under Magistrate Liu Xuan -> Administer land surveys, tax grain collection, and civil order -> Navigate court factionalism (Eunuchs vs. Scholar-Gentry).
+- **Winning Strategy**: High Politics (`POL`) and Diplomacy (`DIP`) unlock provincial appointments and royal favor.
+
+### 4. The Clan Patriarch (Gia Tộc Thế Lực)
+- **Core Loop**: Purchase fertile agricultural estates -> Build fortified manors (Ô bảo) -> Educate younger kinsmen in martial arts and classics -> Form marriage alliances with local gentry -> Maintain private security forces to safeguard family heritage amidst realm-wide anarchy.
+
+---
+
+## Command Syntax & How to Play
+
+You can command the engine using natural language (Vietnamese or English). Below are standard command templates:
+
+### General & Time Simulation Commands
+| Command (VN) | Command (EN) | Effect |
+|---|---|---|
+| `mô phỏng 1 tháng` | `simulate 1 month` | Executes 1 standard monthly business, production, payroll, and geopolitical cycle. |
+| `mô phỏng 1 ngày` | `simulate 1 day` | Resolves micro-actions, local meetings, or tactical negotiations. |
+| `tiếp tục` | `continue` | Reads `saves/latest.md` and resumes the game from the current checkpoint. |
+| `kiểm toán` | `audit` | Performs a full mathematical reconciliation of cash, inventory, and cross-references. |
+| `lưu` | `save` | Writes a verified snapshot to `saves/snapshots/SNAP-xxxx.md` and updates `saves/latest.md`. |
+
+### Inspection & Query Commands
+| Command (VN) | Command (EN) | Effect |
+|---|---|---|
+| `xem trạng thái` | `status` | Displays player summary, liquid cash, grain reserve, net worth, and macro indicators. |
+| `xem BIZ-0001` | `view BIZ-0001` | Inspects workshop P&L, stock, labor hours, and product lines. |
+| `xem NPC-0001` | `view NPC-0001` | Reads full dossier of Liu Bei (attributes, skills, morale, sentiment toward player). |
+| `xem thị trường` | `view market` | Displays current commodity price index in `ECONOMY.md`. |
+
+### Action & Roleplay Commands
+You can issue customized tactical, commercial, diplomatic, or personal directives:
+- *“Gặp Lưu Bị và Trương Phi tại quán rượu, chúc mừng lễ kết nghĩa và bàn về việc cung ứng giỏ lương cho đội quân tình nguyện.”*
+- *“Chi 2.000 tiền mua thêm tre nứa và da thuộc để tăng gấp đôi sản lượng giỏ bọc da trong tháng tới.”*
+- *“Thuê thêm 2 thợ phụ từ hội thợ mộc của Lư lão bá để mở rộng công suất xưởng.”*
+- *“Tổ chức đội tuần tra tự vệ 5 người bảo vệ kho hàng xưởng Lương thị tại khu Đông Môn.”*
+
+---
+
+## Memory Architecture & Storage Schema
 
 ```text
-.
-├── README.md               # Repository documentation
-├── .gitignore
-└── game/                   # Persistent Simulation Engine Core
-    ├── README.md           # Operational manual & agent pipeline
-    ├── RULES.md            # Formulas, DCs, combat & production resolution
-    ├── WORLD_STATE.md      # Macro indicators, calendar & global crises
-    ├── PLAYER.md           # Player dashboard & active objectives
-    ├── ECONOMY.md          # Currency benchmarks, commodity price index
-    ├── TECHNIQUES.md       # Skill ladders & progression trees
-    ├── FACTIONS.md         # Major & regional warlords registry
-    ├── RELATIONS.md        # Diplomatic matrix & NPC sentiment tracker
-    ├── TURN_STATE.md       # Turn execution pipeline tracker
-    ├── TASKS.md            # Active project & operation queues
-    ├── CHANGELOG.md        # Version history & simulation logs
-    ├── chronicle/          # Chronological realm history by year
-    ├── characters/         # Character dossiers (Player & NPCs)
-    ├── factions/           # Detailed faction sheets
-    ├── locations/          # Settlement, county & commandery sheets
-    ├── organizations/      # Guilds, sects & merchant fraternities
-    ├── businesses/         # Enterprise dossiers (P&L, BOM, labor)
-    ├── military/           # Divisions, garrisons & active campaigns
-    ├── events/             # Active crisis cards & archived events
-    ├── ledger/             # Cashflow, inventory, contracts & audits
-    └── saves/              # State snapshots & recovery points
+game/
+├── README.md               # Operational manual & agent pipeline
+├── RULES.md                # Formulas, DCs, combat & production resolution
+├── WORLD_STATE.md          # Macro indicators, calendar & global crises
+├── PLAYER.md               # Player dashboard & active objectives
+├── ECONOMY.md              # Currency benchmarks, commodity price index
+├── TECHNIQUES.md           # Skill ladders & progression trees
+├── FACTIONS.md             # Major & regional warlords registry
+├── RELATIONS.md            # Diplomatic matrix & NPC sentiment tracker
+├── TURN_STATE.md           # Turn execution pipeline tracker
+├── TASKS.md                # Active project & operation queues
+├── CHANGELOG.md            # Version history & simulation logs
+├── chronicle/              # Chronological realm history by year (0184.md, ...)
+├── characters/             # Detailed character sheets (player.md, NPC-xxxx.md)
+├── factions/               # Faction dossiers (FACTION-xxxx.md)
+├── locations/              # Geographic dossiers (LOC-xxxx.md)
+├── organizations/          # Guilds & sects (ORG-xxxx.md)
+├── businesses/             # Enterprise dossiers (BIZ-xxxx.md)
+├── military/               # Armies & campaigns (armies.md, campaigns.md)
+├── events/                 # Active event cards & archive (active.md, archive.md)
+├── ledger/                 # Cashflow, inventory, contracts & audits
+└── saves/                  # Latest save & historical snapshots
 ```
 
 ---
 
-## Quick Start & Interaction
+## Economic, Production & Military Formulas
 
-Interact with the simulation engine via natural language prompts:
-- `mô phỏng 1 tháng` / `simulate 1 month`: Advance the world by one standard monthly business & geopolitical cycle.
-- `xem trạng thái` / `status`: View current character, enterprise, and geopolitical overview.
-- `kiểm toán` / `audit`: Execute a full financial, inventory, and cross-reference consistency check.
-- `xem NPC-0001` / `view NPC-0001`: Inspect dossier for Liu Bei (or any registered entity).
-- `hành động [mô tả]` / `action [description]`: Propose tactical, commercial, diplomatic, or martial actions.
+All actions are resolved deterministically using clear formulas defined in `game/RULES.md`:
+
+### 1. Skill Check Resolution
+$$\text{Check Score} = (\text{Attribute} \times 0.5) + (\text{Skill Level} \times 0.5) + \text{Modifiers} + d20$$
+- **DC 30**: Routine | **DC 45**: Moderate | **DC 60**: Challenging | **DC 75**: Formidable | **DC 90**: Masterstroke / Legendary.
+
+### 2. Workshop Production & Defect Rate
+$$\text{Max Capacity} = \frac{\text{Craftsmen} \times \text{Hours/Day} \times \text{Days/Month}}{\text{Labor Hours per Unit}}$$
+$$\text{Defect Rate (\%)} = \max\left(2\%,\; \text{Base Defect} - (\text{Lead Artisan CRA} \times 0.15\%) + \text{Fatigue Penalty}\right)$$
+
+### 3. Military Provisioning
+- 1 Soldier consumes **0.1 Dan of grain per month** (~3 kg/day).
+- 1,000 Soldiers require **100 Dan of grain/month**.
+- War horses consume **0.3 Dan of grain and fodder per month**.
+
+---
+
+## Resuming Across Sessions & Multi-Agent Collaboration
+
+To continue a campaign in a new AI conversation or with another agent:
+1. Provide the agent with the repository or clone this workspace.
+2. Instruct the agent:
+   > *"Read `game/README.md`, `game/saves/latest.md`, and `game/TURN_STATE.md`. Act as the Simulation Engine and await my command."*
+3. The agent will read the verified state and continue the world seamlessly with zero context loss.
