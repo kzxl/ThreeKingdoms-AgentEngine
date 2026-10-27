@@ -741,6 +741,27 @@ body.tactical-body {
   box-shadow: 0 0 10px rgba(245, 158, 11, 0.35);
 }
 
+.btn-clear-chat {
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  padding: 3px 8px;
+  border-radius: var(--radius-xs);
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-clear-chat:hover {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.5);
+  color: #fca5a5;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.2);
+}
+
 /* Hero Encounter & Dice Check Stage */
 .hero-dice-stage {
   display: grid;

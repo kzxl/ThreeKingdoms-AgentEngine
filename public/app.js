@@ -10,10 +10,50 @@ let selectedChoiceId = null;
 // 1. DATA INITIALIZATION & ORCHESTRATION
 // ==========================================================================
 
+// 1.0 Load & Synchronize Chat Chronicle History
+async function loadChatHistory() {
+  try {
+    if (typeof apiFetchChatHistory !== 'function') return;
+    const history = await apiFetchChatHistory();
+    if (Array.isArray(history) && history.length > 0) {
+      storyChronicle.length = 0;
+      storyChronicle.push(...history);
+      renderStoryChronicle();
+      if (typeof saveStoryChronicle === 'function') saveStoryChronicle();
+      if (typeof restoreAgentThoughtFromHistory === 'function') restoreAgentThoughtFromHistory();
+    } else if (storyChronicle.length > 0) {
+      // Sync client localStorage turns back to server
+      for (const turn of storyChronicle) {
+        if (typeof apiSaveChatTurn === 'function') {
+          apiSaveChatTurn(turn);
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('Failed to load server chat history, fallback to local storage:', err);
+  }
+}
+
 async function loadAllData() {
   try {
+    // 1. Immediately restore local storage chronicle for zero-flicker UI
+    if (typeof loadStoryChronicleFromStorage === 'function') {
+      loadStoryChronicleFromStorage();
+    }
+
+    // 2. Fetch authoritative player status from SQLite
+    const statusData = await loadStatus();
+    const dbLoc = statusData?.player?.current_location;
+    if (dbLoc) {
+      activeSubLocation = dbLoc;
+      localStorage.setItem('sim_active_subloc', activeSubLocation);
+    }
+
+    // 3. Sync full chat history from SQLite backend
+    await loadChatHistory();
+
+    // 4. Load dynamic context scene and remaining deck cards
     await Promise.all([
-      loadStatus(),
       loadScene(activeSubLocation),
       loadDeckInventory(),
       loadDeckNpcs(),
@@ -103,8 +143,10 @@ async function loadStatus() {
       if (attrWar) attrWar.innerText = p.war_attr || 58;
     }
 
+    return data;
   } catch (err) {
     console.error('Failed to load status:', err);
+    return null;
   }
 }
 
@@ -159,6 +201,7 @@ async function switchSubLocation(locName) {
   if (activeSubLocation === locName) return;
 
   activeSubLocation = locName;
+  localStorage.setItem('sim_active_subloc', activeSubLocation);
   showToast(`Đang chuyển cảnh tới: ${locName}...`);
   await loadScene(locName);
 }
@@ -208,6 +251,7 @@ async function executeChoiceDirect(optId) {
         return;
       }
       activeSubLocation = opt.action.new_location;
+      localStorage.setItem('sim_active_subloc', activeSubLocation);
 
       appendStoryTurn({
         type: 'system',
@@ -343,6 +387,7 @@ async function executeChoiceAi(optId) {
     if (result.updatedScene) {
       if (result.updatedScene.campaign && result.updatedScene.campaign.activeSubLocation) {
         activeSubLocation = result.updatedScene.campaign.activeSubLocation;
+        localStorage.setItem('sim_active_subloc', activeSubLocation);
       }
       renderSceneFromData(result.updatedScene);
     } else {
@@ -459,6 +504,7 @@ async function dispatchOmniCommand(mode = 'ai') {
     if (result.updatedScene) {
       if (result.updatedScene.campaign && result.updatedScene.campaign.activeSubLocation) {
         activeSubLocation = result.updatedScene.campaign.activeSubLocation;
+        localStorage.setItem('sim_active_subloc', activeSubLocation);
       }
       renderSceneFromData(result.updatedScene);
     } else {

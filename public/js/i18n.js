@@ -67,6 +67,7 @@ const I18N_DICT = {
     btnConfirm: 'Xác Nhận Thực Thi',
     // Location & World Map
     btnWorldMap: 'Dư Đồ Tam Quốc',
+    btnClearChat: 'Làm Mới Chat',
     worldMapTitle: '🗺️ Dư Đồ Tam Quốc • Chiến Tuyến Khởi Nghĩa Khăn Vàng (184 SCN)',
     worldMapSub: 'Khảo sát lộ trình hành quân, cự ly dịch trạm, an ninh và quân lương tiêu hao',
     lblDist: 'Cự Ly Hành Quân',
@@ -146,6 +147,7 @@ const I18N_DICT = {
     btnConfirm: 'Confirm Execution',
     // Location & World Map
     btnWorldMap: 'Three Kingdoms Map',
+    btnClearChat: 'Clear Chat',
     worldMapTitle: '🗺️ Three Kingdoms Cartography • Yellow Turban Frontlines (184 AD)',
     worldMapSub: 'Inspect march routes, relay station distances, threats, and grain provisions',
     lblDist: 'March Distance',
@@ -235,6 +237,9 @@ function applyLanguage() {
   // World Map Button & Modal
   const btnWorldMap = document.getElementById('txt-btn-worldmap');
   if (btnWorldMap) btnWorldMap.innerText = dict.btnWorldMap;
+
+  const btnClearChat = document.getElementById('txt-btn-clear-chat');
+  if (btnClearChat) btnClearChat.innerText = dict.btnClearChat;
 
   const mapTitle = document.getElementById('world-map-title');
   if (mapTitle) mapTitle.innerText = dict.worldMapTitle;

@@ -75,6 +75,42 @@ function runSqlJson(sql) {
   }
 }
 
+function runSqlRaw(sql) {
+  if (!fs.existsSync(DB_PATH)) return false;
+  const tempFile = path.join(SAVES_DIR, `web_raw_${Date.now()}_${Math.random().toString(36).substr(2, 4)}.sql`);
+  fs.writeFileSync(tempFile, sql, 'utf8');
+  try {
+    execSync(`sqlite3 "${DB_PATH}" < "${tempFile}"`, {
+      encoding: 'utf8',
+      stdio: ['pipe', 'pipe', 'pipe']
+    });
+    return true;
+  } catch (err) {
+    console.error('runSqlRaw error:', err.message);
+    return false;
+  } finally {
+    if (fs.existsSync(tempFile)) {
+      try { fs.unlinkSync(tempFile); } catch (e) {}
+    }
+  }
+}
+
+// Ensure chat_chronicle table exists on boot
+runSqlRaw(`CREATE TABLE IF NOT EXISTS chat_chronicle (
+  id TEXT PRIMARY KEY,
+  turn_number INTEGER DEFAULT 1,
+  game_date TEXT DEFAULT '184-05-02',
+  type TEXT NOT NULL,
+  speaker TEXT,
+  title TEXT,
+  avatar TEXT,
+  text TEXT NOT NULL,
+  dice_badge TEXT,
+  deltas TEXT,
+  reasoning TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);`);
+
 function sendJson(res, statusCode, data) {
   res.writeHead(statusCode, {
     'Content-Type': 'application/json; charset=utf-8',
@@ -250,6 +286,91 @@ const server = http.createServer((req, res) => {
   // 5b. GET /api/agent/logs - Agent Simulation Activity Feed
   if (req.method === 'GET' && pathname === '/api/agent/logs') {
     sendJson(res, 200, { success: true, logs: agentActivityStream });
+    return;
+  }
+
+  // 5c. GET /api/chat/history - Continuous Story Chronicle Stream
+  if (req.method === 'GET' && pathname === '/api/chat/history') {
+    try {
+      const rows = runSqlJson(`SELECT * FROM chat_chronicle ORDER BY rowid ASC;`);
+      const history = (rows || []).map(r => {
+        let diceBadge = null;
+        let deltas = null;
+        try { if (r.dice_badge) diceBadge = JSON.parse(r.dice_badge); } catch (e) {}
+        try { if (r.deltas) deltas = JSON.parse(r.deltas); } catch (e) {}
+        return {
+          id: r.id,
+          type: r.type,
+          speaker: r.speaker,
+          title: r.title,
+          avatar: r.avatar,
+          text: r.text,
+          diceBadge,
+          deltas,
+          reasoning: r.reasoning || null,
+          time: r.game_date ? `${r.game_date} • ${r.created_at ? r.created_at.substr(11, 5) : '00:00'}` : r.created_at
+        };
+      });
+      sendJson(res, 200, { success: true, history });
+    } catch (err) {
+      sendJson(res, 500, { success: false, error: err.message });
+    }
+    return;
+  }
+
+  // 5d. POST /api/chat/turn - Save/Append Single Story Turn
+  if (req.method === 'POST' && pathname === '/api/chat/turn') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const turn = JSON.parse(body || '{}');
+        if (turn && turn.text) {
+          const id = turn.id || `turn_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`;
+          const type = turn.type || 'npc';
+          const speaker = turn.speaker || '';
+          const title = turn.title || '';
+          const avatar = turn.avatar || '';
+          const text = turn.text || '';
+          const diceBadgeStr = turn.diceBadge ? JSON.stringify(turn.diceBadge) : null;
+          const deltasStr = turn.deltas ? JSON.stringify(turn.deltas) : null;
+          const reasoning = turn.reasoning || null;
+          const gameDate = turn.gameDate || '184-05-02';
+
+          const sql = `INSERT OR REPLACE INTO chat_chronicle (id, turn_number, game_date, type, speaker, title, avatar, text, dice_badge, deltas, reasoning)
+            VALUES (
+              '${id.replace(/'/g, "''")}',
+              (SELECT COALESCE(active_turn, 1) FROM campaign_meta LIMIT 1),
+              '${gameDate.replace(/'/g, "''")}',
+              '${type.replace(/'/g, "''")}',
+              '${speaker.replace(/'/g, "''")}',
+              '${title.replace(/'/g, "''")}',
+              '${avatar.replace(/'/g, "''")}',
+              '${text.replace(/'/g, "''")}',
+              ${diceBadgeStr ? `'${diceBadgeStr.replace(/'/g, "''")}'` : 'NULL'},
+              ${deltasStr ? `'${deltasStr.replace(/'/g, "''")}'` : 'NULL'},
+              ${reasoning ? `'${reasoning.replace(/'/g, "''")}'` : 'NULL'}
+            );`;
+          runSqlRaw(sql);
+          sendJson(res, 200, { success: true, id });
+        } else {
+          sendJson(res, 400, { success: false, error: 'Empty turn or text missing' });
+        }
+      } catch (err) {
+        sendJson(res, 500, { success: false, error: err.message });
+      }
+    });
+    return;
+  }
+
+  // 5e. POST /api/chat/clear - Clear Story Chronicle
+  if (req.method === 'POST' && pathname === '/api/chat/clear') {
+    try {
+      runSqlRaw(`DELETE FROM chat_chronicle;`);
+      sendJson(res, 200, { success: true });
+    } catch (err) {
+      sendJson(res, 500, { success: false, error: err.message });
+    }
     return;
   }
 

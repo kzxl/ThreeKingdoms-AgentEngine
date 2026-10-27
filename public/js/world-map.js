@@ -459,6 +459,7 @@ async function executeMarchToSelectedNode(nodeId) {
     });
 
     activeSubLocation = targetNode.defaultSubLoc;
+    localStorage.setItem('sim_active_subloc', activeSubLocation);
     await loadScene(targetNode.defaultSubLoc);
     renderLocalPoiNav(targetNode.defaultSubLoc);
 

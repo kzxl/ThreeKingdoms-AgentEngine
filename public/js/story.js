@@ -89,6 +89,87 @@ function renderTurnHtml(turn) {
   `;
 }
 
+function saveStoryChronicle() {
+  try {
+    const toSave = storyChronicle.slice(-100);
+    localStorage.setItem('sim_story_chronicle', JSON.stringify(toSave));
+    localStorage.setItem('sim_active_subloc', activeSubLocation);
+    if (lastEncounterSubLocation) {
+      localStorage.setItem('sim_last_encounter_subloc', lastEncounterSubLocation);
+    }
+  } catch (e) {
+    console.warn('Failed to save story chronicle to localStorage:', e);
+  }
+}
+
+function restoreAgentThoughtFromHistory() {
+  for (let i = storyChronicle.length - 1; i >= 0; i--) {
+    const t = storyChronicle[i];
+    if (t.reasoning || t.deltas) {
+      renderAgentSimulationFeedback(t.reasoning, t.deltas);
+      break;
+    }
+  }
+}
+
+function loadStoryChronicleFromStorage() {
+  try {
+    const raw = localStorage.getItem('sim_story_chronicle');
+    if (raw) {
+      const list = JSON.parse(raw);
+      if (Array.isArray(list) && list.length > 0) {
+        storyChronicle.length = 0;
+        storyChronicle.push(...list);
+        renderStoryChronicle();
+        restoreAgentThoughtFromHistory();
+        return true;
+      }
+    }
+  } catch (e) {
+    console.warn('Failed to load sim_story_chronicle from localStorage:', e);
+  }
+  return false;
+}
+
+async function clearStoryChronicle() {
+  storyChronicle.length = 0;
+  localStorage.removeItem('sim_story_chronicle');
+  localStorage.removeItem('sim_last_encounter_subloc');
+  lastEncounterSubLocation = null;
+  const chronicle = document.getElementById('story-chronicle');
+  if (chronicle) chronicle.innerHTML = '';
+
+  const thoughtBody = document.getElementById('agent-thought-body');
+  if (thoughtBody) {
+    thoughtBody.innerText = currentLang === 'en' ? 'Awaiting commander orders...' : 'Đang chờ chỉ thị từ chủ công...';
+  }
+  const chipsContainer = document.getElementById('agent-delta-chips');
+  if (chipsContainer) chipsContainer.innerHTML = '';
+
+  try {
+    if (typeof apiClearChatHistory === 'function') {
+      await apiClearChatHistory();
+    }
+  } catch (e) {
+    console.warn('Failed to clear backend chat history:', e);
+  }
+
+  // Re-append encounter turn for current scene if available
+  if (window.currentScene) {
+    renderSceneFromData(window.currentScene);
+  }
+  showToast(currentLang === 'en' ? 'Chat chronicle cleared.' : 'Đã làm mới dòng đối thoại.');
+}
+
+function confirmClearChat() {
+  const msg = currentLang === 'en' 
+    ? 'Do you want to clear the entire chat chronicle and start fresh?' 
+    : 'Bạn có muốn làm mới và xóa toàn bộ lịch sử đối thoại chat không?';
+  if (window.confirm(msg)) {
+    clearStoryChronicle();
+  }
+}
+
 function appendStoryTurn(turn) {
   turn.id = turn.id || `turn_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`;
   if (!turn.time) {
@@ -106,6 +187,14 @@ function appendStoryTurn(turn) {
     const node = wrapper.firstElementChild;
     chronicle.appendChild(node);
     chronicle.scrollTop = chronicle.scrollHeight;
+  }
+
+  // Persist to localStorage immediately
+  saveStoryChronicle();
+
+  // Async sync to SQLite backend
+  if (typeof apiSaveChatTurn === 'function') {
+    apiSaveChatTurn(turn);
   }
 }
 
@@ -305,6 +394,11 @@ function renderAgentSimulationFeedback(reasoning, delta) {
 
 // Global exposure
 window.lastEncounterSubLocation = lastEncounterSubLocation;
+window.saveStoryChronicle = saveStoryChronicle;
+window.loadStoryChronicleFromStorage = loadStoryChronicleFromStorage;
+window.restoreAgentThoughtFromHistory = restoreAgentThoughtFromHistory;
+window.clearStoryChronicle = clearStoryChronicle;
+window.confirmClearChat = confirmClearChat;
 window.formatNarrativeQuotes = formatNarrativeQuotes;
 window.formatStoryText = formatStoryText;
 window.renderDiceBadgeHtml = renderDiceBadgeHtml;

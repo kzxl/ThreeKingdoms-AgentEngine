@@ -5,9 +5,9 @@
 
 const API_BASE = '';
 
-// Global Application State
-let activeSubLocation = 'Vườn Đào';
-let lastEncounterSubLocation = null;
+// Global Application State (Persisted across refreshes)
+let activeSubLocation = localStorage.getItem('sim_active_subloc') || 'Vườn Đào';
+let lastEncounterSubLocation = localStorage.getItem('sim_last_encounter_subloc') || null;
 let currentScene = null;
 let currentInventory = [];
 let currentStatus = null;
@@ -19,3 +19,5 @@ let currentLang = localStorage.getItem('sim_lang') || 'vi';
 // Expose state to window for module interoperability
 window.API_BASE = API_BASE;
 window.storyChronicle = storyChronicle;
+window.activeSubLocation = activeSubLocation;
+window.lastEncounterSubLocation = lastEncounterSubLocation;

@@ -72,6 +72,35 @@ async function apiDispatchAction(payload) {
   return data;
 }
 
+async function apiFetchChatHistory() {
+  const res = await fetch(`${API_BASE}/api/chat/history`);
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Failed to fetch chat history');
+  return data.history || [];
+}
+
+async function apiSaveChatTurn(turn) {
+  try {
+    const res = await fetch(`${API_BASE}/api/chat/turn`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(turn)
+    });
+    return await res.json();
+  } catch (err) {
+    console.warn('apiSaveChatTurn non-blocking error:', err);
+    return { success: false };
+  }
+}
+
+async function apiClearChatHistory() {
+  const res = await fetch(`${API_BASE}/api/chat/clear`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' }
+  });
+  return await res.json();
+}
+
 // Global exposure
 window.apiFetchStatus = apiFetchStatus;
 window.apiFetchAudit = apiFetchAudit;
@@ -82,3 +111,6 @@ window.apiFetchLedger = apiFetchLedger;
 window.apiFetchAgentLogs = apiFetchAgentLogs;
 window.apiDispatchPrompt = apiDispatchPrompt;
 window.apiDispatchAction = apiDispatchAction;
+window.apiFetchChatHistory = apiFetchChatHistory;
+window.apiSaveChatTurn = apiSaveChatTurn;
+window.apiClearChatHistory = apiClearChatHistory;
