@@ -37,10 +37,10 @@ const I18N_DICT = {
     attrPol: 'Chính',
     attrCra: 'Khéo',
     attrWar: 'Võ',
-    // Milestone
-    milestoneTitle: 'Tiến Độ Kết Nghĩa Vườn Đào (RELATIONS.md)',
-    milestoneDeadline: 'Hạn: 10/02/184',
-    milestoneHint: 'Gặp đủ 3 Hào Kiệt dưới đây để mở khóa đại lễ "Đào Viên Kết Nghĩa" Lưu - Quan - Trương.',
+    // Relations & Sentiment Network
+    relationsTitle: 'Mạng Lưới Quan Hệ Hào Kiệt (RELATIONS.md)',
+    relationsBadge: 'Tín Nhiệm / Hảo Cảm',
+    relationsHint: 'Mức độ tín nhiệm & hảo cảm của các nhân sĩ trọng yếu đối với Lương Diễn (-100 đến +100).',
     completedTag: '(Đạt)',
     // Tabs
     tabInv: '📦 Kho Xưởng',
@@ -116,10 +116,10 @@ const I18N_DICT = {
     attrPol: 'POL',
     attrCra: 'CRA',
     attrWar: 'WAR',
-    // Milestone
-    milestoneTitle: 'Peach Garden Oath Progress (RELATIONS.md)',
-    milestoneDeadline: 'Due: 184-05-10',
-    milestoneHint: 'Rendezvous with all 3 Heroes to unlock the Oath of the Peach Garden ceremony.',
+    // Relations & Sentiment Network
+    relationsTitle: 'Key NPC Relationships (RELATIONS.md)',
+    relationsBadge: 'Sentiment Rating',
+    relationsHint: 'Trust & sentiment ratings of prominent figures toward Liang Yan (-100 to +100).',
     completedTag: '(Achieved)',
     // Tabs
     tabInv: '📦 Warehouse',
@@ -208,6 +208,20 @@ function applyLanguage() {
 
   const ageEl = document.getElementById('protagonist-age');
   if (ageEl && currentStatus?.player) ageEl.innerText = `${currentStatus.player.age || 21} ${dict.ageUnit}`;
+
+  // Relations & Sentiment Network Card
+  const relTitle = document.getElementById('relations-card-title');
+  if (relTitle) relTitle.innerText = dict.relationsTitle;
+
+  const relBadge = document.getElementById('relations-card-badge');
+  if (relBadge) relBadge.innerText = dict.relationsBadge;
+
+  const relHint = document.getElementById('relations-card-hint');
+  if (relHint) relHint.innerText = dict.relationsHint;
+
+  if (typeof renderRelations === 'function' && window.currentScene?.relations) {
+    renderRelations(window.currentScene.relations);
+  }
 
   // Tabs Header
   document.querySelectorAll('.deck-tab-btn').forEach(btn => {

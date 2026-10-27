@@ -349,10 +349,46 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
   }
 
   const relations = [
-    { name: 'Lưu Bị (Huyền Đức)', role: 'Nghĩa Quân Thống Lĩnh', score: 70, target: 100, status: 'Tâm Phúc Quân Sư' },
-    { name: 'Trương Phi (Dực Đức)', role: 'Tiên Phong Mãnh Tướng', score: 65, target: 100, status: 'Tử Sinh Huynh Đệ' },
-    { name: 'Quan Vũ (Vân Trường)', role: 'Tiên Phong Mãnh Tướng', score: 60, target: 100, status: 'Kính Trọng Mưu Lược' },
-    { name: 'Lư Thực (Tử Cán)', role: 'Bắc Quân Trung Lang Tướng', score: 50, target: 100, status: 'Ân Sư Kính Mến' }
+    { 
+      name: 'Lưu Bị (Huyền Đức)', 
+      nameEn: 'Liu Bei (Xuande)', 
+      role: 'Nghĩa Quân Thống Lĩnh', 
+      roleEn: 'Volunteer Commander', 
+      score: 70, 
+      target: 100, 
+      status: 'Tâm Phúc Quân Sư',
+      statusEn: 'Sworn Confidant & Strategist'
+    },
+    { 
+      name: 'Trương Phi (Dực Đức)', 
+      nameEn: 'Zhang Fei (Yide)', 
+      role: 'Tiên Phong Mãnh Tướng', 
+      roleEn: 'Vanguard General', 
+      score: 65, 
+      target: 100, 
+      status: 'Tử Sinh Huynh Đệ',
+      statusEn: 'Sworn Brother'
+    },
+    { 
+      name: 'Quan Vũ (Vân Trường)', 
+      nameEn: 'Guan Yu (Yunchang)', 
+      role: 'Tiên Phong Mãnh Tướng', 
+      roleEn: 'Vanguard General', 
+      score: 60, 
+      target: 100, 
+      status: 'Kính Trọng Mưu Lược',
+      statusEn: 'Deep Martial Respect'
+    },
+    { 
+      name: 'Lư Thực (Tử Cán)', 
+      nameEn: 'Lu Zhi (Zigan)', 
+      role: 'Bắc Quân Trung Lang Tướng', 
+      roleEn: 'General of the Household', 
+      score: 50, 
+      target: 100, 
+      status: 'Ân Sư Kính Mến',
+      statusEn: 'Revered Imperial Mentor'
+    }
   ];
 
   const subLocationsList = ['Vườn Đào', 'Chợ Đông Môn', 'Xưởng Lương Thị', 'Quảng Tông Quân Doanh'];

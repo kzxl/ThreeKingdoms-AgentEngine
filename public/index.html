@@ -218,44 +218,22 @@
         </div>
       </div>
 
-      <!-- 1. Milestone Target Card (RELATIONS.md) -->
+      <!-- 1. Key NPC Relationships Card (RELATIONS.md) -->
       <div class="deck-card relations-card">
         <div class="deck-card-header">
           <div class="deck-title-group">
-            <span class="deck-icon">🌸</span>
-            <span class="deck-title">Tiến Độ Kết Nghĩa Vườn Đào (RELATIONS.md)</span>
+            <span class="deck-icon" id="relations-card-icon">🤝</span>
+            <span class="deck-title" id="relations-card-title">Mạng Lưới Quan Hệ Hào Kiệt (RELATIONS.md)</span>
           </div>
-          <span class="deck-deadline">Hạn: 10/02/184</span>
+          <span class="deck-deadline" id="relations-card-badge">Tín Nhiệm / Hảo Cảm</span>
         </div>
-        <div class="relations-sub-hint">
-          Gặp đủ 3 Hào Kiệt dưới đây để mở khóa đại lễ "Đào Viên Kết Nghĩa" Lưu - Quan - Trương.
+        <div class="relations-sub-hint" id="relations-card-hint">
+          Mức độ tín nhiệm & hảo cảm của các nhân sĩ trọng yếu đối với Lương Diễn (-100 đến +100).
         </div>
 
         <!-- Progress Bars List -->
         <div class="relations-progress-list" id="relations-progress-list">
-          <div class="rel-item">
-            <div class="rel-info">
-              <span class="rel-name">Lưu Bị (Huyền Đức)</span>
-              <span class="rel-score">+20 / +35</span>
-            </div>
-            <div class="rel-bar"><div class="rel-bar-fill cyan" style="width: 57%;"></div></div>
-          </div>
-
-          <div class="rel-item">
-            <div class="rel-info">
-              <span class="rel-name">Trương Phi (Dực Đức)</span>
-              <span class="rel-score green-text font-bold">+25 / +30 (Đạt)</span>
-            </div>
-            <div class="rel-bar"><div class="rel-bar-fill gold" style="width: 83%;"></div></div>
-          </div>
-
-          <div class="rel-item">
-            <div class="rel-info">
-              <span class="rel-name">Quan Vũ (Vân Trường)</span>
-              <span class="rel-score">+10 / +25</span>
-            </div>
-            <div class="rel-bar"><div class="rel-bar-fill orange" style="width: 40%;"></div></div>
-          </div>
+          <!-- Dynamically populated by renderRelations -->
         </div>
       </div>
 

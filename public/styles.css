@@ -1282,11 +1282,30 @@ button:disabled,
 .rel-info {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   font-size: 11px;
+}
+
+.rel-name-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .rel-name {
   color: var(--text-primary);
+  font-weight: 600;
+  letter-spacing: 0.1px;
+}
+
+.rel-status-badge {
+  font-size: 9px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.28);
+  color: #fbbf24;
+  white-space: nowrap;
   font-weight: 500;
 }
 
@@ -1307,11 +1326,13 @@ button:disabled,
 .rel-bar-fill {
   height: 100%;
   border-radius: var(--radius-xs);
+  transition: width 0.3s ease;
 }
 
-.rel-bar-fill.cyan { background-color: #06b6d4; }
-.rel-bar-fill.gold { background-color: #f59e0b; }
-.rel-bar-fill.orange { background-color: #f97316; }
+.rel-bar-fill.emerald { background: linear-gradient(90deg, #059669, #10b981); }
+.rel-bar-fill.cyan { background: linear-gradient(90deg, #0284c7, #06b6d4); }
+.rel-bar-fill.gold { background: linear-gradient(90deg, #d97706, #f59e0b); }
+.rel-bar-fill.orange { background: linear-gradient(90deg, #ea580c, #f97316); }
 
 /* Interactive Tabs Deck */
 .tabs-card {

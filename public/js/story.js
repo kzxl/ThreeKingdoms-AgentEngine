@@ -188,17 +188,33 @@ function renderRelations(relations) {
   const list = document.getElementById('relations-progress-list');
   if (!list) return;
 
-  list.innerHTML = (relations || []).map((rel, idx) => {
-    const pct = Math.min(100, Math.round((rel.score / rel.target) * 100));
-    const colorClass = idx === 0 ? 'cyan' : idx === 1 ? 'gold' : 'orange';
-    const isCompleted = rel.score >= rel.target;
+  const isEn = (currentLang === 'en');
+  const rels = relations || window.currentScene?.relations || [];
+
+  if (rels.length === 0) {
+    list.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 8px; font-size: 10px;">${isEn ? 'No sentiment data available' : 'Chưa có dữ liệu hảo cảm'}</div>`;
+    return;
+  }
+
+  list.innerHTML = rels.map((rel) => {
+    const target = rel.target || 100;
+    const score = rel.score || 0;
+    const pct = Math.max(0, Math.min(100, Math.round((score / target) * 100)));
+    const colorClass = pct >= 70 ? 'emerald' : pct >= 60 ? 'cyan' : pct >= 50 ? 'gold' : 'orange';
+    const isHigh = pct >= 70;
+
+    const name = isEn ? (rel.nameEn || rel.name) : rel.name;
+    const status = isEn ? (rel.statusEn || rel.status) : rel.status;
 
     return `
       <div class="rel-item">
         <div class="rel-info">
-          <span class="rel-name">${rel.name}</span>
-          <span class="rel-score ${isCompleted ? 'green-text font-bold' : ''}">
-            +${rel.score} / +${rel.target} ${isCompleted ? '(Đạt)' : ''}
+          <div class="rel-name-group">
+            <span class="rel-name">${name}</span>
+            ${status ? `<span class="rel-status-badge">${status}</span>` : ''}
+          </div>
+          <span class="rel-score ${isHigh ? 'green-text font-bold' : ''}">
+            ${score >= 0 ? '+' : ''}${score} / +${target}
           </span>
         </div>
         <div class="rel-bar">
