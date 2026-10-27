@@ -7,20 +7,20 @@
 - **Age**: 21 (Born 163 AD, Year of the Water Rabbit)
 - **Gender**: Male
 - **Hometown**: Zhuo County, Youzhou
-- **Current Location**: Qingzhou City (`LOC-0004`), Inner Citadel Palace
-- **Current Position**: Chief Quartermaster, Tactical Advisor & Holder of Imperial Salt Trading Permit
-- **Honorary Military Title**: Acclaimed Military Staff Advisor & Master Strategist (Tổng Đốc Quân Nhu kiêm Tham Mưu Quân Sư)
+- **Current Location**: Guangzong Siege Encampment (`LOC-0003`), Julu Commandery, Jizhou
+- **Current Position**: Chief Quartermaster, Senior Strategic Advisor & Holder of Imperial Salt Trading Permit
+- **Honorary Title**: Master Strategist & Chief Logistics Director (Quân Nhu Tổng Quản kiêm Tán Lý Quân Cơ)
 
 ---
 
 ## 2. Core Attributes & Aptitudes
-- **Intelligence (`INT`)**: **76** (Deep understanding of Sun Tzu; master of deception and pincer tactics)
-- **Politics (`POL`)**: **64** (+2 from high-level diplomacy with Governor Gong Jing)
-- **Martial Prowess (`WAR`)**: **58** (Spear combat honed under fire; defeated and captured rebel officer Zhang Bo)
-- **Leadership (`LDR`)**: **68** (+2 from battlefield signal coordination across 3 armies)
-- **Diplomacy (`DIP`)**: **68**
-- **Commerce (`COM`)**: **76**
-- **Logistics (`LOG`)**: **68**
+- **Intelligence (`INT`)**: **76** (Master of deception, pincer maneuvers, and operational calculation)
+- **Politics (`POL`)**: **64** (Navigating magistrate bureaucracy and imperial court protocol)
+- **Martial Prowess (`WAR`)**: **58** (Spear combat honed under fire; defeated rebel officer Zhang Bo)
+- **Leadership (`LDR`)**: **68** (Respected by Liu Bei's 500 volunteer veterans)
+- **Diplomacy (`DIP`)**: **70** (+2 from high-level negotiations with Lu Zhi and border prefects)
+- **Commerce (`COM`)**: **78** (+2 from masterminding inter-provincial coastal-inland sea salt arbitrage)
+- **Logistics (`LOG`)**: **70** (+2 from managing 420-li supply expedition across hostile borders)
 - **Craftsmanship (`CRA`)**: **62**
 
 ---
@@ -32,31 +32,32 @@
 ---
 
 ## 4. Skills & Progression
-- **`SKL-TAC-STRAT` (Tactical Stratagems & Deception)**: **Tier 2 (Competent) — 38 / 40 EXP** *(Approaching Tier 3 Proficient)*
-  - Masterminded the Three-Way Pincer Attack of Qingzhou with a check score of 100 vs DC 65!
+- **`SKL-TAC-STRAT` (Tactical Stratagems & Deception)**: **Tier 3 (Proficient) — 2 / 60 EXP** *(Newly Promoted!)*
+  - Master of deception, supply line diversion, and synchronized multi-front assault.
+- **`SKL-COM-APPRAISE` (Commercial Appraisal & Arbitrage)**: **Tier 3 (Proficient) — 0 / 60 EXP** *(Newly Promoted!)*
+  - Expert in identifying wartime price discrepancies, border commodity flow, and salt taxation arbitrage.
 - **`SKL-WAR-SPEAR` (Spear Combat)**: **Tier 3 (Proficient) — 50 / 60 EXP**
-  - Expert in "Coiled Serpent Counter"; captured rebel sub-general Zhang Bo in single combat.
-- **`SKL-MGT-ENTERPRISE`**: Tier 2 (Competent) — 32 / 40 EXP (Foreman Delegation SOP Active)
-- **`SKL-LDR-DRILL`**: Tier 2 (Competent) — 29 / 40 EXP
-- **`SKL-LOG-PROV`**: Tier 2 (Competent) — 28 / 40 EXP
-- **`SKL-COM-BOOK`**: Tier 2 (Competent) — 30 / 40 EXP
-- **`SKL-COM-APPRAISE`**: Tier 2 (Competent) — 35 / 40 EXP
-- **`SKL-CRA-WEAVE`**: Tier 2 (Competent) — 26 / 40 EXP
+  - Expert in "Coiled Serpent Counter"; veteran of single combat.
+- **`SKL-LOG-PROV` (Logistical Provisioning)**: Tier 2 (Competent) — 38 / 40 EXP *(Approaching Tier 3)*
+- **`SKL-MGT-ENTERPRISE` (Workshop Management)**: Tier 2 (Competent) — 32 / 40 EXP (Autonomous SOP Active)
+- **`SKL-COM-BOOK` (Double-Entry Bookkeeping)**: Tier 2 (Competent) — 30 / 40 EXP
+- **`SKL-LDR-DRILL` (Militia Drilling)**: Tier 2 (Competent) — 29 / 40 EXP
+- **`SKL-CRA-WEAVE` (Artisan Weaving)**: Tier 2 (Competent) — 26 / 40 EXP
 
 ---
 
 ## 5. Possessions, Wealth & Special Licenses
-- **Special Imperial License**: **Official Qingzhou Sea Salt Purchase Permit (Thanh Châu Hải Diêm Đặc Quyền)** — grants 20% discount on wholesale imperial sea salt purchases, enabling lucrative coastal-inland salt trade!
-- **Cash**: **15,940 Qian**
-  - *In Mobile War Chest (at Qingzhou)*: **12,940 Qian** (includes +2,000 Qian Governor Gong Jing cash bounty)
+- **Special Imperial License**: **Official Qingzhou Sea Salt Purchase Permit (Thanh Châu Hải Diêm Đặc Quyền)** — grants 20% discount on wholesale imperial sea salt.
+- **Liquid Cash**: **17,700 Qian**
+  - *In Mobile War Chest (at Guangzong Camp)*: **14,700 Qian**
   - *In Zhuo Workshop Safe*: **3,000 Qian**
-- **Mounted / Beast**: 1 Chestnut pony; 2 sturdy northern pack mules.
-- **Armaments with Liang Yan**: 1 Quality Ashwood spear, 1 Dao sword, leather brigandine armor.
-- **Personal Coin Pouch**: 500 Qian.
+- **Mounted / Beasts**: 1 Chestnut pony; 2 sturdy northern pack mules.
+- **Armaments**: 1 Quality Ashwood spear, 1 Dao sword, leather brigandine armor.
+- **Personal Reserve**: 10 Dou refined sea salt (high-value ration & trade reserve).
 
 ---
 
 ## 6. Physical & Mental Status
-- **Health**: 98 / 100.
-- **Fatigue**: 20 / 100.
-- **Morale**: 100 / 100 (Supreme confidence; widely acclaimed as the rising mastermind behind Liu Bei's miraculous victories).
+- **Health**: 98 / 100
+- **Fatigue**: 30 / 100 (March recovery completed)
+- **Morale**: 100 / 100 (Respected by Master Lu Zhi; Liu Bei relies wholeheartedly on Liang Yan's counsel).

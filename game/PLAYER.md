@@ -8,9 +8,9 @@
 | **Full Name** | **Liang Yan** (Lương Nhan / 梁彦) |
 | **Courtesy Name (Tự)** | **Zhiyuan** (Chí Viễn / 志远) |
 | **Age / Gender** | 21 (Born 163 AD) / Male |
-| **Current Location** | Qingzhou City (`LOC-0004`), Governor's Palace |
+| **Current Location** | Guangzong Siege Camp (`LOC-0003`), Julu Commandery, Jizhou |
 | **Permanent Base** | Liang Clan Workshop (`BIZ-0001`), Zhuo County (Foreman Chen Bao presiding) |
-| **Official Expedition Role**| Chief Quartermaster, Master Strategist & Imperial Salt Licensee |
+| **Official Expedition Role**| Chief Quartermaster, Senior Strategic Advisor & Imperial Salt Licensee |
 
 ---
 
@@ -18,28 +18,28 @@
 
 | Attribute | Code | Value | Tier / Description |
 |---|---|---|---|
-| **Intelligence** | `INT` | **76** | Masterminded the Three-Way Pincer stratagem that shattered 30,000 rebels at Qingzhou |
-| **Politics** | `POL` | **64** (+2) | Gained official imperial patronage and sea salt monopoly license from Governor Gong Jing |
+| **Intelligence** | `INT` | **76** | Master of deception, pincer maneuvers, and operational calculation |
+| **Politics** | `POL` | **64** | Gained official imperial patronage and sea salt monopoly license from Governor Gong Jing |
 | **Martial Prowess** | `WAR` | **58** | Spear combat (Tier 3 Proficient); defeated rebel sub-general Zhang Bo in single combat |
-| **Leadership** | `LDR` | **68** (+2) | Flawlessly synchronized joint offensive across Zou Jing, Liu Bei, and Gong Jing |
-| **Diplomacy** | `DIP` | **68** | Inviolable bond with Liu Bei (+65), Zhang Fei (+60), Guan Yu (+55), Gong Jing (+60) |
-| **Commerce** | `COM` | **76** | Unlocked lucrative Qingzhou-Youzhou sea salt trading corridor |
-| **Logistics** | `LOG` | **68** | Flawless forward quartermastering across 400 Li march |
+| **Leadership** | `LDR` | **68** | Respected by Liu Bei's 500 volunteer veterans |
+| **Diplomacy** | `DIP` | **70** (+2) | Gained deep favor with Commander Lu Zhi (+50) and local commandery prefects |
+| **Commerce** | `COM` | **78** (+2) | Promoted to Tier 3 Appraisal; masterminded interstate coastal-inland salt trade |
+| **Logistics** | `LOG` | **70** (+2) | Flawlessly organized 420-li northern supply expedition through hostile frontiers |
 | **Craftsmanship** | `CRA` | **62** | Workshop capacity expanded to 800 man-hours/month in Zhuo County |
 
 ---
 
-## 3. Financial & Asset Dashboard (Month 4 Day 8, 184 AD)
+## 3. Financial & Asset Dashboard (Month 4 Day 24, 184 AD)
 
-- **Total Entity Cash Balance**: **15,940 Qian**
-  - *Mobile War Chest (with Liang Yan at Qingzhou)*: **12,940 Qian**
+- **Total Entity Cash Balance**: **17,700 Qian**
+  - *Mobile War Chest (with Liang Yan at Guangzong Camp)*: **14,700 Qian**
   - *Zhuo Workshop Safe (under Foreman Chen Bao)*: **3,000 Qian**
 - **Accounts Receivable (AR)**: 0 Qian.
 - **Accounts Payable (AP)**: 0 Qian.
 - **Strategic Food Reserve (Zhuo Workshop)**: 9.60 Dan grain.
-- **Inventory Valuation**: **21,708 Qian** (Includes 10 Dou sea salt, 15 spears, 5 swords, 2 pack mules, finished goods).
+- **Inventory Valuation**: **21,578 Qian** (Includes 10 Dou sea salt, 15 spears, 5 swords, 2 pack mules, materials).
 - **Fixed Assets**: **19,600 Qian** (Workshop compound, 3 looms, tools, handcart).
-- **Total Net Worth**: **57,248 Qian** (High liquidity, monopoly trading rights, and peerless prestige).
+- **Total Net Worth**: **58,878 Qian** (Liquid, debt-free, and rising in imperial prominence).
 
 ---
 
@@ -47,5 +47,5 @@
 
 - [x] **Execute Qingzhou Relief Stratagem 1**: Feint & Three-Way Pincer completely annihilated 30,000-strong siege force.
 - [x] **Secure Provincial Reward & Privileges**: Earned 2,000 Qian bounty and Imperial Qingzhou Sea Salt Purchase Permit (20% discount).
-- [ ] **Objective 1 (Commercial / Salt Arbitrage)**: Utilize 2 pack mules and expedition funds to purchase a bulk consignment of Qingzhou sea salt at wholesale discount and ship it north to Jizhou/Youzhou for 100%+ profit.
-- [ ] **Objective 2 (The Lu Zhi / Guangzong Crisis)**: Imperial couriers arrive: Grand Commander Lu Zhi (Lư Thực) is locked in brutal siege warfare against Zhang Jue's main army at Guangzong (Quảng Tông). Liu Bei decides whether to march north to reinforce his former teacher Master Lu Zhi!
+- [x] **Execute Salt Arbitrage & Northern Expedition**: Purchased 70 Dou sea salt, sold 40 Dou in Pingyuan and 25 Dou at Guangzong, netted +1,760 Qian cash.
+- [ ] **Active Crisis: The Extortion of Eunuch Zuo Feng**: Defend Master Lu Zhi against Court Inspector Zuo Feng's malicious slander without alienating the Han court.

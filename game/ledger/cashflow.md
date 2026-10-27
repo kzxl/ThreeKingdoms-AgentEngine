@@ -4,8 +4,8 @@
 - **Entity**: Liang Yan (`player`) & Liang Clan Workshop (`BIZ-0001`)
 - **Initial Capital (Turn 0)**: 15,000 Qian
 - **Turn 1 Closing Balance**: 13,610 Qian
-- **Current Balance (Month 4 Day 8, 184 AD)**: **15,940 Qian**
-  - *Mobile War Chest (with Liang Yan at Qingzhou)*: **12,940 Qian**
+- **Current Balance (Month 4 Day 24, 184 AD)**: **17,700 Qian**
+  - *Mobile War Chest (with Liang Yan at Guangzong Camp)*: **14,700 Qian**
   - *Zhuo Workshop Safe (under Foreman Chen Bao)*: **3,000 Qian**
 
 ---
@@ -25,4 +25,7 @@
 | `TXN-01840318-0007` | 184-03-18 | Merchant Guild (`ORG-0001`)| OPEX/Defense | 0 | 200 | 11,490 | Contribution to East Gate civilian defense watch fund | Confirmed |
 | `TXN-01840324-0008` | 184-03-24 | Liu Bei (`NPC-0001`) | Revenue/AR | 1,950 | 0 | 13,440 | Final settlement of contract `CTR-01840311-0001` from victory bounty | Confirmed |
 | `TXN-01840324-0009` | 184-03-24 | Zou Jing / Youzhou Gov | Military Bounty | 500 | 0 | 13,940 | Official commendation bonus for Daxing Mountain terrain map & logistics | Confirmed |
-| `TXN-01840408-0010` | 184-04-08 | Gong Jing (`NPC-0011`) | Stratagem Bounty| 2,000 | 0 | **15,940** | Personal reward from Governor Gong Jing for Qingzhou relief pincer plan | Confirmed |
+| `TXN-01840408-0010` | 184-04-08 | Gong Jing (`NPC-0011`) | Stratagem Bounty| 2,000 | 0 | 15,940 | Personal reward from Governor Gong Jing for Qingzhou relief pincer plan | Confirmed |
+| `TXN-01840409-0011` | 184-04-09 | Qingzhou Salt Monopoly | Procurement | 0 | 3,640 | 12,300 | Purchased 70 Dou sea salt @ 52 Qian (20% official discount) | Confirmed |
+| `TXN-01840416-0012` | 184-04-16 | Pingyuan Chamber | Commercial Revenue | 3,400 | 0 | 15,700 | Wholesale arbitrage sale of 40 Dou sea salt @ 85 Qian to Pingyuan | Confirmed |
+| `TXN-01840424-0013` | 184-04-24 | Imperial Northern Army (`NPC-0012`) | Strategic Supply | 2,000 | 0 | **17,700** | Supplied 25 Dou sea salt @ 80 Qian to Commander Lu Zhi siege camp | Confirmed |
