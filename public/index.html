@@ -14,7 +14,7 @@
   <header class="app-header">
     <div class="header-left">
       <button class="btn-menu" id="btn-main-menu">
-        <span class="icon">🏛️</span> Menu Chính
+        Hành Dinh
       </button>
       <div class="header-title-block">
         <span class="main-title">TAM QUỐC CHÍ • LƯƠNG THỊ PHONG VÂN LỤC</span>
@@ -25,22 +25,18 @@
 
     <div class="header-right">
       <div class="metric-chip">
-        <span class="chip-icon">🪙</span>
         <span class="chip-label">Tiền Mặt:</span>
         <span class="chip-val gold-text" id="top-val-cash">21,200 Tiền</span>
       </div>
       <div class="metric-chip">
-        <span class="chip-icon">🌾</span>
         <span class="chip-label">Lương Thảo:</span>
         <span class="chip-val cyan-text" id="top-val-grain">9.60 Thạch</span>
       </div>
       <div class="metric-chip">
-        <span class="chip-icon">📦</span>
         <span class="chip-label">Giá Trị Kho:</span>
         <span class="chip-val purple-text" id="top-val-inv">47,578 Tiền</span>
       </div>
       <div class="metric-chip">
-        <span class="chip-icon">⚖️</span>
         <span class="chip-label">Tài Sản Ròng:</span>
         <span class="chip-val amber-text" id="top-val-networth">91,378 Tiền</span>
       </div>
@@ -49,11 +45,11 @@
         <span class="pulse-dot"></span> <span id="txt-bridge-status">AI Bridge: LIVE</span>
       </div>
       <div class="badge-bridge-live" id="badge-modular-status" style="border-color: rgba(168, 85, 247, 0.4); color: #c084fc; background: rgba(168, 85, 247, 0.08);">
-        <span class="pulse-dot" style="background-color: #a855f7; box-shadow: 0 0 8px #a855f7;"></span> <span id="txt-modular-status">Universe v4.0 TS: 5 Modules</span>
+        <span class="pulse-dot" style="background-color: #a855f7;"></span> <span id="txt-modular-status">Universe v4.0 TS: 5 Modules</span>
       </div>
       <div class="badge-audit" id="badge-top-audit">100% Khớp</div>
       <button class="btn-lang-toggle" id="btn-lang-toggle" onclick="toggleLanguage()" title="Chuyển đổi ngôn ngữ / Switch Language">
-        🌐 <span id="lang-label">VI</span>
+        <span id="lang-label">VI</span>
       </button>
       <button class="btn-logs" id="btn-toggle-logs" title="Xem nhật ký hệ thống">Logs</button>
     </div>
@@ -70,7 +66,6 @@
       <!-- 1. Location Breadcrumbs, Local POIs & World Map Launcher -->
       <div class="location-banner">
         <div class="loc-name-group">
-          <span class="loc-bullet">📍</span>
           <span class="loc-region" id="loc-region-badge">U Châu • Trác Huyện</span>
           <span class="loc-divider">/</span>
           <span class="loc-text" id="loc-breadcrumb-text">Trang Viên Vườn Đào Hạ Trạch</span>
@@ -84,13 +79,11 @@
 
           <!-- World Map / Dư Đồ Tam Quốc Button -->
           <button class="btn-world-map" id="btn-open-worldmap" onclick="openWorldMap()" title="Mở Dư Đồ Tam Quốc / Open Strategic Campaign Map">
-            <span class="icon">🗺️</span>
             <span id="txt-btn-worldmap">Dư Đồ Tam Quốc</span>
           </button>
 
           <!-- Clear / Reset Chat Chronicle Button -->
           <button class="btn-clear-chat" id="btn-clear-chat" onclick="confirmClearChat()" title="Làm mới dòng chat / Clear Chat History">
-            <span class="icon">🧹</span>
             <span id="txt-btn-clear-chat">Làm Mới Chat</span>
           </button>
         </div>
@@ -99,12 +92,12 @@
       <!-- Historical Event Alert Banner (Prompts player to intervene in historic moments) -->
       <div id="historical-event-banner" class="historical-event-banner hidden">
         <div class="event-banner-content">
-          <div class="event-banner-badge">⚡ ĐẠI BIẾN CỐ LỊCH SỬ TAM QUỐC</div>
+          <div class="event-banner-badge">ĐẠI BIẾN CỐ LỊCH SỬ TAM QUỐC</div>
           <div class="event-banner-title" id="event-banner-title">Đang quét sự kiện lịch sử...</div>
           <div class="event-banner-desc" id="event-banner-desc">Địa điểm và thời khắc phù hợp để can thiệp lịch sử.</div>
         </div>
         <button class="btn-event-participate" id="btn-event-participate" onclick="openEventParticipationModal()">
-          ⚔️ Tham Gia Quyết Sách
+          Tham Gia Quyết Sách
         </button>
       </div>
 
@@ -118,11 +111,11 @@
         <!-- Locality & Physical Presence Banner -->
         <div class="dock-locality-banner" id="dock-locality-banner">
           <div class="dock-locality-left">
-            <span class="dock-locality-tag" id="locality-tag">📍 HIỆN DIỆN:</span>
+            <span class="dock-locality-tag" id="locality-tag">HIỆN DIỆN:</span>
             <span class="dock-locality-target" id="locality-target">Trang Viên Vườn Đào (Trực diện: Trương Phi)</span>
           </div>
           <div class="dock-locality-courier-hint" id="locality-courier-hint">
-            ✉️ <em>(Muốn điều phối nơi khác: Phái sứ giả / Phi thư tín)</em>
+            <em>(Muốn điều phối nơi khác: Phái sứ giả / Phi thư tín)</em>
           </div>
         </div>
 
@@ -156,10 +149,10 @@
             onkeydown="if(event.key==='Enter') dispatchOmniCommand('ai');"
           />
           <button class="btn-omni-ai" id="btn-omni-ai" onclick="dispatchOmniCommand('ai')">
-            <span class="icon">💬</span> <span id="txt-omni-ai">Gửi AI Core</span>
+            <span id="txt-omni-ai">Gửi AI Core</span>
           </button>
           <button class="btn-omni-instant" id="btn-omni-instant" onclick="dispatchOmniCommand('instant')">
-            <span class="icon">⚡</span> <span id="txt-omni-instant">Tức Thì</span>
+            <span id="txt-omni-instant">Tức Thì</span>
           </button>
         </div>
       </div>
@@ -188,14 +181,14 @@
         <div class="protagonist-vitals-grid">
           <div class="vital-item">
             <div class="vital-label-row">
-              <span class="vital-name">❤️ Sinh Lực</span>
+              <span class="vital-name">Sinh Lực</span>
               <span class="vital-val green-text" id="protagonist-hp">100/100</span>
             </div>
             <div class="vital-bar"><div class="vital-bar-fill green" id="bar-hp" style="width: 100%;"></div></div>
           </div>
           <div class="vital-item">
             <div class="vital-label-row">
-              <span class="vital-name">⚡ Sĩ Khí</span>
+              <span class="vital-name">Sĩ Khí</span>
               <span class="vital-val gold-text" id="protagonist-morale">100%</span>
             </div>
             <div class="vital-bar"><div class="vital-bar-fill gold" id="bar-morale" style="width: 100%;"></div></div>
@@ -243,8 +236,7 @@
       <div class="deck-card relations-card">
         <div class="deck-card-header">
           <div class="deck-title-group">
-            <span class="deck-icon" id="relations-card-icon">🤝</span>
-            <span class="deck-title" id="relations-card-title">Mạng Lưới Quan Hệ Hào Kiệt (RELATIONS.md)</span>
+            <span class="deck-title" id="relations-card-title">Quan Hệ Hào Kiệt</span>
           </div>
           <span class="deck-deadline" id="relations-card-badge">Tín Nhiệm / Hảo Cảm</span>
         </div>
@@ -262,16 +254,16 @@
       <div class="deck-card tabs-card">
         <div class="deck-tabs-header">
           <button class="deck-tab-btn" data-subtab="subtab-inventory" onclick="switchDeckTab('subtab-inventory')">
-            📦 Kho Xưởng
+            Kho Xưởng
           </button>
           <button class="deck-tab-btn" data-subtab="subtab-npcs" onclick="switchDeckTab('subtab-npcs')">
-            👥 Lương Nhân
+            Gia Đinh
           </button>
           <button class="deck-tab-btn active" data-subtab="subtab-ledger" onclick="switchDeckTab('subtab-ledger')">
-            📜 Sổ Cái TXN
+            Sổ Cái TXN
           </button>
           <button class="deck-tab-btn" data-subtab="subtab-agent-log" onclick="switchDeckTab('subtab-agent-log')">
-            🤖 AI Feed
+            Nhật Ký AI
           </button>
         </div>
 
@@ -363,7 +355,7 @@
     <div class="modal-card world-map-card">
       <div class="modal-header world-map-header">
         <div class="world-map-title-group">
-          <h3 class="modal-title" id="world-map-title">🗺️ Dư Đồ Tam Quốc • Chiến Tuyến Khởi Nghĩa Khăn Vàng (184 SCN)</h3>
+          <h3 class="modal-title" id="world-map-title">Dư Đồ Tam Quốc • Khởi Nghĩa Khăn Vàng (184 SCN)</h3>
           <span class="world-map-sub" id="world-map-sub">Khảo sát lộ trình hành quân, cự ly dịch trạm, an ninh và quân lương tiêu hao</span>
         </div>
         <button class="modal-close-btn" onclick="closeWorldMap()">&times;</button>
@@ -397,34 +389,34 @@
     <div class="modal-card gm-modal-card">
       <div class="modal-header">
         <div class="gm-header-left">
-          <h3 class="modal-title">🏛️ Quản Lý Màn Chơi & Chiến Dịch (Game Manager)</h3>
+          <h3 class="modal-title">Tổng Hành Dinh & Quản Lý Chiến Dịch</h3>
           <span class="gm-header-sub">Tách biệt Master Blueprint (Bất biến) và Gameplay Session (Biến động)</span>
         </div>
         <button class="modal-close-btn" onclick="closeGameManagerModal()">&times;</button>
       </div>
 
-      <!-- Navigation Tabs: Continue vs New Game vs Chronicles -->
+      <!-- Navigation Tabs: Tactical Grand Strategy Tabs -->
       <div class="gm-tabs-bar">
         <button class="gm-tab-btn active" id="gm-tab-continue" onclick="switchGameManagerTab('continue')">
-          ⚔️ Chơi Tiếp (Active Session)
+          Chiến Cục Hiện Tại
         </button>
         <button class="gm-tab-btn" id="gm-tab-new" onclick="switchGameManagerTab('new')">
-          🌟 Tạo Màn Chơi Mới (New Campaign)
+          Khởi Lập Điển Tích
         </button>
         <button class="gm-tab-btn" id="gm-tab-chronicles" onclick="switchGameManagerTab('chronicles')">
-          📜 Biên Niên Sử Tam Quốc (ROTK Chronicles)
+          Biên Niên Sử
         </button>
         <button class="gm-tab-btn" id="gm-tab-npc-life" onclick="switchGameManagerTab('npc-life')">
-          👥 Hành Trình Nhân Vật (Living World)
+          Vận Mệnh Quần Hùng
         </button>
         <button class="gm-tab-btn" id="gm-tab-factions" onclick="switchGameManagerTab('factions')">
-          👑 Bàn Cờ Chính Trị (Faction Politics)
+          Chính Trị & Quân Doanh
         </button>
         <button class="gm-tab-btn" id="gm-tab-professions" onclick="switchGameManagerTab('professions')">
-          ⛏️ Bách Nghệ & Sáng Tạo Nghề (Professions & Gathering)
+          Bách Nghệ & Khai Khoáng
         </button>
         <button class="gm-tab-btn" id="gm-tab-ecology" onclick="switchGameManagerTab('ecology')">
-          🌾 Sinh Thái & Thương Đoàn (Ecology & Logistics)
+          Thiên Tai & Vận Tải
         </button>
       </div>
 
@@ -461,12 +453,12 @@
           </div>
 
           <div class="gm-alert-box">
-            ⚠️ <strong>Lưu ý:</strong> Bắt đầu màn chơi mới sẽ khởi tạo lại toàn bộ số dư, kho hàng, và lượt chơi từ Master Blueprint gốc.
+            <strong>Lưu ý:</strong> Bắt đầu màn chơi mới sẽ khởi tạo lại toàn bộ số dư, kho hàng, và lượt chơi từ Master Blueprint gốc.
           </div>
 
           <div class="gm-actions-row" style="margin-top: 12px;">
-            <button class="btn-primary" onclick="submitStartNewGame()" style="width: 100%; padding: 10px;">
-              🚀 Khởi Tạo Tân Du Hý (Bắt Đầu Chiến Dịch Mới)
+            <button class="tactical-btn tactical-btn--primary" onclick="submitStartNewGame()" style="width: 100%; padding: 10px;">
+              Khởi Tạo Chiến Dịch Mới
             </button>
           </div>
         </div>
@@ -475,7 +467,7 @@
         <div class="gm-tab-content hidden" id="gm-view-chronicles">
           <div class="gm-chronicles-header">
             <div class="gm-filter-bar">
-              <input type="text" id="gm-event-search" class="modal-input" placeholder="🔍 Tìm kiếm sự kiện, nhân vật, địa danh..." oninput="filterRotkEvents()" />
+              <input type="text" id="gm-event-search" class="modal-input" placeholder="Tìm kiếm sự kiện, nhân vật, địa danh..." oninput="filterRotkEvents()" />
               <select id="gm-event-era-filter" class="modal-input" onchange="filterRotkEvents()">
                 <option value="ALL">Toàn Bộ Niên Đại (184 - 234 SCN)</option>
                 <option value="184-189">184 - 189: Khởi Nghĩa Khăn Vàng</option>
@@ -496,38 +488,38 @@
 
         <!-- 4. View: Living World NPC Progression & Chronicles -->
         <div class="gm-tab-content hidden" id="gm-view-npc-life">
-          <div class="gm-chronicles-header">
+          <div class="tactical-section-head">
             <div>
-              <h4 class="gm-sec-title">👥 Hành Trình Phát Triển Tự Thân Của Hào Kiệt & Môn Hạ</h4>
-              <p class="gm-sec-desc">Mỗi nhân vật tự rèn luyện võ nghệ, tích lũy tiền riêng, mưu cầu chí hướng và đạt các cột mốc trong thế giới sống.</p>
+              <h4 class="tactical-section-title">Hành Trình Tự Thân Của Hào Kiệt & Môn Hạ</h4>
+              <p class="tactical-section-desc">Mỗi nhân vật tự rèn luyện võ nghệ, tích lũy tiền riêng, mưu cầu chí hướng và đạt các cột mốc trong thế giới sống.</p>
             </div>
             <div style="display:flex; gap:10px; align-items:center;">
-              <button class="btn btn-primary" onclick="triggerSimulateNpcJourney()" style="background:#8b5cf6; border-color:#7c3aed;">
-                ⚡ Vận Vành 1 Lượt Tự Thân (Simulate Month)
+              <button class="tactical-btn tactical-btn--primary" onclick="triggerSimulateNpcJourney()">
+                Vận Hành 1 Lượt Tự Thân
               </button>
             </div>
           </div>
 
           <!-- Active Progression Cards Grid -->
-          <h5 style="color:#e2e8f0; margin:15px 0 10px 0; font-size:14px; font-weight:600;">🌟 Chí Hướng & Thực Lực Hiện Tại:</h5>
+          <h5 style="color:#fbbf24; margin:15px 0 10px 0; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">Chí Hướng & Thực Lực Hiện Tại:</h5>
           <div id="gm-npc-progression-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:12px; margin-bottom:20px;">
             <!-- Rendered dynamically via JS -->
           </div>
 
           <!-- Career Paradigm Shifts Section -->
-          <h5 style="color:#e2e8f0; margin:15px 0 10px 0; font-size:14px; font-weight:600;">⚡ Đột Phá Thân Phận & Bước Ngoặt Cuộc Đời (Career Shifts):</h5>
+          <h5 style="color:#fbbf24; margin:15px 0 10px 0; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">Đột Phá Thân Phận & Bước Ngoặt Cuộc Đời:</h5>
           <div id="gm-npc-career-shifts-container" style="display:flex; flex-direction:column; gap:10px; margin-bottom:20px;">
             <!-- Rendered dynamically via JS -->
           </div>
 
           <!-- Cross-NPC Peer Relations Section -->
-          <h5 style="color:#e2e8f0; margin:15px 0 10px 0; font-size:14px; font-weight:600;">🤝 Mạng Lưới Quan Hệ Chéo Giữa Các Hào Kiệt (Peer Relations):</h5>
+          <h5 style="color:#fbbf24; margin:15px 0 10px 0; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">Mạng Lưới Quan Hệ Chéo Giữa Các Hào Kiệt:</h5>
           <div id="gm-npc-peer-relations-container" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap:12px; margin-bottom:20px;">
             <!-- Rendered dynamically via JS -->
           </div>
 
           <!-- Timeline of Autonomous Logs -->
-          <h5 style="color:#e2e8f0; margin:15px 0 10px 0; font-size:14px; font-weight:600;">📜 Nhật Ký Chiến Tích & Sự Kiện Tự Thân Gần Đây:</h5>
+          <h5 style="color:#fbbf24; margin:15px 0 10px 0; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">Nhật Ký Chiến Tích & Sự Kiện Tự Thân Gần Đây:</h5>
           <div class="gm-events-timeline" id="gm-npc-journey-timeline">
             <!-- Rendered dynamically via JS -->
           </div>
@@ -535,41 +527,41 @@
 
         <!-- 5. View: Faction Politics & Dynastic Lineage -->
         <div class="gm-tab-content hidden" id="gm-view-factions">
-          <div class="gm-chronicles-header" style="margin-bottom:15px;">
+          <div class="tactical-section-head">
             <div>
-              <h4 class="gm-sec-title">👑 Bàn Cờ Chính Trị, Cát Cứ & Nguy Cơ Phản Trắc</h4>
-              <p class="gm-sec-desc">Quản lý các thế lực chư hầu, phong tước tiến vị, bổ nhiệm Thái thú trấn thủ và kiểm soát tham vọng quyền lực nội bộ.</p>
+              <h4 class="tactical-section-title">Bàn Cờ Chính Trị, Cát Cứ & Nguy Cơ Phản Trắc</h4>
+              <p class="tactical-section-desc">Quản lý các thế lực chư hầu, phong tước tiến vị, bổ nhiệm Thái thú trấn thủ và kiểm soát tham vọng quyền lực nội bộ.</p>
             </div>
             <div style="display:flex; gap:8px;">
-              <button class="btn btn-primary" onclick="triggerSimulatePolitics()" style="background:#b45309; border-color:#d97706;">
-                ⚡ Mô Phỏng Chính Trị Nội Bộ
+              <button class="tactical-btn tactical-btn--primary" onclick="triggerSimulatePolitics()">
+                Mô Phỏng Chính Trị Nội Bộ
               </button>
-              <button class="btn btn-outline" onclick="loadAndRenderFactions()">
-                🔄 Làm Mới
+              <button class="tactical-btn" onclick="loadAndRenderFactions()">
+                Làm Mới
               </button>
             </div>
           </div>
 
           <!-- Factions Overview Cards -->
-          <h5 style="color:#e2e8f0; margin:10px 0 8px 0; font-size:13px; font-weight:600;">⚔️ Các Thế Lực Cát Cứ Tam Quốc (Factions Overview):</h5>
+          <h5 style="color:#fbbf24; margin:10px 0 8px 0; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">Các Thế Lực Cát Cứ Tam Quốc:</h5>
           <div id="gm-factions-cards-container" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:12px; margin-bottom:20px;">
             <!-- Rendered dynamically via JS -->
           </div>
 
           <!-- Officers & Betrayal Risk Section -->
-          <h5 style="color:#e2e8f0; margin:15px 0 8px 0; font-size:13px; font-weight:600;">👥 Tướng Lĩnh, Lòng Trung Thành & Nguy Cơ Phản Nghịch (Officer Tension):</h5>
+          <h5 style="color:#fbbf24; margin:15px 0 8px 0; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">Tướng Lĩnh, Lòng Trung Thành & Nguy Cơ Phản Nghịch:</h5>
           <div id="gm-officers-tension-container" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap:12px; margin-bottom:20px;">
             <!-- Rendered dynamically via JS -->
           </div>
 
           <!-- Regional Citadels & Governance Control -->
-          <h5 style="color:#e2e8f0; margin:15px 0 8px 0; font-size:13px; font-weight:600;">🏛️ 18 Trọng Trấn & Bổ Nhiệm Thái Thú Trấn Thủ (Regional Citadels):</h5>
+          <h5 style="color:#fbbf24; margin:15px 0 8px 0; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">18 Trọng Trấn & Bổ Nhiệm Thái Thú Trấn Thủ:</h5>
           <div id="gm-settlements-container" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:10px; margin-bottom:20px;">
             <!-- Rendered dynamically via JS -->
           </div>
 
           <!-- Political Chronicles & Intrigues -->
-          <h5 style="color:#e2e8f0; margin:15px 0 8px 0; font-size:13px; font-weight:600;">📜 Ký Sự Biến Chính & Mưu Đồ Cát Cứ (Political Intrigues):</h5>
+          <h5 style="color:#fbbf24; margin:15px 0 8px 0; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">Ký Sự Biến Chính & Mưu Đồ Cát Cứ:</h5>
           <div class="gm-events-timeline" id="gm-political-events-timeline">
             <!-- Rendered dynamically via JS -->
           </div>
@@ -577,35 +569,35 @@
 
         <!-- 6. View: Ancient Professions, Gathering & Emergent Innovations -->
         <div class="gm-tab-content hidden" id="gm-view-professions">
-          <div class="gm-chronicles-header" style="margin-bottom:15px;">
+          <div class="tactical-section-head">
             <div>
-              <h4 class="gm-sec-title">⛏️ Bách Nghệ Đông Hán, Thu Thập Thực Địa & Sáng Tạo Nghề Đột Phá</h4>
-              <p class="gm-sec-desc">Khai mỏ sắt, hái dược thảo rừng, đốn thiết mộc, chử hải nấu muối; tích lũy thực tiễn kết hợp kỹ nghệ để sáng tạo ra nghề mới trong Tam Quốc.</p>
+              <h4 class="tactical-section-title">Bách Nghệ Đông Hán, Thu Thập Thực Địa & Sáng Tạo Nghề Đột Phá</h4>
+              <p class="tactical-section-desc">Khai mỏ sắt, hái dược thảo rừng, đốn thiết mộc, chưng cất nấu muối; tích lũy thực tiễn kết hợp kỹ nghệ để sáng tạo ra nghề mới trong Tam Quốc.</p>
             </div>
             <div style="display:flex; gap:8px;">
-              <button class="btn btn-primary" onclick="triggerSynthesizeBreakthrough()" style="background:#059669; border-color:#10b981;">
-                ✨ Đột Phá Sáng Tạo Nghề Mới
+              <button class="tactical-btn tactical-btn--primary" onclick="triggerSynthesizeBreakthrough()">
+                Đột Phá Sáng Tạo Nghề Mới
               </button>
-              <button class="btn btn-outline" onclick="loadAndRenderProfessions()">
-                🔄 Làm Mới
+              <button class="tactical-btn" onclick="loadAndRenderProfessions()">
+                Làm Mới
               </button>
             </div>
           </div>
 
           <!-- Character Learned Professions Section -->
-          <h5 style="color:#e2e8f0; margin:10px 0 8px 0; font-size:13px; font-weight:600;">📜 Nghề Nghiệp Của Bạn & Các Bậc Thầy Trong Xưởng (Learned Disciplines):</h5>
+          <h5 style="color:#fbbf24; margin:10px 0 8px 0; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">Nghề Nghiệp Của Bạn & Các Bậc Thầy Trong Xưởng:</h5>
           <div id="gm-professions-list-container" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:12px; margin-bottom:20px;">
             <!-- Rendered dynamically via JS -->
           </div>
 
           <!-- Regional Gathering Nodes Section -->
-          <h5 style="color:#e2e8f0; margin:15px 0 8px 0; font-size:13px; font-weight:600;">⛏️ Các Mỏ Khoáng, Dược Điền & Điểm Thu Thập Thực Địa (Gathering Nodes):</h5>
+          <h5 style="color:#fbbf24; margin:15px 0 8px 0; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">Các Mỏ Khoáng, Dược Điền & Điểm Thu Thập Thực Địa:</h5>
           <div id="gm-gathering-nodes-container" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap:12px; margin-bottom:20px;">
             <!-- Rendered dynamically via JS -->
           </div>
 
           <!-- Emergent Innovations Chronicles -->
-          <h5 style="color:#e2e8f0; margin:15px 0 8px 0; font-size:13px; font-weight:600;">🌟 Ký Sự Sáng Tạo Nghề Mới Độc Bản (Emergent Innovations):</h5>
+          <h5 style="color:#fbbf24; margin:15px 0 8px 0; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">Ký Sự Sáng Tạo Nghề Mới Độc Bản:</h5>
           <div class="gm-events-timeline" id="gm-innovations-timeline">
             <!-- Rendered dynamically via JS -->
           </div>
@@ -613,35 +605,35 @@
 
         <!-- 7. View: Ecological Crises & Macro Logistics Caravans -->
         <div class="gm-tab-content hidden" id="gm-view-ecology">
-          <div class="gm-chronicles-header" style="margin-bottom:15px;">
+          <div class="tactical-section-head">
             <div>
-              <h4 class="gm-sec-title">🌾 Thiên Tai Sinh Thái, Nạn Đói & Thương Đoàn Vận Tải</h4>
-              <p class="gm-sec-desc">Hạn hán, cào cào và khởi nghĩa nông dân làm gián đoạn sản xuất; các đoàn xe vận tải di chuyển trên đường liên quận đối mặt với hiểm họa bị sơn tặc phục kích.</p>
+              <h4 class="tactical-section-title">Biến Động Sinh Thái & Thương Đoàn Vận Tải</h4>
+              <p class="tactical-section-desc">Hạn hán, dịch châu chấu và khởi nghĩa nông dân làm đình trệ nông nghiệp; các dịch lộ thương đoàn đối mặt với sơn phỉ phục kích.</p>
             </div>
             <div style="display:flex; gap:8px;">
-              <button class="btn btn-primary" onclick="triggerSimulateEcology()" style="background:#d97706; border-color:#f59e0b;">
-                ⚡ Vận Hành Chu Kỳ Sinh Thái & Thương Đoàn
+              <button class="tactical-btn tactical-btn--primary" onclick="triggerSimulateEcology()">
+                Vận Hành Chu Kỳ
               </button>
-              <button class="btn btn-outline" onclick="loadAndRenderEcology()">
-                🔄 Làm Mới
+              <button class="tactical-btn" onclick="loadAndRenderEcology()">
+                Làm Mới
               </button>
             </div>
           </div>
 
           <!-- Active Ecological Crises Section -->
-          <h5 style="color:#e2e8f0; margin:10px 0 8px 0; font-size:13px; font-weight:600;">🌪️ Biến Cố Thiên Tai & Nạn Đói Đang Hoành Hành (Active Crises):</h5>
+          <h5 style="color:#fbbf24; margin:10px 0 8px 0; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">Biến Cố Thiên Tai & Nạn Đói Đang Diễn Ra:</h5>
           <div id="gm-crises-container" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap:12px; margin-bottom:20px;">
             <!-- Rendered dynamically via JS -->
           </div>
 
           <!-- Trade Caravans En Route Section -->
-          <h5 style="color:#e2e8f0; margin:15px 0 8px 0; font-size:13px; font-weight:600;">🚚 Các Thương Đoàn Đang Vận Tải Thực Địa (Trade Caravans):</h5>
+          <h5 style="color:#fbbf24; margin:15px 0 8px 0; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">Thương Đoàn Lưu Thông Trên Dịch Đạo:</h5>
           <div id="gm-caravans-container" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap:12px; margin-bottom:20px;">
             <!-- Rendered dynamically via JS -->
           </div>
 
           <!-- Bandit Strongholds & Chokepoint Bounties Section -->
-          <h5 style="color:#e2e8f0; margin:15px 0 8px 0; font-size:13px; font-weight:600;">⚔️ Các Sơn Trại Phỉ Đạo & Tiền Thưởng Tiễu Phỉ (Bandit Strongholds):</h5>
+          <h5 style="color:#fbbf24; margin:15px 0 8px 0; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">Sơn Trại Phỉ Đạo & Tiền Thưởng Tiễu Phạt:</h5>
           <div id="gm-strongholds-container" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:12px; margin-bottom:20px;">
             <!-- Rendered dynamically via JS -->
           </div>
@@ -659,7 +651,7 @@
     <div class="modal-card event-modal-card">
       <div class="modal-header">
         <div class="event-modal-header-left">
-          <h3 class="modal-title" id="ep-modal-title">📜 Biến Cố Lịch Sử: Đào Viên Kết Nghĩa</h3>
+          <h3 class="modal-title" id="ep-modal-title">Biến Cố Lịch Sử: Đào Viên Kết Nghĩa</h3>
           <span class="event-modal-subtitle" id="ep-modal-subtitle">184 SCN • Trác Quận • Tam Phân Thiên Hạ Khởi Điểm</span>
         </div>
         <button class="modal-close-btn" onclick="closeEventParticipationModal()">&times;</button>
@@ -676,7 +668,7 @@
           </div>
         </div>
 
-        <h4 class="event-choices-heading">🎯 Lựa Chọn Quyết Định Của Bạn (Player Agency & Alternate History):</h4>
+        <h4 class="event-choices-heading">Phương Án Quyết Sách Chiến Lược:</h4>
         
         <!-- Options Grid -->
         <div class="event-choices-list" id="ep-modal-choices">

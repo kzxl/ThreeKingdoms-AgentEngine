@@ -43,7 +43,7 @@ function setProcessingLock(busy, targetElement = null, statusText = '') {
       indicator.id = 'story-computing-indicator';
       indicator.className = 'story-turn system';
       indicator.innerHTML = `
-        <div class="story-turn-avatar">🤖</div>
+        <div class="story-turn-avatar">Cơ</div>
         <div class="story-turn-content" style="padding: 6px 10px; font-size: 11px; color: #34d399;">
           <span class="pulse-dot"></span> Agent Core đang phân tích chiến thuật & đối soát SQLite: <em>"${statusText}"</em>...
         </div>
@@ -58,7 +58,7 @@ function setProcessingLock(busy, targetElement = null, statusText = '') {
 
 function openQuickTrade(mode, itemCode, defaultQty, defaultPrice) {
   if (isProcessingAction) {
-    showToast('⚠️ Đang thực thi điều lệnh, vui lòng chờ!', true);
+    showToast('Đang thực thi điều lệnh, vui lòng chờ!', true);
     return;
   }
 
@@ -149,7 +149,7 @@ async function submitModalTrade() {
       type: 'system',
       speaker: 'Thương Nghiệp Lương Gia',
       title: 'Hoàn Tất Giao Dịch Sổ Cái',
-      avatar: '📦',
+      avatar: 'Hóa',
       text: `Giao dịch thương nghiệp đã giao nhận thành công. Hàng hóa và dòng tiền được đối soát tự động trong cơ sở dữ liệu SQLite.`,
       deltas: { cash: deltaCash, inventory: deltaStock, audit: '70/70 Khớp' },
       reasoning: `Hoàn tất giao dịch thương nghiệp ${mode} cho ${itemCode}.`
@@ -279,15 +279,15 @@ function renderRotkEvents(events) {
     let actionBtn = '';
     if (ev.sessionStatus === 'RESOLVED') {
       const isAlt = ev.outcomeType === 'ALTERNATE';
-      actionBtn = `<span class="event-choice-badge ${isAlt ? 'alternate' : 'canon'}">✅ Đã Tham Gia (${isAlt ? 'Dị Bản What-If' : 'Chính Sử'})</span>`;
+      actionBtn = `<span class="event-choice-badge ${isAlt ? 'alternate' : 'canon'}">Đã Tham Gia (${isAlt ? 'Dị Bản What-If' : 'Chính Sử'})</span>`;
     } else if (ev.isLocal) {
-      actionBtn = `<button class="btn-select-choice" onclick="openEventParticipationModal('${ev.event_id}')">⚡ Tham Gia Ngay</button>`;
+      actionBtn = `<button class="btn-select-choice" onclick="openEventParticipationModal('${ev.event_id}')">Tham Gia Ngay</button>`;
     }
 
     return `
       <div class="gm-event-card">
         <div class="gm-event-header">
-          <div class="gm-event-title">📜 ${ev.name_vi}</div>
+          <div class="gm-event-title">${ev.name_vi}</div>
           <div style="display:flex;align-items:center;gap:6px;">
             ${actionBtn}
             <span class="gm-event-badge">${ev.historical_year} SCN • ${seasonMap[ev.season] || ev.season}</span>
@@ -296,9 +296,9 @@ function renderRotkEvents(events) {
         <div class="gm-event-sub">${ev.name_en}</div>
         <div class="gm-event-summary">${ev.summary_vi}</div>
         <div class="gm-event-meta">
-          <div class="gm-event-meta-item">📍 Địa điểm: <strong>${ev.location_id || 'Trung Nguyên'}</strong></div>
-          <div class="gm-event-meta-item">👤 Nhân vật chính: <strong>${ev.primary_character_id || 'Chư Hầu'}</strong></div>
-          ${effectsStr ? `<div class="gm-event-meta-item" style="color:#fbbf24;">⚡ Thưởng/Hiệu ứng: <strong>${effectsStr}</strong></div>` : ''}
+          <div class="gm-event-meta-item">Địa bàn: <strong>${ev.location_id || 'Trung Nguyên'}</strong></div>
+          <div class="gm-event-meta-item">Nhân vật chính: <strong>${ev.primary_character_id || 'Chư Hầu'}</strong></div>
+          ${effectsStr ? `<div class="gm-event-meta-item" style="color:#fbbf24;">Thưởng/Hiệu ứng: <strong>${effectsStr}</strong></div>` : ''}
         </div>
       </div>
     `;
@@ -358,23 +358,23 @@ function renderGameManagerModalContent(data) {
             </div>
             <div class="gm-stat-item">
               <span class="label">Vị Trí Hiện Tại:</span>
-              <span class="val">📍 ${summary.location || 'Huyện Trác'}</span>
+              <span class="val">${summary.location || 'Huyện Trác'}</span>
             </div>
             <div class="gm-stat-item">
               <span class="label">Tiền Mặt:</span>
-              <span class="val font-mono">🪙 ${(summary.liquidCash || 0).toLocaleString()} Tiền</span>
+              <span class="val font-mono">${(summary.liquidCash || 0).toLocaleString()} Tiền</span>
             </div>
             <div class="gm-stat-item">
               <span class="label">Lương Thảo:</span>
-              <span class="val font-mono">🌾 ${Number(summary.strategicGrain || 0).toFixed(1)} Thạch</span>
+              <span class="val font-mono">${Number(summary.strategicGrain || 0).toFixed(1)} Thạch</span>
             </div>
           </div>
           <div class="gm-actions-row">
             <button class="btn-primary" onclick="closeGameManagerModal(); showToast('Tiếp tục chiến dịch!')">
-              ⚔️ Tiếp Tục Màn Chơi Này
+              Tiếp Tục Màn Chơi Này
             </button>
             <button class="btn-outline" onclick="submitSaveSlot('slot_manual')">
-              💾 Lưu Slot Dự Phòng
+              Lưu Bản Sao Dự Phòng
             </button>
           </div>
         </div>
@@ -547,16 +547,16 @@ function openEventParticipationModal(eventId = null) {
   const modal = document.getElementById('event-participation-modal');
   if (!modal) return;
 
-  document.getElementById('ep-modal-title').innerText = `📜 Biến Cố Lịch Sử: ${targetEvent.name_vi}`;
+  document.getElementById('ep-modal-title').innerText = `Biến Cố Lịch Sử: ${targetEvent.name_vi}`;
   document.getElementById('ep-modal-subtitle').innerText = `${targetEvent.historical_year} SCN • ${targetEvent.location_id || 'Trung Nguyên'} • ${targetEvent.name_en}`;
   document.getElementById('ep-modal-summary').innerText = targetEvent.summary_vi;
   
   const metaEl = document.getElementById('ep-modal-meta');
   if (metaEl) {
     metaEl.innerHTML = `
-      <div>📍 Địa bàn: <strong>${targetEvent.location_id || 'Trung Nguyên'}</strong></div>
-      <div>👤 Nhân vật then chốt: <strong>${targetEvent.primary_character_id || 'Chư Hầu'}</strong></div>
-      <div>⚖️ Diễn biến lịch sử: <em>${targetEvent.historical_outcome_vi || 'Đang diễn ra'}</em></div>
+      <div>Địa bàn: <strong>${targetEvent.location_id || 'Trung Nguyên'}</strong></div>
+      <div>Nhân vật then chốt: <strong>${targetEvent.primary_character_id || 'Chư Hầu'}</strong></div>
+      <div>Diễn biến lịch sử: <em>${targetEvent.historical_outcome_vi || 'Đang diễn ra'}</em></div>
     `;
   }
 
@@ -586,14 +586,14 @@ function openEventParticipationModal(eventId = null) {
         return `
           <div class="event-choice-card">
             <div class="event-choice-header">
-              <span class="event-choice-title">👉 ${c.title_vi}</span>
+              <span class="event-choice-title">${c.title_vi}</span>
               <span class="event-choice-badge ${badgeClass}">${badgeText}</span>
             </div>
             <div class="event-choice-narrative">${c.narrative_vi}</div>
             <div class="event-choice-footer">
               <span class="event-choice-cost">${costStr || 'Không đòi hỏi tài nguyên'}</span>
               <button class="btn-select-choice" onclick="submitEventChoice('${targetEvent.event_id}', '${c.choice_id}')">
-                ⚔️ Quyết Định Hành Động
+                Quyết Định Hành Động
               </button>
             </div>
           </div>
@@ -619,7 +619,7 @@ async function submitEventChoice(eventId, choiceId) {
     const resultBox = document.getElementById('ep-modal-result');
     if (resultBox) {
       resultBox.innerHTML = `
-        <div style="font-weight:700;margin-bottom:4px;color:#34d399;">✅ ĐÃ HOÀN TẤT THAM GIA BIẾN CỐ LỊCH SỬ!</div>
+        <div style="font-weight:700;margin-bottom:4px;color:#34d399;">ĐÃ HOÀN TẤT THAM GIA BIẾN CỐ LỊCH SỬ</div>
         <div style="margin-bottom:6px;"><strong>Quyết Sách:</strong> ${result.choiceTitleVi} (${result.outcomeType === 'ALTERNATE' ? 'Dị Bản What-If' : 'Chính Sử'})</div>
         <div style="margin-bottom:6px;">${result.resolutionNarrative}</div>
         <div style="font-size:11px;color:#94a3b8;">${result.netCashDelta !== 0 ? `Biến động ngân lượng: ${result.netCashDelta > 0 ? '+' : ''}${result.netCashDelta.toLocaleString()} Tiền (Đã hạch toán vào Sổ cái kép)` : 'Không thay đổi số dư tiền mặt.'}</div>
@@ -669,39 +669,39 @@ async function loadAndRenderNpcLife() {
       } else {
         grid.innerHTML = progs.map(p => {
           const ambitionMap = {
-            HEGEMON_UNIFIER: { label: '👑 Tranh Bá Đồ Vương', color: '#f59e0b' },
-            RIGHTEOUS_VANGUARD: { label: '⚔️ Chiến Thần Cái Thế', color: '#ef4444' },
-            LOYAL_BROTHERHOOD: { label: '🛡️ Vạn Nhân Địch', color: '#3b82f6' },
-            MASTER_ARTISAN: { label: '🔨 Thần Tượng Đúc Khí', color: '#10b981' },
-            COMMERCE_TYCOON: { label: '💰 Phú Khả Địch Quốc', color: '#eab308' },
-            DEVOTED_RETAINER: { label: '🤝 Tận Tụy Chức Trách', color: '#8b5cf6' }
+            HEGEMON_UNIFIER: { label: 'Tranh Bá Đồ Vương', color: '#f59e0b' },
+            RIGHTEOUS_VANGUARD: { label: 'Chiến Thần Cái Thế', color: '#ef4444' },
+            LOYAL_BROTHERHOOD: { label: 'Vạn Nhân Địch', color: '#3b82f6' },
+            MASTER_ARTISAN: { label: 'Thần Tượng Đúc Khí', color: '#10b981' },
+            COMMERCE_TYCOON: { label: 'Phú Khả Địch Quốc', color: '#eab308' },
+            DEVOTED_RETAINER: { label: 'Tận Tụy Chức Trách', color: '#8b5cf6' }
           };
           const amb = ambitionMap[p.life_ambition] || { label: p.life_ambition, color: '#94a3b8' };
 
           return `
-            <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 6px;">
-              <div style="display: flex; justify-content: space-between; align-items: baseline;">
-                <span style="font-weight: 700; color: #f8fafc; font-size: 15px;">${p.npc_name}</span>
-                <span style="font-size: 11px; padding: 2px 6px; border-radius: 4px; background: rgba(255,255,255,0.05); color: #cbd5e1;">${p.milestone_title || 'Hào Hiệp'}</span>
+            <div class="tactical-card">
+              <div class="tactical-card-header">
+                <div>
+                  <h4 class="tactical-card-title">${p.npc_name}</h4>
+                  <div class="tactical-card-subtitle" style="color:${amb.color}; font-weight:600;">${amb.label}</div>
+                </div>
+                <span class="tactical-badge">${p.milestone_title || 'Hào Hiệp'}</span>
               </div>
-              <div style="display: inline-block; font-size: 12px; font-weight: 600; color: ${amb.color};">
-                ${amb.label}
-              </div>
-              <div style="font-size: 12px; color: #94a3b8; font-style: italic;">
+              <div class="tactical-narrative" style="font-style:italic;">
                 Đang chú tâm: "${p.current_focus}"
               </div>
-              <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.05); font-size: 11px; text-align: center;">
-                <div>
-                  <div style="color: #64748b;">Tiền riêng</div>
-                  <div style="color: #facc15; font-weight: 600;">${(p.personal_cash || 0).toLocaleString()} Tiền</div>
+              <div class="tactical-stat-grid tactical-stat-grid--3col">
+                <div class="tactical-stat-item">
+                  <span class="tactical-stat-label">Tiền Riêng</span>
+                  <span class="tactical-stat-val tactical-stat-val--gold">${(p.personal_cash || 0).toLocaleString()} Đ</span>
                 </div>
-                <div>
-                  <div style="color: #64748b;">Danh vọng</div>
-                  <div style="color: #38bdf8; font-weight: 600;">${p.prestige || 0} Điểm</div>
+                <div class="tactical-stat-item">
+                  <span class="tactical-stat-label">Danh Vọng</span>
+                  <span class="tactical-stat-val tactical-stat-val--blue">${p.prestige || 0}</span>
                 </div>
-                <div>
-                  <div style="color: #64748b;">Quân tư</div>
-                  <div style="color: #f43f5e; font-weight: 600;">${p.personal_troops || 0} Dũng sĩ</div>
+                <div class="tactical-stat-item">
+                  <span class="tactical-stat-label">Quân Tư</span>
+                  <span class="tactical-stat-val tactical-stat-val--red">${p.personal_troops || 0}</span>
                 </div>
               </div>
             </div>
@@ -713,16 +713,18 @@ async function loadAndRenderNpcLife() {
     // 2. Render Career Paradigm Shifts
     if (shiftsContainer) {
       if (shifts.length === 0) {
-        shiftsContainer.innerHTML = '<div style="color:#64748b; padding:10px; background:rgba(15,23,42,0.4); border-radius:6px;">Chưa có bước ngoặt thân phận nào diễn ra. Khi NPC đạt đủ danh vọng và tích lũy thực lực, họ sẽ đột phá thân phận.</div>';
+        shiftsContainer.innerHTML = '<div class="tactical-empty">Chưa có bước ngoặt thân phận nào diễn ra. Khi NPC đạt đủ danh vọng và tích lũy thực lực, họ sẽ đột phá thân phận.</div>';
       } else {
         shiftsContainer.innerHTML = shifts.map(s => `
-          <div style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.08), rgba(15, 23, 42, 0.8)); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 8px; padding: 12px 16px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-              <span style="font-size:12px; font-weight:700; color:#fbbf24; text-transform:uppercase; letter-spacing:0.5px;">⚡ ĐỘT PHÁ THÂN PHẬN • LƯỢT ${s.turn_number}</span>
-              <span style="font-size:11px; color:#94a3b8; background:rgba(255,255,255,0.05); padding:2px 8px; border-radius:4px;">${s.old_tier} ➔ <strong style="color:#38bdf8;">${s.new_tier}</strong></span>
+          <div class="tactical-card tactical-card--accent">
+            <div class="tactical-card-header">
+              <div>
+                <h4 class="tactical-card-title">${s.title_vi}</h4>
+                <div class="tactical-card-subtitle">Đột Phá Thân Phận • Lượt ${s.turn_number}</div>
+              </div>
+              <span class="tactical-badge tactical-badge--primary">${s.old_tier} ➔ ${s.new_tier}</span>
             </div>
-            <h4 style="margin:0 0 6px 0; color:#f8fafc; font-size:15px; font-weight:700;">${s.title_vi}</h4>
-            <p style="margin:0; font-size:13px; color:#cbd5e1; line-height:1.5;">${s.narrative_vi}</p>
+            <p class="tactical-narrative">${s.narrative_vi}</p>
           </div>
         `).join('');
       }
@@ -731,17 +733,17 @@ async function loadAndRenderNpcLife() {
     // 3. Render Cross-NPC Peer Relations
     if (peersContainer) {
       if (peers.length === 0) {
-        peersContainer.innerHTML = '<div style="color:#64748b; padding:10px;">Chưa có dữ liệu quan hệ chéo giữa các NPC.</div>';
+        peersContainer.innerHTML = '<div class="tactical-empty">Chưa có dữ liệu quan hệ chéo giữa các NPC.</div>';
       } else {
         peersContainer.innerHTML = peers.map(rel => {
           const typeBadgeMap = {
-            SWORN_BROTHERS: { label: '🤝 Sinh Tử Kết Nghĩa', color: '#ec4899', bg: 'rgba(236,72,153,0.15)' },
-            COMRADES: { label: '🛡️ Tri Kỷ Đồng Liêu', color: '#38bdf8', bg: 'rgba(56,189,248,0.15)' },
-            INTERNAL_RIVAL: { label: '⚔️ Đối Thủ Cạnh Tranh', color: '#f59e0b', bg: 'rgba(245,158,11,0.15)' },
-            MASTER_DISCIPLE: { label: '📜 Sư Đồ Chân Truyền', color: '#10b981', bg: 'rgba(16,185,129,0.15)' },
-            DEBTOR_CREDITOR: { label: '💰 Ân Nghĩa Vay Mượn', color: '#a855f7', bg: 'rgba(168,85,247,0.15)' }
+            SWORN_BROTHERS: { label: 'Sinh Tử Kết Nghĩa', badgeClass: 'tactical-badge--danger' },
+            COMRADES: { label: 'Tri Kỷ Đồng Liêu', badgeClass: 'tactical-badge--info' },
+            INTERNAL_RIVAL: { label: 'Đối Thủ Cạnh Tranh', badgeClass: 'tactical-badge--warning' },
+            MASTER_DISCIPLE: { label: 'Sư Đồ Chân Truyền', badgeClass: 'tactical-badge--success' },
+            DEBTOR_CREDITOR: { label: 'Ân Nghĩa Vay Mượn', badgeClass: 'tactical-badge--primary' }
           };
-          const tb = typeBadgeMap[rel.relation_type] || { label: rel.relation_type, color: '#94a3b8', bg: 'rgba(255,255,255,0.05)' };
+          const tb = typeBadgeMap[rel.relation_type] || { label: rel.relation_type, badgeClass: '' };
 
           let notes = '';
           try {
@@ -750,32 +752,22 @@ async function loadAndRenderNpcLife() {
           } catch (e) {}
 
           return `
-            <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px; display:flex; flex-direction:column; gap:8px;">
-              <div style="display:flex; justify-content:space-between; align-items:center;">
-                <span style="font-weight:700; color:#f8fafc; font-size:14px;">${rel.name_a} ⟷ ${rel.name_b}</span>
-                <span style="font-size:11px; font-weight:600; padding:2px 8px; border-radius:4px; color:${tb.color}; background:${tb.bg};">${tb.label}</span>
+            <div class="tactical-card">
+              <div class="tactical-card-header">
+                <h4 class="tactical-card-title">${rel.name_a} ⟷ ${rel.name_b}</h4>
+                <span class="tactical-badge ${tb.badgeClass}">${tb.label}</span>
               </div>
-              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; font-size:12px;">
-                <div>
-                  <div style="display:flex; justify-content:space-between; color:#94a3b8; margin-bottom:2px;">
-                    <span>Thiện cảm</span>
-                    <span style="color:#f43f5e; font-weight:600;">${rel.affinity > 0 ? '+' : ''}${rel.affinity}</span>
-                  </div>
-                  <div style="height:4px; background:rgba(255,255,255,0.1); border-radius:2px; overflow:hidden;">
-                    <div style="height:100%; width:${Math.max(0, Math.min(100, (rel.affinity + 100) / 2))}%; background:#f43f5e;"></div>
-                  </div>
+              <div class="tactical-stat-grid">
+                <div class="tactical-stat-item">
+                  <span class="tactical-stat-label">Thiện Cảm</span>
+                  <span class="tactical-stat-val ${rel.affinity >= 0 ? 'tactical-stat-val--green' : 'tactical-stat-val--red'}">${rel.affinity > 0 ? '+' : ''}${rel.affinity}</span>
                 </div>
-                <div>
-                  <div style="display:flex; justify-content:space-between; color:#94a3b8; margin-bottom:2px;">
-                    <span>Tôn kính</span>
-                    <span style="color:#38bdf8; font-weight:600;">${rel.respect}/100</span>
-                  </div>
-                  <div style="height:4px; background:rgba(255,255,255,0.1); border-radius:2px; overflow:hidden;">
-                    <div style="height:100%; width:${rel.respect}%; background:#38bdf8;"></div>
-                  </div>
+                <div class="tactical-stat-item">
+                  <span class="tactical-stat-label">Tôn Kính</span>
+                  <span class="tactical-stat-val tactical-stat-val--blue">${rel.respect}/100</span>
                 </div>
               </div>
-              ${notes ? `<div style="font-size:12px; color:#cbd5e1; font-style:italic; border-top:1px solid rgba(255,255,255,0.05); padding-top:6px;">"${notes}"</div>` : ''}
+              ${notes ? `<div class="tactical-narrative" style="font-style:italic; border-top:1px dashed var(--border-subtle); padding-top:4px;">"${notes}"</div>` : ''}
             </div>
           `;
         }).join('');
@@ -785,18 +777,18 @@ async function loadAndRenderNpcLife() {
     // 4. Render Journey Timeline
     if (timeline) {
       if (logs.length === 0) {
-        timeline.innerHTML = '<div style="color:#64748b; padding:15px; text-align:center;">Chưa có nhật ký hành trình. Bấm "Vận Hành 1 Lượt Tự Thân" để NPC bắt đầu chuỗi sự kiện.</div>';
+        timeline.innerHTML = '<div class="tactical-empty">Chưa có nhật ký hành trình. Bấm "Vận Hành 1 Lượt Tự Thân" để NPC bắt đầu chuỗi sự kiện.</div>';
       } else {
         timeline.innerHTML = logs.map(l => {
-          const actionIcons = {
-            MARTIAL_DRILL: '🗡️ Khổ Luyện Võ Nghệ',
-            STRATEGY_STUDY: '📜 Nghiên Cứu Binh Thư',
-            COMMERCE_ARBITRAGE: '💰 Giao Thương Tích Lũy',
-            BANDIT_EXPEDITION: '⚔️ Tiễu Phỉ Dẹp Cướp',
-            BANQUET_NETWORKING: '🍷 Hội Ngộ Bằng Hữu',
-            CRAFT_BREAKTHROUGH: '🔨 Đột Phá Kỹ Nghệ'
+          const actionNames = {
+            MARTIAL_DRILL: 'Khổ Luyện Võ Nghệ',
+            STRATEGY_STUDY: 'Nghiên Cứu Binh Thư',
+            COMMERCE_ARBITRAGE: 'Giao Thương Tích Lũy',
+            BANDIT_EXPEDITION: 'Tiễu Phỉ Dẹp Cướp',
+            BANQUET_NETWORKING: 'Hội Ngộ Bằng Hữu',
+            CRAFT_BREAKTHROUGH: 'Đột Phá Kỹ Nghệ'
           };
-          const iconLabel = actionIcons[l.actionType] || l.actionType;
+          const actionLabel = actionNames[l.actionType] || l.actionType;
 
           let badgeHtml = '';
           if (l.statChanges && Object.keys(l.statChanges).length > 0) {
@@ -811,7 +803,7 @@ async function loadAndRenderNpcLife() {
             <div class="event-card" style="border-left-color: #8b5cf6;">
               <div class="event-header">
                 <span class="event-year-badge" style="background:#8b5cf6;">Lượt ${l.turnNumber} • ${l.gameDate}</span>
-                <span class="event-loc-badge">👤 ${l.npcName}</span>
+                <span class="event-loc-badge">${l.npcName}</span>
                 <span style="font-size:12px; color:#cbd5e1; margin-left:auto;">${iconLabel}</span>
               </div>
               <h4 class="event-title" style="color:#c084fc;">${l.titleVi}</h4>
@@ -873,31 +865,31 @@ async function loadAndRenderFactions() {
         factionsContainer.innerHTML = '<div style="color:#94a3b8;">Chưa có dữ liệu thế lực.</div>';
       } else {
         const ideologyLabels = {
-          ROYALIST: '👑 Phò Hán',
-          REBEL: '⚡ Khăn Vàng Khởi Nghĩa',
-          WARLORD: '⚔️ Quân Phiệt Cát Cứ',
-          MERCHANT_GUILD: '💎 Thương Bang Nghiệp Hộ'
+          ROYALIST: 'Phò Hán Tôn Thất',
+          REBEL: 'Khăn Vàng Khởi Nghĩa',
+          WARLORD: 'Quân Phiệt Cát Cứ',
+          MERCHANT_GUILD: 'Thương Bang Nghiệp Hộ'
         };
 
         factionsContainer.innerHTML = factions.map(f => `
-          <div class="gm-npc-card" style="border-top: 3px solid ${f.colorHex};">
-            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+          <div class="tactical-card" style="border-top: 3px solid ${f.colorHex};">
+            <div class="tactical-card-header">
               <div>
-                <h4 style="color:#f8fafc; font-size:15px; font-weight:700; margin:0;">${f.nameVi}</h4>
-                <span style="font-size:11px; color:#94a3b8;">${f.nameEn}</span>
+                <h4 class="tactical-card-title">${f.nameVi}</h4>
+                <div class="tactical-card-subtitle">${f.nameEn}</div>
               </div>
-              <span style="font-size:11px; padding:2px 8px; border-radius:10px; background:rgba(255,255,255,0.08); color:#facc15; border:1px solid rgba(250,204,21,0.3);">
+              <span class="tactical-badge tactical-badge--primary">
                 ${ideologyLabels[f.ideology] || f.ideology}
               </span>
             </div>
 
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:6px; font-size:12px; margin-bottom:10px; background:rgba(0,0,0,0.25); padding:8px; border-radius:4px;">
-              <div><span style="color:#94a3b8;">Uy thế:</span> <b style="color:#e2e8f0;">${f.prestige}</b></div>
-              <div><span style="color:#94a3b8;">Binh lực:</span> <b style="color:#38bdf8;">${f.militaryPower?.toLocaleString()}</b></div>
-              <div><span style="color:#94a3b8;">Quân khố:</span> <b style="color:#4ade80;">${f.treasuryCash?.toLocaleString()}</b> đ</div>
-              <div><span style="color:#94a3b8;">Lương thảo:</span> <b style="color:#fbbf24;">${f.granaryGrain}</b> thạch</div>
-              <div><span style="color:#94a3b8;">Trọng trấn:</span> <b style="color:#e2e8f0;">${f.settlementCount || 0} thành</b></div>
-              <div><span style="color:#94a3b8;">Tướng soái:</span> <b style="color:#c084fc;">${f.officerCount || 0} người</b></div>
+            <div class="tactical-stat-grid tactical-stat-grid--3col">
+              <div class="tactical-stat-item"><span class="tactical-stat-label">Uy Thế</span><span class="tactical-stat-val tactical-stat-val--gold">${f.prestige}</span></div>
+              <div class="tactical-stat-item"><span class="tactical-stat-label">Binh Lực</span><span class="tactical-stat-val tactical-stat-val--blue">${f.militaryPower?.toLocaleString()}</span></div>
+              <div class="tactical-stat-item"><span class="tactical-stat-label">Quân Khố</span><span class="tactical-stat-val tactical-stat-val--green">${f.treasuryCash?.toLocaleString()} Đ</span></div>
+              <div class="tactical-stat-item"><span class="tactical-stat-label">Lương Thảo</span><span class="tactical-stat-val tactical-stat-val--gold">${f.granaryGrain} Thạch</span></div>
+              <div class="tactical-stat-item"><span class="tactical-stat-label">Thành Trì</span><span class="tactical-stat-val">${f.settlementCount || 0}</span></div>
+              <div class="tactical-stat-item"><span class="tactical-stat-label">Tướng Soái</span><span class="tactical-stat-val tactical-stat-val--purple">${f.officerCount || 0}</span></div>
             </div>
           </div>
         `).join('');
@@ -907,80 +899,84 @@ async function loadAndRenderFactions() {
     // 2. Render Officers Tension & Betrayal Risk
     if (officersContainer) {
       if (officers.length === 0) {
-        officersContainer.innerHTML = '<div style="color:#94a3b8;">Chưa có danh sách tướng lĩnh.</div>';
+        officersContainer.innerHTML = '<div class="tactical-empty">Chưa có danh sách tướng lĩnh.</div>';
       } else {
         const rankLabels = {
-          RULER: '👑 Chúa Công',
-          CHIEF_COMMANDER: '🎖️ Đại Đô Đốc',
-          CHIEF_ADVISOR: '📜 Quân Sư',
-          GOVERNOR: '🏛️ Thái Thú',
-          GENERAL: '⚔️ Tiền Phong',
-          OFFICER: '🛡️ Hiệu Úy',
-          RETAINER: '👤 Môn Khách'
+          RULER: 'Chúa Công (Lãnh Tụ)',
+          CHIEF_COMMANDER: 'Đại Đô Đốc',
+          CHIEF_ADVISOR: 'Quân Sư',
+          GOVERNOR: 'Thái Thú',
+          GENERAL: 'Tiền Phong',
+          OFFICER: 'Hiệu Úy',
+          RETAINER: 'Môn Khách'
         };
 
         officersContainer.innerHTML = officers.map(off => {
           const riskPercent = Math.round((off.betrayalRisk || 0) * 100);
           let riskBadge = '';
+          let cardModifier = '';
           if (off.courtRank === 'RULER') {
-            riskBadge = `<span style="font-size:11px; padding:2px 8px; border-radius:4px; background:rgba(59,130,246,0.2); color:#60a5fa; border:1px solid #3b82f6;">👑 Lãnh Tụ Thế Lực</span>`;
+            riskBadge = `<span class="tactical-badge tactical-badge--info">Lãnh Tụ Thế Lực</span>`;
           } else if (riskPercent >= 65) {
-            riskBadge = `<span style="font-size:11px; padding:2px 8px; border-radius:4px; background:rgba(239,68,68,0.25); color:#f87171; border:1px solid #ef4444; animation:pulse 1.5s infinite;">⚠️ Nguy Cơ Phản Nghịch: ${riskPercent}%</span>`;
+            riskBadge = `<span class="tactical-badge tactical-badge--danger">Nguy Cơ Phản Nghịch: ${riskPercent}%</span>`;
+            cardModifier = 'tactical-card--danger';
           } else if (riskPercent >= 40) {
-            riskBadge = `<span style="font-size:11px; padding:2px 8px; border-radius:4px; background:rgba(234,179,8,0.2); color:#facc15; border:1px solid #eab308;">⚡ Dao Động: ${riskPercent}%</span>`;
+            riskBadge = `<span class="tactical-badge tactical-badge--warning">Tâm Ý Dao Động: ${riskPercent}%</span>`;
+            cardModifier = 'tactical-card--warning';
           } else {
-            riskBadge = `<span style="font-size:11px; padding:2px 8px; border-radius:4px; background:rgba(34,197,94,0.15); color:#4ade80; border:1px solid rgba(34,197,94,0.3);">🛡️ Trung Thành: ${riskPercent}%</span>`;
+            riskBadge = `<span class="tactical-badge tactical-badge--success">Trung Thành: ${riskPercent}%</span>`;
+            cardModifier = 'tactical-card--success';
           }
 
           const isGovernor = !!off.appointedSettlementName;
 
           return `
-            <div class="gm-npc-card" style="border-left: 3px solid ${riskPercent >= 65 ? '#ef4444' : '#6366f1'};">
-              <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+            <div class="tactical-card ${cardModifier}">
+              <div class="tactical-card-header">
                 <div>
-                  <h4 style="color:#f8fafc; font-size:14px; font-weight:700; margin:0;">${off.officerName}</h4>
-                  <span style="font-size:11px; color:#cbd5e1;">${off.factionNameVi} • ${rankLabels[off.courtRank] || off.courtRank}</span>
+                  <h4 class="tactical-card-title">${off.officerName}</h4>
+                  <div class="tactical-card-subtitle">${off.factionNameVi} • ${rankLabels[off.courtRank] || off.courtRank}</div>
                 </div>
                 ${riskBadge}
               </div>
 
               ${isGovernor ? `
-                <div style="font-size:11px; color:#38bdf8; margin-bottom:6px; background:rgba(56,189,248,0.1); padding:3px 6px; border-radius:3px;">
-                  🏛️ Trấn thủ: <b>${off.appointedSettlementName}</b>
+                <div style="font-size:11px; color:#38bdf8; background:rgba(56,189,248,0.08); padding:4px 8px; border-radius:var(--radius-xs); border:1px solid rgba(56,189,248,0.2);">
+                  Trấn Thủ: <b>${off.appointedSettlementName}</b>
                 </div>
               ` : ''}
 
               <!-- Dual Tension Bars: Loyalty vs Ambition -->
-              <div style="display:flex; flex-direction:column; gap:5px; margin-bottom:10px; font-size:11px;">
+              <div style="display:flex; flex-direction:column; gap:6px; font-size:11px;">
                 <div>
-                  <div style="display:flex; justify-content:space-between; color:#94a3b8; margin-bottom:2px;">
-                    <span>Lòng Trung Thành:</span>
-                    <span style="color:#4ade80; font-weight:600;">${off.loyalty}/100</span>
+                  <div style="display:flex; justify-content:space-between; color:var(--text-muted); margin-bottom:2px;">
+                    <span>Lòng Trung Thành</span>
+                    <span class="tactical-stat-val tactical-stat-val--green">${off.loyalty}/100</span>
                   </div>
-                  <div style="height:4px; background:rgba(255,255,255,0.1); border-radius:2px; overflow:hidden;">
-                    <div style="height:100%; width:${off.loyalty}%; background:#22c55e;"></div>
+                  <div class="tactical-progress-track">
+                    <div class="tactical-progress-bar tactical-progress-bar--success" style="width:${off.loyalty}%;"></div>
                   </div>
                 </div>
 
                 <div>
-                  <div style="display:flex; justify-content:space-between; color:#94a3b8; margin-bottom:2px;">
-                    <span>Dã Tâm / Tham Vọng:</span>
-                    <span style="color:#f59e0b; font-weight:600;">${off.ambition}/100</span>
+                  <div style="display:flex; justify-content:space-between; color:var(--text-muted); margin-bottom:2px;">
+                    <span>Dã Tâm / Tham Vọng</span>
+                    <span class="tactical-stat-val tactical-stat-val--gold">${off.ambition}/100</span>
                   </div>
-                  <div style="height:4px; background:rgba(255,255,255,0.1); border-radius:2px; overflow:hidden;">
-                    <div style="height:100%; width:${off.ambition}%; background:#f59e0b;"></div>
+                  <div class="tactical-progress-track">
+                    <div class="tactical-progress-bar" style="width:${off.ambition}%;"></div>
                   </div>
                 </div>
               </div>
 
               <!-- Action buttons -->
               ${off.courtRank !== 'RULER' ? `
-                <div style="display:flex; gap:6px; margin-top:8px; border-top:1px solid rgba(255,255,255,0.06); padding-top:8px;">
-                  <button class="btn btn-outline" style="font-size:11px; padding:4px 8px; flex:1;" onclick="handleGrantReward('${off.officerId}', '${off.factionId}')">
-                    💰 Thưởng 300 Tiền
+                <div style="display:flex; gap:6px; margin-top:4px; border-top:1px solid var(--border-subtle); padding-top:8px;">
+                  <button class="tactical-btn tactical-btn--sm" style="flex:1;" onclick="handleGrantReward('${off.officerId}', '${off.factionId}')">
+                    Thưởng 300 Tiền
                   </button>
-                  <button class="btn btn-outline" style="font-size:11px; padding:4px 8px; flex:1;" onclick="handleInvestTitle('${off.officerId}', '${off.factionId}')">
-                    🎖️ Phong Tước
+                  <button class="tactical-btn tactical-btn--sm" style="flex:1;" onclick="handleInvestTitle('${off.officerId}', '${off.factionId}')">
+                    Phong Tước Vị
                   </button>
                 </div>
               ` : ''}
@@ -993,25 +989,32 @@ async function loadAndRenderFactions() {
     // 3. Render Settlements Control
     if (settlementsContainer) {
       if (settlements.length === 0) {
-        settlementsContainer.innerHTML = '<div style="color:#94a3b8;">Chưa có dữ liệu thành trì.</div>';
+        settlementsContainer.innerHTML = '<div class="tactical-empty">Chưa có dữ liệu thành trì.</div>';
       } else {
         settlementsContainer.innerHTML = settlements.map(s => `
-          <div class="gm-npc-card" style="padding:10px; font-size:12px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-              <b style="color:#f8fafc; font-size:13px;">${s.nameVi}</b>
-              <span style="font-size:11px; padding:1px 6px; border-radius:3px; background:${s.factionColor}33; color:${s.factionColor}; border:1px solid ${s.factionColor}66;">
+          <div class="tactical-card">
+            <div class="tactical-card-header">
+              <h4 class="tactical-card-title">${s.nameVi}</h4>
+              <span class="tactical-badge" style="border-color:${s.factionColor}66; color:${s.factionColor};">
                 ${s.factionNameVi}
               </span>
             </div>
-            <div style="color:#94a3b8; font-size:11px; margin-bottom:4px;">
-              Thái thú: <b style="color:#e2e8f0;">${s.governorName}</b>
+            <div class="tactical-stat-grid">
+              <div class="tactical-stat-item">
+                <span class="tactical-stat-label">Thái Thú</span>
+                <span class="tactical-stat-val">${s.governorName}</span>
+              </div>
+              <div class="tactical-stat-item">
+                <span class="tactical-stat-label">Trị An</span>
+                <span class="tactical-stat-val tactical-stat-val--green">${s.publicOrder}%</span>
+              </div>
+              <div class="tactical-stat-item" style="grid-column: span 2;">
+                <span class="tactical-stat-label">Binh Lực Đồn Trú</span>
+                <span class="tactical-stat-val tactical-stat-val--blue">${s.garrisonTroops?.toLocaleString()} Quân Sĩ</span>
+              </div>
             </div>
-            <div style="display:flex; justify-content:space-between; font-size:11px; color:#cbd5e1; margin-bottom:8px;">
-              <span>Trị an: ${s.publicOrder}%</span>
-              <span>Đồn trú: ${s.garrisonTroops?.toLocaleString()} binh</span>
-            </div>
-            <button class="btn btn-outline" style="width:100%; font-size:11px; padding:3px 6px;" onclick="handleAppointGovernor('${s.settlementId}', '${s.rulerFactionId}')">
-              🏛️ Bổ Nhiệm Thái Thú Mới
+            <button class="tactical-btn tactical-btn--sm" style="width:100%; margin-top:2px;" onclick="handleAppointGovernor('${s.settlementId}', '${s.rulerFactionId}')">
+              Bổ Nhiệm Thái Thú Mới
             </button>
           </div>
         `).join('');
@@ -1074,10 +1077,10 @@ async function handleGrantReward(officerId, factionId) {
 
 async function handleInvestTitle(officerId, factionId) {
   const ranks = [
-    { code: 'CHIEF_COMMANDER', label: '🎖️ Đại Đô Đốc / Thống Soái' },
-    { code: 'CHIEF_ADVISOR', label: '📜 Quân Sư / Đại Quân Mưu' },
-    { code: 'GOVERNOR', label: '🏛️ Thái Thú / Thứ Sử' },
-    { code: 'GENERAL', label: '⚔️ Tiền Phong Tướng Quân' }
+    { code: 'CHIEF_COMMANDER', label: 'Đại Đô Đốc / Thống Soái' },
+    { code: 'CHIEF_ADVISOR', label: 'Quân Sư / Đại Quân Mưu' },
+    { code: 'GOVERNOR', label: 'Thái Thú / Thứ Sử' },
+    { code: 'GENERAL', label: 'Tiền Phong Tướng Quân' }
   ];
 
   const choiceStr = ranks.map((r, i) => `${i + 1}. ${r.label}`).join('\n');
@@ -1160,15 +1163,15 @@ async function loadAndRenderProfessions() {
     // 1. Render Learned Professions
     if (profsContainer) {
       if (profs.length === 0) {
-        profsContainer.innerHTML = '<div style="color:#94a3b8;">Chưa học nghề nào. Hãy lên núi khai thác để bắt đầu nhập môn!</div>';
+        profsContainer.innerHTML = '<div class="tactical-empty">Chưa nhập môn nghề nghiệp nào. Hãy lên núi khai thác để bắt đầu tích lũy kinh nghiệm!</div>';
       } else {
-        const tierLabels = [
+        const tierNames = [
           '',
-          '🌱 Bậc 1: Tập Sự (Apprentice)',
-          '🔨 Bậc 2: Thợ Nghề (Journeyman)',
-          '⚙️ Bậc 3: Thợ Cả (Master Artisan)',
-          '🎖️ Bậc 4: Đại Sư (Grandmaster)',
-          '👑 Bậc 5: Tông Sư (Paragon Pioneer)'
+          'Bậc 1: Tập Sự',
+          'Bậc 2: Thợ Nghề',
+          'Bậc 3: Thợ Cả',
+          'Bậc 4: Đại Sư',
+          'Bậc 5: Tông Sư'
         ];
 
         profsContainer.innerHTML = profs.map(p => {
@@ -1176,31 +1179,28 @@ async function loadAndRenderProfessions() {
           const progressPercent = Math.min(100, Math.round((p.currentExp / p.maxExp) * 100));
 
           return `
-            <div class="gm-npc-card" style="border-left: 3px solid ${isEmergent ? '#f59e0b' : '#10b981'}; background:${isEmergent ? 'rgba(245, 158, 11, 0.05)' : 'rgba(30, 41, 59, 0.7)'};">
-              <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px;">
+            <div class="tactical-card ${isEmergent ? 'tactical-card--accent' : 'tactical-card--success'}">
+              <div class="tactical-card-header">
                 <div>
-                  <h4 style="color:${isEmergent ? '#fbbf24' : '#f8fafc'}; font-size:14px; font-weight:700; margin:0;">
-                    ${isEmergent ? '✨ ' : ''}${p.professionNameVi}
-                  </h4>
-                  <span style="font-size:11px; color:#94a3b8;">${p.professionNameEn}</span>
+                  <h4 class="tactical-card-title">${p.professionNameVi}</h4>
+                  <div class="tactical-card-subtitle">${p.professionNameEn}</div>
                 </div>
-                <span style="font-size:10px; padding:2px 6px; border-radius:3px; background:${isEmergent ? 'rgba(245,158,11,0.2)' : 'rgba(16,185,129,0.15)'}; color:${isEmergent ? '#facc15' : '#4ade80'}; border:1px solid ${isEmergent ? '#f59e0b' : '#10b981'};">
-                  ${p.category}
+                <span class="tactical-badge ${isEmergent ? 'tactical-badge--primary' : 'tactical-badge--success'}">
+                  ${p.category === 'EMERGENT_INNOVATION' ? 'Nghề Đột Phá' : 'Chính Đạo'}
                 </span>
               </div>
 
-              <div style="font-size:11px; color:#cbd5e1; margin-bottom:6px; font-weight:600;">
-                ${tierLabels[p.tier] || `Bậc ${p.tier}`}
+              <div style="font-size:11.5px; color:#cbd5e1; font-weight:600;">
+                ${tierNames[p.tier] || `Bậc ${p.tier}`}
               </div>
 
-              <!-- EXP Bar -->
-              <div style="margin-bottom:8px;">
-                <div style="display:flex; justify-content:space-between; font-size:11px; color:#94a3b8; margin-bottom:2px;">
-                  <span>Độ Thuần Thục:</span>
-                  <span style="color:#e2e8f0;">${p.currentExp} / ${p.maxExp} EXP (${progressPercent}%)</span>
+              <div>
+                <div style="display:flex; justify-content:space-between; font-size:10.5px; color:var(--text-muted); margin-bottom:3px;">
+                  <span>Độ Thuần Thục</span>
+                  <span class="tactical-stat-val">${p.currentExp} / ${p.maxExp} EXP (${progressPercent}%)</span>
                 </div>
-                <div style="height:5px; background:rgba(255,255,255,0.1); border-radius:3px; overflow:hidden;">
-                  <div style="height:100%; width:${progressPercent}%; background:${isEmergent ? 'linear-gradient(90deg, #f59e0b, #fbbf24)' : '#10b981'};"></div>
+                <div class="tactical-progress-track">
+                  <div class="tactical-progress-bar ${isEmergent ? '' : 'tactical-progress-bar--success'}" style="width:${progressPercent}%;"></div>
                 </div>
               </div>
             </div>
@@ -1212,39 +1212,45 @@ async function loadAndRenderProfessions() {
     // 2. Render Gathering Nodes
     if (nodesContainer) {
       if (nodes.length === 0) {
-        nodesContainer.innerHTML = '<div style="color:#94a3b8;">Chưa có điểm thu thập trên bản đồ.</div>';
+        nodesContainer.innerHTML = '<div class="tactical-empty">Chưa có điểm thu thập trên bản đồ.</div>';
       } else {
-        const typeIcons = {
-          MINERAL: '⛏️ Khai Khoáng Mỏ Đá',
-          HERB: '🌿 Dược Thảo Rừng Núi',
-          TIMBER: '🌲 Đốn Củi Rừng Già',
-          SALT_WELL: '🧂 Chưng Cất Nấu Muối'
+        const typeNames = {
+          MINERAL: 'Khai Khoáng Mỏ Đá',
+          HERB: 'Dược Thảo Rừng Núi',
+          TIMBER: 'Đốn Gỗ Sơn Lâm',
+          SALT_WELL: 'Chưng Cất Nấu Muối'
         };
 
         nodesContainer.innerHTML = nodes.map(n => `
-          <div class="gm-npc-card" style="padding:12px;">
-            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px;">
+          <div class="tactical-card tactical-card--info">
+            <div class="tactical-card-header">
               <div>
-                <b style="color:#f8fafc; font-size:14px;">${n.nameVi}</b>
-                <div style="font-size:11px; color:#38bdf8;">${n.settlementId} • ${typeIcons[n.resourceType] || n.resourceType}</div>
+                <h4 class="tactical-card-title">${n.nameVi}</h4>
+                <div class="tactical-card-subtitle">${n.settlementId} • ${typeNames[n.resourceType] || n.resourceType}</div>
               </div>
-              <span style="font-size:11px; color:#f87171; font-weight:600; background:rgba(239,68,68,0.1); padding:2px 6px; border-radius:3px;">
-                -${n.fatigueCost} Thể lực
-              </span>
+              <span class="tactical-badge tactical-badge--danger">-${n.fatigueCost} Thể Lực</span>
             </div>
 
-            <p style="font-size:11px; color:#94a3b8; margin:6px 0 10px 0; line-height:1.4;">
+            <p class="tactical-narrative">
               ${n.descriptionVi || ''}
             </p>
 
-            <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.25); padding:6px 8px; border-radius:4px; margin-bottom:8px; font-size:11px;">
-              <span style="color:#cbd5e1;">Sản vật: <b style="color:#e2e8f0;">${n.yieldItemNameVi}</b></span>
-              <span style="color:#facc15;">Sản lượng: ~${n.yieldQuantityMin}-${n.yieldQuantityMax} đơn vị</span>
+            <div class="tactical-stat-grid">
+              <div class="tactical-stat-item">
+                <span class="tactical-stat-label">Sản Vật Thu Hoạch</span>
+                <span class="tactical-stat-val">${n.yieldItemNameVi}</span>
+              </div>
+              <div class="tactical-stat-item">
+                <span class="tactical-stat-label">Sản Lượng Ước Tính</span>
+                <span class="tactical-stat-val tactical-stat-val--gold">~${n.yieldQuantityMin}-${n.yieldQuantityMax} Đơn Vị</span>
+              </div>
             </div>
 
-            <button class="btn btn-primary" style="width:100%; font-size:12px; padding:6px; background:#047857; border-color:#10b981;" onclick="handleGatherResource('${n.nodeId}')">
-              ⛏️ Lên Núi Thu Thập / Khai Thác
-            </button>
+            <div style="margin-top:4px;">
+              <button class="tactical-btn tactical-btn--success" style="width:100%;" onclick="handleGatherResource('${n.nodeId}')">
+                Tiến Vào Khai Thác
+              </button>
+            </div>
           </div>
         `).join('');
       }
@@ -1253,19 +1259,21 @@ async function loadAndRenderProfessions() {
     // 3. Render Emergent Innovations
     if (innoTimeline) {
       if (innovations.length === 0) {
-        innoTimeline.innerHTML = '<div style="color:#64748b; padding:15px; text-align:center;">Chưa có sáng tạo nghề mới. Hãy nâng cấp nhiều nghề lên Bậc 2 trở lên và bấm "Đột Phá Sáng Tạo Nghề Mới"!</div>';
+        innoTimeline.innerHTML = '<div class="tactical-empty">Chưa có sáng tạo nghề mới. Hãy nâng cấp nhiều nghề lên Bậc 2 trở lên và bấm "Đột Phá Sáng Tạo Nghề Mới"!</div>';
       } else {
         innoTimeline.innerHTML = innovations.map(inno => `
-          <div class="event-card" style="border-left-color: #f59e0b; background:rgba(245,158,11,0.03);">
-            <div class="event-header">
-              <span class="event-year-badge" style="background:#f59e0b;">Lượt ${inno.turnNumber} • ${inno.gameDate}</span>
-              <span class="event-loc-badge" style="background:rgba(245,158,11,0.2); color:#fbbf24; border-color:#f59e0b;">✨ Nghề Mới: ${inno.professionCode}</span>
+          <div class="tactical-card tactical-card--accent">
+            <div class="tactical-card-header">
+              <div>
+                <h4 class="tactical-card-title">${inno.titleVi}</h4>
+                <div class="tactical-card-subtitle">Lượt ${inno.turnNumber} • ${inno.gameDate}</div>
+              </div>
+              <span class="tactical-badge tactical-badge--primary">Nghề Mới: ${inno.professionCode}</span>
             </div>
-            <h4 class="event-title" style="color:#facc15;">${inno.titleVi}</h4>
-            <p class="event-narrative">${inno.narrativeVi}</p>
+            <p class="tactical-narrative">${inno.narrativeVi}</p>
             ${inno.unlockedRecipes && inno.unlockedRecipes.length > 0 ? `
-              <div style="font-size:11px; color:#4ade80; margin-top:6px; background:rgba(34,197,94,0.1); padding:4px 8px; border-radius:3px;">
-                🔓 Mở khóa công thức chế tác: <b>${inno.unlockedRecipes.join(', ')}</b>
+              <div style="font-size:11px; color:#4ade80; margin-top:4px; background:rgba(34,197,94,0.08); padding:5px 8px; border-radius:3px; border:1px solid rgba(34,197,94,0.2);">
+                Công Thức Khai Mở: <b>${inno.unlockedRecipes.join(', ')}</b>
               </div>
             ` : ''}
           </div>
@@ -1287,7 +1295,7 @@ async function handleGatherResource(nodeId) {
       showToast(`Thu hoạch thành công +${data.yieldQuantity} ${data.itemName}! (${data.expMessage})`, false);
       if (data.breakthrough) {
         setTimeout(() => {
-          alert(`🌟 CHÚC MỪNG ĐỘT PHÁ NGHỀ MỚI!\n\n${data.breakthrough.titleVi}\n\n${data.breakthrough.narrativeVi}`);
+          alert(`CHÚC MỪNG ĐỘT PHÁ NGHỀ MỚI!\n\n${data.breakthrough.titleVi}\n\n${data.breakthrough.narrativeVi}`);
         }, 500);
       }
       await loadAndRenderProfessions();
@@ -1302,7 +1310,7 @@ async function triggerSynthesizeBreakthrough() {
     showToast('Đang kiểm tra khả năng dung hợp bách nghệ và điều kiện đột phá...', false);
     const res = await apiSynthesizeBreakthrough('PLY-0001');
     if (res.success && res.innovation) {
-      alert(`🌟 ĐỘT PHÁ THÀNH CÔNG NGHỀ MỚI!\n\n${res.innovation.titleVi}\n\n${res.innovation.narrativeVi}`);
+      alert(`ĐỘT PHÁ THÀNH CÔNG NGHỀ MỚI!\n\n${res.innovation.titleVi}\n\n${res.innovation.narrativeVi}`);
       await loadAndRenderProfessions();
     } else {
       showToast('Chưa hội đủ điều kiện giao thoa! Hãy nâng cấp ít nhất 2 nhánh nghề lên Bậc 2 (ví dụ: Khai Khoáng Bậc 2 + Thái Dược Bậc 2) rồi thử lại.', true);
@@ -1317,9 +1325,9 @@ async function loadAndRenderEcology() {
   const caravansContainer = document.getElementById('gm-caravans-container');
   const strongholdsContainer = document.getElementById('gm-strongholds-container');
 
-  if (crisesContainer) crisesContainer.innerHTML = '<div style="color:#94a3b8; padding:15px; text-align:center;">Đang nạp dữ liệu thiên tai sinh thái...</div>';
-  if (caravansContainer) caravansContainer.innerHTML = '<div style="color:#94a3b8; padding:15px; text-align:center;">Đang nạp dữ liệu thương đoàn...</div>';
-  if (strongholdsContainer) strongholdsContainer.innerHTML = '<div style="color:#94a3b8; padding:15px; text-align:center;">Đang nạp dữ liệu sơn trại phỉ đạo...</div>';
+  if (crisesContainer) crisesContainer.innerHTML = '<div class="tactical-empty">Đang kiểm kê hiện trạng thiên tai sinh thái...</div>';
+  if (caravansContainer) caravansContainer.innerHTML = '<div class="tactical-empty">Đang kiểm kê tuyến vận tải thương đoàn...</div>';
+  if (strongholdsContainer) strongholdsContainer.innerHTML = '<div class="tactical-empty">Đang trinh sát cứ điểm đạo phỉ...</div>';
 
   try {
     const [crisesRes, caravansRes, strongholdsRes] = await Promise.all([
@@ -1335,37 +1343,47 @@ async function loadAndRenderEcology() {
     // 1. Render Crises
     if (crisesContainer) {
       if (crises.length === 0) {
-        crisesContainer.innerHTML = '<div style="color:#10b981; padding:15px; text-align:center;">Mưa thuận gió hòa, thiên hạ thái bình, không có biến cố thiên tai nạn đói.</div>';
+        crisesContainer.innerHTML = '<div class="tactical-empty" style="color:var(--state-success);">Mưa thuận gió hòa, thiên hạ thái bình, không có biến cố thiên tai nạn đói.</div>';
       } else {
-        const crisisIcons = {
-          GREAT_DROUGHT: '☀️ Đại Hạn Hán',
-          LOCUST_SWARM: '🦗 Nạn Châu Chấu',
-          MAJOR_FLOOD: '🌊 Lũ Lụt Lớn',
-          PESTILENCE: '☣️ Dịch Bệnh Hoành Hành',
-          PEASANT_REBELLION: '⚔️ Khởi Nghĩa Nông Dân'
+        const crisisNames = {
+          GREAT_DROUGHT: 'Đại Hạn Hán',
+          LOCUST_SWARM: 'Dịch Châu Chấu',
+          MAJOR_FLOOD: 'Đại Hồng Thủy',
+          PESTILENCE: 'Ôn Dịch Hoành Hành',
+          PEASANT_REBELLION: 'Khởi Nghĩa Nông Dân'
         };
 
         crisesContainer.innerHTML = crises.map(c => `
-          <div class="gm-npc-card" style="border-left: 3px solid #ef4444; background:rgba(239,68,68,0.03);">
-            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+          <div class="tactical-card tactical-card--danger">
+            <div class="tactical-card-header">
               <div>
-                <h4 style="color:#f87171; font-size:14px; font-weight:700; margin:0;">${c.titleVi}</h4>
-                <span style="font-size:11px; color:#94a3b8;">📍 Quận huyện: <b>${c.settlementId}</b> • ${crisisIcons[c.crisisType] || c.crisisType}</span>
+                <h4 class="tactical-card-title">${c.titleVi}</h4>
+                <div class="tactical-card-subtitle">Quận Huyện: <b>${c.settlementId}</b> • ${crisisNames[c.crisisType] || c.crisisType}</div>
               </div>
-              <span style="font-size:11px; padding:2px 8px; border-radius:10px; background:rgba(239,68,68,0.2); color:#fca5a5; border:1px solid #ef4444;">
-                Còn ${c.durationTurnsLeft} lượt
-              </span>
+              <span class="tactical-badge tactical-badge--danger">Còn ${c.durationTurnsLeft} Lượt</span>
             </div>
-            <p style="font-size:12px; color:#cbd5e1; margin-bottom:10px; line-height:1.4;">${c.narrativeVi}</p>
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:6px; font-size:11px; margin-bottom:10px; background:rgba(0,0,0,0.25); padding:8px; border-radius:4px;">
-              <div><span style="color:#94a3b8;">Nông nghiệp:</span> <b style="color:#f87171;">-${Math.round(c.agriculturePenalty * 100)}%</b></div>
-              <div><span style="color:#94a3b8;">Trị an giảm:</span> <b style="color:#f87171;">-${c.publicOrderPenalty}</b></div>
-              <div><span style="color:#94a3b8;">Giá lương thực:</span> <b style="color:#fbbf24;">x${c.grainPriceMultiplier}</b></div>
-              <div><span style="color:#94a3b8;">Mức nghiêm trọng:</span> <b style="color:#f97316;">Cấp ${c.severityLevel}</b></div>
+            <p class="tactical-narrative">${c.narrativeVi}</p>
+            <div class="tactical-stat-grid">
+              <div class="tactical-stat-item">
+                <span class="tactical-stat-label">Sản Lượng Nông Nghiệp</span>
+                <span class="tactical-stat-val tactical-stat-val--red">-${Math.round(c.agriculturePenalty * 100)}%</span>
+              </div>
+              <div class="tactical-stat-item">
+                <span class="tactical-stat-label">Tổn Hại Trị An</span>
+                <span class="tactical-stat-val tactical-stat-val--red">-${c.publicOrderPenalty}</span>
+              </div>
+              <div class="tactical-stat-item">
+                <span class="tactical-stat-label">Bội Số Giá Lương</span>
+                <span class="tactical-stat-val tactical-stat-val--gold">x${c.grainPriceMultiplier}</span>
+              </div>
+              <div class="tactical-stat-item">
+                <span class="tactical-stat-label">Mức Độ Thiệt Hại</span>
+                <span class="tactical-stat-val">Cấp ${c.severityLevel}</span>
+              </div>
             </div>
-            <div style="text-align:right;">
-              <button class="btn btn-primary" onclick="handleDispatchRelief('${c.settlementId}')" style="background:#16a34a; border-color:#22c55e; font-size:12px; padding:4px 10px;">
-                🌾 Mở Kho Phát Chẩn Cứu Đói (5 thạch lương)
+            <div style="text-align:right; margin-top:4px;">
+              <button class="tactical-btn tactical-btn--success" onclick="handleDispatchRelief('${c.settlementId}')">
+                Mở Kho Phát Chẩn (5 Thạch)
               </button>
             </div>
           </div>
@@ -1376,40 +1394,51 @@ async function loadAndRenderEcology() {
     // 2. Render Caravans
     if (caravansContainer) {
       if (caravans.length === 0) {
-        caravansContainer.innerHTML = '<div style="color:#64748b; padding:15px; text-align:center;">Hiện tại không có thương đoàn nào đang lưu thông trên các dịch đạo.</div>';
+        caravansContainer.innerHTML = '<div class="tactical-empty">Hiện tại không có thương đoàn nào đang lưu thông trên các dịch đạo.</div>';
       } else {
         const statusMap = {
-          EN_ROUTE: { label: '🚚 Đang Di Chuyển', color: '#38bdf8', bg: 'rgba(56,189,248,0.15)', border: '#38bdf8' },
-          PLUNDERED: { label: '☠️ Bị Cướp Bóc', color: '#f87171', bg: 'rgba(239,68,68,0.15)', border: '#ef4444' },
-          SUCCESS_TRADED: { label: '🏁 Cập Bến An Toàn', color: '#4ade80', bg: 'rgba(74,222,128,0.15)', border: '#22c55e' }
+          EN_ROUTE: { label: 'Đang Vận Chuyển', badgeClass: 'tactical-badge--info' },
+          PLUNDERED: { label: 'Bị Cướp Phá', badgeClass: 'tactical-badge--danger' },
+          SUCCESS_TRADED: { label: 'Cập Bến Hoàn Tất', badgeClass: 'tactical-badge--success' }
         };
 
         caravansContainer.innerHTML = caravans.map(car => {
-          const st = statusMap[car.status] || { label: car.status, color: '#94a3b8', bg: 'rgba(255,255,255,0.05)', border: '#64748b' };
+          const st = statusMap[car.status] || { label: car.status, badgeClass: '' };
           const progressPercent = Math.round((car.routeProgress || 0) * 100);
+          const isPlundered = car.status === 'PLUNDERED';
 
           return `
-            <div class="gm-npc-card" style="border-left: 3px solid ${st.border};">
-              <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px;">
+            <div class="tactical-card ${isPlundered ? 'tactical-card--danger' : 'tactical-card--info'}">
+              <div class="tactical-card-header">
                 <div>
-                  <h4 style="color:#f8fafc; font-size:14px; font-weight:700; margin:0;">${car.caravanName}</h4>
-                  <span style="font-size:11px; color:#94a3b8;">Chủ quản: <b style="color:#e2e8f0;">${car.ownerFactionName || car.ownerFactionId}</b></span>
+                  <h4 class="tactical-card-title">${car.caravanName}</h4>
+                  <div class="tactical-card-subtitle">Chủ Quản: <b>${car.ownerFactionName || car.ownerFactionId}</b></div>
                 </div>
-                <span style="font-size:11px; padding:2px 8px; border-radius:10px; background:${st.bg}; color:${st.color}; border:1px solid ${st.border};">
-                  ${st.label}
-                </span>
+                <span class="tactical-badge ${st.badgeClass}">${st.label}</span>
               </div>
-              <div style="font-size:12px; color:#cbd5e1; margin-bottom:8px;">
-                📍 Hành trình: <b>${car.fromSettlementName || car.fromSettlementId}</b> ➔ <b>${car.toSettlementName || car.toSettlementId}</b>
+              <div style="font-size:11.5px; color:#cbd5e1;">
+                Lộ Trình: <b>${car.fromSettlementName || car.fromSettlementId}</b> ➔ <b>${car.toSettlementName || car.toSettlementId}</b>
               </div>
-              <div style="background:rgba(0,0,0,0.3); border-radius:4px; height:8px; overflow:hidden; margin-bottom:8px;">
-                <div style="width:${progressPercent}%; background:${car.status === 'PLUNDERED' ? '#ef4444' : '#38bdf8'}; height:100%; transition:width 0.3s;"></div>
+              <div class="tactical-progress-track">
+                <div class="tactical-progress-bar ${isPlundered ? 'tactical-progress-bar--danger' : ''}" style="width:${progressPercent}%;"></div>
               </div>
-              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:6px; font-size:11px; background:rgba(0,0,0,0.25); padding:8px; border-radius:4px;">
-                <div><span style="color:#94a3b8;">Tiến độ lộ trình:</span> <b style="color:#38bdf8;">${progressPercent}%</b></div>
-                <div><span style="color:#94a3b8;">Hộ vệ tiêu sư:</span> <b style="color:#c084fc;">${car.guardTroops} võ sĩ</b></div>
-                <div><span style="color:#94a3b8;">Hàng hóa:</span> <b style="color:#e2e8f0;">${car.cargoQuantity} ${car.cargoItemName || car.cargoItemCode}</b></div>
-                <div><span style="color:#94a3b8;">Giá trị chuyến hàng:</span> <b style="color:#facc15;">${car.cargoValueQian?.toLocaleString()} tiền</b></div>
+              <div class="tactical-stat-grid">
+                <div class="tactical-stat-item">
+                  <span class="tactical-stat-label">Tiến Độ Dịch Lộ</span>
+                  <span class="tactical-stat-val tactical-stat-val--blue">${progressPercent}%</span>
+                </div>
+                <div class="tactical-stat-item">
+                  <span class="tactical-stat-label">Võ Sĩ Hộ Vệ</span>
+                  <span class="tactical-stat-val tactical-stat-val--purple">${car.guardTroops} Tiêu Sư</span>
+                </div>
+                <div class="tactical-stat-item">
+                  <span class="tactical-stat-label">Hàng Hóa</span>
+                  <span class="tactical-stat-val">${car.cargoQuantity} ${car.cargoItemName || car.cargoItemCode}</span>
+                </div>
+                <div class="tactical-stat-item">
+                  <span class="tactical-stat-label">Trị Giá Lô Hàng</span>
+                  <span class="tactical-stat-val tactical-stat-val--gold">${car.cargoValueQian?.toLocaleString()} Tiền</span>
+                </div>
               </div>
             </div>
           `;
@@ -1420,35 +1449,44 @@ async function loadAndRenderEcology() {
     // 3. Render Bandit Strongholds
     if (strongholdsContainer) {
       if (strongholds.length === 0) {
-        strongholdsContainer.innerHTML = '<div style="color:#64748b; padding:15px; text-align:center;">Không phát hiện sơn trại đạo phỉ nào gần khu vực.</div>';
+        strongholdsContainer.innerHTML = '<div class="tactical-empty">Không phát hiện sơn trại đạo phỉ nào gần khu vực.</div>';
       } else {
         strongholdsContainer.innerHTML = strongholds.map(s => {
           const isSubdued = s.status === 'SUBDUED';
           return `
-            <div class="gm-npc-card" style="border-left: 3px solid ${isSubdued ? '#64748b' : '#f59e0b'}; opacity:${isSubdued ? '0.7' : '1'};">
-              <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+            <div class="tactical-card ${isSubdued ? 'tactical-card--subdued' : 'tactical-card--warning'}">
+              <div class="tactical-card-header">
                 <div>
-                  <h4 style="color:${isSubdued ? '#94a3b8' : '#fbbf24'}; font-size:14px; font-weight:700; margin:0;">${s.nameVi}</h4>
-                  <span style="font-size:11px; color:#94a3b8;">Địa bàn: <b>${s.locationNear}</b> • Trại chủ: <b style="color:#f87171;">${s.banditChiefName}</b></span>
+                  <h4 class="tactical-card-title">${s.nameVi}</h4>
+                  <div class="tactical-card-subtitle">Yết Hầu: <b>${s.locationNear}</b> • Trại Chủ: <b>${s.banditChiefName}</b></div>
                 </div>
-                <span style="font-size:11px; padding:2px 8px; border-radius:10px; background:${isSubdued ? 'rgba(100,116,139,0.2)' : 'rgba(245,158,11,0.2)'}; color:${isSubdued ? '#94a3b8' : '#fbbf24'}; border:1px solid ${isSubdued ? '#64748b' : '#f59e0b'};">
-                  ${isSubdued ? '🛡️ Đã Bị Tiễu Phạt' : '⚔️ Hoạt Động Cướp Bóc'}
+                <span class="tactical-badge ${isSubdued ? '' : 'tactical-badge--warning'}">
+                  ${isSubdued ? 'Đã Tiễu Phạt' : 'Hoạt Động Khởi Nghĩa'}
                 </span>
               </div>
-              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:6px; font-size:11px; margin-bottom:10px; background:rgba(0,0,0,0.25); padding:8px; border-radius:4px;">
-                <div><span style="color:#94a3b8;">Lực lượng phỉ:</span> <b style="color:#f87171;">${s.banditPower}</b></div>
-                <div><span style="color:#94a3b8;">Chiến lợi phẩm cướp:</span> <b style="color:#facc15;">${s.plunderedWealth?.toLocaleString()} đ</b></div>
-                <div style="grid-column: span 2;"><span style="color:#94a3b8;">Tiền thưởng quan phủ:</span> <b style="color:#4ade80;">+${s.bountyReward?.toLocaleString()} tiền</b></div>
+              <div class="tactical-stat-grid">
+                <div class="tactical-stat-item">
+                  <span class="tactical-stat-label">Vũ Lực Tặc Đảng</span>
+                  <span class="tactical-stat-val tactical-stat-val--red">${s.banditPower}</span>
+                </div>
+                <div class="tactical-stat-item">
+                  <span class="tactical-stat-label">Tài Vật Cướp Bóc</span>
+                  <span class="tactical-stat-val tactical-stat-val--gold">${s.plunderedWealth?.toLocaleString()} Tiền</span>
+                </div>
+                <div class="tactical-stat-item" style="grid-column: span 2;">
+                  <span class="tactical-stat-label">Tiền Thưởng Quân Công Triều Đình</span>
+                  <span class="tactical-stat-val tactical-stat-val--green">+${s.bountyReward?.toLocaleString()} Tiền</span>
+                </div>
               </div>
               ${!isSubdued ? `
-                <div style="text-align:right;">
-                  <button class="btn btn-primary" onclick="handleAttackStronghold('${s.strongholdId}')" style="background:#dc2626; border-color:#ef4444; font-size:12px; padding:4px 10px;">
-                    ⚔️ Thống Binh Công Trại (Tiễu Phỉ)
+                <div style="text-align:right; margin-top:4px;">
+                  <button class="tactical-btn tactical-btn--danger" onclick="handleAttackStronghold('${s.strongholdId}')">
+                    Công Kích Tiễu Phạt
                   </button>
                 </div>
               ` : `
-                <div style="font-size:11px; color:#94a3b8; text-align:center; padding:4px; background:rgba(255,255,255,0.03); border-radius:3px;">
-                  Trại đã tan rã, trật tự đường lộ được vãn hồi.
+                <div class="tactical-empty" style="padding:6px; font-size:10.5px;">
+                  Sơn trại đã bị dẹp tan, trật tự dịch lộ được vãn hồi.
                 </div>
               `}
             </div>
@@ -1458,7 +1496,7 @@ async function loadAndRenderEcology() {
     }
   } catch (err) {
     console.error('loadAndRenderEcology error:', err);
-    if (crisesContainer) crisesContainer.innerHTML = `<div style="color:#ef4444;">Lỗi: ${err.message}</div>`;
+    if (crisesContainer) crisesContainer.innerHTML = `<div class="tactical-empty" style="color:var(--state-danger);">Lỗi: ${err.message}</div>`;
   }
 }
 
@@ -1480,10 +1518,10 @@ async function handleAttackStronghold(strongholdId) {
     showToast('Đang thống lĩnh dũng sĩ Lương Thị tiến công sơn trại phỉ khấu...', false);
     const res = await apiAttackStronghold(strongholdId);
     if (res.success) {
-      alert(`🎉 ĐẠI THẮNG SƠN TRẠI!\n\n${res.message}\n\nThu hồi: ${res.lootCash} tiền\nTiền thưởng tiễu phỉ: ${res.bounty} tiền\nTổng thu: +${res.totalReward} tiền!`);
+      alert(`ĐẠI THẮNG SƠN TRẠI!\n\n${res.message}\n\nThu hồi: ${res.lootCash} tiền\nTiền thưởng tiễu phỉ: ${res.bounty} tiền\nTổng thu: +${res.totalReward} tiền!`);
       await loadAndRenderEcology();
     } else {
-      alert(`⚠️ CÔNG TRẠI THẤT BẠI!\n\n${res.message}`);
+      alert(`CÔNG TRẠI THẤT BẠI!\n\n${res.message}`);
       await loadAndRenderEcology();
     }
   } catch (err) {
@@ -1497,7 +1535,7 @@ async function triggerSimulateEcology() {
     const res = await apiSimulateEcologyTurn();
     if (res.success) {
       const logs = (res.events || []).join('\n') || 'Không có biến cố phục kích hay thiên tai mới.';
-      alert(`🌾 HOÀN TẤT CHU KỲ SINH THÁI & THƯƠNG ĐOÀN\n\n${logs}`);
+      alert(`HOÀN TẤT CHU KỲ SINH THÁI & THƯƠNG ĐOÀN\n\n${logs}`);
       await loadAndRenderEcology();
     }
   } catch (err) {
