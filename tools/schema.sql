@@ -378,6 +378,54 @@ CREATE TABLE IF NOT EXISTS emergent_innovations (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 26. Regional Ecological Crises & Natural Disasters (Thiên Tai & Dịch Họa Dân Sự)
+CREATE TABLE IF NOT EXISTS regional_ecological_crises (
+    crisis_id TEXT PRIMARY KEY,
+    settlement_id TEXT NOT NULL,
+    crisis_type TEXT NOT NULL, -- 'GREAT_DROUGHT', 'LOCUST_SWARM', 'YELLOW_RIVER_FLOOD', 'PESTILENCE_PLAGUE', 'PEASANT_REBELLION'
+    severity_level REAL NOT NULL DEFAULT 1.0,
+    duration_turns_left INTEGER NOT NULL DEFAULT 3,
+    agriculture_penalty REAL NOT NULL DEFAULT 0.5,
+    public_order_penalty INTEGER NOT NULL DEFAULT 20,
+    grain_price_multiplier REAL NOT NULL DEFAULT 2.0,
+    is_active INTEGER NOT NULL DEFAULT 1,
+    title_vi TEXT NOT NULL,
+    narrative_vi TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(settlement_id) REFERENCES session_settlements(settlement_id)
+);
+
+-- 27. Macro Trade Caravans (Thương Đoàn Thực Địa & Logistics)
+CREATE TABLE IF NOT EXISTS trade_caravans (
+    caravan_id TEXT PRIMARY KEY,
+    caravan_name TEXT NOT NULL,
+    owner_faction_id TEXT NOT NULL,
+    from_settlement_id TEXT NOT NULL,
+    to_settlement_id TEXT NOT NULL,
+    cargo_item_code TEXT NOT NULL,
+    cargo_quantity REAL NOT NULL DEFAULT 10.0,
+    cargo_value_qian INTEGER NOT NULL DEFAULT 800,
+    guard_troops INTEGER NOT NULL DEFAULT 30,
+    route_progress REAL NOT NULL DEFAULT 0.0,
+    status TEXT NOT NULL DEFAULT 'EN_ROUTE', -- 'EN_ROUTE', 'ARRIVED', 'AMBUSHED_FIGHTING', 'PLUNDERED', 'SUCCESS_TRADED'
+    created_turn INTEGER NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(owner_faction_id) REFERENCES session_factions(faction_id)
+);
+
+-- 28. Bandit Strongholds & Chokepoint Ambushes (Sơn Trại & Phục Kích Hiểm Ải)
+CREATE TABLE IF NOT EXISTS bandit_strongholds (
+    stronghold_id TEXT PRIMARY KEY,
+    name_vi TEXT NOT NULL,
+    location_near TEXT NOT NULL,
+    bandit_chief_name TEXT NOT NULL,
+    bandit_power INTEGER NOT NULL DEFAULT 150,
+    plundered_wealth INTEGER NOT NULL DEFAULT 0,
+    bounty_reward INTEGER NOT NULL DEFAULT 500,
+    status TEXT NOT NULL DEFAULT 'ACTIVE', -- 'ACTIVE', 'SUBDUED'
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Indices for rapid querying & integrity checks
 CREATE INDEX IF NOT EXISTS idx_cashflow_date ON cashflow_ledger(game_date);
 CREATE INDEX IF NOT EXISTS idx_stock_mov_item ON stock_movements(item_code);
@@ -398,5 +446,9 @@ CREATE INDEX IF NOT EXISTS idx_political_turn ON faction_political_events(turn_n
 CREATE INDEX IF NOT EXISTS idx_char_prof ON character_professions(character_id);
 CREATE INDEX IF NOT EXISTS idx_node_settlement ON gathering_nodes(settlement_id);
 CREATE INDEX IF NOT EXISTS idx_innovations_char ON emergent_innovations(character_id);
+CREATE INDEX IF NOT EXISTS idx_crisis_settlement ON regional_ecological_crises(settlement_id);
+CREATE INDEX IF NOT EXISTS idx_caravan_faction ON trade_caravans(owner_faction_id);
+CREATE INDEX IF NOT EXISTS idx_stronghold_status ON bandit_strongholds(status);
+
 
 

@@ -216,6 +216,10 @@ async function switchGameManagerTab(tabId) {
   if (tabId === 'professions') {
     await loadAndRenderProfessions();
   }
+
+  if (tabId === 'ecology') {
+    await loadAndRenderEcology();
+  }
 }
 
 async function loadAndRenderRotkEvents() {
@@ -1308,6 +1312,199 @@ async function triggerSynthesizeBreakthrough() {
   }
 }
 
+async function loadAndRenderEcology() {
+  const crisesContainer = document.getElementById('gm-crises-container');
+  const caravansContainer = document.getElementById('gm-caravans-container');
+  const strongholdsContainer = document.getElementById('gm-strongholds-container');
+
+  if (crisesContainer) crisesContainer.innerHTML = '<div style="color:#94a3b8; padding:15px; text-align:center;">Đang nạp dữ liệu thiên tai sinh thái...</div>';
+  if (caravansContainer) caravansContainer.innerHTML = '<div style="color:#94a3b8; padding:15px; text-align:center;">Đang nạp dữ liệu thương đoàn...</div>';
+  if (strongholdsContainer) strongholdsContainer.innerHTML = '<div style="color:#94a3b8; padding:15px; text-align:center;">Đang nạp dữ liệu sơn trại phỉ đạo...</div>';
+
+  try {
+    const [crisesRes, caravansRes, strongholdsRes] = await Promise.all([
+      apiFetchCrises(),
+      apiFetchCaravans(),
+      apiFetchStrongholds()
+    ]);
+
+    const crises = crisesRes.crises || [];
+    const caravans = caravansRes.caravans || [];
+    const strongholds = strongholdsRes.strongholds || [];
+
+    // 1. Render Crises
+    if (crisesContainer) {
+      if (crises.length === 0) {
+        crisesContainer.innerHTML = '<div style="color:#10b981; padding:15px; text-align:center;">Mưa thuận gió hòa, thiên hạ thái bình, không có biến cố thiên tai nạn đói.</div>';
+      } else {
+        const crisisIcons = {
+          GREAT_DROUGHT: '☀️ Đại Hạn Hán',
+          LOCUST_SWARM: '🦗 Nạn Châu Chấu',
+          MAJOR_FLOOD: '🌊 Lũ Lụt Lớn',
+          PESTILENCE: '☣️ Dịch Bệnh Hoành Hành',
+          PEASANT_REBELLION: '⚔️ Khởi Nghĩa Nông Dân'
+        };
+
+        crisesContainer.innerHTML = crises.map(c => `
+          <div class="gm-npc-card" style="border-left: 3px solid #ef4444; background:rgba(239,68,68,0.03);">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+              <div>
+                <h4 style="color:#f87171; font-size:14px; font-weight:700; margin:0;">${c.titleVi}</h4>
+                <span style="font-size:11px; color:#94a3b8;">📍 Quận huyện: <b>${c.settlementId}</b> • ${crisisIcons[c.crisisType] || c.crisisType}</span>
+              </div>
+              <span style="font-size:11px; padding:2px 8px; border-radius:10px; background:rgba(239,68,68,0.2); color:#fca5a5; border:1px solid #ef4444;">
+                Còn ${c.durationTurnsLeft} lượt
+              </span>
+            </div>
+            <p style="font-size:12px; color:#cbd5e1; margin-bottom:10px; line-height:1.4;">${c.narrativeVi}</p>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:6px; font-size:11px; margin-bottom:10px; background:rgba(0,0,0,0.25); padding:8px; border-radius:4px;">
+              <div><span style="color:#94a3b8;">Nông nghiệp:</span> <b style="color:#f87171;">-${Math.round(c.agriculturePenalty * 100)}%</b></div>
+              <div><span style="color:#94a3b8;">Trị an giảm:</span> <b style="color:#f87171;">-${c.publicOrderPenalty}</b></div>
+              <div><span style="color:#94a3b8;">Giá lương thực:</span> <b style="color:#fbbf24;">x${c.grainPriceMultiplier}</b></div>
+              <div><span style="color:#94a3b8;">Mức nghiêm trọng:</span> <b style="color:#f97316;">Cấp ${c.severityLevel}</b></div>
+            </div>
+            <div style="text-align:right;">
+              <button class="btn btn-primary" onclick="handleDispatchRelief('${c.settlementId}')" style="background:#16a34a; border-color:#22c55e; font-size:12px; padding:4px 10px;">
+                🌾 Mở Kho Phát Chẩn Cứu Đói (5 thạch lương)
+              </button>
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+
+    // 2. Render Caravans
+    if (caravansContainer) {
+      if (caravans.length === 0) {
+        caravansContainer.innerHTML = '<div style="color:#64748b; padding:15px; text-align:center;">Hiện tại không có thương đoàn nào đang lưu thông trên các dịch đạo.</div>';
+      } else {
+        const statusMap = {
+          EN_ROUTE: { label: '🚚 Đang Di Chuyển', color: '#38bdf8', bg: 'rgba(56,189,248,0.15)', border: '#38bdf8' },
+          PLUNDERED: { label: '☠️ Bị Cướp Bóc', color: '#f87171', bg: 'rgba(239,68,68,0.15)', border: '#ef4444' },
+          SUCCESS_TRADED: { label: '🏁 Cập Bến An Toàn', color: '#4ade80', bg: 'rgba(74,222,128,0.15)', border: '#22c55e' }
+        };
+
+        caravansContainer.innerHTML = caravans.map(car => {
+          const st = statusMap[car.status] || { label: car.status, color: '#94a3b8', bg: 'rgba(255,255,255,0.05)', border: '#64748b' };
+          const progressPercent = Math.round((car.routeProgress || 0) * 100);
+
+          return `
+            <div class="gm-npc-card" style="border-left: 3px solid ${st.border};">
+              <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px;">
+                <div>
+                  <h4 style="color:#f8fafc; font-size:14px; font-weight:700; margin:0;">${car.caravanName}</h4>
+                  <span style="font-size:11px; color:#94a3b8;">Chủ quản: <b style="color:#e2e8f0;">${car.ownerFactionName || car.ownerFactionId}</b></span>
+                </div>
+                <span style="font-size:11px; padding:2px 8px; border-radius:10px; background:${st.bg}; color:${st.color}; border:1px solid ${st.border};">
+                  ${st.label}
+                </span>
+              </div>
+              <div style="font-size:12px; color:#cbd5e1; margin-bottom:8px;">
+                📍 Hành trình: <b>${car.fromSettlementName || car.fromSettlementId}</b> ➔ <b>${car.toSettlementName || car.toSettlementId}</b>
+              </div>
+              <div style="background:rgba(0,0,0,0.3); border-radius:4px; height:8px; overflow:hidden; margin-bottom:8px;">
+                <div style="width:${progressPercent}%; background:${car.status === 'PLUNDERED' ? '#ef4444' : '#38bdf8'}; height:100%; transition:width 0.3s;"></div>
+              </div>
+              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:6px; font-size:11px; background:rgba(0,0,0,0.25); padding:8px; border-radius:4px;">
+                <div><span style="color:#94a3b8;">Tiến độ lộ trình:</span> <b style="color:#38bdf8;">${progressPercent}%</b></div>
+                <div><span style="color:#94a3b8;">Hộ vệ tiêu sư:</span> <b style="color:#c084fc;">${car.guardTroops} võ sĩ</b></div>
+                <div><span style="color:#94a3b8;">Hàng hóa:</span> <b style="color:#e2e8f0;">${car.cargoQuantity} ${car.cargoItemName || car.cargoItemCode}</b></div>
+                <div><span style="color:#94a3b8;">Giá trị chuyến hàng:</span> <b style="color:#facc15;">${car.cargoValueQian?.toLocaleString()} tiền</b></div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    // 3. Render Bandit Strongholds
+    if (strongholdsContainer) {
+      if (strongholds.length === 0) {
+        strongholdsContainer.innerHTML = '<div style="color:#64748b; padding:15px; text-align:center;">Không phát hiện sơn trại đạo phỉ nào gần khu vực.</div>';
+      } else {
+        strongholdsContainer.innerHTML = strongholds.map(s => {
+          const isSubdued = s.status === 'SUBDUED';
+          return `
+            <div class="gm-npc-card" style="border-left: 3px solid ${isSubdued ? '#64748b' : '#f59e0b'}; opacity:${isSubdued ? '0.7' : '1'};">
+              <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+                <div>
+                  <h4 style="color:${isSubdued ? '#94a3b8' : '#fbbf24'}; font-size:14px; font-weight:700; margin:0;">${s.nameVi}</h4>
+                  <span style="font-size:11px; color:#94a3b8;">Địa bàn: <b>${s.locationNear}</b> • Trại chủ: <b style="color:#f87171;">${s.banditChiefName}</b></span>
+                </div>
+                <span style="font-size:11px; padding:2px 8px; border-radius:10px; background:${isSubdued ? 'rgba(100,116,139,0.2)' : 'rgba(245,158,11,0.2)'}; color:${isSubdued ? '#94a3b8' : '#fbbf24'}; border:1px solid ${isSubdued ? '#64748b' : '#f59e0b'};">
+                  ${isSubdued ? '🛡️ Đã Bị Tiễu Phạt' : '⚔️ Hoạt Động Cướp Bóc'}
+                </span>
+              </div>
+              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:6px; font-size:11px; margin-bottom:10px; background:rgba(0,0,0,0.25); padding:8px; border-radius:4px;">
+                <div><span style="color:#94a3b8;">Lực lượng phỉ:</span> <b style="color:#f87171;">${s.banditPower}</b></div>
+                <div><span style="color:#94a3b8;">Chiến lợi phẩm cướp:</span> <b style="color:#facc15;">${s.plunderedWealth?.toLocaleString()} đ</b></div>
+                <div style="grid-column: span 2;"><span style="color:#94a3b8;">Tiền thưởng quan phủ:</span> <b style="color:#4ade80;">+${s.bountyReward?.toLocaleString()} tiền</b></div>
+              </div>
+              ${!isSubdued ? `
+                <div style="text-align:right;">
+                  <button class="btn btn-primary" onclick="handleAttackStronghold('${s.strongholdId}')" style="background:#dc2626; border-color:#ef4444; font-size:12px; padding:4px 10px;">
+                    ⚔️ Thống Binh Công Trại (Tiễu Phỉ)
+                  </button>
+                </div>
+              ` : `
+                <div style="font-size:11px; color:#94a3b8; text-align:center; padding:4px; background:rgba(255,255,255,0.03); border-radius:3px;">
+                  Trại đã tan rã, trật tự đường lộ được vãn hồi.
+                </div>
+              `}
+            </div>
+          `;
+        }).join('');
+      }
+    }
+  } catch (err) {
+    console.error('loadAndRenderEcology error:', err);
+    if (crisesContainer) crisesContainer.innerHTML = `<div style="color:#ef4444;">Lỗi: ${err.message}</div>`;
+  }
+}
+
+async function handleDispatchRelief(settlementId) {
+  try {
+    showToast(`Đang vận chuyển 5 thạch lương thảo mở kho phát chẩn tại ${settlementId}...`, false);
+    const res = await apiDispatchRelief(settlementId, 5.0);
+    if (res.success) {
+      showToast(res.message, false);
+      await loadAndRenderEcology();
+    }
+  } catch (err) {
+    showToast(`Phát chẩn thất bại: ${err.message}`, true);
+  }
+}
+
+async function handleAttackStronghold(strongholdId) {
+  try {
+    showToast('Đang thống lĩnh dũng sĩ Lương Thị tiến công sơn trại phỉ khấu...', false);
+    const res = await apiAttackStronghold(strongholdId);
+    if (res.success) {
+      alert(`🎉 ĐẠI THẮNG SƠN TRẠI!\n\n${res.message}\n\nThu hồi: ${res.lootCash} tiền\nTiền thưởng tiễu phỉ: ${res.bounty} tiền\nTổng thu: +${res.totalReward} tiền!`);
+      await loadAndRenderEcology();
+    } else {
+      alert(`⚠️ CÔNG TRẠI THẤT BẠI!\n\n${res.message}`);
+      await loadAndRenderEcology();
+    }
+  } catch (err) {
+    showToast(`Lỗi tấn công sơn trại: ${err.message}`, true);
+  }
+}
+
+async function triggerSimulateEcology() {
+  try {
+    showToast('Đang mô phỏng chu kỳ biến thiên sinh thái & hành trình thương đoàn...', false);
+    const res = await apiSimulateEcologyTurn();
+    if (res.success) {
+      const logs = (res.events || []).join('\n') || 'Không có biến cố phục kích hay thiên tai mới.';
+      alert(`🌾 HOÀN TẤT CHU KỲ SINH THÁI & THƯƠNG ĐOÀN\n\n${logs}`);
+      await loadAndRenderEcology();
+    }
+  } catch (err) {
+    showToast(`Lỗi mô phỏng: ${err.message}`, true);
+  }
+}
+
 // Global exposure
 window.isProcessingAction = isProcessingAction;
 window.showToast = showToast;
@@ -1339,5 +1536,9 @@ window.handleAppointGovernor = handleAppointGovernor;
 window.loadAndRenderProfessions = loadAndRenderProfessions;
 window.handleGatherResource = handleGatherResource;
 window.triggerSynthesizeBreakthrough = triggerSynthesizeBreakthrough;
+window.loadAndRenderEcology = loadAndRenderEcology;
+window.handleDispatchRelief = handleDispatchRelief;
+window.handleAttackStronghold = handleAttackStronghold;
+window.triggerSimulateEcology = triggerSimulateEcology;
 
 

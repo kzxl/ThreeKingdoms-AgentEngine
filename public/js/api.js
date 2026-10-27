@@ -329,6 +329,59 @@ async function apiSynthesizeBreakthrough(characterId = 'PLY-0001') {
   return data;
 }
 
+async function apiFetchCrises() {
+  const res = await fetch(`${API_BASE}/api/ecology/crises`);
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Failed to fetch ecological crises');
+  return data;
+}
+
+async function apiFetchCaravans() {
+  const res = await fetch(`${API_BASE}/api/logistics/caravans`);
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Failed to fetch caravans');
+  return data;
+}
+
+async function apiFetchStrongholds() {
+  const res = await fetch(`${API_BASE}/api/logistics/strongholds`);
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Failed to fetch bandit strongholds');
+  return data;
+}
+
+async function apiDispatchRelief(settlementId, grainAmount = 5.0) {
+  const res = await fetch(`${API_BASE}/api/ecology/relief`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ settlementId, grainAmount })
+  });
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Failed to dispatch grain relief');
+  return data;
+}
+
+async function apiAttackStronghold(strongholdId) {
+  const res = await fetch(`${API_BASE}/api/logistics/attack-stronghold`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ strongholdId })
+  });
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Failed to attack stronghold');
+  return data;
+}
+
+async function apiSimulateEcologyTurn() {
+  const res = await fetch(`${API_BASE}/api/ecology/simulate-turn`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' }
+  });
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Failed to simulate ecology turn');
+  return data;
+}
+
 // Global exposure
 window.apiFetchStatus = apiFetchStatus;
 window.apiFetchAudit = apiFetchAudit;
@@ -368,5 +421,12 @@ window.apiFetchCharacterProfessions = apiFetchCharacterProfessions;
 window.apiFetchInnovations = apiFetchInnovations;
 window.apiGatherResource = apiGatherResource;
 window.apiSynthesizeBreakthrough = apiSynthesizeBreakthrough;
+window.apiFetchCrises = apiFetchCrises;
+window.apiFetchCaravans = apiFetchCaravans;
+window.apiFetchStrongholds = apiFetchStrongholds;
+window.apiDispatchRelief = apiDispatchRelief;
+window.apiAttackStronghold = apiAttackStronghold;
+window.apiSimulateEcologyTurn = apiSimulateEcologyTurn;
+
 
 

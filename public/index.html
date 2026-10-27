@@ -423,6 +423,9 @@
         <button class="gm-tab-btn" id="gm-tab-professions" onclick="switchGameManagerTab('professions')">
           ⛏️ Bách Nghệ & Sáng Tạo Nghề (Professions & Gathering)
         </button>
+        <button class="gm-tab-btn" id="gm-tab-ecology" onclick="switchGameManagerTab('ecology')">
+          🌾 Sinh Thái & Thương Đoàn (Ecology & Logistics)
+        </button>
       </div>
 
       <div class="modal-body gm-modal-body">
@@ -604,6 +607,42 @@
           <!-- Emergent Innovations Chronicles -->
           <h5 style="color:#e2e8f0; margin:15px 0 8px 0; font-size:13px; font-weight:600;">🌟 Ký Sự Sáng Tạo Nghề Mới Độc Bản (Emergent Innovations):</h5>
           <div class="gm-events-timeline" id="gm-innovations-timeline">
+            <!-- Rendered dynamically via JS -->
+          </div>
+        </div>
+
+        <!-- 7. View: Ecological Crises & Macro Logistics Caravans -->
+        <div class="gm-tab-content hidden" id="gm-view-ecology">
+          <div class="gm-chronicles-header" style="margin-bottom:15px;">
+            <div>
+              <h4 class="gm-sec-title">🌾 Thiên Tai Sinh Thái, Nạn Đói & Thương Đoàn Vận Tải</h4>
+              <p class="gm-sec-desc">Hạn hán, cào cào và khởi nghĩa nông dân làm gián đoạn sản xuất; các đoàn xe vận tải di chuyển trên đường liên quận đối mặt với hiểm họa bị sơn tặc phục kích.</p>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button class="btn btn-primary" onclick="triggerSimulateEcology()" style="background:#d97706; border-color:#f59e0b;">
+                ⚡ Vận Hành Chu Kỳ Sinh Thái & Thương Đoàn
+              </button>
+              <button class="btn btn-outline" onclick="loadAndRenderEcology()">
+                🔄 Làm Mới
+              </button>
+            </div>
+          </div>
+
+          <!-- Active Ecological Crises Section -->
+          <h5 style="color:#e2e8f0; margin:10px 0 8px 0; font-size:13px; font-weight:600;">🌪️ Biến Cố Thiên Tai & Nạn Đói Đang Hoành Hành (Active Crises):</h5>
+          <div id="gm-crises-container" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap:12px; margin-bottom:20px;">
+            <!-- Rendered dynamically via JS -->
+          </div>
+
+          <!-- Trade Caravans En Route Section -->
+          <h5 style="color:#e2e8f0; margin:15px 0 8px 0; font-size:13px; font-weight:600;">🚚 Các Thương Đoàn Đang Vận Tải Thực Địa (Trade Caravans):</h5>
+          <div id="gm-caravans-container" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap:12px; margin-bottom:20px;">
+            <!-- Rendered dynamically via JS -->
+          </div>
+
+          <!-- Bandit Strongholds & Chokepoint Bounties Section -->
+          <h5 style="color:#e2e8f0; margin:15px 0 8px 0; font-size:13px; font-weight:600;">⚔️ Các Sơn Trại Phỉ Đạo & Tiền Thưởng Tiễu Phỉ (Bandit Strongholds):</h5>
+          <div id="gm-strongholds-container" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:12px; margin-bottom:20px;">
             <!-- Rendered dynamically via JS -->
           </div>
         </div>

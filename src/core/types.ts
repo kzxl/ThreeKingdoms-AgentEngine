@@ -230,4 +230,62 @@ export interface EmergentInnovation {
   statBoosts: Record<string, number>;
 }
 
+// -------------------------------------------------------------
+// Ecological Crises & Macro Logistics Caravans (Phase 3 & 4)
+// -------------------------------------------------------------
+export type EcologicalCrisisType =
+  | 'GREAT_DROUGHT'
+  | 'LOCUST_SWARM'
+  | 'YELLOW_RIVER_FLOOD'
+  | 'PESTILENCE_PLAGUE'
+  | 'PEASANT_REBELLION';
+
+export interface EcologicalCrisis {
+  crisisId: string;
+  settlementId: SettlementId;
+  crisisType: EcologicalCrisisType;
+  severityLevel: number; // 0.5 to 3.0
+  durationTurnsLeft: number;
+  agriculturePenalty: number;
+  publicOrderPenalty: number;
+  grainPriceMultiplier: number;
+  isActive: boolean;
+  titleVi: string;
+  narrativeVi: string;
+}
+
+export type CaravanStatus =
+  | 'EN_ROUTE'
+  | 'ARRIVED'
+  | 'AMBUSHED_FIGHTING'
+  | 'PLUNDERED'
+  | 'SUCCESS_TRADED';
+
+export interface TradeCaravan {
+  caravanId: string;
+  caravanName: string;
+  ownerFactionId: FactionId;
+  fromSettlementId: SettlementId;
+  toSettlementId: SettlementId;
+  cargoItemCode: string;
+  cargoQuantity: number;
+  cargoValueQian: number;
+  guardTroops: number;
+  routeProgress: number; // 0.0 to 1.0
+  status: CaravanStatus;
+  createdTurn: number;
+}
+
+export interface BanditStronghold {
+  strongholdId: string;
+  nameVi: string;
+  locationNear: string;
+  banditChiefName: string;
+  banditPower: number;
+  plunderedWealth: number;
+  bountyReward: number;
+  status: 'ACTIVE' | 'SUBDUED';
+}
+
+
 

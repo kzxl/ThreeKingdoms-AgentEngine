@@ -662,6 +662,122 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // 4t. GET /api/ecology/crises - Regional Ecological Disasters & Peasant Uprisings
+  if (req.method === 'GET' && pathname === '/api/ecology/crises') {
+    try {
+      const gsm = globalThis.__GRAND_STRATEGY_MODULES__;
+      const crises = gsm && gsm.ecologyLogistics ? gsm.ecologyLogistics.getCrises() : runSqlJson(`
+        SELECT * FROM regional_ecological_crises WHERE is_active = 1 ORDER BY severity_level DESC;
+      `);
+      sendJson(res, 200, { success: true, crises });
+    } catch (err) {
+      sendJson(res, 500, { success: false, error: err.message });
+    }
+    return;
+  }
+
+  // 4u. GET /api/logistics/caravans - Macro Trade Caravans on Regional Routes
+  if (req.method === 'GET' && pathname === '/api/logistics/caravans') {
+    try {
+      const gsm = globalThis.__GRAND_STRATEGY_MODULES__;
+      const caravans = gsm && gsm.ecologyLogistics ? gsm.ecologyLogistics.getCaravans() : runSqlJson(`
+        SELECT c.*, sf.name_vi as ownerFactionName FROM trade_caravans c
+        JOIN session_factions sf ON c.owner_faction_id = sf.faction_id ORDER BY c.route_progress DESC;
+      `);
+      sendJson(res, 200, { success: true, caravans });
+    } catch (err) {
+      sendJson(res, 500, { success: false, error: err.message });
+    }
+    return;
+  }
+
+  // 4v. GET /api/logistics/strongholds - Bandit Strongholds & Plundered Wealth
+  if (req.method === 'GET' && pathname === '/api/logistics/strongholds') {
+    try {
+      const gsm = globalThis.__GRAND_STRATEGY_MODULES__;
+      const strongholds = gsm && gsm.ecologyLogistics ? gsm.ecologyLogistics.getBanditStrongholds() : runSqlJson(`
+        SELECT * FROM bandit_strongholds ORDER BY status ASC, plundered_wealth DESC;
+      `);
+      sendJson(res, 200, { success: true, strongholds });
+    } catch (err) {
+      sendJson(res, 500, { success: false, error: err.message });
+    }
+    return;
+  }
+
+  // 4w. POST /api/ecology/relief - Action: Dispatch Grain Relief to Quell Crisis
+  if (req.method === 'POST' && pathname === '/api/ecology/relief') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        const settlementId = payload.settlementId;
+        const grainAmount = parseFloat(payload.grainAmount || '5.0');
+        if (!settlementId) {
+          sendJson(res, 400, { success: false, error: 'settlementId is required' });
+          return;
+        }
+        const gsm = globalThis.__GRAND_STRATEGY_MODULES__;
+        if (gsm && gsm.ecologyLogistics) {
+          const meta = runSqlJson(`SELECT active_turn, current_date FROM campaign_meta LIMIT 1;`)[0] || { active_turn: 6, current_date: '184-05-01' };
+          const result = gsm.ecologyLogistics.dispatchGrainRelief(settlementId, grainAmount, meta.active_turn, meta.current_date);
+          sendJson(res, 200, { success: true, result });
+        } else {
+          sendJson(res, 500, { success: false, error: 'EcologyLogistics module not initialized' });
+        }
+      } catch (err) {
+        sendJson(res, 500, { success: false, error: err.message });
+      }
+    });
+    return;
+  }
+
+  // 4x. POST /api/logistics/attack-stronghold - Action: Attack Bandit Lair & Claim Bounty
+  if (req.method === 'POST' && pathname === '/api/logistics/attack-stronghold') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        const strongholdId = payload.strongholdId;
+        if (!strongholdId) {
+          sendJson(res, 400, { success: false, error: 'strongholdId is required' });
+          return;
+        }
+        const gsm = globalThis.__GRAND_STRATEGY_MODULES__;
+        if (gsm && gsm.ecologyLogistics) {
+          const meta = runSqlJson(`SELECT active_turn, current_date FROM campaign_meta LIMIT 1;`)[0] || { active_turn: 6, current_date: '184-05-01' };
+          const result = gsm.ecologyLogistics.attackBanditStronghold('PLY-0001', strongholdId, meta.active_turn, meta.current_date);
+          sendJson(res, 200, { success: true, result });
+        } else {
+          sendJson(res, 500, { success: false, error: 'EcologyLogistics module not initialized' });
+        }
+      } catch (err) {
+        sendJson(res, 500, { success: false, error: err.message });
+      }
+    });
+    return;
+  }
+
+  // 4y. POST /api/ecology/simulate-turn - Action: Advance Ecology & Caravans Simulation
+  if (req.method === 'POST' && pathname === '/api/ecology/simulate-turn') {
+    try {
+      const gsm = globalThis.__GRAND_STRATEGY_MODULES__;
+      if (gsm && gsm.ecologyLogistics) {
+        const meta = runSqlJson(`SELECT active_turn, current_date FROM campaign_meta LIMIT 1;`)[0] || { active_turn: 6, current_date: '184-05-01' };
+        const result = gsm.ecologyLogistics.simulateEcologyAndLogisticsTurn(meta.active_turn, meta.current_date);
+        sendJson(res, 200, { success: true, result });
+      } else {
+        sendJson(res, 500, { success: false, error: 'EcologyLogistics module not initialized' });
+      }
+    } catch (err) {
+      sendJson(res, 500, { success: false, error: err.message });
+    }
+    return;
+  }
+
+
 
 
   // 5. GET /api/audit - Comprehensive Invariant Audit
