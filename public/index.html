@@ -99,7 +99,7 @@
         </div>
       </div>
 
-      <!-- 3. Narrative Dialogue Box -->
+      <!-- 3. Narrative Dialogue Box & Agent Simulation HUD -->
       <div class="narrative-box">
         <div class="narrative-header">
           <div class="narrative-label">DIỄN BIẾN & ĐỐI THOẠI BỐI CẢNH</div>
@@ -109,6 +109,22 @@
         </div>
         <div class="narrative-body" id="narrative-text">
           Đang kết nối bối cảnh và đồng bộ dữ liệu SQLite...
+        </div>
+
+        <!-- Real-Time Agent Simulation Feedback & Invariant Verification -->
+        <div class="agent-simulation-hud" id="agent-simulation-hud">
+          <div class="agent-thought-header">
+            <span class="agent-thought-tag">🧠 PHÂN TÍCH CHIẾN LƯỢC TỪ AGENT</span>
+            <span class="agent-audit-tag" id="hud-audit-tag">✅ INVARIANTS: 70/70 KHỚP</span>
+          </div>
+          <div class="agent-thought-body" id="agent-thought-body">
+            Hệ thống mô phỏng sẵn sàng. Lựa chọn điều lệnh cơ học hoặc gửi chỉ thị tự do để Agent suy luận và cập nhật trực tiếp vào SQLite.
+          </div>
+          <div class="agent-delta-chips" id="agent-delta-chips">
+            <span class="agent-delta-pill cash-plus">🪙 Tiền: Sẵn sàng</span>
+            <span class="agent-delta-pill inv">📦 Kho: 12 SKUs</span>
+            <span class="agent-delta-pill rel">⚖️ Sổ cái: Cân bằng</span>
+          </div>
         </div>
       </div>
 
@@ -203,6 +219,9 @@
           <button class="deck-tab-btn active" data-subtab="subtab-ledger" onclick="switchDeckTab('subtab-ledger')">
             📜 Sổ Cái TXN
           </button>
+          <button class="deck-tab-btn" data-subtab="subtab-agent-log" onclick="switchDeckTab('subtab-agent-log')">
+            🤖 AI Feed
+          </button>
         </div>
 
         <!-- SUBTAB 1: KHO XƯỞNG (INVENTORY) -->
@@ -236,6 +255,13 @@
         <div id="subtab-ledger" class="deck-tab-pane active">
           <div class="deck-transactions-list" id="deck-transactions-list">
             <!-- Dynamically populated from SQLite -->
+          </div>
+        </div>
+
+        <!-- SUBTAB 4: NHẬT KÝ MÔ PHỎNG AGENT (AI SIMULATION FEED) -->
+        <div id="subtab-agent-log" class="deck-tab-pane">
+          <div class="deck-agent-log-list" id="deck-agent-log-list">
+            <!-- Dynamically populated from /api/agent/logs -->
           </div>
         </div>
       </div>

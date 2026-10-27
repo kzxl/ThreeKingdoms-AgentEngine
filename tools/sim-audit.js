@@ -59,7 +59,7 @@ function auditSqliteCashflow() {
   let checksCount = 0;
 
   // 1. Fetch transactions in chronological order
-  const txns = runSqlJson(`SELECT * FROM cashflow_ledger ORDER BY game_date ASC, txn_id ASC;`);
+  const txns = runSqlJson(`SELECT * FROM cashflow_ledger ORDER BY game_date ASC, rowid ASC;`);
   if (!txns || txns.length === 0) {
     errors.push('No cashflow transactions found in SQLite database!');
     return { passed: false, checksCount, errors, finalBalance: 0 };

@@ -455,6 +455,153 @@ body.tactical-body {
   font-style: normal;
 }
 
+/* Real-Time Agent Simulation HUD & Feedback */
+.agent-simulation-hud {
+  margin-top: 10px;
+  padding: 10px 12px;
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-left: 3px solid #10b981;
+  border-radius: var(--radius-xs);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.agent-thought-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10px;
+}
+
+.agent-thought-tag {
+  color: #34d399;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.agent-audit-tag {
+  color: #fbbf24;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid var(--border-gold-subtle);
+  padding: 1px 6px;
+  border-radius: var(--radius-xs);
+}
+
+.agent-thought-body {
+  font-size: 11px;
+  color: #cbd5e1;
+  line-height: 1.45;
+}
+
+.agent-delta-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.agent-delta-pill {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: var(--radius-xs);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.agent-delta-pill.cash-plus { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+.agent-delta-pill.cash-minus { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+.agent-delta-pill.inv { background: rgba(6, 182, 212, 0.15); color: #22d3ee; border: 1px solid rgba(6, 182, 212, 0.3); }
+.agent-delta-pill.rel { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+
+/* Global Loading & Anti-Piling Debounce Locks */
+button:disabled,
+.btn-choice-select:disabled,
+.btn-choice-ai:disabled,
+.btn-omni-ai:disabled,
+.btn-omni-instant:disabled {
+  opacity: 0.55 !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+}
+
+.choice-card.executing {
+  border-color: #f59e0b !important;
+  background-color: var(--bg-surface-elevated) !important;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.25);
+  animation: pulseCard 0.8s infinite alternate;
+}
+
+@keyframes pulseCard {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.008); }
+}
+
+/* Agent Log Tab Components */
+.deck-agent-log-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.deck-agent-log-item {
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+
+.deck-agent-log-item:hover {
+  border-color: var(--border-gold-subtle);
+  background-color: var(--bg-surface-elevated);
+}
+
+.deck-agent-log-top {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+}
+
+.deck-agent-log-type {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  color: #34d399;
+}
+
+.deck-agent-log-time {
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+}
+
+.deck-agent-log-prompt {
+  font-weight: 600;
+  font-size: 11px;
+  color: var(--text-primary);
+}
+
+.deck-agent-log-reason {
+  font-size: 10px;
+  color: #94a3b8;
+  line-height: 1.4;
+}
+
+.deck-agent-log-delta {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: #fbbf24;
+  margin-top: 2px;
+}
+
 /* Choices Grid */
 .choices-container {
   display: flex;

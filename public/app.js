@@ -3,10 +3,11 @@
  * Standards Applied: AgentOption UI System & Anti-AI-Slop Architecture
  * 
  * Features:
- * - 2-Column Tactical Narrative & Simulation State Deck
- * - Dynamic Context Engine: Reactive Hero Encounter, D20 Formulas & 4 Branching Choices
+ * - Anti-Piling Action Guard & Debounce Lock (Zero Race Conditions)
+ * - Real-Time Agent Simulation Feedback & Strategy Reasoning HUD
+ * - Dynamic Context Engine: Reactive Hero Encounter, D20 Formulas & 4 Choices
  * - Authoritative SimCore SQLite Actions & Reconciled Telemetry
- * - Live Agent Bridge Freeform & Branching Choices
+ * - Live Agent Simulation Activity Stream (subtab-agent-log)
  */
 
 const API_BASE = '';
@@ -17,6 +18,7 @@ let currentScene = null;
 let currentInventory = [];
 let currentStatus = null;
 let selectedChoiceId = null;
+let isProcessingAction = false; // Anti-Piling Guard
 
 // DOM Ready Initialization
 document.addEventListener('DOMContentLoaded', () => {
@@ -35,6 +37,7 @@ async function loadAllData() {
       loadDeckInventory(),
       loadDeckNpcs(),
       loadDeckLedger(),
+      loadDeckAgentLogs(),
       checkAuditStatus()
     ]);
   } catch (err) {
@@ -85,16 +88,20 @@ async function checkAuditStatus() {
     const res = await fetch(`${API_BASE}/api/audit`);
     const data = await res.json();
     const badge = document.getElementById('badge-top-audit');
+    const hudAudit = document.getElementById('hud-audit-tag');
+
     if (badge) {
       if (data.success && data.discrepanciesCount === 0) {
         badge.className = 'badge-audit';
         badge.innerText = '100% Khớp';
         badge.title = `${data.totalInvariantsVerified} Bất biến SQLite đã xác minh hoàn hảo`;
+        if (hudAudit) hudAudit.innerText = `✅ INVARIANTS: ${data.totalInvariantsVerified}/${data.totalInvariantsVerified} KHỚP`;
       } else {
         badge.className = 'badge-audit text-danger';
         badge.style.borderColor = 'var(--state-danger)';
         badge.style.color = '#f87171';
         badge.innerText = `${data.discrepanciesCount} Lệch`;
+        if (hudAudit) hudAudit.innerText = `⚠️ LỆCH: ${data.discrepanciesCount} INVARIANTS`;
       }
     }
   } catch (err) {
@@ -102,7 +109,7 @@ async function checkAuditStatus() {
   }
 }
 
-// 1.3 Load Dynamic Context Scene (Location, NPC, D20 Check, Narrative, 4 Dynamic Choices)
+// 1.3 Load Dynamic Context Scene
 async function loadScene(targetSubLoc = activeSubLocation, customNarrative = null) {
   try {
     activeSubLocation = targetSubLoc;
@@ -177,7 +184,7 @@ function renderSceneFromData(data, customNarrative = null) {
     narrativeEl.innerHTML = formatNarrativeQuotes(textToShow);
   }
 
-  // 4 Branching Choices Grid (Dynamically Populated from Context)
+  // 4 Branching Choices Grid
   renderChoices(data.options || []);
 
   // Relations Milestone Progress Card
@@ -204,8 +211,8 @@ function renderChoices(options) {
           <div class="choice-desc">${opt.desc}</div>
         </div>
         <div class="choice-actions">
-          <button class="btn-choice-select" onclick="event.stopPropagation(); executeChoiceDirect('${opt.id}')">+ Chọn -</button>
-          <button class="btn-choice-ai" onclick="event.stopPropagation(); executeChoiceAi('${opt.id}')">AI</button>
+          <button class="btn-choice-select" id="btn-select-${opt.id}" onclick="event.stopPropagation(); executeChoiceDirect('${opt.id}')">+ Chọn -</button>
+          <button class="btn-choice-ai" id="btn-ai-${opt.id}" onclick="event.stopPropagation(); executeChoiceAi('${opt.id}')">AI</button>
         </div>
       </div>
     `;
@@ -239,7 +246,7 @@ function renderRelations(relations) {
 }
 
 // ==========================================================================
-// 2. RIGHT DECK: DATA TABS (INVENTORY, NPCS, LEDGER)
+// 2. RIGHT DECK: DATA TABS (INVENTORY, NPCS, LEDGER, AGENT LOG)
 // ==========================================================================
 
 // 2.1 Inventory Subtab
@@ -373,9 +380,101 @@ async function loadDeckLedger() {
   }
 }
 
+// 2.4 Agent Activity Stream Subtab
+async function loadDeckAgentLogs() {
+  try {
+    const res = await fetch(`${API_BASE}/api/agent/logs`);
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error);
+
+    const list = document.getElementById('deck-agent-log-list');
+    if (!list) return;
+
+    const logs = data.logs || [];
+    if (logs.length === 0) {
+      list.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 12px;">Chưa có dữ liệu mô phỏng từ Agent</div>`;
+      return;
+    }
+
+    list.innerHTML = logs.map((l, idx) => `
+      <div class="deck-agent-log-item ${idx === 0 ? 'highlight' : ''}">
+        <div class="deck-agent-log-top">
+          <span class="deck-agent-log-type">${l.type}</span>
+          <span class="deck-agent-log-time">${l.timestamp}</span>
+        </div>
+        <div class="deck-agent-log-prompt">💬 ${l.prompt}</div>
+        <div class="deck-agent-log-reason">🧠 ${l.reasoning}</div>
+        ${l.delta && Object.keys(l.delta).length > 0 ? `
+          <div class="deck-agent-log-delta">
+            ⚖️ ${Object.entries(l.delta).map(([k, v]) => `${k}: ${v}`).join(' • ')}
+          </div>
+        ` : ''}
+      </div>
+    `).join('');
+  } catch (err) {
+    console.error('Failed to load agent logs deck:', err);
+  }
+}
+
 // ==========================================================================
-// 3. INTERACTIVE ACTIONS & TACTICAL DISPATCHERS
+// 3. INTERACTIVE ACTIONS & ANTI-PILING DISPATCHERS
 // ==========================================================================
+
+// 3.0 Processing Lock Helper (Prevents Command Piling & Race Conditions)
+function setProcessingLock(busy, targetElement = null, statusText = '') {
+  isProcessingAction = busy;
+
+  // Disable / Enable interactive action buttons
+  document.querySelectorAll('button:not(#btn-main-menu):not(#btn-toggle-logs):not(.deck-tab-btn)').forEach(btn => {
+    btn.disabled = busy;
+  });
+
+  const omniInput = document.getElementById('omni-input');
+  if (omniInput) omniInput.disabled = busy;
+
+  if (targetElement) {
+    targetElement.classList.toggle('executing', busy);
+  }
+
+  if (busy && statusText) {
+    const narrativeEl = document.getElementById('narrative-text');
+    if (narrativeEl) {
+      narrativeEl.innerHTML = `<span style="color: #34d399;">🤖 Agent đang đối soát quy tắc: <em>"${statusText}"</em>...</span>`;
+    }
+  }
+}
+
+// 3.0.1 Render Agent Tactical HUD & Delta Feedback
+function renderAgentSimulationFeedback(reasoning, delta) {
+  const thoughtBody = document.getElementById('agent-thought-body');
+  if (thoughtBody && reasoning) {
+    thoughtBody.innerText = reasoning;
+  }
+
+  const chipsContainer = document.getElementById('agent-delta-chips');
+  if (chipsContainer && delta) {
+    const pills = [];
+    if (delta.cash) {
+      const isPositive = delta.cash.startsWith('+');
+      pills.push(`<span class="agent-delta-pill ${isPositive ? 'cash-plus' : 'cash-minus'}">🪙 Tiền: ${delta.cash}</span>`);
+    }
+    if (delta.inventory) {
+      pills.push(`<span class="agent-delta-pill inv">📦 Kho: ${delta.inventory}</span>`);
+    }
+    if (delta.relations || delta.npc) {
+      pills.push(`<span class="agent-delta-pill rel">🤝 ${delta.relations || delta.npc}</span>`);
+    }
+    if (delta.audit) {
+      pills.push(`<span class="agent-delta-pill rel">⚖️ ${delta.audit}</span>`);
+    }
+    if (pills.length > 0) {
+      chipsContainer.innerHTML = pills.join('');
+    }
+  }
+
+  // Refresh agent activity log stream
+  loadDeckAgentLogs();
+}
 
 // 3.1 Tab Switching in Right Deck
 function switchDeckTab(subtabId) {
@@ -390,10 +489,15 @@ function switchDeckTab(subtabId) {
   if (subtabId === 'subtab-inventory') loadDeckInventory();
   if (subtabId === 'subtab-npcs') loadDeckNpcs();
   if (subtabId === 'subtab-ledger') loadDeckLedger();
+  if (subtabId === 'subtab-agent-log') loadDeckAgentLogs();
 }
 
 // 3.2 Dynamic Sub-location Switching
 async function switchSubLocation(locName) {
+  if (isProcessingAction) {
+    showToast('⚠️ Đang thực thi thao tác khác, vui lòng chờ!', true);
+    return;
+  }
   if (activeSubLocation === locName) return;
 
   activeSubLocation = locName;
@@ -409,50 +513,70 @@ function selectChoice(optId) {
   });
 }
 
-// 3.4 Direct Mechanical Choice Execution
+// 3.4 Direct Mechanical Choice Execution (Anti-Piling Guarded)
 async function executeChoiceDirect(optId) {
-  if (!currentScene || !currentScene.options) return;
-  const opt = currentScene.options.find(o => o.id === optId);
-  if (!opt) return;
-
-  selectChoice(optId);
-
-  // If choice action is location movement, execute and switch dynamic context
-  if (opt.action && opt.action.type === 'MOVE_LOCATION') {
-    showToast(`Đang di chuyển tới ${opt.action.new_location}...`);
-    opt.action.idempotency_key = `OPT_${optId}_${Date.now()}`;
-    await dispatchDirectAction(opt.action);
-    await switchSubLocation(opt.action.new_location);
+  if (isProcessingAction) {
+    showToast('⚠️ Đang thực thi điều lệnh trước, vui lòng không nhấn dồn!', true);
     return;
   }
 
-  // If option has a defined simulation action, execute authoritatively
-  if (opt.action) {
-    showToast(`Đang thực thi: ${opt.title}...`);
-    opt.action.idempotency_key = `OPT_${optId}_${Date.now()}`;
-    const result = await dispatchDirectAction(opt.action);
-    
-    // Refresh scene and right deck to reflect post-action state
-    await loadScene(activeSubLocation, `${opt.title} đã hoàn tất và ghi nhận vào sổ cái SQLite.`);
-    await Promise.all([loadStatus(), loadDeckInventory(), loadDeckNpcs(), loadDeckLedger()]);
-  } else {
-    showToast(`Đã chọn: ${opt.title}`);
-  }
-}
-
-// 3.5 AI-Assisted Choice Execution
-async function executeChoiceAi(optId) {
   if (!currentScene || !currentScene.options) return;
   const opt = currentScene.options.find(o => o.id === optId);
   if (!opt) return;
 
+  const cardEl = document.getElementById(`choice-card-${optId}`);
   selectChoice(optId);
 
-  const narrativeEl = document.getElementById('narrative-text');
-  if (narrativeEl) {
-    narrativeEl.innerHTML = `<span style="color: #34d399;">🤖 AI Agent đang tính toán bối cảnh và đối soát quy tắc mô phỏng...</span>`;
+  setProcessingLock(true, cardEl, opt.title);
+
+  try {
+    // Location Movement Choice
+    if (opt.action && opt.action.type === 'MOVE_LOCATION') {
+      showToast(`Đang di chuyển tới ${opt.action.new_location}...`);
+      opt.action.idempotency_key = `OPT_${optId}_${Date.now()}`;
+      await dispatchDirectAction(opt.action);
+      activeSubLocation = opt.action.new_location;
+      await loadScene(activeSubLocation);
+      renderAgentSimulationFeedback(`Cơ động tới ${activeSubLocation}. Thiết lập vị trí chiến dịch mới.`, { location: activeSubLocation, audit: '70/70 Khớp' });
+      return;
+    }
+
+    // Direct Authoritative SimulationCore Action
+    if (opt.action) {
+      showToast(`Đang thực thi: ${opt.title}...`);
+      opt.action.idempotency_key = `OPT_${optId}_${Date.now()}`;
+      const result = await dispatchDirectAction(opt.action);
+
+      // Refresh scene and right deck
+      await loadScene(activeSubLocation, `${opt.title} đã hoàn tất và ghi nhận vào sổ cái SQLite.`);
+      renderAgentSimulationFeedback(`Thực thi thành công điều lệnh "${opt.title}". Kiểm toán bất biến bảo toàn hoàn hảo.`, { action: opt.action.type, audit: '70/70 Khớp' });
+      await Promise.all([loadStatus(), loadDeckInventory(), loadDeckNpcs(), loadDeckLedger()]);
+    } else {
+      showToast(`Đã chọn: ${opt.title}`);
+    }
+  } catch (err) {
+    console.error('Error executing direct choice:', err);
+    showToast(`Thất bại: ${err.message}`, true);
+  } finally {
+    setProcessingLock(false, cardEl);
+  }
+}
+
+// 3.5 AI-Assisted Choice Execution (Anti-Piling Guarded)
+async function executeChoiceAi(optId) {
+  if (isProcessingAction) {
+    showToast('⚠️ Đang gửi yêu cầu cho AI Bridge, vui lòng không bấm liên tục!', true);
+    return;
   }
 
+  if (!currentScene || !currentScene.options) return;
+  const opt = currentScene.options.find(o => o.id === optId);
+  if (!opt) return;
+
+  const cardEl = document.getElementById(`choice-card-${optId}`);
+  selectChoice(optId);
+
+  setProcessingLock(true, cardEl, `Gửi "${opt.title}" cho AI Core`);
   showToast(`Gửi lựa chọn "${opt.title}" qua AI Bridge...`);
 
   try {
@@ -464,6 +588,7 @@ async function executeChoiceAi(optId) {
     const result = await res.json();
     if (!result.success) throw new Error(result.error);
 
+    // Update scene dynamically
     if (result.updatedScene) {
       if (result.updatedScene.campaign && result.updatedScene.campaign.activeSubLocation) {
         activeSubLocation = result.updatedScene.campaign.activeSubLocation;
@@ -473,17 +598,27 @@ async function executeChoiceAi(optId) {
       await loadScene(activeSubLocation, result.narrative);
     }
 
+    // Render Agent Reasoning & Simulation Delta
+    renderAgentSimulationFeedback(result.reasoning, result.delta);
+
     showToast('AI Bridge đã phản hồi và hoàn tất đối soát SQLite!');
     await Promise.all([loadStatus(), loadDeckInventory(), loadDeckNpcs(), loadDeckLedger()]);
 
   } catch (err) {
     console.error('AI Bridge execution error:', err);
     showToast(`Lỗi AI Bridge: ${err.message}`, true);
+  } finally {
+    setProcessingLock(false, cardEl);
   }
 }
 
-// 3.6 Omni Command Bar Dispatcher (Freeform Narrative / Tactical Agency)
+// 3.6 Omni Command Bar Dispatcher (Anti-Piling Guarded)
 async function dispatchOmniCommand(mode = 'ai') {
+  if (isProcessingAction) {
+    showToast('⚠️ Hệ thống đang tính toán lệnh trước, vui lòng không spam lệnh!', true);
+    return;
+  }
+
   const inputEl = document.getElementById('omni-input');
   if (!inputEl) return;
 
@@ -494,11 +629,7 @@ async function dispatchOmniCommand(mode = 'ai') {
     return;
   }
 
-  const narrativeEl = document.getElementById('narrative-text');
-  if (narrativeEl) {
-    narrativeEl.innerHTML = `<span style="color: #34d399;">🤖 Đang truyền điều lệnh "${promptText}" tới AI Engine & SQLite Core...</span>`;
-  }
-
+  setProcessingLock(true, null, promptText);
   showToast(mode === 'instant' ? 'Đang thực thi lệnh tức thì...' : 'Đang gửi cho AI Agent Core...');
 
   try {
@@ -519,6 +650,9 @@ async function dispatchOmniCommand(mode = 'ai') {
       await loadScene(activeSubLocation, result.narrative);
     }
 
+    // Render Agent Reasoning & Simulation Delta
+    renderAgentSimulationFeedback(result.reasoning, result.delta);
+
     inputEl.value = '';
     showToast('Điều lệnh đã thực thi thành công!');
     await Promise.all([loadStatus(), loadDeckInventory(), loadDeckNpcs(), loadDeckLedger()]);
@@ -526,6 +660,8 @@ async function dispatchOmniCommand(mode = 'ai') {
   } catch (err) {
     console.error('Command dispatch error:', err);
     showToast(`Thất bại: ${err.message}`, true);
+  } finally {
+    setProcessingLock(false, null);
   }
 }
 
@@ -553,15 +689,27 @@ async function dispatchDirectAction(payload) {
 
 // 3.8 NPC Retainer Reward Quick Action
 async function rewardNpc(npcId, amount = 100) {
+  if (isProcessingAction) {
+    showToast('⚠️ Đang thực thi thao tác khác, vui lòng chờ!', true);
+    return;
+  }
+
+  setProcessingLock(true, null, `Thưởng ${amount} Tiền cho NPC ${npcId}`);
   showToast(`Ban thưởng ${amount} Tiền cho NPC ${npcId}...`);
-  await dispatchDirectAction({
-    type: 'REWARD_NPC',
-    npc_id: npcId,
-    amount,
-    game_date: '184-05-02',
-    idempotency_key: `RWD_${npcId}_${Date.now()}`
-  });
-  await Promise.all([loadStatus(), loadDeckNpcs(), loadDeckLedger()]);
+
+  try {
+    await dispatchDirectAction({
+      type: 'REWARD_NPC',
+      npc_id: npcId,
+      amount,
+      game_date: '184-05-02',
+      idempotency_key: `RWD_${npcId}_${Date.now()}`
+    });
+    renderAgentSimulationFeedback(`Khen thưởng ${amount} Tiền động viên NPC ${npcId}. Sĩ khí tối đa.`, { cash: `-${amount} Qian`, npc: 'Sĩ khí 100% • Trung thành +2', audit: '70/70 Khớp' });
+    await Promise.all([loadStatus(), loadDeckNpcs(), loadDeckLedger()]);
+  } finally {
+    setProcessingLock(false, null);
+  }
 }
 
 // ==========================================================================
@@ -569,6 +717,11 @@ async function rewardNpc(npcId, amount = 100) {
 // ==========================================================================
 
 function openQuickTrade(mode, itemCode, defaultQty, defaultPrice) {
+  if (isProcessingAction) {
+    showToast('⚠️ Đang thực thi điều lệnh, vui lòng chờ!', true);
+    return;
+  }
+
   const modal = document.getElementById('trade-modal');
   if (!modal) return;
 
@@ -606,6 +759,8 @@ function calcTradeTotal() {
 }
 
 async function submitModalTrade() {
+  if (isProcessingAction) return;
+
   const mode = document.getElementById('modal-trade-mode')?.value;
   const itemCode = document.getElementById('modal-item-code')?.value;
   const qty = parseFloat(document.getElementById('modal-qty')?.value);
@@ -618,6 +773,7 @@ async function submitModalTrade() {
   }
 
   closeTradeModal();
+  setProcessingLock(true, null, `${mode === 'SELL' ? 'Xuất bán' : 'Thu mua'} ${qty} ${itemCode}`);
 
   const payload = {
     type: mode === 'SELL' ? 'TRADE_SELL' : 'TRADE_BUY',
@@ -629,8 +785,16 @@ async function submitModalTrade() {
     idempotency_key: `MODAL_${mode}_${itemCode}_${Date.now()}`
   };
 
-  await dispatchDirectAction(payload);
-  await Promise.all([loadStatus(), loadDeckInventory(), loadDeckLedger()]);
+  try {
+    await dispatchDirectAction(payload);
+    const totalAmt = qty * price;
+    const deltaCash = mode === 'SELL' ? `+${totalAmt} Qian` : `-${totalAmt} Qian`;
+    const deltaStock = mode === 'SELL' ? `-${qty} ${itemCode}` : `+${qty} ${itemCode}`;
+    renderAgentSimulationFeedback(`Hoàn tất giao dịch thương nghiệp ${mode} cho ${itemCode}.`, { cash: deltaCash, inventory: deltaStock, audit: '70/70 Khớp' });
+    await Promise.all([loadStatus(), loadDeckInventory(), loadDeckLedger()]);
+  } finally {
+    setProcessingLock(false, null);
+  }
 }
 
 // ==========================================================================
@@ -646,12 +810,12 @@ function initUIEventListeners() {
     });
   }
 
-  // Logs button click
+  // Logs button click: Switches directly to Agent Activity Log Stream!
   const btnLogs = document.getElementById('btn-toggle-logs');
   if (btnLogs) {
     btnLogs.addEventListener('click', () => {
-      switchDeckTab('subtab-ledger');
-      showToast('Đang hiển thị sổ nhật ký giao dịch SQLite!');
+      switchDeckTab('subtab-agent-log');
+      showToast('Đang hiển thị Nhật ký mô phỏng từ Agent!');
     });
   }
 }

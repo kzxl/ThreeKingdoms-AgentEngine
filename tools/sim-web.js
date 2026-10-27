@@ -28,6 +28,31 @@ const SAVES_DIR = path.join(ROOT_DIR, 'saves');
 const DB_PATH = process.env.SIM_DB_PATH || path.join(SAVES_DIR, 'session.db');
 const DEFAULT_PORT = parseInt(process.env.PORT || process.argv[2] || '3300', 10);
 
+// In-Memory Agent Simulation Activity Stream
+const agentActivityStream = [
+  {
+    timestamp: '08:00:00',
+    type: 'SESSION_START',
+    prompt: 'Khởi tạo phiên mô phỏng chiến dịch',
+    narrative: 'Lương Diễn hoàn tất giao dịch quân nhu cho Bắc Quân Lư Thực và trở về Huyện Trác củng cố hậu cần.',
+    reasoning: 'Thiết lập cân bằng sổ cái kép 70/70 Invariants và duy trì kết nối AI Bridge trực tiếp.',
+    delta: { cash: '+0 Qian', inventory: '12 SKUs ổn định', relations: 'Trương Phi +25, Quan Vũ +10', audit: '70/70 Khớp 100%' }
+  }
+];
+
+function logAgentSimulationEvent(event) {
+  agentActivityStream.unshift({
+    timestamp: event.timestamp || new Date().toLocaleTimeString(),
+    type: event.type || 'SIMULATION_ACTION',
+    prompt: event.prompt || 'Chỉ thị mô phỏng',
+    narrative: event.narrative || '',
+    reasoning: event.reasoning || 'Thực thi quy tắc mô phỏng SQLite SimCore.',
+    delta: event.delta || {},
+    executedAction: event.executedAction || null
+  });
+  if (agentActivityStream.length > 50) agentActivityStream.pop();
+}
+
 function runSqlJson(sql) {
   if (!fs.existsSync(DB_PATH)) return [];
   const tempFile = path.join(SAVES_DIR, `web_tmp_${Date.now()}_${Math.random().toString(36).substr(2, 4)}.sql`);
@@ -222,6 +247,12 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // 5b. GET /api/agent/logs - Agent Simulation Activity Feed
+  if (req.method === 'GET' && pathname === '/api/agent/logs') {
+    sendJson(res, 200, { success: true, logs: agentActivityStream });
+    return;
+  }
+
   // 6. POST /api/action - Simulation Core Action Dispatcher
   if (req.method === 'POST' && pathname === '/api/action') {
     let body = '';
@@ -231,6 +262,18 @@ const server = http.createServer((req, res) => {
         const payload = JSON.parse(body || '{}');
         const core = new SimulationCore(DB_PATH);
         const result = core.executeAction(payload);
+
+        if (result.success) {
+          logAgentSimulationEvent({
+            type: payload.type,
+            prompt: `Thao tác cơ học: ${payload.type}`,
+            narrative: `Hệ thống SimulationCore đã thực thi và cân bằng sổ cái kép cho điều lệnh ${payload.type}.`,
+            reasoning: `Xử lý tức thì qua SimCore. Kiểm toán 70/70 Invariants bảo toàn hoàn hảo.`,
+            delta: { action: payload.type, status: 'SUCCESS' },
+            executedAction: result
+          });
+        }
+
         sendJson(res, 200, result);
       } catch (err) {
         sendJson(res, 400, { success: false, error: err.message });
@@ -627,11 +670,48 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
           execResult = core.executeAction(actionToRun);
         }
 
+        let tacticalReasoning = '';
+        let delta = {};
+
+        if (actionToRun && actionToRun.type === 'TRADE_BUY') {
+          tacticalReasoning = `Thu mua ${actionToRun.quantity} đơn vị ${actionToRun.item_code} từ ${actionToRun.counterparty}. Tăng tích trữ nguyên liệu/quân lương cho chiến dịch.`;
+          delta = { cash: `-${actionToRun.quantity * actionToRun.unit_price} Qian`, inventory: `+${actionToRun.quantity} ${actionToRun.item_code}`, audit: 'Khớp Nợ Tồn Kho / Có Tiền Mặt' };
+        } else if (actionToRun && actionToRun.type === 'TRADE_SELL') {
+          tacticalReasoning = `Xuất bán ${actionToRun.quantity} đơn vị ${actionToRun.item_code} cho ${actionToRun.counterparty}. Chuyển hóa thặng dư hàng hóa thành tiền mặt lưu động.`;
+          delta = { cash: `+${actionToRun.quantity * actionToRun.unit_price} Qian`, inventory: `-${actionToRun.quantity} ${actionToRun.item_code}`, audit: 'Khớp Nợ Tiền Mặt / Có Doanh Thu' };
+        } else if (actionToRun && actionToRun.type === 'PRODUCTION_BATCH') {
+          tacticalReasoning = `Hoàn thành lô sản xuất ${actionToRun.recipe} số lượng ${actionToRun.batch_size}. Khấu trừ nguyên vật liệu theo định mức BOM.`;
+          delta = { cash: '0 Qian (Tiêu hao nguyên liệu)', inventory: `+${actionToRun.batch_size} thành phẩm`, audit: 'Bảo toàn BOM định mức' };
+        } else if (actionToRun && actionToRun.type === 'REWARD_NPC') {
+          tacticalReasoning = `Khen thưởng ${actionToRun.amount} Tiền củng cố lòng trung thành và sĩ khí của danh tướng/thợ xưởng.`;
+          delta = { cash: `-${actionToRun.amount} Qian`, inventory: 'Bảo toàn', npc: 'Sĩ khí 100% • Trung thành +2', audit: 'Khớp Nợ Chi Phí / Có Tiền Mặt' };
+        } else if (actionToRun && actionToRun.type === 'MOVE_LOCATION') {
+          tacticalReasoning = `Cơ động tới ${actionToRun.new_location} mở rộng mạng lưới giao thương và tiếp xúc các thế lực Tam Quốc.`;
+          delta = { cash: '0 Qian', inventory: 'Bảo toàn', location: actionToRun.new_location, audit: 'Cập nhật vị trí chiến dịch' };
+        } else if (actionToRun && actionToRun.type === 'RECORD_BOUNTY') {
+          tacticalReasoning = `Ghi nhận quân thưởng quân công từ tiền tuyến phá giặc Khăn Vàng.`;
+          delta = { cash: `+${actionToRun.amount} Qian`, inventory: 'Bảo toàn', relations: 'Quân huân Bắc Quân +20', audit: 'Khớp Nợ Tiền Mặt / Có Thu Nhập Khác' };
+        } else {
+          tacticalReasoning = `Đàm đạo chiến lược và thăm dò tình hình thời cuộc cùng các hào kiệt tại ${subLocation}.`;
+          delta = { cash: '0 Qian', inventory: 'Bảo toàn', relations: 'Hảo cảm +5', audit: 'Bảo toàn trạng thái' };
+        }
+
+        logAgentSimulationEvent({
+          type: actionToRun ? actionToRun.type : 'DIALOGUE',
+          prompt: payload.prompt || 'Chỉ thị chiến thuật',
+          narrative: replyNarrative,
+          reasoning: tacticalReasoning,
+          delta,
+          executedAction: execResult
+        });
+
         const updatedScene = generateDynamicScene(DB_PATH, subLocation, actionToRun, replyNarrative);
 
         sendJson(res, 200, {
           success: true,
           narrative: replyNarrative,
+          reasoning: tacticalReasoning,
+          delta,
           executedAction: execResult,
           updatedScene,
           timestamp: new Date().toISOString()

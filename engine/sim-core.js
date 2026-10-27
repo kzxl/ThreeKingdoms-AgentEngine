@@ -68,6 +68,18 @@ class SimulationCore {
     }
   }
 
+  _getNextTxnId(gameDate) {
+    const dateCompact = gameDate.replace(/-/g, '');
+    const countRes = runSqlJson(this.dbPath, `SELECT COUNT(*) as c FROM cashflow_ledger;`)[0];
+    const seq = String((countRes ? countRes.c : 0) + 1).padStart(4, '0');
+    return `TXN-${dateCompact}-${seq}`;
+  }
+
+  _getLastBalance(defaultLiquid = 0) {
+    const lastTxn = runSqlJson(this.dbPath, `SELECT balance FROM cashflow_ledger ORDER BY rowid DESC LIMIT 1;`)[0];
+    return lastTxn ? Number(lastTxn.balance) : defaultLiquid;
+  }
+
   // 1. Idempotency Check
   checkIdempotency(idempotencyKey) {
     if (!idempotencyKey) return null;
@@ -138,13 +150,12 @@ class SimulationCore {
     }
 
     // Prepare transaction IDs
-    const txnId = `TXN-${game_date.replace(/-/g, '')}-${Date.now().toString().slice(-4)}`;
+    const txnId = this._getNextTxnId(game_date);
     const movId = `MOV-${game_date.replace(/-/g, '')}-${Date.now().toString().slice(-4)}`;
     const actionId = `ACT-${Date.now()}`;
 
     // Get current inventory and cashflow balance
-    const lastTxn = runSqlJson(this.dbPath, `SELECT balance FROM cashflow_ledger ORDER BY game_date DESC, txn_id DESC LIMIT 1;`)[0];
-    const prevBal = lastTxn ? Number(lastTxn.balance) : currentLiquid;
+    const prevBal = this._getLastBalance(currentLiquid);
     const newBal = prevBal - totalCost;
 
     const itemRow = runSqlJson(this.dbPath, `SELECT quantity, unit_cost_basis FROM inventory_items WHERE item_code = '${item_code}' LIMIT 1;`)[0];
@@ -237,13 +248,12 @@ class SimulationCore {
     const totalCOGS = Math.round(quantity * costBasis);
     const netProfit = totalRevenue - totalCOGS;
 
-    const txnId = `TXN-${game_date.replace(/-/g, '')}-${Date.now().toString().slice(-4)}`;
+    const txnId = this._getNextTxnId(game_date);
     const movId = `MOV-${game_date.replace(/-/g, '')}-${Date.now().toString().slice(-4)}`;
     const actionId = `ACT-${Date.now()}`;
 
-    const lastTxn = runSqlJson(this.dbPath, `SELECT balance FROM cashflow_ledger ORDER BY game_date DESC, txn_id DESC LIMIT 1;`)[0];
     const playerRows = runSqlJson(this.dbPath, `SELECT liquid_cash FROM player_state LIMIT 1;`)[0];
-    const prevBal = lastTxn ? Number(lastTxn.balance) : Number(playerRows.liquid_cash);
+    const prevBal = this._getLastBalance(Number(playerRows.liquid_cash));
     const newBal = prevBal + totalRevenue;
     const newQty = currentQty - quantity;
 
@@ -395,10 +405,9 @@ class SimulationCore {
       return { success: false, code: 'INSUFFICIENT_FUNDS', error: `Insufficient cash for payroll. Required: ${amount}, Available: ${currentLiquid}` };
     }
 
-    const txnId = `TXN-${game_date.replace(/-/g, '')}-${Date.now().toString().slice(-4)}`;
+    const txnId = this._getNextTxnId(game_date);
     const actionId = `ACT-${Date.now()}`;
-    const lastTxn = runSqlJson(this.dbPath, `SELECT balance FROM cashflow_ledger ORDER BY game_date DESC, txn_id DESC LIMIT 1;`)[0];
-    const newBal = (lastTxn ? Number(lastTxn.balance) : currentLiquid) - amount;
+    const newBal = this._getLastBalance(currentLiquid) - amount;
 
     const sql = `
       UPDATE player_state SET liquid_cash = liquid_cash - ${amount};
@@ -441,10 +450,9 @@ class SimulationCore {
     }
 
     const playerRows = runSqlJson(this.dbPath, `SELECT liquid_cash FROM player_state LIMIT 1;`)[0];
-    const txnId = `TXN-${game_date.replace(/-/g, '')}-${Date.now().toString().slice(-4)}`;
+    const txnId = this._getNextTxnId(game_date);
     const actionId = `ACT-${Date.now()}`;
-    const lastTxn = runSqlJson(this.dbPath, `SELECT balance FROM cashflow_ledger ORDER BY game_date DESC, txn_id DESC LIMIT 1;`)[0];
-    const newBal = (lastTxn ? Number(lastTxn.balance) : Number(playerRows.liquid_cash)) + amount;
+    const newBal = this._getLastBalance(Number(playerRows.liquid_cash)) + amount;
 
     const sql = `
       UPDATE player_state SET liquid_cash = liquid_cash + ${amount};
@@ -497,10 +505,9 @@ class SimulationCore {
     }
     const npc = npcRows[0];
 
-    const txnId = `TXN-${game_date.replace(/-/g, '')}-${Date.now().toString().slice(-4)}`;
+    const txnId = this._getNextTxnId(game_date);
     const actionId = `ACT-${Date.now()}`;
-    const lastTxn = runSqlJson(this.dbPath, `SELECT balance FROM cashflow_ledger ORDER BY game_date DESC, txn_id DESC LIMIT 1;`)[0];
-    const newBal = (lastTxn ? Number(lastTxn.balance) : Number(playerRows.liquid_cash)) - amount;
+    const newBal = this._getLastBalance(Number(playerRows.liquid_cash)) - amount;
 
     const newMorale = Math.min(100, Number(npc.morale) + 10);
     const newLoyalty = Math.min(100, Number(npc.loyalty) + 5);
