@@ -5,9 +5,9 @@
 | Source Faction | Target Faction | Diplomatic Status | Trust Score (-100 to +100) | Notes |
 |---|---|---|---|---|
 | `FACTION-0001` (Han Court) | `FACTION-0002` (Yellow Turbans) | **War** (Total Eradication) | -100 | Imperial decree declares all rebels outlaws |
-| `FACTION-0001` (Han Court) | `FACTION-0003` (Youzhou Gov) | **Vassal / Subordinate** | +70 | Liu Yan holds imperial commission |
-| `FACTION-0003` (Youzhou Gov) | `FACTION-0004` (Zhuo County) | **Administrative Superior** | +85 | Celebrates Daxing Mountain victory |
-| `FACTION-0002` (Yellow Turbans) | `FACTION-0004` (Zhuo County) | **Crushed / In Disarray** | -95 | Northern invasion army shattered |
+| `FACTION-0001` (Han Court) | `FACTION-0003` (Youzhou Gov) | **Vassal / Subordinate** | +75 | Commended for rescuing Qingzhou |
+| `FACTION-0003` (Youzhou Gov) | `FACTION-0004` (Zhuo County) | **Administrative Superior** | +85 | Garrison and merchant guild praised |
+| `FACTION-0002` (Yellow Turbans) | `LOC-0004` (Qingzhou) | **Shattered Siege** | -100 | 30,000 insurgents routed from Qingzhou |
 
 ---
 
@@ -15,11 +15,12 @@
 
 | NPC ID | Name | Affiliation / Role | Sentiment (-100 to +100) | Relationship Type | Notes |
 |---|---|---|---|---|---|
-| `NPC-0001` | Liu Bei (Xuande) | Victorious Militia Commander | **+52** (+14) (Sworn Benefactor & Core Pillar) | Senior Military & Political Patron | Fully settled `CTR-01840311-0001`; credits Liang Yan with tactical victory |
-| `NPC-0002` | Zhang Fei (Yide) | Vanguard Hero of Daxing Mtn | **+50** (+15) (Life-and-Death Sworn Brother) | Blood Brother & Frontline Shield | Impressed by Liang Yan repelling rebel flankers with ashwood spear |
-| `NPC-0003` | Guan Yu (Yunchang) | Slayer of Cheng Yuanzhi | **+42** (+16) (Deep Martial & Tactician Respect) | Senior Commander & Protector | Values Liang Yan's precise map reconnaissance that enabled decapitation strike |
-| `NPC-0004` | Zhang Jue | Taiping Dao Celestial Master | **0** (Unknown) | Leader of Rebellion | Shaken by loss of Cheng Yuanzhi and Deng Mao in northern front |
-| `NPC-0005` | Zhang Shiping | Zhongshan Horse Merchant | **+45** (+5) (Valued Trading Partner) | Commercial associate | Delighted to see his sponsored militia triumph; eager for further supply orders |
-| `NPC-0006` | Master Lu Zhirong | Senior Woodwright & Guild Head | **+55** (+5) (Paternal Guild Mentor) | District Defense Leader | Successfully maintained East Gate security during the expedition |
-| `NPC-0007` | Chen Bao | Workshop Foreman (`BIZ-0001`) | **+75** (+5) (Devoted Workshop Deputy) | Chief Foreman | Successfully ran autonomous batch production, producing 15 baskets & 10 mats |
-| `NPC-0008` | Zhao An | Workshop Apprentice / Porter | **+65** (+5) (Loyal Retainer) | Retainer | Assisted Foreman Chen Bao diligently; earned performance bonus |
+| `NPC-0001` | Liu Bei (Xuande) | Acclaimed Volunteer Commander | **+65** (+13) (Sworn Confidant & Chief Strategist) | Core Strategic Patron | Considers Liang Yan his indispensable right hand & chief strategist |
+| `NPC-0002` | Zhang Fei (Yide) | Vanguard Hero of Qingzhou | **+60** (+10) (Life-and-Death Sworn Brother) | Blood Brother & Frontline Shield | Proud of Liang Yan's spear combat mastery and field courage |
+| `NPC-0003` | Guan Yu (Yunchang) | Vanguard Hero of Qingzhou | **+55** (+13) (Deep Intellectual & Martial Respect) | Senior Commander & Protector | Praised Liang Yan's pincer timing as worthy of Sun Tzu |
+| `NPC-0004` | Zhang Jue | Taiping Dao Celestial Master | **-10** (Hostile / Alarmed) | Rebel Leader | Infuriated by destruction of both northern vanguard and eastern siege |
+| `NPC-0005` | Zhang Shiping | Zhongshan Horse Merchant | **+45** (Valued Trading Partner) | Commercial associate | Anticipating northern horse/salt trade exchange |
+| `NPC-0006` | Master Lu Zhirong | Senior Woodwright & Guild Head | **+55** (Paternal Guild Mentor) | District Defense Leader | Successfully maintained East Gate security and workshop patronage |
+| `NPC-0007` | Chen Bao | Workshop Foreman (`BIZ-0001`) | **+75** (Devoted Workshop Deputy) | Chief Foreman | Managing expanded 4-man workshop team autonomously in Zhuo |
+| `NPC-0008` | Zhao An | Workshop Apprentice / Porter | **+65** (Loyal Retainer) | Retainer | Diligent assistant at Zhuo workshop |
+| `NPC-0011` | Gong Jing | Imperial Governor of Qingzhou | **+60** (Eternal Life-Saving Benefactor) | High Imperial Patron | Awarded Liang Yan 2,000 Qian cash bounty + Qingzhou Sea Salt Monopoly Permit |

@@ -8,9 +8,9 @@
 | **Full Name** | **Liang Yan** (Lương Nhan / 梁彦) |
 | **Courtesy Name (Tự)** | **Zhiyuan** (Chí Viễn / 志远) |
 | **Age / Gender** | 21 (Born 163 AD) / Male |
-| **Current Location** | Expeditionary Headquarters outside Qingzhou (`LOC-0004`) |
-| **Permanent Base** | Liang Clan Workshop (`BIZ-0001`), Zhuo County (Under Foreman Chen Bao) |
-| **Official Expedition Role**| Chief Quartermaster & Tactical Advisor (Tổng Đốc Quân Nhu kiêm Tham Mưu Quân Sư) |
+| **Current Location** | Qingzhou City (`LOC-0004`), Governor's Palace |
+| **Permanent Base** | Liang Clan Workshop (`BIZ-0001`), Zhuo County (Foreman Chen Bao presiding) |
+| **Official Expedition Role**| Chief Quartermaster, Master Strategist & Imperial Salt Licensee |
 
 ---
 
@@ -18,37 +18,34 @@
 
 | Attribute | Code | Value | Tier / Description |
 |---|---|---|---|
-| **Intelligence** | `INT` | **76** (+2) | Deepened via Sun Tzu strategy studies with Guan Yu; master of military stratagems |
-| **Politics** | `POL` | **62** | Established autonomous workshop governance and guild alliance before departure |
-| **Martial Prowess** | `WAR` | **58** (+2) | Intensive spear sparring with Zhang Fei; unlocked Coiled Serpent Thrust |
-| **Leadership** | `LDR` | **66** | Commands full respect of volunteer vanguard and logistics train |
-| **Diplomacy** | `DIP` | **68** | Direct trusted advisor to Liu Bei, Guan Yu, and Zhang Fei |
-| **Commerce** | `COM` | **76** | Enterprise expanding autonomously in Zhuo County |
-| **Logistics** | `LOG` | **68** | Managing mobile baggage train of 1,500 soldiers without a hitch |
-| **Craftsmanship** | `CRA` | **62** | Workshop capacity expanded to 800 man-hours/month under delegated foreman |
+| **Intelligence** | `INT` | **76** | Masterminded the Three-Way Pincer stratagem that shattered 30,000 rebels at Qingzhou |
+| **Politics** | `POL` | **64** (+2) | Gained official imperial patronage and sea salt monopoly license from Governor Gong Jing |
+| **Martial Prowess** | `WAR` | **58** | Spear combat (Tier 3 Proficient); defeated rebel sub-general Zhang Bo in single combat |
+| **Leadership** | `LDR` | **68** (+2) | Flawlessly synchronized joint offensive across Zou Jing, Liu Bei, and Gong Jing |
+| **Diplomacy** | `DIP` | **68** | Inviolable bond with Liu Bei (+65), Zhang Fei (+60), Guan Yu (+55), Gong Jing (+60) |
+| **Commerce** | `COM` | **76** | Unlocked lucrative Qingzhou-Youzhou sea salt trading corridor |
+| **Logistics** | `LOG` | **68** | Flawless forward quartermastering across 400 Li march |
+| **Craftsmanship** | `CRA` | **62** | Workshop capacity expanded to 800 man-hours/month in Zhuo County |
 
 ---
 
-## 3. Financial & Asset Dashboard (Month 4 Day 5, 184 AD)
+## 3. Financial & Asset Dashboard (Month 4 Day 8, 184 AD)
 
-- **Total Entity Cash Balance**: **13,940 Qian**
-  - *Expedition Mobile Coffer (with Liang Yan)*: **10,940 Qian**
+- **Total Entity Cash Balance**: **15,940 Qian**
+  - *Mobile War Chest (with Liang Yan at Qingzhou)*: **12,940 Qian**
   - *Zhuo Workshop Safe (under Foreman Chen Bao)*: **3,000 Qian**
 - **Accounts Receivable (AR)**: 0 Qian.
 - **Accounts Payable (AP)**: 0 Qian.
 - **Strategic Food Reserve (Zhuo Workshop)**: 9.60 Dan grain.
-- **Inventory Valuation**: 21,058 Qian.
-- **Fixed Assets**: 19,600 Qian (Added third heavy loom).
-- **Total Net Worth**: **54,598 Qian**.
+- **Inventory Valuation**: **21,708 Qian** (Includes 10 Dou sea salt, 15 spears, 5 swords, 2 pack mules, finished goods).
+- **Fixed Assets**: **19,600 Qian** (Workshop compound, 3 looms, tools, handcart).
+- **Total Net Worth**: **57,248 Qian** (High liquidity, monopoly trading rights, and peerless prestige).
 
 ---
 
 ## 4. Current Objectives
 
-- [x] **Workshop Delegation & Expansion**: Delegated daily operations to Foreman Chen Bao; Master Lu serving as external advisor; hired 2 new apprentices (capacity: 800 hrs/mo).
-- [x] **Martial & Strategic Breakthroughs**:
-  - `SKL-WAR-SPEAR` advanced to **Tier 3 (Proficient)** with Zhang Fei.
-  - `SKL-TAC-STRAT` unlocked at **Tier 2 (Competent)** with Guan Yu.
-- [x] **Arrive at Qingzhou Front**: Safely navigated 400 Li march; vanguard camp pitched 20 Li from besieged walls.
-- [ ] **Objective 1 (Battle of Qingzhou)**: Devise and execute the relief stratagem with Liu Bei, Guan Yu, and Zhang Fei to break the 30,000-strong siege and save Governor Gong Jing.
-- [ ] **Objective 2 (Post-Relief Political Leverage)**: Secure Qingzhou commercial privileges (salt & silk trade rights) and official Imperial Court recommendation from Governor Gong Jing.
+- [x] **Execute Qingzhou Relief Stratagem 1**: Feint & Three-Way Pincer completely annihilated 30,000-strong siege force.
+- [x] **Secure Provincial Reward & Privileges**: Earned 2,000 Qian bounty and Imperial Qingzhou Sea Salt Purchase Permit (20% discount).
+- [ ] **Objective 1 (Commercial / Salt Arbitrage)**: Utilize 2 pack mules and expedition funds to purchase a bulk consignment of Qingzhou sea salt at wholesale discount and ship it north to Jizhou/Youzhou for 100%+ profit.
+- [ ] **Objective 2 (The Lu Zhi / Guangzong Crisis)**: Imperial couriers arrive: Grand Commander Lu Zhi (Lư Thực) is locked in brutal siege warfare against Zhang Jue's main army at Guangzong (Quảng Tông). Liu Bei decides whether to march north to reinforce his former teacher Master Lu Zhi!
