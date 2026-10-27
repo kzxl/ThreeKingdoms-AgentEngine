@@ -14,6 +14,7 @@ import { KizunaModule } from '../modules/social-kizuna/kizuna.module';
 import { AgentBridgeModule } from '../modules/agent-bridge/agent-bridge.module';
 import { NpcLifecycleModule } from '../modules/npc-lifecycle/npc-lifecycle.module';
 import { FactionPoliticsModule } from '../modules/faction-politics/faction-politics.module';
+import { ProfessionsModule } from '../modules/professions/professions.module';
 
 // Resolve database path
 const ROOT_DIR = path.resolve(__dirname, '../..');
@@ -30,6 +31,7 @@ export async function bootstrapGrandStrategy() {
   const agentBridge = new AgentBridgeModule();
   const npcLifecycle = new NpcLifecycleModule();
   const factionPolitics = new FactionPoliticsModule();
+  const professions = new ProfessionsModule();
 
   registry.register(utilityAi);
   registry.register(military);
@@ -38,6 +40,7 @@ export async function bootstrapGrandStrategy() {
   registry.register(agentBridge);
   registry.register(npcLifecycle);
   registry.register(factionPolitics);
+  registry.register(professions);
 
   await registry.initAll(DB_PATH);
 
@@ -52,7 +55,8 @@ export async function bootstrapGrandStrategy() {
     kizuna,
     agentBridge,
     npcLifecycle,
-    factionPolitics
+    factionPolitics,
+    professions
   };
 }
 

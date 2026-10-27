@@ -333,6 +333,51 @@ CREATE TABLE IF NOT EXISTS faction_political_events (
     FOREIGN KEY(source_faction_id) REFERENCES session_factions(faction_id)
 );
 
+-- 23. Ancient Professions & Master Crafting Disciplines (Bách Nghệ Tam Quốc)
+CREATE TABLE IF NOT EXISTS character_professions (
+    character_id TEXT NOT NULL,
+    profession_code TEXT NOT NULL,
+    profession_name_vi TEXT NOT NULL,
+    profession_name_en TEXT NOT NULL,
+    category TEXT NOT NULL DEFAULT 'GATHERING', -- 'GATHERING', 'CRAFTING', 'MEDICINE', 'AGRONOMY', 'COMMERCE', 'EMERGENT_INNOVATION'
+    tier INTEGER NOT NULL DEFAULT 1 CHECK (tier >= 1 AND tier <= 5), -- 1: Tập Sự, 2: Thợ Nghề, 3: Thợ Cả, 4: Đại Sư, 5: Tông Sư
+    current_exp INTEGER NOT NULL DEFAULT 0 CHECK (current_exp >= 0),
+    max_exp INTEGER NOT NULL DEFAULT 100 CHECK (max_exp > 0),
+    is_primary INTEGER NOT NULL DEFAULT 0,
+    unlocked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (character_id, profession_code)
+);
+
+-- 24. Regional Gathering Nodes (Khai Mỏ, Hái Thuốc, Đốn Củi, Nấu Muối Thực Địa)
+CREATE TABLE IF NOT EXISTS gathering_nodes (
+    node_id TEXT PRIMARY KEY,
+    settlement_id TEXT NOT NULL,
+    name_vi TEXT NOT NULL,
+    name_en TEXT NOT NULL,
+    resource_type TEXT NOT NULL, -- 'MINERAL', 'HERB', 'TIMBER', 'SALT_WELL'
+    yield_item_code TEXT NOT NULL,
+    yield_item_name_vi TEXT NOT NULL,
+    yield_quantity_min REAL NOT NULL DEFAULT 1.0,
+    yield_quantity_max REAL NOT NULL DEFAULT 4.0,
+    fatigue_cost INTEGER NOT NULL DEFAULT 15,
+    required_skill_code TEXT,
+    description_vi TEXT
+);
+
+-- 25. Emergent Profession Innovations (Sáng Tạo Nghề Mới Đột Phá)
+CREATE TABLE IF NOT EXISTS emergent_innovations (
+    innovation_id TEXT PRIMARY KEY,
+    character_id TEXT NOT NULL,
+    turn_number INTEGER NOT NULL,
+    game_date TEXT NOT NULL,
+    profession_code TEXT NOT NULL,
+    title_vi TEXT NOT NULL,
+    narrative_vi TEXT NOT NULL,
+    unlocked_recipes_json TEXT DEFAULT '[]',
+    stat_boosts_json TEXT DEFAULT '{}',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Indices for rapid querying & integrity checks
 CREATE INDEX IF NOT EXISTS idx_cashflow_date ON cashflow_ledger(game_date);
 CREATE INDEX IF NOT EXISTS idx_stock_mov_item ON stock_movements(item_code);
@@ -350,4 +395,8 @@ CREATE INDEX IF NOT EXISTS idx_settlement_faction ON session_settlements(ruler_f
 CREATE INDEX IF NOT EXISTS idx_officer_faction ON faction_officers(faction_id);
 CREATE INDEX IF NOT EXISTS idx_officer_risk ON faction_officers(betrayal_risk);
 CREATE INDEX IF NOT EXISTS idx_political_turn ON faction_political_events(turn_number);
+CREATE INDEX IF NOT EXISTS idx_char_prof ON character_professions(character_id);
+CREATE INDEX IF NOT EXISTS idx_node_settlement ON gathering_nodes(settlement_id);
+CREATE INDEX IF NOT EXISTS idx_innovations_char ON emergent_innovations(character_id);
+
 

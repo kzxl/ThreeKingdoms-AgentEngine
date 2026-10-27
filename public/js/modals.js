@@ -212,6 +212,10 @@ async function switchGameManagerTab(tabId) {
   if (tabId === 'factions') {
     await loadAndRenderFactions();
   }
+
+  if (tabId === 'professions') {
+    await loadAndRenderProfessions();
+  }
 }
 
 async function loadAndRenderRotkEvents() {
@@ -1126,6 +1130,184 @@ async function handleAppointGovernor(settlementId, factionId) {
   }
 }
 
+// -------------------------------------------------------------
+// Ancient Professions, Gathering & Emergent Innovations (Phase 2)
+// -------------------------------------------------------------
+async function loadAndRenderProfessions() {
+  const profsContainer = document.getElementById('gm-professions-list-container');
+  const nodesContainer = document.getElementById('gm-gathering-nodes-container');
+  const innoTimeline = document.getElementById('gm-innovations-timeline');
+
+  if (profsContainer) {
+    profsContainer.innerHTML = '<div style="color:#94a3b8; padding:15px; text-align:center;">Đang nạp bách nghệ và điểm khai khoáng...</div>';
+  }
+
+  try {
+    const [profsRes, nodesRes, innoRes] = await Promise.all([
+      apiFetchCharacterProfessions('PLY-0001'),
+      apiFetchGatheringNodes(),
+      apiFetchInnovations()
+    ]);
+
+    const profs = profsRes.professions || [];
+    const nodes = nodesRes.nodes || [];
+    const innovations = innoRes.innovations || [];
+
+    // 1. Render Learned Professions
+    if (profsContainer) {
+      if (profs.length === 0) {
+        profsContainer.innerHTML = '<div style="color:#94a3b8;">Chưa học nghề nào. Hãy lên núi khai thác để bắt đầu nhập môn!</div>';
+      } else {
+        const tierLabels = [
+          '',
+          '🌱 Bậc 1: Tập Sự (Apprentice)',
+          '🔨 Bậc 2: Thợ Nghề (Journeyman)',
+          '⚙️ Bậc 3: Thợ Cả (Master Artisan)',
+          '🎖️ Bậc 4: Đại Sư (Grandmaster)',
+          '👑 Bậc 5: Tông Sư (Paragon Pioneer)'
+        ];
+
+        profsContainer.innerHTML = profs.map(p => {
+          const isEmergent = p.category === 'EMERGENT_INNOVATION';
+          const progressPercent = Math.min(100, Math.round((p.currentExp / p.maxExp) * 100));
+
+          return `
+            <div class="gm-npc-card" style="border-left: 3px solid ${isEmergent ? '#f59e0b' : '#10b981'}; background:${isEmergent ? 'rgba(245, 158, 11, 0.05)' : 'rgba(30, 41, 59, 0.7)'};">
+              <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px;">
+                <div>
+                  <h4 style="color:${isEmergent ? '#fbbf24' : '#f8fafc'}; font-size:14px; font-weight:700; margin:0;">
+                    ${isEmergent ? '✨ ' : ''}${p.professionNameVi}
+                  </h4>
+                  <span style="font-size:11px; color:#94a3b8;">${p.professionNameEn}</span>
+                </div>
+                <span style="font-size:10px; padding:2px 6px; border-radius:3px; background:${isEmergent ? 'rgba(245,158,11,0.2)' : 'rgba(16,185,129,0.15)'}; color:${isEmergent ? '#facc15' : '#4ade80'}; border:1px solid ${isEmergent ? '#f59e0b' : '#10b981'};">
+                  ${p.category}
+                </span>
+              </div>
+
+              <div style="font-size:11px; color:#cbd5e1; margin-bottom:6px; font-weight:600;">
+                ${tierLabels[p.tier] || `Bậc ${p.tier}`}
+              </div>
+
+              <!-- EXP Bar -->
+              <div style="margin-bottom:8px;">
+                <div style="display:flex; justify-content:space-between; font-size:11px; color:#94a3b8; margin-bottom:2px;">
+                  <span>Độ Thuần Thục:</span>
+                  <span style="color:#e2e8f0;">${p.currentExp} / ${p.maxExp} EXP (${progressPercent}%)</span>
+                </div>
+                <div style="height:5px; background:rgba(255,255,255,0.1); border-radius:3px; overflow:hidden;">
+                  <div style="height:100%; width:${progressPercent}%; background:${isEmergent ? 'linear-gradient(90deg, #f59e0b, #fbbf24)' : '#10b981'};"></div>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    // 2. Render Gathering Nodes
+    if (nodesContainer) {
+      if (nodes.length === 0) {
+        nodesContainer.innerHTML = '<div style="color:#94a3b8;">Chưa có điểm thu thập trên bản đồ.</div>';
+      } else {
+        const typeIcons = {
+          MINERAL: '⛏️ Khai Khoáng Mỏ Đá',
+          HERB: '🌿 Dược Thảo Rừng Núi',
+          TIMBER: '🌲 Đốn Củi Rừng Già',
+          SALT_WELL: '🧂 Chưng Cất Nấu Muối'
+        };
+
+        nodesContainer.innerHTML = nodes.map(n => `
+          <div class="gm-npc-card" style="padding:12px;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px;">
+              <div>
+                <b style="color:#f8fafc; font-size:14px;">${n.nameVi}</b>
+                <div style="font-size:11px; color:#38bdf8;">${n.settlementId} • ${typeIcons[n.resourceType] || n.resourceType}</div>
+              </div>
+              <span style="font-size:11px; color:#f87171; font-weight:600; background:rgba(239,68,68,0.1); padding:2px 6px; border-radius:3px;">
+                -${n.fatigueCost} Thể lực
+              </span>
+            </div>
+
+            <p style="font-size:11px; color:#94a3b8; margin:6px 0 10px 0; line-height:1.4;">
+              ${n.descriptionVi || ''}
+            </p>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.25); padding:6px 8px; border-radius:4px; margin-bottom:8px; font-size:11px;">
+              <span style="color:#cbd5e1;">Sản vật: <b style="color:#e2e8f0;">${n.yieldItemNameVi}</b></span>
+              <span style="color:#facc15;">Sản lượng: ~${n.yieldQuantityMin}-${n.yieldQuantityMax} đơn vị</span>
+            </div>
+
+            <button class="btn btn-primary" style="width:100%; font-size:12px; padding:6px; background:#047857; border-color:#10b981;" onclick="handleGatherResource('${n.nodeId}')">
+              ⛏️ Lên Núi Thu Thập / Khai Thác
+            </button>
+          </div>
+        `).join('');
+      }
+    }
+
+    // 3. Render Emergent Innovations
+    if (innoTimeline) {
+      if (innovations.length === 0) {
+        innoTimeline.innerHTML = '<div style="color:#64748b; padding:15px; text-align:center;">Chưa có sáng tạo nghề mới. Hãy nâng cấp nhiều nghề lên Bậc 2 trở lên và bấm "Đột Phá Sáng Tạo Nghề Mới"!</div>';
+      } else {
+        innoTimeline.innerHTML = innovations.map(inno => `
+          <div class="event-card" style="border-left-color: #f59e0b; background:rgba(245,158,11,0.03);">
+            <div class="event-header">
+              <span class="event-year-badge" style="background:#f59e0b;">Lượt ${inno.turnNumber} • ${inno.gameDate}</span>
+              <span class="event-loc-badge" style="background:rgba(245,158,11,0.2); color:#fbbf24; border-color:#f59e0b;">✨ Nghề Mới: ${inno.professionCode}</span>
+            </div>
+            <h4 class="event-title" style="color:#facc15;">${inno.titleVi}</h4>
+            <p class="event-narrative">${inno.narrativeVi}</p>
+            ${inno.unlockedRecipes && inno.unlockedRecipes.length > 0 ? `
+              <div style="font-size:11px; color:#4ade80; margin-top:6px; background:rgba(34,197,94,0.1); padding:4px 8px; border-radius:3px;">
+                🔓 Mở khóa công thức chế tác: <b>${inno.unlockedRecipes.join(', ')}</b>
+              </div>
+            ` : ''}
+          </div>
+        `).join('');
+      }
+    }
+  } catch (err) {
+    console.error('loadAndRenderProfessions error:', err);
+    if (profsContainer) profsContainer.innerHTML = `<div style="color:#ef4444;">Lỗi: ${err.message}</div>`;
+  }
+}
+
+async function handleGatherResource(nodeId) {
+  try {
+    showToast('Đang tiến vào sơn mạch khai thác tài nguyên...', false);
+    const res = await apiGatherResource('PLY-0001', nodeId);
+    if (res.success) {
+      const data = res.result;
+      showToast(`Thu hoạch thành công +${data.yieldQuantity} ${data.itemName}! (${data.expMessage})`, false);
+      if (data.breakthrough) {
+        setTimeout(() => {
+          alert(`🌟 CHÚC MỪNG ĐỘT PHÁ NGHỀ MỚI!\n\n${data.breakthrough.titleVi}\n\n${data.breakthrough.narrativeVi}`);
+        }, 500);
+      }
+      await loadAndRenderProfessions();
+    }
+  } catch (err) {
+    showToast(`Khai thác thất bại: ${err.message}`, true);
+  }
+}
+
+async function triggerSynthesizeBreakthrough() {
+  try {
+    showToast('Đang kiểm tra khả năng dung hợp bách nghệ và điều kiện đột phá...', false);
+    const res = await apiSynthesizeBreakthrough('PLY-0001');
+    if (res.success && res.innovation) {
+      alert(`🌟 ĐỘT PHÁ THÀNH CÔNG NGHỀ MỚI!\n\n${res.innovation.titleVi}\n\n${res.innovation.narrativeVi}`);
+      await loadAndRenderProfessions();
+    } else {
+      showToast('Chưa hội đủ điều kiện giao thoa! Hãy nâng cấp ít nhất 2 nhánh nghề lên Bậc 2 (ví dụ: Khai Khoáng Bậc 2 + Thái Dược Bậc 2) rồi thử lại.', true);
+    }
+  } catch (err) {
+    showToast(`Lỗi dung hợp: ${err.message}`, true);
+  }
+}
+
 // Global exposure
 window.isProcessingAction = isProcessingAction;
 window.showToast = showToast;
@@ -1154,4 +1336,8 @@ window.triggerSimulatePolitics = triggerSimulatePolitics;
 window.handleGrantReward = handleGrantReward;
 window.handleInvestTitle = handleInvestTitle;
 window.handleAppointGovernor = handleAppointGovernor;
+window.loadAndRenderProfessions = loadAndRenderProfessions;
+window.handleGatherResource = handleGatherResource;
+window.triggerSynthesizeBreakthrough = triggerSynthesizeBreakthrough;
+
 

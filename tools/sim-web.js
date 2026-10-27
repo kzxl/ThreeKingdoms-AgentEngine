@@ -566,6 +566,103 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // 4o. GET /api/professions/nodes - Regional Gathering Nodes (Khai Mỏ, Hái Thuốc)
+  if (req.method === 'GET' && pathname === '/api/professions/nodes') {
+    try {
+      const gsm = globalThis.__GRAND_STRATEGY_MODULES__;
+      const settlementId = parsedUrl.query.settlementId;
+      const nodes = gsm && gsm.professions ? gsm.professions.getGatheringNodes(settlementId) : runSqlJson(`
+        SELECT * FROM gathering_nodes ${settlementId ? `WHERE settlement_id = '${settlementId.replace(/'/g, "''")}'` : ''} ORDER BY settlement_id;
+      `);
+      sendJson(res, 200, { success: true, nodes });
+    } catch (err) {
+      sendJson(res, 500, { success: false, error: err.message });
+    }
+    return;
+  }
+
+  // 4p. GET /api/professions/character - Character Disciplines & Tiers
+  if (req.method === 'GET' && pathname === '/api/professions/character') {
+    try {
+      const gsm = globalThis.__GRAND_STRATEGY_MODULES__;
+      const characterId = parsedUrl.query.characterId || 'PLY-0001';
+      const professions = gsm && gsm.professions ? gsm.professions.getCharacterProfessions(characterId) : runSqlJson(`
+        SELECT * FROM character_professions WHERE character_id = '${characterId.replace(/'/g, "''")}' ORDER BY is_primary DESC, tier DESC;
+      `);
+      sendJson(res, 200, { success: true, characterId, professions });
+    } catch (err) {
+      sendJson(res, 500, { success: false, error: err.message });
+    }
+    return;
+  }
+
+  // 4q. GET /api/professions/innovations - Emergent Innovations (Sáng Tạo Nghề Mới)
+  if (req.method === 'GET' && pathname === '/api/professions/innovations') {
+    try {
+      const gsm = globalThis.__GRAND_STRATEGY_MODULES__;
+      const characterId = parsedUrl.query.characterId;
+      const innovations = gsm && gsm.professions ? gsm.professions.getInnovations(characterId) : runSqlJson(`
+        SELECT * FROM emergent_innovations ${characterId ? `WHERE character_id = '${characterId.replace(/'/g, "''")}'` : ''} ORDER BY created_at DESC;
+      `);
+      sendJson(res, 200, { success: true, innovations });
+    } catch (err) {
+      sendJson(res, 500, { success: false, error: err.message });
+    }
+    return;
+  }
+
+  // 4r. POST /api/professions/gather - Action: Gather Resource at Node
+  if (req.method === 'POST' && pathname === '/api/professions/gather') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        const characterId = payload.characterId || 'PLY-0001';
+        const nodeId = payload.nodeId;
+        if (!nodeId) {
+          sendJson(res, 400, { success: false, error: 'nodeId is required' });
+          return;
+        }
+        const gsm = globalThis.__GRAND_STRATEGY_MODULES__;
+        if (gsm && gsm.professions) {
+          const meta = runSqlJson(`SELECT active_turn, current_date FROM campaign_meta LIMIT 1;`)[0] || { active_turn: 6, current_date: '184-05-01' };
+          const result = gsm.professions.gatherResource(characterId, nodeId, meta.active_turn, meta.current_date);
+          sendJson(res, 200, { success: true, result });
+        } else {
+          sendJson(res, 500, { success: false, error: 'Professions module not initialized' });
+        }
+      } catch (err) {
+        sendJson(res, 500, { success: false, error: err.message });
+      }
+    });
+    return;
+  }
+
+  // 4s. POST /api/professions/synthesize - Action: Trigger Emergent Innovation Breakthrough
+  if (req.method === 'POST' && pathname === '/api/professions/synthesize') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        const characterId = payload.characterId || 'PLY-0001';
+        const gsm = globalThis.__GRAND_STRATEGY_MODULES__;
+        if (gsm && gsm.professions) {
+          const meta = runSqlJson(`SELECT active_turn, current_date FROM campaign_meta LIMIT 1;`)[0] || { active_turn: 6, current_date: '184-05-01' };
+          const innovation = gsm.professions.checkAndTriggerBreakthrough(characterId, meta.active_turn, meta.current_date);
+          sendJson(res, 200, { success: true, innovation });
+        } else {
+          sendJson(res, 500, { success: false, error: 'Professions module not initialized' });
+        }
+      } catch (err) {
+        sendJson(res, 500, { success: false, error: err.message });
+      }
+    });
+    return;
+  }
+
+
 
   // 5. GET /api/audit - Comprehensive Invariant Audit
   if (req.method === 'GET' && pathname === '/api/audit') {

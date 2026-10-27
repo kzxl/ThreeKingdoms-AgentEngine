@@ -284,6 +284,51 @@ async function apiSimulatePolitics() {
   return data;
 }
 
+async function apiFetchGatheringNodes(settlementId = null) {
+  const url = settlementId ? `${API_BASE}/api/professions/nodes?settlementId=${encodeURIComponent(settlementId)}` : `${API_BASE}/api/professions/nodes`;
+  const res = await fetch(url);
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Failed to fetch gathering nodes');
+  return data;
+}
+
+async function apiFetchCharacterProfessions(characterId = 'PLY-0001') {
+  const res = await fetch(`${API_BASE}/api/professions/character?characterId=${encodeURIComponent(characterId)}`);
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Failed to fetch character professions');
+  return data;
+}
+
+async function apiFetchInnovations(characterId = null) {
+  const url = characterId ? `${API_BASE}/api/professions/innovations?characterId=${encodeURIComponent(characterId)}` : `${API_BASE}/api/professions/innovations`;
+  const res = await fetch(url);
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Failed to fetch innovations');
+  return data;
+}
+
+async function apiGatherResource(characterId, nodeId) {
+  const res = await fetch(`${API_BASE}/api/professions/gather`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ characterId, nodeId })
+  });
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Failed to gather resource');
+  return data;
+}
+
+async function apiSynthesizeBreakthrough(characterId = 'PLY-0001') {
+  const res = await fetch(`${API_BASE}/api/professions/synthesize`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ characterId })
+  });
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Failed to synthesize breakthrough');
+  return data;
+}
+
 // Global exposure
 window.apiFetchStatus = apiFetchStatus;
 window.apiFetchAudit = apiFetchAudit;
@@ -318,4 +363,10 @@ window.apiAppointGovernor = apiAppointGovernor;
 window.apiInvestTitle = apiInvestTitle;
 window.apiGrantReward = apiGrantReward;
 window.apiSimulatePolitics = apiSimulatePolitics;
+window.apiFetchGatheringNodes = apiFetchGatheringNodes;
+window.apiFetchCharacterProfessions = apiFetchCharacterProfessions;
+window.apiFetchInnovations = apiFetchInnovations;
+window.apiGatherResource = apiGatherResource;
+window.apiSynthesizeBreakthrough = apiSynthesizeBreakthrough;
+
 

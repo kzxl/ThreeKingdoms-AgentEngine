@@ -179,3 +179,55 @@ export interface FactionPoliticalEvent {
   consequences: Record<string, any>;
 }
 
+// -------------------------------------------------------------
+// Ancient Professions, Gathering & Emergent Innovations
+// -------------------------------------------------------------
+export type ProfessionCategory =
+  | 'GATHERING'
+  | 'CRAFTING'
+  | 'MEDICINE'
+  | 'AGRONOMY'
+  | 'COMMERCE'
+  | 'EMERGENT_INNOVATION';
+
+export interface CharacterProfessionState {
+  characterId: CharacterId;
+  professionCode: string;
+  professionNameVi: string;
+  professionNameEn: string;
+  category: ProfessionCategory;
+  tier: number; // 1 - 5
+  currentExp: number;
+  maxExp: number;
+  isPrimary: boolean;
+  unlockedAt?: string;
+}
+
+export interface GatheringNode {
+  nodeId: string;
+  settlementId: SettlementId;
+  nameVi: string;
+  nameEn: string;
+  resourceType: 'MINERAL' | 'HERB' | 'TIMBER' | 'SALT_WELL';
+  yieldItemCode: string;
+  yieldItemNameVi: string;
+  yieldQuantityMin: number;
+  yieldQuantityMax: number;
+  fatigueCost: number;
+  requiredSkillCode?: string;
+  descriptionVi?: string;
+}
+
+export interface EmergentInnovation {
+  innovationId: string;
+  characterId: CharacterId;
+  turnNumber: number;
+  gameDate: string;
+  professionCode: string;
+  titleVi: string;
+  narrativeVi: string;
+  unlockedRecipes: string[];
+  statBoosts: Record<string, number>;
+}
+
+
