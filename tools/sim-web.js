@@ -116,6 +116,32 @@ runSqlRaw(`CREATE TABLE IF NOT EXISTS chat_chronicle (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );`);
 
+// Passive Stamina Regeneration Tracker
+let lastPassiveStaminaCheck = Date.now();
+
+function processPassiveStaminaRecovery(player) {
+  if (!player || !player.player_id) return player;
+  const currentFatigue = Number(player.fatigue || 0);
+  if (currentFatigue <= 0) {
+    lastPassiveStaminaCheck = Date.now();
+    return player;
+  }
+  const warAttr = Number(player.war_attr || 50);
+  const intervalSeconds = Math.max(8, 30 - Math.floor((warAttr - 50) * 0.4));
+  const elapsedSeconds = Math.floor((Date.now() - lastPassiveStaminaCheck) / 1000);
+  if (elapsedSeconds >= intervalSeconds) {
+    const pointsToRecover = Math.floor(elapsedSeconds / intervalSeconds);
+    const actualRecovered = Math.min(currentFatigue, pointsToRecover);
+    const newFatigue = currentFatigue - actualRecovered;
+    lastPassiveStaminaCheck = Date.now() - ((elapsedSeconds % intervalSeconds) * 1000);
+    if (actualRecovered > 0) {
+      runSqlRaw(`UPDATE player_state SET fatigue = ${newFatigue} WHERE player_id = '${player.player_id}';`);
+      player.fatigue = newFatigue;
+    }
+  }
+  return player;
+}
+
 function sendJson(res, statusCode, data) {
   res.writeHead(statusCode, {
     'Content-Type': 'application/json; charset=utf-8',
@@ -181,7 +207,8 @@ const server = http.createServer(async (req, res) => {
   if (req.method === 'GET' && pathname === '/api/status') {
     try {
       const meta = runSqlJson(`SELECT * FROM campaign_meta LIMIT 1;`)[0] || {};
-      const player = runSqlJson(`SELECT * FROM player_state LIMIT 1;`)[0] || {};
+      let player = runSqlJson(`SELECT * FROM player_state LIMIT 1;`)[0] || {};
+      player = processPassiveStaminaRecovery(player);
       const skills = runSqlJson(`SELECT * FROM player_skills ORDER BY tier DESC, current_exp DESC;`);
       const invSummary = runSqlJson(`SELECT COUNT(*) as item_count, TOTAL(quantity * unit_cost_basis) as inv_val FROM inventory_items;`)[0] || { item_count: 0, inv_val: 0 };
       const bizCount = runSqlJson(`SELECT COUNT(*) as count FROM businesses;`)[0]?.count || 0;
@@ -210,6 +237,29 @@ const server = http.createServer(async (req, res) => {
           npcCount: npcs
         }
       });
+    } catch (err) {
+      sendJson(res, 500, { success: false, error: err.message });
+    }
+    return;
+  }
+
+  // 1b. POST /api/player/stamina-tick - Stamina Regeneration over Time
+  if (req.method === 'POST' && pathname === '/api/player/stamina-tick') {
+    try {
+      let player = runSqlJson(`SELECT player_id, war_attr, health, fatigue FROM player_state LIMIT 1;`)[0];
+      if (!player) {
+        sendJson(res, 404, { success: false, error: 'Player not found' });
+        return;
+      }
+      const fatigue = Number(player.fatigue || 0);
+      if (fatigue <= 0) {
+        sendJson(res, 200, { success: true, recovered: 0, fatigue: 0 });
+        return;
+      }
+      const newFatigue = Math.max(0, fatigue - 1);
+      lastPassiveStaminaCheck = Date.now();
+      runSqlRaw(`UPDATE player_state SET fatigue = ${newFatigue} WHERE player_id = '${player.player_id}';`);
+      sendJson(res, 200, { success: true, recovered: 1, fatigue: newFatigue });
     } catch (err) {
       sendJson(res, 500, { success: false, error: err.message });
     }

@@ -83,6 +83,109 @@ async function loadAllData() {
   }
 }
 
+// ==========================================================================
+// STAMINA RECOVERY & DYNAMIC ANIMATION ENGINE
+// ==========================================================================
+let prevStaminaValue = null;
+let staminaTickerTimer = null;
+let currentStaminaCountdown = 0;
+let staminaIntervalSecs = 27;
+
+function triggerStaminaRecoveryAnimation(amount) {
+  const container = document.getElementById('vital-stamina-item');
+  if (!container || amount <= 0) return;
+
+  container.classList.remove('stamina-pulse');
+  void container.offsetWidth; // Force DOM reflow
+  container.classList.add('stamina-pulse');
+  setTimeout(() => container.classList.remove('stamina-pulse'), 1200);
+
+  const gainEl = document.createElement('span');
+  gainEl.className = 'vital-gain-indicator';
+  gainEl.innerText = `+${amount} ⚡`;
+  container.appendChild(gainEl);
+  setTimeout(() => gainEl.remove(), 1400);
+}
+
+function updateStaminaRegenDisplay(fatigueVal, maxStamina, currentStamina, warAttr) {
+  const timerEl = document.getElementById('stamina-timer-row');
+  const barEl = document.getElementById('bar-stamina');
+  const containerEl = document.getElementById('vital-stamina-item');
+  if (!timerEl) return;
+
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+  staminaIntervalSecs = Math.max(8, 30 - Math.floor((warAttr - 50) * 0.4));
+
+  if (fatigueVal <= 0) {
+    timerEl.className = 'vital-sub-timer full';
+    timerEl.innerHTML = `<span class="icon">⚡</span> ${isEn ? 'Full' : 'Đầy'}`;
+    if (barEl) barEl.classList.remove('recovering');
+    if (containerEl) {
+      containerEl.title = isEn 
+        ? `Stamina Full: ${maxStamina}/${maxStamina} (WAR +${Math.round((warAttr - 50) * 1.5)} bonus)`
+        : `Thể Lực Đầy: ${maxStamina}/${maxStamina} (Cộng hưởng Võ Lực +${Math.round((warAttr - 50) * 1.5)})`;
+    }
+    return;
+  }
+
+  if (barEl) barEl.classList.add('recovering');
+
+  if (currentStaminaCountdown <= 0) {
+    currentStaminaCountdown = staminaIntervalSecs;
+  }
+
+  const totalSecondsRemaining = Math.max(0, (fatigueVal - 1) * staminaIntervalSecs + currentStaminaCountdown);
+  const mins = Math.floor(totalSecondsRemaining / 60);
+  const secs = totalSecondsRemaining % 60;
+  const timeStr = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+
+  timerEl.className = 'vital-sub-timer recovering';
+  timerEl.innerHTML = `<span class="icon">⚡</span> ${timeStr} <span style="opacity:0.75; font-size:7.5px;">(+1/${staminaIntervalSecs}s)</span>`;
+
+  if (containerEl) {
+    containerEl.title = isEn
+      ? `Stamina: ${currentStamina}/${maxStamina}. Passive Recovery: +1 point every ${staminaIntervalSecs}s (based on WAR ${warAttr}). Full in ${timeStr}.`
+      : `Thể Lực: ${currentStamina}/${maxStamina}. Tự hồi phục: +1 điểm mỗi ${staminaIntervalSecs}s (dựa trên Võ Lực ${warAttr}). Hồi đầy sau ${timeStr}.`;
+  }
+}
+
+function startStaminaRegenTicker() {
+  if (staminaTickerTimer) clearInterval(staminaTickerTimer);
+  staminaTickerTimer = setInterval(async () => {
+    if (!currentStatus || !currentStatus.player) return;
+    const p = currentStatus.player;
+    const fatigueVal = Number(p.fatigue || 0);
+    if (fatigueVal <= 0) {
+      const warAttr = Number(p.war_attr || 50);
+      const healthVal = Number(p.health || 100);
+      const maxStamina = 100 + Math.max(0, Math.round((warAttr - 50) * 1.5)) + Math.floor(healthVal / 10);
+      updateStaminaRegenDisplay(0, maxStamina, maxStamina, warAttr);
+      return;
+    }
+
+    currentStaminaCountdown--;
+    if (currentStaminaCountdown <= 0) {
+      currentStaminaCountdown = staminaIntervalSecs;
+      try {
+        const res = await fetch(`${API_BASE}/api/player/stamina-tick`, { method: 'POST' });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && data.recovered > 0) {
+            p.fatigue = data.fatigue;
+            await loadStatus();
+          }
+        }
+      } catch (e) {}
+    } else {
+      const warAttr = Number(p.war_attr || 50);
+      const healthVal = Number(p.health || 100);
+      const maxStamina = 100 + Math.max(0, Math.round((warAttr - 50) * 1.5)) + Math.floor(healthVal / 10);
+      const currentStamina = Math.max(0, maxStamina - fatigueVal);
+      updateStaminaRegenDisplay(fatigueVal, maxStamina, currentStamina, warAttr);
+    }
+  }, 1000);
+}
+
 // 1.1 Load Telemetry & Player Status
 async function loadStatus() {
   try {
@@ -136,6 +239,12 @@ async function loadStatus() {
       const currentStamina = Math.max(0, maxStamina - fatigueVal);
       const staminaPct = Math.min(100, Math.max(0, Math.round((currentStamina / maxStamina) * 100)));
 
+      // Trigger recovery animation if stamina increased
+      if (prevStaminaValue !== null && currentStamina > prevStaminaValue) {
+        triggerStaminaRecoveryAnimation(currentStamina - prevStaminaValue);
+      }
+      prevStaminaValue = currentStamina;
+
       const staminaEl = document.getElementById('protagonist-stamina');
       if (staminaEl) {
         staminaEl.innerText = `${currentStamina}/${maxStamina}`;
@@ -160,11 +269,29 @@ async function loadStatus() {
         }
       }
 
+      updateStaminaRegenDisplay(fatigueVal, maxStamina, currentStamina, warAttr);
+
+      // HP Sub-timer status
+      const hpTimerEl = document.getElementById('hp-timer-row');
+      if (hpTimerEl) {
+        hpTimerEl.innerText = healthVal >= 80 
+          ? (typeof currentLang !== 'undefined' && currentLang === 'en' ? '❤️ Robust' : '❤️ Khang kiện') 
+          : (typeof currentLang !== 'undefined' && currentLang === 'en' ? '⚠️ Injured' : '⚠️ Thể tổn');
+      }
+
       const moraleEl = document.getElementById('protagonist-morale');
       if (moraleEl) moraleEl.innerText = `${p.morale || 100}%`;
 
       const barMorale = document.getElementById('bar-morale');
       if (barMorale) barMorale.style.width = `${p.morale || 100}%`;
+
+      const moraleVal = Number(p.morale || 100);
+      const moraleTimerEl = document.getElementById('morale-timer-row');
+      if (moraleTimerEl) {
+        moraleTimerEl.innerText = moraleVal >= 80 
+          ? (typeof currentLang !== 'undefined' && currentLang === 'en' ? '🔥 High' : '🔥 Hăng hái') 
+          : (typeof currentLang !== 'undefined' && currentLang === 'en' ? '⚡ Normal' : '⚡ Bình ổn');
+      }
 
       const attrInt = document.getElementById('attr-int');
       if (attrInt) attrInt.innerText = p.int_attr || 80;
@@ -786,6 +913,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initUIEventListeners();
   applyLanguage();
   loadAllData();
+  startStaminaRegenTicker();
 });
 
 // Global exposure for template strings and inline handlers
