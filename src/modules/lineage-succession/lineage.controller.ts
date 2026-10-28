@@ -22,9 +22,11 @@ import {
   HouseholdRole,
   ChildGrowthFocus
 } from './family-lineage.service';
+import { SpatialGuardService } from '../progression/spatial-guard.service';
 
 export function registerLineageRoutes(router: Router): void {
   const service = FamilyLineageService.getInstance();
+  const guard = SpatialGuardService.getInstance();
 
   /**
    * 1. GET /api/lineage/overview & GET /api/lineage/status
@@ -72,6 +74,15 @@ export function registerLineageRoutes(router: Router): void {
         dowryItems: body.dowryItems || []
       };
 
+      // Progression Stage Verification: Stage 2+ required to propose marriage & establish household
+      const playerId = params.playerId || 'PLY-0001';
+      guard.assertStage(
+        playerId,
+        2,
+        'Cầu Hôn & Thành Gia Lập Thất',
+        body.bypassSpatialGuard || body.bypassProgressionGate
+      );
+
       const result = service.proposeMarriage(params);
       sendJson(res, 200, result);
     } catch (err: any) {
@@ -117,11 +128,20 @@ export function registerLineageRoutes(router: Router): void {
     try {
       const body = ctx.body || {};
       const marriageId = body.marriageId;
+      const playerId = body.playerId || 'PLY-0001';
 
       if (!marriageId) {
         sendJson(res, 400, { success: false, error: 'Thiếu marriageId' });
         return;
       }
+
+      // Spatial Presence Guard: Must be at Residence / Manor / Tư Trạch
+      guard.assertPresence(
+        playerId,
+        ['Tư Trạch', 'Vườn Đào', 'Lương Phủ', 'Residence', 'Manor'],
+        'Nghỉ Ngơi Phòng Trong',
+        body.bypassSpatialGuard
+      );
 
       const result = service.restWithSpouse(marriageId);
       sendJson(res, 200, result);
@@ -213,11 +233,20 @@ export function registerLineageRoutes(router: Router): void {
       const body = ctx.body || {};
       const childId = body.childId;
       const mentorNpcId = body.mentorNpcId;
+      const playerId = body.playerId || 'PLY-0001';
 
       if (!childId || !mentorNpcId) {
         sendJson(res, 400, { success: false, error: 'Thiếu childId hoặc mentorNpcId' });
         return;
       }
+
+      // Spatial Presence Guard: Mentorship requires presence at Residence / Study
+      guard.assertPresence(
+        playerId,
+        ['Tư Trạch', 'Vườn Đào', 'Lương Phủ', 'Residence', 'Manor'],
+        'Bái Sư Tu Dưỡng',
+        body.bypassSpatialGuard
+      );
 
       const params: AssignMentorParams = { childId, mentorNpcId };
       const result = service.assignMasterMentor(params);
@@ -238,11 +267,20 @@ export function registerLineageRoutes(router: Router): void {
     try {
       const body = ctx.body || {};
       const childId = body.childId;
+      const playerId = body.playerId || 'PLY-0001';
 
       if (!childId) {
         sendJson(res, 400, { success: false, error: 'Thiếu childId' });
         return;
       }
+
+      // Spatial Presence Guard: Mentorship session at Residence
+      guard.assertPresence(
+        playerId,
+        ['Tư Trạch', 'Vườn Đào', 'Lương Phủ', 'Residence', 'Manor'],
+        'Chỉ Điểm Tu Dưỡng',
+        body.bypassSpatialGuard
+      );
 
       const result = service.executeMentorshipTurn(childId);
       sendJson(res, 200, { success: true, ...result });

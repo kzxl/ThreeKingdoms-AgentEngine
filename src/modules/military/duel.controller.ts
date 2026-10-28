@@ -13,12 +13,14 @@ import {
   DuelContext,
   ARENA_ROSTER
 } from './single-combat-duel.service';
+import { SpatialGuardService } from '../progression/spatial-guard.service';
 
 /**
  * Registers all Single Combat Duel routes into the provided Router instance.
  */
 export function registerDuelRoutes(router: Router): void {
   const duelService = SingleCombatDuelService.getInstance();
+  const guard = SpatialGuardService.getInstance();
 
   // -------------------------------------------------------------
   // 1. POST /api/duel/initiate & /api/duels/initiate
@@ -162,8 +164,17 @@ export function registerDuelRoutes(router: Router): void {
         heroNpcId,
         npcId,
         autoResolve = true,
-        playerCommands
+        playerCommands,
+        bypassSpatialGuard
       } = ctx.body || {};
+
+      // Spatial Presence Guard
+      guard.assertPresence(
+        playerId,
+        ['Lôi Đài', 'Giáo Trường', 'Võ Đài', 'Arena', 'Drill'],
+        'Tỉ Võ Giao Lưu',
+        bypassSpatialGuard
+      );
 
       const targetHero = heroNpcId || npcId || 'NPC-0002'; // Default Zhang Fei
 
@@ -217,8 +228,17 @@ export function registerDuelRoutes(router: Router): void {
         playerId = 'PLY-0001',
         tier = 1,
         autoResolve = true,
-        playerCommands
+        playerCommands,
+        bypassSpatialGuard
       } = ctx.body || {};
+
+      // Spatial Presence Guard
+      guard.assertPresence(
+        playerId,
+        ['Lôi Đài', 'Giáo Trường', 'Võ Đài', 'Arena'],
+        'Khiêu Chiến Lôi Đài',
+        bypassSpatialGuard
+      );
 
       const result = duelService.challengeArena(
         playerId,

@@ -216,11 +216,22 @@
     }
   }
 
+  async function assertPresence(allowedPoiTypes, actionNameVi, defaultTargetLoc = 'Thiết Điếm Trác Huyện') {
+    const curType = resolvePoiType(currentSubLocation || window.activeSubLocation);
+    if (!allowedPoiTypes.includes(curType)) {
+      showFallbackToast(`[Khóa Chặn Không Gian] Đang ở [${currentSubLocation}]. Thao tác [${actionNameVi}] yêu cầu bước chân tới [${defaultTargetLoc}]!`);
+      return false;
+    }
+    return true;
+  }
+
   return {
     init,
     updateActionDock,
     triggerActivePoiAction,
     openMarketAction,
-    resolvePoiType
+    resolvePoiType,
+    assertPresence,
+    getCurrentSubLocation: () => currentSubLocation
   };
 });

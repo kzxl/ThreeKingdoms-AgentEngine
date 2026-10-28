@@ -47,11 +47,12 @@
 
   async function getCharacterJournalState() {
     try {
-      const [statusRes, entRes, lineageRes, equipRes] = await Promise.all([
+      const [statusRes, entRes, lineageRes, equipRes, progRes] = await Promise.all([
         fetch('/api/status').then(r => r.json()).catch(() => ({ success: false })),
         fetch('/api/enterprise/status?characterId=PLY-0001').then(r => r.json()).catch(() => ({ success: false })),
         fetch('/api/lineage/status').then(r => r.json()).catch(() => ({ success: false })),
-        fetch('/api/equipment?characterId=PLY-0001').then(r => r.json()).catch(() => ({ success: false }))
+        fetch('/api/equipment?characterId=PLY-0001').then(r => r.json()).catch(() => ({ success: false })),
+        fetch('/api/progression/status?playerId=PLY-0001').then(r => r.json()).catch(() => ({ success: false }))
       ]);
 
       const p = statusRes?.player || {};
@@ -72,16 +73,32 @@
       const spouses = lineageRes?.overview?.spouses || [];
       const isMarried = spouses.length > 0;
 
-      // Determine Life Stage (1 to 4)
+      // Authoritative progression from backend if available
       let currentStage = 1;
-      if (netWorth >= 50000 || (hasEnterprises && enterprises.length >= 2 && netWorth >= 30000)) {
-        currentStage = 4;
-      } else if (netWorth >= 12000 || hasEnterprises || war >= 75 || com >= 80) {
-        currentStage = 3;
-      } else if (netWorth >= 1500 || hasEnterprises || cra >= 60 || war >= 60 || com >= 60) {
-        currentStage = 2;
+      let unlockedCapabilities = null;
+      let criteriaForNextStageVi = '';
+
+      if (progRes && progRes.success) {
+        currentStage = progRes.currentStage || 1;
+        unlockedCapabilities = progRes.unlockedCapabilities;
+        criteriaForNextStageVi = progRes.criteriaForNextStageVi || '';
       } else {
-        currentStage = 1;
+        // Fallback calculation
+        if (netWorth >= 50000 || (hasEnterprises && enterprises.length >= 2 && netWorth >= 30000)) {
+          currentStage = 4;
+        } else if (netWorth >= 10000 || hasEnterprises || war >= 75 || com >= 80) {
+          currentStage = 3;
+        } else if (netWorth >= 2000 || hasEnterprises || cra >= 60 || war >= 60 || com >= 60) {
+          currentStage = 2;
+        } else {
+          currentStage = 1;
+        }
+        unlockedCapabilities = {
+          allowLocalWork: true,
+          allowHomeDesk: currentStage >= 2,
+          allowRemoteCourier: currentStage >= 3,
+          allowWarRoom: currentStage >= 4
+        };
       }
 
       cachedProgressionState = {
@@ -97,6 +114,8 @@
         ldr,
         intVal,
         currentStage,
+        unlockedCapabilities,
+        criteriaForNextStageVi,
         enterprises,
         hasEnterprises,
         isMarried,

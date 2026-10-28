@@ -5,9 +5,11 @@
 
 import { Router, sendJson, RouteContext } from '../../../../server/router';
 import { BespokeForgeService } from './bespoke-forge.service';
+import { SpatialGuardService } from '../../../progression/spatial-guard.service';
 
 export function registerBespokeForgeRoutes(router: Router): void {
   const service = BespokeForgeService.getInstance();
+  const guard = SpatialGuardService.getInstance();
 
   /**
    * GET /api/forge/rates
@@ -26,10 +28,21 @@ export function registerBespokeForgeRoutes(router: Router): void {
   /**
    * POST /api/forge/bespoke
    * Crafts a bespoke god weapon with quality roll and clamped stat modifiers.
+   * Spatial Guard: Requires presence at a Smithy / Forge.
    */
   router.post('/api/forge/bespoke', (req: any, res: any, ctx: RouteContext) => {
     try {
       const body = ctx.body || {};
+      const charId = body.characterId || 'PLY-0001';
+
+      // Spatial Presence Verification Guard
+      guard.assertPresence(
+        charId,
+        ['Thiết Điếm', 'Lò Rèn', 'Smithy', 'Forge'],
+        'Rèn Đúc Thần Binh',
+        body.bypassSpatialGuard
+      );
+
       const result = service.forgeWeapon(body);
       sendJson(res, 200, result);
     } catch (err: any) {

@@ -297,9 +297,11 @@ async function runTavernBanquetsVerification(): Promise<void> {
       // Revert player_state
       db.execute(`
         UPDATE player_state
-        SET liquid_cash = 15438, safe_cash = 3000, health = 100, fatigue = 0, morale = 100
-        WHERE player_id = 'PLY-0001';
-      `);
+        SET liquid_cash = ?, safe_cash = ?, health = ?, fatigue = ?, morale = ?
+        WHERE player_id = ?;
+      `, [
+        initialPlayer.liquid_cash, initialPlayer.safe_cash, initialPlayer.health, initialPlayer.fatigue, initialPlayer.morale, initialPlayer.player_id
+      ]);
 
       // Delete test items & test movements
       db.execute("DELETE FROM stock_movements WHERE movement_type = 'BANQUET_CONSUME' OR ref_txn LIKE 'TXN-BNQ-%' OR mov_id LIKE 'MOV-BUY-%';");

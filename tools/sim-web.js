@@ -81,6 +81,20 @@ function getCharacterStatsModule() {
   return characterStatsModule;
 }
 
+let spatialGuardService = null;
+function getSpatialGuardService() {
+  if (!spatialGuardService) {
+    try {
+      require('tsx/cjs');
+      const { SpatialGuardService } = require('../src/modules/progression/spatial-guard.service.ts');
+      spatialGuardService = SpatialGuardService.getInstance();
+    } catch (e) {
+      console.warn('[sim-web.js] SpatialGuardService initialization note:', e.message);
+    }
+  }
+  return spatialGuardService;
+}
+
 const ROOT_DIR = path.resolve(__dirname, '..');
 const PUBLIC_DIR = path.join(ROOT_DIR, 'public');
 const SAVES_DIR = path.join(ROOT_DIR, 'saves');
@@ -3774,6 +3788,14 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
     }
   }
 
+  let progression = null;
+  try {
+    const guardSvc = getSpatialGuardService();
+    if (guardSvc) {
+      progression = guardSvc.getProgressionStatus(player.player_id || 'PLY-0001');
+    }
+  } catch (e) {}
+
   return {
     success: true,
     campaign: {
@@ -3788,7 +3810,8 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
     lastCheck,
     narrative,
     options,
-    relations
+    relations,
+    progression
   };
 }
 
@@ -3796,6 +3819,10 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
   if (req.method === 'GET' && pathname === '/api/scene') {
     try {
       const subLoc = parsedUrl.query.subLocation || 'Vườn Đào';
+      try {
+        const charId = parsedUrl.query.characterId || parsedUrl.query.playerId || 'PLY-0001';
+        runSql(`UPDATE player_state SET current_location = '${subLoc.replace(/'/g, "''")}' WHERE player_id = '${charId.replace(/'/g, "''")}';`);
+      } catch (e) {}
       const sceneData = generateDynamicScene(DB_PATH, subLoc);
       sendJson(res, 200, sceneData);
     } catch (err) {

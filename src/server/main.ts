@@ -26,6 +26,7 @@ import { registerBlacksmithForgeRoutes } from '../modules/professions/blacksmith
 import { registerLineageRoutes } from '../modules/lineage-succession/lineage.controller';
 import { registerDuelRoutes } from '../modules/military/duel.controller';
 import { registerBanquetRoutes } from '../modules/social-kizuna/banquet.controller';
+import { registerProgressionRoutes } from '../modules/progression/progression.controller';
 import { DailyInteractionEngine } from '../modules/social-kizuna/daily-interaction.engine';
 import { ContextActionEngine } from '../modules/contextual-actions/context-action.engine';
 
@@ -87,6 +88,7 @@ export function createGrandStrategyRouter(): Router {
   registerLineageRoutes(router);
   registerDuelRoutes(router);
   registerBanquetRoutes(router);
+  registerProgressionRoutes(router);
   return router;
 }
 

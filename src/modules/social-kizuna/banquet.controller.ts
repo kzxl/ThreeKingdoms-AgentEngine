@@ -20,13 +20,16 @@ import {
   HostBanquetParams,
   RecruitRetainerParams
 } from './tavern-banquet.service';
+import { SpatialGuardService } from '../progression/spatial-guard.service';
 
 export function registerBanquetRoutes(router: Router): void {
   const banquetService = TavernBanquetService.getInstance();
+  const guard = SpatialGuardService.getInstance();
 
   /**
    * 1. POST /api/banquet/host & /api/banquets/host
    * Hosts a banquet consuming gourmet dishes & wine, accelerating affinity/respect
+   * Spatial Guard: Requires presence at a Tavern / Inn.
    */
   const handleHostBanquet = (req: any, res: any, ctx: RouteContext) => {
     try {
@@ -36,6 +39,14 @@ export function registerBanquetRoutes(router: Router): void {
       const tavernEnterpriseId = body.tavernEnterpriseId || body.businessId;
       const playerId = body.playerId || 'PLY-0001';
       const allowAutoProcure = body.allowAutoProcure !== false;
+
+      // Spatial Presence Guard
+      guard.assertPresence(
+        playerId,
+        ['Tửu Quán', 'Tavern', 'Quán Rượu'],
+        'Mở Đại Yến Hào Kiệt',
+        body.bypassSpatialGuard
+      );
 
       const params: HostBanquetParams = {
         playerId,
@@ -58,6 +69,7 @@ export function registerBanquetRoutes(router: Router): void {
   /**
    * 2. POST /api/banquet/brotherhood & /api/banquets/swear-brotherhood
    * Swears Peach Garden Brotherhood with a hero having Affinity >= 80
+   * Spatial Guard: Requires presence at Tavern or Peach Garden.
    */
   const handleSwearBrotherhood = (req: any, res: any, ctx: RouteContext) => {
     try {
@@ -69,6 +81,14 @@ export function registerBanquetRoutes(router: Router): void {
         sendJson(res, 400, { success: false, error: 'Missing npcId in request body' });
         return;
       }
+
+      // Spatial Presence Guard
+      guard.assertPresence(
+        playerId,
+        ['Tửu Quán', 'Tavern', 'Vườn Đào', 'Peach Garden'],
+        'Kết Bái Huynh Đệ',
+        body.bypassSpatialGuard
+      );
 
       const result = banquetService.swearBrotherhood(npcId, playerId);
       sendJson(res, 200, { success: true, result });
@@ -84,6 +104,7 @@ export function registerBanquetRoutes(router: Router): void {
   /**
    * 3. POST /api/banquet/recruit & /api/banquets/recruit-retainer
    * Recruits a hero with Affinity >= 70 or sworn brotherhood into FAC-LIANG-CLAN
+   * Spatial Guard: Requires presence at Tavern.
    */
   const handleRecruitRetainer = (req: any, res: any, ctx: RouteContext) => {
     try {
@@ -96,6 +117,14 @@ export function registerBanquetRoutes(router: Router): void {
         sendJson(res, 400, { success: false, error: 'Missing heroNpcId in request body' });
         return;
       }
+
+      // Spatial Presence Guard
+      guard.assertPresence(
+        playerId,
+        ['Tửu Quán', 'Tavern', 'Quán Rượu'],
+        'Chiêu Mộ Hào Kiệt',
+        body.bypassSpatialGuard
+      );
 
       const params: RecruitRetainerParams = {
         playerId,
