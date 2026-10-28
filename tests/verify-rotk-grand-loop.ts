@@ -25,7 +25,7 @@ function assert(condition: boolean, message: string): void {
 
 async function runGrandLoopVerification(): Promise<void> {
   console.log('====================================================');
-  console.log(' ⚔️  ROTK GRAND STRATEGY 3-LOOP INTEGRATION VERIFICATION');
+  console.log(' ⚔️  THREE KINGDOMS GRAND STRATEGY 3-LOOP INTEGRATION VERIFICATION');
   console.log('====================================================\n');
 
   const db = DatabaseService.getInstance();
@@ -231,7 +231,7 @@ async function runGrandLoopVerification(): Promise<void> {
   assert(auditOutput.includes('Discrepancies Detected   : 0'), 'Discrepancies Detected must be 0');
 
   console.log('====================================================');
-  console.log(' 🟢 ALL 3 ROTK STRATEGIC LOOPS FULLY VERIFIED!');
+  console.log(' 🟢 ALL 3 GRAND STRATEGY LOOPS FULLY VERIFIED!');
   console.log('====================================================\n');
 }
 

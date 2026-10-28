@@ -5,7 +5,7 @@
 [![Stack](https://img.shields.io/badge/Stack-TypeScript%20%7C%20Vite%20%7C%20SQLite%20%7C%20MCP-blue.svg)](package.json)
 [![License](https://img.shields.io/badge/License-MIT-gray.svg)](LICENSE)
 
-An autonomous, deterministic grand strategy simulation engine and character-driven RPG modeling the Three Kingdoms era (beginning 184 AD). Engineered with **AgentOption Universe Modular Architecture v4.0**, fullstack **TypeScript & Vite**, an authoritative **SQLite** double-entry ledger, distilled **Romance of the Three Kingdoms (ROTK)** historical data, an autonomous **Living World** progression engine, and a native **Model Context Protocol (MCP)** bridge for AI Agents.
+An autonomous, deterministic grand strategy simulation engine and character-driven RPG modeling the Three Kingdoms era (beginning 184 AD). Engineered with **AgentOption Universe Modular Architecture v4.0**, fullstack **TypeScript & Vite**, an authoritative **SQLite** double-entry ledger, authoritative historical Three Kingdoms data catalogs, an autonomous **Living World** progression engine, and a native **Model Context Protocol (MCP)** bridge for AI Agents.
 
 ---
 
@@ -14,7 +14,7 @@ An autonomous, deterministic grand strategy simulation engine and character-driv
 1. [Core Architectural Philosophy](#core-architectural-philosophy)
 2. [Technology Stack & Repository Layout](#technology-stack--repository-layout)
 3. [AgentOption Universe Modular Systems](#agentoption-universe-modular-systems)
-4. [ROTK Master Distillation & Strategic World Map](#rotk-master-distillation--strategic-world-map)
+4. [Historical Master Catalog & Strategic World Map](#historical-master-catalog--strategic-world-map)
 5. [Grand Strategy Gameplay Loops](#grand-strategy-gameplay-loops)
 6. [Autonomous Living World & NPC Lifecycle](#autonomous-living-world--npc-lifecycle)
 7. [Interactive Historical Event Engine](#interactive-historical-event-engine)
@@ -86,7 +86,7 @@ ThreeKingdoms-AgentEngine/
 │
 ├── tests/                             # E2E & Architectural Integration Test Suites
 │   ├── verify-rotk-grand-loop.ts      # End-to-end verification of 3 grand strategy loops
-│   ├── verify-strategic-world-map.ts  # Verification of distilled ROTK master data & map
+│   ├── verify-strategic-world-map.ts  # Verification of historical master data & map
 │   └── ...                            # Feature-specific verification suites
 │
 ├── vite.config.ts                      # Vite 5 configuration with proxy to backend (:3300)
@@ -114,14 +114,14 @@ The simulation is partitioned into autonomous feature modules adhering to **Univ
 
 ---
 
-## ROTK Master Distillation & Strategic World Map
+## Historical Master Catalog & Strategic World Map
 
-### 1. Distilled Master Catalog
-- **120+ Master Items**: Spanning unique national treasures (Green Dragon Crescent Blade, Red Hare Steed, Serpent Spear, Mengde's New Book), tactical equipment, and regional trade commodities across all ancient provinces.
+### 1. Historical Master Catalog
+- **120+ Master Items**: Spanning unique national treasures (Green Dragon Crescent Blade, Red Hare Steed, Serpent Spear, Mengde's New Book), tactical equipment, and regional trade commodities across ancient provinces.
 - **30+ Master Talents**: Explicit perks categorized into Combat (`God of War`, `Iron General`), Strategy (`Fierce Ambition`), Crafting (`Master Metallurgist`, `Silk Weaver`), and Commerce (`Grand Arbitrage`).
 - **150+ Historical Characters & 20 Auxiliary Retainers**: Complete stat distributions across 8 canonical attributes (INT, POL, WAR, LDR, DIP, COM, LOG, CRA) with specific talent affiliations.
 
-### 2. 20 Historical ROTK Citadels & Provincial Centers
+### 2. 20 Historical Citadels & Provincial Centers
 Each settlement models authoritative military forces, wall defense integrity, granary reserves, cash treasuries, and regional trade profiles:
 
 ```text
@@ -137,7 +137,7 @@ Giao Châu (Jiaozhou)   : Giao Chỉ (Jiaozhi)
 ```
 
 ### 3. Strategic 3-Layer Interactive Map Engine
-- **24 Historical Connecting Routes**: Categorized into 4 ROTK terrain profiles with realistic travel days and grain consumption:
+- **24 Historical Connecting Routes**: Categorized into 4 ancient historical terrain profiles with realistic travel days and grain consumption:
   - 🛣️ `HIGHWAY`: Low hazard, high marching speed (e.g., Luoyang – Changan, Zhuo – Yecheng).
   - 🌊 `WATERWAY`: River transport along the Yellow River and Yangtze River.
   - 🏔️ `MOUNTAIN_PASS`: Chokepoint fortified gates (Hulao Pass, Tong Pass, Jiameng Pass).
@@ -185,7 +185,7 @@ NPCs are not passive quest dispensers; they exist in an **unprompted, living eco
 
 ## Interactive Historical Event Engine
 
-The engine includes 41 comprehensive ROTK historical events (184 AD to 234 AD), spanning the Oath of the Peach Garden to the Wuzhang Plains:
+The engine includes 41 comprehensive Three Kingdoms historical events (184 AD to 234 AD), spanning the Oath of the Peach Garden to the Wuzhang Plains:
 - **Atmospheric Alert Banner**: Automatically highlights major historical crises occurring in the player's current location and campaign era.
 - **Player Decision Modal**: Players can intervene in history across multiple asymmetric vectors:
   - *Canon Path*: Support historical outcomes (e.g., funding Liu Bei's militia and weapons).
@@ -280,147 +280,6 @@ npm run audit
 ====================================================
  🟢 AUDIT VERDICT: PASSED
     Total Invariants Verified: 193
-    Discrepancies Detected   : 0
-====================================================
-```
-
----
-
-## Mathematical & Economic Formulas
-
-### 1. Skill Check Resolution
-$$\text{Check Score} = (\text{Attribute} \times 0.5) + (\text{Skill Level} \times 0.5) + \text{Modifiers} + d20$$
-- **DC 30**: Routine | **DC 45**: Moderate | **DC 60**: Challenging | **DC 75**: Formidable | **DC 90**: Masterstroke / Legendary.
-
-### 2. Workshop Capacity & Defect Variance
-$$\text{Max Capacity} = \frac{\text{Craftsmen} \times \text{Hours/Day} \times \text{Days/Month}}{\text{Labor Hours per Unit}}$$
-$$\text{Defect Rate (\%)} = \max\left(2\%,\; \text{Base Defect} - (\text{Lead Artisan CRA} \times 0.15\%) + \text{Fatigue Penalty}\right)$$
-
-### 3. Logistical Provisioning & Consumption
-- 1 Soldier consumes **0.1 Dan of grain/month** (~3 kg/day).
-- 1,000 Soldiers require **100 Dan of grain/month**.
-- 1 War Horse consumes **0.3 Dan of grain and fodder/month**.
-- Severed supply lines induce a **15-point daily morale collapse** with exponential troop desertion within 7–10 days.
-
----
-
-## License
-
-MIT License. Designed and engineered for high-performance deterministic simulation and agentic AI pair programming.
-
----
-
-## Autonomous Living World & NPC Lifecycle
-
-NPCs are not passive quest dispensers; they exist in an **unprompted, living ecosystem**:
-- **Personal Ambitions**: Each character pursues a core vocation (`HEGEMON_UNIFIER`, `RIGHTEOUS_VANGUARD`, `LOYAL_BROTHERHOOD`, `MASTER_ARTISAN`, `COMMERCE_TYCOON`, `DEVOTED_RETAINER`).
-- **Autonomous Monthly Cycles**: Every month, NPCs independently execute actions based on their Utility AI:
-  - 🗡️ *Martial Drill*: Daily combat practice at the garrison (+WAR EXP, +Morale).
-  - 📜 *Strategy Contemplation*: Studying treatises and historical annals (+INT/POL EXP).
-  - ⚔️ *Bandit Expedition*: Leading private retainers to eliminate local outlaws (+Prestige, +Bounty cash, +Recruits).
-  - 💰 *Private Commerce*: After-hours trade arbitrage accumulating personal wealth (`personal_cash`).
-  - 🔨 *Craft Innovation*: Metallurgical and textile breakthroughs reducing workshop defect rates.
-- **Living World Chronicles**: Every achievement is preserved in `npc_journey_logs` and viewable via the interactive web timeline.
-
----
-
-## Interactive Historical Event Engine
-
-The engine includes 41 comprehensive ROTK historical events (184 AD to 234 AD), spanning the Oath of the Peach Garden to the Wuzhang Plains:
-- **Atmospheric Amber Alert Banner**: Automatically highlights major historical crises occurring in the player's current location and campaign era.
-- **Player Decision Modal**: Players can intervene in history across multiple asymmetric vectors:
-  - *Canon Path*: Support historical outcomes (e.g., funding Liu Bei's militia and weapons).
-  - *Alternate History ("What-If")*: Exploit crises for mercantilist arbitrage or side with rival factions.
-- **Zero-Drift Resolution**: Every choice executes atomic SQLite transactions updating cashflow ledgers, double-entry journals, inventory stock, and NPC sentiment.
-
----
-
-## Model Context Protocol (MCP) Integration
-
-The project includes a native **Model Context Protocol (MCP)** server operating via standard JSON-RPC 2.0 over `stdio`. AI Agents can directly discover and invoke tools to query and mutate the world state without hallucination.
-
-### Available MCP Tools
-
-| Tool Name | Parameters | Description |
-| :--- | :--- | :--- |
-| `sim_query_player` | `{ playerId?: string }` | Query character attributes, cash balances, grain, location, and inventory. |
-| `sim_check_supply_line` | `{ fromNode: string, supplyHub: string, maxHops?: number }` | BFS pathfinding to check logistical supply-line reachability. |
-| `sim_calculate_price` | `{ commodity: string, basePrice: number, stockUnits: number, demandUnits: number }` | Calculate dynamic market price elasticity. |
-| `sim_get_kizuna` | `{ charA: string, charB: string }` | Query 2-axis social relations (Affinity, Respect), Sworn Brotherhood, and Hooks. |
-| `sim_record_memory` | `{ npcId: string, topic: string, lessonLearned: string, emotionalValence?: string }` | Record episodic memory reflections for continuous NPC self-learning. |
-| `sim_get_npc_journey` | `{ npcId?: string, limit?: number }` | Retrieve autonomous progression state, ambition, prestige, and journey chronicle. |
-| `sim_audit_invariants` | `{}` | Execute independent verification of all 80/80 database invariants. |
-
-### Connecting AI Agents
-
-Add to your MCP client configuration (e.g., `C:\Users\<user>\.gemini\antigravity\mcp\` or Claude Desktop):
-```json
-{
-  "mcpServers": {
-    "threekingdoms-sim": {
-      "command": "npx",
-      "args": ["tsx", "src/mcp/server.ts"],
-      "cwd": "E:\\15. Other\\Simulation",
-      "env": {
-        "SIM_DB_PATH": "E:\\15. Other\\Simulation\\saves\\session.db"
-      }
-    }
-  }
-}
-```
-
----
-
-## Getting Started & Operational Commands
-
-### Prerequisites
-- [Node.js](https://nodejs.org/) v20.13.0 or higher
-- [SQLite3](https://www.sqlite.org/) CLI
-
-### Installation
-```bash
-# Clone the repository
-git clone https://github.com/kzxl/ThreeKingdoms-AgentEngine.git
-cd ThreeKingdoms-AgentEngine
-
-# Install development tooling & dependencies
-npm install
-```
-
-### NPM Command Reference
-
-| Command | Action | Description |
-| :--- | :--- | :--- |
-| `npm run audit` | Verification | Executes independent verification of all 80/80 SQLite invariants. |
-| `npm run typecheck` | TypeScript | Performs compile-time strict type-checking across all `.ts` files. |
-| `npm run dev:server` | Fullstack Server | Starts Node.js + `tsx` Hot Reload server on `http://localhost:3300`. |
-| `npm run dev:client` | Frontend UI | Starts Vite 5 HMR dev server on `http://localhost:5173` (proxies `/api` to `:3300`). |
-| `npm run build:client`| Production Build| Compiles and minifies frontend static assets into `dist/`. |
-| `npm run test:mcp` | MCP Verification | Tests JSON-RPC handshake and executes all 7 MCP tools against live database. |
-| `npm run mcp` | MCP Server | Launches the standalone MCP server on `stdio` for agent connections. |
-
----
-
-## Auditing & Zero-Drift Invariants
-
-The engine enforces strict conservation laws across every transaction:
-
-```bash
-npm run audit
-```
-
-```text
-====================================================
- ⚡ ThreeKingdoms-AgentEngine: Invariant & State Auditor
-====================================================
-[1] CASHFLOW LEDGER (SQLite Primary Truth)     : ✅ Passed (22 Txns balanced)
-[2] PHYSICAL INVENTORY (SQLite Conservation)   : ✅ Passed (13 SKUs conserved)
-[3] DOUBLE-ENTRY JOURNAL (Dr/Cr Parity)        : ✅ Passed (22 Sets Dr == Cr)
-[4] PROJECTION SYNCHRONIZATION (PROGRESS.md)   : ✅ Passed (Matches SQLite)
-[5] NPC & ENTERPRISE STATE (P4 Integrity)      : ✅ Passed (Attributes & Safe cash verified)
-====================================================
- 🟢 AUDIT VERDICT: PASSED
-    Total Invariants Verified: 80
     Discrepancies Detected   : 0
 ====================================================
 ```

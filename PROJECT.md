@@ -76,13 +76,13 @@ ThreeKingdoms-AgentEngine is an autonomous Three Kingdoms simulation engine powe
 | 13 | Hero & Retainer Recruitment | Recruit high-affinity heroes as loyal family retainers and commanders into `FAC-LIANG-CLAN` (`faction_officers`) | M3 | ORIGINAL_REQUEST §R3 |
 | 14 | Grand Command Hub Shell | Reorganize fragmented buttons in `.cmd-bar-right` and purge dynamic injections in `equipment-ui.js` / `enterprise-ui.js` into single Master Hub `#grand-command-hub-modal` | M4 | ORIGINAL_REQUEST §R4 |
 | 15 | 6 High-Density Tabs | Tab 1 Quân Trang `[武]`, Tab 2 Sản Nghiệp `[業]`, Tab 3 Thương Đoàn `[商]`, Tab 4 Gia Thất `[家]`, Tab 5 Diễn Võ `[演]`, Tab 6 Tụ Nghĩa `[義]` | M4 | ORIGINAL_REQUEST §R4 |
-| 16 | Codebase-wide Anti-AI-Slop | Purge all emojis in UI and REST payloads (`map-data.js`, `caravan-ui.js`, `sim-web.js`, `context-action.engine.ts`), replace with Koei ROTK Hanzi seals | M4 | ORIGINAL_REQUEST §R4 |
-| 17 | E2E Testing Runner & Verification | 100% pass across Marriage, ROTK Duels, Tavern Banquets, existing suites (`verify-equipment-and-exp.ts`, `verify-enterprise-labor.ts`, `test-branch4-logistics.ts`), and 140/140 SQLite audit invariants | M5 | ORIGINAL_REQUEST §Acceptance |
-| 18 | ROTK Master Distillation & 20-Settlement Strategic Map | Enriched 120+ master items, 30+ talents, 150+ characters, 20 historical citadels, 24 tactical routes across 4 terrain profiles (`HIGHWAY`, `WATERWAY`, `MOUNTAIN_PASS`, `PLANK_ROAD`), 3 view modes (`overview`, `military`, `economy`), and route pulse animation | M6 | ROTK_GRAND_STRATEGY |
-| 19 | Specialist Workforce Recruitment (Loop 1) | 20 auxiliary specialists (`NPC-0201` to `NPC-0220`), recruitment signing bonus via double-entry journal, assignment to businesses boosting efficiency by +15% to +25% | M6 | ROTK_GRAND_STRATEGY |
-| 20 | 20-Settlement Arbitrage & Caravans (Loop 2) | Full price profile coverage for all 20 citadels, long-distance trade caravans with 3 guard tiers (`MILITIA`, `VETERAN`, `ELITE_RETINUE`), bandit ambushes, and destination liquidation | M6 | ROTK_GRAND_STRATEGY |
-| 21 | Garrisons & Citadel Siege Assaults (Loop 3) | Recruit and station garrison troops, wall defense ratings (10-100), vanguard siege assaults with defense destruction and war loot plundering (`WAR_LOOT`) | M6 | ROTK_GRAND_STRATEGY |
-| 22 | Double-Entry Transaction Engine & 193 Invariants | `src/shared/financial-transaction.ts`, atomic Dr == Cr accounting, `game/PROGRESS.md` synchronization, and 193/193 audit invariants verified | M6 | ROTK_GRAND_STRATEGY |
+| 16 | Codebase-wide Anti-AI-Slop | Purge all emojis in UI and REST payloads (`map-data.js`, `caravan-ui.js`, `sim-web.js`, `context-action.engine.ts`), replace with authentic Hanzi seals | M4 | ORIGINAL_REQUEST §R4 |
+| 17 | E2E Testing Runner & Verification | 100% pass across Marriage, Single Combat Duels, Tavern Banquets, existing suites (`verify-equipment-and-exp.ts`, `verify-enterprise-labor.ts`, `test-branch4-logistics.ts`), and 140/140 SQLite audit invariants | M5 | ORIGINAL_REQUEST §Acceptance |
+| 18 | Historical Master Catalog & 20-Settlement Strategic Map | Enriched 120+ master items, 30+ talents, 150+ characters, 20 historical citadels, 24 tactical routes across 4 terrain profiles (`HIGHWAY`, `WATERWAY`, `MOUNTAIN_PASS`, `PLANK_ROAD`), 3 view modes (`overview`, `military`, `economy`), and route pulse animation | M6 | GRAND_STRATEGY_EXPANSION |
+| 19 | Specialist Workforce Recruitment (Loop 1) | 20 auxiliary specialists (`NPC-0201` to `NPC-0220`), recruitment signing bonus via double-entry journal, assignment to businesses boosting efficiency by +15% to +25% | M6 | GRAND_STRATEGY_EXPANSION |
+| 20 | 20-Settlement Arbitrage & Caravans (Loop 2) | Full price profile coverage for all 20 citadels, long-distance trade caravans with 3 guard tiers (`MILITIA`, `VETERAN`, `ELITE_RETINUE`), bandit ambushes, and destination liquidation | M6 | GRAND_STRATEGY_EXPANSION |
+| 21 | Garrisons & Citadel Siege Assaults (Loop 3) | Recruit and station garrison troops, wall defense ratings (10-100), vanguard siege assaults with defense destruction and war loot plundering (`WAR_LOOT`) | M6 | GRAND_STRATEGY_EXPANSION |
+| 22 | Double-Entry Transaction Engine & 193 Invariants | `src/shared/financial-transaction.ts`, atomic Dr == Cr accounting, `game/PROGRESS.md` synchronization, and 193/193 audit invariants verified | M6 | GRAND_STRATEGY_EXPANSION |
 
 ---
 
@@ -91,11 +91,11 @@ ThreeKingdoms-AgentEngine is an autonomous Three Kingdoms simulation engine powe
 |---|------|-------|-------------|--------|
 | E2E | E2E Testing Track | Test harness, test runners, and multi-tier test specifications for all 17 features | none | DONE |
 | M1 | Marriage, Childbirth & Lineage Succession (R1) | Features 1-6: SQLite schemas, `FamilyLineageService`, courtship, genetics, mentorship, succession protocol | none | DONE |
-| M2 | ROTK Single Combat Dueling System (R2) | Features 7-9: `SingleCombatDuelService`, 4 tactical commands, 3-5 round loop, equipment WAR scaling, contextual triggers | none | DONE |
+| M2 | Three Kingdoms Single Combat Dueling System (R2) | Features 7-9: `SingleCombatDuelService`, 4 tactical commands, 3-5 round loop, equipment WAR scaling, contextual triggers | none | DONE |
 | M3 | Tavern Hero Banquets & Brotherhood (R3) | Features 10-13: `TavernBanquetService`, gourmet dishes/Dukang wine consumption, brotherhood oath, retainer recruitment | none | DONE |
 | M4 | Grand Command Hub UI & Anti-AI-Slop (R4) | Features 14-16: Unified `#grand-command-hub-modal`, 6 tabs, REST wiring in `sim-web.js`, emoji eradication | M1, M2, M3 | DONE |
 | M5 | Final E2E Suite Pass & Adversarial Hardening | Feature 17: Pass 100% E2E tests, verify 140/140 audit invariants, forensic auditor review, Tier 5 hardening | E2E, M1-M4 | DONE |
-| M6 | ROTK Grand Strategy & 3-Loop Expansion | Features 18-22: 20-settlement 3-layer world map, specialist workforce, 20-city arbitrage caravans, siege assaults, and 193/193 audit invariants | M1-M5 | DONE |
+| M6 | Grand Strategy & 3-Loop Expansion | Features 18-22: 20-settlement 3-layer world map, specialist workforce, 20-city arbitrage caravans, siege assaults, and 193/193 audit invariants | M1-M5 | DONE |
 
 ---
 

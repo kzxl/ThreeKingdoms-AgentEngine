@@ -9,7 +9,7 @@ The **ThreeKingdoms-AgentEngine** test infrastructure provides an autonomous, mu
 2. **Physical Stock Conservation**: Physical inventory quantities are non-negative and mathematically match stock movements: $\text{BalanceAfter} = \text{BalanceBefore} \pm \text{Quantity}$.
 3. **Cashflow Ledger Balance Parity**: Running cash balance in `cashflow_ledger` must equal `player_state.liquid_cash + player_state.safe_cash`.
 4. **Idempotence & Complete Teardown**: Verification suites must snapshot baseline state, execute adversarial tests, and completely restore primary truth without leaving orphaned records or inducing audit discrepancies.
-5. **Anti-AI-Slop Compliance**: Battle chronicles, dialogue, and toasts must utilize authentic Koei ROTK Hanzi typography and Sino-Vietnamese terminology, with zero juvenile emojis.
+5. **Anti-AI-Slop Compliance**: Battle chronicles, dialogue, and toasts must utilize authentic Hanzi typography and Sino-Vietnamese terminology, with zero juvenile emojis.
 
 ---
 
@@ -66,7 +66,7 @@ The **ThreeKingdoms-AgentEngine** test infrastructure provides an autonomous, mu
 | Test File | Target Feature / Module | Test Count | Key Invariants Verified |
 |---|---|---|---|
 | `tests/verify-marriage-lineage.ts` | R1: Life-Sim, Marriage, Childbirth & Succession | 60 | Dowry cashflow parity, genetic inheritance $[-3, +5]$, master mentorship, dynastic asset continuity without breaking `PLY-0001` PK |
-| `tests/verify-rotk-duels.ts` | R2: ROTK 1v1 Single Combat Dueling | 61 | Gear bonus clamp `[+1..+5]`, Golden Cap $>100$, 4-command clash matrix, knockout/rout/exhaustion, zero-emoji battle texts |
+| `tests/verify-rotk-duels.ts` | R2: 1v1 Single Combat Dueling | 61 | Gear bonus clamp `[+1..+5]`, Golden Cap $>100$, 4-command clash matrix, knockout/rout/exhaustion, zero-emoji battle texts |
 | `tests/verify-tavern-banquets.ts` | R3: Tavern Banquets, Brotherhood & Recruitment | 52 | Gourmet BOM consumption, stock movement conservation, sworn brotherhood ($\text{Affinity} \ge 80$), Tier 5 Fog, retainer loyalty |
 | `tools/verify-equipment-and-exp.ts` | Core: Equipment System & EXP Progression | 58 | Diminishing returns scaling, gear slot constraints, effective stats calculation |
 | `tools/verify-enterprise-labor.ts` | Core: Enterprise Management & Wage Labor | 12 | Master recipe BOM, owner profit accrual, wage labor shifts, fatigue exhaustion guard |
@@ -82,7 +82,7 @@ The **ThreeKingdoms-AgentEngine** test infrastructure provides an autonomous, mu
 # Verify Marriage, Childbirth & Lineage Succession
 npx tsx tests/verify-marriage-lineage.ts
 
-# Verify ROTK 1v1 Single Combat Duels
+# Verify 1v1 Single Combat Duels
 npx tsx tests/verify-rotk-duels.ts
 
 # Verify Tavern Banquets & Hero Recruitment

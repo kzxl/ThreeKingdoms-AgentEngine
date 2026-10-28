@@ -1,11 +1,11 @@
 /**
- * ThreeKingdoms-AgentEngine: Strategic World Map & ROTK Distillation Verification Suite
+ * ThreeKingdoms-AgentEngine: Strategic World Map & Historical Master Data Verification Suite
  * (tests/verify-strategic-world-map.ts)
  *
  * Verifies:
- * 1. Distilled ROTK Master Items, Talents, and Characters (Historical & Auxiliary Specialists).
+ * 1. Historical Master Items, Talents, and Characters (Historical & Auxiliary Specialists).
  * 2. 20 Historical Settlements with military garrisons, defenses, granary reserves, cash.
- * 3. Master Routes with 4 explicit ROTK terrain profiles (HIGHWAY, WATERWAY, MOUNTAIN_PASS, PLANK_ROAD).
+ * 3. Master Routes with 4 explicit terrain profiles (HIGHWAY, WATERWAY, MOUNTAIN_PASS, PLANK_ROAD).
  * 4. Military Controller REST endpoints: /api/garrisons and /api/military/routes.
  * 5. Spatial Registry synchronization across all 20 tactical nodes.
  * 6. Frontend map-data structure (military, economy, hireableNpcs) and route styling specs.
@@ -28,7 +28,7 @@ function assert(condition: boolean, message: string): void {
 
 async function runWorldMapVerification(): Promise<void> {
   console.log('====================================================');
-  console.log(' 🗺️  VERIFYING STRATEGIC WORLD MAP & ROTK DISTILLATION');
+  console.log(' 🗺️  VERIFYING STRATEGIC WORLD MAP & HISTORICAL MASTER DATA');
   console.log('====================================================\n');
 
   const sdb = new Database(SESSION_DB_PATH);

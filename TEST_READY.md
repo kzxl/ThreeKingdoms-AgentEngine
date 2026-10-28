@@ -13,10 +13,10 @@
 
 In accordance with `PROJECT.md` and `ORIGINAL_REQUEST.md`, complete opaque-box, multi-tier E2E verification test suites have been authored for all three major sandbox simulation features:
 1. **R1: Marriage, Childbirth & Dynastic Lineage Succession** (`tests/verify-marriage-lineage.ts`)
-2. **R2: ROTK Single Combat Dueling System** (`tests/verify-rotk-duels.ts`)
+2. **R2: Single Combat Dueling System** (`tests/verify-rotk-duels.ts`)
 3. **R3: Tavern Hero Banquets & Brotherhood Recruitment** (`tests/verify-tavern-banquets.ts`)
 
-All test suites execute cleanly via `npx tsx <file>`, uphold zero-drift state isolation on `saves/session.db`, and adhere strictly to Anti-AI-Slop standards (authentic Koei ROTK Hanzi typography, zero juvenile emojis).
+All test suites execute cleanly via `npx tsx <file>`, uphold zero-drift state isolation on `saves/session.db`, and adhere strictly to Anti-AI-Slop standards (authentic Hanzi typography, zero juvenile emojis).
 
 ---
 
@@ -25,7 +25,7 @@ All test suites execute cleanly via `npx tsx <file>`, uphold zero-drift state is
 | Feature Domain | Verification Suite Path | Test Groups | Total Tests | Pass Rate | Execution Time |
 |---|---|---|---|---|---|
 | **R1: Marriage, Childbirth & Lineage** | `tests/verify-marriage-lineage.ts` | 7 Groups | 60 | **100% (60/60)** | ~2.5s |
-| **R2: ROTK 1v1 Single Combat Duels** | `tests/verify-rotk-duels.ts` | 5 Groups | 61 | **100% (61/61)** | ~2.8s |
+| **R2: 1v1 Single Combat Duels** | `tests/verify-rotk-duels.ts` | 5 Groups | 61 | **100% (61/61)** | ~2.8s |
 | **R3: Tavern Banquets & Brotherhood** | `tests/verify-tavern-banquets.ts` | 5 Groups | 52 | **100% (52/52)** | ~2.4s |
 | **Core: Equipment & EXP Progression** | `tools/verify-equipment-and-exp.ts` | 5 Groups | 58 | **100% (58/58)** | ~2.2s |
 | **Core: Enterprise & Wage Labor** | `tools/verify-enterprise-labor.ts` | 4 Groups | 12 | **100% (12/12)** | ~1.5s |
@@ -85,7 +85,7 @@ All test suites execute cleanly via `npx tsx <file>`, uphold zero-drift state is
   - Early Knockout (opponent HP reduced to 0).
   - Morale Rout (opponent morale reduced to 0).
   - 5-Round Exhaustion: Points decision based on remaining HP percentage.
-  - Anti-AI-slop narrative check: Authenticity of Koei ROTK Sino-Vietnamese text, zero emojis.
+  - Anti-AI-slop narrative check: Authenticity of Sino-Vietnamese text, zero emojis.
 - **Group 4: Historical Martial Sparring Integration** (7 tests)
   - Sparring with Zhang Fei (`NPC-0002`) and Guan Yu (`NPC-0003`).
   - Awards: Kizuna Affinity (+15 to +25), Respect (+10), WAR EXP with diminishing returns.

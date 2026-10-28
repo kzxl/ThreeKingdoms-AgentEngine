@@ -10,10 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.3.0] - 2026-10-28
 
 ### Added
-- **ROTK Master Data Distillation**: Enriched SQLite databases (`saves/master.db` & `saves/session.db`) with 120+ master items (weapons, steeds, treatises, commodities), 30+ master talents (combat, strategy, crafting, commerce), 150+ historical characters, and 20 auxiliary hireable specialists (`NPC-0201` to `NPC-0220`).
+- **Historical Three Kingdoms Master Data Synthesis**: Enriched SQLite databases (`saves/master.db` & `saves/session.db`) with 120+ master items (weapons, steeds, treatises, commodities), 30+ master talents (combat, strategy, crafting, commerce), 150+ historical characters, and 20 auxiliary hireable specialists (`NPC-0201` to `NPC-0220`).
 - **Strategic 3-Layer Interactive World Map (`public/js/world-map.js`, `public/js/map-data.js`)**:
-  - Modeled 20 historical ROTK citadels across ancient provinces with authoritative garrison troop breakdowns, wall defense ratings (10-100), granary reserves, treasuries, and regional trade profiles.
-  - Plotted 24 tactical routes across 4 ROTK terrain profiles (`HIGHWAY`, `WATERWAY`, `MOUNTAIN_PASS`, `PLANK_ROAD`) with travel duration and grain provisioning metrics.
+  - Modeled 20 historical citadels across ancient provinces with authoritative garrison troop breakdowns, wall defense ratings (10-100), granary reserves, treasuries, and regional trade profiles.
+  - Plotted 24 tactical routes across 4 ancient terrain profiles (`HIGHWAY`, `WATERWAY`, `MOUNTAIN_PASS`, `PLANK_ROAD`) with travel duration and grain provisioning metrics.
   - Implemented 3 interactive View Modes (`Overview`, `Military`, `Economy`), route pulse SVG animations, and a rich 3-tab Intel Dossier panel.
 - **Loop 1: Specialist Workforce Recruitment & Enterprise Assignment (`src/modules/professions/features/workforce/`)**:
   - Implemented `SpecialistWorkforceService` and REST endpoints (`/api/workforce/specialists`, `/api/workforce/hire`, `/api/workforce/businesses`).

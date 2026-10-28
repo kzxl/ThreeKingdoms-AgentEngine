@@ -216,7 +216,7 @@ async function runTavernBanquetsVerification(): Promise<void> {
     // 3.4 Anti-AI-slop dialogue and narrative checks
     assert(!banquetHostResult.narrativeVi.match(/[\u{1F300}-\u{1F9FF}]/u), 'Banquet narrative free of juvenile emojis');
     assert(!banquetHostResult.toastDialogueVi.match(/[\u{1F300}-\u{1F9FF}]/u), 'Toast dialogue free of juvenile emojis');
-    assert(banquetHostResult.toastDialogueVi.length > 5, 'Authentic Koei ROTK toast speech recorded');
+    assert(banquetHostResult.toastDialogueVi.length > 5, 'Authentic toast speech recorded');
 
     // -------------------------------------------------------------------------
     // GROUP 4: Sworn Brotherhood Ceremony (Kết Bái Huynh Đệ)

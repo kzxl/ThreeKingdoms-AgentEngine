@@ -237,7 +237,7 @@ async function runRotkDuelsVerification(): Promise<void> {
     // 3.4 Anti-AI-Slop Narrative Verification
     assert(!roundA.narrativeVi.match(/[\u{1F300}-\u{1F9FF}]/u), 'Narrative A completely devoid of juvenile emojis');
     assert(!roundB.narrativeVi.match(/[\u{1F300}-\u{1F9FF}]/u), 'Narrative B completely devoid of juvenile emojis');
-    assert(roundA.narrativeVi.length > 10, 'Authentic Koei ROTK Sino-Vietnamese battle text generated');
+    assert(roundA.narrativeVi.length > 10, 'Authentic Sino-Vietnamese battle text generated');
 
     // -------------------------------------------------------------------------
     // GROUP 4: Historical Martial Sparring Integration (Zhang Fei & Guan Yu)
