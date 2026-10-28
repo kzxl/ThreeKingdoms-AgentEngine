@@ -426,6 +426,17 @@ CREATE TABLE IF NOT EXISTS bandit_strongholds (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 29. NPC Episodic Memories (Ký Ức Từng Hồi & Thu Hoạch Tri Thức NPC)
+CREATE TABLE IF NOT EXISTS npc_episodic_memories (
+    id TEXT PRIMARY KEY,
+    npc_id TEXT NOT NULL,
+    turn_number INTEGER NOT NULL,
+    topic TEXT NOT NULL,
+    emotional_valence TEXT NOT NULL, -- 'POSITIVE', 'NEUTRAL', 'NEGATIVE'
+    lesson_learned TEXT NOT NULL,
+    created_date TEXT NOT NULL
+);
+
 -- Indices for rapid querying & integrity checks
 CREATE INDEX IF NOT EXISTS idx_cashflow_date ON cashflow_ledger(game_date);
 CREATE INDEX IF NOT EXISTS idx_stock_mov_item ON stock_movements(item_code);
@@ -449,6 +460,7 @@ CREATE INDEX IF NOT EXISTS idx_innovations_char ON emergent_innovations(characte
 CREATE INDEX IF NOT EXISTS idx_crisis_settlement ON regional_ecological_crises(settlement_id);
 CREATE INDEX IF NOT EXISTS idx_caravan_faction ON trade_caravans(owner_faction_id);
 CREATE INDEX IF NOT EXISTS idx_stronghold_status ON bandit_strongholds(status);
+CREATE INDEX IF NOT EXISTS idx_memories_npc ON npc_episodic_memories(npc_id);
 
 
 

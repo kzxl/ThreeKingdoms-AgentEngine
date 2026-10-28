@@ -27,6 +27,7 @@ export class FactionPoliticsModule implements IFeatureModule {
 
   private ctx!: ModuleContext;
   private db!: DatabaseService;
+  private lastSimulatedTurn = -1;
 
   public async init(ctx: ModuleContext): Promise<void> {
     this.ctx = ctx;
@@ -310,6 +311,11 @@ export class FactionPoliticsModule implements IFeatureModule {
    * Simulates a political cycle: checks tensions, triggers coups/secessions, updates faction treasuries
    */
   public simulatePoliticalCycle(turnNumber: number, gameDate: string): FactionPoliticalEvent[] {
+    if (this.lastSimulatedTurn === turnNumber) {
+      return this.getPoliticalEvents(10);
+    }
+    this.lastSimulatedTurn = turnNumber;
+
     this.recalculateAllOfficerRisks();
 
     const events: FactionPoliticalEvent[] = [];
@@ -337,30 +343,48 @@ export class FactionPoliticsModule implements IFeatureModule {
 
     for (const off of disgruntledOfficers) {
       if (off.appointed_settlement_id) {
-        // Governor Secession Plot
-        const eventId = `EVT-SEC-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`;
+        // Governor Secession Plot: Real territorial transfer & warlord faction formation
+        const rebelFactionId = `FAC-REBEL-${off.officer_id}`;
+        const rebelNameVi = `Phản Quân ${off.officer_name}`;
+        const rebelNameEn = `Rebel Command of ${off.officer_id}`;
+        const eventId = `EVT-SEC-${turnNumber}-${off.officer_id}`;
         const titleVi = `Biến cố Thái thú: ${off.officer_name} Cát Cứ Tại ${off.settlement_name}!`;
         const narrativeVi = `Thái thú ${off.officer_name} nuôi dã tâm lớn, bất mãn với sự điều hành của chúa công ${off.faction_name}. Tận dụng sự kiểm soát tại ${off.settlement_name}, y đã đóng cửa thành trì, tự xưng Tiết Độ Sứ, từ chối nộp thuế khóa và tuyên bố độc lập!`;
 
         const consequences = {
           secedingOfficer: off.officer_id,
           settlementId: off.appointed_settlement_id,
+          rebelFactionId,
           statusChange: 'SECESSION_DECLARED',
-          loyaltyDrop: -20
+          territorialTransfer: true
         };
 
         this.db.transaction(() => {
           this.db.execute(
-            `INSERT INTO faction_political_events (event_id, turn_number, game_date, event_type, source_faction_id, instigator_officer_id, title_vi, narrative_vi, consequences_json)
+            `INSERT OR REPLACE INTO faction_political_events (event_id, turn_number, game_date, event_type, source_faction_id, instigator_officer_id, title_vi, narrative_vi, consequences_json)
              VALUES (?, ?, ?, 'SECESSION_WARLORD', ?, ?, ?, ?, ?);`,
             [eventId, turnNumber, gameDate, off.faction_id, off.officer_id, titleVi, narrativeVi, JSON.stringify(consequences)]
           );
 
-          // Lower loyalty further
-          this.db.execute(
-            `UPDATE faction_officers SET loyalty = MAX(10, loyalty - 15) WHERE officer_id = ? AND faction_id = ?;`,
-            [off.officer_id, off.faction_id]
-          );
+          // 1. Establish new rebel warlord faction in session_factions
+          this.db.execute(`
+            INSERT OR REPLACE INTO session_factions (faction_id, name_vi, name_en, leader_id, capital_settlement_id, treasury_cash, granary_grain, military_power, prestige, ideology, color_hex)
+            VALUES (?, ?, ?, ?, ?, 8000, 300.0, 450, 120, 'WARLORD', '#f97316');
+          `, [rebelFactionId, rebelNameVi, rebelNameEn, off.officer_id, off.appointed_settlement_id]);
+
+          // 2. Transfer territorial sovereignty of settlement
+          this.db.execute(`
+            UPDATE session_settlements 
+            SET ruler_faction_id = ?, governor_id = ? 
+            WHERE settlement_id = ?;
+          `, [rebelFactionId, off.officer_id, off.appointed_settlement_id]);
+
+          // 3. Elevate officer to Ruler of new faction
+          this.db.execute(`
+            UPDATE faction_officers 
+            SET faction_id = ?, court_rank = 'RULER', loyalty = 100, betrayal_risk = 0.0 
+            WHERE officer_id = ?;
+          `, [rebelFactionId, off.officer_id]);
         });
 
         events.push({
@@ -376,7 +400,7 @@ export class FactionPoliticsModule implements IFeatureModule {
         });
       } else {
         // Dissatisfied Officer Defection Plot
-        const eventId = `EVT-DEF-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`;
+        const eventId = `EVT-DEF-${turnNumber}-${off.officer_id}`;
         const titleVi = `Bất Mãn Nội Bộ: ${off.officer_name} Có Ý Định Đào Tẩu`;
         const narrativeVi = `Tướng lĩnh ${off.officer_name} cảm thấy không được trọng dụng tại ${off.faction_name}. Lòng trung thành sụt giảm nghiêm trọng, y đã bí mật phái sứ giả tiếp xúc với chư hầu lân cận mưu tìm đường đào tẩu.`;
 
@@ -387,7 +411,7 @@ export class FactionPoliticsModule implements IFeatureModule {
         };
 
         this.db.execute(
-          `INSERT INTO faction_political_events (event_id, turn_number, game_date, event_type, source_faction_id, instigator_officer_id, title_vi, narrative_vi, consequences_json)
+          `INSERT OR REPLACE INTO faction_political_events (event_id, turn_number, game_date, event_type, source_faction_id, instigator_officer_id, title_vi, narrative_vi, consequences_json)
            VALUES (?, ?, ?, 'OFFICER_DEFECT', ?, ?, ?, ?, ?);`,
           [eventId, turnNumber, gameDate, off.faction_id, off.officer_id, titleVi, narrativeVi, JSON.stringify(consequences)]
         );
@@ -448,7 +472,7 @@ export class FactionPoliticsModule implements IFeatureModule {
       throw new Error(`Settlement ${settlementId} not found`);
     }
 
-    const eventId = `EVT-APP-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`;
+    const eventId = `EVT-APP-${turnNumber}-${officerId}-${settlementId}`;
     const titleVi = `Bổ Nhiệm Thái Thú: ${officer.officer_name} Trấn Thủ ${settlement.name_vi}`;
     const narrativeVi = `Chúa công phái ${officer.officer_name} đảm nhiệm chức vị Thái thú ${settlement.name_vi}, ban cờ tiết chỉ huy toàn bộ quân dân trong hạt. Tướng lĩnh vô cùng cảm kích, lòng trung thành gia tăng.`;
 
@@ -516,7 +540,7 @@ export class FactionPoliticsModule implements IFeatureModule {
     };
 
     const titleViDesc = rankTitlesVi[newRank] || newRank;
-    const eventId = `EVT-INV-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`;
+    const eventId = `EVT-INV-${turnNumber}-${officerId}-${newRank}`;
     const titleVi = `Phong Quan Tiến Chức: ${officer.officer_name} Thụ Phong ${titleViDesc}`;
     const narrativeVi = `Nhận thấy tài năng và cống hiến vượt bậc, chúa công ban chiếu chỉ tấn phong ${officer.officer_name} lên hàng ${titleViDesc}. Cả phủ đệ hân hoan, lòng trung thành tăng thêm 20 điểm.`;
 

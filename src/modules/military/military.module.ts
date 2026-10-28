@@ -200,7 +200,7 @@ export class MilitaryModule implements IFeatureModule {
           [strongholdId]
         );
         player = this.db.queryOne<any>(
-          `SELECT name, war_attr, ldr_attr, int_attr, health, fatigue, liquid_cash FROM player_state WHERE player_id = ?;`,
+          `SELECT name, war_attr, ldr_attr, int_attr, health, fatigue, liquid_cash, current_location FROM player_state WHERE player_id = ?;`,
           [characterId]
         );
         const prog = this.db.queryOne<any>(
@@ -240,9 +240,15 @@ export class MilitaryModule implements IFeatureModule {
         int_attr: 82,
         health: 100,
         fatigue: 10,
-        liquid_cash: 20000
+        liquid_cash: 20000,
+        current_location: 'LOC-0001'
       };
     }
+
+    // Verify logistical supply lines reachability back to strategic hub (LOC-0002 Luoyang)
+    const playerLoc = player.current_location || 'LOC-0001';
+    const isSupplied = this.graph.hasUnbrokenSupplyPath(playerLoc, 'LOC-0002');
+    const attackerInitialMorale = isSupplied ? 95 : 70; // 25 morale penalty when supply lines are broken
 
     // Determine battlefield terrain based on stronghold location
     let battlefieldTerrain: TerrainType = options.terrain || 'MOUNTAINS';
@@ -277,7 +283,7 @@ export class MilitaryModule implements IFeatureModule {
         vanguardTroops: typeof totalAtkTroops === 'number' ? Math.round(totalAtkTroops * 0.35) : totalAtkTroops,
         centerTroops: typeof totalAtkTroops === 'number' ? Math.round(totalAtkTroops * 0.45) : undefined,
         rearguardTroops: typeof totalAtkTroops === 'number' ? Math.round(totalAtkTroops * 0.20) : undefined,
-        initialMorale: 95
+        initialMorale: attackerInitialMorale
       },
       defender: {
         commander: {
@@ -314,7 +320,7 @@ export class MilitaryModule implements IFeatureModule {
             );
             const currentCash = prevCashflow ? Number(prevCashflow.balance) : Number(player.liquid_cash || 0);
             const newBalance = currentCash + totalReward;
-            const txnId = `TXN-LOOT-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+            const txnId = `TXN-LOOT-${gameDate.replace(/-/g, '')}-${strongholdId}-${turnNumber}`;
 
             // 2. Insert cashflow ledger entry
             this.db!.execute(

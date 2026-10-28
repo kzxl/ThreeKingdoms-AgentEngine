@@ -266,6 +266,73 @@ function auditNpcAndBusinesses() {
   };
 }
 
+function auditSqliteFactionsAndSettlements() {
+  const errors = [];
+  let checksCount = 0;
+
+  // Check if session_factions and session_settlements exist in sqlite_master
+  let tableCheck = [];
+  try {
+    tableCheck = runSqlJson(`SELECT name FROM sqlite_master WHERE type='table' AND name IN ('session_factions', 'session_settlements', 'npc_personal_progression');`);
+  } catch (e) {
+    return { passed: true, checksCount: 0, errors: [], installed: false, factionCount: 0, settlementCount: 0, progCount: 0 };
+  }
+
+  const existingTables = new Set(tableCheck.map(t => t.name));
+  if (!existingTables.has('session_factions') || !existingTables.has('session_settlements')) {
+    return { passed: true, checksCount: 0, errors: [], installed: false, factionCount: 0, settlementCount: 0, progCount: 0 };
+  }
+
+  // 1. Audit Factions
+  const factions = runSqlJson(`SELECT faction_id, treasury_cash, granary_grain FROM session_factions;`);
+  for (const f of factions) {
+    checksCount++;
+    if (f.treasury_cash < 0) {
+      errors.push(`Faction ${f.faction_id} has negative treasury cash: ${f.treasury_cash}`);
+    }
+    checksCount++;
+    if (f.granary_grain < 0) {
+      errors.push(`Faction ${f.faction_id} has negative granary grain: ${f.granary_grain}`);
+    }
+  }
+
+  // 2. Audit Settlements
+  const settlements = runSqlJson(`SELECT settlement_id, garrison_troops, defense FROM session_settlements;`);
+  for (const s of settlements) {
+    checksCount++;
+    if (s.garrison_troops < 0) {
+      errors.push(`Settlement ${s.settlement_id} has negative garrison troops: ${s.garrison_troops}`);
+    }
+    checksCount++;
+    if (s.defense < 10 || s.defense > 100) {
+      errors.push(`Settlement ${s.settlement_id} defense out of bounds (10-100): ${s.defense}`);
+    }
+  }
+
+  // 3. Audit NPC Personal Progression if table exists
+  let progCount = 0;
+  if (existingTables.has('npc_personal_progression')) {
+    const progressions = runSqlJson(`SELECT npc_id, personal_cash FROM npc_personal_progression;`);
+    progCount = progressions.length;
+    for (const p of progressions) {
+      checksCount++;
+      if (p.personal_cash < 0) {
+        errors.push(`NPC ${p.npc_id} has negative personal cash: ${p.personal_cash}`);
+      }
+    }
+  }
+
+  return {
+    passed: errors.length === 0,
+    checksCount,
+    errors,
+    installed: true,
+    factionCount: factions.length,
+    settlementCount: settlements.length,
+    progCount
+  };
+}
+
 function auditProjectionSync(cashResult, invResult) {
   const errors = [];
   let checksCount = 0;
@@ -402,6 +469,24 @@ function runAudit() {
       }
     }
 
+    // 6. Factions & Settlements State Audit
+    const factionResult = auditSqliteFactionsAndSettlements();
+    totalChecks += factionResult.checksCount;
+    if (factionResult.installed && (factionResult.factionCount > 0 || factionResult.settlementCount > 0)) {
+      console.log(`\n[${journalResult.installed ? 6 : 5}] GRAND STRATEGY INVARIANTS (Factions & Settlements):`);
+      console.log(`    Factions Verified     : ${factionResult.factionCount}`);
+      console.log(`    Settlements Verified  : ${factionResult.settlementCount}`);
+      if (factionResult.progCount > 0) {
+        console.log(`    Personal Assets Checked: ${factionResult.progCount}`);
+      }
+      if (!factionResult.passed) {
+        allPassed = false;
+        factionResult.errors.forEach(e => { console.error(`    ❌ ${e}`); allErrors.push(e); });
+      } else {
+        console.log(`    ✅ Passed: Non-negative treasuries, garrisons, and bounded defense verified.`);
+      }
+    }
+
     console.log('\n====================================================');
     if (allPassed) {
       console.log(` 🟢 AUDIT VERDICT: PASSED`);
@@ -432,5 +517,6 @@ module.exports = {
   auditDoubleEntryJournal,
   auditProjectionSync,
   auditNpcAndBusinesses,
+  auditSqliteFactionsAndSettlements,
   runAudit
 };

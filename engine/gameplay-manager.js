@@ -272,32 +272,29 @@ class GameplayManager {
     // 2. Advance game date to the 1st of next month
     const nextDate = advanceCalendarMonth(prevDate, 1, true);
 
-    // 3. Player State Fatigue Recovery & Morale Stabilization
+    // 3. Player State Fatigue Recovery & Morale Stabilization (Gradual Health Recovery, No Invincible Resets)
     const player = runSqlJson(this.dbPath, `SELECT * FROM player_state LIMIT 1;`)[0];
     let recoveredFatigue = 0;
+    let playerUpdateSql = '';
     if (player) {
       const currentFatigue = Number(player.fatigue || 0);
       const newFatigue = Math.max(0, currentFatigue - 35);
       recoveredFatigue = currentFatigue - newFatigue;
       const currentMorale = Number(player.morale || 100);
       const newMorale = Math.min(100, currentMorale + 10);
-      runSqlBatch(this.dbPath, `
-        UPDATE player_state 
-        SET fatigue = ${newFatigue}, morale = ${newMorale}, health = 100 
-        WHERE player_id = '${player.player_id}';
-      `);
+      const currentHealth = Number(player.health !== undefined ? player.health : 100);
+      // Natural health recovery of +15 if alive, capped at 100
+      const newHealth = currentHealth > 0 ? Math.min(100, currentHealth + 15) : 0;
+      playerUpdateSql = `UPDATE player_state SET fatigue = ${newFatigue}, morale = ${newMorale}, health = ${newHealth} WHERE player_id = '${player.player_id}';`;
     }
 
-    // 4. Update campaign_meta
-    runSqlBatch(this.dbPath, `
-      UPDATE campaign_meta 
-      SET active_turn = ${nextTurn}, current_date = '${nextDate}'
-      WHERE campaign_id = '${meta.campaign_id}';
-    `);
+    // 4. Prepare campaign_meta update SQL
+    const metaUpdateSql = `UPDATE campaign_meta SET active_turn = ${nextTurn}, current_date = '${nextDate}' WHERE campaign_id = '${meta.campaign_id}';`;
 
     // 5. Monthly Business / Enterprise Cycle & Retainer Wages
     const businesses = runSqlJson(this.dbPath, `SELECT * FROM businesses;`);
     const bizReports = [];
+    const bizUpdates = [];
     for (const b of businesses) {
       const staff = runSqlJson(this.dbPath, `SELECT * FROM npc_state WHERE assigned_business_id = '${b.business_id}';`);
       let totalWages = 0;
@@ -312,7 +309,7 @@ class GameplayManager {
 
       let currentSafe = Number(b.safe_cash || 0);
       let updatedSafe = Math.max(0, currentSafe + netProfit);
-      runSqlBatch(this.dbPath, `UPDATE businesses SET safe_cash = ${updatedSafe} WHERE business_id = '${b.business_id}';`);
+      bizUpdates.push(`UPDATE businesses SET safe_cash = ${updatedSafe} WHERE business_id = '${b.business_id}';`);
 
       bizReports.push({
         businessId: b.business_id,
@@ -341,16 +338,27 @@ class GameplayManager {
       try { ecologyResults = gsm.ecologyLogistics.simulateEcologyAndLogisticsTurn(nextTurn, nextDate); } catch (e) {}
     }
 
+    // Wire WORLD_MONTH_TICK EventBus notification to cascade time advancement
+    const eventBus = gsm?.registry?.ctx?.eventBus || gsm?.utilityAi?.ctx?.eventBus;
+    if (eventBus && typeof eventBus.publish === 'function') {
+      const [y, m] = nextDate.split('-').map(Number);
+      try {
+        eventBus.publish('WORLD_MONTH_TICK', { year: y, month: m, turn: nextTurn });
+      } catch (e) {
+        console.warn('[GameplayManager] WORLD_MONTH_TICK publish failed:', e.message);
+      }
+    }
+
+    let proceduralNpcSql = '';
     // Procedural Fallback & Comprehensive Simulation Enrichment
     if (!npcLogs || npcLogs.length === 0) {
-      // Simulate workshop retainers progression in SQLite
-      runSqlBatch(this.dbPath, `
+      proceduralNpcSql = `
         UPDATE npc_state 
         SET craft_exp = craft_exp + 15, 
             fatigue = MAX(0, fatigue - 3), 
             morale = MIN(100, morale + 4)
         WHERE assigned_business_id IS NOT NULL;
-      `);
+      `;
 
       npcLogs = [
         { npcId: 'NPC-0007', name: 'Trần Bao (Chen Bao)', action: 'Đôn đốc gia nhân xưởng chức tác hoàn thành định mức vật liệu mây tre, tích lũy +15 EXP Chế Tác.' },
@@ -387,25 +395,25 @@ class GameplayManager {
       };
     }
 
-    // 7. Write Turn Log
+    // 7. Write Turn Log SQL
     const turnTitle = `Lượt ${nextTurn} • Phong Vân Biến Động (${nextDate})`;
     const playerLoc = player?.current_location || 'LOC-0001';
     const turnSummary = `Chuyển sang tháng mới (${nextDate}). Vận hành ${bizReports.length} sản nghiệp; thể lực phục hồi +${recoveredFatigue}; thế cuộc quần hùng thiên hạ và nghĩa quân chuyển dịch.`;
 
-    runSqlBatch(this.dbPath, `
+    const turnLogSql = `
       INSERT INTO turn_log (turn_number, game_date, turn_title, location, summary, dilemma_choice)
       VALUES (${nextTurn}, '${nextDate}', '${turnTitle.replace(/'/g, "''")}', '${playerLoc}', '${turnSummary.replace(/'/g, "''")}', 'Tiếp tục phát triển sản nghiệp và bồi đắp uy vọng hào kiệt.');
-    `);
+    `;
 
-    // 8. Record Chat Chronicle turn
-    const chronicleId = `turn_adv_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`;
+    // 8. Record Chat Chronicle SQL
+    const chronicleId = `turn_adv_${nextTurn}_${nextDate.replace(/-/g, '')}`;
     const chronicleText = `【KẾT THÚC LƯỢT ${prevTurn} ➔ BƯỚC VÀO LƯỢT ${nextTurn}】\n` +
       `Thời quang thấm thoát, chiến cuộc chuyển sang ngày **${nextDate}**.\n` +
       `• **Trạng thái cá nhân**: Thể lực hồi phục (${recoveredFatigue > 0 ? `+${recoveredFatigue}` : 'Tối đa'}), sĩ khí ổn định.\n` +
       `• **Vận hành sản nghiệp**: ${bizReports.length > 0 ? bizReports.map(br => `${br.businessName} (Lợi nhuận: ${br.netProfit >= 0 ? '+' : ''}${br.netProfit} Tiền)`).join(', ') : 'Chưa có xưởng trực thuộc, tiếp tục tự do hành hiệp.'}\n` +
       `• **Động thái thiên hạ**: Các chư hầu Bắc Cương và triều đình Lạc Dương tiếp tục điều động binh mã, giá cả thị trường biến động theo mùa.`;
 
-    runSqlBatch(this.dbPath, `
+    const chronicleSql = `
       INSERT INTO chat_chronicle (id, turn_number, game_date, type, speaker, title, avatar, text, deltas, reasoning)
       VALUES (
         '${chronicleId}', ${nextTurn}, '${nextDate}', 'system', 'Hệ Thống Chiến Lược', 'Báo Cáo Chuyển Lượt', '曆',
@@ -413,7 +421,22 @@ class GameplayManager {
         '{"activeTurn": ${nextTurn}, "gameDate": "${nextDate}", "recoveredFatigue": ${recoveredFatigue}}',
         'Cập nhật tiến trình thời gian và mô phỏng thế giới sống động.'
       );
-    `);
+    `;
+
+    // Execute all core turn mutations inside an ACID transaction to prevent partial state corruption
+    const atomicTurnBatch = [
+      playerUpdateSql,
+      metaUpdateSql,
+      ...bizUpdates,
+      proceduralNpcSql,
+      turnLogSql,
+      chronicleSql
+    ].filter(Boolean).join('\n');
+
+    const txResult = runSqlBatch(this.dbPath, atomicTurnBatch);
+    if (!txResult.success) {
+      throw new Error(`Failed to commit turn advance transaction: ${txResult.error}`);
+    }
 
     // 9. Sync PROGRESS.md Header & Turn Section
     const progressPath = path.join(ROOT_DIR, 'game', 'PROGRESS.md');

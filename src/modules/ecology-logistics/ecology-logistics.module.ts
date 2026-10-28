@@ -20,6 +20,14 @@ import {
   BanditStronghold
 } from '../../core/types';
 
+function getTurnDeterministicRoll(turnNumber: number, entityId: string, salt = 0): number {
+  let hash = ((turnNumber * 10007) + (salt * 1337)) >>> 0;
+  for (let i = 0; i < entityId.length; i++) {
+    hash = ((hash << 5) - hash + entityId.charCodeAt(i)) >>> 0;
+  }
+  return (hash % 10000) / 10000;
+}
+
 export class EcologyLogisticsModule implements IFeatureModule {
   public readonly id = 'module.ecology-logistics';
   public readonly name = 'Ecological Crises & Macro Logistics Caravans';
@@ -27,6 +35,7 @@ export class EcologyLogisticsModule implements IFeatureModule {
 
   private ctx!: ModuleContext;
   private db!: DatabaseService;
+  private lastSimulatedTurn = -1;
 
   public async init(ctx: ModuleContext): Promise<void> {
     this.ctx = ctx;
@@ -271,7 +280,8 @@ export class EcologyLogisticsModule implements IFeatureModule {
       throw new Error(`Thể lực quá mỏi mệt (${player.fatigue}/100), không thể thống lĩnh binh mã công sơn kích trại!`);
     }
 
-    const combatScore = (player.war_attr * 1.5 + player.ldr_attr * 1.2) + Math.random() * 50;
+    const roll = getTurnDeterministicRoll(turnNumber, characterId, 42);
+    const combatScore = (player.war_attr * 1.5 + player.ldr_attr * 1.2) + roll * 50;
     const isVictory = combatScore >= stronghold.bandit_power;
 
     if (isVictory) {
@@ -309,7 +319,7 @@ export class EcologyLogisticsModule implements IFeatureModule {
       };
     } else {
       this.db.execute(
-        `UPDATE player_state SET health = MAX(30, health - 20), fatigue = MIN(100, fatigue + 40) WHERE player_id = ?;`,
+        `UPDATE player_state SET health = MAX(0, health - 20), fatigue = MIN(100, fatigue + 40) WHERE player_id = ?;`,
         [characterId]
       );
 
@@ -326,6 +336,11 @@ export class EcologyLogisticsModule implements IFeatureModule {
    * Simulates monthly/turn cycle for Ecology & Macro Logistics Caravans
    */
   public simulateEcologyAndLogisticsTurn(turnNumber: number, gameDate: string): any {
+    if (this.lastSimulatedTurn === turnNumber) {
+      return { turnNumber, gameDate, processedCaravans: 0, events: [] };
+    }
+    this.lastSimulatedTurn = turnNumber;
+
     const events: string[] = [];
 
     // 1. Advance Caravans
@@ -333,8 +348,9 @@ export class EcologyLogisticsModule implements IFeatureModule {
     for (const car of activeCaravans) {
       const newProgress = Math.min(1.0, Math.round((car.route_progress + 0.35) * 100) / 100);
 
-      // Ambush check at midway (0.4 to 0.7)
-      if (newProgress >= 0.4 && newProgress <= 0.7 && Math.random() < 0.30) {
+      // Ambush check at midway (0.4 to 0.7) with deterministic roll
+      const ambushRoll = getTurnDeterministicRoll(turnNumber, car.caravan_id, 11);
+      if (newProgress >= 0.4 && newProgress <= 0.7 && ambushRoll < 0.30) {
         // Find nearest active bandit stronghold
         const stronghold = this.db.queryOne<any>(`SELECT * FROM bandit_strongholds WHERE status = 'ACTIVE' LIMIT 1;`);
         if (stronghold && stronghold.bandit_power > car.guard_troops * 2) {
@@ -356,15 +372,28 @@ export class EcologyLogisticsModule implements IFeatureModule {
       }
 
       if (newProgress >= 1.0) {
-        // Arrived and traded successfully!
+        // Arrived and traded successfully! Conserve currency between factions
+        const totalPayout = Math.round(car.cargo_value_qian * 1.35);
+        const destSettlement = this.db.queryOne<any>(
+          `SELECT ruler_faction_id FROM session_settlements WHERE settlement_id = ?;`,
+          [car.to_settlement_id]
+        );
+        const buyerFactionId = destSettlement?.ruler_faction_id || 'FAC-HAN';
+
         this.db.transaction(() => {
           this.db.execute(
             `UPDATE trade_caravans SET status = 'SUCCESS_TRADED', route_progress = 1.0, updated_at = CURRENT_TIMESTAMP WHERE caravan_id = ?;`,
             [car.caravan_id]
           );
+          // Deduct from buyer faction treasury
+          this.db.execute(
+            `UPDATE session_factions SET treasury_cash = MAX(0, treasury_cash - ?) WHERE faction_id = ?;`,
+            [totalPayout, buyerFactionId]
+          );
+          // Credit owner faction treasury
           this.db.execute(
             `UPDATE session_factions SET treasury_cash = treasury_cash + ? WHERE faction_id = ?;`,
-            [Math.round(car.cargo_value_qian * 1.35), car.owner_faction_id]
+            [totalPayout, car.owner_faction_id]
           );
         });
 
@@ -377,21 +406,36 @@ export class EcologyLogisticsModule implements IFeatureModule {
       }
     }
 
-    // 2. Tick Ecological Crises
+    // 2. Tick Ecological Crises and causally adjust agriculture
     const crises = this.db.query<any>(`SELECT * FROM regional_ecological_crises WHERE is_active = 1;`);
     for (const c of crises) {
       const remainingTurns = c.duration_turns_left - 1;
       if (remainingTurns <= 0) {
-        this.db.execute(
-          `UPDATE regional_ecological_crises SET is_active = 0, duration_turns_left = 0 WHERE crisis_id = ?;`,
-          [c.crisis_id]
-        );
-        events.push(`[THỜI TIẾT] Thiên tai tại ${c.settlement_id} (${c.title_vi}) đã qua đi, đất đai hồi sinh.`);
+        this.db.transaction(() => {
+          this.db.execute(
+            `UPDATE regional_ecological_crises SET is_active = 0, duration_turns_left = 0 WHERE crisis_id = ?;`,
+            [c.crisis_id]
+          );
+          // Restore agricultural baseline when crisis clears
+          this.db.execute(
+            `UPDATE session_settlements SET agriculture = MIN(100, agriculture + 15) WHERE settlement_id = ?;`,
+            [c.settlement_id]
+          );
+        });
+        events.push(`[THỜI TIẾT] Thiên tai tại ${c.settlement_id} (${c.title_vi}) đã qua đi, nông nghiệp dần phục hồi.`);
       } else {
-        this.db.execute(
-          `UPDATE regional_ecological_crises SET duration_turns_left = ? WHERE crisis_id = ?;`,
-          [remainingTurns, c.crisis_id]
-        );
+        this.db.transaction(() => {
+          this.db.execute(
+            `UPDATE regional_ecological_crises SET duration_turns_left = ? WHERE crisis_id = ?;`,
+            [remainingTurns, c.crisis_id]
+          );
+          // Depress agricultural yield during active crisis
+          const penalty = Math.round((c.agriculture_penalty || 0.3) * 10);
+          this.db.execute(
+            `UPDATE session_settlements SET agriculture = MAX(15, agriculture - ?) WHERE settlement_id = ?;`,
+            [penalty, c.settlement_id]
+          );
+        });
       }
     }
 

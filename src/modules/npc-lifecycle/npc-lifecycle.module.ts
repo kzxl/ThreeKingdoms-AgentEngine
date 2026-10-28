@@ -5,7 +5,17 @@
  */
 
 import { DatabaseService } from '../../core/database';
-import { IFeatureModule, ModuleContext, CharacterId } from '../../core/types';
+import { IFeatureModule, ModuleContext, CharacterId, UtilityActionCandidate } from '../../core/types';
+import { ModuleRegistry } from '../../core/module-registry';
+import { UtilityAiModule, UtilityCurveEvaluator } from '../utility-ai/utility-ai.module';
+
+function getTurnDeterministicRoll(turnNumber: number, npcId: string, salt = 0): number {
+  let hash = ((turnNumber * 10007) + (salt * 1337)) >>> 0;
+  for (let i = 0; i < npcId.length; i++) {
+    hash = ((hash << 5) - hash + npcId.charCodeAt(i)) >>> 0;
+  }
+  return (hash % 10000) / 10000;
+}
 
 export type NpcAmbitionType =
   | 'HEGEMON_UNIFIER'
@@ -54,6 +64,7 @@ export class NpcLifecycleModule implements IFeatureModule {
 
   private ctx!: ModuleContext;
   private db!: DatabaseService;
+  private lastSimulatedTurn = -1;
 
   public init(ctx: ModuleContext): void {
     this.ctx = ctx;
@@ -130,40 +141,138 @@ export class NpcLifecycleModule implements IFeatureModule {
     `, [npcId, npcId]);
     const npc = charRows[0] || { name: npcId, war_attr: 50, int_attr: 50, cra_attr: 50, com_attr: 50 };
 
-    // 3. Determine autonomous action based on ambition and focus
-    let actionType: NpcActionType = 'MARTIAL_DRILL';
+    // 3. Evaluate candidate actions with Continuous Utility AI & BDI Priors
+    const utilityAi = ModuleRegistry.getInstance().get<UtilityAiModule>('module.utility-ai') || new UtilityAiModule();
+
+    // Check bandit plunder availability
+    const topStronghold = this.db.queryOne<any>(`
+      SELECT stronghold_id, name_vi, plundered_wealth, bounty_reward
+      FROM bandit_strongholds
+      WHERE status = 'ACTIVE' AND plundered_wealth > 0
+      ORDER BY plundered_wealth DESC
+      LIMIT 1;
+    `);
+
+    const martialAffinity = (prog.life_ambition === 'RIGHTEOUS_VANGUARD' || prog.life_ambition === 'LOYAL_BROTHERHOOD') ? 1.4 : 0.6;
+    const craftAffinity = prog.life_ambition === 'MASTER_ARTISAN' ? 1.8 : 0.2;
+    const scholarAffinity = (prog.life_ambition === 'HEGEMON_UNIFIER' || prog.life_ambition === 'SCHOLAR_STATESMAN') ? 1.6 : 0.4;
+    const commerceAffinity = prog.life_ambition === 'COMMERCE_TYCOON' ? 1.7 : 0.8;
+
+    const candidates: UtilityActionCandidate[] = [
+      {
+        id: 'MARTIAL_DRILL',
+        actionType: 'PATROL',
+        weight: 1.0,
+        considerations: [
+          { name: 'WarAptitude', rawInput: npc.war_attr, score: UtilityCurveEvaluator.evaluateLinear(npc.war_attr, 20, 100) },
+          { name: 'AmbitionFit', rawInput: martialAffinity, score: martialAffinity }
+        ],
+        compositeScore: UtilityCurveEvaluator.computeCompositeScore([
+          UtilityCurveEvaluator.evaluateLinear(npc.war_attr, 20, 100),
+          martialAffinity
+        ])
+      },
+      {
+        id: 'BANDIT_EXPEDITION',
+        actionType: 'MARCH',
+        weight: 1.0,
+        considerations: [
+          { name: 'ExpeditionPower', rawInput: npc.war_attr + (prog.personal_troops || 0), score: UtilityCurveEvaluator.evaluateLinear(npc.war_attr + (prog.personal_troops || 0), 40, 150) },
+          { name: 'PlunderOpportunity', rawInput: topStronghold?.plundered_wealth || 0, score: topStronghold ? 0.9 : 0.2 },
+          { name: 'AmbitionFit', rawInput: martialAffinity, score: martialAffinity }
+        ],
+        compositeScore: UtilityCurveEvaluator.computeCompositeScore([
+          UtilityCurveEvaluator.evaluateLinear(npc.war_attr + (prog.personal_troops || 0), 40, 150),
+          topStronghold ? 0.9 : 0.2,
+          martialAffinity
+        ])
+      },
+      {
+        id: 'CRAFT_BREAKTHROUGH',
+        actionType: 'CRAFT',
+        weight: 1.0,
+        considerations: [
+          { name: 'CraftAptitude', rawInput: npc.cra_attr, score: UtilityCurveEvaluator.evaluateLinear(npc.cra_attr, 20, 100) },
+          { name: 'AmbitionFit', rawInput: craftAffinity, score: craftAffinity }
+        ],
+        compositeScore: UtilityCurveEvaluator.computeCompositeScore([
+          UtilityCurveEvaluator.evaluateLinear(npc.cra_attr, 20, 100),
+          craftAffinity
+        ])
+      },
+      {
+        id: 'STRATEGY_STUDY',
+        actionType: 'STUDY',
+        weight: 1.0,
+        considerations: [
+          { name: 'IntAptitude', rawInput: npc.int_attr, score: UtilityCurveEvaluator.evaluateLinear(npc.int_attr, 20, 100) },
+          { name: 'AmbitionFit', rawInput: scholarAffinity, score: scholarAffinity }
+        ],
+        compositeScore: UtilityCurveEvaluator.computeCompositeScore([
+          UtilityCurveEvaluator.evaluateLinear(npc.int_attr, 20, 100),
+          scholarAffinity
+        ])
+      },
+      {
+        id: 'COMMERCE_ARBITRAGE',
+        actionType: 'TRADE',
+        weight: 1.0,
+        considerations: [
+          { name: 'ComAptitude', rawInput: npc.com_attr, score: UtilityCurveEvaluator.evaluateLinear(npc.com_attr, 20, 100) },
+          { name: 'CashNeed', rawInput: prog.personal_cash, score: UtilityCurveEvaluator.evaluateLogistic(prog.personal_cash, 500, -0.005) },
+          { name: 'AmbitionFit', rawInput: commerceAffinity, score: commerceAffinity }
+        ],
+        compositeScore: UtilityCurveEvaluator.computeCompositeScore([
+          UtilityCurveEvaluator.evaluateLinear(npc.com_attr, 20, 100),
+          UtilityCurveEvaluator.evaluateLogistic(prog.personal_cash, 500, -0.005),
+          commerceAffinity
+        ])
+      }
+    ];
+
+    const chosenCandidate = utilityAi.selectBestAction(npcId, candidates, prog.current_focus) || candidates[0];
+    const actionType: NpcActionType = chosenCandidate.id as NpcActionType;
+
     let titleVi = '';
     let narrativeVi = '';
     const statChanges: Record<string, number | string> = {};
 
-    switch (prog.life_ambition) {
-      case 'RIGHTEOUS_VANGUARD':
-      case 'LOYAL_BROTHERHOOD': {
-        const rand = Math.random();
-        if (rand < 0.5) {
-          actionType = 'MARTIAL_DRILL';
-          titleVi = `${npc.name} dốc lòng khổ luyện võ nghệ`;
-          narrativeVi = `Tại bãi tập, ${npc.name} ngày đêm mài giũa thương pháp, khí thế bức người, uy lực chiêu thức gia tăng đáng kể.`;
-          statChanges['war_exp'] = '+15 EXP';
-          statChanges['morale'] = '+5';
-        } else {
-          actionType = 'BANDIT_EXPEDITION';
-          const bounty = Math.floor(150 + Math.random() * 200);
-          const recruited = Math.floor(5 + Math.random() * 10);
-          titleVi = `${npc.name} dẫn binh tiễu trừ sơn tặc phụ cận`;
-          narrativeVi = `${npc.name} tự dẫn bộ hạ đột kích sào huyệt sơn tặc, trảm tướng cướp, thu được ${bounty} Tiền chiến lợi phẩm và thu phục ${recruited} tráng đinh tình nguyện gia nhập.`;
-          statChanges['personal_cash'] = `+${bounty} Tiền`;
-          statChanges['personal_troops'] = `+${recruited} Dũng sĩ`;
-          statChanges['prestige'] = '+15 Danh vọng';
-          prog.personal_cash += bounty;
-          prog.personal_troops += recruited;
-          prog.prestige += 15;
-        }
+    switch (actionType) {
+      case 'MARTIAL_DRILL': {
+        titleVi = `${npc.name} dốc lòng khổ luyện võ nghệ`;
+        narrativeVi = `Tại bãi tập, ${npc.name} ngày đêm mài giũa thương pháp, khí thế bức người, uy lực chiêu thức gia tăng đáng kể.`;
+        statChanges['war_exp'] = '+15 EXP';
+        statChanges['morale'] = '+5';
         break;
       }
 
-      case 'MASTER_ARTISAN': {
-        actionType = 'CRAFT_BREAKTHROUGH';
+      case 'BANDIT_EXPEDITION': {
+        const rollBounty = getTurnDeterministicRoll(turnNumber, npcId, 2);
+        const rollTroops = getTurnDeterministicRoll(turnNumber, npcId, 3);
+        let bounty = Math.floor(150 + rollBounty * 200);
+        const recruited = Math.floor(5 + rollTroops * 10);
+
+        if (topStronghold && topStronghold.plundered_wealth > 0) {
+          bounty = Math.min(topStronghold.plundered_wealth, bounty);
+          this.db.execute(`
+            UPDATE bandit_strongholds 
+            SET plundered_wealth = MAX(0, plundered_wealth - ?) 
+            WHERE stronghold_id = ?;
+          `, [bounty, topStronghold.stronghold_id]);
+        }
+
+        titleVi = `${npc.name} dẫn binh tiễu trừ sơn tặc phụ cận`;
+        narrativeVi = `${npc.name} tự dẫn bộ hạ đột kích sào huyệt sơn tặc, trảm tướng cướp, thu được ${bounty} Tiền chiến lợi phẩm và thu phục ${recruited} tráng đinh tình nguyện gia nhập.`;
+        statChanges['personal_cash'] = `+${bounty} Tiền`;
+        statChanges['personal_troops'] = `+${recruited} Dũng sĩ`;
+        statChanges['prestige'] = '+15 Danh vọng';
+        prog.personal_cash += bounty;
+        prog.personal_troops += recruited;
+        prog.prestige += 15;
+        break;
+      }
+
+      case 'CRAFT_BREAKTHROUGH': {
         titleVi = `${npc.name} cải tiến kỹ nghệ chế tác`;
         narrativeVi = `Sau nhiều đêm thử nghiệm, ${npc.name} tinh chỉnh thành công phương pháp trui rèn vật liệu, giúp nâng cao độ bền và giảm hao mòn sản phẩm.`;
         statChanges['craft_exp'] = '+20 EXP';
@@ -172,9 +281,7 @@ export class NpcLifecycleModule implements IFeatureModule {
         break;
       }
 
-      case 'HEGEMON_UNIFIER':
-      case 'SCHOLAR_STATESMAN': {
-        actionType = 'STRATEGY_STUDY';
+      case 'STRATEGY_STUDY': {
         titleVi = `${npc.name} luận bàn thế cục & nghiên cứu binh pháp`;
         narrativeVi = `${npc.name} tiếp kiến các danh sĩ địa phương, phân tích cục diện khởi nghĩa Khăn Vàng, hoạch định phương lược cứu dân giúp nước.`;
         statChanges['int_exp'] = '+15 EXP';
@@ -183,9 +290,10 @@ export class NpcLifecycleModule implements IFeatureModule {
         break;
       }
 
+      case 'COMMERCE_ARBITRAGE':
       default: {
-        actionType = 'COMMERCE_ARBITRAGE';
-        const earned = Math.floor(80 + Math.random() * 120);
+        const rollCash = getTurnDeterministicRoll(turnNumber, npcId, 4);
+        const earned = Math.floor(80 + rollCash * 120);
         titleVi = `${npc.name} tham gia giao thương tích lũy`;
         narrativeVi = `Tận dụng ngày nghỉ tại thị trấn, ${npc.name} thực hiện giao lưu trao đổi hàng hóa vật phẩm, thu thêm ${earned} Tiền vào tài sản riêng.`;
         statChanges['personal_cash'] = `+${earned} Tiền`;
@@ -195,7 +303,7 @@ export class NpcLifecycleModule implements IFeatureModule {
     }
 
     // 4. Save Journey Log
-    const logId = `JRN-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    const logId = `JRN-${gameDate.replace(/-/g, '')}-${npcId}-${turnNumber}`;
     const log: NpcJourneyLog = {
       id: logId,
       npcId,
@@ -205,12 +313,12 @@ export class NpcLifecycleModule implements IFeatureModule {
       titleVi,
       narrativeVi,
       statChanges,
-      createdAt: new Date().toISOString()
+      createdAt: `${gameDate}T00:00:00.000Z`
     };
 
     this.db.transaction(() => {
       this.db.execute(`
-        INSERT INTO npc_journey_logs (id, npc_id, turn_number, game_date, action_type, title_vi, narrative_vi, stat_changes_json)
+        INSERT OR REPLACE INTO npc_journey_logs (id, npc_id, turn_number, game_date, action_type, title_vi, narrative_vi, stat_changes_json)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?);
       `, [log.id, log.npcId, log.turnNumber, log.gameDate, log.actionType, log.titleVi, log.narrativeVi, JSON.stringify(log.statChanges)]);
 
@@ -219,9 +327,10 @@ export class NpcLifecycleModule implements IFeatureModule {
         SET personal_cash = ?,
             prestige = ?,
             personal_troops = ?,
+            current_focus = ?,
             updated_at = CURRENT_TIMESTAMP
         WHERE npc_id = ?;
-      `, [prog.personal_cash, prog.prestige, prog.personal_troops, npcId]);
+      `, [prog.personal_cash, prog.prestige, prog.personal_troops, actionType, npcId]);
     });
 
     // 5. Publish to EventBus
@@ -398,6 +507,11 @@ export class NpcLifecycleModule implements IFeatureModule {
    * Advances autonomous progression for all registered active NPCs
    */
   public simulateAllActiveNpcs(turnNumber: number, gameDate: string): NpcJourneyLog[] {
+    if (this.lastSimulatedTurn === turnNumber) {
+      return this.getJourneyLogs(undefined, 10);
+    }
+    this.lastSimulatedTurn = turnNumber;
+
     const list = this.db.query<{ npc_id: string }>(`SELECT npc_id FROM npc_personal_progression;`);
     const logs: NpcJourneyLog[] = [];
 
