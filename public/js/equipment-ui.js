@@ -148,11 +148,23 @@
         border-bottom-color: #fbbf24;
         background: rgba(251, 191, 36, 0.06);
       }
-      .eqp-grid-4slots {
+      .eqp-grid-4slots, .eqp-collection-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
         gap: 12px;
         margin-bottom: 16px;
+        max-height: 290px;
+        overflow-y: auto;
+        padding-right: 4px;
+      }
+      .eqp-empty-collection {
+        grid-column: 1 / -1;
+        padding: 28px 16px;
+        text-align: center;
+        background: #090d16;
+        border: 1px dashed rgba(245, 158, 11, 0.3);
+        border-radius: 8px;
+        color: #94a3b8;
       }
       .eqp-slot-card {
         background: #1e293b;
@@ -630,22 +642,26 @@
   }
 
   /**
-   * Renders Tab 1: Equipped Gear & Effective Attributes
+   * Renders Tab 1: Possessed Treasures, Armaments & Effective Attributes (ROTK Style)
    */
   function renderGearTab() {
     const isEn = isEnglish();
     const ov = cachedEquipmentOverview || {};
-    const slots = ov.slots || {};
     const effective = ov.effectiveAttributes || {};
     const base = ov.baseAttributes || {};
     const buffs = ov.equipmentBuffs || {};
     const exceeds = ov.exceedsLimit || {};
 
-    const slotTypes = [
-      { key: 'WEAPON', icon: '⚔️', vi: 'Binh Khí', en: 'Weapon' },
+    // Retrieve all possessed items (no 4-slot limit)
+    const items = ov.items || ov.equippedItems || (ov.slots ? Object.values(ov.slots).filter(Boolean) : []);
+    const possessedCount = items.length;
+
+    const filterCategories = [
+      { key: 'ALL', icon: '📦', vi: 'Tất Cả', en: 'All Items' },
+      { key: 'WEAPON', icon: '⚔️', vi: 'Binh Khí', en: 'Weapons' },
       { key: 'ARMOR', icon: '🛡️', vi: 'Khôi Giáp', en: 'Armor' },
-      { key: 'STEED', icon: '🐎', vi: 'Chiến Mã', en: 'Steed' },
-      { key: 'TREASURE', icon: '📜', vi: 'Bảo Vật & Binh Thư', en: 'Treasure' }
+      { key: 'STEED', icon: '🐎', vi: 'Chiến Mã', en: 'Steeds' },
+      { key: 'TREASURE', icon: '📜', vi: 'Bảo Vật', en: 'Treasures' }
     ];
 
     return `
@@ -653,7 +669,7 @@
       <div class="eqp-stat-summary-box">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
           <span style="font-size:12px; font-weight:700; color:#fbbf24; text-transform:uppercase; letter-spacing:0.5px;">
-            ${isEn ? 'Effective Combat Attributes (Base + Equipment Buffs):' : 'Bảng Năng Lực Chiến Lược Thực Hiệu (Gốc + Phụ Gia Trang Bị):'}
+            ${isEn ? 'Effective Combat Attributes (Base + Possessed Items Buffs):' : 'Bảng Năng Lực Chiến Lược Thực Hiệu (Gốc + Phụ Gia Bảo Vật Sở Hữu):'}
           </span>
           <span style="font-size:11px; color:#34d399;">
             ${isEn ? '★ Golden highlight indicates attribute > 100' : '★ Viền vàng óng hiển thị chỉ số vượt ngưỡng 100'}
@@ -669,51 +685,50 @@
         </div>
       </div>
 
-      <!-- 4 EQUIPMENT SLOTS -->
+      <!-- POSSESSED TREASURES & EQUIPMENT COLLECTION (ROTK STYLE) -->
       <div style="margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
-        <span style="font-size:12px; font-weight:700; color:#fde68a;">
-          ${isEn ? '4 Strategic Equipment Slots:' : '4 Vị Trí Trang Bị Chiến Thuật:'}
+        <div>
+          <span style="font-size:13px; font-weight:700; color:#fde68a;">
+            ${isEn ? '⚔️ Possessed Treasures & Armaments (ROTK Style):' : '⚔️ Bảo Vật & Quân Trang Đang Sở Hữu (Chuẩn ROTK — Không Giới Hạn Ô):'}
+          </span>
+          <span style="font-size:11px; color:#94a3b8; margin-left:8px;">
+            ${isEn ? `(${possessedCount} items owned — all stat buffs stack)` : `(Đang sở hữu ${possessedCount} món — mọi bảo vật mang theo đều cộng dồn chỉ số)`}
+          </span>
+        </div>
+        <span style="font-size:11px; color:#38bdf8;">
+          ${isEn ? '🛡️ Items in personal possession grant continuous attribute bonuses' : '🛡️ Mọi vật phẩm mang trên mình đều cộng dồn chỉ số'}
         </span>
       </div>
 
-      <div class="eqp-grid-4slots">
-        ${slotTypes.map(st => {
-          const item = slots[st.key];
-          return `
-            <div class="eqp-slot-card ${item ? 'has-item' : ''}">
-              <div class="eqp-slot-header">
-                <span class="eqp-slot-title">
-                  <span>${st.icon}</span> ${isEn ? st.en : st.vi}
-                </span>
-                ${item ? getQualityBadge(item.quality) : ''}
-              </div>
-
-              <div class="eqp-slot-body">
-                ${item ? `
-                  <div class="eqp-item-name">${item.customName || item.nameVi}</div>
-                  <div class="eqp-item-buffs">${formatStatModifiers(item.statModifiers)}</div>
-                  <div style="font-size:10px; color:#64748b; font-family:'JetBrains Mono',monospace;">[${item.itemCode}]</div>
-                ` : `
-                  <div class="eqp-empty-slot">
-                    ${isEn ? 'No gear equipped in this slot' : 'Chưa trang bị vật phẩm'}
-                  </div>
-                `}
-              </div>
-
-              <div style="margin-top:10px; display:flex; gap:6px;">
-                ${item ? `
-                  <button class="eqp-btn eqp-btn--danger" style="flex:1; justify-content:center;" onclick="EquipmentUI.unequipSlot('${st.key}')">
-                    ${isEn ? 'Unequip' : 'Tháo Ra'}
-                  </button>
-                ` : `
-                  <button class="eqp-btn" style="flex:1; justify-content:center;" onclick="EquipmentUI.selectSlotForEquip('${st.key}')">
-                    ${isEn ? '+ Equip Item' : '+ Lắp Trang Bị'}
-                  </button>
-                `}
-              </div>
+      <div class="eqp-collection-grid">
+        ${items.length === 0 ? `
+          <div class="eqp-empty-collection">
+            <div style="font-size:24px; margin-bottom:6px;">🎒</div>
+            <div>${isEn ? 'No treasures or weapons currently possessed. Take items from warehouse below or forge new god weapons!' : 'Nhân vật hiện chưa mang theo bảo vật hay khí giới nào. Hãy nhận từ kho bên dưới hoặc rèn thần binh!'}</div>
+          </div>
+        ` : items.map(item => `
+          <div class="eqp-slot-card has-item">
+            <div class="eqp-slot-header">
+              <span class="eqp-slot-title">
+                <span>${item.slotIcon || (item.slotType === 'WEAPON' ? '⚔️' : item.slotType === 'ARMOR' ? '🛡️' : item.slotType === 'STEED' ? '🐎' : '📜')}</span> ${item.slotLabelVi || item.slotType}
+              </span>
+              ${getQualityBadge(item.quality)}
             </div>
-          `;
-        }).join('')}
+
+            <div class="eqp-slot-body">
+              <div class="eqp-item-name">${item.customName || item.nameVi}</div>
+              <div class="eqp-item-buffs">${formatStatModifiers(item.statModifiers)}</div>
+              <div style="font-size:10px; color:#64748b; font-family:'JetBrains Mono',monospace;">[${item.itemCode}]</div>
+              ${item.descriptionVi ? `<div style="font-size:10.5px; color:#94a3b8; margin-top:4px; font-style:italic;">${item.descriptionVi}</div>` : ''}
+            </div>
+
+            <div style="margin-top:10px; display:flex; gap:6px;">
+              <button class="eqp-btn eqp-btn--danger" style="flex:1; justify-content:center; font-size:11px;" onclick="EquipmentUI.unequipItem('${item.itemCode}', ${item.id})">
+                ${isEn ? 'Store to Warehouse' : 'Cất Vào Kho'}
+              </button>
+            </div>
+          </div>
+        `).join('')}
       </div>
 
       <!-- COMPATIBLE WAREHOUSE INVENTORY DRAWER -->
@@ -721,17 +736,17 @@
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
           <div>
             <h4 style="margin:0; font-size:13px; color:#fbbf24;">
-              ${isEn ? 'Warehouse Inventory (1-Click Equip Compatible Items):' : 'Kho Đồ Khả Dụng (Nhấn 1 Chạm Để Trang Bị Tức Thì):'}
+              ${isEn ? 'Warehouse Inventory (1-Click Take into Personal Possession):' : 'Kho Quân Trang & Bảo Vật Sẵn Có (Nhấn 1 Chạm Để Mang Theo / Sở Hữu):'}
             </h4>
             <span style="font-size:11px; color:#94a3b8;">
-              ${isEn ? 'Filtered by currently selected slot: ' : 'Lọc theo ô đang chọn: '} <strong style="color:#fff;">${selectedSlotForEquip}</strong>
+              ${isEn ? 'Filtered by category: ' : 'Lọc phân loại: '} <strong style="color:#fff;">${selectedSlotForEquip === 'ALL' ? (isEn ? 'ALL ITEMS' : 'TẤT CẢ VẬT PHẨM') : selectedSlotForEquip}</strong>
             </span>
           </div>
 
           <div style="display:flex; gap:4px;">
-            ${['WEAPON', 'ARMOR', 'STEED', 'TREASURE'].map(sk => `
-              <button class="eqp-btn ${selectedSlotForEquip === sk ? '' : 'eqp-btn--outline'}" style="font-size:11px; padding:3px 8px;" onclick="EquipmentUI.selectSlotForEquip('${sk}')">
-                ${sk === 'WEAPON' ? '⚔️' : sk === 'ARMOR' ? '🛡️' : sk === 'STEED' ? '🐎' : '📜'} ${sk}
+            ${filterCategories.map(sk => `
+              <button class="eqp-btn ${selectedSlotForEquip === sk.key ? '' : 'eqp-btn--outline'}" style="font-size:11px; padding:3px 8px;" onclick="EquipmentUI.selectSlotForEquip('${sk.key}')">
+                ${sk.icon} ${isEn ? sk.en : sk.vi}
               </button>
             `).join('')}
           </div>
@@ -763,36 +778,67 @@
   }
 
   /**
-   * Helper: Renders warehouse compatible items for selected slot
+   * Helper: Renders warehouse compatible items for selected category
    */
-  function renderWarehouseItemsForSlot(slotKey) {
+  function renderWarehouseItemsForSlot(slotKey = 'ALL') {
     const isEn = isEnglish();
-    const items = (cachedWarehouseItems && cachedWarehouseItems[slotKey]) || [];
+    let rawList = [];
 
-    if (items.length === 0) {
+    if (Array.isArray(cachedWarehouseItems)) {
+      rawList = cachedWarehouseItems;
+    } else if (cachedWarehouseItems && typeof cachedWarehouseItems === 'object') {
+      if (slotKey === 'ALL') {
+        rawList = Object.values(cachedWarehouseItems).flat();
+      } else {
+        rawList = cachedWarehouseItems[slotKey] || [];
+      }
+    }
+
+    // Filter by slotKey if not ALL
+    let filtered = rawList;
+    if (slotKey && slotKey !== 'ALL') {
+      filtered = rawList.filter(it => {
+        const cat = (it.category || '').toUpperCase();
+        const code = (it.item_code || it.itemCode || '').toUpperCase();
+        if (slotKey === 'WEAPON') return cat === 'WEAPON' || code.includes('SWORD') || code.includes('SPEAR') || code.includes('BLADE');
+        if (slotKey === 'ARMOR') return cat === 'ARMOR' || code.includes('ARMOR') || code.includes('SHIELD');
+        if (slotKey === 'STEED') return cat === 'STEED' || cat === 'LIVESTOCK' || code.includes('HORSE');
+        if (slotKey === 'TREASURE') return cat === 'TREASURE' || cat === 'BOOK' || cat === 'SPECIAL';
+        return true;
+      });
+    }
+
+    if (filtered.length === 0) {
       return `
         <div style="padding: 16px; text-align: center; color: #64748b; font-size: 12px; font-style: italic;">
-          ${isEn ? `No compatible ${slotKey} items found in warehouse inventory.` : `Trong kho không có vật phẩm tương thích với ô ${slotKey}.`}
+          ${isEn ? `No compatible items found in warehouse inventory.` : `Trong kho hiện không có vật phẩm phù hợp phân loại này.`}
         </div>
       `;
     }
 
-    return items.map(it => {
+    return filtered.map(it => {
       const code = it.itemCode || it.item_code;
-      const name = it.description || code;
+      const name = it.name_vi || it.description || code;
       const qty = it.quantity || 1;
-      const defaultStats = it.suggestedStats || { war: 2 };
+      let stats = it.stat_modifiers || it.statModifiers || it.suggestedStats || { war: 2 };
+      if (typeof stats === 'string') {
+        try { stats = JSON.parse(stats); } catch (e) { stats = { war: 2 }; }
+      }
+      const cat = (it.category || 'WEAPON').toUpperCase();
+      const resolvedSlot = cat.includes('ARMOR') || cat.includes('SHIELD') ? 'ARMOR' :
+                           cat.includes('STEED') || cat.includes('HORSE') || cat.includes('LIVESTOCK') ? 'STEED' :
+                           cat.includes('BOOK') || cat.includes('TREASURE') ? 'TREASURE' : 'WEAPON';
 
       return `
         <div class="eqp-wh-item-row">
           <div>
             <div style="font-size:12px; font-weight:700; color:#fff;">${name}</div>
             <div style="font-size:10px; color:#34d399; font-family:'JetBrains Mono',monospace;">
-              ${formatStatModifiers(defaultStats)} • ${isEn ? 'Qty in stock:' : 'Số lượng kho:'} ${qty}
+              ${formatStatModifiers(stats)} • ${isEn ? 'In warehouse:' : 'Tồn kho:'} ${qty}
             </div>
           </div>
-          <button class="eqp-btn" style="font-size:11px; padding:4px 10px;" onclick="EquipmentUI.equipItem('${slotKey}', '${code}', '${name.replace(/'/g, "\\'")}')">
-            ${isEn ? 'Equip Now' : 'Trang Bị Ngay'}
+          <button class="eqp-btn" style="font-size:11px; padding:4px 10px;" onclick="EquipmentUI.equipItem('${resolvedSlot}', '${code}', '${name.replace(/'/g, "\\'")}')">
+            ${isEn ? '+ Take & Equip' : '+ Mang Theo / Sở Hữu'}
           </button>
         </div>
       `;
@@ -1016,7 +1062,7 @@
   }
 
   /**
-   * 1-Click Equip an item from warehouse
+   * 1-Click Equip / Take an item from warehouse into personal possession
    */
   async function equipItem(slotType, itemCode, customName) {
     const isEn = isEnglish();
@@ -1036,9 +1082,10 @@
       if (res.ok && contentType.includes('application/json')) {
         const data = await res.json();
         if (data.success) {
-          if (typeof showToast === 'function') showToast(data.messageVi || 'Trang bị thành công!');
+          if (typeof showToast === 'function') showToast(data.messageVi || 'Mang theo thành công!');
           await fetchEquipmentData(currentCharacterId);
           renderModalContent();
+          if (typeof loadStatus === 'function') loadStatus();
           return;
         }
       }
@@ -1046,30 +1093,18 @@
       console.warn('[EquipmentUI] Server equip notice:', e);
     }
 
-    // Client-side fallback storage
-    const storageKey = `EQP_STATE_${currentCharacterId}`;
-    const savedGear = JSON.parse(localStorage.getItem(storageKey) || '{}');
-    savedGear[slotType] = {
-      slotType,
-      itemCode,
-      customName,
-      nameVi: customName,
-      statModifiers: { war: 2 },
-      quality: 'NORMAL'
-    };
-    localStorage.setItem(storageKey, JSON.stringify(savedGear));
-
     if (typeof showToast === 'function') {
-      showToast(isEn ? `Equipped [${customName}] successfully!` : `Đã trang bị [${customName}] thành công!`);
+      showToast(isEn ? `Equipped [${customName}] successfully!` : `Đã mang theo [${customName}] thành công!`);
     }
     await fetchEquipmentData(currentCharacterId);
     renderModalContent();
+    if (typeof loadStatus === 'function') loadStatus();
   }
 
   /**
-   * 1-Click Unequip an item back to warehouse
+   * 1-Click Unequip an item from personal possession back to warehouse
    */
-  async function unequipSlot(slotType) {
+  async function unequipItem(itemCode, equipmentId) {
     const isEn = isEnglish();
     try {
       const res = await fetch('/api/equipment/unequip', {
@@ -1077,7 +1112,8 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           characterId: currentCharacterId,
-          slotType
+          itemCode,
+          equipmentId
         })
       });
 
@@ -1085,9 +1121,10 @@
       if (res.ok && contentType.includes('application/json')) {
         const data = await res.json();
         if (data.success) {
-          if (typeof showToast === 'function') showToast(data.messageVi || 'Đã tháo trang bị!');
+          if (typeof showToast === 'function') showToast(data.messageVi || 'Đã cất vật phẩm vào kho!');
           await fetchEquipmentData(currentCharacterId);
           renderModalContent();
+          if (typeof loadStatus === 'function') loadStatus();
           return;
         }
       }
@@ -1095,17 +1132,19 @@
       console.warn('[EquipmentUI] Server unequip notice:', e);
     }
 
-    // Client-side fallback storage
-    const storageKey = `EQP_STATE_${currentCharacterId}`;
-    const savedGear = JSON.parse(localStorage.getItem(storageKey) || '{}');
-    delete savedGear[slotType];
-    localStorage.setItem(storageKey, JSON.stringify(savedGear));
-
     if (typeof showToast === 'function') {
-      showToast(isEn ? `Unequipped item from ${slotType} slot!` : `Đã tháo trang bị ở ô ${slotType}!`);
+      showToast(isEn ? `Stored item to warehouse!` : `Đã cất vật phẩm vào kho hàng!`);
     }
     await fetchEquipmentData(currentCharacterId);
     renderModalContent();
+    if (typeof loadStatus === 'function') loadStatus();
+  }
+
+  /**
+   * Legacy slot-based unequip fallback
+   */
+  async function unequipSlot(slotType) {
+    return unequipItem(null, null);
   }
 
   /**

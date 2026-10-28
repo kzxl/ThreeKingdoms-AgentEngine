@@ -449,7 +449,7 @@ export class EnterpriseLaborService {
       ]);
 
       // 2. Record cashflow ledger entry
-      const txnId = `TXN-CAPITAL-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+      const txnId = `TXN-CAPITAL-${Date.now()}-${process.hrtime.bigint()}-${Math.floor(Math.random() * 10000)}`;
       this.db.execute(
         `INSERT INTO cashflow_ledger (txn_id, game_date, counterparty, category, inflow, outflow, balance, memo)
          VALUES (?, ?, ?, 'CAPITAL_INVESTMENT', 0, ?, ?, ?);`,
@@ -614,7 +614,7 @@ export class EnterpriseLaborService {
       const ownerNewCash = this.getPlayerCash(biz.ownerCharacterId);
 
       // 3. Log cashflow ledger entry
-      const txnId = `TXN-DIVIDEND-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+      const txnId = `TXN-DIVIDEND-${Date.now()}-${process.hrtime.bigint()}-${Math.floor(Math.random() * 10000)}`;
       this.db.execute(
         `INSERT INTO cashflow_ledger (txn_id, game_date, counterparty, category, inflow, outflow, balance, memo)
          VALUES (?, ?, ?, 'ENTERPRISE_DIVIDEND', ?, 0, ?, ?);`,
@@ -712,7 +712,7 @@ export class EnterpriseLaborService {
       }
 
       // 3. Log cashflow wage transaction
-      const txnId = `TXN-WAGE-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+      const txnId = `TXN-WAGE-${Date.now()}-${process.hrtime.bigint()}-${Math.floor(Math.random() * 10000)}`;
       this.db.execute(
         `INSERT INTO cashflow_ledger (txn_id, game_date, counterparty, category, inflow, outflow, balance, memo)
          VALUES (?, ?, ?, 'LABOR_WAGE', ?, 0, ?, ?);`,

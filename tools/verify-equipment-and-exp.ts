@@ -238,9 +238,9 @@ async function runVerification(): Promise<void> {
   }
 
   // --------------------------------------------------------------------------
-  // SUITE 3: Equipment System - Equip & Unequip (Player & NPC)
+  // SUITE 3: Equipment System - Multi-Item Possession Stacking (ROTK Model)
   // --------------------------------------------------------------------------
-  console.log('\n>>> [SUITE 3] Testing Equip/Unequip Operations & Slot Replacement...');
+  console.log('\n>>> [SUITE 3] Testing Multi-Item Possession Stacking (No 4-Slot Limit)...');
 
   const playerEqBackup = db.query<any>(
     'SELECT * FROM character_equipment WHERE character_id = ?',
@@ -250,58 +250,82 @@ async function runVerification(): Promise<void> {
   try {
     db.execute('DELETE FROM character_equipment WHERE character_id = ?', ['PLY-0001']);
 
-    // 3.1 Equip Weapon
+    // 3.1 Possess Weapon 1
     const eq1 = equipmentService.equipItem('PLY-0001', 'WEAPON', 'COM-SWORD');
-    assert(eq1.success && eq1.slotType === 'WEAPON', 'Equips WEAPON (COM-SWORD)');
+    assert(eq1.success && eq1.slotType === 'WEAPON', 'Possesses WEAPON (COM-SWORD)');
 
-    // 3.2 Equip Armor
+    // 3.2 Possess Armor
     const eq2 = equipmentService.equipItem('PLY-0001', 'ARMOR', 'EQP-ARMOR-LEATHER');
-    assert(eq2.success && eq2.slotType === 'ARMOR', 'Equips ARMOR (EQP-ARMOR-LEATHER)');
+    assert(eq2.success && eq2.slotType === 'ARMOR', 'Possesses ARMOR (EQP-ARMOR-LEATHER)');
 
     // 3.3 Check aggregated equipment bonuses
     // COM-SWORD (+2 WAR) + EQP-ARMOR-LEATHER (+2 WAR, +1 LDR) -> total WAR +4, LDR +1
     const playerGear = equipmentService.getCharacterEquipment('PLY-0001');
-    assert(playerGear.items.length === 2, 'Character has exactly 2 items equipped');
+    assert(playerGear.items.length === 2, 'Character has exactly 2 items possessed');
     assert(
       playerGear.totalBonuses.war === 4 && playerGear.totalBonuses.ldr === 1,
       'Total equipment bonuses correctly summed (WAR: +4, LDR: +1)'
     );
 
-    // 3.4 Slot replacement (replaces COM-SWORD with COM-SPEAR in WEAPON slot)
-    // COM-SPEAR has +1 WAR
+    // 3.4 Multi-item stacking: possess a SECOND weapon (COM-SPEAR: +1 WAR) without replacing COM-SWORD!
+    // ROTK mechanic: Possessions stack freely, no rigid 4-slot bottleneck.
     const eq3 = equipmentService.equipItem('PLY-0001', 'WEAPON', 'COM-SPEAR');
-    assert(eq3.success && eq3.itemCode === 'COM-SPEAR', 'Replaces existing WEAPON with COM-SPEAR');
+    assert(eq3.success && eq3.itemCode === 'COM-SPEAR', 'Possesses second weapon (COM-SPEAR) alongside COM-SWORD');
 
-    const playerGearReplaced = equipmentService.getCharacterEquipment('PLY-0001');
+    const playerGearStacked = equipmentService.getCharacterEquipment('PLY-0001');
     assert(
-      playerGearReplaced.items.length === 2,
-      'Unique constraint maintained: exactly 1 item in WEAPON slot'
+      playerGearStacked.items.length === 3,
+      'Unlimited slots: Character now holds 3 items simultaneously (2 weapons + 1 armor)'
     );
     assert(
-      playerGearReplaced.totalBonuses.war === 3, // COM-SPEAR (+1) + EQP-ARMOR-LEATHER (+2) = +3 WAR
-      'Total bonuses updated after weapon swap (WAR: +3)'
+      playerGearStacked.totalBonuses.war === 5 && playerGearStacked.totalBonuses.ldr === 1,
+      'All possessed weapon buffs stack: COM-SWORD (+2) + EQP-ARMOR-LEATHER (+2) + COM-SPEAR (+1) = +5 WAR'
     );
 
-    // 3.5 Unequip Armor
+    // 3.5 Possess 4th and 5th items (demonstrating > 4 items possessed)
+    const eq4 = equipmentService.equipItem('PLY-0001', 'STEED', 'HRS-SHADOW-RUNNER', 'Tuyệt Ảnh', { ldr: 3 });
+    const eq5 = equipmentService.equipItem('PLY-0001', 'TREASURE', 'BOOK-SUN-TZU', 'Tôn Tử Binh Pháp', { int: 5, ldr: 2 });
+    assert(eq4.success && eq5.success, 'Successfully possesses 4th (steed) and 5th (book) items');
+
+    const playerGear5 = equipmentService.getCharacterEquipment('PLY-0001');
+    assert(
+      playerGear5.items.length === 5,
+      'Exceeds 4-slot limitation: Character successfully possesses 5 items'
+    );
+    assert(
+      playerGear5.totalBonuses.war === 5 &&
+      playerGear5.totalBonuses.ldr === 6 && // 1 (armor) + 3 (horse) + 2 (book)
+      playerGear5.totalBonuses.int === 5,
+      'Total bonuses accurately aggregated across all 5 possessed items (WAR: 5, LDR: 6, INT: 5)'
+    );
+
+    // 3.6 Unequip Armor (EQP-ARMOR-LEATHER)
     const unequipArmor = equipmentService.unequipItem('PLY-0001', 'ARMOR');
-    assert(unequipArmor.success && unequipArmor.unequipped, 'Unequips ARMOR slot');
+    assert(unequipArmor.success && unequipArmor.unequipped, 'Unequips ARMOR item to warehouse');
 
     const gearAfterUnequip = equipmentService.getCharacterEquipment('PLY-0001');
-    assert(gearAfterUnequip.items.length === 1, 'Only 1 item remains equipped after unequip');
+    assert(gearAfterUnequip.items.length === 4, 'Exactly 4 items remain possessed after unequipping armor');
     assert(
-      gearAfterUnequip.slots.ARMOR === null,
-      'ARMOR slot is null after unequip'
-    );
-    assert(
-      gearAfterUnequip.totalBonuses.war === 1 && gearAfterUnequip.totalBonuses.ldr === 0,
-      'Total bonuses updated accurately after unequip (WAR: +1, LDR: 0)'
+      gearAfterUnequip.totalBonuses.war === 3 && gearAfterUnequip.totalBonuses.ldr === 5,
+      'Total bonuses updated accurately after unequip (WAR: 5 - 2 = 3, LDR: 6 - 1 = 5)'
     );
 
-    // 3.6 Unequip empty slot returns unequipped: false gracefully
-    const unequipEmpty = equipmentService.unequipItem('PLY-0001', 'ARMOR');
+    // 3.7 Unequip specific item by itemCode (COM-SPEAR)
+    const unequipSpear = equipmentService.unequipItem('PLY-0001', 'COM-SPEAR');
+    assert(unequipSpear.success && unequipSpear.unequipped, 'Unequips specific weapon COM-SPEAR by itemCode');
+
+    const gearAfterSpear = equipmentService.getCharacterEquipment('PLY-0001');
+    assert(gearAfterSpear.items.length === 3, '3 items remain possessed after unequipping COM-SPEAR');
+    assert(
+      gearAfterSpear.totalBonuses.war === 2, // Only COM-SWORD (+2) remains
+      'WAR bonus correctly reduces to +2 after unequipping COM-SPEAR'
+    );
+
+    // 3.8 Unequip non-possessed item returns unequipped: false gracefully
+    const unequipEmpty = equipmentService.unequipItem('PLY-0001', 'NON-EXISTENT-ITEM');
     assert(
       unequipEmpty.success && !unequipEmpty.unequipped,
-      'Unequipping empty slot handles gracefully without throwing'
+      'Unequipping non-possessed item handles gracefully without throwing'
     );
   } finally {
     // Restore player equipment

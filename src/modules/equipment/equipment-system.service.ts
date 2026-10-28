@@ -157,28 +157,52 @@ export class EquipmentSystemService {
   }
 
   /**
-   * Ensures the character_equipment table exists in the active database.
+   * Ensures the character_equipment table exists without rigid 4-slot UNIQUE constraint.
    */
   private ensureTableExists(): void {
-    this.db.exec(`
-      CREATE TABLE IF NOT EXISTS character_equipment (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        character_id TEXT NOT NULL,
-        slot_type TEXT NOT NULL,
-        item_code TEXT NOT NULL,
-        custom_name TEXT,
-        stat_modifiers TEXT NOT NULL,
-        equipped_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(character_id, slot_type)
-      );
-    `);
+    const tableInfo = this.db.queryOne<any>(
+      `SELECT sql FROM sqlite_master WHERE name = 'character_equipment';`
+    );
+    if (tableInfo && tableInfo.sql && tableInfo.sql.includes('UNIQUE(character_id, slot_type)')) {
+      this.db.exec(`
+        CREATE TABLE IF NOT EXISTS character_equipment_v2 (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          character_id TEXT NOT NULL,
+          slot_type TEXT NOT NULL,
+          item_code TEXT NOT NULL,
+          custom_name TEXT,
+          stat_modifiers TEXT NOT NULL,
+          equipped_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        INSERT INTO character_equipment_v2 (id, character_id, slot_type, item_code, custom_name, stat_modifiers, equipped_at)
+        SELECT id, character_id, slot_type, item_code, custom_name, stat_modifiers, equipped_at FROM character_equipment;
+        DROP TABLE character_equipment;
+        ALTER TABLE character_equipment_v2 RENAME TO character_equipment;
+      `);
+    } else {
+      this.db.exec(`
+        CREATE TABLE IF NOT EXISTS character_equipment (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          character_id TEXT NOT NULL,
+          slot_type TEXT NOT NULL,
+          item_code TEXT NOT NULL,
+          custom_name TEXT,
+          stat_modifiers TEXT NOT NULL,
+          equipped_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+    }
   }
 
   /**
    * Normalizes and validates slot type.
+   * Maps common aliases like HORSE -> STEED, BOOK/ACCESSORY -> TREASURE.
    */
   public normalizeSlotType(slotType: string): EquipmentSlot {
-    const upper = slotType.toUpperCase().trim() as EquipmentSlot;
+    const raw = String(slotType || '').toUpperCase().trim();
+    if (raw === 'HORSE' || raw === 'MOUNT') return 'STEED';
+    if (raw === 'BOOK' || raw === 'SCROLL' || raw === 'ACCESSORY' || raw === 'MANUAL' || raw === 'RELIC') return 'TREASURE';
+    const upper = raw as EquipmentSlot;
     if (!VALID_EQUIPMENT_SLOTS.includes(upper)) {
       throw new Error(
         `Invalid equipment slot: "${slotType}". Allowed slots are: ${VALID_EQUIPMENT_SLOTS.join(', ')}`
@@ -188,10 +212,10 @@ export class EquipmentSystemService {
   }
 
   /**
-   * Equips an item to a character's designated slot.
+   * Equips / adds an item to a character's possession list.
    * - Validates itemCode against master_items.
    * - Parses stat_modifiers and STRICTLY clamps each bonus between +1 and +5.
-   * - Replaces any existing item in that slot (preserving UNIQUE constraint).
+   * - Supports unlimited possessions (no 4-slot restriction).
    */
   public equipItem(
     characterId: string,
@@ -228,17 +252,12 @@ export class EquipmentSystemService {
       }
     }
 
-    const finalName = customName || masterItem.name_en || masterItem.name_vi || itemCode;
+    const finalName = customName || masterItem.name_vi || masterItem.name_en || itemCode;
 
-    // 3. Insert or Replace into character_equipment
+    // 3. Insert into character_equipment (unlimited possessions per character)
     this.db.execute(
       `INSERT INTO character_equipment (character_id, slot_type, item_code, custom_name, stat_modifiers, equipped_at)
-       VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-       ON CONFLICT(character_id, slot_type) DO UPDATE SET
-         item_code = excluded.item_code,
-         custom_name = excluded.custom_name,
-         stat_modifiers = excluded.stat_modifiers,
-         equipped_at = CURRENT_TIMESTAMP`,
+       VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
       [characterId, slot, itemCode, finalName, JSON.stringify(storageModifiers)]
     );
 
@@ -253,33 +272,56 @@ export class EquipmentSystemService {
   }
 
   /**
-   * Unequips an item from the specified slot for a character.
+   * Unequips / removes an item from character possessions (by itemCode, slotType, or id).
    */
-  public unequipItem(characterId: string, slotType: string): UnequipResult {
-    const slot = this.normalizeSlotType(slotType);
+  public unequipItem(
+    characterId: string,
+    slotTypeOrItemCode: string,
+    itemId?: number
+  ): UnequipResult {
+    let existing: any = null;
 
-    const existing = this.db.queryOne<any>(
-      `SELECT item_code FROM character_equipment WHERE character_id = ? AND slot_type = ? LIMIT 1`,
-      [characterId, slot]
-    );
+    if (itemId) {
+      existing = this.db.queryOne<any>(
+        `SELECT id, item_code, slot_type FROM character_equipment WHERE character_id = ? AND id = ? LIMIT 1`,
+        [characterId, itemId]
+      );
+    }
+
+    if (!existing) {
+      // Try finding by itemCode first
+      existing = this.db.queryOne<any>(
+        `SELECT id, item_code, slot_type FROM character_equipment WHERE character_id = ? AND item_code = ? ORDER BY id DESC LIMIT 1`,
+        [characterId, slotTypeOrItemCode]
+      );
+    }
+
+    if (!existing) {
+      // Try finding by slotType
+      const upper = slotTypeOrItemCode.toUpperCase().trim();
+      existing = this.db.queryOne<any>(
+        `SELECT id, item_code, slot_type FROM character_equipment WHERE character_id = ? AND slot_type = ? ORDER BY id DESC LIMIT 1`,
+        [characterId, upper]
+      );
+    }
 
     if (!existing) {
       return {
         success: true,
         unequipped: false,
-        slotType: slot
+        slotType: slotTypeOrItemCode as EquipmentSlot
       };
     }
 
     this.db.execute(
-      `DELETE FROM character_equipment WHERE character_id = ? AND slot_type = ?`,
-      [characterId, slot]
+      `DELETE FROM character_equipment WHERE id = ?`,
+      [existing.id]
     );
 
     return {
       success: true,
       unequipped: true,
-      slotType: slot,
+      slotType: existing.slot_type as EquipmentSlot,
       itemCode: existing.item_code
     };
   }
@@ -333,7 +375,7 @@ export class EquipmentSystemService {
       };
 
       items.push(detail);
-      if (VALID_EQUIPMENT_SLOTS.includes(slot)) {
+      if (VALID_EQUIPMENT_SLOTS.includes(slot) && !slots[slot]) {
         slots[slot] = detail;
       }
 

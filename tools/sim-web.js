@@ -808,6 +808,7 @@ const server = http.createServer(async (req, res) => {
 
       const slots = { WEAPON: null, ARMOR: null, STEED: null, TREASURE: null };
       const equipmentBuffs = { war: 0, ldr: 0, int: 0, pol: 0, dip: 0, com: 0, log: 0, cra: 0 };
+      const items = [];
 
       for (const r of rows) {
         let mods = {};
@@ -821,7 +822,9 @@ const server = http.createServer(async (req, res) => {
             equipmentBuffs[normK] += clamped;
           }
         }
-        slots[r.slot_type] = {
+        const maxBuff = Math.max(...Object.values(clampedMods), 1);
+        const quality = maxBuff >= 5 ? 'LEGENDARY' : maxBuff >= 4 ? 'MASTERWORK' : maxBuff >= 3 ? 'FINE' : 'NORMAL';
+        const itemObj = {
           id: r.id,
           characterId: r.character_id,
           slotType: r.slot_type,
@@ -829,11 +832,16 @@ const server = http.createServer(async (req, res) => {
           customName: r.custom_name || r.name_vi,
           nameVi: r.name_vi || r.custom_name || r.item_code,
           nameEn: r.name_en || r.item_code,
-          quality: 'NORMAL',
+          quality,
           statModifiers: clampedMods,
           slotIcon: r.slot_type === 'WEAPON' ? '⚔️' : r.slot_type === 'ARMOR' ? '🛡️' : r.slot_type === 'STEED' ? '🐎' : '📜',
           slotLabelVi: r.slot_type === 'WEAPON' ? 'Binh Khí' : r.slot_type === 'ARMOR' ? 'Khôi Giáp' : r.slot_type === 'STEED' ? 'Chiến Mã' : 'Bảo Vật'
         };
+
+        items.push(itemObj);
+        if (!slots[r.slot_type]) {
+          slots[r.slot_type] = itemObj;
+        }
       }
 
       const effectiveAttributes = {};
@@ -869,7 +877,10 @@ const server = http.createServer(async (req, res) => {
           equipmentBuffs,
           effectiveAttributes,
           exceedsLimit,
-          slots
+          slots,
+          items,
+          equippedItems: items,
+          possessedCount: items.length
         },
         compatibleWarehouseItems: compatible
       });
@@ -879,7 +890,7 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // 4s2. POST /api/equipment/equip - Equip Item into Designated Slot
+  // 4s2. POST /api/equipment/equip - Equip Item into Personal Possession
   if (req.method === 'POST' && pathname === '/api/equipment/equip') {
     let body = '';
     req.on('data', chunk => { body += chunk; });
@@ -926,14 +937,11 @@ const server = http.createServer(async (req, res) => {
         const modsJson = JSON.stringify(clampedMods).replace(/'/g, "''");
         const safeName = customName.replace(/'/g, "''");
 
+        // Deduct 1 from warehouse inventory and insert into personal possession
         runSqlRaw(`
           INSERT INTO character_equipment (character_id, slot_type, item_code, custom_name, stat_modifiers)
-          VALUES ('${characterId.replace(/'/g, "''")}', '${slotType}', '${itemCode.replace(/'/g, "''")}', '${safeName}', '${modsJson}')
-          ON CONFLICT(character_id, slot_type) DO UPDATE SET
-            item_code = excluded.item_code,
-            custom_name = excluded.custom_name,
-            stat_modifiers = excluded.stat_modifiers,
-            equipped_at = CURRENT_TIMESTAMP;
+          VALUES ('${characterId.replace(/'/g, "''")}', '${slotType}', '${itemCode.replace(/'/g, "''")}', '${safeName}', '${modsJson}');
+          UPDATE inventory_items SET quantity = MAX(0, quantity - 1) WHERE item_code = '${itemCode.replace(/'/g, "''")}';
         `);
 
         sendJson(res, 200, {
@@ -943,7 +951,7 @@ const server = http.createServer(async (req, res) => {
           itemCode,
           itemName: customName,
           statModifiers: clampedMods,
-          messageVi: `Trang bị thành công ${customName} vào vị trí [${slotType}]!`
+          messageVi: `Đã mang theo [${customName}] vào bảo vật sở hữu (+${Object.entries(clampedMods).map(([k, v]) => `+${v} ${k.toUpperCase()}`).join(', ')})!`
         });
       } catch (err) {
         sendJson(res, 500, { success: false, error: err.message });
@@ -952,7 +960,7 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // 4s3. POST /api/equipment/unequip - Unequip Slot
+  // 4s3. POST /api/equipment/unequip - Store Item to Warehouse
   if (req.method === 'POST' && pathname === '/api/equipment/unequip') {
     let body = '';
     req.on('data', chunk => { body += chunk; });
@@ -961,21 +969,38 @@ const server = http.createServer(async (req, res) => {
         const payload = JSON.parse(body || '{}');
         const characterId = payload.characterId || 'PLY-0001';
         const slotType = (payload.slotType || '').toUpperCase().trim();
-        if (!slotType) {
-          sendJson(res, 400, { success: false, error: 'slotType is required.' });
+        const itemCode = payload.itemCode;
+        const equipmentId = payload.equipmentId || payload.id;
+        let deletedItemCode = itemCode;
+
+        if (equipmentId) {
+          const row = runSqlJson(`SELECT item_code FROM character_equipment WHERE character_id = '${characterId.replace(/'/g, "''")}' AND id = ${parseInt(equipmentId, 10)} LIMIT 1;`)[0];
+          if (row) deletedItemCode = row.item_code;
+          runSqlRaw(`DELETE FROM character_equipment WHERE id = ${parseInt(equipmentId, 10)};`);
+        } else if (itemCode) {
+          runSqlRaw(`DELETE FROM character_equipment WHERE rowid = (SELECT rowid FROM character_equipment WHERE character_id = '${characterId.replace(/'/g, "''")}' AND item_code = '${itemCode.replace(/'/g, "''")}' LIMIT 1);`);
+        } else if (slotType) {
+          const row = runSqlJson(`SELECT item_code FROM character_equipment WHERE character_id = '${characterId.replace(/'/g, "''")}' AND slot_type = '${slotType.replace(/'/g, "''")}' LIMIT 1;`)[0];
+          if (row) deletedItemCode = row.item_code;
+          runSqlRaw(`DELETE FROM character_equipment WHERE rowid = (SELECT rowid FROM character_equipment WHERE character_id = '${characterId.replace(/'/g, "''")}' AND slot_type = '${slotType.replace(/'/g, "''")}' LIMIT 1);`);
+        } else {
+          sendJson(res, 400, { success: false, error: 'itemCode, equipmentId, or slotType is required.' });
           return;
         }
 
-        runSqlRaw(`
-          DELETE FROM character_equipment 
-          WHERE character_id = '${characterId.replace(/'/g, "''")}' AND slot_type = '${slotType}';
-        `);
+        if (deletedItemCode) {
+          runSqlRaw(`
+            INSERT INTO inventory_items (item_code, category, description, quantity, unit_cost_basis, location)
+            VALUES ('${deletedItemCode.replace(/'/g, "''")}', 'EQUIPMENT', '${deletedItemCode.replace(/'/g, "''")}', 1, 35, 'Zhuo Workshop')
+            ON CONFLICT(item_code) DO UPDATE SET quantity = quantity + 1;
+          `);
+        }
 
         sendJson(res, 200, {
           success: true,
           unequipped: true,
-          slotType,
-          messageVi: `Đã tháo trang bị khỏi vị trí [${slotType}] thành công.`
+          slotType: slotType || 'ITEM',
+          messageVi: `Đã cất vật phẩm [${deletedItemCode || 'Trang bị'}] vào kho hàng thành công.`
         });
       } catch (err) {
         sendJson(res, 500, { success: false, error: err.message });

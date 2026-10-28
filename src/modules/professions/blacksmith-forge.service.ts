@@ -25,6 +25,7 @@ import { DatabaseService } from '../../core/database';
 import { Router, sendJson, RouteContext } from '../../server/router';
 
 export type EquipmentSlotType = 'WEAPON' | 'ARMOR' | 'STEED' | 'TREASURE';
+export const VALID_EQUIPMENT_SLOTS: readonly EquipmentSlotType[] = ['WEAPON', 'ARMOR', 'STEED', 'TREASURE'];
 export type EquipmentQuality = 'NORMAL' | 'FINE' | 'MASTERWORK' | 'LEGENDARY';
 
 export interface EquippedItem {
@@ -54,6 +55,9 @@ export interface CharacterEquipmentOverview {
   effectiveAttributes: Record<string, number>;
   exceedsLimit: Record<string, boolean>; // True if effective attribute > 100
   slots: Record<EquipmentSlotType, EquippedItem | null>;
+  equippedItems: EquippedItem[]; // All possessed items, no 4-slot limit!
+  items: EquippedItem[]; // Alias for equippedItems
+  possessedCount: number;
 }
 
 export interface BespokeWeaponForgeParams {
@@ -169,8 +173,7 @@ export class BlacksmithForgeService {
           item_code TEXT NOT NULL,
           custom_name TEXT,
           stat_modifiers TEXT NOT NULL,
-          equipped_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          UNIQUE(character_id, slot_type)
+          equipped_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
       `);
     } catch (err) {
@@ -399,30 +402,10 @@ export class BlacksmithForgeService {
 
       if (destination === 'EQUIP_IMMEDIATELY') {
         equippedSlot = 'WEAPON';
-        // Unequip old weapon if present
-        const oldGear = this.db.queryOne<any>(
-          'SELECT item_code, custom_name FROM character_equipment WHERE character_id = ? AND slot_type = ?;',
-          [characterId, 'WEAPON']
-        );
-        if (oldGear) {
-          // Return old weapon to warehouse
-          this.db.execute(
-            `INSERT INTO inventory_items (item_code, category, description, quantity, unit_cost_basis, location)
-             VALUES (?, 'MILITARY_EQUIPMENT', ?, 1, 400, 'Zhuo Workshop')
-             ON CONFLICT(item_code) DO UPDATE SET quantity = quantity + 1;`,
-            [oldGear.item_code, oldGear.custom_name || 'Binh Khí Hoán Đổi']
-          );
-        }
-
-        // Equip new bespoke weapon
+        // Add bespoke weapon directly to personal possessions (no slot limitation)
         this.db.execute(
           `INSERT INTO character_equipment (character_id, slot_type, item_code, custom_name, stat_modifiers, equipped_at)
-           VALUES (?, 'WEAPON', ?, ?, ?, CURRENT_TIMESTAMP)
-           ON CONFLICT(character_id, slot_type) DO UPDATE SET
-             item_code = excluded.item_code,
-             custom_name = excluded.custom_name,
-             stat_modifiers = excluded.stat_modifiers,
-             equipped_at = CURRENT_TIMESTAMP;`,
+           VALUES (?, 'WEAPON', ?, ?, ?, CURRENT_TIMESTAMP);`,
           [characterId, bespokeItemCode, finalName, JSON.stringify(statModifiers)]
         );
       } else if (destination === 'GIFT_TO_NPC' && params.giftTargetNpcId) {
@@ -433,15 +416,10 @@ export class BlacksmithForgeService {
         );
         const npcName = npc ? npc.name_vi : npcId;
 
-        // Equip onto NPC weapon slot
+        // Add to NPC personal possessions (no slot limitation)
         this.db.execute(
           `INSERT INTO character_equipment (character_id, slot_type, item_code, custom_name, stat_modifiers, equipped_at)
-           VALUES (?, 'WEAPON', ?, ?, ?, CURRENT_TIMESTAMP)
-           ON CONFLICT(character_id, slot_type) DO UPDATE SET
-             item_code = excluded.item_code,
-             custom_name = excluded.custom_name,
-             stat_modifiers = excluded.stat_modifiers,
-             equipped_at = CURRENT_TIMESTAMP;`,
+           VALUES (?, 'WEAPON', ?, ?, ?, CURRENT_TIMESTAMP);`,
           [npcId, bespokeItemCode, finalName, JSON.stringify(statModifiers)]
         );
 
@@ -770,60 +748,74 @@ export class BlacksmithForgeService {
       cra: 0
     };
 
+    const equippedItems: EquippedItem[] = [];
+
     for (const row of equippedRows) {
-      const slotType = row.slot_type as EquipmentSlotType;
-      if (!slots[slotType] && slotMetadata[slotType]) {
-        let stats: Record<string, number> = {};
-        try {
-          stats = typeof row.stat_modifiers === 'string' ? JSON.parse(row.stat_modifiers) : row.stat_modifiers;
-        } catch {
-          stats = {};
+      const slotType = (row.slot_type as EquipmentSlotType) || 'TREASURE';
+      const meta = slotMetadata[slotType] || { icon: '💎', vi: 'Bảo Vật', en: 'Treasure' };
+
+      let stats: Record<string, number> = {};
+      try {
+        stats = typeof row.stat_modifiers === 'string' ? JSON.parse(row.stat_modifiers) : (row.stat_modifiers || {});
+      } catch {
+        stats = {};
+      }
+
+      // Clamp stat modifiers between +1 and +5
+      const clampedStats: Record<string, number> = {};
+      for (const [k, v] of Object.entries(stats)) {
+        const normK = k.toLowerCase().replace(/_attr$|_exp$/, '').trim();
+        const clampedVal = BlacksmithForgeService.clampStatModifier(v);
+        clampedStats[normK] = clampedVal;
+        if (equipmentBuffs.hasOwnProperty(normK)) {
+          equipmentBuffs[normK] += clampedVal;
         }
+      }
 
-        // Clamp stat modifiers between +1 and +5
-        const clampedStats: Record<string, number> = {};
-        for (const [k, v] of Object.entries(stats)) {
-          clampedStats[k] = BlacksmithForgeService.clampStatModifier(v);
-          equipmentBuffs[k] = (equipmentBuffs[k] || 0) + clampedStats[k];
-        }
+      // Resolve item names and descriptions from master_items if needed
+      let itemNameVi = row.custom_name;
+      let itemNameEn = row.custom_name;
+      let descriptionVi = '';
+      const master = this.db.queryOne<any>(
+        'SELECT name_vi, name_en, description_vi FROM master_items WHERE item_code = ?;',
+        [row.item_code]
+      );
+      if (master) {
+        if (!itemNameVi) itemNameVi = master.name_vi;
+        if (!itemNameEn) itemNameEn = master.name_en;
+        descriptionVi = master.description_vi || '';
+      } else {
+        if (!itemNameVi) itemNameVi = row.item_code;
+        if (!itemNameEn) itemNameEn = row.item_code;
+      }
 
-        // Resolve item names from master_items if needed
-        let itemNameVi = row.custom_name;
-        let itemNameEn = row.custom_name;
-        if (!itemNameVi) {
-          const master = this.db.queryOne<any>(
-            'SELECT name_vi, name_en FROM master_items WHERE item_code = ?;',
-            [row.item_code]
-          );
-          if (master) {
-            itemNameVi = master.name_vi;
-            itemNameEn = master.name_en;
-          } else {
-            itemNameVi = row.item_code;
-            itemNameEn = row.item_code;
-          }
-        }
+      // Infer quality
+      const maxBuff = Math.max(...Object.values(clampedStats), 1);
+      const quality: EquipmentQuality =
+        maxBuff >= 5 ? 'LEGENDARY' : maxBuff >= 4 ? 'MASTERWORK' : maxBuff >= 3 ? 'FINE' : 'NORMAL';
 
-        // Infer quality
-        const maxBuff = Math.max(...Object.values(clampedStats), 1);
-        const quality: EquipmentQuality =
-          maxBuff >= 5 ? 'LEGENDARY' : maxBuff >= 4 ? 'MASTERWORK' : maxBuff >= 3 ? 'FINE' : 'NORMAL';
+      const itemObj: EquippedItem = {
+        id: row.id,
+        characterId: row.character_id,
+        slotType,
+        itemCode: row.item_code,
+        customName: row.custom_name || itemNameVi,
+        nameVi: itemNameVi,
+        nameEn: itemNameEn,
+        quality,
+        statModifiers: clampedStats,
+        slotIcon: meta.icon,
+        slotLabelVi: meta.vi,
+        slotLabelEn: meta.en,
+        equippedAt: row.equipped_at,
+        descriptionVi
+      };
 
-        slots[slotType] = {
-          id: row.id,
-          characterId: row.character_id,
-          slotType,
-          itemCode: row.item_code,
-          customName: row.custom_name || itemNameVi,
-          nameVi: itemNameVi,
-          nameEn: itemNameEn,
-          quality,
-          statModifiers: clampedStats,
-          slotIcon: slotMetadata[slotType].icon,
-          slotLabelVi: slotMetadata[slotType].vi,
-          slotLabelEn: slotMetadata[slotType].en,
-          equippedAt: row.equipped_at
-        };
+      equippedItems.push(itemObj);
+
+      // Keep primary slot item for backward compatibility
+      if (!slots[slotType] && VALID_EQUIPMENT_SLOTS.includes(slotType as any)) {
+        slots[slotType] = itemObj;
       }
     }
 
@@ -847,7 +839,10 @@ export class BlacksmithForgeService {
       equipmentBuffs,
       effectiveAttributes,
       exceedsLimit,
-      slots
+      slots,
+      equippedItems,
+      items: equippedItems,
+      possessedCount: equippedItems.length
     };
   }
 
@@ -871,27 +866,13 @@ export class BlacksmithForgeService {
         throw new Error(`Vật phẩm [${itemCode}] không còn trong kho đồ!`);
       }
 
-      // 2. If slot already occupied, unequip existing item back to inventory
-      const existing = this.db.queryOne<any>(
-        'SELECT item_code, custom_name FROM character_equipment WHERE character_id = ? AND slot_type = ?;',
-        [characterId, slotType]
-      );
-      if (existing) {
-        this.db.execute(
-          `INSERT INTO inventory_items (item_code, category, description, quantity, unit_cost_basis, location)
-           VALUES (?, 'MILITARY_EQUIPMENT', ?, 1, 400, 'Zhuo Workshop')
-           ON CONFLICT(item_code) DO UPDATE SET quantity = quantity + 1;`,
-          [existing.item_code, existing.custom_name || existing.item_code]
-        );
-      }
-
-      // 3. Deduct 1 from warehouse inventory
+      // 2. Deduct 1 from warehouse inventory
       this.db.execute(
         'UPDATE inventory_items SET quantity = quantity - 1 WHERE item_code = ?;',
         [itemCode]
       );
 
-      // 4. Resolve default stat modifiers if not provided
+      // 3. Resolve default stat modifiers if not provided
       let finalStats = statModifiers;
       if (!finalStats) {
         finalStats = this.getDefaultStatModifiersForItem(itemCode, slotType);
@@ -905,48 +886,63 @@ export class BlacksmithForgeService {
 
       const finalName = customName || stock.description || itemCode;
 
-      // 5. Insert/Update into character_equipment
+      // 4. Insert into character_equipment (No 4-slot limit, characters can possess multiple items!)
       this.db.execute(
         `INSERT INTO character_equipment (character_id, slot_type, item_code, custom_name, stat_modifiers, equipped_at)
-         VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-         ON CONFLICT(character_id, slot_type) DO UPDATE SET
-           item_code = excluded.item_code,
-           custom_name = excluded.custom_name,
-           stat_modifiers = excluded.stat_modifiers,
-           equipped_at = CURRENT_TIMESTAMP;`,
+         VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP);`,
         [characterId, slotType, itemCode, finalName, JSON.stringify(clampedStats)]
       );
 
+      const buffText = Object.entries(clampedStats).map(([k, v]) => `+${v} ${k.toUpperCase()}`).join(', ');
       const overview = this.getCharacterEquipment(characterId);
       return {
         success: true,
-        messageVi: `Trang bị thành công [${finalName}] vào ô ${slotType}!`,
+        messageVi: `Đã mang theo [${finalName}] vào danh sách bảo vật sở hữu (${buffText})!`,
         overview
       };
     });
   }
 
   /**
-   * 1-Click Unequip an item from a slot back to warehouse inventory.
+   * 1-Click Unequip an item from personal possession back to warehouse inventory.
    */
   public unequipItem(
     characterId: string,
-    slotType: EquipmentSlotType
+    slotTypeOrItemCode: string,
+    equipmentId?: number
   ): { success: boolean; messageVi: string; overview: CharacterEquipmentOverview } {
     return this.db.transaction(() => {
-      const existing = this.db.queryOne<any>(
-        'SELECT item_code, custom_name FROM character_equipment WHERE character_id = ? AND slot_type = ?;',
-        [characterId, slotType]
-      );
+      let existing: any = null;
+
+      if (equipmentId) {
+        existing = this.db.queryOne<any>(
+          'SELECT id, item_code, custom_name, slot_type FROM character_equipment WHERE character_id = ? AND id = ?;',
+          [characterId, equipmentId]
+        );
+      }
+
+      if (!existing && slotTypeOrItemCode) {
+        existing = this.db.queryOne<any>(
+          'SELECT id, item_code, custom_name, slot_type FROM character_equipment WHERE character_id = ? AND item_code = ? ORDER BY id DESC LIMIT 1;',
+          [characterId, slotTypeOrItemCode]
+        );
+      }
+
+      if (!existing && slotTypeOrItemCode) {
+        existing = this.db.queryOne<any>(
+          'SELECT id, item_code, custom_name, slot_type FROM character_equipment WHERE character_id = ? AND slot_type = ? ORDER BY id DESC LIMIT 1;',
+          [characterId, slotTypeOrItemCode]
+        );
+      }
 
       if (!existing) {
-        throw new Error(`Ô trang bị ${slotType} hiện đang trống, không thể tháo.`);
+        throw new Error(`Không tìm thấy vật phẩm sở hữu để cất vào kho.`);
       }
 
       // Remove from character_equipment
       this.db.execute(
-        'DELETE FROM character_equipment WHERE character_id = ? AND slot_type = ?;',
-        [characterId, slotType]
+        'DELETE FROM character_equipment WHERE id = ?;',
+        [existing.id]
       );
 
       // Return item to inventory
@@ -960,7 +956,7 @@ export class BlacksmithForgeService {
       const overview = this.getCharacterEquipment(characterId);
       return {
         success: true,
-        messageVi: `Đã tháo [${existing.custom_name || existing.item_code}] cất vào kho!`,
+        messageVi: `Đã cất [${existing.custom_name || existing.item_code}] vào kho hàng!`,
         overview
       };
     });
@@ -1447,12 +1443,13 @@ export function registerBlacksmithForgeRoutes(router: Router): void {
   // 3. POST /api/equipment/unequip
   router.post('/api/equipment/unequip', async (_req: any, res: any, ctx: RouteContext) => {
     try {
-      const { characterId = 'PLY-0001', slotType } = ctx.body || {};
-      if (!slotType) {
-        sendJson(res, 400, { success: false, error: 'slotType is required.' });
+      const { characterId = 'PLY-0001', slotType, itemCode, equipmentId } = ctx.body || {};
+      const target = equipmentId ? String(equipmentId) : (itemCode || slotType);
+      if (!target && !equipmentId) {
+        sendJson(res, 400, { success: false, error: 'itemCode, equipmentId, or slotType is required.' });
         return;
       }
-      const result = service.unequipItem(characterId, slotType as EquipmentSlotType);
+      const result = service.unequipItem(characterId, target, equipmentId ? Number(equipmentId) : undefined);
       sendJson(res, 200, result);
     } catch (err: any) {
       sendJson(res, 400, { success: false, error: err.message });
