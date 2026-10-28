@@ -2515,13 +2515,16 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
           if (subLocation.includes('Đông Môn') || subLocation.includes('Chợ')) currentNpcId = 'NPC-0003'; // Quan Vũ
           else if (subLocation.includes('Xưởng')) currentNpcId = 'NPC-0007'; // Trần Bảo
           else if (subLocation.includes('Quảng Tông')) currentNpcId = 'NPC-0012'; // Lư Thực
-          else if (subLocation.includes('Bắc Bình')) currentNpcId = 'NPC-0011'; // Công Tôn Toản
+          else if (subLocation.includes('Bắc Bình')) currentNpcId = 'NPC-0060'; // Công Tôn Toản
 
           if (globalThis.__DAILY_INTERACTION_ENGINE__) {
             const pLower = (payload.prompt || '').toLowerCase();
             const isClientEn = payload.lang === 'en';
             let actionType = 'TEA_CONVERSE';
-            if (
+
+            if (actionToRun && actionToRun.type === 'PERSONAL_GROWTH') {
+              actionType = (actionToRun.sub_type === 'REST_RECOVERY') ? 'TEA_CONVERSE' : 'SPAR_DEBATE';
+            } else if (
               pLower.includes('rượu') || pLower.includes('uống') || pLower.includes('say') ||
               pLower.includes('chén') || pLower.includes('nhậu') || pLower.includes('ẩm') ||
               pLower.includes('wine') || pLower.includes('drink') || pLower.includes('ale') ||
@@ -2531,8 +2534,11 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
             } else if (
               pLower.includes('so tài') || pLower.includes('tỉ thí') || pLower.includes('đấu') ||
               pLower.includes('mâu') || pLower.includes('kiếm') || pLower.includes('võ') ||
-              pLower.includes('spar') || pLower.includes('duel') || pLower.includes('fight') ||
-              pLower.includes('clash') || pLower.includes('martial')
+              pLower.includes('thương') || pLower.includes('luyện') || pLower.includes('tập') ||
+              pLower.includes('thực chiến') || pLower.includes('binh khí') || pLower.includes('đao') ||
+              pLower.includes('cung') || pLower.includes('kích') || pLower.includes('spar') ||
+              pLower.includes('duel') || pLower.includes('fight') || pLower.includes('clash') ||
+              pLower.includes('martial') || pLower.includes('train') || pLower.includes('practice')
             ) {
               actionType = 'SPAR_DEBATE';
             } else if (

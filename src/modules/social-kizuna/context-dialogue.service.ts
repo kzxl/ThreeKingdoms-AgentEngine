@@ -148,14 +148,14 @@ export class ContextDialogueService {
     relationshipTier: string
   ): any {
     try {
-      // Priority 1: Exact match with specific relationship tier
+      // Priority 1: Exact match with specific relationship tier for THIS character
       let row = this.db.queryOne<any>(`
         SELECT * FROM master_context_dialogues
         WHERE npc_id = ? AND action_type = ? AND outcome_tier = ? AND relationship_tier = ?
         ORDER BY RANDOM() LIMIT 1;
       `, [npcId, actionType, outcomeTier, relationshipTier]);
 
-      // Priority 2: Match with 'ANY' relationship tier
+      // Priority 2: Match with 'ANY' relationship tier for THIS character
       if (!row) {
         row = this.db.queryOne<any>(`
           SELECT * FROM master_context_dialogues
@@ -164,15 +164,17 @@ export class ContextDialogueService {
         `, [npcId, actionType, outcomeTier]);
       }
 
-      // Priority 3: Match same action_type and outcome_tier for ANY character of same archetype (fallback)
+      // Priority 3: Match same action_type for THIS character (outcome agnostic fallback)
       if (!row) {
         row = this.db.queryOne<any>(`
           SELECT * FROM master_context_dialogues
-          WHERE action_type = ? AND outcome_tier = ?
+          WHERE npc_id = ? AND action_type = ?
           ORDER BY RANDOM() LIMIT 1;
-        `, [actionType, outcomeTier]);
+        `, [npcId, actionType]);
       }
 
+      // CRITICAL INVARIANT: NEVER match across different characters!
+      // If no dialogue exists for this specific NPC, return null to trigger tailored synthesis.
       return row || null;
     } catch (e: any) {
       console.warn('[ContextDialogueService] Cache lookup error:', e.message);

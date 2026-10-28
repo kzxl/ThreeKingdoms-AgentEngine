@@ -145,6 +145,72 @@ const SEED_DIALOGUES = [
     source: 'CANONICAL_SEED'
   },
 
+  // TEA_CONVERSE - SUCCESS
+  {
+    id: 'DLG-ZF-TEA-SUCC-1',
+    npc_id: 'NPC-0002',
+    action_type: 'TEA_CONVERSE',
+    outcome_tier: 'SUCCESS',
+    relationship_tier: 'ANY',
+    speaker_name_vi: 'Trương Phi',
+    speaker_name_en: 'Zhang Fei',
+    dialogue_vi: 'Trương Phi nâng bát trà lớn uống cạn một hơi rồi gật gù: "Lão Trương ta vốn quen uống rượu vò lớn, nay ngồi uống trà đàm đạo cùng Lương đệ mới thấy lòng dạ lắng lại đôi chút. Lời đệ nói rất có lý, thời loạn này muốn cứu dân thì không thể chỉ cậy sức mạnh mà phải có mưu lược!"',
+    dialogue_en: 'Zhang Fei drains a large tea bowl in one draught, nodding: "Old Zhang is used to gulping wine from jars, yet sitting for tea with you brings peace to my restless spirit. Your words hold great truth—in chaotic times, saving the people requires strategy, not mere brute force!"',
+    source: 'CANONICAL_SEED'
+  },
+  // TEA_CONVERSE - CRITICAL_SUCCESS
+  {
+    id: 'DLG-ZF-TEA-CRIT-1',
+    npc_id: 'NPC-0002',
+    action_type: 'TEA_CONVERSE',
+    outcome_tier: 'CRITICAL_SUCCESS',
+    relationship_tier: 'ANY',
+    speaker_name_vi: 'Trương Phi',
+    speaker_name_en: 'Zhang Fei',
+    dialogue_vi: 'Trương Phi ánh mắt rực sáng, vỗ đùi đánh đét cười sảng khoái: "Hay! Rất hay! Chí Viễn nhìn nhận thời cuộc thấu đáo chẳng kém gì các bậc túc nho! Lão Trương ta tuy thô lỗ nhưng kính trọng kẻ có tài đức. Đàm đạo xong trận trà này, lát nữa nhất định phải cùng ta nâng chén rượu thịt ăn mừng!"',
+    dialogue_en: 'Zhang Fei\'s eyes gleam brightly as he slaps his thigh in hearty laughter: "Splendid! Truly splendid! Zhiyuan perceives worldly currents as sharply as the grandest scholars! Old Zhang may be coarse, but I revere men of intellect and virtue. After this tea, you must join me in feasting with meat and wine!"',
+    source: 'CANONICAL_SEED'
+  },
+  // SPAR_DEBATE - SUCCESS (Spear drills under Peach Blossoms)
+  {
+    id: 'DLG-ZF-SPAR-SUCC-2',
+    npc_id: 'NPC-0002',
+    action_type: 'SPAR_DEBATE',
+    outcome_tier: 'SUCCESS',
+    relationship_tier: 'ANY',
+    speaker_name_vi: 'Trương Phi',
+    speaker_name_en: 'Zhang Fei',
+    dialogue_vi: 'Hai bên múa thương hoa đào rụng lả tả. Trương Phi hạ Xà Mâu xuống, vuốt râu khen ngợi: "Đòn thế Thương Pháp của Lương đệ ra đòn dứt khoát, kình lực dồn vào mũi thương đã có ba phần uy dũng! Cứ khổ luyện dưới gốc đào này mỗi ngày, ngày sau ra trận ắt khiến quân giặc khiếp vía!"',
+    dialogue_en: 'Both wield spears as peach blossoms scatter in the wind. Zhang Fei lowers his Serpent Spear, praising with satisfaction: "Brother Liang\'s spear strokes are decisive and crisp; the vigor concentrated at the tip already bears formidable might! Keep drilling beneath these blossoms daily, and enemy vanguards will tremble before you on the field!"',
+    source: 'CANONICAL_SEED'
+  },
+  // HEART_CONFESSION - CRITICAL_SUCCESS
+  {
+    id: 'DLG-ZF-HEART-CRIT-1',
+    npc_id: 'NPC-0002',
+    action_type: 'HEART_CONFESSION',
+    outcome_tier: 'CRITICAL_SUCCESS',
+    relationship_tier: 'ANY',
+    speaker_name_vi: 'Trương Phi',
+    speaker_name_en: 'Zhang Fei',
+    dialogue_vi: 'Trương Phi nhìn rặng đào hạ trạch xao xác trong gió xuân, mắt ngời ngời nhiệt huyết: "Lão Trương ta mổ heo bán rượu ở đất Trác này bấy lâu, ruột gan lúc nào cũng nóng như lửa đốt trước cảnh giặc cướp bừa bãi. Nay có Lương đệ đồng lòng cứu khốn phò nguy, tính mạng này ta phó thác cho đại nghĩa!"',
+    dialogue_en: 'Zhang Fei gazes across the peach orchard rustling in spring winds, his eyes burning with fervor: "Old Zhang has slaughtered pigs and vended wine in Zhuo for years, boiling with rage seeing commoners oppressed. Now standing shoulder-to-shoulder with you, Brother Liang, I stake my very life upon this noble path!"',
+    source: 'CANONICAL_SEED'
+  },
+  // GIFT_TREASURE - SUCCESS
+  {
+    id: 'DLG-ZF-GIFT-SUCC-1',
+    npc_id: 'NPC-0002',
+    action_type: 'GIFT_TREASURE',
+    outcome_tier: 'SUCCESS',
+    relationship_tier: 'ANY',
+    speaker_name_vi: 'Trương Phi',
+    speaker_name_en: 'Zhang Fei',
+    dialogue_vi: 'Trương Phi nhận lấy lễ vật từ tay Lương Diễn, cười to sảng khoái: "Ha ha! Lương đệ thật chu đáo! Bằng hữu kết giao cốt ở tấm lòng chân thật, món quà này ta xin nhận lấy, sau này đệ có việc gì cần cứ ới một tiếng, lão Trương ta quyết không chối từ!"',
+    dialogue_en: 'Zhang Fei accepts the gift from Liang Yan, laughing with booming delight: "Haha! Brother Liang is truly considerate! Brotherhood is bound by genuine hearts; I gladly receive this token. Call upon me whenever you have need, and Old Zhang will never refuse!"',
+    source: 'CANONICAL_SEED'
+  },
+
   // =========================================================================
   // NPC-0003: QUAN VŨ (GUAN YU • VÂN TRƯỜNG)
   // Personality: Uy nghiêm, trọng đại nghĩa, điềm tĩnh, yêu chuộng sách Xuân Thu

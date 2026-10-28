@@ -140,9 +140,13 @@ export function registerKizunaRoutes(router: Router): void {
       } else if (
         pLower.includes('so tài') || pLower.includes('tỉ thí') || pLower.includes('đấu') ||
         pLower.includes('mâu') || pLower.includes('kiếm') || pLower.includes('võ') ||
+        pLower.includes('thương') || pLower.includes('luyện') || pLower.includes('tập') ||
+        pLower.includes('thực chiến') || pLower.includes('binh khí') || pLower.includes('đao') ||
+        pLower.includes('cung') || pLower.includes('kích') ||
         pLower.includes('spar') || pLower.includes('duel') || pLower.includes('fight') ||
         pLower.includes('clash') || pLower.includes('martial') || pLower.includes('combat') ||
-        pLower.includes('debate') || pLower.includes('challenge')
+        pLower.includes('debate') || pLower.includes('challenge') || pLower.includes('train') ||
+        pLower.includes('practice')
       ) {
         actionType = 'SPAR_DEBATE';
       } else if (
