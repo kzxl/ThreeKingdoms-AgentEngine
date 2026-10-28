@@ -285,13 +285,23 @@ async function executeChoiceDirect(optId) {
   const cardEl = document.getElementById(`choice-card-${optId}`);
   selectChoice(optId);
 
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+  // Clean description: strip any debug dice strings or table-top jargon
+  const cleanDesc = (opt.desc || '')
+    .replace(/•?\s*Đổ D20\s*\[[^\]]+\]\s*•?/gi, '')
+    .replace(/•?\s*Roll D20\s*\[[^\]]+\]\s*•?/gi, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+
   // Append Player Action Turn into Story Chronicle
   appendStoryTurn({
     type: 'player',
-    speaker: 'Lương Diễn',
-    title: 'Quyết Sách Trực Tiếp',
+    speaker: isEn ? 'Liang Yan' : 'Lương Diễn',
+    title: isEn ? 'Decisive Action' : 'Quyết Sách Trực Tiếp',
     avatar: '梁',
-    text: `**${opt.title}**\n\n*Ý đồ chiến thuật:* ${opt.desc}`
+    text: cleanDesc && cleanDesc !== opt.title
+      ? `**${opt.title}**\n\n${cleanDesc}`
+      : `**${opt.title}**`
   });
 
   setProcessingLock(true, cardEl, opt.title);
@@ -315,35 +325,23 @@ async function executeChoiceDirect(optId) {
         return;
       }
       const res = kizunaData.result;
-      const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
       const npcName = isEn ? (res.npcNameEn || res.npcNameVi || opt.action.npc_name) : (res.npcNameVi || opt.action.npc_name);
       const speakerAvatar = opt.action.npc_name ? opt.action.npc_name.charAt(0) : '漢';
       const quoteText = isEn ? (res.dialogueNarrativeEn || res.dialogueNarrativeVi) : res.dialogueNarrativeVi;
       const deltaAffinity = res.deltas?.affinityChange || 0;
       const deltaRespect = res.deltas?.respectChange || 0;
-      const roll = res.diceRoll || {};
-      const formulaStr = `[D20: ${roll.d20 ?? 10}] + [Thuộc tính: ${roll.statBonus ?? 0}] + [Sở thích: ${roll.hobbyBonus ?? 0}] = ${roll.total ?? 10}`;
-      
-      const diceBadge = {
-        status: res.outcome === 'CRITICAL_SUCCESS' ? 'ĐẠI HẢO' : res.outcome === 'SUCCESS' ? 'HỢP Ý' : res.outcome === 'CRITICAL_FAILURE' ? 'XUNG ĐỘT' : 'KHÁCH SÁO',
-        type: `ĐỔ XÚC XẮC D20 (${isEn ? (res.actionTitleEn || res.actionType) : (res.actionTitleVi || res.actionType)})`,
-        score: roll.total ?? 15,
-        dc: 15,
-        formula: formulaStr
-      };
 
       appendStoryTurn({
         type: 'npc',
         speaker: npcName,
-        title: `${isEn ? (res.outcomeTitleEn || res.outcome) : (res.outcomeTitleVi || res.outcome)} • Hảo Cảm ${deltaAffinity >= 0 ? '+' : ''}${deltaAffinity}`,
+        title: `${isEn ? (res.outcomeTitleEn || res.outcome) : (res.outcomeTitleVi || res.outcome)} • ${isEn ? 'Affinity' : 'Hảo Cảm'} ${deltaAffinity >= 0 ? '+' : ''}${deltaAffinity}`,
         avatar: speakerAvatar,
         text: quoteText,
-        diceBadge: diceBadge,
         deltas: {
-          relations: `${npcName} (+${deltaAffinity} Hảo cảm, +${deltaRespect} Kính trọng)`,
-          audit: 'Ghi nhận Hảo cảm'
-        },
-        reasoning: `Xúc xắc D20: ${roll.total}. Tương tác đời thường thành công rực rỡ.`
+          relations: `${npcName} (+${deltaAffinity} ${isEn ? 'Affinity' : 'Hảo cảm'}, +${deltaRespect} ${isEn ? 'Respect' : 'Kính trọng'})`,
+          cash: res.deltas?.cashCost ? `-${res.deltas.cashCost}` : undefined,
+          audit: 'Ghi nhận quan hệ'
+        }
       });
 
       // Refresh scene and deck
@@ -586,15 +584,16 @@ function appendAgentResultTurn(result) {
     }
   }
 
+  // Clean title: remove any residual [D20: ...] tag
+  const cleanTitle = (title || '').replace(/\[D20:\s*\d+\]\s*/gi, '').trim();
+
   appendStoryTurn({
     type,
     speaker,
-    title,
+    title: cleanTitle || title,
     avatar,
     text: result.narrative,
-    diceBadge,
-    deltas: result.delta,
-    reasoning: result.reasoning
+    deltas: result.delta
   });
 }
 

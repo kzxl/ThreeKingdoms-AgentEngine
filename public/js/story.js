@@ -19,17 +19,8 @@ function formatStoryText(text) {
 }
 
 function renderDiceBadgeHtml(check) {
-  if (!check || !check.type) return '';
-  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
-  const isSuccess = check.status === 'THÀNH CÔNG' || check.status === 'SUCCESS' || check.passed;
-  const statusClass = isSuccess ? 'success' : 'failed';
-  const statusLabel = isSuccess ? (isEn ? 'SUCCESS' : 'THÀNH CÔNG') : (isEn ? 'FAILED' : 'THẤT BẠI');
-  return `
-    <div class="story-dice-badge">
-      <span>🎲 <strong>${check.type}</strong>: ${check.formula || ''}</span>
-      <span class="${statusClass}">${isEn ? 'TOTAL' : 'TỔNG'} ${check.score ?? check.roll ?? ''} [${check.status || statusLabel}]</span>
-    </div>
-  `;
+  // Suppress intrusive dice formulas and roll metrics per user roleplay focus
+  return '';
 }
 
 function renderDeltaBarHtml(delta) {
@@ -59,8 +50,8 @@ function renderDeltaBarHtml(delta) {
 }
 
 function renderReasoningHtml(reasoning) {
-  if (!reasoning) return '';
-  return `<div class="story-reasoning">🧠 <strong>Agent Reasoning:</strong> ${reasoning}</div>`;
+  // Suppress internal agent reasoning from story view
+  return '';
 }
 
 function resolveNpcIdFromName(name) {

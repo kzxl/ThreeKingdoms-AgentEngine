@@ -480,8 +480,8 @@
           <button class="tactical-btn tactical-btn--primary" onclick="executeDossierAction('${dossier.npcId}', 'BANQUET_DRINK')" title="Hồi phục +35 Thể Lực, +12 Sĩ Khí">
             ${isEn ? '[HOST WINE BANQUET] (-30 Qian, +35 Stamina)' : '[RÓT RƯỢU ẨM THỰC] (-30 Tiền, +35 Thể Lực)'}
           </button>
-          <button class="tactical-btn" onclick="executeDossierAction('${dossier.npcId}', 'SPAR_DEBATE')" title="Tiêu hao 15 Thể Lực, kiểm tra D20 võ nghệ">
-            ${isEn ? '[SPAR & DEBATE] (-15 Stamina, D20)' : '[LUẬN VÕ SO TÀI] (-15 Thể Lực, D20)'}
+          <button class="tactical-btn" onclick="executeDossierAction('${dossier.npcId}', 'SPAR_DEBATE')" title="Tiêu hao 15 Thể Lực, luận bàn võ nghệ">
+            ${isEn ? '[SPAR & DEBATE] (-15 Stamina)' : '[LUẬN VÕ SO TÀI] (-15 Thể Lực)'}
           </button>
           <button class="tactical-btn" onclick="executeDossierAction('${dossier.npcId}', 'LEARN_MENTOR')">
             ${isEn ? '[SEEK MENTORSHIP] (-25 Qian)' : '[THỈNH GIÁO KỸ NGHỆ] (-25 Tiền)'}
@@ -644,7 +644,7 @@
     const feedbackEl = document.getElementById('dossier-interaction-feedback');
     if (feedbackEl) {
       feedbackEl.classList.remove('hidden');
-      feedbackEl.innerHTML = `<span style="color: var(--brand-primary);">${isEn ? 'Rolling D20 social check...' : 'Đang đổ xúc xắc giao tế D20...'}</span>`;
+      feedbackEl.innerHTML = `<span style="color: var(--brand-primary);">${isEn ? 'Engaging in strategic interaction...' : 'Đang tiến hành giao tế...'}</span>`;
     }
 
     try {
@@ -659,7 +659,6 @@
       }
 
       const r = data.result;
-      const dice = r.diceRoll || { total: 15, d20: 10, statBonus: 2, hobbyBonus: 3 };
 
       let outcomeBadge = '<span class="tactical-badge">[COURTESY]</span>';
       if (r.outcome === 'CRITICAL_SUCCESS') {
@@ -676,9 +675,6 @@
 
       const actionTitle = isEn ? (r.actionTitleEn || r.actionTitleVi) : r.actionTitleVi;
       const dialogueText = isEn ? (r.dialogueNarrativeEn || r.dialogueNarrativeVi) : r.dialogueNarrativeVi;
-      const formulaStr = isEn
-        ? `[D20: ${dice.total}/20] (Base: ${dice.d20} + Stat: ${dice.statBonus} + Bonus: ${dice.hobbyBonus || 0})`
-        : `[D20: ${dice.total}/20] (Gốc: ${dice.d20} + Thuộc tính: ${dice.statBonus} + Thưởng: ${dice.hobbyBonus || 0})`;
 
       const affinityLabel = isEn ? 'Affinity:' : 'Hảo cảm:';
       const respectLabel = isEn ? 'Respect:' : 'Kính trọng:';
@@ -701,9 +697,6 @@
               ${outcomeBadge}
               <span style="font-weight: bold; font-size: 12px; color: var(--text-main);">${actionTitle}</span>
             </div>
-            <span style="font-family: monospace; font-size: 11px; color: var(--brand-primary); font-variant-numeric: tabular-nums;">
-              ${formulaStr}
-            </span>
           </div>
           <div style="font-size: 11px; line-height: 1.5; color: #cbd5e1; margin-bottom: 8px;">
             "${dialogueText}"

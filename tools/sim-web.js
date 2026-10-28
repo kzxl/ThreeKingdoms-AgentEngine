@@ -2568,14 +2568,14 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
             diceCheck = {
               roll: dailyRes.diceRoll.total,
               badge: isClientEn
-                ? `[D20: ${dailyRes.diceRoll.total}] ${dailyRes.outcomeTitleEn || dailyRes.outcomeTitleVi}`
-                : `[D20: ${dailyRes.diceRoll.total}] ${dailyRes.outcomeTitleVi}`,
+                ? (dailyRes.outcomeTitleEn || dailyRes.outcomeTitleVi)
+                : dailyRes.outcomeTitleVi,
               dc: 15,
               passed: dailyRes.outcome === 'SUCCESS' || dailyRes.outcome === 'CRITICAL_SUCCESS'
             };
             tacticalReasoning = isClientEn
-              ? `D20 Social Check: [${dailyRes.diceRoll.total}/20] -> ${dailyRes.outcomeTitleEn || dailyRes.outcomeTitleVi}. Affinity delta: ${dailyRes.deltas.affinityChange > 0 ? '+' : ''}${dailyRes.deltas.affinityChange}, decrypting fog of info.`
-              : `Đổ xúc xắc giao tế D20: [${dailyRes.diceRoll.total}/20] -> Đạt trạng thái ${dailyRes.outcomeTitleVi}. Tác động Hảo cảm ${dailyRes.deltas.affinityChange > 0 ? '+' : ''}${dailyRes.deltas.affinityChange}, giải mã sương mù thông tin.`;
+              ? `Social Interaction: ${dailyRes.outcomeTitleEn || dailyRes.outcomeTitleVi}. Affinity delta: ${dailyRes.deltas.affinityChange > 0 ? '+' : ''}${dailyRes.deltas.affinityChange}.`
+              : `Giao tế đời thường: ${dailyRes.outcomeTitleVi}. Biến động hảo cảm: ${dailyRes.deltas.affinityChange > 0 ? '+' : ''}${dailyRes.deltas.affinityChange}.`;
             delta = {
               cash: dailyRes.deltas.cashCost > 0 ? `-${dailyRes.deltas.cashCost} Qian` : (isClientEn ? 'Preserved' : 'Bảo toàn'),
               inventory: isClientEn ? 'Preserved' : 'Bảo toàn',
