@@ -17,7 +17,102 @@ const QUICK_CHIPS_DATA = {
       { type: 'courier', icon: '信', labelVi: 'Phái người ra Chợ', labelEn: 'Retainer to Market', promptVi: 'Sai gia đinh mang thư ra Chợ Đông Môn xuất bán 10 đấu muối', promptEn: 'Dispatch retainer to East Gate Market to sell 10 salt' },
       { divider: true },
       { type: 'travel', icon: '行', labelVi: 'Đến Chợ Đông Môn', labelEn: 'Go to Market', promptVi: 'Rời Vườn Đào, rảo bước đi tới Chợ Đông Môn', promptEn: 'Leave Peach Garden and travel to East Gate Market' },
-      { type: 'travel', icon: '行', labelVi: 'Đến Xưởng Lương Thị', labelEn: 'Go to Workshop', promptVi: 'Rời Vườn Đào, đi tới Lương Thị Chức Tác Phường', promptEn: 'Travel to Liang Textile & Craft Workshop' }
+      { type: 'travel', icon: '行', labelVi: 'Đến Thiết Điếm', labelEn: 'To Smithy', promptVi: 'Rời Vườn Đào, đi tới Thiết Điếm Trác Huyện để rèn đao', promptEn: 'Travel to Town Smithy to forge weapons' },
+      { type: 'travel', icon: '行', labelVi: 'Đến Tửu Quán', labelEn: 'To Tavern', promptVi: 'Rời Vườn Đào, đi tới Tửu Quán Trác Huyện', promptEn: 'Travel to Town Tavern' }
+    ]
+  },
+  'Tư Trạch Vườn Đào': {
+    presenceVi: 'Tư Trạch Vườn Đào • Lương Phủ (Trực diện: Thê Tử & Hậu Duệ)',
+    presenceEn: 'Peach Garden Manor • Liang Residence (In-person: Spouse & Heirs)',
+    placeholderVi: 'Lương Diễn tâm tình cùng thê thất, nghỉ ngơi tĩnh dưỡng...',
+    placeholderEn: 'Liang Yan spends domestic moments with family and rests...',
+    chips: [
+      { type: 'local', icon: '休', labelVi: 'Nghỉ Ngơi Tĩnh Dưỡng', labelEn: 'Rest & Recover', promptVi: 'Nghỉ ngơi an giấc tại phòng trong, hồi phục thể lực và khí huyết', promptEn: 'Rest in private quarters to restore vitality' },
+      { type: 'local', icon: '家', labelVi: 'Trò Chuyện Thê Tử', labelEn: 'Converse with Spouse', promptVi: 'Đàm đạo tâm tình cùng phu nhân, bồi đắp tình cảm gia đình', promptEn: 'Converse warmly with spouse to cultivate domestic harmony' },
+      { type: 'local', icon: '嗣', labelVi: 'Chỉ Dạy Thế Tử', labelEn: 'Instruct Heirs', promptVi: 'Kiểm tra bài vở, truyền dạy võ nghệ và sách lược cho con cái', promptEn: 'Examine studies and tutor heirs in tactics and martial arts' },
+      { type: 'local', icon: '書', labelVi: 'Kê Toán Tại Gia', labelEn: 'Review Home Desk', promptVi: 'Ngồi tại bàn làm việc tại gia duyệt sổ sách sản nghiệp và thu địa tô', promptEn: 'Review enterprise ledgers and tenant profits at home desk' },
+      { divider: true },
+      { type: 'travel', icon: '行', labelVi: 'Đi Thiết Điếm', labelEn: 'To Smithy', promptVi: 'Rời tư trạch, đi tới Thiết Điếm Trác Huyện để rèn đao', promptEn: 'Leave residence and head to Town Smithy' },
+      { type: 'travel', icon: '行', labelVi: 'Đi Tửu Quán', labelEn: 'To Tavern', promptVi: 'Rời tư trạch, đi tới Tửu Quán Trác Huyện', promptEn: 'Leave residence and head to Town Tavern' },
+      { type: 'travel', icon: '行', labelVi: 'Ra Chợ Đông Môn', labelEn: 'To Market', promptVi: 'Rời tư trạch, đi ra Chợ Đông Môn & Sạp Trà', promptEn: 'Leave residence and head to East Gate Market' },
+      { type: 'travel', icon: '行', labelVi: 'Tới Lôi Đài', labelEn: 'To Arena', promptVi: 'Rời tư trạch, đi sang Lôi Đài Giáo Trường tỉ võ', promptEn: 'Leave residence and head to Martial Arena' }
+    ]
+  },
+  'Thiết Điếm Trác Huyện': {
+    presenceVi: 'Thiết Điếm Lò Rèn Trác Huyện (Trực diện: Thợ Cả Trần Bảo)',
+    presenceEn: 'Zhuo Town Smithy & Forge (In-person: Master Smith Chen Bao)',
+    placeholderVi: 'Lương Diễn kéo bễ nung thép rèn đao... (hoặc gõ: "Thu mua sắt thỏi...")',
+    placeholderEn: 'Liang Yan works the bellows forging blades... (or type: "Procure iron ingots...")',
+    chips: [
+      { type: 'local', icon: '工', labelVi: 'Kéo Bễ Rèn Đao', labelEn: 'Work Forge Bellows', promptVi: 'Đích thân kéo bễ, phụ việc rèn binh khí kiếm tiền công và tăng CRA EXP', promptEn: 'Work the forge bellows to earn wages and gain Crafting EXP' },
+      { type: 'local', icon: '鍛', labelVi: 'Rèn Đúc Thần Binh', labelEn: 'Bespoke Forge', promptVi: 'Khai lò nung sắt, tự tay tôi luyện binh khí thần phẩm độc bản', promptEn: 'Operate master forge to craft bespoke unique weapons' },
+      { type: 'local', icon: '商', labelVi: 'Mua 10 Thỏi Sắt', labelEn: 'Buy 10 Iron', promptVi: 'Thu mua 10 thỏi sắt tinh luyện từ thợ cả chuẩn bị đúc rèn', promptEn: 'Purchase 10 refined iron ingots from the master smith' },
+      { type: 'local', icon: '師', labelVi: 'Thỉnh Giáo Thợ Cả', labelEn: 'Consult Master', promptVi: 'Đàm đạo cùng Thợ Cả Trần Bảo về thuật tôi thép và đúc kiếm bách luyện', promptEn: 'Discuss metallurgy with Master Smith Chen Bao' },
+      { divider: true },
+      { type: 'travel', icon: '行', labelVi: 'Về Tư Trạch', labelEn: 'To Residence', promptVi: 'Rời thiết điếm, trở về Tư Trạch Vườn Đào nghỉ ngơi', promptEn: 'Leave smithy and return to Residence' },
+      { type: 'travel', icon: '行', labelVi: 'Sang Tửu Quán', labelEn: 'To Tavern', promptVi: 'Rời thiết điếm, sang Tửu Quán Trác Huyện uống rượu', promptEn: 'Leave smithy and head to Tavern' },
+      { type: 'travel', icon: '行', labelVi: 'Ra Chợ Đông Môn', labelEn: 'To Market', promptVi: 'Rời thiết điếm, ra Chợ Đông Môn giao dịch', promptEn: 'Leave smithy and head to East Gate Market' }
+    ]
+  },
+  'Tửu Quán Trác Huyện': {
+    presenceVi: 'Tửu Quán Trác Huyện (Trực diện: Chưởng Quỹ & Hào Kiệt Giang Hồ)',
+    presenceEn: 'Zhuo Town Tavern (In-person: Tavernkeeper & Wandering Heroes)',
+    placeholderVi: 'Lương Diễn nâng chén đàm đạo hào hiệp... (hoặc gõ: "Mở tiệc thết đãi...")',
+    placeholderEn: 'Liang Yan drinks and converses with heroes... (or type: "Host banquet...")',
+    chips: [
+      { type: 'local', icon: '飲', labelVi: 'Uống Rượu Hồi Thể Lực', labelEn: 'Drink Vintage Wine', promptVi: 'Gọi vò Trác Thành Trán Nương uống rượu xua tan mệt mỏi và hồi thể lực', promptEn: 'Drink vintage wine to restore stamina' },
+      { type: 'local', icon: '宴', labelVi: 'Mở Tiệc Hào Kiệt', labelEn: 'Host Hero Banquet', promptVi: 'Mở tiệc rượu linh đình thết đãi hào kiệt bốn phương, tăng hảo cảm danh sĩ', promptEn: 'Host banquet to treat visiting heroes and raise affinity' },
+      { type: 'local', icon: '義', labelVi: 'Chiêu Mộ Hảo Hán', labelEn: 'Recruit Heroes', promptVi: 'Quan sát các bàn tiệc, tìm kiếm hảo hán giang hồ chiêu mộ làm môn khách', promptEn: 'Recruit talented wanderers as retainers' },
+      { type: 'local', icon: '結', labelVi: 'Cắt Máu Kết Nghĩa', labelEn: 'Swear Brotherhood', promptVi: 'Mời hảo hữu tri kỷ cắt máu ăn thề, kết bái huynh đệ đồng sinh cộng tử', promptEn: 'Take blood oaths of brotherhood with trusted friends' },
+      { divider: true },
+      { type: 'travel', icon: '行', labelVi: 'Về Tư Trạch', labelEn: 'To Residence', promptVi: 'Rời tửu quán, quay về Tư Trạch Vườn Đào an giấc', promptEn: 'Return to Residence to sleep' },
+      { type: 'travel', icon: '行', labelVi: 'Sang Lôi Đài', labelEn: 'To Arena', promptVi: 'Rời tửu quán sang Lôi Đài Giáo Trường đọ sức', promptEn: 'Proceed to Arena for combat' },
+      { type: 'travel', icon: '行', labelVi: 'Sang Dịch Trạm', labelEn: 'To Depot', promptVi: 'Rời tửu quán, sang Mã Xa Dịch Trạm bàn việc', promptEn: 'Proceed to Caravan Depot' }
+    ]
+  },
+  'Lôi Đài Giáo Trường': {
+    presenceVi: 'Lôi Đài Giáo Trường Bắc Môn (Trực diện: Trương Phi • Võ Sĩ Lôi Đài)',
+    presenceEn: 'Northern Drill Grounds & Arena (In-person: Zhang Fei • Arena Champions)',
+    placeholderVi: 'Lương Diễn thượng đài luận võ... (hoặc gõ: "Thách đấu lôi đài...")',
+    placeholderEn: 'Liang Yan steps into the sparring ring... (or type: "Challenge arena...")',
+    chips: [
+      { type: 'local', icon: '武', labelVi: 'Đấu Thương Trương Phi', labelEn: 'Spar with Zhang Fei', promptVi: 'Lên võ đài thỉnh giáo Trương Phi giao lưu thương pháp thực chiến', promptEn: 'Spar in spear combat with Zhang Fei' },
+      { type: 'local', icon: '武', labelVi: 'Luận Kiếm Quan Vũ', labelEn: 'Spar with Guan Yu', promptVi: 'Thỉnh giáo Thanh Long đao pháp của Quan Vân Trường tăng WAR EXP', promptEn: 'Spar with Guan Yu to study blade tactics' },
+      { type: 'local', icon: '演', labelVi: 'Thách Đấu Lôi Đài', labelEn: 'Enter Tournament', promptVi: 'Đăng ký khiêu chiến các võ sĩ lôi đài 3 cấp độ tranh đoạt ngân lượng', promptEn: 'Enter 3-tiered arena tournament for prize purses' },
+      { type: 'local', icon: '兵', labelVi: 'Luyện Binh Thao Diễn', labelEn: 'Drill Retainers', promptVi: 'Tập hợp dân binh, chỉ đạo thao diễn chiến trận tăng LDR EXP', promptEn: 'Drill garrison troops in battle formations' },
+      { divider: true },
+      { type: 'travel', icon: '行', labelVi: 'Sang Tửu Quán', labelEn: 'To Tavern', promptVi: 'Rời võ đài, sang Tửu Quán Trác Huyện khao quân', promptEn: 'Celebrate victories at the Tavern' },
+      { type: 'travel', icon: '行', labelVi: 'Về Tư Trạch', labelEn: 'To Residence', promptVi: 'Rời giáo trường, quay về Tư Trạch dưỡng thương', promptEn: 'Return to Residence to recuperate' }
+    ]
+  },
+  'Mã Xa Dịch Trạm': {
+    presenceVi: 'Mã Xa Dịch Trạm & Thương Hội (Trực diện: Dịch Quan & Tiêu Sư)',
+    presenceEn: 'Caravan Guild & Depot (In-person: Post Master & Escort Guards)',
+    placeholderVi: 'Lương Diễn điều phối xe hàng, khảo sát lộ tuyến...',
+    placeholderEn: 'Liang Yan coordinates wagons and maps caravan routes...',
+    chips: [
+      { type: 'local', icon: '商', labelVi: 'Lập Thương Đoàn', labelEn: 'Form Caravan', promptVi: 'Khảo sát chênh lệch giá cả các châu, tổ chức thương đoàn viễn chinh', promptEn: 'Establish long-distance expedition trade caravan' },
+      { type: 'local', icon: '車', labelVi: 'Mua 1 Xe Ngựa Kéo', labelEn: 'Buy Carriage', promptVi: 'Chi tiền mua thêm xe ngựa kéo gia cố để tăng tải trọng hàng hóa', promptEn: 'Procure reinforced heavy carriage' },
+      { type: 'local', icon: '衛', labelVi: 'Thuê 5 Tiêu Sư', labelEn: 'Hire Guards', promptVi: 'Thuê 5 tay tiêu sư hộ tống tinh nhuệ phòng thủ sơn tặc cướp bóc', promptEn: 'Hire 5 veteran guards to protect cargo' },
+      { type: 'local', icon: '報', labelVi: 'Nghe Ngóng Thương Lộ', labelEn: 'Survey Routes', promptVi: 'Hỏi thăm dịch quan về tình hình chiến sự và thổ phỉ trên các tuyến đường', promptEn: 'Consult post officials regarding bandits and war hazards' },
+      { divider: true },
+      { type: 'travel', icon: '行', labelVi: 'Ra Chợ Đông Môn', labelEn: 'To Market', promptVi: 'Rời dịch trạm, đi ra Chợ Đông Môn thu mua hàng', promptEn: 'Proceed to East Gate Market' },
+      { type: 'travel', icon: '行', labelVi: 'Về Tư Trạch', labelEn: 'To Residence', promptVi: 'Rời dịch trạm, quay về Tư Trạch Vườn Đào nghỉ ngơi', promptEn: 'Return to Peach Garden Residence' }
+    ]
+  },
+  'Chợ Đông Môn & Sạp Trà': {
+    presenceVi: 'Chợ Đông Môn & Sạp Trà (Trực diện: Quan Vũ • Vân Trường)',
+    presenceEn: 'East Gate Market & Tea Stall (In-person: Guan Yu • Yunchang)',
+    placeholderVi: 'Lương Diễn đàm đạo tại Chợ... (hoặc gõ: "Phái gia nhân sang Vườn Đào...")',
+    placeholderEn: 'Liang Yan dialogues at Market... (or type: "Dispatch messenger to Peach Garden...")',
+    chips: [
+      { type: 'local', icon: '商', labelVi: 'Bán 10 Chiếu Trúc', labelEn: 'Sell 10 Mats', promptVi: 'Xuất bán 10 tấm Chiếu Trúc Lương Gia cho Thương đoàn Ký Châu', promptEn: 'Sell 10 bamboo mats to Jizhou merchant caravan' },
+      { type: 'local', icon: '商', labelVi: 'Mua 5 Lương Thảo', labelEn: 'Buy 5 Grain', promptVi: 'Thu mua 5 thạch lương tiểu mạch dự trữ', promptEn: 'Purchase 5 piculs of strategic grain' },
+      { type: 'local', icon: '茶', labelVi: 'Đàm Đạo Quan Vũ', labelEn: 'Tea with Guan Yu', promptVi: 'Mời Quan Vũ uống trà đàm đạo binh pháp Xuân Thu', promptEn: 'Invite Guan Yu for tea discussing strategy' },
+      { divider: true },
+      { type: 'travel', icon: '行', labelVi: 'Về Tư Trạch', labelEn: 'To Residence', promptVi: 'Rời Chợ Đông Môn, về Tư Trạch Vườn Đào', promptEn: 'Return to Peach Garden Residence' },
+      { type: 'travel', icon: '行', labelVi: 'Đến Thiết Điếm', labelEn: 'To Smithy', promptVi: 'Rời Chợ Đông Môn, đi sang Thiết Điếm Trác Huyện', promptEn: 'Head to Town Smithy' },
+      { type: 'travel', icon: '行', labelVi: 'Đến Dịch Trạm', labelEn: 'To Depot', promptVi: 'Rời Chợ Đông Môn, đi sang Mã Xa Dịch Trạm', promptEn: 'Head to Caravan Depot' }
     ]
   },
   'Chợ Đông Môn': {
@@ -285,12 +380,22 @@ const WORLD_MAP_NODES = {
     distanceFromZhuo: 0,
     daysRequired: 0,
     grainCost: 0,
-    defaultSubLoc: 'Vườn Đào',
-    subLocations: ['Vườn Đào', 'Chợ Đông Môn', 'Xưởng Lương Thị'],
-    figuresVi: 'Lưu Bị (Huyền Đức), Trương Phi (Dực Đức), Quan Vũ (Vân Trường), Thợ cả Trần Bảo',
-    figuresEn: 'Liu Bei, Zhang Fei, Guan Yu, Master Chen Bao',
-    intelVi: 'Bản dinh và quê hương của gia tộc Lương Thị. Nơi khởi phát của Đào Viên Kết Nghĩa và xưởng dệt thủ công.',
-    intelEn: 'Home base of Liang Clan. Cradle of the Peach Garden Oath and textile craft workshop.'
+    defaultSubLoc: 'Tư Trạch Vườn Đào',
+    subLocations: [
+      'Tư Trạch Vườn Đào',
+      'Chợ Đông Môn & Sạp Trà',
+      'Thiết Điếm Trác Huyện',
+      'Tửu Quán Trác Huyện',
+      'Lôi Đài Giáo Trường',
+      'Mã Xa Dịch Trạm',
+      'Xưởng Lương Thị',
+      'Vườn Đào',
+      'Chợ Đông Môn'
+    ],
+    figuresVi: 'Lưu Bị (Huyền Đức), Trương Phi (Dực Đức), Quan Vũ (Vân Trường), Thợ cả Trần Bảo, Triệu An, Chân Cơ, Tôn Thượng Hương',
+    figuresEn: 'Liu Bei, Zhang Fei, Guan Yu, Master Chen Bao, Zhao An, Lady Zhen, Sun Shangxiang',
+    intelVi: 'Bản dinh và quê hương của Lương Diễn. Quy tụ đầy đủ các địa điểm: Tư Trạch (gia đạo), Thiết Điếm (rèn đao), Tửu Quán (tụ nghĩa), Lôi Đài (diễn võ), Dịch Trạm (thương đoàn) và Chợ Đông Môn.',
+    intelEn: 'Home base of Liang Yan. Features all physical town POIs: Residence, Smithy, Tavern, Arena, Caravan Depot, and Market.'
   },
   'ji_cheng': {
     id: 'ji_cheng',
@@ -590,7 +695,13 @@ const WORLD_MAP_NODES = {
 
 function getPoiMeta(locName) {
   const dict = {
-    // Zhuo County
+    // Zhuo County Physical POIs
+    'Tư Trạch Vườn Đào': { vi: 'Tư Trạch Vườn Đào (Lương Phủ)', en: 'Peach Garden Manor (Residence)', icon: '🏛️', distFromZhuo: '0 dặm' },
+    'Thiết Điếm Trác Huyện': { vi: 'Thiết Điếm Lò Rèn Trác Huyện', en: 'Town Smithy & Forge', icon: '🔨', distFromZhuo: '1.2 dặm' },
+    'Tửu Quán Trác Huyện': { vi: 'Tửu Quán Trác Huyện', en: 'Town Tavern', icon: '🍺', distFromZhuo: '0.8 dặm' },
+    'Lôi Đài Giáo Trường': { vi: 'Lôi Đài Giáo Trường Bắc Môn', en: 'Northern Drill Grounds & Arena', icon: '⚔️', distFromZhuo: '1.5 dặm' },
+    'Mã Xa Dịch Trạm': { vi: 'Mã Xa Dịch Trạm & Thương Hội', en: 'Caravan Guild & Depot', icon: '📦', distFromZhuo: '1.0 dặm' },
+    'Chợ Đông Môn & Sạp Trà': { vi: 'Chợ Đông Môn & Sạp Trà', en: 'East Gate Market & Tea Stall', icon: '🍵', distFromZhuo: '1 dặm' },
     'Vườn Đào': { vi: 'Trang Viên Vườn Đào Hạ Trạch', en: 'Peach Garden Manor', icon: '花', distFromZhuo: '0 dặm' },
     'Chợ Đông Môn': { vi: 'Chợ Đông Môn & Sạp Trà', en: 'East Gate Market & Tea Stall', icon: '市', distFromZhuo: '1 dặm' },
     'Xưởng Lương Thị': { vi: 'Lương Thị Chức Tác Phường', en: 'Liang Textile Workshop', icon: '坊', distFromZhuo: '2 dặm' },
