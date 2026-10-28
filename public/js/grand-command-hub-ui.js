@@ -21,13 +21,14 @@
   'use strict';
 
   // Active state cache
-  let activeTabKey = 'gear';
+  let activeTabKey = 'career';
   let activeLineageSubTab = 'courtship'; // courtship | heirs | tree | succession
   let activeDuelId = null;
   let activeDuelState = null;
   let cachedLineageOverview = null;
   let cachedBanquetStatus = null;
   let cachedArenaRoster = null;
+  let cachedProgressionState = null;
   let isSubmittingAction = false;
 
   function isEnglish() {
@@ -39,10 +40,231 @@
   }
 
   // --------------------------------------------------------------------------
+  // Progression State & Domain Unlocks (RPG Standards)
+  // --------------------------------------------------------------------------
+
+  async function getHubProgressionState() {
+    try {
+      const [statusRes, entRes, lineageRes, caravanRes] = await Promise.all([
+        fetch('/api/status').then(r => r.json()).catch(() => ({ success: false })),
+        fetch('/api/enterprise/status?characterId=PLY-0001').then(r => r.json()).catch(() => ({ success: false })),
+        fetch('/api/lineage/status').then(r => r.json()).catch(() => ({ success: false })),
+        fetch('/api/logistics/caravans').then(r => r.json()).catch(() => ({ success: false }))
+      ]);
+
+      const p = statusRes?.player || {};
+      const f = statusRes?.financials || {};
+      const liquidCash = Number(f.liquidCash || p.liquid_cash || 0);
+      const netWorth = Number(f.netWorth || f.liquidCash || p.liquid_cash || 0);
+      const war = Number(p.war_attr || 50);
+      const com = Number(p.com_attr || 50);
+      const cra = Number(p.cra_attr || 50);
+      const pol = Number(p.pol_attr || 50);
+      const ldr = Number(p.ldr_attr || 50);
+
+      const enterprises = entRes?.status?.ownedBusinesses || entRes?.status?.activeEnterprises || [];
+      const hasEnterprises = enterprises.length > 0;
+
+      const spouses = lineageRes?.overview?.spouses || [];
+      const isMarried = spouses.length > 0;
+
+      const caravans = caravanRes?.caravans || [];
+      const hasCaravans = caravans.length > 0;
+
+      // Determine Life Stage (1 to 4)
+      let currentStage = 1;
+      if (netWorth >= 50000 || (hasEnterprises && enterprises.length >= 2 && netWorth >= 30000)) {
+        currentStage = 4;
+      } else if (netWorth >= 12000 || hasEnterprises || war >= 75 || com >= 80) {
+        currentStage = 3;
+      } else if (netWorth >= 1500 || hasEnterprises || cra >= 60 || war >= 60 || com >= 60) {
+        currentStage = 2;
+      } else {
+        currentStage = 1;
+      }
+
+      // Domain Unlock Checks according to authentic RPG standards:
+      // 1. Forge: Requires CRA >= 50 or owning a Blacksmith Forge
+      const isForgeUnlocked = cra >= 50 || enterprises.some(b => b.business_type === 'BLACKSMITH');
+
+      // 2. Caravan: Unlocked if Net Worth >= 2500 OR has business OR COM >= 50 OR has active caravans
+      const isCaravanUnlocked = netWorth >= 2500 || hasEnterprises || com >= 50 || hasCaravans;
+
+      // 3. Family Lineage: Clan Manor unlocked if married or Stage >= 2
+      const isFamilyUnlocked = isMarried || currentStage >= 2;
+
+      cachedProgressionState = {
+        stage: currentStage,
+        liquidCash,
+        netWorth,
+        cra,
+        com,
+        war,
+        pol,
+        ldr,
+        enterprises,
+        hasEnterprises,
+        isMarried,
+        spouses,
+        caravans,
+        hasCaravans,
+        isForgeUnlocked,
+        isCaravanUnlocked,
+        isFamilyUnlocked
+      };
+      return cachedProgressionState;
+    } catch (err) {
+      console.warn('[GrandCommandHubUI] Error evaluating progression state:', err);
+      cachedProgressionState = {
+        stage: 1,
+        liquidCash: 100,
+        netWorth: 100,
+        cra: 50,
+        com: 50,
+        war: 50,
+        pol: 50,
+        ldr: 50,
+        enterprises: [],
+        hasEnterprises: false,
+        isMarried: false,
+        spouses: [],
+        caravans: [],
+        hasCaravans: false,
+        isForgeUnlocked: false,
+        isCaravanUnlocked: false,
+        isFamilyUnlocked: false
+      };
+      return cachedProgressionState;
+    }
+  }
+
+  function refreshHubNavigation(progState) {
+    if (!progState) return;
+    const isEn = isEnglish();
+
+    // 1. Dynamic Evolution of Headquarters Title & Seal
+    const hubTitleEl = document.getElementById('grand-hub-title');
+    const hubSubEl = document.querySelector('.grand-hub-subtitle');
+    const masterSealEl = document.querySelector('.grand-hub-master-seal');
+
+    if (progState.stage === 1) {
+      if (masterSealEl) masterSealEl.textContent = '草廬';
+      if (hubTitleEl) hubTitleEl.textContent = isEn ? 'HUMBLE ABODE • LIFE JOURNEY' : 'THẢO LƯ • HÀNH TRÌNH LẬP THÂN';
+      if (hubSubEl) hubSubEl.textContent = isEn ? 'Commoner Youth • Daily Labor & Laying Foundations' : 'Thanh Niên Bố Y • Lao Động Mưu Sinh & Tích Lũy Khởi Nghiệp';
+    } else if (progState.stage === 2) {
+      if (masterSealEl) masterSealEl.textContent = '莊園';
+      if (hubTitleEl) hubTitleEl.textContent = isEn ? 'FAMILY MANOR • REGIONAL VENTURE' : 'TRANG VIÊN • TRUNG TÂM CƠ NGHIỆP';
+      if (hubSubEl) hubSubEl.textContent = isEn ? 'Local Entrepreneur • Enterprise Operations & Social Standing' : 'Khởi Lập Cơ Sở • Điều Hành Sản Nghiệp & Gây Dựng Thanh Danh';
+    } else if (progState.stage === 3) {
+      if (masterSealEl) masterSealEl.textContent = '將府';
+      if (hubTitleEl) hubTitleEl.textContent = isEn ? 'GENERAL RESIDENCE • INTER-CITY TRADE' : 'TƯỚNG PHỦ • ĐẠI THƯƠNG ĐOÀN';
+      if (hubSubEl) hubSubEl.textContent = isEn ? 'Regional Magnate & Champion • Trade Routes & Hegemonic Ambition' : 'Hào Kiệt Phương Xa • Thương Lộ Viễn Chinh & Binh Uy';
+    } else {
+      if (masterSealEl) masterSealEl.textContent = '軍機';
+      if (hubTitleEl) hubTitleEl.textContent = isEn ? 'GRAND COMMAND HUB • WAR COUNCIL' : 'QUÂN CƠ XỨ • ĐẠI BẢN DOANH';
+      if (hubSubEl) hubSubEl.textContent = isEn ? 'Dynastic Hegemon • Multi-Domain Grand Strategy' : 'Tam Quốc Hùng Đồ • Tổng Hành Dinh 6 Đại Phân Hệ Chiến Lược';
+    }
+
+    // 2. Dynamic Update of Tab Navigation Bar
+    const tabsBar = document.querySelector('.grand-hub-tabs-bar');
+    if (!tabsBar) return;
+
+    const tabsConfig = [
+      {
+        key: 'career',
+        seal: '路',
+        titleVi: 'Phẩm Lộ',
+        titleEn: 'Roadmap',
+        badgeVi: 'Chỉ Nam',
+        badgeEn: 'Guide',
+        badgeType: 'badge-unlocked',
+        isLocked: false
+      },
+      {
+        key: 'gear',
+        seal: '武',
+        titleVi: 'Quân Trang',
+        titleEn: 'Armaments',
+        badgeVi: progState.isForgeUnlocked ? 'Lò Rèn' : 'Hành Trang',
+        badgeEn: progState.isForgeUnlocked ? 'Forge' : 'Gear',
+        badgeType: 'badge-unlocked',
+        isLocked: false
+      },
+      {
+        key: 'enterprise',
+        seal: progState.hasEnterprises ? '業' : '工',
+        titleVi: progState.hasEnterprises ? `Sản Nghiệp (${progState.enterprises.length})` : 'Lao Động',
+        titleEn: progState.hasEnterprises ? `Enterprises (${progState.enterprises.length})` : 'Labor',
+        badgeVi: progState.hasEnterprises ? 'Kinh Doanh' : 'Làm Thuê',
+        badgeEn: progState.hasEnterprises ? 'Active' : 'Wages',
+        badgeType: progState.hasEnterprises ? 'badge-unlocked' : 'badge-pending',
+        isLocked: false
+      },
+      {
+        key: 'caravan',
+        seal: '商',
+        titleVi: 'Thương Đoàn',
+        titleEn: 'Caravans',
+        badgeVi: progState.isCaravanUnlocked ? (progState.hasCaravans ? `Đoàn Buôn (${progState.caravans.length})` : 'Khả Dụng') : 'Chưa Mở',
+        badgeEn: progState.isCaravanUnlocked ? 'Active' : 'Locked',
+        badgeType: progState.isCaravanUnlocked ? 'badge-unlocked' : 'badge-locked',
+        isLocked: !progState.isCaravanUnlocked
+      },
+      {
+        key: 'family',
+        seal: '家',
+        titleVi: 'Gia Thất',
+        titleEn: 'Lineage',
+        badgeVi: progState.isMarried ? 'Đã Lập Gia' : 'Độc Thân',
+        badgeEn: progState.isMarried ? 'Married' : 'Single',
+        badgeType: progState.isMarried ? 'badge-unlocked' : 'badge-pending',
+        isLocked: false
+      },
+      {
+        key: 'duel',
+        seal: '演',
+        titleVi: 'Diễn Võ',
+        titleEn: 'Arena',
+        badgeVi: 'Võ Đài',
+        badgeEn: 'Arena',
+        badgeType: 'badge-unlocked',
+        isLocked: false
+      },
+      {
+        key: 'tavern',
+        seal: '義',
+        titleVi: 'Tụ Nghĩa',
+        titleEn: 'Tavern',
+        badgeVi: 'Tửu Quán',
+        badgeEn: 'Tavern',
+        badgeType: 'badge-unlocked',
+        isLocked: false
+      }
+    ];
+
+    tabsBar.innerHTML = tabsConfig.map(t => {
+      const title = isEn ? t.titleEn : t.titleVi;
+      const badge = isEn ? t.badgeEn : t.badgeVi;
+      const isActive = activeTabKey === t.key;
+      return `
+        <button class="grand-hub-tab-btn ${isActive ? 'active' : ''} ${t.isLocked ? 'tab-locked' : ''}"
+          data-tab="${t.key}"
+          onclick="GrandCommandHubUI.switchTab('${t.key}')"
+          title="${t.isLocked ? (isEn ? 'Domain Locked: Click to view unlock prerequisites' : 'Chưa đủ điều kiện khởi sự: Bấm để xem nhiệm vụ mở khóa') : title}">
+          <span class="hub-tab-seal">${t.seal}</span>
+          <span class="hub-tab-text">${title}</span>
+          ${t.isLocked ? `<span class="hub-tab-lock-icon">🔒</span>` : ''}
+          <span class="hub-tab-badge ${t.badgeType}">${badge}</span>
+        </button>
+      `;
+    }).join('');
+  }
+
+  // --------------------------------------------------------------------------
   // Core Hub Controller: Open, Close, Switch Tab
   // --------------------------------------------------------------------------
 
-  function openHub(defaultTab = 'career') {
+  async function openHub(defaultTab = 'career') {
     const modal = document.getElementById('grand-command-hub-modal');
     if (!modal) {
       console.error('Grand Command Hub modal shell not found in DOM.');
@@ -50,6 +272,8 @@
     }
 
     modal.classList.remove('hidden');
+    const progState = await getHubProgressionState();
+    refreshHubNavigation(progState);
     switchTab(defaultTab);
   }
 
@@ -569,6 +793,7 @@
 
   async function renderGearTab(container) {
     try {
+      const progState = cachedProgressionState || await getHubProgressionState();
       const res = await fetch('/api/equipment?characterId=PLY-0001');
       const data = await res.json();
       if (!data.success) throw new Error(data.error || 'Failed to load equipment');
@@ -583,9 +808,15 @@
               <h3 class="grand-hub-view-title"><span class="hub-seal-accent">武</span> ${isEn ? 'Armaments & Bespoke Blacksmith Forge' : 'Quân Trang Binh Khí & Lò Rèn Thần Binh'}</h3>
               <p class="grand-hub-view-desc">${isEn ? 'Manage equipped armaments and forge legendary bespoke masterworks.' : 'Quản lý bảo vật, binh khí hộ thân và đúc rèn thần binh độc bản.'}</p>
             </div>
-            <button class="tactical-btn tactical-btn--primary tactical-btn--sm" onclick="if(window.EquipmentUI){EquipmentUI.openEquipmentModal('PLY-0001','forge');}">
-              ${isEn ? 'Open Master Forge' : 'Mở Lò Rèn Đại Tượng Sư'} →
-            </button>
+            ${progState.isForgeUnlocked ? `
+              <button class="tactical-btn tactical-btn--primary tactical-btn--sm" onclick="if(window.EquipmentUI){EquipmentUI.openEquipmentModal('PLY-0001','forge');}">
+                ${isEn ? 'Open Master Forge' : 'Mở Lò Rèn Đại Tượng Sư'} →
+              </button>
+            ` : `
+              <span class="tactical-badge tactical-badge--warning" style="font-size: 11px;">
+                ${isEn ? 'Forge Locked (CRA < 50)' : 'Lò Rèn: Chưa Mở (CRA < 50)'}
+              </span>
+            `}
           </div>
 
           <!-- Equipped Armaments Grid -->
@@ -633,19 +864,35 @@
           </div>
 
           <!-- Bespoke Blacksmith Mini-Workbench -->
-          <div class="tactical-card" style="margin-top: 14px; border-left: 3px solid var(--brand-primary, #f59e0b);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-              <div>
-                <strong style="color: #f1f5f9;">${isEn ? 'Bespoke Forging Protocol (CRA ≥ 60 Required):' : 'Quy Trình Đoán Tạo Thần Binh (Yêu Cầu CRA ≥ 60):'}</strong>
-                <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
-                  ${isEn ? 'Consumes 25 Fatigue, Iron Ingots, Oak Timber, Charcoal and Leather. Stat clamped to [+1..+5].' : 'Tiêu hao 25 Thể lực, Phôi sắt, Than lò, Gỗ sồi & Da thuộc. Chỉ số bảo toàn nghiêm ngặt [+1..+5].'}
+          ${progState.isForgeUnlocked ? `
+            <div class="tactical-card" style="margin-top: 14px; border-left: 3px solid var(--brand-primary, #f59e0b);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <div>
+                  <strong style="color: #f1f5f9;">${isEn ? 'Bespoke Forging Protocol (CRA ≥ 50 Active):' : 'Quy Trình Đoán Tạo Thần Binh (Đã Mở Khóa Lò Rèn):'}</strong>
+                  <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                    ${isEn ? 'Consumes 25 Fatigue, Iron Ingots, Oak Timber, Charcoal and Leather. Stat clamped to [+1..+5].' : 'Tiêu hao 25 Thể lực, Phôi sắt, Than lò, Gỗ sồi & Da thuộc. Chỉ số bảo toàn nghiêm ngặt [+1..+5].'}
+                  </div>
                 </div>
+                <button class="tactical-btn tactical-btn--primary" onclick="if(window.EquipmentUI){EquipmentUI.openEquipmentModal('PLY-0001','forge');}">
+                  ${isEn ? 'Enter Forge Workshop' : 'Vào Phân Xưởng Lò Rèn'} →
+                </button>
               </div>
-              <button class="tactical-btn tactical-btn--primary" onclick="if(window.EquipmentUI){EquipmentUI.openEquipmentModal('PLY-0001','forge');}">
-                ${isEn ? 'Enter Forge Workshop' : 'Vào Phân Xưởng Lò Rèn'} →
-              </button>
             </div>
-          </div>
+          ` : `
+            <div class="tactical-card" style="margin-top: 14px; border-left: 3px solid #64748b; background: rgba(100, 116, 139, 0.05);">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <strong style="color: #94a3b8;">${isEn ? 'Bespoke Master Forge (Locked - Requires CRA ≥ 50 or Forge Facility)' : 'Lò Rèn Thần Binh (Chưa Mở Khóa - Cần Kỹ Nghệ CRA ≥ 50 hoặc Có Xưởng Rèn)'}</strong>
+                  <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                    ${isEn ? `Current CRA: ${progState.cra}/50. Work as Forge Apprentice to gain Crafting EXP.` : `Chỉ số Kỹ Nghệ hiện tại: ${progState.cra}/50. Hãy làm thuê phụ lò rèn để nâng cao tay nghề đúc kiếm.`}
+                  </div>
+                </div>
+                <button class="tactical-btn tactical-btn--sm" onclick="GrandCommandHubUI.executeWorkShift('SHIFT_FORGE_HAND')">
+                  🔨 ${isEn ? 'Apprentice at Forge (+40 CRA EXP)' : 'Làm Phụ Lò Rèn (+40 EXP CRA)'}
+                </button>
+              </div>
+            </div>
+          `}
         </div>
       `;
     } catch (err) {
@@ -661,11 +908,12 @@
   }
 
   // --------------------------------------------------------------------------
-  // TAB 2: [業] SẢN NGHIỆP (Enterprises & Labor)
+  // TAB 2: [業/工] SẢN NGHIỆP & LAO ĐỘNG (Enterprises & Labor Market)
   // --------------------------------------------------------------------------
 
   async function renderEnterpriseTab(container) {
     try {
+      const progState = cachedProgressionState || await getHubProgressionState();
       const res = await fetch('/api/enterprise/status?characterId=PLY-0001');
       const data = await res.json();
       if (!data.success) throw new Error(data.error || 'Failed to load enterprises');
@@ -673,6 +921,8 @@
       const st = data.status;
       const isEn = isEnglish();
       const owned = st.ownedBusinesses || st.activeEnterprises || [];
+      const hasOwned = owned.length > 0;
+      const canAffordEnterprise = progState.liquidCash >= 1500;
 
       const laborShifts = [
         { id: 'SHIFT_FORGE_HAND', seal: '鍛', title: 'Thợ Phụ Kéo Bễ & Quai Búa', wage: 140, fatigue: 20, exp: 40, workplace: 'Lò Rèn Bách Nghệ Trác Quận' },
@@ -687,58 +937,89 @@
         <div class="grand-hub-view-container">
           <div class="grand-hub-section-header">
             <div>
-              <h3 class="grand-hub-view-title"><span class="hub-seal-accent">業</span> ${isEn ? 'Enterprises, Facilities & Labor Market' : 'Sản Nghiệp, Cơ Sở & Thị Trường Làm Thuê'}</h3>
-              <p class="grand-hub-view-desc">${isEn ? 'Direct production lines, assign artisans, or earn wages via manual labor.' : 'Quản lý cơ sở chế tác, phân công thợ giỏi và tham gia lao động nhật khóa.'}</p>
+              <h3 class="grand-hub-view-title">
+                <span class="hub-seal-accent">${hasOwned ? '業' : '工'}</span>
+                ${hasOwned
+                  ? (isEn ? 'Enterprises, Facilities & Revenue Management' : 'Sản Nghiệp, Cơ Sở & Quản Lý Doanh Thu')
+                  : (isEn ? 'Daily Labor Market & Venture Accumulation' : 'Lao Động Mưu Sinh & Tích Lũy Khởi Nghiệp')}
+              </h3>
+              <p class="grand-hub-view-desc">
+                ${hasOwned
+                  ? (isEn ? 'Direct production lines, collect profits, and manage enterprise workforce.' : 'Quản lý cơ sở chế tác, phân công thợ giỏi và quyết toán thặng dư lợi nhuận.')
+                  : (isEn ? 'Take daily wage shifts to accumulate initial capital and craft experience before founding an enterprise.' : 'Làm thuê công nhật mưu sinh, tích lũy tiền công và kinh nghiệm nghề nghiệp để tự do lập xưởng.')}
+              </p>
             </div>
             <div style="display: flex; align-items: center; gap: 12px;">
-              <div style="font-size: 12px; font-family: 'JetBrains Mono', monospace; color: #34d399;">
-                ${isEn ? 'Workforce:' : 'Tổng Nhân Lực:'} <strong>${st.totalWorkforce || 0}</strong> • ${isEn ? 'Daily Rev:' : 'Doanh Thu Ngày:'} <strong>${formatNumber(st.totalDailyRevenue || 0)} Qian</strong>
-              </div>
-              <button class="tactical-btn tactical-btn--primary tactical-btn--sm" onclick="if(window.EnterpriseUI){EnterpriseUI.openEnterpriseModal('own');}">
-                ${isEn ? 'Full Enterprise Manager' : 'Tự Do Lập Nghiệp & Mở Xưởng'} →
+              ${hasOwned ? `
+                <div style="font-size: 12px; font-family: 'JetBrains Mono', monospace; color: #34d399;">
+                  ${isEn ? 'Workforce:' : 'Tổng Nhân Lực:'} <strong>${st.totalWorkforce || 0}</strong> • ${isEn ? 'Daily Rev:' : 'Doanh Thu Ngày:'} <strong>${formatNumber(st.totalDailyRevenue || 0)} Qian</strong>
+                </div>
+              ` : `
+                <div style="font-size: 12px; font-family: 'JetBrains Mono', monospace; color: #fbbf24;">
+                  ${isEn ? 'Current Cash:' : 'Tiền Mặt:'} <strong>${formatNumber(progState.liquidCash)} Qian</strong>
+                </div>
+              `}
+              <button class="tactical-btn ${canAffordEnterprise ? 'tactical-btn--primary' : 'tactical-btn--disabled'} tactical-btn--sm"
+                ${canAffordEnterprise ? `onclick="if(window.EnterpriseUI){EnterpriseUI.openEnterpriseModal('own');}"` : 'disabled'}
+                title="${canAffordEnterprise ? (isEn ? 'Open venture creation modal' : 'Mở giao diện lập xưởng mới') : (isEn ? `Requires 1,500 Qian (Have: ${progState.liquidCash})` : `Cần tối thiểu 1,500 Tiền (Hiện có: ${formatNumber(progState.liquidCash)})`)}">
+                ${canAffordEnterprise ? (isEn ? 'Found New Enterprise →' : 'Tự Do Lập Nghiệp & Mở Xưởng →') : `[CẦN 1,500 TIỀN (${formatNumber(progState.liquidCash)}/1,500)]`}
               </button>
             </div>
           </div>
 
-          <!-- Owned Facilities -->
-          <div class="hub-section-subtitle">${isEn ? 'Active Owned Enterprises:' : 'Cơ Sở Sản Nghiệp Đang Sở Hữu & Điều Hành:'}</div>
-          <div class="grand-hub-grid-3">
-            ${owned.length > 0 ? owned.map(biz => {
-              const profit = Number(biz.accumulated_profit || 0);
-              const dailyRev = Number(biz.daily_revenue || biz.daily_revenue_avg || 120);
-
-              return `
-                <div class="tactical-card">
-                  <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
-                    <strong style="font-size: 13px; color: #f1f5f9;">${biz.name}</strong>
-                    <span class="tactical-badge tactical-badge--info">${biz.business_type || 'WORKSHOP'}</span>
-                  </div>
-                  <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">
-                    ${isEn ? 'Location:' : 'Địa bàn:'} <b>${biz.location || biz.location_id || 'LOC-0001'}</b> • ${isEn ? 'Workforce:' : 'Quy mô thợ:'} <b>${biz.current_workforce || biz.workforce_count || 4}</b>
-                  </div>
-                  <div style="display: flex; justify-content: space-between; font-size: 11px; font-family: 'JetBrains Mono', monospace; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 6px;">
-                    <span>${isEn ? 'Daily Rev:' : 'Thu nhập ngày:'} <b style="color: #4ade80;">+${dailyRev} Qian</b></span>
-                    <span>${isEn ? 'Safe Cash:' : 'Két sắt:'} <b>${formatNumber(biz.safe_cash)} Qian</b></span>
-                  </div>
-                  ${profit > 0 ? `
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; padding-top: 6px; border-top: 1px dashed rgba(255,255,255,0.12); font-size: 11px;">
-                      <span style="color: #34d399; font-family: 'JetBrains Mono', monospace;">Thặng dư: <b>+${profit} Qian</b></span>
-                      <button class="tactical-btn tactical-btn--xs" style="background: #059669; border-color: #10b981; color: #fff; padding: 2px 8px;" onclick="GrandCommandHubUI.collectProfit('${biz.business_id}')">
-                        ${isEn ? 'Collect' : 'Rút Tiền'}
-                      </button>
+          ${hasOwned ? `
+            <!-- Owned Facilities (Rendered first if player owns business) -->
+            <div class="hub-section-subtitle">${isEn ? 'Active Owned Enterprises:' : 'Cơ Sở Sản Nghiệp Đang Sở Hữu & Điều Hành:'}</div>
+            <div class="grand-hub-grid-3">
+              ${owned.map(biz => {
+                const profit = Number(biz.accumulated_profit || 0);
+                const dailyRev = Number(biz.daily_revenue || biz.daily_revenue_avg || 120);
+                return `
+                  <div class="tactical-card">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
+                      <strong style="font-size: 13px; color: #f1f5f9;">${biz.name}</strong>
+                      <span class="tactical-badge tactical-badge--info">${biz.business_type || 'WORKSHOP'}</span>
                     </div>
-                  ` : ''}
+                    <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">
+                      ${isEn ? 'Location:' : 'Địa bàn:'} <b>${biz.location || biz.location_id || 'LOC-0001'}</b> • ${isEn ? 'Workforce:' : 'Quy mô thợ:'} <b>${biz.current_workforce || biz.workforce_count || 4}</b>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 11px; font-family: 'JetBrains Mono', monospace; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 6px;">
+                      <span>${isEn ? 'Daily Rev:' : 'Thu nhập ngày:'} <b style="color: #4ade80;">+${dailyRev} Qian</b></span>
+                      <span>${isEn ? 'Safe Cash:' : 'Két sắt:'} <b>${formatNumber(biz.safe_cash)} Qian</b></span>
+                    </div>
+                    ${profit > 0 ? `
+                      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; padding-top: 6px; border-top: 1px dashed rgba(255,255,255,0.12); font-size: 11px;">
+                        <span style="color: #34d399; font-family: 'JetBrains Mono', monospace;">Thặng dư: <b>+${profit} Qian</b></span>
+                        <button class="tactical-btn tactical-btn--xs" style="background: #059669; border-color: #10b981; color: #fff; padding: 2px 8px;" onclick="GrandCommandHubUI.collectProfit('${biz.business_id}')">
+                          ${isEn ? 'Collect' : 'Rút Tiền'}
+                        </button>
+                      </div>
+                    ` : ''}
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          ` : `
+            <!-- Venture Goal Banner when no business owned yet -->
+            <div class="tactical-card" style="border-left: 3px solid #fbbf24; background: rgba(251, 191, 36, 0.04); margin-bottom: 14px; padding: 14px 18px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <strong style="color: #fbbf24; font-size: 13px;">${isEn ? 'Venture Milestone: Founding Your First Business' : 'Mục Tiêu Khởi Nghiệp: Khởi Lập Cơ Sở Đầu Tiên'}</strong>
+                  <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                    ${isEn
+                      ? 'Accumulate 1,500 Qian from daily wages to purchase or establish your own Workshop, Tavern, Apothecary, or Blacksmith Forge.'
+                      : 'Tích lũy đủ 1,500 Tiền từ làm thuê để mua lại hoặc mở mới Xưởng thủ công, Tửu quán, Dược điếm hoặc Lò rèn.'}
+                  </div>
                 </div>
-              `;
-            }).join('') : `
-              <div class="tactical-card" style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 20px;">
-                ${isEn ? 'No commercial enterprises currently established in this jurisdiction.' : 'Chưa khai trương cơ sở sản nghiệp nào. Bấm nút "Tự Do Lập Nghiệp" để mở xưởng mới.'}
+                <div style="font-size: 12px; font-family: 'JetBrains Mono', monospace; color: ${canAffordEnterprise ? '#4ade80' : '#fbbf24'};">
+                  <b>${formatNumber(progState.liquidCash)} / 1,500 Qian</b>
+                </div>
               </div>
-            `}
-          </div>
+            </div>
+          `}
 
-          <!-- Labor Market Shifts -->
-          <div class="hub-section-subtitle" style="margin-top: 16px;">${isEn ? 'Daily Labor Market (Earn Immediate Wages):' : 'Thị Trường Làm Thuê Kiếm Sống (Lương Ngày & Kinh Nghiệm Nghề):'}</div>
+          <!-- Labor Market Shifts (Always accessible) -->
+          <div class="hub-section-subtitle" style="margin-top: 12px;">${isEn ? 'Daily Labor Market (Earn Immediate Wages):' : 'Thị Trường Làm Thuê Kiếm Sống (Lương Ngày & Kinh Nghiệm Nghề):'}</div>
           <div class="grand-hub-grid-2">
             ${laborShifts.map(sh => `
               <div class="tactical-card" style="display: flex; justify-content: space-between; align-items: center;">
@@ -747,7 +1028,7 @@
                   <div>
                     <strong style="font-size: 12.5px; color: #f1f5f9;">${sh.title}</strong>
                     <div style="font-size: 10.5px; color: var(--text-muted); margin-top: 2px;">
-                      ${sh.workplace} • Tiêu hao: <b style="color: #fbbf24;">${sh.fatigue} Thể lực</b>
+                      ${sh.workplace} • Tiêu hao: <b style="color: #fbbf24;">${sh.fatigue} Thể lực</b> • Nhận: <b style="color: #38bdf8;">+${sh.exp} EXP</b>
                     </div>
                   </div>
                 </div>
@@ -816,15 +1097,94 @@
   }
 
   // --------------------------------------------------------------------------
-  // TAB 3: [商] THƯƠNG ĐOÀN (Caravans & Trade)
+  // TAB 3: [商] THƯƠNG ĐOÀN (Caravans & Inter-City Trade)
   // --------------------------------------------------------------------------
 
   async function renderCaravanTab(container) {
     try {
+      const progState = cachedProgressionState || await getHubProgressionState();
+      const isEn = isEnglish();
+
+      // Check if Caravan domain is locked for protagonist
+      if (!progState.isCaravanUnlocked) {
+        container.innerHTML = `
+          <div class="grand-hub-view-container">
+            <div class="tactical-card" style="border-left: 4px solid #f59e0b; background: rgba(245, 158, 11, 0.04); padding: 22px 24px;">
+              <div style="display: flex; align-items: flex-start; gap: 18px;">
+                <div style="font-size: 34px; line-height: 1; padding: 12px; background: rgba(0,0,0,0.3); border-radius: 8px; border: 1px solid rgba(245, 158, 11, 0.3);">
+                  🔒
+                </div>
+                <div style="flex: 1;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <h3 style="margin: 0; font-size: 15px; color: #fbbf24; font-weight: 700;">
+                      ${isEn ? 'INTER-CITY TRADE EXPEDITIONS • NOT YET UNLOCKED' : 'THƯƠNG ĐOÀN BUÔN XA LIÊN CHÂU QUẬN • CHƯA ĐỦ ĐIỀU KIỆN KHỞI SỰ'}
+                    </h3>
+                    <span class="tactical-badge tactical-badge--warning">
+                      ${isEn ? 'Requires Merchant Foundation' : 'Cần Nền Tảng Thương Nghiệp'}
+                    </span>
+                  </div>
+                  <p style="margin: 0 0 14px 0; font-size: 12px; color: #cbd5e1; line-height: 1.6;">
+                    ${isEn
+                      ? 'Traversing long-distance trade routes across the 15 provinces in turbulent times requires significant working capital, freight horses, and hired escort guards. A penniless commoner cannot yet independently organize caravans.'
+                      : 'Vận chuyển hàng hóa qua 15 châu quận thời buổi loạn thế đòi hỏi nguồn vốn nhập hàng dồi dào, ngựa xe vận tải và đội ngũ võ sĩ hộ tiêu áp tải. Một thanh niên áo vải chưa đủ tư cách để tự mình lãnh đạo thương đoàn.'}
+                  </p>
+
+                  <!-- Unlock Checklist -->
+                  <div style="background: rgba(0,0,0,0.35); border: 1px dashed rgba(255,255,255,0.15); border-radius: 8px; padding: 12px 16px; margin-bottom: 14px;">
+                    <strong style="color: #38bdf8; font-size: 11.5px; display: block; margin-bottom: 8px;">
+                      ${isEn ? '📋 PREREQUISITES TO ESTABLISH CARAVANS (MEET ANY OF THE FOLLOWING):' : '📋 ĐIỀU KIỆN ĐỂ TỔ CHỨC THƯƠNG ĐOÀN (ĐẠT 1 TRONG CÁC ĐIỀU KIỆN):'}
+                    </strong>
+                    <div style="display: grid; gap: 8px; font-size: 11.5px;">
+                      <div style="display: flex; justify-content: space-between; align-items: center; color: ${progState.liquidCash >= 2500 ? '#4ade80' : '#94a3b8'};">
+                        <span>💰 ${isEn ? 'Working Cash Reserve:' : 'Ngân lượng lưu động tối thiểu:'} <b>2,500 Qian</b></span>
+                        <b>${progState.liquidCash >= 2500 ? '✅ ĐÃ ĐẠT' : `❌ Hiện có: ${formatNumber(progState.liquidCash)} / 2,500 Qian`}</b>
+                      </div>
+                      <div style="display: flex; justify-content: space-between; align-items: center; color: ${progState.com >= 50 ? '#4ade80' : '#94a3b8'};">
+                        <span>📜 ${isEn ? 'Commerce Attribute (COM):' : 'Chỉ số Thương Nghiệp (COM):'} <b>≥ 50</b></span>
+                        <b>${progState.com >= 50 ? '✅ ĐÃ ĐẠT' : `❌ Hiện tại: ${progState.com} / 50`}</b>
+                      </div>
+                      <div style="display: flex; justify-content: space-between; align-items: center; color: ${progState.hasEnterprises ? '#4ade80' : '#94a3b8'};">
+                        <span>🏢 ${isEn ? 'Commercial Facility Ownership:' : 'Sở hữu ít nhất 1 cơ sở sản nghiệp (Xưởng/Tửu quán/Dược điếm)'}</span>
+                        <b>${progState.hasEnterprises ? '✅ ĐÃ ĐẠT' : '❌ Chưa sở hữu xưởng nào'}</b>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Action Guidance -->
+                  <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button class="tactical-btn tactical-btn--primary tactical-btn--sm" onclick="GrandCommandHubUI.switchTab('enterprise')">
+                      💼 ${isEn ? 'Earn Wages in Labor Market' : 'Làm Thuê Tích Lũy Vốn (Tab Lao Động)'} →
+                    </button>
+                    <button class="tactical-btn tactical-btn--sm" onclick="GrandCommandHubUI.switchTab('career')">
+                      🗺️ ${isEn ? 'View Merchant Destiny Path' : 'Xem Phẩm Lộ [Hành Thương Cự Phú]'} →
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Regional Price Arbitrage Preview (Always accessible as market intelligence!) -->
+            <div class="tactical-card" style="margin-top: 14px; background: rgba(15, 23, 42, 0.8);">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <strong style="color: #38bdf8;">${isEn ? '15-Province Macro-Economic Arbitrage Matrix (Market Intel)' : 'Bảng Chênh Lệch Giá Hàng Hóa 15 Châu Huyện (Thám Thính Thị Trường)'}</strong>
+                  <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                    ${isEn ? 'Inspect grain, silk, iron and salt price spreads across China before launching your trade network.' : 'Dù chưa thể phái đoàn buôn, bạn vẫn có thể xem xét giá cả ngũ cốc, da thuộc, tơ lụa để chuẩn bị chiến lược.'}
+                  </div>
+                </div>
+                <button class="tactical-btn tactical-btn--sm" onclick="if(window.CaravanUI){CaravanUI.open('arbitrage');}">
+                  ${isEn ? 'Inspect Price Matrix' : 'Xem Bảng Giá Toàn Quốc'} →
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
       const res = await fetch('/api/logistics/caravans');
       const data = await res.json();
       const caravans = data.caravans || [];
-      const isEn = isEnglish();
 
       container.innerHTML = `
         <div class="grand-hub-view-container">
@@ -909,6 +1269,7 @@
 
   async function renderFamilyTab(container) {
     try {
+      const progState = cachedProgressionState || await getHubProgressionState();
       const res = await fetch('/api/lineage/status');
       const data = await res.json();
       if (!data.success) throw new Error(data.error || 'Failed to load lineage status');
@@ -916,32 +1277,66 @@
       cachedLineageOverview = data.overview;
       const overview = cachedLineageOverview;
       const isEn = isEnglish();
+      const isMarried = overview.spouses && overview.spouses.length > 0;
 
       container.innerHTML = `
         <div class="grand-hub-view-container">
           <div class="grand-hub-section-header">
             <div>
-              <h3 class="grand-hub-view-title"><span class="hub-seal-accent">家</span> ${isEn ? 'Dynastic Family & Lineage Succession (R1)' : 'Gia Thất, Hậu Duệ & Kế Thừa Dòng Họ (R1)'}</h3>
-              <p class="grand-hub-view-desc">${isEn ? 'Manage betrothal, heir mentorship under historical masters, and dynastic succession.' : 'Cầu hôn tài nữ, nuôi dạy thế tử dưới trướng danh sư và kế thừa dòng họ.'}</p>
+              <h3 class="grand-hub-view-title">
+                <span class="hub-seal-accent">家</span>
+                ${isMarried
+                  ? (isEn ? 'Dynastic Family & Lineage Succession (R1)' : 'Gia Thất, Hậu Duệ & Kế Thừa Dòng Họ (R1)')
+                  : (isEn ? 'Courtship & Family Founding (Bachelor)' : 'Gia Thất • Tầm Thê & Khởi Lập Gia Tộc (Độc Thân)')}
+              </h3>
+              <p class="grand-hub-view-desc">
+                ${isMarried
+                  ? (isEn ? 'Manage betrothal, heir mentorship under historical masters, and dynastic succession.' : 'Cầu hôn tài nữ, nuôi dạy thế tử dưới trướng danh sư và kế thừa dòng họ.')
+                  : (isEn ? 'Seek and encounter prominent heroines across China, cultivate bonds, and accumulate dowry to establish your clan.' : 'Diện kiến giai nhân Tam Quốc, bồi đắp hảo cảm và nạp sính lễ để chính thức lập gia thất.')}
+              </p>
             </div>
             <div style="font-size: 12px; font-family: 'JetBrains Mono', monospace; color: #fbbf24;">
-              ${isEn ? 'Generation:' : 'Đời Thứ:'} <strong>${overview.clan?.current_generation || 1}</strong> • ${isEn ? 'Spouses:' : 'Thê Thiếp:'} <strong>${overview.spouses?.length || 0}</strong> • ${isEn ? 'Heirs:' : 'Hậu Duệ:'} <strong>${overview.children?.length || 0}</strong>
+              ${isMarried
+                ? `${isEn ? 'Generation:' : 'Đời Thứ:'} <strong>${overview.clan?.current_generation || 1}</strong> • ${isEn ? 'Spouses:' : 'Thê Thiếp:'} <strong>${overview.spouses?.length || 0}</strong> • ${isEn ? 'Heirs:' : 'Hậu Duệ:'} <strong>${overview.children?.length || 0}</strong>`
+                : `<span style="color: #38bdf8;">${isEn ? 'Bachelor • Unmarried' : 'Bố Y Độc Thân • Chưa Lập Gia'}</span>`}
             </div>
           </div>
+
+          ${!isMarried ? `
+            <!-- Bachelor Notice Banner -->
+            <div class="tactical-card" style="border-left: 3px solid #38bdf8; background: rgba(56, 189, 248, 0.05); margin-bottom: 14px; padding: 14px 18px;">
+              <div style="display: flex; align-items: center; justify-content: space-between;">
+                <div>
+                  <strong style="color: #38bdf8; font-size: 13px;">${isEn ? 'Protagonist Status: Unmarried Wanderer' : 'Tình Trạng Gia Thất: Bố Y Độc Thân (Chưa Lập Trang Viên)'}</strong>
+                  <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                    ${isEn
+                      ? 'Courtship & Maiden Encounter is open below. Heirs, Genealogy, and Ancestral Memorial unlock once you marry a spouse.'
+                      : 'Hiện có thể tương ngộ và cầu hôn giai nhân. Các mục Hậu Duệ, Gia Phả và Tông Miếu sẽ mở khóa sau khi thành gia lập thất.'}
+                  </div>
+                </div>
+                <span class="tactical-badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3);">
+                  ${isEn ? 'Bachelor' : 'Độc Thân'}
+                </span>
+              </div>
+            </div>
+          ` : ''}
 
           <!-- Sub-View Navigation Tabs -->
           <div class="grand-hub-subnav">
             <button class="grand-hub-subnav-btn ${activeLineageSubTab === 'courtship' ? 'active' : ''}" onclick="GrandCommandHubUI.switchLineageSubTab('courtship')">
-              <span class="hub-subnav-seal">姻</span> ${isEn ? 'Courtship & Spouses' : 'Cầu Hôn & Thê Thiếp'}
+              <span class="hub-subnav-seal">姻</span> ${isEn ? 'Courtship & Spouses' : (isMarried ? 'Cầu Hôn & Thê Thiếp' : 'Tầm Thê & Cầu Hôn')}
             </button>
-            <button class="grand-hub-subnav-btn ${activeLineageSubTab === 'heirs' ? 'active' : ''}" onclick="GrandCommandHubUI.switchLineageSubTab('heirs')">
-              <span class="hub-subnav-seal">嗣</span> ${isEn ? 'Heirs & Mentorship' : 'Hậu Duệ & Dạy Dỗ'}
+            <button class="grand-hub-subnav-btn ${activeLineageSubTab === 'heirs' ? 'active' : ''} ${!isMarried ? 'subnav-btn-locked' : ''}"
+              ${isMarried ? `onclick="GrandCommandHubUI.switchLineageSubTab('heirs')"` : `disabled title="${isEn ? 'Locked: Requires married spouse' : 'Khóa: Cần cưới thê thiếp để mở sổ bộ hậu duệ'}"`}>
+              <span class="hub-subnav-seal">${isMarried ? '嗣' : '🔒'}</span> ${isEn ? 'Heirs & Mentorship' : 'Hậu Duệ & Dạy Dỗ'}
             </button>
-            <button class="grand-hub-subnav-btn ${activeLineageSubTab === 'tree' ? 'active' : ''}" onclick="GrandCommandHubUI.switchLineageSubTab('tree')">
-              <span class="hub-subnav-seal">譜</span> ${isEn ? 'Genealogical Tree' : 'Gia Phả Dòng Họ'}
+            <button class="grand-hub-subnav-btn ${activeLineageSubTab === 'tree' ? 'active' : ''} ${!isMarried ? 'subnav-btn-locked' : ''}"
+              ${isMarried ? `onclick="GrandCommandHubUI.switchLineageSubTab('tree')"` : `disabled title="${isEn ? 'Locked: Requires established family' : 'Khóa: Cần khai sáng gia tộc để lập phả đồ'}"`}>
+              <span class="hub-subnav-seal">${isMarried ? '譜' : '🔒'}</span> ${isEn ? 'Genealogical Tree' : 'Gia Phả Dòng Họ'}
             </button>
-            <button class="grand-hub-subnav-btn ${activeLineageSubTab === 'succession' ? 'active' : ''}" onclick="GrandCommandHubUI.switchLineageSubTab('succession')">
-              <span class="hub-subnav-seal">繼</span> ${isEn ? 'Ancestors & Succession' : 'Tông Miếu & Kế Thừa'}
+            <button class="grand-hub-subnav-btn ${activeLineageSubTab === 'succession' ? 'active' : ''} ${!isMarried ? 'subnav-btn-locked' : ''}"
+              ${isMarried ? `onclick="GrandCommandHubUI.switchLineageSubTab('succession')"` : `disabled title="${isEn ? 'Locked: Requires heir' : 'Khóa: Cần có thế tử để thừa kế tông miếu'}"`}>
+              <span class="hub-subnav-seal">${isMarried ? '繼' : '🔒'}</span> ${isEn ? 'Ancestors & Succession' : 'Tông Miếu & Kế Thừa'}
             </button>
           </div>
 
