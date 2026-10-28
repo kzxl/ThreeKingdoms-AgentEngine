@@ -279,7 +279,7 @@ export class TavernBanquetService {
     }
 
     // Resolve active game date
-    const meta = this.db.queryOne<any>('SELECT current_date FROM campaign_meta LIMIT 1;');
+    const meta = this.db.queryOne<any>('SELECT campaign_meta.current_date FROM campaign_meta LIMIT 1;');
     const gameDate = meta?.current_date || '184-05-02';
 
     // Resolve tavern business information
@@ -667,7 +667,7 @@ export class TavernBanquetService {
       );
     }
 
-    const meta = this.db.queryOne<any>('SELECT current_date FROM campaign_meta LIMIT 1;');
+    const meta = this.db.queryOne<any>('SELECT campaign_meta.current_date FROM campaign_meta LIMIT 1;');
     const gameDate = meta?.current_date || '184-05-02';
 
     return this.db.transaction(() => {
@@ -847,7 +847,7 @@ export class TavernBanquetService {
     const ambition = Math.max(10, Math.min(95, Math.floor((charRow.war_attr + charRow.int_attr) / 2) - 10));
     const betrayalRisk = Number(Math.max(0.005, (100 - startingLoyalty) / 200).toFixed(3));
 
-    const meta = this.db.queryOne<any>('SELECT current_date FROM campaign_meta LIMIT 1;');
+    const meta = this.db.queryOne<any>('SELECT campaign_meta.current_date FROM campaign_meta LIMIT 1;');
     const gameDate = meta?.current_date || '184-05-02';
 
     return this.db.transaction(() => {

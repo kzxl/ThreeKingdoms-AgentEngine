@@ -344,7 +344,7 @@ function filterRotkEvents() {
 let cachedGameScenarios = [];
 let cachedGameArchetypes = [];
 let selectedScenarioId = 'SCN-184-ZHOU';
-let selectedArchetypeId = 'ARCH-SCHOLAR-ARTISAN';
+let selectedArchetypeId = 'ARCH-COMMONER-YOUTH';
 
 function updateArchetypePreview(archetypeId) {
   selectedArchetypeId = archetypeId;
@@ -422,7 +422,7 @@ function updateArchetypePreview(archetypeId) {
       </div>
       <div class="gm-asset-row">
         <span class="gm-asset-label">${isEn ? 'Starting Base:' : 'Căn Cứ Khởi Đầu:'}</span>
-        <span class="gm-asset-val">${isEn ? 'Zhuo County Craft Workshop & Granary' : 'Xưởng Chức Tác Lương Gia & Kho Hàng Trác Huyện'}</span>
+        <span class="gm-asset-val">${arch.archetype_id === 'ARCH-COMMONER-YOUTH' ? (isEn ? 'Zhuo County (Pauper: No Real Estate)' : 'Hai Bàn Tay Trắng tại Huyện Trác (Chưa có tư sản)') : (isEn ? 'Zhuo County Craft Workshop & Granary' : 'Xưởng Chức Tác Lương Gia & Kho Hàng Trác Huyện')}</span>
       </div>
       <div class="gm-asset-row">
         <span class="gm-asset-label">${isEn ? 'Initial Perk:' : 'Đặc Quyền Khởi Đầu:'}</span>
@@ -577,7 +577,7 @@ function renderGameManagerModalContent(data) {
   }
 
   // Populate preview panel with currently selected archetype
-  const activeArchId = selectedArchetypeId || (archetypes[0] ? archetypes[0].archetype_id : 'ARCH-SCHOLAR-ARTISAN');
+  const activeArchId = selectedArchetypeId || (archetypes[0] ? archetypes[0].archetype_id : 'ARCH-COMMONER-YOUTH');
   updateArchetypePreview(activeArchId);
 }
 
@@ -588,7 +588,7 @@ async function submitStartNewGame() {
   const styleEl = document.getElementById('gm-custom-player-style');
 
   const scenarioId = scnEl ? scnEl.value : (selectedScenarioId || 'SCN-184-ZHOU');
-  const archetypeId = archEl ? archEl.value : (selectedArchetypeId || 'ARCH-SCHOLAR-ARTISAN');
+  const archetypeId = archEl ? archEl.value : (selectedArchetypeId || 'ARCH-COMMONER-YOUTH');
   const customPlayerName = nameEl && nameEl.value.trim() ? nameEl.value.trim() : null;
   const customStyleName = styleEl && styleEl.value.trim() ? styleEl.value.trim() : null;
 

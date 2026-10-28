@@ -111,7 +111,7 @@ class GameplayManager {
    * List available player archetypes for character creation
    */
   getMasterArchetypes() {
-    return runSqlJson(this.dbPath, `SELECT * FROM master_player_archetypes ORDER BY archetype_id ASC;`);
+    return runSqlJson(this.dbPath, `SELECT * FROM master_player_archetypes ORDER BY CASE WHEN archetype_id = 'ARCH-COMMONER-YOUTH' THEN 0 ELSE 1 END, archetype_id ASC;`);
   }
 
   /**
@@ -120,7 +120,7 @@ class GameplayManager {
    */
   startNewGame({
     scenarioId = 'SCN-184-ZHOU',
-    archetypeId = 'ARCH-SCHOLAR-ARTISAN',
+    archetypeId = 'ARCH-COMMONER-YOUTH',
     customPlayerName = null,
     customStyleName = null,
     seed = 1840201
@@ -287,6 +287,167 @@ class GameplayManager {
     } catch (err) {
       return { success: false, error: err.message };
     }
+  }
+
+  /**
+   * Advance the campaign to the next strategic turn (Monthly Progression).
+   * Increments active_turn, advances game date by 1 month, runs autonomous business operations,
+   * restores player fatigue, executes living world simulations, writes turn_log and chronicle.
+   */
+  advanceTurn({ notes = '' } = {}) {
+    // 1. Fetch active campaign metadata
+    const meta = runSqlJson(this.dbPath, `SELECT * FROM campaign_meta LIMIT 1;`)[0];
+    if (!meta) throw new Error('Campaign metadata missing in session database.');
+
+    const prevTurn = Number(meta.active_turn || 1);
+    const nextTurn = prevTurn + 1;
+    const prevDate = meta.current_date || '184-05-02';
+
+    // 2. Advance game date to the 1st of next month
+    let nextDate = '184-06-01';
+    try {
+      const parts = prevDate.split('-').map(Number);
+      let y = parts[0] || 184;
+      let m = parts[1] || 5;
+      m += 1;
+      if (m > 12) {
+        m = 1;
+        y += 1;
+      }
+      nextDate = `${y}-${String(m).padStart(2, '0')}-01`;
+    } catch {
+      nextDate = '184-06-01';
+    }
+
+    // 3. Player State Fatigue Recovery & Morale Stabilization
+    const player = runSqlJson(this.dbPath, `SELECT * FROM player_state LIMIT 1;`)[0];
+    let recoveredFatigue = 0;
+    if (player) {
+      const currentFatigue = Number(player.fatigue || 0);
+      const newFatigue = Math.max(0, currentFatigue - 35);
+      recoveredFatigue = currentFatigue - newFatigue;
+      const currentMorale = Number(player.morale || 100);
+      const newMorale = Math.min(100, currentMorale + 10);
+      runSqlBatch(this.dbPath, `
+        UPDATE player_state 
+        SET fatigue = ${newFatigue}, morale = ${newMorale}, health = 100 
+        WHERE player_id = '${player.player_id}';
+      `);
+    }
+
+    // 4. Update campaign_meta
+    runSqlBatch(this.dbPath, `
+      UPDATE campaign_meta 
+      SET active_turn = ${nextTurn}, current_date = '${nextDate}'
+      WHERE campaign_id = '${meta.campaign_id}';
+    `);
+
+    // 5. Monthly Business / Enterprise Cycle & Retainer Wages
+    const businesses = runSqlJson(this.dbPath, `SELECT * FROM businesses;`);
+    const bizReports = [];
+    for (const b of businesses) {
+      const staff = runSqlJson(this.dbPath, `SELECT * FROM npc_state WHERE assigned_business_id = '${b.business_id}';`);
+      let totalWages = 0;
+      for (const s of staff) {
+        totalWages += Number(s.monthly_wage || 0);
+      }
+      const tier = Number(b.tier || 1);
+      const workforce = Number(b.current_workforce || 2);
+      const eff = Number(b.efficiency_multiplier || 1.0);
+      const grossIncome = Math.round(tier * 260 * eff + workforce * 25);
+      const netProfit = grossIncome - totalWages;
+
+      let currentSafe = Number(b.safe_cash || 0);
+      let updatedSafe = Math.max(0, currentSafe + netProfit);
+      runSqlBatch(this.dbPath, `UPDATE businesses SET safe_cash = ${updatedSafe} WHERE business_id = '${b.business_id}';`);
+
+      bizReports.push({
+        businessId: b.business_id,
+        businessName: b.name,
+        grossIncome,
+        totalWages,
+        netProfit,
+        newSafeCash: updatedSafe,
+        staffCount: staff.length
+      });
+    }
+
+    // 6. Living World Simulation (NPCs, Politics, Logistics)
+    const gsm = globalThis.__GRAND_STRATEGY_MODULES__;
+    let npcLogs = [];
+    let politicalEvents = [];
+    let ecologyResults = null;
+
+    if (gsm && gsm.npcLifecycle && typeof gsm.npcLifecycle.simulateAllActiveNpcs === 'function') {
+      try { npcLogs = gsm.npcLifecycle.simulateAllActiveNpcs(nextTurn, nextDate); } catch (e) {}
+    }
+    if (gsm && gsm.factionPolitics && typeof gsm.factionPolitics.simulatePoliticalCycle === 'function') {
+      try { politicalEvents = gsm.factionPolitics.simulatePoliticalCycle(nextTurn, nextDate); } catch (e) {}
+    }
+    if (gsm && gsm.ecologyLogistics && typeof gsm.ecologyLogistics.simulateEcologyAndLogisticsTurn === 'function') {
+      try { ecologyResults = gsm.ecologyLogistics.simulateEcologyAndLogisticsTurn(nextTurn, nextDate); } catch (e) {}
+    }
+
+    // 7. Write Turn Log
+    const turnTitle = `Lượt ${nextTurn} • Phong Vân Biến Động (${nextDate})`;
+    const playerLoc = player?.current_location || 'LOC-0001';
+    const turnSummary = `Chuyển sang tháng mới (${nextDate}). Vận hành ${bizReports.length} sản nghiệp; thể lực phục hồi +${recoveredFatigue}; thế cuộc quần hùng thiên hạ và nghĩa quân chuyển dịch.`;
+
+    runSqlBatch(this.dbPath, `
+      INSERT INTO turn_log (turn_number, game_date, turn_title, location, summary, dilemma_choice)
+      VALUES (${nextTurn}, '${nextDate}', '${turnTitle.replace(/'/g, "''")}', '${playerLoc}', '${turnSummary.replace(/'/g, "''")}', 'Tiếp tục phát triển sản nghiệp và bồi đắp uy vọng hào kiệt.');
+    `);
+
+    // 8. Record Chat Chronicle turn
+    const chronicleId = `turn_adv_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`;
+    const chronicleText = `【KẾT THÚC LƯỢT ${prevTurn} ➔ BƯỚC VÀO LƯỢT ${nextTurn}】\n` +
+      `Thời quang thấm thoát, chiến cuộc chuyển sang ngày **${nextDate}**.\n` +
+      `• **Trạng thái cá nhân**: Thể lực hồi phục (${recoveredFatigue > 0 ? `+${recoveredFatigue}` : 'Tối đa'}), sĩ khí ổn định.\n` +
+      `• **Vận hành sản nghiệp**: ${bizReports.length > 0 ? bizReports.map(br => `${br.businessName} (Lợi nhuận: ${br.netProfit >= 0 ? '+' : ''}${br.netProfit} Tiền)`).join(', ') : 'Chưa có xưởng trực thuộc, tiếp tục tự do hành hiệp.'}\n` +
+      `• **Động thái thiên hạ**: Các chư hầu Bắc Cương và triều đình Lạc Dương tiếp tục điều động binh mã, giá cả thị trường biến động theo mùa.`;
+
+    runSqlBatch(this.dbPath, `
+      INSERT INTO chat_chronicle (id, turn_number, game_date, type, speaker, title, avatar, text, deltas, reasoning)
+      VALUES (
+        '${chronicleId}', ${nextTurn}, '${nextDate}', 'system', 'Hệ Thống Chiến Lược', 'Báo Cáo Chuyển Lượt', '曆',
+        '${chronicleText.replace(/'/g, "''")}',
+        '{"activeTurn": ${nextTurn}, "gameDate": "${nextDate}", "recoveredFatigue": ${recoveredFatigue}}',
+        'Cập nhật tiến trình thời gian và mô phỏng thế giới sống động.'
+      );
+    `);
+
+    // 9. Sync PROGRESS.md Header & Turn Section
+    const progressPath = path.join(ROOT_DIR, 'game', 'PROGRESS.md');
+    if (fs.existsSync(progressPath)) {
+      try {
+        let pContent = fs.readFileSync(progressPath, 'utf8');
+        pContent = pContent.replace(/\|\s*\*\*Current In-Game Date\*\*\s*\|\s*\*\*([^*]+)\*\*/i, `| **Current In-Game Date** | **${nextDate}**`);
+        pContent = pContent.replace(/\|\s*\*\*Active Turn\*\*\s*\|\s*\*\*([^*]+)\*\*/i, `| **Active Turn** | **Turn ${nextTurn} (${turnTitle})**`);
+
+        // Insert new turn summary into Section 2
+        const turnHeaderTag = '## 2. Rolling Turn History & Key Milestones';
+        if (pContent.includes(turnHeaderTag)) {
+          const newTurnBlock = `\n### [Turn ${nextTurn}] — ${nextDate}: ${turnTitle}\n- ${turnSummary}\n`;
+          pContent = pContent.replace(turnHeaderTag, `${turnHeaderTag}\n${newTurnBlock}`);
+        }
+        fs.writeFileSync(progressPath, pContent, 'utf8');
+      } catch (e) {}
+    }
+
+    return {
+      success: true,
+      prevTurn,
+      nextTurn,
+      prevDate,
+      nextDate,
+      recoveredFatigue,
+      bizReports,
+      npcLogs: npcLogs || [],
+      politicalEvents: politicalEvents || [],
+      ecologyResults,
+      turnTitle,
+      turnSummary
+    };
   }
 }
 

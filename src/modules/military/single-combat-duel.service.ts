@@ -261,7 +261,7 @@ export class SingleCombatDuelService {
   private getGameDate(): string {
     try {
       const row = this.db.queryOne<{ current_date: string }>(
-        `SELECT current_date FROM campaign_meta LIMIT 1;`
+        `SELECT campaign_meta.current_date FROM campaign_meta LIMIT 1;`
       );
       if (row && row.current_date) return row.current_date;
     } catch {

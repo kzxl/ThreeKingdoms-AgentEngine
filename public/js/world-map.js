@@ -419,16 +419,11 @@ async function executeMarchToSelectedNode(nodeId) {
     return;
   }
 
-  const isEn = (currentLang === 'en');
-  const confirmMsg = isEn 
-    ? `Depart march expedition to ${targetNode.nameEn}?\nLogistical requirement: ${targetNode.grainCost} piculs of grain.`
-    : `Xác nhận khởi hành hành quân tới ${targetNode.nameVi}?\nTiêu hao ước tính: ${targetNode.grainCost} thạch lương lộ phí.`;
-
-  if (!confirm(confirmMsg)) {
+  // Route to the interactive Travel Transit & Road Encounter Journey Interface
+  if (typeof openTravelTransit === 'function') {
+    openTravelTransit(nodeId);
     return;
   }
-
-  closeWorldMap();
 
   try {
     setProcessingLock(true, isEn ? 'Marching...' : 'Đang hành quân...');

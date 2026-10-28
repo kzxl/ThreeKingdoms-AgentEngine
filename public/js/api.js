@@ -447,6 +447,51 @@ window.apiFetchInventory = apiFetchInventory;
 window.apiFetchNpcs = apiFetchNpcs;
 window.apiFetchLedger = apiFetchLedger;
 window.apiFetchAgentLogs = apiFetchAgentLogs;
+async function apiAdvanceTurn(notes = '') {
+  const res = await fetch(`${API_BASE}/api/campaign/advance-turn`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ notes })
+  });
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Failed to advance turn');
+  return data;
+}
+
+async function apiFetchTravelEncounter(fromNode, toNode) {
+  const res = await fetch(`${API_BASE}/api/travel/encounter?from=${encodeURIComponent(fromNode)}&to=${encodeURIComponent(toNode)}`);
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Failed to generate travel encounter');
+  return data.encounter;
+}
+
+async function apiResolveTravelEncounter(payload) {
+  const res = await fetch(`${API_BASE}/api/travel/resolve`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Failed to resolve travel encounter');
+  return data.resolution;
+}
+
+async function apiCompleteTravelMarch(payload) {
+  const res = await fetch(`${API_BASE}/api/travel/complete`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Failed to complete march');
+  return data.result;
+}
+
+window.apiAdvanceTurn = apiAdvanceTurn;
+window.apiFetchTravelEncounter = apiFetchTravelEncounter;
+window.apiResolveTravelEncounter = apiResolveTravelEncounter;
+window.apiCompleteTravelMarch = apiCompleteTravelMarch;
+
 window.apiDispatchPrompt = apiDispatchPrompt;
 window.apiDispatchAction = apiDispatchAction;
 window.apiFetchChatHistory = apiFetchChatHistory;

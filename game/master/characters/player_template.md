@@ -2,8 +2,8 @@
 
 > **IMMUTABLE MASTER DATA**: Reference templates for starting new player campaigns.
 
-## Archetype 0: The Penniless Commoner (Thanh Niên Bố Y / Hai Bàn Tay Trắng)
-- **Archetype ID**: `ARCH-COMMONER-YOUTH`
+## Archetype 0: The Penniless Commoner (Thanh Niên Bố Y - Mặc định / Hai Bàn Tay Trắng)
+- **Archetype ID**: `ARCH-COMMONER-YOUTH` (Default starting archetype for new playthroughs)
 - **Starting Age**: 18 (Born 166 AD)
 - **Location**: Zhuo County (`LOC-0001`)
 - **Initial Float**: 100 Qian (Small pouch of coppers)

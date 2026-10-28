@@ -123,8 +123,8 @@ console.log('\n[3/13] Ingesting Master Player Archetypes (player_template.md)...
 const archetypes = [
   {
     id: 'ARCH-COMMONER-YOUTH',
-    nameVi: 'Thanh Niên Bố Y (Hai bàn tay trắng lập nghiệp)',
-    nameEn: 'The Penniless Commoner (Zero-to-Hero)',
+    nameVi: 'Thanh Niên Bố Y (Mặc định: Hai bàn tay trắng lập nghiệp)',
+    nameEn: 'The Penniless Commoner (Default: Zero-to-Hero)',
     playerName: 'Lương Diễn',
     styleName: 'Chí Viễn',
     age: 18,
@@ -139,8 +139,8 @@ const archetypes = [
   },
   {
     id: 'ARCH-SCHOLAR-ARTISAN',
-    nameVi: 'Sĩ Tộc Thương Khách (Mặc định: Lương Diễn / Lương Nhan)',
-    nameEn: 'The Scholar-Artisan (Default: Liang Yan)',
+    nameVi: 'Sĩ Tộc Thương Khách (Gia thế tiểu thương U Châu)',
+    nameEn: 'The Scholar-Artisan (Gentry Merchant Lineage)',
     playerName: 'Liang Yan',
     styleName: 'Zhiyuan',
     age: 21,

@@ -16,6 +16,7 @@ const { SimulationCore } = require('../engine/sim-core');
 const { WorkshopEngine } = require('../engine/workshop-engine');
 const { GameplayManager } = require('../engine/gameplay-manager');
 const { EventManager } = require('../engine/event-manager');
+const { TravelManager } = require('../engine/travel-manager');
 const {
   auditSqliteCashflow,
   auditSqliteInventory,
@@ -32,6 +33,7 @@ const DEFAULT_PORT = parseInt(process.env.PORT || process.argv[2] || '3300', 10)
 
 const gameplayManager = new GameplayManager(DB_PATH);
 const eventManager = new EventManager(DB_PATH);
+const travelManager = new TravelManager(DB_PATH);
 
 // In-Memory Agent Simulation Activity Stream
 const agentActivityStream = [
@@ -1975,6 +1977,67 @@ const server = http.createServer(async (req, res) => {
       try {
         const payload = JSON.parse(body || '{}');
         const result = gameplayManager.startNewGame(payload);
+        sendJson(res, 200, { success: true, result });
+      } catch (err) {
+        sendJson(res, 400, { success: false, error: err.message });
+      }
+    });
+    return;
+  }
+
+  // 5g-2. POST /api/campaign/advance-turn - End Active Turn & Advance Monthly Campaign Simulation
+  if (req.method === 'POST' && pathname === '/api/campaign/advance-turn') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        const result = gameplayManager.advanceTurn(payload);
+        sendJson(res, 200, { success: true, result });
+      } catch (err) {
+        sendJson(res, 500, { success: false, error: err.message });
+      }
+    });
+    return;
+  }
+
+  // 5g-3. GET /api/travel/encounter - Generate Contextual Road Travel Encounter
+  if (req.method === 'GET' && pathname === '/api/travel/encounter') {
+    try {
+      const fromNode = parsedUrl.query.from || 'zhuo_xian';
+      const toNode = parsedUrl.query.to || 'guang_zong';
+      const encounter = travelManager.generateTravelEncounter(fromNode, toNode);
+      sendJson(res, 200, { success: true, encounter });
+    } catch (err) {
+      sendJson(res, 500, { success: false, error: err.message });
+    }
+    return;
+  }
+
+  // 5g-4. POST /api/travel/resolve - Resolve Travel Encounter Choice with D20 Roll
+  if (req.method === 'POST' && pathname === '/api/travel/resolve') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        const resolution = travelManager.resolveEncounterChoice(payload);
+        sendJson(res, 200, { success: true, resolution });
+      } catch (err) {
+        sendJson(res, 400, { success: false, error: err.message });
+      }
+    });
+    return;
+  }
+
+  // 5g-5. POST /api/travel/complete - Complete March Arrival and Deduct Grain
+  if (req.method === 'POST' && pathname === '/api/travel/complete') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        const result = travelManager.completeMarch(payload);
         sendJson(res, 200, { success: true, result });
       } catch (err) {
         sendJson(res, 400, { success: false, error: err.message });

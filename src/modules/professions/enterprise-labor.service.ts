@@ -1132,6 +1132,7 @@ export class EnterpriseLaborService {
     return this.db.transaction(() => {
       const newFatigue = Math.min(100, currentFatigue + shift.fatigueCost);
       const newCash = Number(player?.liquid_cash || 0) + shift.wage;
+      const totalBalance = newCash + Number(player?.safe_cash || 0);
 
       // Attribute EXP Progression
       const attr = shift.attributeTarget || 'cra';
@@ -1162,7 +1163,7 @@ export class EnterpriseLaborService {
           currentDate,
           shift.workplaceVi,
           shift.wage,
-          newCash,
+          totalBalance,
           `Tiền công lao động ca: ${shift.titleVi}`
         ]
       );
@@ -1373,7 +1374,7 @@ export class EnterpriseLaborService {
 
   private getGameDate(): string {
     try {
-      const meta = this.db.queryOne<any>('SELECT current_date FROM campaign_meta LIMIT 1;');
+      const meta = this.db.queryOne<any>('SELECT campaign_meta.current_date FROM campaign_meta LIMIT 1;');
       if (meta && meta.current_date) return meta.current_date;
     } catch {
       // fallback
