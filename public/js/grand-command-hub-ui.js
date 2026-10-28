@@ -29,6 +29,8 @@
   let cachedBanquetStatus = null;
   let cachedArenaRoster = null;
   let cachedProgressionState = null;
+  let hubDomainFilter = 'all'; // 'all' | 'unlocked'
+  let lastTabsConfig = [];
   let isSubmittingAction = false;
 
   function isEnglish() {
@@ -242,7 +244,25 @@
       }
     ];
 
-    tabsBar.innerHTML = tabsConfig.map(t => {
+    lastTabsConfig = tabsConfig;
+    const unlockedCount = tabsConfig.filter(t => !t.isLocked).length;
+    const filterBtn = document.getElementById('grand-hub-filter-btn');
+    const filterLabel = document.getElementById('grand-hub-filter-label');
+    if (filterBtn && filterLabel) {
+      if (hubDomainFilter === 'unlocked') {
+        filterBtn.classList.add('active-filter');
+        filterLabel.textContent = isEn ? `⚡ Active Only (${unlockedCount}/${tabsConfig.length})` : `⚡ Khả Dụng (${unlockedCount}/${tabsConfig.length})`;
+      } else {
+        filterBtn.classList.remove('active-filter');
+        filterLabel.textContent = isEn ? `⚡ All Domains (${tabsConfig.length})` : `⚡ Tất Cả Phân Hệ (${tabsConfig.length})`;
+      }
+    }
+
+    const tabsToRender = hubDomainFilter === 'unlocked'
+      ? tabsConfig.filter(t => !t.isLocked)
+      : tabsConfig;
+
+    tabsBar.innerHTML = tabsToRender.map(t => {
       const title = isEn ? t.titleEn : t.titleVi;
       const badge = isEn ? t.badgeEn : t.badgeVi;
       const isActive = activeTabKey === t.key;
@@ -258,6 +278,17 @@
         </button>
       `;
     }).join('');
+  }
+
+  function toggleDomainFilter() {
+    hubDomainFilter = hubDomainFilter === 'all' ? 'unlocked' : 'all';
+    if (cachedProgressionState) {
+      refreshHubNavigation(cachedProgressionState);
+      const activeTabObj = lastTabsConfig.find(t => t.key === activeTabKey);
+      if (hubDomainFilter === 'unlocked' && activeTabObj && activeTabObj.isLocked) {
+        switchTab('career');
+      }
+    }
   }
 
   // --------------------------------------------------------------------------
@@ -2251,6 +2282,7 @@
     open: openHub,
     close: closeHub,
     switchTab,
+    toggleDomainFilter,
     renderTabContent,
     renderCareerTab,
     openCareer: () => openHub('career'),

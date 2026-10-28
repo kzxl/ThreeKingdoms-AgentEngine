@@ -156,10 +156,10 @@ function startStaminaRegenTicker() {
     const p = currentStatus.player;
     const fatigueVal = Number(p.fatigue || 0);
     if (fatigueVal <= 0) {
-      const warAttr = Number(p.war_attr || 50);
-      const healthVal = Number(p.health || 100);
-      const maxStamina = 100 + Math.max(0, Math.round((warAttr - 50) * 1.5)) + Math.floor(healthVal / 10);
-      updateStaminaRegenDisplay(0, maxStamina, maxStamina, warAttr);
+      const s = typeof window.calculateStamina === 'function'
+        ? window.calculateStamina(p)
+        : { maxStamina: 100, currentStamina: 100, fatigue: 0, warAttr: Number(p.war_attr || 50) };
+      updateStaminaRegenDisplay(0, s.maxStamina, s.maxStamina, Number(p.war_attr || 50));
       return;
     }
 
@@ -172,16 +172,18 @@ function startStaminaRegenTicker() {
           const data = await res.json();
           if (data.success && data.recovered > 0) {
             p.fatigue = data.fatigue;
+            if (data.stamina) {
+              updateStaminaRegenDisplay(data.stamina.fatigue, data.stamina.maxStamina, data.stamina.currentStamina, data.stamina.warAttr);
+            }
             await loadStatus();
           }
         }
       } catch (e) {}
     } else {
-      const warAttr = Number(p.war_attr || 50);
-      const healthVal = Number(p.health || 100);
-      const maxStamina = 100 + Math.max(0, Math.round((warAttr - 50) * 1.5)) + Math.floor(healthVal / 10);
-      const currentStamina = Math.max(0, maxStamina - fatigueVal);
-      updateStaminaRegenDisplay(fatigueVal, maxStamina, currentStamina, warAttr);
+      const s = typeof window.calculateStamina === 'function'
+        ? window.calculateStamina(p)
+        : { maxStamina: 100, currentStamina: 100, fatigue: fatigueVal, warAttr: Number(p.war_attr || 50) };
+      updateStaminaRegenDisplay(fatigueVal, s.maxStamina, s.currentStamina, Number(p.war_attr || 50));
     }
   }, 1000);
 }

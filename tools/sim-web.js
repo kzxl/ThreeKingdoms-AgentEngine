@@ -40,6 +40,20 @@ function getWageLaborService() {
   return wageLaborService;
 }
 
+let bespokeForgeService = null;
+function getBespokeForgeService() {
+  if (!bespokeForgeService) {
+    try {
+      require('tsx/cjs');
+      const { BespokeForgeService } = require('../src/modules/professions/features/bespoke-forge/bespoke-forge.service.ts');
+      bespokeForgeService = BespokeForgeService.getInstance();
+    } catch (e) {
+      console.warn('[sim-web.js] BespokeForgeService initialization note:', e.message);
+    }
+  }
+  return bespokeForgeService;
+}
+
 const ROOT_DIR = path.resolve(__dirname, '..');
 const PUBLIC_DIR = path.join(ROOT_DIR, 'public');
 const SAVES_DIR = path.join(ROOT_DIR, 'saves');
@@ -316,13 +330,16 @@ const server = http.createServer(async (req, res) => {
       }
       const fatigue = Number(player.fatigue || 0);
       if (fatigue <= 0) {
-        sendJson(res, 200, { success: true, recovered: 0, fatigue: 0 });
+        const stamina = calculatePlayerStamina(player);
+        sendJson(res, 200, { success: true, recovered: 0, fatigue: 0, stamina });
         return;
       }
       const newFatigue = Math.max(0, fatigue - 1);
       lastPassiveStaminaCheck = Date.now();
       runSqlRaw(`UPDATE player_state SET fatigue = ${newFatigue} WHERE player_id = '${player.player_id}';`);
-      sendJson(res, 200, { success: true, recovered: 1, fatigue: newFatigue });
+      const updatedPlayer = { ...player, fatigue: newFatigue };
+      const stamina = calculatePlayerStamina(updatedPlayer);
+      sendJson(res, 200, { success: true, recovered: 1, fatigue: newFatigue, stamina });
     } catch (err) {
       sendJson(res, 500, { success: false, error: err.message });
     }
@@ -1038,13 +1055,20 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // 4s4. POST /api/professions/forge/bespoke - Master Blacksmith Bespoke God Weapon Forging
+  // 4s4. POST /api/professions/forge/bespoke - Master Blacksmith Bespoke God Weapon Forging (Delegated to BespokeForgeService)
   if (req.method === 'POST' && pathname === '/api/professions/forge/bespoke') {
     let body = '';
     req.on('data', chunk => { body += chunk; });
     req.on('end', () => {
       try {
         const payload = JSON.parse(body || '{}');
+        const forgeSvc = getBespokeForgeService();
+        if (forgeSvc) {
+          const result = forgeSvc.forgeWeapon(payload);
+          sendJson(res, 200, result);
+          return;
+        }
+
         const characterId = payload.characterId || 'PLY-0001';
         const player = runSqlJson(`SELECT cra_attr, fatigue, cra_exp FROM player_state WHERE player_id = '${characterId.replace(/'/g, "''")}' LIMIT 1;`)[0] || {};
         const craAttr = Number(player.cra_attr || 50);
@@ -1066,16 +1090,12 @@ const server = http.createServer(async (req, res) => {
           return;
         }
 
-        // Deduct materials from inventory if available
         runSqlRaw(`UPDATE inventory_items SET quantity = MAX(0, quantity - 5) WHERE item_code = 'RAW-IRON';`);
         runSqlRaw(`UPDATE inventory_items SET quantity = MAX(0, quantity - 5) WHERE item_code = 'RAW-COAL';`);
         runSqlRaw(`UPDATE inventory_items SET quantity = MAX(0, quantity - 2) WHERE item_code = 'RAW-TIMBER';`);
         runSqlRaw(`UPDATE inventory_items SET quantity = MAX(0, quantity - 2) WHERE item_code = 'RAW-LEATHER';`);
-
-        // Deduct fatigue +25 & award EXP
         runSqlRaw(`UPDATE player_state SET fatigue = MIN(100, fatigue + 25), cra_exp = cra_exp + 45 WHERE player_id = '${characterId.replace(/'/g, "''")}';`);
 
-        // Anti-Inflationary Bespoke Quality Roll Engine
         const fPenalty = Math.max(0, (fatigue - 40) / 3);
         const S = Math.max(0, (craAttr - 60) - fPenalty);
         const wLegendary = 0.5 + 6.0 * Math.pow(S / 50, 2.2);
@@ -1117,7 +1137,6 @@ const server = http.createServer(async (req, res) => {
           ldrBuff = Math.random() < 0.15 ? 1 : 0;
         }
 
-        // Enforce strict +1..+5 clamp
         warBuff = Math.min(5, Math.max(1, Math.round(warBuff)));
         ldrBuff = ldrBuff > 0 ? Math.min(5, Math.max(1, Math.round(ldrBuff))) : 0;
 
@@ -1127,7 +1146,6 @@ const server = http.createServer(async (req, res) => {
         const statModifiers = { war: warBuff };
         if (ldrBuff > 0) statModifiers.ldr = ldrBuff;
 
-        // Save into master_items & inventory_items
         runSqlRaw(`
           INSERT INTO master_items (item_code, name_vi, name_en, category, stat_modifiers, baseline_peace_price, current_market_price)
           VALUES ('${itemCode}', '${customName.replace(/'/g, "''")}', 'God Weapon', 'WEAPON', '${JSON.stringify(statModifiers)}', 2000, 3000);
@@ -1136,7 +1154,6 @@ const server = http.createServer(async (req, res) => {
           ON CONFLICT(item_code) DO UPDATE SET quantity = quantity + 1;
         `);
 
-        // Auto equip into possessions if requested (ROTK model: unlimited possessions)
         if (payload.targetDestination === 'EQUIP_IMMEDIATELY') {
           runSqlRaw(`
             INSERT INTO character_equipment (character_id, slot_type, item_code, custom_name, stat_modifiers, equipped_at)
@@ -1158,15 +1175,36 @@ const server = http.createServer(async (req, res) => {
           messageVi: `Luyện thành thần binh [${customName}] phẩm cấp [${qualityLabelVi}] (+${warBuff} Võ Lực, +${ldrBuff} Thống Soái)!`
         });
       } catch (err) {
-        sendJson(res, 500, { success: false, error: err.message });
+        sendJson(res, 400, { success: false, error: err.message });
       }
     });
     return;
   }
 
-  // 4s4b. GET /api/professions/forge/rates - Anti-Inflationary Forge Probability Analysis
+  // 4s4b. GET /api/professions/forge/rates - Anti-Inflationary Forge Probability Analysis (Delegated to BespokeForgeService)
   if (req.method === 'GET' && pathname === '/api/professions/forge/rates') {
     const characterId = parsedUrl.query.characterId || 'PLY-0001';
+    const forgeSvc = getBespokeForgeService();
+    if (forgeSvc) {
+      try {
+        const ratesResult = forgeSvc.calculateRates(characterId);
+        const player = runSqlJson(`SELECT name, cra_attr, fatigue, cra_exp FROM player_state WHERE player_id = '${characterId.replace(/'/g, "''")}' LIMIT 1;`)[0] || {};
+        sendJson(res, 200, {
+          success: true,
+          player: {
+            name: player.name || 'Lương Diễn',
+            craAttr: ratesResult.craAttr,
+            fatigue: ratesResult.fatigue
+          },
+          rates: ratesResult
+        });
+        return;
+      } catch (err) {
+        sendJson(res, 500, { success: false, error: err.message });
+        return;
+      }
+    }
+
     const player = runSqlJson(`SELECT name, cra_attr, fatigue, cra_exp FROM player_state WHERE player_id = '${characterId.replace(/'/g, "''")}' LIMIT 1;`)[0] || {};
     const cra = Math.max(60, Number(player.cra_attr || 50));
     const f = Math.max(0, Math.min(100, Number(player.fatigue || 0)));

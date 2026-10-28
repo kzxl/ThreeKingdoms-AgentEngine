@@ -208,13 +208,14 @@
       
       <!-- 0. Protagonist Vitals Sheet (Nhân Vật Chính) -->
       <div class="deck-card protagonist-card" id="protagonist-card">
-        <div class="protagonist-header">
+        <div class="protagonist-header" onclick="if(window.ProtagonistDossierModal)ProtagonistDossierModal.open();" title="Nhấn để mở Hồ Sơ Toàn Cảnh & Bát Hướng Thuộc Tính" style="cursor: pointer;">
           <div class="protagonist-avatar" id="protagonist-avatar">梁</div>
           <div class="protagonist-main-info">
             <div class="protagonist-name-row">
               <span class="protagonist-name" id="protagonist-name">Lương Diễn</span>
               <span class="protagonist-style" id="protagonist-style">(Chí Viễn)</span>
               <span class="protagonist-age-badge" id="protagonist-age">21 Tuổi</span>
+              <span class="protagonist-inspect-icon" title="Hồ Sơ Chiến Lược" style="font-size: 11px; opacity: 0.75; margin-left: 2px;">🔍</span>
             </div>
             <div class="protagonist-title" id="protagonist-title">Bố Y Thường Dân • Khởi Đầu Tay Trắng</div>
             <div class="protagonist-career-badge-row">
@@ -885,7 +886,12 @@
             <div class="grand-hub-subtitle">Tam Quốc Hùng Đồ • Tổng Hành Dinh 6 Đại Phân Hệ Chiến Lược</div>
           </div>
         </div>
-        <button class="grand-hub-close-btn" onclick="GrandCommandHubUI.close()" title="Đóng cửa sổ">&times;</button>
+        <div class="grand-hub-actions-bar">
+          <button id="grand-hub-filter-btn" class="grand-hub-filter-btn" onclick="GrandCommandHubUI.toggleDomainFilter()" title="Lọc các phân hệ đã mở khóa theo giai đoạn nhân vật">
+            <span class="filter-icon">⚡</span> <span id="grand-hub-filter-label">Tất Cả Phân Hệ (7)</span>
+          </button>
+          <button class="grand-hub-close-btn" onclick="GrandCommandHubUI.close()" title="Đóng cửa sổ">&times;</button>
+        </div>
       </div>
 
       <!-- Hub 7-Tab Navigation Bar -->
@@ -939,6 +945,7 @@
   <script src="/js/modals.js"></script>
   <script src="/js/tactical-battle-ui.js"></script>
   <script src="/js/npc-dossier-modal.js"></script>
+  <script src="/js/protagonist-dossier-modal.js"></script>
   <script src="/js/equipment-ui.js"></script>
   <script src="/js/stamina-calculator.js"></script>
   <script src="/js/enterprise-ui.js"></script>

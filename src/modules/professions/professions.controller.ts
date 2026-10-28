@@ -12,6 +12,7 @@ import { ModuleRegistry } from '../../core/module-registry';
 import { ProfessionsModule } from './professions.module';
 
 import { WageLaborController } from './features/wage-labor/wage-labor.controller';
+import { registerBespokeForgeRoutes } from './features/bespoke-forge/bespoke-forge.controller';
 
 function getProfessionsModule(): ProfessionsModule | undefined {
   const gsm = (globalThis as any).__GRAND_STRATEGY_MODULES__;
@@ -334,4 +335,9 @@ export function registerProfessionsRoutes(router: Router): void {
   // -------------------------------------------------------------
   const wageLaborController = new WageLaborController();
   wageLaborController.registerRoutes(router);
+
+  // -------------------------------------------------------------
+  // 8. Bespoke Forge Vertical Slice: /api/forge/rates & /api/forge/bespoke
+  // -------------------------------------------------------------
+  registerBespokeForgeRoutes(router);
 }
