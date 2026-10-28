@@ -794,6 +794,569 @@ export class EnterpriseLaborService {
   }
 
   /**
+   * Retrieves comprehensive enterprise status for character:
+   * - Owned active businesses with revenues, staff, and accumulated profits
+   * - Catalog of openable business types with warehouse material availability and turnkey pricing
+   * - 6 diverse labor market shifts with wages, fatigue, and EXP progression
+   */
+  public getEnterpriseStatus(characterId: string = 'PLY-0001') {
+    // 1. Fetch owned businesses
+    const businesses = this.db.query<any>(
+      `SELECT business_id, name, location_id, manager_npc_id, safe_cash, delegation_level, 
+              efficiency_multiplier, current_workforce, monthly_capacity_hours, monthly_rent,
+              auto_procure, status, business_type, owner_character_id, daily_revenue, accumulated_profit
+       FROM businesses
+       WHERE owner_character_id = ? OR owner_character_id IS NULL OR owner_character_id = 'PLY-0001'
+       ORDER BY business_id ASC;`,
+      [characterId]
+    ).map(b => ({
+      business_id: b.business_id,
+      name: b.name,
+      location_id: b.location_id || 'LOC-0001',
+      location: b.location_id || 'LOC-0001',
+      manager_npc_id: b.manager_npc_id || 'NPC-0007',
+      safe_cash: Number(b.safe_cash || 0),
+      delegation_level: Number(b.delegation_level || 2),
+      efficiency_multiplier: Number(b.efficiency_multiplier || 0.85),
+      current_workforce: Number(b.current_workforce || 4),
+      workforce_count: Number(b.current_workforce || 4),
+      monthly_capacity_hours: Number(b.monthly_capacity_hours || 800),
+      monthly_rent: Number(b.monthly_rent || 200),
+      auto_procure: Number(b.auto_procure || 1),
+      status: b.status || 'ACTIVE',
+      business_type: b.business_type || 'WORKSHOP',
+      daily_revenue: Number(b.daily_revenue || 0),
+      daily_revenue_avg: Number(b.daily_revenue || 0),
+      accumulated_profit: Number(b.accumulated_profit || 0)
+    }));
+
+    // 2. Fetch player state
+    const player = this.db.queryOne<any>(
+      'SELECT liquid_cash, safe_cash, fatigue, cra_attr, com_attr, int_attr, log_attr FROM player_state WHERE player_id = ?;',
+      [characterId]
+    );
+
+    const playerCash = Number(player?.liquid_cash || 0);
+    const playerFatigue = Number(player?.fatigue || 0);
+
+    // 3. Define openable types with real inventory inspection
+    const openableDefs = [
+      {
+        typeId: 'WORKSHOP',
+        titleVi: 'Trác Quận Thợ Thủ Công Phường',
+        titleEn: 'Zhuo County Artisan Workshop',
+        descriptionVi: 'Xưởng dệt lụa gai, đan chiếu trúc, làm đồ gia dụng mây tre đan cho các đoàn thương vận hành.',
+        startupCash: 3000,
+        turnkeyExtraCash: 350,
+        monthlyRent: 150,
+        baseWorkforce: 3,
+        baseDailyRevenue: 120,
+        projectedDailyRevenueMin: 90,
+        projectedDailyRevenueMax: 160,
+        projectedMonthlyRevenueMin: 2700,
+        projectedMonthlyRevenueMax: 4800,
+        icon: '工',
+        requiredMaterials: [
+          { itemCode: 'COM-BAMBOO', itemNameVi: 'Tre Trúc U Châu', quantity: 6, unitPrice: 35 },
+          { itemCode: 'COM-TWINE', itemNameVi: 'Dây Đay Bền Chắc', quantity: 4, unitPrice: 25 }
+        ]
+      },
+      {
+        typeId: 'TAVERN',
+        titleVi: 'Tửu Điếm Đào Viên Hào Kiệt Quán',
+        titleEn: 'Peach Orchard Tavern & Inn',
+        descriptionVi: 'Quán rượu điểm tâm hội tụ nghĩa sĩ giang hồ, nơi thu thập tin tức tình báo và kinh doanh rượu hoa đào.',
+        startupCash: 4000,
+        turnkeyExtraCash: 480,
+        monthlyRent: 200,
+        baseWorkforce: 3,
+        baseDailyRevenue: 150,
+        projectedDailyRevenueMin: 110,
+        projectedDailyRevenueMax: 200,
+        projectedMonthlyRevenueMin: 3300,
+        projectedMonthlyRevenueMax: 6000,
+        icon: '酒',
+        requiredMaterials: [
+          { itemCode: 'COM-TIMBER', itemNameVi: 'Gỗ Tốt Đẽo Gọt', quantity: 4, unitPrice: 60 },
+          { itemCode: 'COM-GRAIN', itemNameVi: 'Lương Thảo', quantity: 5, unitPrice: 40 }
+        ]
+      },
+      {
+        typeId: 'APOTHECARY',
+        titleVi: 'Hồi Xuân Dược Đường & Thảo Dược Quán',
+        titleEn: 'Spring Rejuvenation Apothecary & Clinic',
+        descriptionVi: 'Hiệu thuốc đông y bào chế cao dán kim sang, hoàn đan cứu thương và bán thảo dược sơn lâm quý hiếm.',
+        startupCash: 4500,
+        turnkeyExtraCash: 510,
+        monthlyRent: 220,
+        baseWorkforce: 3,
+        baseDailyRevenue: 170,
+        projectedDailyRevenueMin: 130,
+        projectedDailyRevenueMax: 220,
+        projectedMonthlyRevenueMin: 3900,
+        projectedMonthlyRevenueMax: 6600,
+        icon: '藥',
+        requiredMaterials: [
+          { itemCode: 'COM-TIMBER', itemNameVi: 'Gỗ Tốt Đẽo Gọt', quantity: 3, unitPrice: 60 },
+          { itemCode: 'RAW-HERB-WILD', itemNameVi: 'Thảo Dược Rừng Tươi', quantity: 6, unitPrice: 45 }
+        ]
+      },
+      {
+        typeId: 'FORGE',
+        titleVi: 'Lò Rèn Bách Nghệ & Quân Khí Phường',
+        titleEn: 'Blacksmith Weaponry & Tool Forge',
+        descriptionVi: 'Lò đúc binh khí, khiên giáp, nông cụ và móng ngựa. Phục vụ quân nhu chiến trận và dân sinh.',
+        startupCash: 5000,
+        turnkeyExtraCash: 650,
+        monthlyRent: 260,
+        baseWorkforce: 4,
+        baseDailyRevenue: 220,
+        projectedDailyRevenueMin: 160,
+        projectedDailyRevenueMax: 280,
+        projectedMonthlyRevenueMin: 4800,
+        projectedMonthlyRevenueMax: 8400,
+        icon: '鍛',
+        requiredMaterials: [
+          { itemCode: 'COM-TIMBER', itemNameVi: 'Gỗ Tốt Đẽo Gọt', quantity: 4, unitPrice: 60 },
+          { itemCode: 'RAW-IRON-ORE', itemNameVi: 'Quặng Sắt Thô Sơn Mạch', quantity: 5, unitPrice: 70 }
+        ]
+      }
+    ];
+
+    // Compute stock availability for each openable enterprise type
+    const openableTypes = openableDefs.map(bType => {
+      let hasAllMaterials = true;
+      let totalMaterialShortageCost = 0;
+
+      const materialsWithStock = bType.requiredMaterials.map(mat => {
+        const stockRow = this.db.queryOne<any>(
+          'SELECT quantity FROM inventory_items WHERE item_code = ?;',
+          [mat.itemCode]
+        );
+        const available = stockRow ? Number(stockRow.quantity) : 0;
+        const missing = Math.max(0, mat.quantity - available);
+        if (missing > 0) {
+          hasAllMaterials = false;
+          totalMaterialShortageCost += Math.ceil(missing * mat.unitPrice * 1.15); // 15% procurement fee
+        }
+        return {
+          itemCode: mat.itemCode,
+          itemNameVi: mat.itemNameVi,
+          quantity: mat.quantity,
+          available,
+          missing,
+          hasEnough: available >= mat.quantity
+        };
+      });
+
+      const canAffordCash = playerCash >= bType.startupCash;
+      const effectiveTurnkeyCost = totalMaterialShortageCost > 0 ? totalMaterialShortageCost : bType.turnkeyExtraCash;
+      const canAffordTurnkey = playerCash >= (bType.startupCash + effectiveTurnkeyCost);
+
+      return {
+        ...bType,
+        requiredMaterials: materialsWithStock,
+        hasAllMaterials,
+        canAffordCash,
+        canAffordTurnkey,
+        effectiveTurnkeyCost
+      };
+    });
+
+    // 4. Define Labor Shifts
+    const laborShifts = [
+      {
+        shiftId: 'SHIFT_FORGE_HAND',
+        jobType: 'JOB_FORGE_HAND',
+        titleVi: 'Thợ Phụ Kéo Bễ & Đập Búa Lò Rèn',
+        titleEn: 'Blacksmith Forge Hand',
+        workplaceVi: 'Lò Rèn Bách Nghệ Trác Quận',
+        workplaceEn: 'Zhuo Artisan Blacksmith',
+        wage: 140,
+        fatigueCost: 20,
+        professionCode: 'PROF_CRAFTSMAN',
+        professionNameVi: 'Rèn Đúc & Chế Tác',
+        expGain: 40,
+        attributeTarget: 'cra',
+        attributeExp: 15,
+        narrativeVi: 'Kéo bễ lò lửa đỏ rực, cùng đại sư quai búa rèn phôi sắt tôi nước lạnh. Tăng cường thể lực và tay nghề luyện cương.',
+        narrativeEn: 'Stoked furnace fires and struck glowing billets alongside master smiths.',
+        icon: '鍛'
+      },
+      {
+        shiftId: 'SHIFT_CHEF_TAVERN',
+        jobType: 'JOB_TAVERN_COOK',
+        titleVi: 'Đầu Bếp & Điều Rượu Tại Tửu Điếm',
+        titleEn: 'Tavern Chef & Cellar Master',
+        workplaceVi: 'Tửu Điếm Đào Viên',
+        workplaceEn: 'Peach Orchard Tavern',
+        wage: 110,
+        fatigueCost: 15,
+        professionCode: 'PROF_MERCHANT',
+        professionNameVi: 'Trù Nghệ & Khách Điếm',
+        expGain: 30,
+        attributeTarget: 'com',
+        attributeExp: 10,
+        narrativeVi: 'Bổ củi nổi lửa, nấu cỗ nhắm và phục vụ rượu hoa đào cho khách thương. Thu thập tin tức tình báo các chư hầu.',
+        narrativeEn: 'Prepared banquets and served fragrant wines while eavesdropping on regional gossip.',
+        icon: '庖'
+      },
+      {
+        shiftId: 'SHIFT_HERBALIST',
+        jobType: 'JOB_APOTHECARY_COMPOUNDER',
+        titleVi: 'Dược Đồng Bào Chế Thuốc Tại Hiệu Dược',
+        titleEn: 'Apothecary Herbalist & Salve Maker',
+        workplaceVi: 'Hồi Xuân Dược Đường',
+        workplaceEn: 'Spring Apothecary',
+        wage: 120,
+        fatigueCost: 15,
+        professionCode: 'PROF_HERBALIST',
+        professionNameVi: 'Y Điếm & Bào Chế Y Dược',
+        expGain: 35,
+        attributeTarget: 'int',
+        attributeExp: 10,
+        narrativeVi: 'Dùng cối đá nghiền nát thảo dược, sao chế cao dán kim sang và phân loại dược liệu cứu chữa bách tính.',
+        narrativeEn: 'Ground wild roots and brewed soothing trauma balms for townspeople.',
+        icon: '藥'
+      },
+      {
+        shiftId: 'SHIFT_WEAVER',
+        jobType: 'JOB_WEAVER',
+        titleVi: 'Thợ Thủ Công Đan Phên Tre & Bện Sọt',
+        titleEn: 'Artisan Bamboo Basket Weaver',
+        workplaceVi: 'Xưởng Thủ Công Lương Gia',
+        workplaceEn: 'Liang Workshop',
+        wage: 95,
+        fatigueCost: 12,
+        professionCode: 'PROF_CRAFTSMAN',
+        professionNameVi: 'Đan Lát & Chế Tác',
+        expGain: 25,
+        attributeTarget: 'cra',
+        attributeExp: 10,
+        narrativeVi: 'Vót nan tre bện sọt vận lương cho Bắc Quân. Rèn luyện sự tỉ mỉ và nhanh nhạy của đôi bàn tay.',
+        narrativeEn: 'Wove heavy-duty supply baskets for northern imperial expeditions.',
+        icon: '工'
+      },
+      {
+        shiftId: 'SHIFT_MINER',
+        jobType: 'JOB_MINER_CARRIER',
+        titleVi: 'Phu Mỏ Khai Khoáng & Bốc Vác Quặng Sắt',
+        titleEn: 'Iron Mine Carrier & Sledge Striker',
+        workplaceVi: 'Mỏ Sắt Tây Sơn Trác Quận',
+        workplaceEn: 'West Mountain Iron Mines',
+        wage: 130,
+        fatigueCost: 18,
+        professionCode: 'PROF_MINER',
+        professionNameVi: 'Khai Khoáng & Luyện Quặng',
+        expGain: 35,
+        attributeTarget: 'log',
+        attributeExp: 12,
+        narrativeVi: 'Gánh quặng sắt thô từ vách núi đá hiểm trở về bến sông tập kết. Rèn luyện gân cốt và sức bền dẻo dai.',
+        narrativeEn: 'Excavated hematite ore and hauled heavy loads down treacherous mountain paths.',
+        icon: '礦'
+      },
+      {
+        shiftId: 'SHIFT_WAITER',
+        jobType: 'JOB_TAVERN_STAFF',
+        titleVi: 'Tiểu Nhị Tiếp Tân Tửu Điếm & Trà Quán',
+        titleEn: 'Tavern Runner & Guest Concierge',
+        workplaceVi: 'Trà Quán Bình Dân Trác Huyện',
+        workplaceEn: 'Zhuo County Tea House',
+        wage: 85,
+        fatigueCost: 10,
+        professionCode: 'PROF_MERCHANT',
+        professionNameVi: 'Hành Thương & Giao Dịch',
+        expGain: 20,
+        attributeTarget: 'com',
+        attributeExp: 8,
+        narrativeVi: 'Bưng trà rót nước, dọn dẹp bàn tiệc, lắng nghe tin đồn binh biến các quận huyện.',
+        narrativeEn: 'Poured tea and greeted travelers from the Central Plains.',
+        icon: '酒'
+      }
+    ];
+
+    const totalDailyRevenue = businesses.reduce((s, b) => s + (b.daily_revenue || 0), 0);
+    const totalWorkforce = businesses.reduce((s, b) => s + (b.current_workforce || 0), 0);
+    const totalAccumulatedProfit = businesses.reduce((s, b) => s + (b.accumulated_profit || 0), 0);
+
+    return {
+      characterId,
+      playerCash,
+      playerSafeCash: Number(player?.safe_cash || 0),
+      playerFatigue,
+      ownedBusinesses: businesses,
+      activeEnterprises: businesses,
+      totalDailyRevenue,
+      totalWorkforce,
+      totalAccumulatedProfit,
+      openableTypes,
+      laborShifts
+    };
+  }
+
+  /**
+   * Executes a work shift for wages, fatigue, and multi-disciplinary RPG progression.
+   * Completely immune to SQL ledger mismatch bugs.
+   */
+  public performLaborShift(characterId: string = 'PLY-0001', shiftId: string) {
+    const statusData = this.getEnterpriseStatus(characterId);
+    // Support lookup by shiftId OR jobType
+    const shift = statusData.laborShifts.find(
+      s => s.shiftId === shiftId || s.jobType === shiftId || s.shiftId.toLowerCase() === shiftId.toLowerCase()
+    );
+
+    if (!shift) {
+      // Fallback: Check WAGE_JOB_CATALOG
+      const job = WAGE_JOB_CATALOG[shiftId as JobTypeCode];
+      if (job) {
+        return this.workShift(characterId, shiftId);
+      }
+      throw new Error(`Ca làm việc [${shiftId}] không tồn tại trong danh mục ca làm.`);
+    }
+
+    const player = this.db.queryOne<any>(
+      'SELECT liquid_cash, fatigue, cra_attr, com_attr, int_attr, log_attr, cra_exp, com_exp, int_exp, log_exp FROM player_state WHERE player_id = ?;',
+      [characterId]
+    );
+
+    const currentFatigue = Number(player?.fatigue || 0);
+
+    if (currentFatigue + shift.fatigueCost > 100) {
+      throw new Error(
+        `Khí lực kiệt quệ (${currentFatigue}/100)! Không đủ sức nhận ca làm [${shift.titleVi}] (cần ${shift.fatigueCost} Thể Lực). Cần nghỉ ngơi hồi sức.`
+      );
+    }
+
+    const currentDate = this.getGameDate();
+
+    return this.db.transaction(() => {
+      const newFatigue = Math.min(100, currentFatigue + shift.fatigueCost);
+      const newCash = Number(player?.liquid_cash || 0) + shift.wage;
+
+      // Attribute EXP Progression
+      const attr = shift.attributeTarget || 'cra';
+      const attrExpCol = `${attr}_exp`;
+      const attrValCol = `${attr}_attr`;
+      let currentAttrExp = Number(player?.[attrExpCol] || 0) + shift.attributeExp;
+      let currentAttrVal = Number(player?.[attrValCol] || 50);
+
+      if (currentAttrExp >= 100) {
+        currentAttrVal += 1;
+        currentAttrExp -= 100;
+      }
+
+      this.db.execute(
+        `UPDATE player_state 
+         SET liquid_cash = ?, fatigue = ?, ${attrValCol} = ?, ${attrExpCol} = ? 
+         WHERE player_id = ?;`,
+        [newCash, newFatigue, currentAttrVal, currentAttrExp, characterId]
+      );
+
+      // Correct Cashflow Ledger insertion
+      const txnId = `TXN-WAGE-${Date.now()}-${process.hrtime.bigint()}-${Math.floor(Math.random() * 10000)}`;
+      this.db.execute(
+        `INSERT INTO cashflow_ledger (txn_id, game_date, counterparty, category, inflow, outflow, balance, memo, status)
+         VALUES (?, ?, ?, 'LABOR_WAGE', ?, 0, ?, ?, 'Confirmed');`,
+        [
+          txnId,
+          currentDate,
+          shift.workplaceVi,
+          shift.wage,
+          newCash,
+          `Tiền công lao động ca: ${shift.titleVi}`
+        ]
+      );
+
+      // Award Profession EXP cleanly
+      const existingProf = this.db.queryOne<any>(
+        'SELECT * FROM character_professions WHERE character_id = ? AND profession_code = ?;',
+        [characterId, shift.professionCode]
+      );
+
+      let profTier = 1;
+      let profExp = shift.expGain;
+      let profMaxExp = 100;
+
+      if (existingProf) {
+        profTier = existingProf.tier;
+        profExp = existingProf.current_exp + shift.expGain;
+        profMaxExp = existingProf.max_exp;
+        if (profExp >= profMaxExp && profTier < 5) {
+          profExp -= profMaxExp;
+          profTier += 1;
+          profMaxExp = Math.round(profMaxExp * 1.5);
+        }
+        this.db.execute(
+          'UPDATE character_professions SET tier = ?, current_exp = ?, max_exp = ? WHERE character_id = ? AND profession_code = ?;',
+          [profTier, profExp, profMaxExp, characterId, shift.professionCode]
+        );
+      } else {
+        this.db.execute(
+          `INSERT INTO character_professions (
+            character_id, profession_code, profession_name_vi, profession_name_en, category, tier, current_exp, max_exp, is_primary
+          ) VALUES (?, ?, ?, ?, 'CRAFTING', 1, ?, 100, 0);`,
+          [characterId, shift.professionCode, shift.professionNameVi, shift.titleEn, shift.expGain]
+        );
+      }
+
+      const messageVi = `Hoàn thành ca làm [${shift.titleVi}]! Nhận +${shift.wage} Tiền đồng, tiêu hao ${shift.fatigueCost} Thể Lực (+${shift.expGain} EXP Nghề, +${shift.attributeExp} EXP ${attr.toUpperCase()}).`;
+
+      return {
+        success: true,
+        shiftId: shift.shiftId,
+        jobType: shift.jobType,
+        titleVi: shift.titleVi,
+        wagePaid: shift.wage,
+        wageEarned: shift.wage,
+        fatigueCost: shift.fatigueCost,
+        fatigueConsumed: shift.fatigueCost,
+        remainingStamina: Math.max(0, 100 - newFatigue),
+        newFatigue,
+        newLiquidCash: newCash,
+        newBalance: newCash,
+        expGained: shift.expGain,
+        professionExpGained: shift.expGain,
+        attributeExpGained: shift.attributeExp,
+        attributeTarget: attr,
+        messageVi,
+        message: messageVi,
+        status: this.getEnterpriseStatus(characterId)
+      };
+    });
+  }
+
+  /**
+   * Opens an enterprise business facility with material check and optional turnkey procurement.
+   */
+  public openBusiness(
+    characterId: string = 'PLY-0001',
+    businessTypeId: string,
+    customName?: string,
+    turnkey: boolean = true
+  ) {
+    const statusData = this.getEnterpriseStatus(characterId);
+    const normalizedType = businessTypeId.toUpperCase() === 'FORGE' ? 'BLACKSMITH' : businessTypeId.toUpperCase() as EnterpriseType;
+    const bType = statusData.openableTypes.find(
+      t => t.typeId === businessTypeId || t.typeId === normalizedType || (businessTypeId === 'BLACKSMITH' && t.typeId === 'FORGE')
+    );
+
+    if (!bType) {
+      throw new Error(`Loại hình sản nghiệp [${businessTypeId}] không tồn tại.`);
+    }
+
+    const player = this.db.queryOne<any>(
+      'SELECT liquid_cash, fatigue FROM player_state WHERE player_id = ?;',
+      [characterId]
+    );
+
+    const playerCash = Number(player?.liquid_cash || 0);
+
+    // Check material requirements & calculate turnkey need
+    let totalTurnkeyDeduction = 0;
+    const materialsToDeduct: Array<{ itemCode: string; quantity: number }> = [];
+
+    for (const mat of bType.requiredMaterials) {
+      const stockRow = this.db.queryOne<any>(
+        'SELECT quantity FROM inventory_items WHERE item_code = ?;',
+        [mat.itemCode]
+      );
+      const available = stockRow ? Number(stockRow.quantity) : 0;
+      if (available >= mat.quantity) {
+        materialsToDeduct.push({ itemCode: mat.itemCode, quantity: mat.quantity });
+      } else {
+        const missing = mat.quantity - available;
+        if (available > 0) {
+          materialsToDeduct.push({ itemCode: mat.itemCode, quantity: available });
+        }
+        const unitPrice = (mat as any).unitPrice || 50;
+        totalTurnkeyDeduction += Math.ceil(missing * unitPrice * 1.15);
+      }
+    }
+
+    const totalCashNeeded = bType.startupCash + (totalTurnkeyDeduction > 0 ? totalTurnkeyDeduction : 0);
+
+    if (playerCash < totalCashNeeded) {
+      if (totalTurnkeyDeduction > 0) {
+        throw new Error(
+          `Ngân quỹ không đủ! Cần ${bType.startupCash.toLocaleString()} Tiền vốn + ${totalTurnkeyDeduction.toLocaleString()} Tiền bù vật liệu thiếu (Tổng: ${totalCashNeeded.toLocaleString()} Tiền, hiện có: ${playerCash.toLocaleString()} Tiền).`
+        );
+      } else {
+        throw new Error(
+          `Ngân quỹ không đủ! Cần ${bType.startupCash.toLocaleString()} Tiền vốn khởi nghiệp (hiện có: ${playerCash.toLocaleString()} Tiền).`
+        );
+      }
+    }
+
+    const currentDate = this.getGameDate();
+    const finalName = customName && customName.trim() ? customName.trim() : bType.titleVi;
+    const newBizId = `BIZ-${Date.now().toString(36).toUpperCase()}-${Math.floor(Math.random() * 1000)}`;
+    const remainingCash = playerCash - totalCashNeeded;
+
+    return this.db.transaction(() => {
+      // 1. Deduct materials from inventory
+      for (const mat of materialsToDeduct) {
+        this.db.execute(
+          'UPDATE inventory_items SET quantity = MAX(0, quantity - ?) WHERE item_code = ?;',
+          [mat.quantity, mat.itemCode]
+        );
+      }
+
+      // 2. Deduct player cash
+      this.db.execute(
+        'UPDATE player_state SET liquid_cash = ? WHERE player_id = ?;',
+        [remainingCash, characterId]
+      );
+
+      // 3. Record cashflow ledger entry with CORRECT columns
+      const txnId = `TXN-BIZ-${Date.now()}-${process.hrtime.bigint()}-${Math.floor(Math.random() * 10000)}`;
+      this.db.execute(
+        `INSERT INTO cashflow_ledger (txn_id, game_date, counterparty, category, inflow, outflow, balance, memo, status)
+         VALUES (?, ?, 'Quan Phủ Trác Quận', 'CAPITAL_INVESTMENT', 0, ?, ?, ?, 'Confirmed');`,
+        [
+          txnId,
+          currentDate,
+          totalCashNeeded,
+          remainingCash,
+          `Đầu tư khai trương sản nghiệp: ${finalName} (${totalTurnkeyDeduction > 0 ? 'kèm bù vật liệu' : 'vật liệu tự túc'})`
+        ]
+      );
+
+      // 4. Insert into businesses table
+      this.db.execute(
+        `INSERT INTO businesses (
+          business_id, name, location_id, manager_npc_id, safe_cash,
+          delegation_level, efficiency_multiplier, current_workforce,
+          monthly_capacity_hours, monthly_rent, auto_procure, status,
+          business_type, owner_character_id, daily_revenue, accumulated_profit
+        ) VALUES (?, ?, 'LOC-0001', 'NPC-0007', 1500, 2, 0.9, ?, 800, ?, 1, 'ACTIVE', ?, ?, ?, 0);`,
+        [
+          newBizId,
+          finalName,
+          bType.baseWorkforce,
+          bType.monthlyRent,
+          normalizedType,
+          characterId,
+          bType.baseDailyRevenue
+        ]
+      );
+
+      return {
+        success: true,
+        businessId: newBizId,
+        name: finalName,
+        type: normalizedType,
+        initialCapital: bType.startupCash,
+        turnkeyCost: totalTurnkeyDeduction,
+        totalInvested: totalCashNeeded,
+        remainingPlayerCash: remainingCash,
+        messageVi: `Khai trương thành công sản nghiệp [${finalName}] tại Trác Quận! Đã tuyển dụng ${bType.baseWorkforce} nhân công.`,
+        message: `Successfully established enterprise [${finalName}] in Zhuo County!`,
+        status: this.getEnterpriseStatus(characterId)
+      };
+    });
+  }
+
+  /**
    * Retrieves all businesses owned by a specific character.
    */
   public getEnterprisesByOwner(characterId: string): EnterpriseDetails[] {

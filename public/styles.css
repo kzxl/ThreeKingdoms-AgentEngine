@@ -1936,7 +1936,8 @@ button:disabled,
    5. TRADE MODAL & TOAST
    ========================================================================== */
 
-.modal-backdrop {
+.modal-backdrop,
+.modal-overlay {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
   background-color: rgba(6, 8, 14, 0.85);
@@ -1946,8 +1947,9 @@ button:disabled,
   z-index: 1000;
 }
 
-.modal-backdrop.hidden {
-  display: none;
+.modal-backdrop.hidden,
+.modal-overlay.hidden {
+  display: none !important;
 }
 
 .modal-card {

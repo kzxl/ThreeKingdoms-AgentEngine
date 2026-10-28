@@ -1266,22 +1266,245 @@ const server = http.createServer(async (req, res) => {
   if (req.method === 'GET' && pathname === '/api/enterprise/status') {
     try {
       const characterId = parsedUrl.query.characterId || 'PLY-0001';
-      const player = runSqlJson(`SELECT liquid_cash, fatigue, cra_attr, com_attr, log_attr FROM player_state WHERE player_id = '${characterId.replace(/'/g, "''")}' LIMIT 1;`)[0] || {};
-      const activeBusinesses = runSqlJson(`
-        SELECT business_id, name, owner_character_id, location, business_type, workforce_count, daily_revenue_avg, monthly_rent, safe_cash
+      const player = runSqlJson(`SELECT liquid_cash, safe_cash, fatigue, cra_attr, com_attr, log_attr, int_attr FROM player_state WHERE player_id = '${characterId.replace(/'/g, "''")}' LIMIT 1;`)[0] || {};
+      const rawBusinesses = runSqlJson(`
+        SELECT business_id, name, location_id, manager_npc_id, safe_cash, delegation_level, 
+               efficiency_multiplier, current_workforce, monthly_capacity_hours, monthly_rent,
+               auto_procure, status, business_type, owner_character_id, daily_revenue, accumulated_profit
         FROM businesses
-        WHERE owner_character_id = '${characterId.replace(/'/g, "''")}';
+        WHERE owner_character_id = '${characterId.replace(/'/g, "''")}' OR owner_character_id IS NULL OR owner_character_id = 'PLY-0001';
       `);
+
+      const activeBusinesses = rawBusinesses.map(b => ({
+        business_id: b.business_id,
+        name: b.name,
+        location_id: b.location_id || 'LOC-0001',
+        location: b.location_id || 'LOC-0001',
+        manager_npc_id: b.manager_npc_id || 'NPC-0007',
+        safe_cash: Number(b.safe_cash || 0),
+        delegation_level: Number(b.delegation_level || 2),
+        efficiency_multiplier: Number(b.efficiency_multiplier || 0.85),
+        current_workforce: Number(b.current_workforce || 4),
+        workforce_count: Number(b.current_workforce || 4),
+        monthly_capacity_hours: Number(b.monthly_capacity_hours || 800),
+        monthly_rent: Number(b.monthly_rent || 200),
+        auto_procure: Number(b.auto_procure || 1),
+        status: b.status || 'ACTIVE',
+        business_type: b.business_type || 'WORKSHOP',
+        daily_revenue: Number(b.daily_revenue || 0),
+        daily_revenue_avg: Number(b.daily_revenue || 0),
+        accumulated_profit: Number(b.accumulated_profit || 0)
+      }));
+
+      const playerCash = Number(player.liquid_cash || 0);
+      const playerFatigue = Number(player.fatigue || 0);
+
+      const openableTypes = [
+        {
+          typeId: 'WORKSHOP',
+          titleVi: 'Trác Quận Thợ Thủ Công Phường',
+          titleEn: 'Zhuo County Artisan Workshop',
+          descriptionVi: 'Xưởng dệt lụa gai, đan chiếu trúc, làm đồ gia dụng mây tre đan cho các đoàn thương vận hành.',
+          startupCash: 3000,
+          turnkeyExtraCash: 350,
+          monthlyRent: 150,
+          baseWorkforce: 3,
+          baseDailyRevenue: 120,
+          projectedDailyRevenueMin: 90,
+          projectedDailyRevenueMax: 160,
+          projectedMonthlyRevenueMin: 2700,
+          projectedMonthlyRevenueMax: 4800,
+          icon: '工',
+          requiredMaterials: [
+            { itemCode: 'COM-BAMBOO', itemNameVi: 'Tre Trúc U Châu', quantity: 6 },
+            { itemCode: 'COM-TWINE', itemNameVi: 'Dây Đay Bền Chắc', quantity: 4 }
+          ],
+          hasAllMaterials: true,
+          canAffordCash: playerCash >= 3000,
+          canAffordTurnkey: playerCash >= 3350,
+          effectiveTurnkeyCost: 350
+        },
+        {
+          typeId: 'TAVERN',
+          titleVi: 'Tửu Điếm Đào Viên Hào Kiệt Quán',
+          titleEn: 'Peach Orchard Tavern & Inn',
+          descriptionVi: 'Quán rượu điểm tâm hội tụ nghĩa sĩ giang hồ, nơi thu thập tin tức tình báo và kinh doanh rượu hoa đào.',
+          startupCash: 4000,
+          turnkeyExtraCash: 480,
+          monthlyRent: 200,
+          baseWorkforce: 3,
+          baseDailyRevenue: 150,
+          projectedDailyRevenueMin: 110,
+          projectedDailyRevenueMax: 200,
+          projectedMonthlyRevenueMin: 3300,
+          projectedMonthlyRevenueMax: 6000,
+          icon: '酒',
+          requiredMaterials: [
+            { itemCode: 'COM-TIMBER', itemNameVi: 'Gỗ Tốt Đẽo Gọt', quantity: 4 },
+            { itemCode: 'COM-GRAIN', itemNameVi: 'Lương Thảo', quantity: 5 }
+          ],
+          hasAllMaterials: false,
+          canAffordCash: playerCash >= 4000,
+          canAffordTurnkey: playerCash >= 4480,
+          effectiveTurnkeyCost: 480
+        },
+        {
+          typeId: 'APOTHECARY',
+          titleVi: 'Hồi Xuân Dược Đường & Thảo Dược Quán',
+          titleEn: 'Spring Rejuvenation Apothecary & Clinic',
+          descriptionVi: 'Hiệu thuốc đông y bào chế cao dán kim sang, hoàn đan cứu thương và bán thảo dược sơn lâm quý hiếm.',
+          startupCash: 4500,
+          turnkeyExtraCash: 510,
+          monthlyRent: 220,
+          baseWorkforce: 3,
+          baseDailyRevenue: 170,
+          projectedDailyRevenueMin: 130,
+          projectedDailyRevenueMax: 220,
+          projectedMonthlyRevenueMin: 3900,
+          projectedMonthlyRevenueMax: 6600,
+          icon: '藥',
+          requiredMaterials: [
+            { itemCode: 'COM-TIMBER', itemNameVi: 'Gỗ Tốt Đẽo Gọt', quantity: 3 },
+            { itemCode: 'RAW-HERB-WILD', itemNameVi: 'Thảo Dược Rừng Tươi', quantity: 6 }
+          ],
+          hasAllMaterials: false,
+          canAffordCash: playerCash >= 4500,
+          canAffordTurnkey: playerCash >= 5010,
+          effectiveTurnkeyCost: 510
+        },
+        {
+          typeId: 'FORGE',
+          titleVi: 'Lò Rèn Bách Nghệ & Quân Khí Phường',
+          titleEn: 'Blacksmith Weaponry & Tool Forge',
+          descriptionVi: 'Lò đúc binh khí, khiên giáp, nông cụ và móng ngựa. Phục vụ quân nhu chiến trận và dân sinh.',
+          startupCash: 5000,
+          turnkeyExtraCash: 650,
+          monthlyRent: 260,
+          baseWorkforce: 4,
+          baseDailyRevenue: 220,
+          projectedDailyRevenueMin: 160,
+          projectedDailyRevenueMax: 280,
+          projectedMonthlyRevenueMin: 4800,
+          projectedMonthlyRevenueMax: 8400,
+          icon: '鍛',
+          requiredMaterials: [
+            { itemCode: 'COM-TIMBER', itemNameVi: 'Gỗ Tốt Đẽo Gọt', quantity: 4 },
+            { itemCode: 'RAW-IRON-ORE', itemNameVi: 'Quặng Sắt Thô Sơn Mạch', quantity: 5 }
+          ],
+          hasAllMaterials: false,
+          canAffordCash: playerCash >= 5000,
+          canAffordTurnkey: playerCash >= 5650,
+          effectiveTurnkeyCost: 650
+        }
+      ];
+
+      const laborShifts = [
+        {
+          shiftId: 'SHIFT_FORGE_HAND',
+          jobType: 'JOB_FORGE_HAND',
+          titleVi: 'Thợ Phụ Kéo Bễ & Đập Búa Lò Rèn',
+          titleEn: 'Blacksmith Forge Hand',
+          workplaceVi: 'Lò Rèn Bách Nghệ Trác Quận',
+          workplaceEn: 'Zhuo Artisan Blacksmith',
+          wage: 140,
+          fatigueCost: 20,
+          professionCode: 'PROF_CRAFTSMAN',
+          expGain: 40,
+          attributeTarget: 'cra',
+          attributeExp: 15,
+          icon: '鍛'
+        },
+        {
+          shiftId: 'SHIFT_CHEF_TAVERN',
+          jobType: 'JOB_TAVERN_COOK',
+          titleVi: 'Đầu Bếp & Điều Rượu Tại Tửu Điếm',
+          titleEn: 'Tavern Chef & Cellar Master',
+          workplaceVi: 'Tửu Điếm Đào Viên',
+          workplaceEn: 'Peach Orchard Tavern',
+          wage: 110,
+          fatigueCost: 15,
+          professionCode: 'PROF_MERCHANT',
+          expGain: 30,
+          attributeTarget: 'com',
+          attributeExp: 10,
+          icon: '庖'
+        },
+        {
+          shiftId: 'SHIFT_HERBALIST',
+          jobType: 'JOB_APOTHECARY_COMPOUNDER',
+          titleVi: 'Dược Đồng Bào Chế Thuốc Tại Hiệu Dược',
+          titleEn: 'Apothecary Herbalist & Salve Maker',
+          workplaceVi: 'Hồi Xuân Dược Đường',
+          workplaceEn: 'Spring Apothecary',
+          wage: 120,
+          fatigueCost: 15,
+          professionCode: 'PROF_HERBALIST',
+          expGain: 35,
+          attributeTarget: 'int',
+          attributeExp: 10,
+          icon: '藥'
+        },
+        {
+          shiftId: 'SHIFT_WEAVER',
+          jobType: 'JOB_WEAVER',
+          titleVi: 'Thợ Thủ Công Đan Phên Tre & Bện Sọt',
+          titleEn: 'Artisan Bamboo Basket Weaver',
+          workplaceVi: 'Xưởng Thủ Công Lương Gia',
+          workplaceEn: 'Liang Workshop',
+          wage: 95,
+          fatigueCost: 12,
+          professionCode: 'PROF_CRAFTSMAN',
+          expGain: 25,
+          attributeTarget: 'cra',
+          attributeExp: 10,
+          icon: '工'
+        },
+        {
+          shiftId: 'SHIFT_MINER',
+          jobType: 'JOB_MINER_CARRIER',
+          titleVi: 'Phu Mỏ Khai Khoáng & Bốc Vác Quặng Sắt',
+          titleEn: 'Iron Mine Carrier & Sledge Striker',
+          workplaceVi: 'Mỏ Sắt Tây Sơn Trác Quận',
+          workplaceEn: 'West Mountain Iron Mines',
+          wage: 130,
+          fatigueCost: 18,
+          professionCode: 'PROF_MINER',
+          expGain: 35,
+          attributeTarget: 'log',
+          attributeExp: 12,
+          icon: '礦'
+        },
+        {
+          shiftId: 'SHIFT_WAITER',
+          jobType: 'JOB_TAVERN_STAFF',
+          titleVi: 'Tiểu Nhị Tiếp Tân Tửu Điếm & Trà Quán',
+          titleEn: 'Tavern Runner & Guest Concierge',
+          workplaceVi: 'Trà Quán Bình Dân Trác Huyện',
+          workplaceEn: 'Zhuo County Tea House',
+          wage: 85,
+          fatigueCost: 10,
+          professionCode: 'PROF_MERCHANT',
+          expGain: 20,
+          attributeTarget: 'com',
+          attributeExp: 8,
+          icon: '酒'
+        }
+      ];
 
       sendJson(res, 200, {
         success: true,
         status: {
           characterId,
-          playerCash: Number(player.liquid_cash || 0),
-          playerFatigue: Number(player.fatigue || 0),
+          playerCash,
+          playerSafeCash: Number(player.safe_cash || 0),
+          playerFatigue,
+          ownedBusinesses: activeBusinesses,
           activeEnterprises: activeBusinesses,
-          totalDailyRevenue: activeBusinesses.reduce((s, b) => s + (Number(b.daily_revenue_avg) || 0), 0),
-          totalWorkforce: activeBusinesses.reduce((s, b) => s + (Number(b.workforce_count) || 0), 0)
+          totalDailyRevenue: activeBusinesses.reduce((s, b) => s + (Number(b.daily_revenue) || 0), 0),
+          totalWorkforce: activeBusinesses.reduce((s, b) => s + (Number(b.current_workforce) || 0), 0),
+          totalAccumulatedProfit: activeBusinesses.reduce((s, b) => s + (Number(b.accumulated_profit) || 0), 0),
+          openableTypes,
+          laborShifts
         }
       });
     } catch (err) {
@@ -1298,22 +1521,28 @@ const server = http.createServer(async (req, res) => {
       try {
         const payload = JSON.parse(body || '{}');
         const characterId = payload.characterId || 'PLY-0001';
-        const shiftId = payload.shiftId;
+        const shiftId = payload.shiftId || payload.jobType || 'SHIFT_FORGE_HAND';
 
         const shifts = {
-          JOB_TAVERN_COOK: { title: 'Đầu Bếp Quán Rượu', wage: 65, fatigue: 15, attr: 'cra', exp: 15 },
-          JOB_TAVERN_STAFF: { title: 'Tiểu Nhị Tửu Quán', wage: 40, fatigue: 10, attr: 'com', exp: 10 },
-          JOB_APOTHECARY_COMPOUNDER: { title: 'Dược Đồng Bào Chế', wage: 60, fatigue: 15, attr: 'cra', exp: 15 },
-          JOB_HERB_GATHERER: { title: 'Thái Dược Sơn Dân', wage: 45, fatigue: 15, attr: 'log', exp: 15 },
-          JOB_FORGE_HAND: { title: 'Phụ Lò Rèn', wage: 75, fatigue: 20, attr: 'cra', exp: 20 },
-          JOB_WEAVER: { title: 'Thợ Dệt Vải Gai', wage: 50, fatigue: 10, attr: 'cra', exp: 10 }
+          SHIFT_FORGE_HAND: { title: 'Thợ Phụ Kéo Bễ & Đập Búa Lò Rèn', wage: 140, fatigue: 20, attr: 'cra', exp: 40, workplace: 'Lò Rèn Bách Nghệ Trác Quận' },
+          JOB_FORGE_HAND: { title: 'Thợ Phụ Kéo Bễ & Đập Búa Lò Rèn', wage: 140, fatigue: 20, attr: 'cra', exp: 40, workplace: 'Lò Rèn Bách Nghệ Trác Quận' },
+          SHIFT_CHEF_TAVERN: { title: 'Đầu Bếp & Điều Rượu Tại Tửu Điếm', wage: 110, fatigue: 15, attr: 'com', exp: 30, workplace: 'Tửu Điếm Đào Viên' },
+          JOB_TAVERN_COOK: { title: 'Đầu Bếp Quán Rượu', wage: 110, fatigue: 15, attr: 'com', exp: 30, workplace: 'Tửu Điếm Đào Viên' },
+          SHIFT_HERBALIST: { title: 'Dược Đồng Bào Chế Thuốc Tại Hiệu Dược', wage: 120, fatigue: 15, attr: 'int', exp: 35, workplace: 'Hồi Xuân Dược Đường' },
+          JOB_APOTHECARY_COMPOUNDER: { title: 'Dược Đồng Bào Chế', wage: 120, fatigue: 15, attr: 'int', exp: 35, workplace: 'Hồi Xuân Dược Đường' },
+          SHIFT_WEAVER: { title: 'Thợ Thủ Công Đan Phên Tre & Bện Sọt', wage: 95, fatigue: 12, attr: 'cra', exp: 25, workplace: 'Xưởng Thủ Công Lương Gia' },
+          JOB_WEAVER: { title: 'Thợ Dệt Vải Gai', wage: 95, fatigue: 12, attr: 'cra', exp: 25, workplace: 'Xưởng Thủ Công Lương Gia' },
+          SHIFT_MINER: { title: 'Phu Mỏ Khai Khoáng & Bốc Vác Quặng Sắt', wage: 130, fatigue: 18, attr: 'log', exp: 35, workplace: 'Mỏ Sắt Tây Sơn Trác Quận' },
+          JOB_MINER_CARRIER: { title: 'Phu Mỏ Khai Khoáng & Bốc Vác Quặng Sắt', wage: 130, fatigue: 18, attr: 'log', exp: 35, workplace: 'Mỏ Sắt Tây Sơn Trác Quận' },
+          SHIFT_WAITER: { title: 'Tiểu Nhị Tiếp Tân Tửu Điếm & Trà Quán', wage: 85, fatigue: 10, attr: 'com', exp: 20, workplace: 'Trà Quán Bình Dân Trác Huyện' },
+          JOB_TAVERN_STAFF: { title: 'Tiểu Nhị Tửu Quán', wage: 85, fatigue: 10, attr: 'com', exp: 20, workplace: 'Trà Quán Bình Dân Trác Huyện' }
         };
 
-        const job = shifts[shiftId] || shifts.JOB_TAVERN_COOK;
-        const player = runSqlJson(`SELECT fatigue, liquid_cash FROM player_state WHERE player_id = '${characterId.replace(/'/g, "''")}' LIMIT 1;`)[0] || {};
+        const job = shifts[shiftId] || shifts.SHIFT_FORGE_HAND;
+        const player = runSqlJson(`SELECT fatigue, liquid_cash, ${job.attr}_attr, ${job.attr}_exp FROM player_state WHERE player_id = '${characterId.replace(/'/g, "''")}' LIMIT 1;`)[0] || {};
         const currentFatigue = Number(player.fatigue || 0);
 
-        if (currentFatigue + job.fatigue > 95) {
+        if (currentFatigue + job.fatigue > 100) {
           sendJson(res, 400, {
             success: false,
             error: `Khí lực kiệt quệ (${currentFatigue}/100)! Không đủ sức làm trọn ca ${job.title}. Cần nghỉ ngơi hồi phục.`
@@ -1325,12 +1554,19 @@ const server = http.createServer(async (req, res) => {
         const newCash = Number(player.liquid_cash || 0) + job.wage;
         const currentDate = runSqlJson(`SELECT current_date FROM campaign_meta LIMIT 1;`)[0]?.current_date || '184-05-02';
 
+        let attrExp = Number(player[`${job.attr}_exp`] || 0) + 15;
+        let attrVal = Number(player[`${job.attr}_attr`] || 50);
+        if (attrExp >= 100) {
+          attrVal += 1;
+          attrExp -= 100;
+        }
+
         runSqlRaw(`
           UPDATE player_state 
-          SET fatigue = ${newFatigue}, liquid_cash = ${newCash}, ${job.attr}_exp = ${job.attr}_exp + ${job.exp} 
+          SET fatigue = ${newFatigue}, liquid_cash = ${newCash}, ${job.attr}_attr = ${attrVal}, ${job.attr}_exp = ${attrExp}
           WHERE player_id = '${characterId.replace(/'/g, "''")}';
-          INSERT INTO cashflow_ledger (txn_id, game_date, counterparty, category, inflow, outflow, balance, memo)
-          VALUES ('TXN-WAGE-${Date.now()}', '${currentDate}', 'Chủ quán bản địa', ${job.wage}, 0, ${newCash}, 'Tiền công ca làm thuê: ${job.title}');
+          INSERT INTO cashflow_ledger (txn_id, game_date, counterparty, category, inflow, outflow, balance, memo, status)
+          VALUES ('TXN-WAGE-${Date.now()}', '${currentDate}', '${job.workplace.replace(/'/g, "''")}', 'LABOR_WAGE', ${job.wage}, 0, ${newCash}, 'Tiền công ca làm thuê: ${job.title.replace(/'/g, "''")}', 'Confirmed');
         `);
 
         sendJson(res, 200, {
@@ -1338,11 +1574,19 @@ const server = http.createServer(async (req, res) => {
           shiftId,
           titleVi: job.title,
           wagePaid: job.wage,
+          wageEarned: job.wage,
+          fatigueCost: job.fatigue,
           fatigueConsumed: job.fatigue,
           remainingStamina: Math.max(0, 100 - newFatigue),
+          newFatigue,
+          newLiquidCash: newCash,
           newBalance: newCash,
           expGained: job.exp,
-          messageVi: `Hoàn tất ca làm việc [${job.title}]! Nhận +${job.wage} Tiền công và +${job.exp} EXP.`
+          professionExpGained: job.exp,
+          attributeExpGained: 15,
+          attributeTarget: job.attr,
+          messageVi: `Hoàn tất ca làm việc [${job.title}]! Nhận +${job.wage} Tiền công và +${job.exp} EXP.`,
+          message: `Hoàn tất ca làm việc [${job.title}]! Nhận +${job.wage} Tiền công và +${job.exp} EXP.`
         });
       } catch (err) {
         sendJson(res, 500, { success: false, error: err.message });
@@ -1359,12 +1603,13 @@ const server = http.createServer(async (req, res) => {
       try {
         const payload = JSON.parse(body || '{}');
         const characterId = payload.characterId || 'PLY-0001';
-        const bType = payload.businessType || 'TAVERN';
+        const bType = (payload.businessType || 'TAVERN').toUpperCase();
         const configs = {
-          WORKSHOP: { name: 'Xưởng Dệt & Chế Tác', capital: 1000, rent: 200, rev: 140, staff: 4 },
-          TAVERN: { name: 'Tửu Quán & Khách Điếm', capital: 1500, rent: 250, rev: 200, staff: 3 },
-          APOTHECARY: { name: 'Dược Điếm & Y Quán', capital: 1200, rent: 220, rev: 180, staff: 2 },
-          BLACKSMITH: { name: 'Lò Rèn Bách Nghệ', capital: 2000, rent: 300, rev: 260, staff: 4 }
+          WORKSHOP: { name: 'Xưởng Dệt & Chế Tác', capital: 3000, rent: 150, rev: 120, staff: 3 },
+          TAVERN: { name: 'Tửu Quán & Khách Điếm', capital: 4000, rent: 200, rev: 150, staff: 3 },
+          APOTHECARY: { name: 'Dược Điếm & Y Quán', capital: 4500, rent: 220, rev: 170, staff: 3 },
+          BLACKSMITH: { name: 'Lò Rèn Bách Nghệ', capital: 5000, rent: 260, rev: 220, staff: 4 },
+          FORGE: { name: 'Lò Rèn Bách Nghệ & Quân Khí Phường', capital: 5000, rent: 260, rev: 220, staff: 4 }
         };
         const cfg = configs[bType] || configs.TAVERN;
         const name = payload.customName || cfg.name;
@@ -1380,25 +1625,81 @@ const server = http.createServer(async (req, res) => {
         }
 
         const newCash = cash - cfg.capital;
-        const bId = `BIZ-${Date.now().toString().slice(-4)}`;
+        const bId = `BIZ-${Date.now().toString(36).toUpperCase()}-${Math.floor(Math.random() * 1000)}`;
         const currentDate = runSqlJson(`SELECT current_date FROM campaign_meta LIMIT 1;`)[0]?.current_date || '184-05-02';
+        const normType = bType === 'FORGE' ? 'BLACKSMITH' : bType;
 
         runSqlRaw(`
           UPDATE player_state SET liquid_cash = ${newCash} WHERE player_id = '${characterId.replace(/'/g, "''")}';
-          INSERT INTO businesses (business_id, name, owner_character_id, location, business_type, workforce_count, daily_revenue_avg, monthly_rent, safe_cash)
-          VALUES ('${bId}', '${name.replace(/'/g, "''")}', '${characterId.replace(/'/g, "''")}', 'LOC-0001', '${bType}', ${cfg.staff}, ${cfg.rev}, ${cfg.rent}, ${cfg.capital});
-          INSERT INTO cashflow_ledger (txn_id, game_date, counterparty, category, inflow, outflow, balance, memo)
-          VALUES ('TXN-BIZ-${Date.now()}', '${currentDate}', 'Khai trương ${name.replace(/'/g, "''")}', 0, ${cfg.capital}, ${newCash}, 'Đầu tư mở cơ sở kinh doanh ${name.replace(/'/g, "''")}');
+          INSERT INTO businesses (business_id, name, location_id, manager_npc_id, safe_cash, delegation_level, efficiency_multiplier, current_workforce, monthly_capacity_hours, monthly_rent, auto_procure, status, business_type, owner_character_id, daily_revenue, accumulated_profit)
+          VALUES ('${bId}', '${name.replace(/'/g, "''")}', 'LOC-0001', 'NPC-0007', 1500, 2, 0.9, ${cfg.staff}, 800, ${cfg.rent}, 1, 'ACTIVE', '${normType}', '${characterId.replace(/'/g, "''")}', ${cfg.rev}, 0);
+          INSERT INTO cashflow_ledger (txn_id, game_date, counterparty, category, inflow, outflow, balance, memo, status)
+          VALUES ('TXN-BIZ-${Date.now()}', '${currentDate}', 'Khai trương ${name.replace(/'/g, "''")}', 'CAPITAL_INVESTMENT', 0, ${cfg.capital}, ${newCash}, 'Đầu tư mở cơ sở kinh doanh ${name.replace(/'/g, "''")}', 'Confirmed');
         `);
 
         sendJson(res, 200, {
           success: true,
           businessId: bId,
-          type: bType,
+          type: normType,
           name,
           initialCapital: cfg.capital,
           remainingPlayerCash: newCash,
-          messageVi: `Chúc mừng! Khai trương thành công cơ sở [${name}] với ${cfg.capital} Tiền vốn an toàn!`
+          messageVi: `Chúc mừng! Khai trương thành công cơ sở [${name}] với ${cfg.capital} Tiền vốn an toàn!`,
+          message: `Successfully opened ${name}!`
+        });
+      } catch (err) {
+        sendJson(res, 500, { success: false, error: err.message });
+      }
+    });
+    return;
+  }
+
+  // 4s9. POST /api/enterprise/collect - Collect Profits
+  if (req.method === 'POST' && pathname === '/api/enterprise/collect') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        const characterId = payload.characterId || 'PLY-0001';
+        const businessId = payload.businessId;
+
+        const biz = runSqlJson(`SELECT * FROM businesses WHERE business_id = '${(businessId || '').replace(/'/g, "''")}' LIMIT 1;`)[0];
+        if (!biz) {
+          sendJson(res, 404, { success: false, error: 'Không tìm thấy cơ sở kinh doanh này.' });
+          return;
+        }
+
+        const profit = Number(biz.accumulated_profit || 0);
+        if (profit <= 0) {
+          sendJson(res, 200, {
+            success: true,
+            businessId,
+            collectedAmount: 0,
+            remainingProfit: 0,
+            message: 'Cơ sở hiện chưa có thặng dư lợi nhuận tích lũy để rút.'
+          });
+          return;
+        }
+
+        const player = runSqlJson(`SELECT liquid_cash FROM player_state WHERE player_id = '${characterId.replace(/'/g, "''")}' LIMIT 1;`)[0] || {};
+        const newPlayerCash = Number(player.liquid_cash || 0) + profit;
+        const currentDate = runSqlJson(`SELECT current_date FROM campaign_meta LIMIT 1;`)[0]?.current_date || '184-05-02';
+
+        runSqlRaw(`
+          UPDATE businesses SET accumulated_profit = 0 WHERE business_id = '${(businessId || '').replace(/'/g, "''")}';
+          UPDATE player_state SET liquid_cash = ${newPlayerCash} WHERE player_id = '${characterId.replace(/'/g, "''")}';
+          INSERT INTO cashflow_ledger (txn_id, game_date, counterparty, category, inflow, outflow, balance, memo, status)
+          VALUES ('TXN-DIVIDEND-${Date.now()}', '${currentDate}', '${(biz.name || '').replace(/'/g, "''")}', 'ENTERPRISE_DIVIDEND', ${profit}, 0, ${newPlayerCash}, 'Rút lợi nhuận kinh doanh từ ${(biz.name || '').replace(/'/g, "''")}', 'Confirmed');
+        `);
+
+        sendJson(res, 200, {
+          success: true,
+          businessId,
+          collectedAmount: profit,
+          remainingProfit: 0,
+          ownerNewCash: newPlayerCash,
+          message: `Đã rút thành công ${profit} tiền lợi nhuận từ ${biz.name}. Số dư cá nhân hiện có: ${newPlayerCash}.`
         });
       } catch (err) {
         sendJson(res, 500, { success: false, error: err.message });

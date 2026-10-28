@@ -222,12 +222,15 @@
 
       const st = data.status;
       const isEn = isEnglish();
+      const owned = st.ownedBusinesses || st.activeEnterprises || [];
 
       const laborShifts = [
         { id: 'SHIFT_FORGE_HAND', seal: '鍛', title: 'Thợ Phụ Kéo Bễ & Quai Búa', wage: 140, fatigue: 20, exp: 40, workplace: 'Lò Rèn Bách Nghệ Trác Quận' },
         { id: 'SHIFT_CHEF_TAVERN', seal: '庖', title: 'Đầu Bếp & Phục Vụ Rượu', wage: 110, fatigue: 15, exp: 30, workplace: 'Tửu Điếm Đào Viên' },
         { id: 'SHIFT_HERBALIST', seal: '藥', title: 'Dược Đồng Bào Chế Thuốc', wage: 120, fatigue: 15, exp: 35, workplace: 'Hồi Xuân Dược Đường' },
-        { id: 'SHIFT_WEAVER', seal: '工', title: 'Thợ Thủ Công Đan Phên Tre', wage: 95, fatigue: 12, exp: 25, workplace: 'Xưởng Thủ Công Lương Gia' }
+        { id: 'SHIFT_WEAVER', seal: '工', title: 'Thợ Thủ Công Đan Phên Tre', wage: 95, fatigue: 12, exp: 25, workplace: 'Xưởng Thủ Công Lương Gia' },
+        { id: 'SHIFT_MINER', seal: '礦', title: 'Phu Mỏ Khai Khoáng & Bốc Quặng', wage: 130, fatigue: 18, exp: 35, workplace: 'Mỏ Sắt Tây Sơn Trác Quận' },
+        { id: 'SHIFT_WAITER', seal: '酒', title: 'Tiểu Nhị Tiếp Tân Tửu Điếm', wage: 85, fatigue: 10, exp: 20, workplace: 'Trà Quán Bình Dân Trác Huyện' }
       ];
 
       container.innerHTML = `
@@ -237,31 +240,49 @@
               <h3 class="grand-hub-view-title"><span class="hub-seal-accent">業</span> ${isEn ? 'Enterprises, Facilities & Labor Market' : 'Sản Nghiệp, Cơ Sở & Thị Trường Làm Thuê'}</h3>
               <p class="grand-hub-view-desc">${isEn ? 'Direct production lines, assign artisans, or earn wages via manual labor.' : 'Quản lý cơ sở chế tác, phân công thợ giỏi và tham gia lao động nhật khóa.'}</p>
             </div>
-            <div style="font-size: 12px; font-family: 'JetBrains Mono', monospace; color: #34d399;">
-              ${isEn ? 'Workforce:' : 'Tổng Nhân Lực:'} <strong>${st.totalWorkforce || 0}</strong> • ${isEn ? 'Daily Rev:' : 'Doanh Thu Ngày:'} <strong>${formatNumber(st.totalDailyRevenue || 0)} Qian</strong>
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="font-size: 12px; font-family: 'JetBrains Mono', monospace; color: #34d399;">
+                ${isEn ? 'Workforce:' : 'Tổng Nhân Lực:'} <strong>${st.totalWorkforce || 0}</strong> • ${isEn ? 'Daily Rev:' : 'Doanh Thu Ngày:'} <strong>${formatNumber(st.totalDailyRevenue || 0)} Qian</strong>
+              </div>
+              <button class="tactical-btn tactical-btn--primary tactical-btn--sm" onclick="if(window.EnterpriseUI){EnterpriseUI.openEnterpriseModal('own');}">
+                ${isEn ? 'Full Enterprise Manager' : 'Tự Do Lập Nghiệp & Mở Xưởng'} →
+              </button>
             </div>
           </div>
 
           <!-- Owned Facilities -->
           <div class="hub-section-subtitle">${isEn ? 'Active Owned Enterprises:' : 'Cơ Sở Sản Nghiệp Đang Sở Hữu & Điều Hành:'}</div>
           <div class="grand-hub-grid-3">
-            ${st.activeEnterprises && st.activeEnterprises.length > 0 ? st.activeEnterprises.map(biz => `
-              <div class="tactical-card">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
-                  <strong style="font-size: 13px; color: #f1f5f9;">${biz.name}</strong>
-                  <span class="tactical-badge tactical-badge--info">${biz.business_type}</span>
+            ${owned.length > 0 ? owned.map(biz => {
+              const profit = Number(biz.accumulated_profit || 0);
+              const dailyRev = Number(biz.daily_revenue || biz.daily_revenue_avg || 120);
+
+              return `
+                <div class="tactical-card">
+                  <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
+                    <strong style="font-size: 13px; color: #f1f5f9;">${biz.name}</strong>
+                    <span class="tactical-badge tactical-badge--info">${biz.business_type || 'WORKSHOP'}</span>
+                  </div>
+                  <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">
+                    ${isEn ? 'Location:' : 'Địa bàn:'} <b>${biz.location || biz.location_id || 'LOC-0001'}</b> • ${isEn ? 'Workforce:' : 'Quy mô thợ:'} <b>${biz.current_workforce || biz.workforce_count || 4}</b>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; font-size: 11px; font-family: 'JetBrains Mono', monospace; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 6px;">
+                    <span>${isEn ? 'Daily Rev:' : 'Thu nhập ngày:'} <b style="color: #4ade80;">+${dailyRev} Qian</b></span>
+                    <span>${isEn ? 'Safe Cash:' : 'Két sắt:'} <b>${formatNumber(biz.safe_cash)} Qian</b></span>
+                  </div>
+                  ${profit > 0 ? `
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; padding-top: 6px; border-top: 1px dashed rgba(255,255,255,0.12); font-size: 11px;">
+                      <span style="color: #34d399; font-family: 'JetBrains Mono', monospace;">Thặng dư: <b>+${profit} Qian</b></span>
+                      <button class="tactical-btn tactical-btn--xs" style="background: #059669; border-color: #10b981; color: #fff; padding: 2px 8px;" onclick="GrandCommandHubUI.collectProfit('${biz.business_id}')">
+                        ${isEn ? 'Collect' : 'Rút Tiền'}
+                      </button>
+                    </div>
+                  ` : ''}
                 </div>
-                <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">
-                  ${isEn ? 'Location:' : 'Địa bàn:'} <b>${biz.location}</b> • ${isEn ? 'Workforce:' : 'Quy mô thợ:'} <b>${biz.workforce_count}</b>
-                </div>
-                <div style="display: flex; justify-content: space-between; font-size: 11px; font-family: 'JetBrains Mono', monospace; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 6px;">
-                  <span>${isEn ? 'Daily Rev:' : 'Thu nhập ngày:'} <b style="color: #4ade80;">+${biz.daily_revenue_avg} Qian</b></span>
-                  <span>${isEn ? 'Safe Cash:' : 'Két sắt:'} <b>${formatNumber(biz.safe_cash)} Qian</b></span>
-                </div>
-              </div>
-            `).join('') : `
+              `;
+            }).join('') : `
               <div class="tactical-card" style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 20px;">
-                ${isEn ? 'No commercial enterprises currently established in this jurisdiction.' : 'Chưa khai trương cơ sở sản nghiệp nào. Hãy đầu tư mở xưởng mới.'}
+                ${isEn ? 'No commercial enterprises currently established in this jurisdiction.' : 'Chưa khai trương cơ sở sản nghiệp nào. Bấm nút "Tự Do Lập Nghiệp" để mở xưởng mới.'}
               </div>
             `}
           </div>
@@ -310,8 +331,33 @@
       const data = await res.json();
       if (!data.success) throw new Error(data.error || 'Failed to complete work shift');
 
-      showToast(data.message || 'Hoàn tất ca làm thuê!');
+      showToast(data.messageVi || data.message || 'Hoàn tất ca làm thuê!');
+      if (typeof playSfx === 'function') playSfx('coins');
       renderTabContent('enterprise');
+      if (typeof updateTopTelemetry === 'function') updateTopTelemetry();
+    } catch (err) {
+      showToast(`[LỖI] ${err.message}`, true);
+    } finally {
+      isSubmittingAction = false;
+    }
+  }
+
+  async function collectProfit(businessId) {
+    if (isSubmittingAction) return;
+    isSubmittingAction = true;
+    try {
+      const res = await fetch('/api/enterprise/collect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ characterId: 'PLY-0001', businessId })
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || 'Failed to collect profit');
+
+      showToast(data.message || `Đã rút thành công ${data.collectedAmount} Tiền lợi nhuận!`);
+      if (typeof playSfx === 'function') playSfx('coins');
+      renderTabContent('enterprise');
+      if (typeof updateTopTelemetry === 'function') updateTopTelemetry();
     } catch (err) {
       showToast(`[LỖI] ${err.message}`, true);
     } finally {
@@ -1268,6 +1314,7 @@
     switchTab,
     renderTabContent,
     executeWorkShift,
+    collectProfit,
     switchLineageSubTab,
     submitCourtship,
     executeHouseholdRest,

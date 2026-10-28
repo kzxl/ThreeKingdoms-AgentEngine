@@ -5,16 +5,14 @@
  * Implements:
  * 1. Tab 1: "Làm Chủ Sản Nghiệp" (Manage Owned Enterprises & Launch New Businesses):
  *    - Lists active businesses (Workshop, Tavern, Apothecary, Blacksmith Forge).
- *    - Shows workforce, capacity, safe cash reserves, monthly rent, and revenue.
- *    - Open new businesses with custom naming and prerequisite material/capital validation.
- * 2. Tab 2: "Đi Làm Thuê Kiếm Sống" (Work Shifts for Wages & Profession Growth):
- *    - 4 distinct historical shifts:
- *      * Thợ Phụ Lò Rèn (Forge Hand at Blacksmith) - 140 Qian, 20 Fatigue, +40 CRA EXP
- *      * Đầu Bếp / Điều Rượu (Chef at Tavern) - 110 Qian, 15 Fatigue, +30 COM EXP
- *      * Dược Đồng Bào Chế (Herbalist at Apothecary) - 120 Qian, 15 Fatigue, +35 INT EXP
- *      * Thợ Đan Mây Tre (Weaver at Workshop) - 95 Qian, 12 Fatigue, +25 CRA EXP
- *    - Real-time stamina cost calculation and fatigue-cap validation.
- *    - Instant work button with sound/toast feedback and telemetry refresh.
+ *    - Real-time revenue tracking, safe cash reserves, monthly rent, and accumulated profits.
+ *    - 1-Click Profit Withdrawal ("Rút Lợi Nhuận") with instant ledger reflection.
+ *    - In-modal Establishment Drawer for launching new enterprises (Non-blocking, zero prompt()).
+ *    - Automatic material check with optional turnkey procurement ("Ủy thác thu mua vật liệu còn thiếu").
+ * 2. Tab 2: "Đi Làm Thuê Kiếm Sống" (Work Shifts for Immediate Wages & RPG Progression):
+ *    - 6 distinct historical shifts across all disciplines (Craft, Culinary, Herbal, Textile, Mining, Hospitality).
+ *    - Real-time stamina meter and fatigue exhaustion guard (cap at 100).
+ *    - Sound and toast feedback with immediate top telemetry bar synchronization.
  *
  * Adheres strictly to Universe Architecture v4.0 & Anti-AI-Slop standards.
  */
@@ -25,6 +23,7 @@
   } else {
     const exports = factory();
     root.EnterpriseUI = exports;
+    root.openEnterpriseModal = exports.openEnterpriseModal;
     Object.assign(root, exports);
   }
 })(typeof self !== 'undefined' ? self : this, function () {
@@ -34,9 +33,17 @@
   let activeTab = 'work'; // 'work' | 'own'
   let cachedStatus = null;
   let isWorking = false;
+  let isSubmitting = false;
+  let activeCreationTypeId = null; // typeId currently in establishment panel
 
   function isEnglish() {
     return (typeof currentLang !== 'undefined' && currentLang === 'en');
+  }
+
+  function playUiSound(type = 'click') {
+    if (typeof playSfx === 'function') {
+      try { playSfx(type); } catch (e) {}
+    }
   }
 
   /**
@@ -47,6 +54,9 @@
     const style = document.createElement('style');
     style.id = 'enterprise-ui-styles';
     style.textContent = `
+      #enterprise-manager-modal {
+        z-index: 1200;
+      }
       .ent-modal-card {
         max-width: 960px;
         width: 95vw;
@@ -88,6 +98,19 @@
         border-bottom-color: #fbbf24;
         background: rgba(251, 191, 36, 0.06);
       }
+      .ent-fatigue-bar-track {
+        width: 100%;
+        height: 6px;
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 3px;
+        overflow: hidden;
+        margin-top: 6px;
+      }
+      .ent-fatigue-bar-fill {
+        height: 100%;
+        transition: width 0.3s ease, background 0.3s ease;
+        border-radius: 3px;
+      }
       .ent-grid-shifts {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -115,10 +138,13 @@
         margin-bottom: 10px;
       }
       .ent-shift-icon {
-        font-size: 24px;
-        background: #0f172a;
-        padding: 6px 10px;
-        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 700;
+        font-family: 'Cinzel', serif;
+        background: rgba(217, 119, 6, 0.15);
+        color: #fbbf24;
+        padding: 4px 8px;
+        border-radius: 4px;
         border: 1px solid rgba(217, 119, 6, 0.3);
       }
       .ent-shift-title-block {
@@ -171,6 +197,11 @@
         border: 1px solid rgba(168, 85, 247, 0.35);
         color: #c084fc;
       }
+      .ent-metric-pill--attr {
+        background: rgba(56, 189, 248, 0.15);
+        border: 1px solid rgba(56, 189, 248, 0.35);
+        color: #38bdf8;
+      }
       .ent-btn {
         background: var(--brand-primary, #b45309);
         border: 1px solid #d97706;
@@ -203,6 +234,15 @@
         background: rgba(148, 163, 184, 0.1);
         color: #fff;
       }
+      .ent-btn--success {
+        background: #059669;
+        border-color: #10b981;
+        color: #fff;
+      }
+      .ent-btn--success:hover:not(:disabled) {
+        background: #10b981;
+        box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+      }
       .ent-biz-card {
         background: #1e293b;
         border: 1px solid rgba(217, 119, 6, 0.25);
@@ -210,28 +250,32 @@
         padding: 14px;
         margin-bottom: 12px;
       }
-      .ent-floating-trigger {
-        position: fixed;
-        bottom: 72px;
-        right: 24px;
-        z-index: 80;
-        background: #1e293b;
-        border: 1px solid #b45309;
-        color: #fbbf24;
-        padding: 8px 14px;
-        border-radius: 20px;
-        font-size: 12px;
-        font-weight: 700;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        box-shadow: 0 4px 14px rgba(0,0,0,0.5);
-        transition: transform 0.15s;
+      .ent-creation-box {
+        background: #0b1120;
+        border: 1px solid #f59e0b;
+        border-radius: 6px;
+        padding: 16px;
+        margin-bottom: 18px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.6);
       }
-      .ent-floating-trigger:hover {
-        transform: translateY(-2px);
-        background: #273549;
+      .ent-mat-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+        margin: 2px 4px 2px 0;
+      }
+      .ent-mat-badge--ok {
+        background: rgba(16, 185, 129, 0.15);
+        border: 1px solid rgba(16, 185, 129, 0.4);
+        color: #34d399;
+      }
+      .ent-mat-badge--warn {
+        background: rgba(245, 158, 11, 0.15);
+        border: 1px solid rgba(245, 158, 11, 0.4);
+        color: #fbbf24;
       }
     `;
     document.head.appendChild(style);
@@ -255,157 +299,32 @@
       console.warn('[EnterpriseUI] Backend status notice, generating live status:', err);
     }
 
-    // Fallback: Read player status from /api/status
+    // Fallback: Read player status from /api/status if endpoint unreachable
     try {
       const statusRes = await fetch('/api/status').then(r => r.json());
       const p = statusRes.player || {};
-
-      cachedStatus = {
-        characterId,
-        playerCash: p.liquid_cash || 15000,
-        playerFatigue: p.fatigue || 0,
-        ownedBusinesses: [
-          {
-            business_id: 'BIZ-0001',
-            name: 'Liang Clan Workshop & Trading Post',
-            location_id: 'LOC-0001',
-            manager_npc_id: 'NPC-0007',
-            safe_cash: p.safe_cash || 3000,
-            current_workforce: 4,
-            monthly_capacity_hours: 800,
-            monthly_rent: 200,
-            status: 'ACTIVE'
-          }
-        ],
-        openableTypes: [
-          {
-            typeId: 'FORGE',
-            titleVi: 'Lò Rèn Bách Nghệ & Quân Khí Phường',
-            titleEn: 'Blacksmith Weaponry & Tool Forge',
-            descriptionVi: 'Lò đúc binh khí, khiên giáp, nông cụ và móng ngựa. Phục vụ quân nhu chiến trận và dân sinh.',
-            startupCash: 5000,
-            requiredMaterials: [
-              { itemCode: 'RAW-TIMBER-OAK', itemNameVi: 'Gỗ Sồi Quân Nhu', quantity: 6 },
-              { itemCode: 'RAW-IRON-INGOT', itemNameVi: 'Sắt Thỏi Tinh Luyện', quantity: 6 }
-            ],
-            monthlyRent: 250,
-            baseWorkforce: 4,
-            projectedMonthlyRevenueMin: 900,
-            projectedMonthlyRevenueMax: 1800,
-            icon: ''
-          },
-          {
-            typeId: 'TAVERN',
-            titleVi: 'Tửu Điếm Đào Viên Hào Kiệt Quán',
-            titleEn: 'Peach Orchard Tavern & Inn',
-            descriptionVi: 'Quán rượu điểm tâm hội tụ nghĩa sĩ giang hồ, nơi thu thập tin tức tình báo và kinh doanh rượu hoa đào.',
-            startupCash: 4000,
-            requiredMaterials: [
-              { itemCode: 'RAW-TIMBER-OAK', itemNameVi: 'Gỗ Sồi Quân Nhu', quantity: 8 },
-              { itemCode: 'COM-GRAIN', itemNameVi: 'Lương Thảo', quantity: 5 }
-            ],
-            monthlyRent: 200,
-            baseWorkforce: 3,
-            projectedMonthlyRevenueMin: 700,
-            projectedMonthlyRevenueMax: 1400,
-            icon: ''
-          },
-          {
-            typeId: 'APOTHECARY',
-            titleVi: 'Hồi Xuân Dược Đường & Thảo Dược Quán',
-            titleEn: 'Spring Rejuvenation Apothecary & Clinic',
-            descriptionVi: 'Hiệu thuốc đông y bào chế cao dán kim sang, hoàn đan cứu thương và bán thảo dược sơn lâm quý hiếm.',
-            startupCash: 4500,
-            requiredMaterials: [
-              { itemCode: 'RAW-TIMBER-OAK', itemNameVi: 'Gỗ Sồi Quân Nhu', quantity: 5 },
-              { itemCode: 'RAW-HERB-WILD', itemNameVi: 'Thảo Dược Rừng Tươi', quantity: 8 }
-            ],
-            monthlyRent: 220,
-            baseWorkforce: 3,
-            projectedMonthlyRevenueMin: 800,
-            projectedMonthlyRevenueMax: 1600,
-            icon: ''
-          },
-          {
-            typeId: 'WORKSHOP',
-            titleVi: 'Trác Quận Thợ Thủ Công Phường',
-            titleEn: 'Zhuo County Artisan Workshop',
-            descriptionVi: 'Xưởng dệt chiếu, bện sọt lương và làm đồ gia dụng mây tre đan cho các đoàn thương vận hành.',
-            startupCash: 3500,
-            requiredMaterials: [
-              { itemCode: 'COM-BAMBOO', itemNameVi: 'Tre Trúc U Châu', quantity: 8 },
-              { itemCode: 'COM-TWINE', itemNameVi: 'Dây Đay Bền Chắc', quantity: 5 }
-            ],
-            monthlyRent: 180,
-            baseWorkforce: 4,
-            projectedMonthlyRevenueMin: 600,
-            projectedMonthlyRevenueMax: 1200,
-            icon: ''
-          }
-        ],
-        laborShifts: [
-          {
-            shiftId: 'SHIFT_FORGE_HAND',
-            titleVi: 'Thợ Phụ Kéo Bễ & Đập Búa Lò Rèn',
-            titleEn: 'Blacksmith Forge Hand',
-            workplaceVi: 'Lò Rèn Bách Nghệ Trác Quận',
-            workplaceEn: 'Zhuo Artisan Blacksmith',
-            wage: 140,
-            fatigueCost: 20,
-            professionCode: 'PROF_CRAFTSMAN',
-            expGain: 40,
-            narrativeVi: 'Kéo bễ lò lửa đỏ rực, cùng đại sư quai búa rèn phôi sắt tôi nước lạnh. Tăng cường thể lực và tay nghề luyện cương.',
-            narrativeEn: 'Stoked furnace fires and struck glowing billets alongside master smiths.',
-            icon: ''
-          },
-          {
-            shiftId: 'SHIFT_CHEF_TAVERN',
-            titleVi: 'Đầu Bếp & Điều Rượu Tại Tửu Điếm',
-            titleEn: 'Tavern Chef & Cellar Master',
-            workplaceVi: 'Tửu Điếm Đào Viên',
-            workplaceEn: 'Peach Orchard Tavern',
-            wage: 110,
-            fatigueCost: 15,
-            professionCode: 'PROF_MERCHANT',
-            expGain: 30,
-            narrativeVi: 'Bổ củi nổi lửa, nấu cỗ nhắm và phục vụ rượu hoa đào cho khách thương. Thu thập tin tức tình báo các chư hầu.',
-            narrativeEn: 'Prepared banquets and served fragrant wines while eavesdropping on regional gossip.',
-            icon: ''
-          },
-          {
-            shiftId: 'SHIFT_HERBALIST',
-            titleVi: 'Dược Đồng Bào Chế Thuốc Tại Hiệu Dược',
-            titleEn: 'Apothecary Herbalist & Salve Maker',
-            workplaceVi: 'Hồi Xuân Dược Đường',
-            workplaceEn: 'Spring Apothecary',
-            wage: 120,
-            fatigueCost: 15,
-            professionCode: 'PROF_HERBALIST',
-            expGain: 35,
-            narrativeVi: 'Dùng cối đá nghiền nát thảo dược, sao chế cao dán kim sang và phân loại dược liệu cứu chữa bách tính.',
-            narrativeEn: 'Ground wild roots and brewed soothing trauma balms for townspeople.',
-            icon: ''
-          },
-          {
-            shiftId: 'SHIFT_WEAVER',
-            titleVi: 'Thợ Thủ Công Đan Phên Tre & Bện Sọt',
-            titleEn: 'Artisan Bamboo Basket Weaver',
-            workplaceVi: 'Xưởng Thủ Công Lương Gia',
-            workplaceEn: 'Liang Workshop',
-            wage: 95,
-            fatigueCost: 12,
-            professionCode: 'PROF_CRAFTSMAN',
-            expGain: 25,
-            narrativeVi: 'Vót nan tre bện sọt vận lương cho Bắc Quân. Rèn luyện sự tỉ mỉ và nhanh nhạy của đôi bàn tay.',
-            narrativeEn: 'Wove heavy-duty supply baskets for northern imperial expeditions.',
-            icon: ''
-          }
-        ]
-      };
+      if (!cachedStatus) {
+        cachedStatus = {
+          characterId,
+          playerCash: Number(p.liquid_cash || 15000),
+          playerSafeCash: Number(p.safe_cash || 3000),
+          playerFatigue: Number(p.fatigue || 0),
+          ownedBusinesses: [],
+          activeEnterprises: [],
+          totalDailyRevenue: 0,
+          totalWorkforce: 0,
+          totalAccumulatedProfit: 0,
+          openableTypes: [],
+          laborShifts: []
+        };
+      } else {
+        cachedStatus.playerCash = Number(p.liquid_cash || cachedStatus.playerCash);
+        cachedStatus.playerFatigue = Number(p.fatigue || cachedStatus.playerFatigue);
+      }
       return cachedStatus;
     } catch (e) {
       console.error('[EnterpriseUI] Failed to generate status:', e);
-      return null;
+      return cachedStatus;
     }
   }
 
@@ -415,6 +334,7 @@
   async function openEnterpriseModal(initialTab = 'work') {
     ensureStyles();
     activeTab = initialTab;
+    activeCreationTypeId = null;
 
     let modalEl = document.getElementById('enterprise-manager-modal');
     if (!modalEl) {
@@ -437,6 +357,7 @@
   function closeEnterpriseModal() {
     const modalEl = document.getElementById('enterprise-manager-modal');
     if (modalEl) modalEl.classList.add('hidden');
+    activeCreationTypeId = null;
   }
 
   /**
@@ -456,8 +377,8 @@
     const isEn = isEnglish();
     modalEl.innerHTML = `
       <div class="modal-card ent-modal-card">
-        <div class="modal-header">
-          <h3 class="modal-title">${isEn ? 'Enterprise & Labor Market' : 'Sản Nghiệp & Thị Trường Lao Động'}</h3>
+        <div class="modal-header" style="background:#090d16; border-bottom:1px solid rgba(217, 119, 6, 0.4); padding: 12px 16px;">
+          <h3 class="modal-title" style="color:#fbbf24; font-size:15px; margin:0;">${isEn ? 'Enterprise & Labor Market' : 'Sản Nghiệp & Thị Trường Lao Động'}</h3>
           <button class="modal-close-btn" onclick="EnterpriseUI.closeEnterpriseModal()">&times;</button>
         </div>
         <div class="modal-body" style="padding: 40px; text-align: center; color: #94a3b8;">
@@ -476,21 +397,21 @@
 
     const isEn = isEnglish();
     const st = cachedStatus || {};
-    const cash = st.playerCash || 0;
-    const fatigue = st.playerFatigue || 0;
+    const cash = Number(st.playerCash || 0);
+    const fatigue = Number(st.playerFatigue || 0);
 
     modalEl.innerHTML = `
       <div class="modal-card ent-modal-card">
         <!-- MODAL HEADER -->
-        <div class="modal-header" style="background:#090d16; border-bottom:1px solid rgba(217, 119, 6, 0.4); padding: 12px 16px;">
+        <div class="modal-header" style="background:#090d16; border-bottom:1px solid rgba(217, 119, 6, 0.4); padding: 12px 16px; display:flex; justify-content:space-between; align-items:center;">
           <div>
-            <h3 class="modal-title" style="color:#fbbf24; font-size:16px; margin:0;">
+            <h3 class="modal-title" style="color:#fbbf24; font-size:15px; margin:0; letter-spacing:0.5px;">
               ${isEn ? 'FREE ENTERPRISE & LABOR MARKET' : 'TỰ DO LẬP NGHIỆP & THỊ TRƯỜNG LAO ĐỘNG'}
             </h3>
             <span style="font-size:11px; color:#94a3b8;">
-              ${isEn ? 'Campaign Region: Zhuo County & North Frontier' : 'Địa bàn chiến dịch: Trác Quận • U Châu Biên Cương'} • 
-              <strong style="color:#34d399;">${cash.toLocaleString()} Tiền</strong> • 
-              <strong style="color:${fatigue > 80 ? '#ef4444' : '#fbbf24'};">${fatigue}/100 Thể Lực</strong>
+              ${isEn ? 'Campaign Region: Zhuo County & North Frontier' : 'Địa bàn: Trác Quận • U Châu'} • 
+              <strong style="color:#34d399; font-family:'JetBrains Mono',monospace;">${cash.toLocaleString()} Tiền</strong> • 
+              <strong style="color:${fatigue > 80 ? '#ef4444' : '#fbbf24'}; font-family:'JetBrains Mono',monospace;">${fatigue}/100 Thể Lực</strong>
             </span>
           </div>
           <button class="modal-close-btn" onclick="EnterpriseUI.closeEnterpriseModal()">&times;</button>
@@ -499,10 +420,10 @@
         <!-- TABS BAR -->
         <div class="ent-tabs-bar">
           <button class="ent-tab-btn ${activeTab === 'work' ? 'active' : ''}" onclick="EnterpriseUI.switchEnterpriseTab('work')">
-            ${isEn ? 'Work Shifts' : 'Đi làm thuê'}
+            <span>🛠️</span> ${isEn ? 'Daily Labor Shifts' : 'Đi làm thuê kiếm sống'}
           </button>
           <button class="ent-tab-btn ${activeTab === 'own' ? 'active' : ''}" onclick="EnterpriseUI.switchEnterpriseTab('own')">
-            ${isEn ? 'Manage Enterprises' : 'Quản lý sản nghiệp'}
+            <span>🏛️</span> ${isEn ? 'Manage Enterprises' : 'Làm chủ sản nghiệp'}
           </button>
         </div>
 
@@ -514,7 +435,7 @@
         <!-- MODAL FOOTER -->
         <div class="modal-footer" style="background:#090d16; border-top:1px solid rgba(217, 119, 6, 0.2); padding:10px 16px; display:flex; justify-content:space-between; align-items:center;">
           <div style="font-size:11px; color:#64748b;">
-            ${isEn ? 'Double-entry cashflow ledger ensures 100% invariant consistency' : 'Sổ cái kép tự động hạch toán tiền lương và hao mòn thể lực chuẩn xác'}
+            ${isEn ? 'Double-entry cashflow ledger ensures 100% financial integrity' : 'Sổ cái kép tự động hạch toán tiền lương và hao mòn thể lực chuẩn xác'}
           </div>
           <button class="ent-btn ent-btn--outline" onclick="EnterpriseUI.closeEnterpriseModal()">
             ${isEn ? 'Close Window' : 'Đóng Cửa Sổ'}
@@ -531,20 +452,32 @@
     const isEn = isEnglish();
     const st = cachedStatus || {};
     const shifts = st.laborShifts || [];
-    const playerFatigue = st.playerFatigue || 0;
+    const playerFatigue = Number(st.playerFatigue || 0);
+    const staminaRemaining = Math.max(0, 100 - playerFatigue);
 
     return `
+      <!-- STAMINA METRIC HEADER -->
       <div style="margin-bottom:14px; background:#090d16; border:1px solid rgba(217,119,6,0.25); border-radius:6px; padding:12px 16px;">
-        <h4 style="margin:0 0 4px 0; font-size:14px; color:#fbbf24;">
-          ${isEn ? 'Daily Labor Opportunities at Local Workshops & Taverns:' : 'Cơ Hội Lao Động Kiếm Sống Hàng Ngày Tại Trác Quận:'}
-        </h4>
-        <p style="margin:0; font-size:11px; color:#94a3b8;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+          <h4 style="margin:0; font-size:13px; color:#fbbf24;">
+            ${isEn ? 'Daily Labor Market Opportunities in Zhuo County:' : 'Cơ Hội Lao Động Kiếm Sống Hàng Ngày Tại Trác Quận:'}
+          </h4>
+          <span style="font-size:11.5px; font-family:'JetBrains Mono',monospace;">
+            Thể Lực: <strong style="color:${playerFatigue > 80 ? '#ef4444' : '#fbbf24'};">${playerFatigue}/100</strong> 
+            (Khí lực: <strong style="color:#34d399;">${staminaRemaining}</strong>)
+          </span>
+        </div>
+        <p style="margin:0 0 6px 0; font-size:11px; color:#94a3b8;">
           ${isEn
-            ? 'Sell manual labor to earn cash and gain real-world profession experience. Monitor your fatigue closely.'
-            : 'Đem sức lực và tài nghệ đổi lấy tiền công cầm tay, đồng thời rèn luyện tăng điểm EXP nghề nghiệp. Chú ý thể lực không được vượt quá 100.'}
+            ? 'Earn immediate cash wages and increase profession & attribute EXP through physical crafts.'
+            : 'Đem sức lực và tài nghệ đổi lấy tiền công cầm tay, đồng thời rèn luyện tăng điểm EXP nghề nghiệp. Chú ý thể lực không vượt quá 100.'}
         </p>
+        <div class="ent-fatigue-bar-track">
+          <div class="ent-fatigue-bar-fill" style="width: ${playerFatigue}%; background: ${playerFatigue > 80 ? '#ef4444' : playerFatigue > 50 ? '#f59e0b' : '#10b981'};"></div>
+        </div>
       </div>
 
+      <!-- SHIFTS GRID -->
       <div class="ent-grid-shifts">
         ${shifts.map(shift => {
           const wouldExceed = playerFatigue + shift.fatigueCost > 100;
@@ -553,14 +486,15 @@
             <div class="ent-shift-card">
               <div>
                 <div class="ent-shift-header">
+                  <span class="ent-shift-icon">${shift.icon || '工'}</span>
                   <div class="ent-shift-title-block">
-                    <div class="ent-shift-title">${isEn ? shift.titleEn : shift.titleVi}</div>
-                    <div class="ent-shift-workplace">${isEn ? shift.workplaceEn : shift.workplaceVi}</div>
+                    <div class="ent-shift-title">${isEn ? (shift.titleEn || shift.titleVi) : shift.titleVi}</div>
+                    <div class="ent-shift-workplace">${isEn ? (shift.workplaceEn || shift.workplaceVi) : shift.workplaceVi}</div>
                   </div>
                 </div>
 
                 <div class="ent-shift-desc">
-                  ${isEn ? shift.narrativeEn : shift.narrativeVi}
+                  ${isEn ? (shift.narrativeEn || shift.narrativeVi) : shift.narrativeVi}
                 </div>
 
                 <div class="ent-metrics-row">
@@ -571,14 +505,21 @@
                     -${shift.fatigueCost} Thể lực
                   </span>
                   <span class="ent-metric-pill ent-metric-pill--exp">
-                    +${shift.expGain} EXP
+                    +${shift.expGain} EXP Nghề
                   </span>
+                  ${shift.attributeTarget ? `
+                    <span class="ent-metric-pill ent-metric-pill--attr">
+                      +${shift.attributeExp || 10} ${shift.attributeTarget.toUpperCase()}
+                    </span>
+                  ` : ''}
                 </div>
               </div>
 
               <div style="margin-top:12px;">
                 <button class="ent-btn" style="width:100%;" ${wouldExceed || isWorking ? 'disabled' : ''} onclick="EnterpriseUI.takeWorkShift('${shift.shiftId}')">
-                  ${wouldExceed
+                  ${isWorking
+                    ? (isEn ? 'Working...' : 'Đang làm việc...')
+                    : wouldExceed
                     ? (isEn ? 'Exhausted (Rest Needed)' : 'Khí lực kiệt quệ')
                     : (isEn ? 'Take Shift' : 'Nhận việc')}
                 </button>
@@ -596,65 +537,99 @@
   function renderEnterpriseTab() {
     const isEn = isEnglish();
     const st = cachedStatus || {};
-    const owned = st.ownedBusinesses || [];
+    const owned = st.ownedBusinesses || st.activeEnterprises || [];
     const openable = st.openableTypes || [];
-    const playerCash = st.playerCash || 0;
+    const playerCash = Number(st.playerCash || 0);
 
     return `
       <!-- CURRENTLY OWNED BUSINESSES -->
       <div style="margin-bottom:20px;">
-        <h4 style="margin:0 0 10px 0; font-size:14px; color:#fbbf24;">
-          ${isEn ? 'Currently Managed Enterprises:' : 'Sản nghiệp đang sở hữu:'}
-        </h4>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+          <h4 style="margin:0; font-size:13.5px; color:#fbbf24;">
+            ${isEn ? 'Currently Managed Enterprises:' : 'Sản nghiệp đang sở hữu & vận hành:'}
+          </h4>
+          <span style="font-size:11px; color:#94a3b8; font-family:'JetBrains Mono',monospace;">
+            ${isEn ? 'Total Daily Revenue:' : 'Tổng Thu Ngày:'} <b style="color:#34d399;">+${(st.totalDailyRevenue || 0).toLocaleString()} Tiền</b>
+          </span>
+        </div>
 
         ${owned.length === 0 ? `
           <div style="padding:16px; background:#1e293b; border-radius:6px; color:#94a3b8; font-size:12px; font-style:italic;">
-            ${isEn ? 'You currently do not own any enterprises.' : 'Hiện tại bạn chưa làm chủ sản nghiệp nào.'}
+            ${isEn ? 'You currently do not own any enterprises.' : 'Hiện tại bạn chưa làm chủ sản nghiệp nào. Hãy đầu tư mở xưởng mới bên dưới.'}
           </div>
-        ` : owned.map(biz => `
-          <div class="ent-biz-card">
-            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
-              <div>
-                <strong style="color:#fff; font-size:14px;">${biz.name}</strong>
-                <div style="font-size:11px; color:#34d399;">Mã quản lý: [${biz.business_id}] • Trạng thái: ${biz.status || 'ACTIVE'}</div>
-              </div>
-              <span style="font-size:11px; color:#fbbf24; background:rgba(251,191,36,0.1); padding:2px 8px; border-radius:4px; border:1px solid rgba(251,191,36,0.3);">
-                Ủy quyền: Bậc ${biz.delegation_level || 2}
-              </span>
-            </div>
+        ` : owned.map(biz => {
+          const profit = Number(biz.accumulated_profit || 0);
+          const dailyRev = Number(biz.daily_revenue || biz.daily_revenue_avg || 120);
 
-            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:8px; font-size:11px; color:#94a3b8; font-family:'JetBrains Mono',monospace;">
-              <div>Nhân công: <strong style="color:#fff;">${biz.current_workforce || 4} người</strong></div>
-              <div>Thuê mặt bằng: <strong style="color:#fff;">${biz.monthly_rent || 200} Tiền/tháng</strong></div>
-              <div>Quỹ dự phòng: <strong style="color:#34d399;">${(biz.safe_cash || 0).toLocaleString()} Tiền</strong></div>
-              <div>Công suất: <strong style="color:#fff;">${biz.monthly_capacity_hours || 800} giờ/tháng</strong></div>
+          return `
+            <div class="ent-biz-card">
+              <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+                <div>
+                  <strong style="color:#fff; font-size:14px;">${biz.name}</strong>
+                  <div style="font-size:11px; color:#34d399; margin-top:2px;">
+                    Mã quản lý: [${biz.business_id}] • Loại hình: ${biz.business_type || 'WORKSHOP'} • Trạng thái: ${biz.status || 'ACTIVE'}
+                  </div>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span style="font-size:11px; color:#fbbf24; background:rgba(251,191,36,0.1); padding:3px 8px; border-radius:4px; border:1px solid rgba(251,191,36,0.3);">
+                    Ủy quyền: Bậc ${biz.delegation_level || 2}
+                  </span>
+                  <button class="ent-btn ent-btn--success" style="padding:4px 10px; font-size:11px;" ${profit <= 0 || isSubmitting ? 'disabled' : ''} onclick="EnterpriseUI.collectEnterpriseProfit('${biz.business_id}')">
+                    ${profit > 0 ? `Rút Lợi Nhuận (+${profit.toLocaleString()} Tiền)` : 'Không có thặng dư'}
+                  </button>
+                </div>
+              </div>
+
+              <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:8px; font-size:11px; color:#94a3b8; font-family:'JetBrains Mono',monospace; background:rgba(0,0,0,0.25); padding:8px 10px; border-radius:4px;">
+                <div>Nhân công: <strong style="color:#fff;">${biz.current_workforce || biz.workforce_count || 4} thợ</strong></div>
+                <div>Thu nhập ngày: <strong style="color:#34d399;">+${dailyRev.toLocaleString()} Tiền</strong></div>
+                <div>Mặt bằng: <strong style="color:#f59e0b;">${biz.monthly_rent || 200} Tiền/tháng</strong></div>
+                <div>Két sắt dự phòng: <strong style="color:#38bdf8;">${(biz.safe_cash || 0).toLocaleString()} Tiền</strong></div>
+                <div>Thặng dư tích lũy: <strong style="color:#4ade80;">+${profit.toLocaleString()} Tiền</strong></div>
+              </div>
             </div>
-          </div>
-        `).join('')}
+          `;
+        }).join('')}
       </div>
+
+      <!-- IN-MODAL ESTABLISHMENT FORM (IF OPENED) -->
+      ${renderEstablishmentBox()}
 
       <!-- OPEN NEW ENTERPRISE CATALOG -->
       <div>
-        <h4 style="margin:0 0 4px 0; font-size:14px; color:#fbbf24;">
-          ${isEn ? 'Establish New Commercial & Artisan Enterprises:' : 'Khai trương sản nghiệp mới:'}
+        <h4 style="margin:0 0 4px 0; font-size:13.5px; color:#fbbf24;">
+          ${isEn ? 'Establish New Commercial & Artisan Enterprises:' : 'Khai trương cơ sở sản nghiệp mới:'}
         </h4>
         <p style="margin:0 0 12px 0; font-size:11px; color:#94a3b8;">
           ${isEn
             ? 'Invest startup capital and raw building materials to establish permanent enterprises in Zhuo County.'
-            : 'Đầu tư vốn liếng và vật liệu xây dựng để thiết lập các cơ sở sản xuất, tạo doanh thu thụ động hàng tháng.'}
+            : 'Đầu tư vốn liếng và vật liệu xây dựng để thiết lập cơ sở sản xuất, tạo thu nhập thụ động mỗi ngày.'}
         </p>
 
-        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:14px;">
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(310px, 1fr)); gap:14px;">
           ${openable.map(bType => {
-            const hasEnoughCash = playerCash >= bType.startupCash;
-            const matList = bType.requiredMaterials.map(m => `${m.quantity}x ${m.itemNameVi}`).join(', ');
+            const hasCash = playerCash >= bType.startupCash;
+            const canAfford = bType.canAffordTurnkey || hasCash;
+            const matList = (bType.requiredMaterials || []).map(m => {
+              const ok = m.hasEnough || m.available >= m.quantity;
+              return `<span class="ent-mat-badge ent-mat-badge--${ok ? 'ok' : 'warn'}">${m.itemNameVi}: ${m.available}/${m.quantity} ${ok ? '[Đủ]' : `(Thiếu ${m.missing})`}</span>`;
+            }).join(' ');
+
+            const isSelected = activeCreationTypeId === bType.typeId;
 
             return `
-              <div style="background:#1e293b; border:1px solid rgba(148,163,184,0.15); border-radius:6px; padding:14px; display:flex; flex-direction:column; justify-content:space-between;">
+              <div style="background:#1e293b; border:1px solid ${isSelected ? '#f59e0b' : 'rgba(148,163,184,0.15)'}; border-radius:6px; padding:14px; display:flex; flex-direction:column; justify-content:space-between;">
                 <div>
-                  <div style="margin-bottom:6px;">
-                    <strong style="color:#fff; font-size:13px;">${isEn ? bType.titleEn : bType.titleVi}</strong>
-                    <div style="font-size:10px; color:#fbbf24;">Dự kiến: ${bType.projectedMonthlyRevenueMin}-${bType.projectedMonthlyRevenueMax} Tiền/tháng</div>
+                  <div style="margin-bottom:6px; display:flex; justify-content:space-between; align-items:flex-start;">
+                    <div>
+                      <strong style="color:#fff; font-size:13px;">${isEn ? bType.titleEn : bType.titleVi}</strong>
+                      <div style="font-size:10.5px; color:#fbbf24; margin-top:2px;">
+                        Doanh thu ước tính: +${bType.projectedDailyRevenueMin || 100}-${bType.projectedDailyRevenueMax || 200} Tiền/ngày
+                      </div>
+                    </div>
+                    <span style="font-size:12px; font-weight:700; color:#fbbf24; background:rgba(251,191,36,0.1); padding:2px 6px; border-radius:3px;">
+                      ${bType.icon || '業'}
+                    </span>
                   </div>
 
                   <p style="font-size:11px; color:#94a3b8; margin:0 0 10px 0; line-height:1.4;">
@@ -662,21 +637,22 @@
                   </p>
 
                   <div style="font-size:11px; background:#090d16; border-radius:4px; padding:8px 10px; margin-bottom:12px; border:1px solid rgba(148,163,184,0.1);">
-                    <div style="color:${hasEnoughCash ? '#34d399' : '#ef4444'}; margin-bottom:3px;">
-                      <strong>Vốn ban đầu:</strong> ${bType.startupCash.toLocaleString()} Tiền (${hasEnoughCash ? 'Đủ' : 'Thiếu'})
+                    <div style="color:${hasCash ? '#34d399' : '#ef4444'}; margin-bottom:4px;">
+                      <strong>Vốn ban đầu:</strong> ${bType.startupCash.toLocaleString()} Tiền (${hasCash ? 'Đủ' : 'Thiếu'})
                     </div>
-                    <div style="color:#94a3b8;">
-                      <strong>Vật liệu:</strong> ${matList}
+                    <div style="margin-bottom:4px;">
+                      <div style="color:#94a3b8; font-size:10.5px; margin-bottom:2px;">Vật liệu xây dựng:</div>
+                      <div>${matList}</div>
                     </div>
-                    <div style="color:#94a3b8;">
-                      <strong>Mặt bằng:</strong> ${bType.monthlyRent} Tiền/tháng • Tuyển dụng: ${bType.baseWorkforce} thợ
+                    <div style="color:#94a3b8; font-size:10.5px; margin-top:4px;">
+                      Mặt bằng: ${bType.monthlyRent} Tiền/tháng • Tuyển dụng: ${bType.baseWorkforce} thợ
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <button class="ent-btn" style="width:100%;" ${hasEnoughCash ? '' : 'disabled'} onclick="EnterpriseUI.openBusinessDialog('${bType.typeId}', '${bType.titleVi.replace(/'/g, "\\'")}')">
-                    ${isEn ? 'Open Enterprise' : 'Khai trương sản nghiệp'}
+                  <button class="ent-btn" style="width:100%;" ${canAfford ? '' : 'disabled'} onclick="EnterpriseUI.startOpenBusiness('${bType.typeId}')">
+                    ${isSelected ? 'Đang chọn thiết lập ↑' : (isEn ? 'Establish Enterprise' : 'Mở Cơ Sở Này')}
                   </button>
                 </div>
               </div>
@@ -688,11 +664,210 @@
   }
 
   /**
+   * Renders the integrated in-modal establishment drawer/panel
+   */
+  function renderEstablishmentBox() {
+    if (!activeCreationTypeId) return '';
+    const st = cachedStatus || {};
+    const bType = (st.openableTypes || []).find(t => t.typeId === activeCreationTypeId);
+    if (!bType) return '';
+
+    const isEn = isEnglish();
+    const playerCash = Number(st.playerCash || 0);
+    const hasCash = playerCash >= bType.startupCash;
+    const turnkeyCost = bType.effectiveTurnkeyCost || 0;
+    const totalCost = bType.hasAllMaterials ? bType.startupCash : (bType.startupCash + turnkeyCost);
+    const canAfford = playerCash >= totalCost;
+
+    return `
+      <div class="ent-creation-box" id="ent-creation-panel">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <h4 style="margin:0; font-size:14px; color:#fbbf24;">
+            ${isEn ? 'Establish Enterprise:' : 'Thiết Lập Khai Trương Sản Nghiệp:'} ${bType.titleVi}
+          </h4>
+          <button class="ent-btn ent-btn--outline" style="padding:2px 8px; font-size:11px;" onclick="EnterpriseUI.cancelOpenBusiness()">&times; Đóng</button>
+        </div>
+
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:12px; margin-bottom:12px;">
+          <div>
+            <label style="display:block; font-size:11px; color:#cbd5e1; margin-bottom:4px;">
+              ${isEn ? 'Enterprise Brand Name:' : 'Tên hiệu thương mại cơ sở mới:'}
+            </label>
+            <input type="text" id="ent-custom-name-input" value="${bType.titleVi} Lương Gia" style="width:100%; box-sizing:border-box; background:#1e293b; border:1px solid #d97706; color:#fff; padding:8px 10px; border-radius:4px; font-size:12px;" />
+          </div>
+
+          <div style="font-size:11px; color:#94a3b8; background:rgba(0,0,0,0.3); padding:8px 10px; border-radius:4px;">
+            <div style="margin-bottom:4px;">
+              Vốn cố định: <strong style="color:#fff;">${bType.startupCash.toLocaleString()} Tiền</strong>
+            </div>
+            ${!bType.hasAllMaterials ? `
+              <div style="color:#f59e0b; margin-bottom:4px;">
+                Thiếu vật liệu kho: <strong style="color:#fbbf24;">+${turnkeyCost.toLocaleString()} Tiền</strong> (Ủy thác quan phủ thu mua trọn gói)
+              </div>
+            ` : `
+              <div style="color:#34d399; margin-bottom:4px;">
+                Vật liệu kho: <strong>Đầy đủ 100%</strong> (Không mất phụ phí thu mua)
+              </div>
+            `}
+            <div style="border-top:1px solid rgba(255,255,255,0.1); padding-top:4px; font-weight:700; color:${canAfford ? '#34d399' : '#ef4444'};">
+              Tổng ngân quỹ cần: ${totalCost.toLocaleString()} Tiền (Ví có: ${playerCash.toLocaleString()})
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:8px;">
+          <button class="ent-btn ent-btn--outline" onclick="EnterpriseUI.cancelOpenBusiness()">
+            ${isEn ? 'Cancel' : 'Hủy Bỏ'}
+          </button>
+          <button class="ent-btn" ${canAfford && !isSubmitting ? '' : 'disabled'} onclick="EnterpriseUI.confirmOpenBusiness()">
+            ${isSubmitting ? 'Đang khai trương...' : (isEn ? 'Confirm & Establish' : 'Xác Nhận Khai Trương Ngay')}
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Begins business establishment drawer
+   */
+  function startOpenBusiness(typeId) {
+    playUiSound('click');
+    activeCreationTypeId = typeId;
+    renderModalContent();
+
+    setTimeout(() => {
+      const panel = document.getElementById('ent-creation-panel');
+      if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      const input = document.getElementById('ent-custom-name-input');
+      if (input) input.focus();
+    }, 50);
+  }
+
+  /**
+   * Cancels business establishment drawer
+   */
+  function cancelOpenBusiness() {
+    activeCreationTypeId = null;
+    renderModalContent();
+  }
+
+  /**
+   * Confirms opening a business
+   */
+  async function confirmOpenBusiness() {
+    if (isSubmitting || !activeCreationTypeId) return;
+    isSubmitting = true;
+    playUiSound('click');
+
+    const input = document.getElementById('ent-custom-name-input');
+    const customName = input ? input.value.trim() : '';
+
+    try {
+      const res = await fetch('/api/enterprise/open', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          characterId: currentCharacterId,
+          businessType: activeCreationTypeId,
+          customName,
+          turnkey: true
+        })
+      });
+
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        const data = await res.json();
+        if (data.success) {
+          if (typeof showToast === 'function') {
+            showToast(data.messageVi || data.message || 'Khai trương thành công!', false);
+          }
+          activeCreationTypeId = null;
+          if (data.status) {
+            cachedStatus = data.status;
+          } else {
+            await fetchEnterpriseStatus(currentCharacterId);
+          }
+          activeTab = 'own';
+          renderModalContent();
+          if (typeof updateTopTelemetry === 'function') updateTopTelemetry();
+          return;
+        } else {
+          if (typeof showToast === 'function') {
+            showToast(data.error || 'Khai trương thất bại!', true);
+          }
+        }
+      } else {
+        if (typeof showToast === 'function') showToast('Máy chủ phản hồi không hợp lệ!', true);
+      }
+    } catch (e) {
+      console.warn('[EnterpriseUI] Server open business error:', e);
+      if (typeof showToast === 'function') showToast(`Lỗi: ${e.message}`, true);
+    } finally {
+      isSubmitting = false;
+      renderModalContent();
+    }
+  }
+
+  /**
+   * Backward compatibility alias
+   */
+  function openBusinessDialog(typeId, defaultName) {
+    startOpenBusiness(typeId);
+  }
+
+  /**
+   * Collects profit from an owned enterprise
+   */
+  async function collectEnterpriseProfit(businessId) {
+    if (isSubmitting) return;
+    isSubmitting = true;
+    playUiSound('coins');
+
+    try {
+      const res = await fetch('/api/enterprise/collect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          characterId: currentCharacterId,
+          businessId
+        })
+      });
+
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        const data = await res.json();
+        if (data.success) {
+          if (typeof showToast === 'function') {
+            showToast(data.message || `Đã rút +${data.collectedAmount} Tiền lợi nhuận!`, false);
+          }
+          if (data.status) {
+            cachedStatus = data.status;
+          } else {
+            await fetchEnterpriseStatus(currentCharacterId);
+          }
+          renderModalContent();
+          if (typeof updateTopTelemetry === 'function') updateTopTelemetry();
+          return;
+        } else {
+          if (typeof showToast === 'function') showToast(data.error || 'Rút lợi nhuận thất bại!', true);
+        }
+      }
+    } catch (e) {
+      console.warn('[EnterpriseUI] Profit collection notice:', e);
+      if (typeof showToast === 'function') showToast(`Lỗi rút lợi nhuận: ${e.message}`, true);
+    } finally {
+      isSubmitting = false;
+      renderModalContent();
+    }
+  }
+
+  /**
    * Executes a work shift
    */
   async function takeWorkShift(shiftId) {
     if (isWorking) return;
     isWorking = true;
+    playUiSound('click');
     const isEn = isEnglish();
 
     try {
@@ -706,106 +881,48 @@
       });
 
       const contentType = res.headers.get('content-type') || '';
-      if (res.ok && contentType.includes('application/json')) {
+      if (contentType.includes('application/json')) {
         const data = await res.json();
         if (data.success) {
-          if (typeof showToast === 'function') showToast(data.messageVi, false);
-          cachedStatus = data.status;
+          playUiSound('coins');
+          if (typeof showToast === 'function') {
+            showToast(data.messageVi || data.message || 'Hoàn tất ca làm!', false);
+          }
+          if (data.status) {
+            cachedStatus = data.status;
+          } else {
+            await fetchEnterpriseStatus(currentCharacterId);
+          }
           renderModalContent();
-
-          // Refresh top telemetry bar if present
           if (typeof updateTopTelemetry === 'function') updateTopTelemetry();
           return;
         } else {
-          if (typeof showToast === 'function') showToast(data.error || 'Ca làm thất bại!', true);
+          if (typeof showToast === 'function') {
+            showToast(data.error || 'Ca làm việc thất bại!', true);
+          }
+          return;
         }
+      } else {
+        if (typeof showToast === 'function') showToast('Phản hồi máy chủ không hợp lệ!', true);
+        return;
       }
     } catch (e) {
       console.warn('[EnterpriseUI] Server labor shift notice:', e);
+      if (typeof showToast === 'function') showToast(`Lỗi ca làm: ${e.message}`, true);
     } finally {
       isWorking = false;
-    }
-
-    // Client-side fallback calculation
-    const shift = (cachedStatus?.laborShifts || []).find(s => s.shiftId === shiftId);
-    if (shift) {
-      cachedStatus.playerCash = (cachedStatus.playerCash || 15000) + shift.wage;
-      cachedStatus.playerFatigue = Math.min(100, (cachedStatus.playerFatigue || 0) + shift.fatigueCost);
-
-      if (typeof showToast === 'function') {
-        showToast(
-          isEn
-            ? `Completed shift [${shift.titleEn}]! Earned +${shift.wage} coins, +${shift.fatigueCost} fatigue (+${shift.expGain} EXP)!`
-            : `Hoàn thành ca làm [${shift.titleVi}]! Nhận +${shift.wage} Tiền đồng, tiêu hao ${shift.fatigueCost} Thể Lực (+${shift.expGain} EXP)!`
-        );
-      }
       renderModalContent();
     }
   }
 
-  /**
-   * Prompts dialog to open a business
-   */
-  async function openBusinessDialog(typeId, defaultName) {
-    const isEn = isEnglish();
-    const customName = prompt(
-      isEn ? 'Enter custom name for your new enterprise:' : 'Nhập tên thương hiệu cho sản nghiệp mới của bạn:',
-      defaultName
-    );
-    if (!customName) return;
-
-    try {
-      const res = await fetch('/api/enterprise/open', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          characterId: currentCharacterId,
-          businessType: typeId,
-          customName
-        })
-      });
-
-      const contentType = res.headers.get('content-type') || '';
-      if (res.ok && contentType.includes('application/json')) {
-        const data = await res.json();
-        if (data.success) {
-          if (typeof showToast === 'function') showToast(data.messageVi, false);
-          await fetchEnterpriseStatus(currentCharacterId);
-          switchEnterpriseTab('own');
-          return;
-        } else {
-          if (typeof showToast === 'function') showToast(data.error || 'Mở sản nghiệp thất bại!', true);
-          return;
-        }
-      }
-    } catch (e) {
-      console.warn('[EnterpriseUI] Server open business notice:', e);
-    }
-
-    if (typeof showToast === 'function') {
-      showToast(isEn ? `Established [${customName}] successfully!` : `Khai trương [${customName}] thành công!`);
-    }
-    await fetchEnterpriseStatus(currentCharacterId);
-    switchEnterpriseTab('own');
-  }
-
-  /**
-   * Injects quick access trigger button - Purged in R4 in favor of Grand Command Hub
-   */
-  function injectTriggerButton() {
-    // Purged in R4: Unified under Grand Command Hub (#btn-open-grand-hub)
-  }
-
-  // Auto-init styles & triggers on load
+  // Auto-init styles on load
   if (typeof document !== 'undefined') {
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', () => {
         ensureStyles();
-        injectTriggerButton();
       });
     } else {
       ensureStyles();
-      injectTriggerButton();
     }
   }
 
@@ -814,6 +931,10 @@
     closeEnterpriseModal,
     switchEnterpriseTab,
     takeWorkShift,
-    openBusinessDialog
+    startOpenBusiness,
+    cancelOpenBusiness,
+    confirmOpenBusiness,
+    openBusinessDialog,
+    collectEnterpriseProfit
   };
 });
