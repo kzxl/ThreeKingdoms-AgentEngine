@@ -53,6 +53,24 @@ function runSqlBatch(dbPath, sql) {
   }
 }
 
+const NODE_TO_LOC_MAP = {
+  'zhuo_xian': 'LOC-0001',
+  'luo_yang': 'LOC-0002',
+  'guang_zong': 'LOC-0003',
+  'ping_yuan': 'LOC-0004',
+  'chang_an': 'LOC-0005',
+  'ye_cheng': 'LOC-0006',
+  'xu_chang': 'LOC-0007',
+  'ji_cheng': 'LOC-0008',
+  'xia_pi': 'LOC-0009',
+  'xiang_yang': 'LOC-0010',
+  'chi_bi': 'LOC-0011',
+  'jiang_ling': 'LOC-0012',
+  'jian_ye': 'LOC-0013',
+  'han_zhong': 'LOC-0014',
+  'cheng_du': 'LOC-0015'
+};
+
 const TRAVEL_EVENTS_POOL = [
   {
     id: 'TRV-YELLOW-TURBAN-SCOUTS',
@@ -323,6 +341,89 @@ const TRAVEL_EVENTS_POOL = [
 class TravelManager {
   constructor(dbPath = DB_PATH) {
     this.dbPath = dbPath;
+  }
+
+  /**
+   * Plans the road expedition between two nodes using master_routes from SQLite
+   */
+  planTravel(fromNodeId, toNodeId) {
+    const srcLoc = NODE_TO_LOC_MAP[fromNodeId] || fromNodeId;
+    const tgtLoc = NODE_TO_LOC_MAP[toNodeId] || toNodeId;
+
+    // 1. Fetch route from master_routes
+    const routes = runSqlJson(this.dbPath, `
+      SELECT * FROM master_routes 
+      WHERE (source_location_id = '${srcLoc}' AND target_location_id = '${tgtLoc}')
+         OR (source_location_id = '${tgtLoc}' AND target_location_id = '${srcLoc}')
+      LIMIT 1;
+    `);
+    const route = routes && routes.length > 0 ? routes[0] : null;
+
+    // 2. Fetch target location info for fallback
+    const locRows = runSqlJson(this.dbPath, `SELECT * FROM master_locations WHERE location_id = '${tgtLoc}' LIMIT 1;`);
+    const tgtLocation = locRows && locRows.length > 0 ? locRows[0] : null;
+
+    const distanceLi = route ? Number(route.distance_li) : (tgtLocation?.distance_from_zhuo || 300);
+    const terrainType = route ? route.terrain_type : 'PLAINS';
+    const marchDays = route ? Number(route.standard_march_days) : (tgtLocation?.march_days || 2.0);
+    const grainCost = route ? Number(route.grain_provision_cost) : (tgtLocation?.grain_cost || 2.0);
+    const riskLevel = route ? route.ambush_risk_level : (tgtLocation?.threat_level_vi || 'MODERATE');
+    const routeDescVi = route?.description_vi || `Đại lộ quan đạo tiến về ${tgtLocation?.name_vi || toNodeId}.`;
+    const routeDescEn = route?.description_en || `Imperial highway route heading toward ${toNodeId}.`;
+
+    // 3. Fetch player state
+    const player = runSqlJson(this.dbPath, `SELECT strategic_grain, fatigue, current_location FROM player_state LIMIT 1;`)[0] || {};
+    const playerGrain = Number(player.strategic_grain || 0);
+    const hasEnoughGrain = playerGrain >= grainCost;
+    const playerFatigue = Number(player.fatigue || 0);
+
+    return {
+      fromNodeId,
+      toNodeId,
+      sourceLocationId: srcLoc,
+      targetLocationId: tgtLoc,
+      routeId: route?.route_id || `RT-${fromNodeId.toUpperCase()}-${toNodeId.toUpperCase()}`,
+      distanceLi,
+      terrainType,
+      marchDays,
+      grainCost,
+      riskLevel,
+      routeDescriptionVi: routeDescVi,
+      routeDescriptionEn: routeDescEn,
+      playerGrain,
+      hasEnoughGrain,
+      playerFatigue
+    };
+  }
+
+  /**
+   * Starts travel expedition, evaluating encounter probability by route ambush_risk_level & terrain
+   */
+  startTravel(fromNodeId, toNodeId) {
+    const plan = this.planTravel(fromNodeId, toNodeId);
+
+    let encounterProb = 0.35;
+    if (plan.riskLevel === 'EXTREME') encounterProb = 0.75;
+    else if (plan.riskLevel === 'HIGH') encounterProb = 0.55;
+    else if (plan.riskLevel === 'MODERATE') encounterProb = 0.35;
+    else if (plan.riskLevel === 'LOW') encounterProb = 0.20;
+
+    const roll = Math.random();
+    const hasEncounter = roll <= encounterProb;
+
+    let encounter = null;
+    if (hasEncounter) {
+      encounter = this.generateTravelEncounter(fromNodeId, toNodeId);
+      // Annotate encounter with terrain
+      encounter.terrainType = plan.terrainType;
+    }
+
+    return {
+      plan,
+      hasEncounter,
+      encounter,
+      narrative: hasEncounter ? null : 'Lộ trình quan đạo thông suốt, cờ xí phe ta thuận gió tiến quân an toàn.'
+    };
   }
 
   /**

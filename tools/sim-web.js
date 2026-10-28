@@ -2001,7 +2001,39 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // 5g-3. GET /api/travel/encounter - Generate Contextual Road Travel Encounter
+  // 5g-3. POST /api/travel/plan - Query master_routes logistics & requirements
+  if (req.method === 'POST' && pathname === '/api/travel/plan') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        const plan = travelManager.planTravel(payload.fromNodeId || 'zhuo_xian', payload.toNodeId || 'guang_zong');
+        sendJson(res, 200, { success: true, plan });
+      } catch (err) {
+        sendJson(res, 400, { success: false, error: err.message });
+      }
+    });
+    return;
+  }
+
+  // 5g-4. POST /api/travel/start - Begin Road Transit and Roll Contextual Encounter
+  if (req.method === 'POST' && pathname === '/api/travel/start') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        const transit = travelManager.startTravel(payload.fromNodeId || 'zhuo_xian', payload.toNodeId || 'guang_zong');
+        sendJson(res, 200, { success: true, transit });
+      } catch (err) {
+        sendJson(res, 400, { success: false, error: err.message });
+      }
+    });
+    return;
+  }
+
+  // 5g-5. GET /api/travel/encounter - Generate Contextual Road Travel Encounter
   if (req.method === 'GET' && pathname === '/api/travel/encounter') {
     try {
       const fromNode = parsedUrl.query.from || 'zhuo_xian';
@@ -2014,7 +2046,7 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // 5g-4. POST /api/travel/resolve - Resolve Travel Encounter Choice with D20 Roll
+  // 5g-6. POST /api/travel/resolve - Resolve Travel Encounter Choice with D20 Roll
   if (req.method === 'POST' && pathname === '/api/travel/resolve') {
     let body = '';
     req.on('data', chunk => { body += chunk; });
@@ -2030,8 +2062,8 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // 5g-5. POST /api/travel/complete - Complete March Arrival and Deduct Grain
-  if (req.method === 'POST' && pathname === '/api/travel/complete') {
+  // 5g-7. POST /api/travel/arrive & /api/travel/complete - Complete March Arrival and Deduct Grain
+  if (req.method === 'POST' && (pathname === '/api/travel/arrive' || pathname === '/api/travel/complete')) {
     let body = '';
     req.on('data', chunk => { body += chunk; });
     req.on('end', () => {

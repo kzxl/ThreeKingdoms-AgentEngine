@@ -447,6 +447,28 @@ window.apiFetchInventory = apiFetchInventory;
 window.apiFetchNpcs = apiFetchNpcs;
 window.apiFetchLedger = apiFetchLedger;
 window.apiFetchAgentLogs = apiFetchAgentLogs;
+async function apiPlanTravel(fromNodeId, toNodeId) {
+  const res = await fetch(`${API_BASE}/api/travel/plan`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fromNodeId, toNodeId })
+  });
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Failed to plan travel');
+  return data.plan;
+}
+
+async function apiStartTravel(fromNodeId, toNodeId) {
+  const res = await fetch(`${API_BASE}/api/travel/start`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fromNodeId, toNodeId })
+  });
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Failed to start travel');
+  return data.transit;
+}
+
 async function apiAdvanceTurn(notes = '') {
   const res = await fetch(`${API_BASE}/api/campaign/advance-turn`, {
     method: 'POST',
@@ -487,6 +509,8 @@ async function apiCompleteTravelMarch(payload) {
   return data.result;
 }
 
+window.apiPlanTravel = apiPlanTravel;
+window.apiStartTravel = apiStartTravel;
 window.apiAdvanceTurn = apiAdvanceTurn;
 window.apiFetchTravelEncounter = apiFetchTravelEncounter;
 window.apiResolveTravelEncounter = apiResolveTravelEncounter;
