@@ -128,6 +128,38 @@ async function loadStatus() {
       const barHp = document.getElementById('bar-hp');
       if (barHp) barHp.style.width = `${p.health || 100}%`;
 
+      // Dynamic Stamina Calculation based on STR (WAR) and Vigor (HP)
+      const warAttr = Number(p.war_attr || 50);
+      const healthVal = Number(p.health || 100);
+      const fatigueVal = Number(p.fatigue || 0);
+      const maxStamina = 100 + Math.max(0, Math.round((warAttr - 50) * 1.5)) + Math.floor(healthVal / 10);
+      const currentStamina = Math.max(0, maxStamina - fatigueVal);
+      const staminaPct = Math.min(100, Math.max(0, Math.round((currentStamina / maxStamina) * 100)));
+
+      const staminaEl = document.getElementById('protagonist-stamina');
+      if (staminaEl) {
+        staminaEl.innerText = `${currentStamina}/${maxStamina}`;
+        if (staminaPct <= 20) {
+          staminaEl.className = 'vital-val red-text';
+        } else if (staminaPct <= 45) {
+          staminaEl.className = 'vital-val gold-text';
+        } else {
+          staminaEl.className = 'vital-val cyan-text';
+        }
+      }
+
+      const barStamina = document.getElementById('bar-stamina');
+      if (barStamina) {
+        barStamina.style.width = `${staminaPct}%`;
+        if (staminaPct <= 20) {
+          barStamina.style.backgroundColor = '#ef4444';
+        } else if (staminaPct <= 45) {
+          barStamina.style.backgroundColor = '#f59e0b';
+        } else {
+          barStamina.style.backgroundColor = '#06b6d4';
+        }
+      }
+
       const moraleEl = document.getElementById('protagonist-morale');
       if (moraleEl) moraleEl.innerText = `${p.morale || 100}%`;
 

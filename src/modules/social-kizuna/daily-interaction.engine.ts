@@ -21,12 +21,16 @@ export type FogTier = 1 | 2 | 3 | 4 | 5;
 export type NpcMood = 'CHEERFUL' | 'NORMAL' | 'TIRED' | 'ANNOYED' | 'DRUNK' | 'MELANCHOLY';
 
 export type EverydayActionType =
-  | 'TEA_CONVERSE'      // Chuyện phiếm làng xã, mời trà, thăm dò khí sắc
-  | 'BANQUET_DRINK'     // Mời rượu, đồng bàn ẩm thực, giải tỏa mỏi mệt
-  | 'LEARN_MENTOR'      // Thỉnh giáo võ nghệ, mưu lược, hoặc kỹ nghệ chế tác
-  | 'SPAR_DEBATE'       // Tỉ thí võ nghệ hoặc đàm đạo biện luận
-  | 'GIFT_TREASURE'     // Tặng bảo vật, tiền bạc, quà cáp đời thường
-  | 'HEART_CONFESSION'; // Tâm sự đêm khuya, thăm dò hoài bão
+  | 'TEA_CONVERSE'           // Chuyện phiếm làng xã, mời trà, thăm dò khí sắc
+  | 'BANQUET_DRINK'          // Mời rượu, đồng bàn ẩm thực, giải tỏa mỏi mệt
+  | 'LEARN_MENTOR'           // Thỉnh giáo võ nghệ, mưu lược, hoặc kỹ nghệ chế tác
+  | 'SPAR_DEBATE'            // Tỉ thí võ nghệ hoặc đàm đạo biện luận
+  | 'GIFT_TREASURE'          // Tặng bảo vật, tiền bạc, quà cáp đời thường
+  | 'HEART_CONFESSION'       // Tâm sự đêm khuya, thăm dò hoài bão
+  | 'SEND_COURIER_LETTER'    // Phái gia nhân gửi thư thăm hỏi từ xa
+  | 'DISPATCH_GIFT_CARAVAN'  // Ủy thác gia nhân mang lễ vật tận nơi
+  | 'SUMMON_SUBORDINATE'     // Triệu kiến thuộc cấp/thợ xưởng về diện kiến
+  | 'CARRIER_PIGEON_LETTER'; // Phi thư bồ câu vượt ngàn dặm
 
 export type InteractionOutcome =
   | 'CRITICAL_SUCCESS'  // Đại Hảo / Thấu Cảm Tuyệt Đối (Roll >= 23 or Perfect Hobby Match)
@@ -89,10 +93,12 @@ export interface NpcDossierView {
   npcId: string;
   nameVi: string;
   nameEn: string;
+  nameHan?: string;
   styleNameVi: string;
   styleNameEn: string;
   positionVi: string;
   positionEn: string;
+  baselineLocation?: string;
   locationVi: string;
   locationEn: string;
   avatarChar: string;
@@ -153,6 +159,9 @@ export interface DailyInteractionResult {
     affinityChange: number;
     respectChange: number;
     cashCost: number;
+    fatigueDelta?: number;
+    moraleDelta?: number;
+    staminaChange?: number;
     itemConsumed?: string;
     expGained?: { skill: string; amount: number };
     newIntelUnlocked?: string[];
@@ -615,10 +624,12 @@ export class DailyInteractionEngine {
       npcId: profile.npcId,
       nameVi: profile.nameVi,
       nameEn: profile.nameEn,
+      nameHan: profile.nameHan,
       styleNameVi: profile.styleNameVi || 'Chưa rõ tự',
       styleNameEn: profile.styleNameEn || profile.styleNameVi || 'Style unrecorded',
       positionVi: profile.positionVi || 'Hào Kiệt Bản Địa',
       positionEn: profile.positionEn || 'Local Champion',
+      baselineLocation: profile.baselineLocation || 'LOC-0001',
       locationVi: profile.locationVi || 'LOC-0001',
       locationEn: profile.locationEn || profile.baselineLocation || 'LOC-0001',
       avatarChar: profile.nameHan ? profile.nameHan.charAt(0) : (profile.nameVi ? profile.nameVi.charAt(0) : '漢'),
@@ -738,19 +749,51 @@ export class DailyInteractionEngine {
       respectDelta = -3;
     }
 
-    // 3. Costs and Rewards by Action Type
+    // 3. Costs, Stamina, and Rewards by Action Type
+    let fatigueDelta = 0;
+    let moraleDelta = 0;
+
     if (actionType === 'BANQUET_DRINK') {
       cashCost = 30; // 30 Qian for fine wine and meats
+      fatigueDelta = -35; // Phục hồi 35 thể lực
+      moraleDelta = 12;
     } else if (actionType === 'TEA_CONVERSE') {
       cashCost = 5;  // 5 Qian tea table fee
+      fatigueDelta = -15; // Phục hồi 15 thể lực
+      moraleDelta = 5;
     } else if (actionType === 'LEARN_MENTOR') {
       cashCost = 25; // Mentorship tribute
+      fatigueDelta = 10;
+      moraleDelta = 5;
       if (outcome === 'SUCCESS' || outcome === 'CRITICAL_SUCCESS') {
         const skillName = profile.war >= profile.int ? 'Võ Thuật (Warfare)' : 'Mưu Lược (Tactics)';
         expGained = { skill: skillName, amount: outcome === 'CRITICAL_SUCCESS' ? 25 : 12 };
       }
+    } else if (actionType === 'SPAR_DEBATE') {
+      fatigueDelta = 15; // Tiêu hao 15 thể lực
+      moraleDelta = 3;
+      const playerCheck = this.db.queryOne<any>(`SELECT fatigue FROM player_state WHERE player_id = 'PLY-0001';`);
+      if (playerCheck && playerCheck.fatigue >= 85) {
+        throw new Error(`Khí lực kiệt quệ (${playerCheck.fatigue}/100)! Cần uống trà đàm đạo hoặc rót rượu nghỉ ngơi để hồi phục thể lực trước khi tiếp tục luận võ.`);
+      }
     } else if (actionType === 'GIFT_TREASURE') {
       cashCost = 50; // Cash gift
+    } else if (actionType === 'SEND_COURIER_LETTER') {
+      cashCost = 3; // Phí gia nhân đưa thư
+      affinityDelta = (totalRoll >= 14 ? 7 : 3);
+      respectDelta = 2;
+    } else if (actionType === 'DISPATCH_GIFT_CARAVAN') {
+      cashCost = 55; // 50 quà + 5 công gia nhân
+      affinityDelta = (totalRoll >= 14 ? 16 : 8);
+      respectDelta = 5;
+    } else if (actionType === 'SUMMON_SUBORDINATE') {
+      cashCost = 0; // Triệu kiến thuộc cấp
+      affinityDelta = 4;
+      respectDelta = 3;
+    } else if (actionType === 'CARRIER_PIGEON_LETTER') {
+      cashCost = 15; // Phí trạm bồ câu
+      affinityDelta = (totalRoll >= 14 ? 10 : 5);
+      respectDelta = 4;
     }
 
     // 4. Resolve Contextual Dialogue (SQLite Cache-First -> Lazy Seeding -> Archetype Fallback)
@@ -841,6 +884,16 @@ export class DailyInteractionEngine {
             updated_at = CURRENT_TIMESTAMP
         WHERE npc_id = ?;
       `, [newInteractions, updatedHobbiesJson, updatedDislikesJson, updatedStatsJson, actionType, outcome, npcId]);
+
+      // 5.4 Update Player Fatigue and Morale (Stamina Regeneration / Consumption)
+      if (fatigueDelta !== 0 || moraleDelta !== 0) {
+        this.db.execute(`
+          UPDATE player_state
+          SET fatigue = MAX(0, MIN(100, fatigue + ?)),
+              morale = MAX(0, MIN(100, morale + ?))
+          WHERE player_id = 'PLY-0001';
+        `, [fatigueDelta, moraleDelta]);
+      }
     });
 
     if (cashCost > 0) {
@@ -858,7 +911,11 @@ export class DailyInteractionEngine {
       LEARN_MENTOR: 'Thỉnh Giáo Kỹ Nghệ',
       SPAR_DEBATE: 'Luận Võ So Tài',
       GIFT_TREASURE: 'Tặng Quà Kết Giao',
-      HEART_CONFESSION: 'Tâm Sự Hoài Bão'
+      HEART_CONFESSION: 'Tâm Sự Hoài Bão',
+      SEND_COURIER_LETTER: 'Phái Gia Nhân Gửi Thư',
+      DISPATCH_GIFT_CARAVAN: 'Ủy Thác Chuyển Quà Tận Tay',
+      SUMMON_SUBORDINATE: 'Triệu Kiến Về Diện Kiến',
+      CARRIER_PIGEON_LETTER: 'Phi Thư Bồ Câu Vượt Tuyến'
     };
 
     const actionTitlesEn: Record<EverydayActionType, string> = {
@@ -867,7 +924,11 @@ export class DailyInteractionEngine {
       LEARN_MENTOR: 'Seek Mentorship',
       SPAR_DEBATE: 'Spar & Debate',
       GIFT_TREASURE: 'Present Gift',
-      HEART_CONFESSION: 'Confide Ambition'
+      HEART_CONFESSION: 'Confide Ambition',
+      SEND_COURIER_LETTER: 'Send Courier Letter',
+      DISPATCH_GIFT_CARAVAN: 'Dispatch Consigned Gift',
+      SUMMON_SUBORDINATE: 'Summon Subordinate',
+      CARRIER_PIGEON_LETTER: 'Carrier Pigeon Letter'
     };
 
     const outcomeTitlesVi: Record<InteractionOutcome, string> = {
@@ -911,6 +972,9 @@ export class DailyInteractionEngine {
         affinityChange: affinityDelta,
         respectChange: respectDelta,
         cashCost,
+        fatigueDelta,
+        moraleDelta,
+        staminaChange: fatigueDelta < 0 ? Math.abs(fatigueDelta) : -fatigueDelta,
         itemConsumed: offeredItemCode,
         expGained,
         newIntelUnlocked: newIntelUnlocked.length > 0 ? newIntelUnlocked : undefined

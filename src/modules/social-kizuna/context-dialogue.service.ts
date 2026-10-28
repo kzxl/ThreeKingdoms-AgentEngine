@@ -313,6 +313,37 @@ export class ContextDialogueService {
           en: `${nameEn} gazes into the horizon with a warm, steady voice: "Meeting someone who shares the resolve to deliver the realm from strife is rare fate indeed. May this brotherhood remain as enduring as iron and stone."`
         };
 
+      case 'SEND_COURIER_LETTER':
+        if (isSuccess) {
+          return {
+            vi: `Gia nhân phong trần trở về, hai tay dâng phong thư phúc đáp từ ${name}: "Đông gia chu đáo thăm hỏi, tiểu nhân vô cùng cảm kích. Mọi việc nơi đây đều chu toàn, xin đông gia an tâm định liệu đại sự!"`,
+            en: `The messenger returns from afar, respectfully presenting a reply from ${nameEn}: "Your thoughtful inquiry warms my heart. All affairs here proceed orderly; please rest assured and command without worry!"`
+          };
+        } else {
+          return {
+            vi: `Gia nhân trở về bẩm báo: "Tiểu nhân đã trao tận tay phong thư cho ${name}. Ngài ấy xem xong chỉ gật đầu khẽ dặn tiểu nhân chuyển lời chúc sức khỏe tới đông gia."`,
+            en: `The messenger returns reporting: "I have delivered the missive into ${nameEn}'s hands. Having read it, he nodded curtly and bade me convey his basic regards."`
+          };
+        }
+
+      case 'DISPATCH_GIFT_CARAVAN':
+        return {
+          vi: `Gia nhân hồ hởi trở về bẩm báo: "Lễ vật đã chuyển đến tận tay ${name}. Ngài ấy vô cùng cảm kích trước sự chu tất rộng rãi của đông gia, căn dặn gửi lời cảm tạ sâu sắc!"`,
+          en: `The servant returns cheerfully reporting: "The gifts have reached ${nameEn}'s quarters safely. He was deeply touched by your lavish generosity and sent his sincerest gratitude!"`
+        };
+
+      case 'SUMMON_SUBORDINATE':
+        return {
+          vi: `Nhận được tín bài triệu kiến của Lương Diễn, ${name} lập tức gác lại công việc, hỏa tốc đến diện kiến: "Tham kiến đông gia! Nghe lệnh triệu, tiểu nhân không dám chậm trễ, xin đông gia chỉ thị!"`,
+          en: `Upon receiving Liang Yan's summons token, ${nameEn} promptly sets aside his work and arrives post-haste: "Greetings, Master! Hearing your summons, I dared not delay; please bestow your orders!"`
+        };
+
+      case 'CARRIER_PIGEON_LETTER':
+        return {
+          vi: `Bồ câu đưa thư vượt dặm trường bay về, chân buộc ống trúc mang mật thư từ ${name}: "Cách trở muôn trùng nhưng tấm lòng tri âm vẫn tương thông. Mong ngày sớm trùng phùng đàm đạo thế cuộc."`,
+          en: `The carrier pigeon returns across vast distances with a bamboo tube containing ${nameEn}'s reply: "Though parted by mountains and rivers, our kindred conviction remains unbroken. I eagerly await our reunion to discuss statecraft."`
+        };
+
       default:
         // TEA_CONVERSE / Default
         if (isSuccess) {
