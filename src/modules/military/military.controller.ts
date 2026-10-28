@@ -186,6 +186,35 @@ export function registerMilitaryRoutes(router: Router): void {
   router.get('/api/military/garrisons/:settlementId', handleGetGarrisons);
 
   // -------------------------------------------------------------
+  // 2b. GET /api/military/routes & /api/routes
+  // -------------------------------------------------------------
+  const handleGetRoutes = async (_req: any, res: any, _ctx: RouteContext) => {
+    try {
+      const routes = db.query<any>(`
+        SELECT 
+          route_id as routeId,
+          source_location_id as sourceLocationId,
+          target_location_id as targetLocationId,
+          distance_li as distanceLi,
+          terrain_type as terrainType,
+          standard_march_days as standardMarchDays,
+          grain_provision_cost as grainProvisionCost,
+          ambush_risk_level as ambushRiskLevel,
+          description_vi as descriptionVi,
+          description_en as descriptionEn
+        FROM master_routes
+        ORDER BY route_id ASC;
+      `);
+      sendJson(res, 200, { success: true, count: routes.length, routes });
+    } catch (err: any) {
+      sendJson(res, 500, { success: false, error: err.message });
+    }
+  };
+
+  router.get('/api/military/routes', handleGetRoutes);
+  router.get('/api/routes', handleGetRoutes);
+
+  // -------------------------------------------------------------
   // 3. POST /api/garrisons & /api/garrisons/reinforce
   // -------------------------------------------------------------
   const handleReinforceGarrison = async (_req: any, res: any, ctx: RouteContext) => {

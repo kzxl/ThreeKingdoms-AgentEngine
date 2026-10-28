@@ -2821,6 +2821,175 @@ button:disabled,
   background-color: var(--brand-primary);
 }
 
+/* World Map View Mode Selector Toolbar */
+.map-viewmode-toolbar {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  background: #0f172a;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  border-radius: var(--radius-sm);
+  padding: 3px 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+}
+
+.map-viewmode-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  border-radius: var(--radius-xs);
+  cursor: pointer;
+  padding: 3px 8px;
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 1.2;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+
+.map-viewmode-btn:hover {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+}
+
+.map-viewmode-btn.active {
+  background: rgba(245, 158, 11, 0.25);
+  border-color: #f59e0b;
+  color: #fbbf24;
+  font-weight: 700;
+}
+
+/* Route Styling & Selected Pulse Animation */
+@keyframes routePulse {
+  0% { stroke-opacity: 0.6; stroke-width: 2.5px; }
+  50% { stroke-opacity: 1; stroke-width: 4.2px; }
+  100% { stroke-opacity: 0.6; stroke-width: 2.5px; }
+}
+
+.map-route-active {
+  animation: routePulse 1.8s infinite ease-in-out;
+}
+
+/* Strategic Dossier Intel Panel */
+.intel-faction-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: var(--radius-xs);
+  margin-top: 3px;
+}
+
+.intel-subcard {
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.intel-subcard-title {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #fbbf24;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 4px;
+}
+
+.intel-breakdown-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.intel-unit-chip {
+  flex: 1;
+  min-width: 70px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-xs);
+  padding: 4px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.intel-unit-lbl {
+  font-size: 8.5px;
+  color: var(--text-muted);
+}
+
+.intel-unit-val {
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: #f1f5f9;
+}
+
+.intel-trade-box {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 10px;
+  color: #cbd5e1;
+}
+
+.intel-trade-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.intel-trade-tag {
+  font-size: 8.5px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 2px;
+}
+
+.intel-trade-tag.export {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.intel-trade-tag.import {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+.intel-npc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.intel-npc-pill {
+  font-size: 10px;
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  color: #fde68a;
+  padding: 3px 7px;
+  border-radius: var(--radius-xs);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
 /* ==========================================================================
    GAME MANAGER & PLAYTHROUGH LIFECYCLE MODAL
    ========================================================================== */

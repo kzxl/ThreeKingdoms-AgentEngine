@@ -381,6 +381,30 @@ const WORLD_MAP_NODES = {
     daysRequired: 0,
     grainCost: 0,
     defaultSubLoc: 'Tư Trạch Vườn Đào',
+    military: {
+      garrison: 1500,
+      infantry: 800,
+      cavalry: 200,
+      archers: 500,
+      defense: 70,
+      rulerFaction: 'FAC-LIANG-CLAN',
+      rulerNameVi: 'Lương Gia Tộc & Lưu Bị',
+      colorHex: '#10b981',
+      governorVi: 'Lưu Bị • Huyền Đức'
+    },
+    economy: {
+      grainReserves: 1200,
+      treasury: 15000,
+      primaryCommodityVi: 'Chiếu Trúc & Binh Khí',
+      exportGoodVi: 'Chiếu Trúc Lương Gia',
+      importNeedVi: 'Thép Thỏi & Da Bò'
+    },
+    hireableNpcs: [
+      'Vương Lão Thất (Chưởng Quỹ Tiệm Buôn)',
+      'Lý Thiết Chùy (Thợ Rèn Bách Luyện)',
+      'Triệu Dũng (Tiêu Đầu Hộ Vệ)',
+      'Trương Điền Phụ (Lãnh Công Điền Trang)'
+    ],
     subLocations: [
       'Tư Trạch Vườn Đào',
       'Chợ Đông Môn & Sạp Trà',
@@ -412,6 +436,28 @@ const WORLD_MAP_NODES = {
     daysRequired: 0.5,
     grainCost: 0.8,
     defaultSubLoc: 'Bắc Bình Soái Phủ',
+    military: {
+      garrison: 6000,
+      infantry: 2000,
+      cavalry: 3500,
+      archers: 500,
+      defense: 85,
+      rulerFaction: 'FAC-GONGSUN-ZAN',
+      rulerNameVi: 'Công Tôn Toản (Bạch Mã)',
+      colorHex: '#38bdf8',
+      governorVi: 'Công Tôn Toản • Bá Khuê'
+    },
+    economy: {
+      grainReserves: 3500,
+      treasury: 22000,
+      primaryCommodityVi: 'Chiến Mã U Châu',
+      exportGoodVi: 'Tuấn Mã U Châu',
+      importNeedVi: 'Quân Lương & Khiên Trúc'
+    },
+    hireableNpcs: [
+      'Lão Mã Thương (Buôn Ngựa Bắc Bình)',
+      'Hộ Vệ Biên Ải (Tiêu Sư)'
+    ],
     subLocations: ['Bắc Bình Soái Phủ'],
     figuresVi: 'Công Tôn Toản (Bá Khuê), Triệu Vân (Tử Long - thời kỳ đầu), Thiết Kỵ Bạch Mã',
     figuresEn: 'Gongsun Zan, Zhao Yun (early), White Horse Cavalry',
@@ -433,6 +479,29 @@ const WORLD_MAP_NODES = {
     daysRequired: 1.2,
     grainCost: 1.8,
     defaultSubLoc: 'Nghiệp Thành Đại Phủ',
+    military: {
+      garrison: 9000,
+      infantry: 5000,
+      cavalry: 2000,
+      archers: 2000,
+      defense: 90,
+      rulerFaction: 'FAC-YUAN-SHAO',
+      rulerNameVi: 'Viên Thiệu (Ký Châu)',
+      colorHex: '#818cf8',
+      governorVi: 'Viên Thiệu • Bản Sơ'
+    },
+    economy: {
+      grainReserves: 8000,
+      treasury: 45000,
+      primaryCommodityVi: 'Lương Thảo & Gấm Vóc',
+      exportGoodVi: 'Lương Ký Châu',
+      importNeedVi: 'Chiến Mã & Thiết Bị'
+    },
+    hireableNpcs: [
+      'Chân Phúc Đức (Thương Nhân Lương Thảo)',
+      'Liễu Nương Chức (Trưởng Xưởng Dệt)',
+      'Mã Dẫn Lộ (Lão Xa Phu Dẫn Tuyến)'
+    ],
     subLocations: ['Nghiệp Thành Đại Phủ'],
     figuresVi: 'Viên Thiệu (Bản Sơ), Phùng Kỷ, Điền Phong, Thương nhân thế tộc Hà Bắc',
     figuresEn: 'Yuan Shao, Feng Ji, Tian Feng, Jizhou merchant elites',
@@ -454,6 +523,28 @@ const WORLD_MAP_NODES = {
     daysRequired: 1.0,
     grainCost: 1.5,
     defaultSubLoc: 'Quảng Tông Quân Doanh',
+    military: {
+      garrison: 8500,
+      infantry: 6000,
+      cavalry: 500,
+      archers: 2000,
+      defense: 65,
+      rulerFaction: 'FAC-YELLOW-TURBAN',
+      rulerNameVi: 'Khăn Vàng (Trương Giác)',
+      colorHex: '#ef4444',
+      governorVi: 'Trương Giác • Đại Hiền Lương Sư'
+    },
+    economy: {
+      grainReserves: 4000,
+      treasury: 18000,
+      primaryCommodityVi: 'Phù Lục & Dân Binh',
+      exportGoodVi: 'Bùa Thái Bình',
+      importNeedVi: 'Quân Lương Cứu Tế'
+    },
+    hireableNpcs: [
+      'Đạo Nhân Cứu Tế (Phương Sĩ)',
+      'Dân Binh Khăn Vàng (Giác Ngộ)'
+    ],
     subLocations: ['Quảng Tông Quân Doanh'],
     figuresVi: 'Lư Thực (Bắc Quân Trung Lang Tướng), Trương Giác, Trương Lương, Trương Bảo',
     figuresEn: 'General Lu Zhi, Zhang Jue, Zhang Liang, Zhang Bao',
@@ -475,6 +566,28 @@ const WORLD_MAP_NODES = {
     daysRequired: 1.5,
     grainCost: 2.0,
     defaultSubLoc: 'Bình Nguyên Trọng Trấn',
+    military: {
+      garrison: 2500,
+      infantry: 1500,
+      cavalry: 300,
+      archers: 700,
+      defense: 72,
+      rulerFaction: 'FAC-HAN',
+      rulerNameVi: 'Đại Hán Triều Đình',
+      colorHex: '#06b6d4',
+      governorVi: 'Vương Triệt (Huyện Thừa)'
+    },
+    economy: {
+      grainReserves: 2000,
+      treasury: 12000,
+      primaryCommodityVi: 'Hải Sản & Ngũ Cốc Bột Hải',
+      exportGoodVi: 'Cá Khô Vịnh Bột Hải',
+      importNeedVi: 'Khiên Giáp & Dược Liệu'
+    },
+    hireableNpcs: [
+      'Trần Ngư Hộ (Chủ Thuyền Đánh Cá)',
+      'Nghĩa Quân Giáo Đầu (Luyện Binh)'
+    ],
     subLocations: ['Bình Nguyên Trọng Trấn'],
     figuresVi: 'Lưu Bị (khi làm Bình Nguyên Lệnh), Thương đoàn Thanh Châu, Dân binh xã tắc',
     figuresEn: 'Liu Bei (as Magistrate), Qingzhou merchants, Village militia',
@@ -496,6 +609,29 @@ const WORLD_MAP_NODES = {
     daysRequired: 3.0,
     grainCost: 4.0,
     defaultSubLoc: 'Kinh Đô Lạc Dương',
+    military: {
+      garrison: 15000,
+      infantry: 8000,
+      cavalry: 3000,
+      archers: 4000,
+      defense: 98,
+      rulerFaction: 'FAC-HAN',
+      rulerNameVi: 'Đại Hán Kinh Sư (Hà Tiến)',
+      colorHex: '#f59e0b',
+      governorVi: 'Hà Tiến • Đại Tướng Quân'
+    },
+    economy: {
+      grainReserves: 12000,
+      treasury: 80000,
+      primaryCommodityVi: 'Tiền Đồng & Lụa Cung Đình',
+      exportGoodVi: 'Lụa Kinh Sư & Rượu Ngự',
+      importNeedVi: 'Lương Thảo & Thiết Quặng'
+    },
+    hireableNpcs: [
+      'Tôn Diệu (Đại Chưởng Quỹ Tiền Trang)',
+      'Âu Dương Phong Đúc (Đại Sư Lò Đúc)',
+      'Hứa Hộ Uy (Tổng Tiêu Đầu Kinh Sư)'
+    ],
     subLocations: ['Kinh Đô Lạc Dương'],
     figuresVi: 'Hán Linh Đế, Hà Tiến, Viên Thiệu, Tào Tháo, Thập Thường Thị',
     figuresEn: 'Emperor Ling, He Jin, Yuan Shao, Cao Cao, Ten Attendants',
@@ -517,6 +653,28 @@ const WORLD_MAP_NODES = {
     daysRequired: 3.8,
     grainCost: 5.0,
     defaultSubLoc: 'Trường An Cung Phủ',
+    military: {
+      garrison: 12000,
+      infantry: 6000,
+      cavalry: 4000,
+      archers: 2000,
+      defense: 95,
+      rulerFaction: 'FAC-DONG-ZHUO',
+      rulerNameVi: 'Đổng Trác (Tây Lương Quân)',
+      colorHex: '#a855f7',
+      governorVi: 'Đổng Trác • Trọng Dĩnh'
+    },
+    economy: {
+      grainReserves: 9000,
+      treasury: 60000,
+      primaryCommodityVi: 'Ngựa Chiến & Bảo Vật Tây Vực',
+      exportGoodVi: 'Tuấn Mã & Cẩm Thạch',
+      importNeedVi: 'Lương Thảo Quan Trung'
+    },
+    hireableNpcs: [
+      'Lý Cổ Ngoạn (Thương Gia Tây Vực)',
+      'Tây Lương Kỵ Vệ (Hộ Tống)'
+    ],
     subLocations: ['Trường An Cung Phủ'],
     figuresVi: 'Đổng Trác, Lữ Bố, Vương Doãn, Lý Thôi, Quách Dĩ',
     figuresEn: 'Dong Zhuo, Lu Bu, Wang Yun, Li Jue, Guo Si',
@@ -538,6 +696,28 @@ const WORLD_MAP_NODES = {
     daysRequired: 2.2,
     grainCost: 3.0,
     defaultSubLoc: 'Hứa Xương Tướng Phủ',
+    military: {
+      garrison: 7500,
+      infantry: 4500,
+      cavalry: 1500,
+      archers: 1500,
+      defense: 88,
+      rulerFaction: 'FAC-CAO-CAO',
+      rulerNameVi: 'Tào Tháo (Mạnh Đức)',
+      colorHex: '#3b82f6',
+      governorVi: 'Tào Tháo • Mạnh Đức'
+    },
+    economy: {
+      grainReserves: 6500,
+      treasury: 38000,
+      primaryCommodityVi: 'Đồn Điền Lương & Binh Khí',
+      exportGoodVi: 'Lúa Đồn Điền Dự Châu',
+      importNeedVi: 'Chiến Mã & Thiết Quặng'
+    },
+    hireableNpcs: [
+      'Tuân Thị Điền Quan (Đồn Điền Sứ)',
+      'Kỳ Binh Tiêu Đầu (Hổ Báo Kỵ)'
+    ],
     subLocations: ['Hứa Xương Tướng Phủ'],
     figuresVi: 'Tào Tháo (Mạnh Đức), Tuân Úc, Quách Gia, Hổ Báo Kỵ',
     figuresEn: 'Cao Cao, Xun Yu, Guo Jia, Tiger & Leopard Cavalry',
@@ -559,6 +739,28 @@ const WORLD_MAP_NODES = {
     daysRequired: 2.5,
     grainCost: 3.5,
     defaultSubLoc: 'Hạ Phì Thành Lũy',
+    military: {
+      garrison: 5000,
+      infantry: 3000,
+      cavalry: 800,
+      archers: 1200,
+      defense: 80,
+      rulerFaction: 'FAC-TAO-QIAN',
+      rulerNameVi: 'Đào Khiêm (Từ Châu)',
+      colorHex: '#14b8a6',
+      governorVi: 'Đào Khiêm • Cung Tổ'
+    },
+    economy: {
+      grainReserves: 4200,
+      treasury: 28000,
+      primaryCommodityVi: 'Muối Biển & Hải Sản',
+      exportGoodVi: 'Muối Biển Tinh Luyện Từ Châu',
+      importNeedVi: 'Binh Khí & Ngựa Chiến'
+    },
+    hireableNpcs: [
+      'Hải Muối Tử (Đại Hộ Muối Biển)',
+      'Thương Thuyền Hộ Vệ (Thủy Cước)'
+    ],
     subLocations: ['Hạ Phì Thành Lũy'],
     figuresVi: 'Đào Khiêm, Mi Trúc (Cự phú Từ Châu), Lữ Bố, Trần Cung',
     figuresEn: 'Tao Qian, Mi Zhu (Merchant Prince), Lu Bu, Chen Gong',
@@ -580,6 +782,28 @@ const WORLD_MAP_NODES = {
     daysRequired: 3.5,
     grainCost: 4.8,
     defaultSubLoc: 'Tương Dương Châu Phủ',
+    military: {
+      garrison: 8500,
+      infantry: 5000,
+      cavalry: 1000,
+      archers: 2500,
+      defense: 90,
+      rulerFaction: 'FAC-LIU-BIAO',
+      rulerNameVi: 'Lưu Biểu (Kinh Châu)',
+      colorHex: '#0284c7',
+      governorVi: 'Lưu Biểu • Cảnh Thăng'
+    },
+    economy: {
+      grainReserves: 7500,
+      treasury: 40000,
+      primaryCommodityVi: 'Gỗ Thiết Mộc & Thảo Dược',
+      exportGoodVi: 'Gỗ Đóng Thuyền Thiết Mộc',
+      importNeedVi: 'Muối Biển & Ngựa Bắc'
+    },
+    hireableNpcs: [
+      'Bạch Dược Cư Sĩ (Dược Liệu Kinh Tương)',
+      'Thiết Mộc Công (Đóng Thuyền)'
+    ],
     subLocations: ['Tương Dương Châu Phủ'],
     figuresVi: 'Lưu Biểu (Cảnh Thăng), Khoái Lương, Sĩ phu Nam Dương, Hoàng Thừa Ngạn',
     figuresEn: 'Liu Biao, Kuai Liang, Nanyang scholars, Huang Chengyan',
@@ -601,6 +825,28 @@ const WORLD_MAP_NODES = {
     daysRequired: 4.2,
     grainCost: 5.5,
     defaultSubLoc: 'Giang Lăng Thủy Doanh',
+    military: {
+      garrison: 6000,
+      infantry: 3000,
+      cavalry: 500,
+      archers: 2500,
+      defense: 82,
+      rulerFaction: 'FAC-LIU-BIAO',
+      rulerNameVi: 'Kinh Châu Thủy Quân',
+      colorHex: '#06b6d4',
+      governorVi: 'Sái Mạo • Đức Khuê'
+    },
+    economy: {
+      grainReserves: 5000,
+      treasury: 32000,
+      primaryCommodityVi: 'Chiến Thuyền & Cá Khô',
+      exportGoodVi: 'Thuyền Mông Xung & Cá Khô',
+      importNeedVi: 'Dầu Hỏa & Cung Tên'
+    },
+    hireableNpcs: [
+      'Trường Giang Tiêu Sư (Hộ Vận)',
+      'Lão Thuyền Công (Cầm Lái)'
+    ],
     subLocations: ['Giang Lăng Thủy Doanh'],
     figuresVi: 'Quan Vũ (sau này trấn thủ), Thủy quân Đô đốc, Thuyền buôn Trường Giang',
     figuresEn: 'Guan Yu (later commander), Marine fleet captains, Yangtze merchants',
@@ -622,6 +868,28 @@ const WORLD_MAP_NODES = {
     daysRequired: 4.6,
     grainCost: 6.0,
     defaultSubLoc: 'Xích Bích Thủy Trại',
+    military: {
+      garrison: 5500,
+      infantry: 2000,
+      cavalry: 500,
+      archers: 3000,
+      defense: 80,
+      rulerFaction: 'FAC-SUN-JIAN',
+      rulerNameVi: 'Tôn Kiên / Giang Đông Quân',
+      colorHex: '#f97316',
+      governorVi: 'Chu Du • Công Cẩn'
+    },
+    economy: {
+      grainReserves: 4800,
+      treasury: 26000,
+      primaryCommodityVi: 'Dầu Hỏa & Thủy Binh',
+      exportGoodVi: 'Hỏa Cụ & Dầu Hỏa Chiến',
+      importNeedVi: 'Lương Thảo & Gỗ Cứng'
+    },
+    hireableNpcs: [
+      'Lục Thủy Thủ (Hoa Tiêu Thủy Đạo)',
+      'Giang Đông Du Hiệp (Võ Biền)'
+    ],
     subLocations: ['Xích Bích Thủy Trại'],
     figuresVi: 'Chu Du (Công Cẩn), Lỗ Túc, Hoàng Cái, Hạm đội Liên Quân',
     figuresEn: 'Zhou Yu, Lu Su, Huang Gai, Allied Fleet Commanders',
@@ -643,6 +911,28 @@ const WORLD_MAP_NODES = {
     daysRequired: 4.5,
     grainCost: 5.8,
     defaultSubLoc: 'Kiến Nghiệp Đô Thành',
+    military: {
+      garrison: 7000,
+      infantry: 3500,
+      cavalry: 500,
+      archers: 3000,
+      defense: 84,
+      rulerFaction: 'FAC-SUN-JIAN',
+      rulerNameVi: 'Tôn Kiên / Tôn Quyền (Đông Ngô)',
+      colorHex: '#22c55e',
+      governorVi: 'Tôn Kiên • Văn Đài'
+    },
+    economy: {
+      grainReserves: 6000,
+      treasury: 42000,
+      primaryCommodityVi: 'Trà Giang Nam & Gốm Sứ',
+      exportGoodVi: 'Trà Thơm Giang Đông & Gốm Men',
+      importNeedVi: 'Chiến Mã & Thiết Quặng'
+    },
+    hireableNpcs: [
+      'Cố Gia Định (Đại Quản Gia Lương Phủ)',
+      'Hải Thượng Tiêu Đầu (Thuyền Buôn)'
+    ],
     subLocations: ['Kiến Nghiệp Đô Thành'],
     figuresVi: 'Tôn Quyền, Trương Chiêu, Chu Thái, Thương thuyền biển Giang Đông',
     figuresEn: 'Sun Quan, Zhang Zhao, Zhou Tai, Maritime merchant guild',
@@ -664,6 +954,28 @@ const WORLD_MAP_NODES = {
     daysRequired: 5.0,
     grainCost: 6.5,
     defaultSubLoc: 'Hán Trung Thiên Sư Phủ',
+    military: {
+      garrison: 4500,
+      infantry: 3000,
+      cavalry: 500,
+      archers: 1000,
+      defense: 88,
+      rulerFaction: 'FAC-ZHANG-LU',
+      rulerNameVi: 'Trương Lỗ (Thiên Sư Đạo)',
+      colorHex: '#a8a29e',
+      governorVi: 'Trương Lỗ • Công Kỳ'
+    },
+    economy: {
+      grainReserves: 4000,
+      treasury: 20000,
+      primaryCommodityVi: 'Dược Liệu Tần Lĩnh & Nghĩa Mễ',
+      exportGoodVi: 'Sâm Quy Tần Lĩnh & Nghĩa Mễ',
+      importNeedVi: 'Muối & Binh Khí Sắt'
+    },
+    hireableNpcs: [
+      'Khương Hiểm (Tiêu Đầu Sạn Đạo)',
+      'Thiên Sư Đạo Đồng (Thuốc Cứu Thương)'
+    ],
     subLocations: ['Hán Trung Thiên Sư Phủ'],
     figuresVi: 'Trương Lỗ (Thiên Sư Đạo), Dương Bằng, Dương Tùng, Bào Dũng',
     figuresEn: 'Zhang Lu (Five Pecks of Rice leader), Yang Song, Mountain guides',
@@ -685,6 +997,28 @@ const WORLD_MAP_NODES = {
     daysRequired: 6.5,
     grainCost: 8.0,
     defaultSubLoc: 'Thành Đô Ích Châu Phủ',
+    military: {
+      garrison: 8000,
+      infantry: 5000,
+      cavalry: 1000,
+      archers: 2000,
+      defense: 86,
+      rulerFaction: 'FAC-HAN',
+      rulerNameVi: 'Lưu Yên (Ích Châu Mục)',
+      colorHex: '#10b981',
+      governorVi: 'Lưu Yên • Quân Lang'
+    },
+    economy: {
+      grainReserves: 10000,
+      treasury: 50000,
+      primaryCommodityVi: 'Thục Cẩm & Quặng Sắt Tây Thục',
+      exportGoodVi: 'Thục Cẩm Tuyệt Phẩm',
+      importNeedVi: 'Chiến Mã & Muối Biển'
+    },
+    hireableNpcs: [
+      'Trịnh Uyển Nhi (Đại Sư Dệt Thục Cẩm)',
+      'Trương Bách Thảo (Dược Sư Danh Y)'
+    ],
     subLocations: ['Thành Đô Ích Châu Phủ'],
     figuresVi: 'Lưu Yên, Lưu Chương (sau là Lưu Bị, Gia Cát Lượng), Thợ dệt Thục Cẩm',
     figuresEn: 'Liu Yan, Liu Zhang (later Liu Bei, Zhuge Liang), Silk artisans',
@@ -706,6 +1040,28 @@ const WORLD_MAP_NODES = {
     daysRequired: 3.5,
     grainCost: 4.5,
     defaultSubLoc: 'Uyển Thành Nha Môn',
+    military: {
+      garrison: 5500,
+      infantry: 3500,
+      cavalry: 1000,
+      archers: 1000,
+      defense: 76,
+      rulerFaction: 'FAC-DONG-ZHUO',
+      rulerNameVi: 'Trương Tú (Nam Dương)',
+      colorHex: '#e11d48',
+      governorVi: 'Trương Tú • Nam Dương Thương Chủ'
+    },
+    economy: {
+      grainReserves: 3800,
+      treasury: 25000,
+      primaryCommodityVi: 'Binh Khí & Thảo Dược Nam Dương',
+      exportGoodVi: 'Đao Kiếm & Dược Thảo Nam Dương',
+      importNeedVi: 'Lương Thảo & Muối Biển'
+    },
+    hireableNpcs: [
+      'Dục Thủy Tiêu Sư (Vận Chuyển)',
+      'Nam Dương Y Sĩ (Trị Thương)'
+    ],
     subLocations: ['Uyển Thành Nha Môn', 'Dục Thủy Cổ Bến', 'Nam Dương Thảo Dược Điếm', 'Uyển Thành Tửu Quán'],
     figuresVi: 'Trương Tú, Giả Hủ, Hồ Xa Nhi',
     figuresEn: 'Zhang Xiu, Jia Xu, Hu Che Er',
@@ -727,6 +1083,28 @@ const WORLD_MAP_NODES = {
     daysRequired: 4.0,
     grainCost: 5.0,
     defaultSubLoc: 'Hoài Nam Ngụy Đế Cung',
+    military: {
+      garrison: 6500,
+      infantry: 4000,
+      cavalry: 1000,
+      archers: 1500,
+      defense: 78,
+      rulerFaction: 'FAC-YUAN-SHU',
+      rulerNameVi: 'Viên Thuật (Hoài Nam)',
+      colorHex: '#f59e0b',
+      governorVi: 'Viên Thuật • Công Lộ'
+    },
+    economy: {
+      grainReserves: 4500,
+      treasury: 30000,
+      primaryCommodityVi: 'Lúa Gạo Sông Hoài & Thủy Sản',
+      exportGoodVi: 'Lúa Gạo & Cá Tươi Sông Hoài',
+      importNeedVi: 'Chiến Mã & Thiết Giáp'
+    },
+    hireableNpcs: [
+      'Hoài Thủy Vận Tiêu (Thủy Lộ)',
+      'Thọ Xuân Đúc Sư (Đúc Binh Khí)'
+    ],
     subLocations: ['Hoài Nam Ngụy Đế Cung', 'Bến Sông Hoài Thủy', 'Thọ Xuân Binh Xưởng', 'Hoài Nam Tửu Điếm'],
     figuresVi: 'Viên Thuật, Kỷ Linh, Viên Dận',
     figuresEn: 'Yuan Shu, Ji Ling, Yuan Yin',
@@ -748,6 +1126,28 @@ const WORLD_MAP_NODES = {
     daysRequired: 2.8,
     grainCost: 3.5,
     defaultSubLoc: 'Thượng Đảng Trọng Trấn',
+    military: {
+      garrison: 3500,
+      infantry: 2000,
+      cavalry: 500,
+      archers: 1000,
+      defense: 84,
+      rulerFaction: 'FAC-HAN',
+      rulerNameVi: 'Trương Dương (Tịnh Châu)',
+      colorHex: '#64748b',
+      governorVi: 'Trương Dương • Trĩ Thúc'
+    },
+    economy: {
+      grainReserves: 2800,
+      treasury: 18000,
+      primaryCommodityVi: 'Quặng Sắt Thái Hành & Than Đá',
+      exportGoodVi: 'Quặng Sắt Thái Hành Thượng Hạng',
+      importNeedVi: 'Lương Thảo & Vải Vóc'
+    },
+    hireableNpcs: [
+      'Thiết Đầu Khai (Giám Công Mỏ Quặng)',
+      'Thái Hành Dẫn Tuyến (Thợ Săn Đường Núi)'
+    ],
     subLocations: ['Thượng Đảng Trọng Trấn', 'Thái Hành Sơn Đạo', 'Thượng Đảng Mỏ Sắt'],
     figuresVi: 'Trương Dương, Mục Thuận',
     figuresEn: 'Zhang Yang, Mu Shun',
@@ -769,6 +1169,28 @@ const WORLD_MAP_NODES = {
     daysRequired: 5.5,
     grainCost: 7.0,
     defaultSubLoc: 'Tây Lương Tướng Phủ',
+    military: {
+      garrison: 6500,
+      infantry: 1500,
+      cavalry: 4000,
+      archers: 1000,
+      defense: 75,
+      rulerFaction: 'FAC-DONG-ZHUO',
+      rulerNameVi: 'Mã Đằng & Hàn Toại (Tây Lương)',
+      colorHex: '#d97706',
+      governorVi: 'Mã Đằng • Thọ Thành'
+    },
+    economy: {
+      grainReserves: 3200,
+      treasury: 24000,
+      primaryCommodityVi: 'Chiến Mã Tây Lương & Da Thuộc',
+      exportGoodVi: 'Chiến Mã Đại Uyển & Da Thú',
+      importNeedVi: 'Lương Thảo & Tơ Lụa'
+    },
+    hireableNpcs: [
+      'Mã Lương Mã (Thương Nhân Ngựa Chiến)',
+      'Cáp Thần Hành (Hoa Tiêu Sa Mạc)'
+    ],
     subLocations: ['Tây Lương Tướng Phủ', 'Vũ Uy Trại Ngựa', 'Sa Mạc Dịch Trạm Tơ Lụa'],
     figuresVi: 'Mã Đằng, Hàn Toại, Mã Siêu, Bàng Đức',
     figuresEn: 'Ma Teng, Han Sui, Ma Chao, Pang De',
@@ -781,7 +1203,7 @@ const WORLD_MAP_NODES = {
     nameEn: 'Jiaozhi (Panyu)',
     provinceVi: 'Giao Châu',
     provinceEn: 'Jiaozhou',
-    coords: { x: 340, y: 520 },
+    coords: { x: 340, y: 500 },
     statusVi: 'Lĩnh Nam Hải Cảng • Dạ Minh Châu',
     statusEn: 'Maritime Trade Port • Southern Pearls',
     threatVi: 'Thấp (Cõi Lĩnh Nam an bình)',
@@ -790,6 +1212,28 @@ const WORLD_MAP_NODES = {
     daysRequired: 8.0,
     grainCost: 10.0,
     defaultSubLoc: 'Giao Châu Thái Thú Phủ',
+    military: {
+      garrison: 3000,
+      infantry: 2000,
+      cavalry: 200,
+      archers: 800,
+      defense: 68,
+      rulerFaction: 'FAC-SHI-XIE',
+      rulerNameVi: 'Sĩ Nhiếp (Giao Châu)',
+      colorHex: '#059669',
+      governorVi: 'Sĩ Nhiếp • Uy Ngạn'
+    },
+    economy: {
+      grainReserves: 3000,
+      treasury: 19000,
+      primaryCommodityVi: 'Trân Châu & Trầm Hương Lĩnh Nam',
+      exportGoodVi: 'Dạ Minh Châu & Trầm Hương',
+      importNeedVi: 'Binh Khí Sắt & Ngũ Cốc'
+    },
+    hireableNpcs: [
+      'Lâm Trầm Hương (Đại Thương Trầm Hương)',
+      'Lĩnh Nam Sơn Tiêu (Hộ Vệ Tinh Nhuệ)'
+    ],
     subLocations: ['Giao Châu Thái Thú Phủ', 'Phiên Ngung Hải Cảng', 'Nam Hải Minh Châu Phố'],
     figuresVi: 'Sĩ Nhiếp, Thương gia Ba Tư',
     figuresEn: 'Shi Xie, Persian merchants',
@@ -797,6 +1241,40 @@ const WORLD_MAP_NODES = {
     intelEn: 'Southern maritime haven under Shi Xie, peaceful sanctuary rich with pearls and spices.'
   }
 };
+
+// Aliases for flawless lookup
+WORLD_MAP_NODES['wu_wei'] = WORLD_MAP_NODES['xi_liang'];
+
+/**
+ * 24 Inter-citadel connecting routes across the Three Kingdoms theater
+ * Adhering to ROTK terrain profiles: HIGHWAY, WATERWAY, MOUNTAIN_PASS, PLANK_ROAD
+ */
+const WORLD_MAP_ROUTES = [
+  { from: 'zhuo_xian', to: 'ji_cheng', terrainType: 'HIGHWAY', distanceLi: 120, marchDays: 0.5, grainCost: 0.8, ambushRisk: 'LOW', descVi: 'Quan đạo U Châu bằng phẳng, nối liền Trác Huyện và Kế Thành Bắc Bình.' },
+  { from: 'zhuo_xian', to: 'guang_zong', terrainType: 'HIGHWAY', distanceLi: 280, marchDays: 1.0, grainCost: 1.5, ambushRisk: 'HIGH', descVi: 'Đường tiến quân nam hạ tiếp cận đại doanh bao vây quân Khăn Vàng.' },
+  { from: 'zhuo_xian', to: 'ping_yuan', terrainType: 'HIGHWAY', distanceLi: 360, marchDays: 1.5, grainCost: 2.0, ambushRisk: 'MODERATE', descVi: 'Quan đạo duyên hải nối Trác Huyện thẳng tới trọng trấn Bình Nguyên.' },
+  { from: 'ji_cheng', to: 'ping_yuan', terrainType: 'HIGHWAY', distanceLi: 340, marchDays: 1.4, grainCost: 1.8, ambushRisk: 'LOW', descVi: 'Tuyến tuần tra biên phòng U - Thanh Châu của thiết kỵ Bạch Mã.' },
+  { from: 'guang_zong', to: 'ye_cheng', terrainType: 'HIGHWAY', distanceLi: 150, marchDays: 0.8, grainCost: 1.0, ambushRisk: 'MODERATE', descVi: 'Đường tiếp vận nối tiền tuyến Cự Lộc với đại đô hội Nghiệp Thành.' },
+  { from: 'guang_zong', to: 'ping_yuan', terrainType: 'HIGHWAY', distanceLi: 180, marchDays: 1.0, grainCost: 1.2, ambushRisk: 'MODERATE', descVi: 'Hành lang đông tiến từ Cự Lộc sang bình nguyên duyên hải.' },
+  { from: 'ye_cheng', to: 'luo_yang', terrainType: 'HIGHWAY', distanceLi: 420, marchDays: 1.8, grainCost: 2.2, ambushRisk: 'LOW', descVi: 'Trục giao thương huyết mạch vượt sông Hoàng Hà tiến vào Kinh Sư Lạc Dương.' },
+  { from: 'ye_cheng', to: 'shang_dang', terrainType: 'MOUNTAIN_PASS', distanceLi: 240, marchDays: 1.5, grainCost: 1.8, ambushRisk: 'MODERATE', descVi: 'Thái Hành sơn đạo quanh co hiểm trở dẫn lên trọng trấn Thượng Đảng.' },
+  { from: 'ye_cheng', to: 'xu_chang', terrainType: 'HIGHWAY', distanceLi: 380, marchDays: 1.6, grainCost: 2.0, ambushRisk: 'LOW', descVi: 'Quan đạo Trung Nguyên nối liền hai trung tâm chính trị Hà Bắc và Dự Châu.' },
+  { from: 'ping_yuan', to: 'xia_pi', terrainType: 'HIGHWAY', distanceLi: 400, marchDays: 1.8, grainCost: 2.4, ambushRisk: 'MODERATE', descVi: 'Thương lộ duyên hải phồn hoa kết nối Thanh Châu và kho muối biển Hạ Phì.' },
+  { from: 'luo_yang', to: 'chang_an', terrainType: 'HIGHWAY', distanceLi: 380, marchDays: 1.8, grainCost: 2.2, ambushRisk: 'LOW', descVi: 'Đại đạo Đông Tây qua Đồng Quan và Hàm Cốc Quan nối liền hai đại kinh đô.' },
+  { from: 'luo_yang', to: 'xu_chang', terrainType: 'HIGHWAY', distanceLi: 220, marchDays: 1.0, grainCost: 1.4, ambushRisk: 'LOW', descVi: 'Cửa ngõ Hổ Lao Quan tiến về vùng đồng bằng đồn điền trù phú Dĩnh Xuyên.' },
+  { from: 'chang_an', to: 'xi_liang', terrainType: 'HIGHWAY', distanceLi: 520, marchDays: 4.2, grainCost: 2.6, ambushRisk: 'MODERATE', descVi: 'Hành lang Hà Tây mở ra Con Đường Tơ Lụa cổ xưa và đại mạc Tây Lương.' },
+  { from: 'chang_an', to: 'han_zhong', terrainType: 'PLANK_ROAD', distanceLi: 360, marchDays: 3.5, grainCost: 2.5, ambushRisk: 'HIGH', descVi: 'Sạn đạo Tí Ngọ và Thảng Lạc cheo leo vách núi hiểm trở vượt dãy Tần Lĩnh.' },
+  { from: 'han_zhong', to: 'cheng_du', terrainType: 'PLANK_ROAD', distanceLi: 420, marchDays: 4.0, grainCost: 2.8, ambushRisk: 'HIGH', descVi: 'Thục Đạo nan xuyên qua đệ nhất hùng quan Kiếm Các vào bồn địa Thành Đô.' },
+  { from: 'xu_chang', to: 'wan_cheng', terrainType: 'HIGHWAY', distanceLi: 280, marchDays: 1.4, grainCost: 1.6, ambushRisk: 'MODERATE', descVi: 'Quan đạo huyết mạch nối Dự Châu xuống bồn địa chiến lược Nam Dương.' },
+  { from: 'xu_chang', to: 'xia_pi', terrainType: 'HIGHWAY', distanceLi: 350, marchDays: 1.6, grainCost: 2.0, ambushRisk: 'LOW', descVi: 'Tuyến giao thương trù phú giữa đất đồn điền và đại thương nhân Từ Châu.' },
+  { from: 'xu_chang', to: 'shou_chun', terrainType: 'HIGHWAY', distanceLi: 320, marchDays: 1.5, grainCost: 1.8, ambushRisk: 'LOW', descVi: 'Trục đường mậu dịch sông Hoài tiến vào căn cứ phồn vinh Thọ Xuân.' },
+  { from: 'wan_cheng', to: 'xiang_yang', terrainType: 'WATERWAY', distanceLi: 220, marchDays: 1.2, grainCost: 1.4, ambushRisk: 'LOW', descVi: 'Thủy lộ Hán Thủy xuôi nam nối cửa ngõ Nam Dương với Châu Phủ Tương Dương.' },
+  { from: 'shou_chun', to: 'jian_ye', terrainType: 'WATERWAY', distanceLi: 260, marchDays: 1.4, grainCost: 1.6, ambushRisk: 'LOW', descVi: 'Thủy lộ Trường Giang hạ lưu tiến thẳng vào đô thành Giang Đông Kiến Nghiệp.' },
+  { from: 'xiang_yang', to: 'jiang_ling', terrainType: 'WATERWAY', distanceLi: 260, marchDays: 1.3, grainCost: 1.5, ambushRisk: 'LOW', descVi: 'Trục giao thông Kinh Châu nối Tương Dương và Giang Lăng qua Trường Bản.' },
+  { from: 'jiang_ling', to: 'chi_bi', terrainType: 'WATERWAY', distanceLi: 280, marchDays: 1.5, grainCost: 1.8, ambushRisk: 'HIGH', descVi: 'Thủy lộ Trường Giang xuôi dòng qua vùng đá dựng đứng Xích Bích oai hùng.' },
+  { from: 'chi_bi', to: 'jian_ye', terrainType: 'WATERWAY', distanceLi: 450, marchDays: 2.2, grainCost: 2.5, ambushRisk: 'LOW', descVi: 'Đại thủy lộ Trường Giang xuôi về trung tâm phồn hoa đô hội Đông Ngô.' },
+  { from: 'xiang_yang', to: 'jiao_zhi', terrainType: 'MOUNTAIN_PASS', distanceLi: 980, marchDays: 6.0, grainCost: 5.0, ambushRisk: 'EXTREME', descVi: 'Nam chinh lộ nghìn dặm vượt đèo dốc sơn lâm tiến vào bờ biển Giao Chỉ.' }
+];
 
 function getPoiMeta(locName) {
   const dict = {
@@ -969,6 +1447,7 @@ async function travelLocalPoi(targetLoc) {
 // Global exports
 window.QUICK_CHIPS_DATA = QUICK_CHIPS_DATA;
 window.WORLD_MAP_NODES = WORLD_MAP_NODES;
+window.WORLD_MAP_ROUTES = WORLD_MAP_ROUTES;
 window.getPoiMeta = getPoiMeta;
 window.getShortNodeName = getShortNodeName;
 window.getLocalPoiDistance = getLocalPoiDistance;

@@ -20,7 +20,13 @@ const NODE_TO_LOC_MAP = {
   'jiang_ling': 'LOC-0012',
   'jian_ye': 'LOC-0013',
   'han_zhong': 'LOC-0014',
-  'cheng_du': 'LOC-0015'
+  'cheng_du': 'LOC-0015',
+  'wan_cheng': 'LOC-0016',
+  'shou_chun': 'LOC-0017',
+  'shang_dang': 'LOC-0018',
+  'xi_liang': 'LOC-0019',
+  'wu_wei': 'LOC-0019',
+  'jiao_zhi': 'LOC-0020'
 };
 
 const LOC_TO_NODE_MAP = Object.entries(NODE_TO_LOC_MAP).reduce((acc, [node, loc]) => {
@@ -31,19 +37,25 @@ const LOC_TO_NODE_MAP = Object.entries(NODE_TO_LOC_MAP).reduce((acc, [node, loc]
 const NODE_COORDINATES = {
   'zhuo_xian': { x: 330, y: 70 },
   'ji_cheng': { x: 440, y: 55 },
-  'ye_cheng': { x: 340, y: 160 },
-  'guang_zong': { x: 410, y: 140 },
-  'ping_yuan': { x: 490, y: 170 },
-  'luo_yang': { x: 260, y: 240 },
-  'xu_chang': { x: 350, y: 250 },
-  'chang_an': { x: 130, y: 250 },
-  'xia_pi': { x: 490, y: 260 },
-  'xiang_yang': { x: 280, y: 350 },
-  'jiang_ling': { x: 290, y: 440 },
-  'chi_bi': { x: 360, y: 450 },
-  'jian_ye': { x: 530, y: 400 },
-  'han_zhong': { x: 120, y: 340 },
-  'cheng_du': { x: 80, y: 460 }
+  'ye_cheng': { x: 320, y: 155 },
+  'guang_zong': { x: 375, y: 165 },
+  'ping_yuan': { x: 460, y: 165 },
+  'luo_yang': { x: 260, y: 250 },
+  'chang_an': { x: 160, y: 250 },
+  'xu_chang': { x: 350, y: 265 },
+  'xia_pi': { x: 460, y: 275 },
+  'xiang_yang': { x: 280, y: 355 },
+  'jiang_ling': { x: 270, y: 430 },
+  'chi_bi': { x: 380, y: 410 },
+  'jian_ye': { x: 490, y: 380 },
+  'han_zhong': { x: 130, y: 345 },
+  'cheng_du': { x: 75, y: 435 },
+  'wan_cheng': { x: 300, y: 310 },
+  'shou_chun': { x: 410, y: 315 },
+  'shang_dang': { x: 280, y: 190 },
+  'xi_liang': { x: 80, y: 200 },
+  'wu_wei': { x: 80, y: 200 },
+  'jiao_zhi': { x: 340, y: 520 }
 };
 
 /**

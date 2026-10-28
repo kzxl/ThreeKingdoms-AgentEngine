@@ -1,9 +1,11 @@
 /**
  * WORLD MAP & CARTOGRAPHY MODULE
  * Interactive SVG Map, Multi-scale Zoom & Pan, Strategic Intel, and Expedition Marching
+ * Supports 3 View Modes: Overview, Military (Garrison & Defense), Economy (Grain & Commodities)
  */
 
 let selectedMapNodeId = 'guang_zong';
+let currentMapViewMode = 'overview'; // 'overview' | 'military' | 'economy'
 let worldMapZoom = 1.0;
 let worldMapPanX = 0;
 let worldMapPanY = 0;
@@ -11,6 +13,14 @@ let isWorldMapPanning = false;
 let mapPanStartX = 0;
 let mapPanStartY = 0;
 let hasAttachedMapEvents = false;
+
+function setMapViewMode(mode) {
+  if (['overview', 'military', 'economy'].includes(mode)) {
+    currentMapViewMode = mode;
+    renderWorldMapSvg();
+    renderWorldMapIntel(selectedMapNodeId);
+  }
+}
 
 function zoomWorldMap(delta) {
   worldMapZoom = Math.min(3.0, Math.max(0.65, Number((worldMapZoom + delta).toFixed(2))));
@@ -49,7 +59,7 @@ function initWorldMapInteractions() {
 
   // Mouse drag-to-pan
   container.addEventListener('mousedown', (e) => {
-    if (e.target.closest('.map-node') || e.target.closest('.map-zoom-toolbar')) return;
+    if (e.target.closest('.map-node') || e.target.closest('.map-zoom-toolbar') || e.target.closest('.map-viewmode-toolbar')) return;
     isWorldMapPanning = true;
     mapPanStartX = e.clientX - worldMapPanX;
     mapPanStartY = e.clientY - worldMapPanY;
@@ -78,7 +88,7 @@ function initWorldMapInteractions() {
 
   container.addEventListener('touchstart', (e) => {
     if (e.touches.length === 1) {
-      if (e.target.closest('.map-node') || e.target.closest('.map-zoom-toolbar')) return;
+      if (e.target.closest('.map-node') || e.target.closest('.map-zoom-toolbar') || e.target.closest('.map-viewmode-toolbar')) return;
       isWorldMapPanning = true;
       lastTouchX = e.touches[0].clientX;
       lastTouchY = e.touches[0].clientY;
@@ -152,57 +162,102 @@ function renderWorldMapSvg() {
   const currentRegion = getCurrentRegionNode(activeSubLocation);
   const isEn = (currentLang === 'en');
 
-  // 18 Tactical connecting routes across the Three Kingdoms theater
-  const routes = [
-    { from: 'zhuo_xian', to: 'ji_cheng' },
-    { from: 'zhuo_xian', to: 'guang_zong' },
-    { from: 'zhuo_xian', to: 'ping_yuan' },
-    { from: 'ji_cheng', to: 'ping_yuan' },
-    { from: 'guang_zong', to: 'ye_cheng' },
-    { from: 'guang_zong', to: 'ping_yuan' },
-    { from: 'ye_cheng', to: 'luo_yang' },
-    { from: 'ye_cheng', to: 'xu_chang' },
-    { from: 'ping_yuan', to: 'xia_pi' },
-    { from: 'luo_yang', to: 'chang_an' },
-    { from: 'luo_yang', to: 'xu_chang' },
-    { from: 'xu_chang', to: 'xia_pi' },
-    { from: 'xu_chang', to: 'xiang_yang' },
-    { from: 'chang_an', to: 'han_zhong' },
-    { from: 'han_zhong', to: 'cheng_du' },
-    { from: 'xiang_yang', to: 'jiang_ling' },
-    { from: 'jiang_ling', to: 'chi_bi' },
-    { from: 'chi_bi', to: 'jian_ye' }
+  // Inter-citadel connecting routes from map-data or fallback
+  const routes = window.WORLD_MAP_ROUTES || [
+    { from: 'zhuo_xian', to: 'ji_cheng', terrainType: 'HIGHWAY' },
+    { from: 'zhuo_xian', to: 'guang_zong', terrainType: 'HIGHWAY' },
+    { from: 'zhuo_xian', to: 'ping_yuan', terrainType: 'HIGHWAY' },
+    { from: 'ji_cheng', to: 'ping_yuan', terrainType: 'HIGHWAY' },
+    { from: 'guang_zong', to: 'ye_cheng', terrainType: 'HIGHWAY' },
+    { from: 'guang_zong', to: 'ping_yuan', terrainType: 'HIGHWAY' },
+    { from: 'ye_cheng', to: 'luo_yang', terrainType: 'HIGHWAY' },
+    { from: 'ye_cheng', to: 'shang_dang', terrainType: 'MOUNTAIN_PASS' },
+    { from: 'ye_cheng', to: 'xu_chang', terrainType: 'HIGHWAY' },
+    { from: 'ping_yuan', to: 'xia_pi', terrainType: 'HIGHWAY' },
+    { from: 'luo_yang', to: 'chang_an', terrainType: 'HIGHWAY' },
+    { from: 'luo_yang', to: 'xu_chang', terrainType: 'HIGHWAY' },
+    { from: 'chang_an', to: 'xi_liang', terrainType: 'HIGHWAY' },
+    { from: 'chang_an', to: 'han_zhong', terrainType: 'PLANK_ROAD' },
+    { from: 'han_zhong', to: 'cheng_du', terrainType: 'PLANK_ROAD' },
+    { from: 'xu_chang', to: 'wan_cheng', terrainType: 'HIGHWAY' },
+    { from: 'xu_chang', to: 'xia_pi', terrainType: 'HIGHWAY' },
+    { from: 'xu_chang', to: 'shou_chun', terrainType: 'HIGHWAY' },
+    { from: 'wan_cheng', to: 'xiang_yang', terrainType: 'WATERWAY' },
+    { from: 'shou_chun', to: 'jian_ye', terrainType: 'WATERWAY' },
+    { from: 'xiang_yang', to: 'jiang_ling', terrainType: 'WATERWAY' },
+    { from: 'jiang_ling', to: 'chi_bi', terrainType: 'WATERWAY' },
+    { from: 'chi_bi', to: 'jian_ye', terrainType: 'WATERWAY' },
+    { from: 'xiang_yang', to: 'jiao_zhi', terrainType: 'MOUNTAIN_PASS' }
   ];
 
   let svgRoutes = routes.map(r => {
     const f = WORLD_MAP_NODES[r.from]?.coords;
     const t = WORLD_MAP_NODES[r.to]?.coords;
     if (!f || !t) return '';
-    return `<line x1="${f.x}" y1="${f.y}" x2="${t.x}" y2="${t.y}" stroke="rgba(245, 158, 11, 0.32)" stroke-width="1.8" stroke-dasharray="4,4" />`;
+
+    const isConnected = (r.from === selectedMapNodeId || r.to === selectedMapNodeId);
+    let strokeColor = 'rgba(245, 158, 11, 0.45)';
+    let strokeWidth = '1.8';
+    let dashArray = 'none';
+
+    switch (r.terrainType) {
+      case 'WATERWAY':
+        strokeColor = isConnected ? '#38bdf8' : 'rgba(56, 189, 248, 0.55)';
+        strokeWidth = isConnected ? '3.5' : '2.2';
+        dashArray = '6,4';
+        break;
+      case 'MOUNTAIN_PASS':
+        strokeColor = isConnected ? '#f87171' : 'rgba(239, 68, 68, 0.55)';
+        strokeWidth = isConnected ? '3.2' : '2.0';
+        dashArray = '3,3';
+        break;
+      case 'PLANK_ROAD':
+        strokeColor = isConnected ? '#fbbf24' : 'rgba(217, 119, 6, 0.6)';
+        strokeWidth = isConnected ? '3.2' : '2.2';
+        dashArray = '2,4';
+        break;
+      case 'HIGHWAY':
+      default:
+        strokeColor = isConnected ? '#fbbf24' : 'rgba(245, 158, 11, 0.45)';
+        strokeWidth = isConnected ? '3.5' : '2.0';
+        dashArray = isConnected ? 'none' : '4,2';
+        break;
+    }
+
+    const activeClass = isConnected ? 'map-route-active' : '';
+
+    return `<line x1="${f.x}" y1="${f.y}" x2="${t.x}" y2="${t.y}" stroke="${strokeColor}" stroke-width="${strokeWidth}" stroke-dasharray="${dashArray}" class="${activeClass}" />`;
   }).join('');
 
-  let svgNodes = Object.keys(WORLD_MAP_NODES).map(key => {
+  const themeMap = {
+    'zhuo_xian': { fill: '#064e3b', stroke: '#10b981', icon: '涿' },
+    'ji_cheng': { fill: '#0f172a', stroke: '#38bdf8', icon: '薊' },
+    'ye_cheng': { fill: '#1e1b4b', stroke: '#818cf8', icon: '鄴' },
+    'guang_zong': { fill: '#450a0a', stroke: '#ef4444', icon: '宗' },
+    'ping_yuan': { fill: '#0f172a', stroke: '#06b6d4', icon: '平' },
+    'luo_yang': { fill: '#451a03', stroke: '#f59e0b', icon: '洛' },
+    'chang_an': { fill: '#3b0764', stroke: '#a855f7', icon: '長' },
+    'xu_chang': { fill: '#1e293b', stroke: '#3b82f6', icon: '昌' },
+    'xia_pi': { fill: '#042f2e', stroke: '#14b8a6', icon: '邳' },
+    'xiang_yang': { fill: '#0c4a6e', stroke: '#0284c7', icon: '襄' },
+    'jiang_ling': { fill: '#164e63', stroke: '#06b6d4', icon: '陵' },
+    'chi_bi': { fill: '#450a0a', stroke: '#f97316', icon: '壁' },
+    'jian_ye': { fill: '#14532d', stroke: '#22c55e', icon: '建' },
+    'han_zhong': { fill: '#292524', stroke: '#a8a29e', icon: '漢' },
+    'cheng_du': { fill: '#064e3b', stroke: '#10b981', icon: '成' },
+    'wan_cheng': { fill: '#450a0a', stroke: '#e11d48', icon: '宛' },
+    'shou_chun': { fill: '#451a03', stroke: '#f59e0b', icon: '春' },
+    'shang_dang': { fill: '#1e293b', stroke: '#94a3b8', icon: '黨' },
+    'wu_wei': { fill: '#451a03', stroke: '#d97706', icon: '涼' },
+    'xi_liang': { fill: '#451a03', stroke: '#d97706', icon: '涼' },
+    'jiao_zhi': { fill: '#064e3b', stroke: '#059669', icon: '交' }
+  };
+
+  const renderedNodeKeys = Object.keys(WORLD_MAP_NODES).filter(k => k !== 'wu_wei'); // Avoid rendering duplicate wu_wei/xi_liang node
+  let svgNodes = renderedNodeKeys.map(key => {
     const node = WORLD_MAP_NODES[key];
     const isCurrent = (currentRegion.id === key);
     const isSelected = (selectedMapNodeId === key);
-
-    const themeMap = {
-      'zhuo_xian': { fill: '#064e3b', stroke: '#10b981', icon: '涿' },
-      'ji_cheng': { fill: '#0f172a', stroke: '#38bdf8', icon: '薊' },
-      'ye_cheng': { fill: '#1e1b4b', stroke: '#818cf8', icon: '鄴' },
-      'guang_zong': { fill: '#450a0a', stroke: '#ef4444', icon: '宗' },
-      'ping_yuan': { fill: '#0f172a', stroke: '#06b6d4', icon: '平' },
-      'luo_yang': { fill: '#451a03', stroke: '#f59e0b', icon: '洛' },
-      'chang_an': { fill: '#3b0764', stroke: '#a855f7', icon: '長' },
-      'xu_chang': { fill: '#1e293b', stroke: '#3b82f6', icon: '昌' },
-      'xia_pi': { fill: '#042f2e', stroke: '#14b8a6', icon: '邳' },
-      'xiang_yang': { fill: '#0c4a6e', stroke: '#0284c7', icon: '襄' },
-      'jiang_ling': { fill: '#164e63', stroke: '#06b6d4', icon: '陵' },
-      'chi_bi': { fill: '#450a0a', stroke: '#f97316', icon: '壁' },
-      'jian_ye': { fill: '#14532d', stroke: '#22c55e', icon: '建' },
-      'han_zhong': { fill: '#292524', stroke: '#a8a29e', icon: '漢' },
-      'cheng_du': { fill: '#064e3b', stroke: '#10b981', icon: '成' }
-    };
 
     let theme = themeMap[key] || { fill: '#0f172a', stroke: '#3b82f6', icon: '鎮' };
     if (isCurrent) {
@@ -212,13 +267,38 @@ function renderWorldMapSvg() {
     const displayName = typeof getShortNodeName === 'function' ? getShortNodeName(node, isEn) : (isEn ? node.nameEn : node.nameVi);
     const displayProvince = isEn ? node.provinceEn : node.provinceVi;
 
+    // Mode-specific overlays
+    let modeTopBadge = '';
+    let modeBottomSub = `<text x="${node.coords.x}" y="${node.coords.y + 34}" text-anchor="middle" fill="#94a3b8" font-size="8.5">${displayProvince}</text>`;
+
+    if (currentMapViewMode === 'military' && node.military) {
+      const garrisonK = (node.military.garrison / 1000).toFixed(1);
+      modeTopBadge = `
+        <rect x="${node.coords.x - 21}" y="${node.coords.y - 28}" width="42" height="13" rx="3" fill="#0f172a" stroke="${theme.stroke}" stroke-width="1.2" />
+        <text x="${node.coords.x}" y="${node.coords.y - 19}" fill="#38bdf8" font-size="7.5" font-family="'JetBrains Mono', monospace" font-weight="700" text-anchor="middle">⚔️ ${garrisonK}k</text>
+      `;
+      modeBottomSub = `
+        <text x="${node.coords.x}" y="${node.coords.y + 34}" text-anchor="middle" fill="#fbbf24" font-size="8" font-family="'JetBrains Mono', monospace" font-weight="600">🛡️ ${node.military.defense}</text>
+      `;
+    } else if (currentMapViewMode === 'economy' && node.economy) {
+      const grainK = (node.economy.grainReserves / 1000).toFixed(1);
+      const shortCommodity = node.economy.primaryCommodityVi.split(' ')[0];
+      modeTopBadge = `
+        <rect x="${node.coords.x - 21}" y="${node.coords.y - 28}" width="42" height="13" rx="3" fill="#0f172a" stroke="#f59e0b" stroke-width="1.2" />
+        <text x="${node.coords.x}" y="${node.coords.y - 19}" fill="#fbbf24" font-size="7.5" font-family="'JetBrains Mono', monospace" font-weight="700" text-anchor="middle">🌾 ${grainK}k</text>
+      `;
+      modeBottomSub = `
+        <text x="${node.coords.x}" y="${node.coords.y + 34}" text-anchor="middle" fill="#34d399" font-size="7.5" font-weight="600">${shortCommodity}</text>
+      `;
+    }
+
     return `
       <g class="map-node ${isSelected ? 'active' : ''}" onclick="selectWorldMapNode('${key}')" style="cursor: pointer;">
         ${isCurrent ? `
           <circle cx="${node.coords.x}" cy="${node.coords.y}" r="22" fill="none" stroke="#10b981" stroke-width="2" opacity="0.8" class="map-pulse-ring" />
           <rect x="${node.coords.x - 34}" y="${node.coords.y - 28}" width="68" height="13" rx="3" fill="#064e3b" stroke="#10b981" stroke-width="1" />
           <text x="${node.coords.x}" y="${node.coords.y - 19}" fill="#34d399" font-size="7.5" font-weight="700" text-anchor="middle">[${isEn ? 'CURRENT' : 'HIỆN TẠI'}]</text>
-        ` : ''}
+        ` : modeTopBadge}
 
         ${isSelected ? `
           <circle cx="${node.coords.x}" cy="${node.coords.y}" r="20" fill="none" stroke="#fbbf24" stroke-width="2.5" stroke-dasharray="4,2" />
@@ -228,13 +308,13 @@ function renderWorldMapSvg() {
         <text x="${node.coords.x}" y="${node.coords.y + 4.5}" font-size="10.5" text-anchor="middle">${theme.icon}</text>
         
         <text x="${node.coords.x}" y="${node.coords.y + 24}" text-anchor="middle" fill="${isSelected ? '#fbbf24' : '#f1f5f9'}" font-size="9.5" font-weight="${isSelected ? '700' : '600'}" letter-spacing="0.2px">${displayName}</text>
-        <text x="${node.coords.x}" y="${node.coords.y + 34}" text-anchor="middle" fill="#94a3b8" font-size="8.5">${displayProvince}</text>
+        ${modeBottomSub}
       </g>
     `;
   }).join('');
 
   container.innerHTML = `
-    <!-- Floating Zoom Toolbar -->
+    <!-- Floating Zoom Toolbar (Top Left) -->
     <div class="map-zoom-toolbar">
       <button class="map-zoom-btn" onclick="zoomWorldMap(0.25)" title="${isEn ? 'Zoom In' : 'Phóng to'}">+</button>
       <span class="map-zoom-level" id="map-zoom-level-badge">${Math.round(worldMapZoom * 100)}%</span>
@@ -242,10 +322,23 @@ function renderWorldMapSvg() {
       <button class="map-zoom-btn" onclick="resetWorldMapZoom()" title="${isEn ? 'Reset View' : 'Khôi phục'}">1:1</button>
     </div>
 
-    <!-- Navigation Hint -->
+    <!-- View Mode Selector Toolbar (Top Right) -->
+    <div class="map-viewmode-toolbar">
+      <button class="map-viewmode-btn ${currentMapViewMode === 'overview' ? 'active' : ''}" onclick="setMapViewMode('overview')" title="Toàn cảnh địa dư">
+        <span>🔘</span> <span>${isEn ? 'Overview' : 'Toàn Cảnh'}</span>
+      </button>
+      <button class="map-viewmode-btn ${currentMapViewMode === 'military' ? 'active' : ''}" onclick="setMapViewMode('military')" title="Binh lực & phòng ngự">
+        <span>⚔️</span> <span>${isEn ? 'Military' : 'Quân Sự'}</span>
+      </button>
+      <button class="map-viewmode-btn ${currentMapViewMode === 'economy' ? 'active' : ''}" onclick="setMapViewMode('economy')" title="Lương thảo & sản vật">
+        <span>🌾</span> <span>${isEn ? 'Economy' : 'Kinh Tế'}</span>
+      </button>
+    </div>
+
+    <!-- Navigation Hint (Bottom Left) -->
     <div class="map-nav-hint">${isEn ? 'Scroll to zoom • Drag to pan' : 'Cuộn chuột để zoom • Kéo chuột để di chuyển'}</div>
 
-    <svg viewBox="0 0 600 500" xmlns="http://www.w3.org/2000/svg">
+    <svg viewBox="0 0 600 550" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <pattern id="tactical-grid" width="25" height="25" patternUnits="userSpaceOnUse">
           <path d="M 25 0 L 0 0 0 25" fill="none" stroke="rgba(255, 255, 255, 0.03)" stroke-width="1"/>
@@ -257,8 +350,8 @@ function renderWorldMapSvg() {
       <rect width="100%" height="100%" fill="url(#tactical-grid)"/>
 
       <!-- Border Frame (Fixed on Canvas) -->
-      <rect x="8" y="8" width="584" height="484" fill="none" stroke="rgba(245, 158, 11, 0.2)" stroke-width="1" stroke-dasharray="6,4"/>
-      <rect x="12" y="12" width="576" height="476" fill="none" stroke="rgba(255, 255, 255, 0.04)" stroke-width="0.5"/>
+      <rect x="8" y="8" width="584" height="534" fill="none" stroke="rgba(245, 158, 11, 0.2)" stroke-width="1" stroke-dasharray="6,4"/>
+      <rect x="12" y="12" width="576" height="526" fill="none" stroke="rgba(255, 255, 255, 0.04)" stroke-width="0.5"/>
 
       <!-- North Indicator (Fixed on Canvas) -->
       <g transform="translate(565, 34)" opacity="0.65">
@@ -268,7 +361,7 @@ function renderWorldMapSvg() {
       </g>
 
       <!-- Scalable Map Viewport -->
-      <g id="world-map-viewport" transform="translate(${worldMapPanX}, ${worldMapPanY}) scale(${worldMapZoom})" transform-origin="300 250">
+      <g id="world-map-viewport" transform="translate(${worldMapPanX}, ${worldMapPanY}) scale(${worldMapZoom})" transform-origin="300 275">
         <!-- Ancient Province Watermarks -->
         <text x="380" y="32" fill="rgba(255, 255, 255, 0.07)" font-size="15" font-family="'Cinzel', serif" font-weight="700" letter-spacing="3px" text-anchor="middle">U CHÂU (YOUZHOU)</text>
         <text x="340" y="125" fill="rgba(255, 255, 255, 0.07)" font-size="15" font-family="'Cinzel', serif" font-weight="700" letter-spacing="3px" text-anchor="middle">KÝ CHÂU (JIZHOU)</text>
@@ -279,6 +372,7 @@ function renderWorldMapSvg() {
         <text x="275" y="395" fill="rgba(255, 255, 255, 0.07)" font-size="15" font-family="'Cinzel', serif" font-weight="700" letter-spacing="3px" text-anchor="middle">KINH CHÂU (JINGZHOU)</text>
         <text x="475" y="435" fill="rgba(255, 255, 255, 0.07)" font-size="15" font-family="'Cinzel', serif" font-weight="700" letter-spacing="3px" text-anchor="middle">GIANG ĐÔNG (WU)</text>
         <text x="95" y="475" fill="rgba(255, 255, 255, 0.07)" font-size="15" font-family="'Cinzel', serif" font-weight="700" letter-spacing="3px" text-anchor="middle">BA THỤC (BASHU)</text>
+        <text x="340" y="535" fill="rgba(255, 255, 255, 0.06)" font-size="14" font-family="'Cinzel', serif" font-weight="700" letter-spacing="2px" text-anchor="middle">GIAO CHÂU (JIAOZHOU)</text>
 
         <!-- Hoàng Hà (The Yellow River) -->
         <path d="M 60,215 C 120,225 180,235 235,230 C 275,225 320,205 380,210 C 440,215 500,190 560,175" 
@@ -312,10 +406,10 @@ function renderWorldMapSvg() {
           <text x="0" y="13" fill="#fca5a5" font-size="7.5" text-anchor="middle" font-weight="600">Kiếm Các</text>
         </g>
 
-        <!-- Tactical Connecting Routes -->
+        <!-- Tactical Connecting Routes (Styled by Terrain Type) -->
         ${svgRoutes}
 
-        <!-- Interactive Strategic Regional Nodes (15 Citadels) -->
+        <!-- Interactive Strategic Regional Nodes (20 Citadels) -->
         ${svgNodes}
       </g>
     </svg>
@@ -354,15 +448,48 @@ function renderWorldMapIntel(nodeId = selectedMapNodeId) {
   const intel = isEn ? node.intelEn : node.intelVi;
   const figures = isEn ? node.figuresEn : node.figuresVi;
 
+  const mil = node.military || {
+    garrison: 1000,
+    infantry: 600,
+    cavalry: 200,
+    archers: 200,
+    defense: 70,
+    rulerFaction: 'FAC-HAN',
+    rulerNameVi: 'Đại Hán Triều Đình',
+    colorHex: '#3b82f6',
+    governorVi: 'Thái Thú Bản Địa'
+  };
+
+  const eco = node.economy || {
+    grainReserves: 2000,
+    treasury: 10000,
+    primaryCommodityVi: 'Ngũ Cốc & Binh Khí',
+    exportGoodVi: 'Lương Thảo',
+    importNeedVi: 'Thép Thỏi'
+  };
+
+  const hireableList = (node.hireableNpcs && node.hireableNpcs.length > 0)
+    ? node.hireableNpcs.map(npc => `
+        <div class="intel-npc-pill">
+          <span>💼 ${npc}</span>
+          <span style="font-size: 9px; opacity: 0.85; font-family: var(--font-mono); color: #34d399;">[${isEn ? 'Hireable' : 'Khả Dụng'}]</span>
+        </div>
+      `).join('')
+    : `<div style="font-size: 10px; color: var(--text-muted); font-style: italic;">${isEn ? 'No wandering specialists available' : 'Chưa có nhân sĩ tự do đồn trú'}</div>`;
+
   panel.innerHTML = `
     <div class="intel-target-header">
       <div>
         <div class="intel-target-name">${title}</div>
         <div class="intel-target-province">${prov}</div>
+        <span class="intel-faction-badge" style="background: ${mil.colorHex}22; border: 1px solid ${mil.colorHex}66; color: ${mil.colorHex};">
+          🚩 ${mil.rulerNameVi} • Trấn thủ: ${mil.governorVi}
+        </span>
       </div>
       <span class="intel-status-badge ${badgeClass}">${badgeText}</span>
     </div>
 
+    <!-- Key Movement Metrics -->
     <div class="intel-metrics-grid">
       <div class="intel-metric-box">
         <div class="intel-metric-lbl">${dict.lblDist}</div>
@@ -382,6 +509,70 @@ function renderWorldMapIntel(nodeId = selectedMapNodeId) {
       </div>
     </div>
 
+    <!-- Strategic Layer 1: Military & Garrisons -->
+    <div class="intel-subcard">
+      <div class="intel-subcard-title">
+        <span>⚔️ ${isEn ? 'Military Garrisons & Defenses' : 'Binh Lực & Thành Phòng'}</span>
+        <span style="font-family: var(--font-mono); color: #38bdf8;">${mil.garrison.toLocaleString()} ${isEn ? 'Troops' : 'Binh Sĩ'}</span>
+      </div>
+      <div class="intel-breakdown-row">
+        <div class="intel-unit-chip">
+          <span class="intel-unit-lbl">${isEn ? 'Infantry' : '🗡️ Bộ Binh'}</span>
+          <span class="intel-unit-val">${mil.infantry.toLocaleString()}</span>
+        </div>
+        <div class="intel-unit-chip">
+          <span class="intel-unit-lbl">${isEn ? 'Cavalry' : '🐎 Kỵ Binh'}</span>
+          <span class="intel-unit-val">${mil.cavalry.toLocaleString()}</span>
+        </div>
+        <div class="intel-unit-chip">
+          <span class="intel-unit-lbl">${isEn ? 'Archers' : '🏹 Cung Thủ'}</span>
+          <span class="intel-unit-val">${mil.archers.toLocaleString()}</span>
+        </div>
+      </div>
+      <div style="font-size: 9.5px; color: var(--text-muted); display: flex; justify-content: space-between; margin-top: 2px;">
+        <span>${isEn ? 'Wall Defense Rating' : 'Độ Kiên Cố Tường Thành'}:</span>
+        <span style="font-family: var(--font-mono); font-weight: 700; color: #fbbf24;">🛡️ ${mil.defense} / 100</span>
+      </div>
+    </div>
+
+    <!-- Strategic Layer 2: Economy & Commodities -->
+    <div class="intel-subcard">
+      <div class="intel-subcard-title">
+        <span>🌾 ${isEn ? 'Economy & Strategic Reserves' : 'Kinh Tế & Sản Vật'}</span>
+        <span style="font-family: var(--font-mono); color: #fbbf24;">${eco.treasury.toLocaleString()} ${isEn ? 'Cash' : 'Tiền'}</span>
+      </div>
+      <div class="intel-trade-box">
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: var(--text-muted);">${isEn ? 'Granary Reserves' : 'Kho Lương Thảo'}:</span>
+          <span style="font-family: var(--font-mono); font-weight: 700; color: #fbbf24;">🌾 ${eco.grainReserves.toLocaleString()} Thạch</span>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: var(--text-muted);">${isEn ? 'Key Commodity' : 'Sản Vật Chủ Lực'}:</span>
+          <span style="font-weight: 600; color: #f1f5f9;">${eco.primaryCommodityVi}</span>
+        </div>
+        <div class="intel-trade-item">
+          <span class="intel-trade-tag export">${isEn ? 'EXPORT' : 'XUẤT'}</span>
+          <span>${eco.exportGoodVi}</span>
+        </div>
+        <div class="intel-trade-item">
+          <span class="intel-trade-tag import">${isEn ? 'IMPORT' : 'NHẬP'}</span>
+          <span>${eco.importNeedVi}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Strategic Layer 3: Auxiliary Hireable Specialists -->
+    <div class="intel-subcard">
+      <div class="intel-subcard-title">
+        <span>👥 ${isEn ? 'Local Workforce & Retainers' : 'Nhân Lực Thuê Mướn (Dịch Quán)'}</span>
+        <span style="font-size: 9px; color: var(--text-muted);">${(node.hireableNpcs || []).length} ${isEn ? 'Specialists' : 'Nhân Tài'}</span>
+      </div>
+      <div class="intel-npc-list">
+        ${hireableList}
+      </div>
+    </div>
+
+    <!-- Historical Lore & Notable Figures -->
     <div class="intel-section">
       <div class="intel-sec-title">${dict.lblIntel}</div>
       <div class="intel-sec-body">${intel}</div>
@@ -476,6 +667,8 @@ async function executeMarchToSelectedNode(nodeId) {
 
 // Global exposure for event handlers and modules
 window.selectedMapNodeId = selectedMapNodeId;
+window.currentMapViewMode = currentMapViewMode;
+window.setMapViewMode = setMapViewMode;
 window.zoomWorldMap = zoomWorldMap;
 window.resetWorldMapZoom = resetWorldMapZoom;
 window.applyWorldMapTransform = applyWorldMapTransform;
