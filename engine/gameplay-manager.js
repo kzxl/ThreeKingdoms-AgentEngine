@@ -136,6 +136,9 @@ class GameplayManager {
     const styleName = customStyleName || arch.default_style_name;
     const startDate = scenario.start_date || '184-02-01';
     const campaignId = `CMP-${Date.now().toString(36).toUpperCase()}`;
+    const isCommoner = (arch.archetype_id === 'ARCH-COMMONER-YOUTH');
+    const startFixedCapital = isCommoner ? 0 : 18000;
+    const startGrain = isCommoner ? 1.0 : 5.0;
 
     // 2. Build Reset & Seeding SQL Script for Session Tables Only
     const sql = `
@@ -170,15 +173,15 @@ class GameplayManager {
         'PLY-0001', '${playerName.replace(/'/g, "''")}', '${styleName.replace(/'/g, "''")}', ${arch.starting_age},
         'Vườn Đào', '${arch.starting_location}',
         ${arch.int_attr}, ${arch.pol_attr}, ${arch.war_attr}, ${arch.ldr_attr}, ${arch.dip_attr}, ${arch.com_attr}, ${arch.log_attr}, ${arch.cra_attr},
-        ${arch.initial_liquid_cash}, 0, 5.0, 18000, '${arch.initial_perks ? arch.initial_perks.replace(/'/g, "''") : '[]'}', 100, 0, 100
+        ${arch.initial_liquid_cash}, 0, ${startGrain}, ${startFixedCapital}, '${arch.initial_perks ? arch.initial_perks.replace(/'/g, "''") : '[]'}', 100, 0, 100
       );
 
       -- D. Seed Baseline Cashflow & Double-Entry Accounting
       INSERT INTO cashflow_ledger (txn_id, game_date, counterparty, category, inflow, outflow, balance, memo, status)
       VALUES (
-        'TXN-1840201-0000', '${startDate}', 'Khởi Tạo Vốn Tộc Lương', 'Góp Vốn',
+        'TXN-1840201-0000', '${startDate}', '${isCommoner ? 'Tự Tích Lũy Bản Thân' : 'Khởi Tạo Vốn Tộc Lương'}', 'Góp Vốn',
         ${arch.initial_liquid_cash}, 0, ${arch.initial_liquid_cash},
-        'Khởi tạo vốn lưu động ban đầu theo định dạng sĩ tộc thương gia', 'Confirmed'
+        '${isCommoner ? 'Vốn lận lưng khởi nghiệp tự thân ban đầu' : 'Khởi tạo vốn lưu động ban đầu theo định dạng sĩ tộc thương gia'}', 'Confirmed'
       );
 
       INSERT INTO account_journal (txn_id, campaign_id, game_date, account_code, debit, credit, memo)
@@ -187,29 +190,45 @@ class GameplayManager {
         ('TXN-1840201-0000', '${campaignId}', '${startDate}', '301_VON_CHU_SO_HUU', 0, ${arch.initial_liquid_cash}, 'Có Vốn chủ sở hữu ban đầu');
 
       -- E. Seed Initial Warehouse Inventory from Master Catalog
+      ${isCommoner ? `
+      INSERT INTO inventory_items (item_code, category, description, quantity, unit_cost_basis, location)
+      VALUES
+        ('COM-BAMBOO', 'RAW_MATERIAL', 'Tre Trúc U Châu (Tự hái)', 5, 10, 'Zhuo County'),
+        ('COM-GRAIN', 'FOOD_STUFF', 'Lương Thảo Mưu Sinh Ban Đầu', 1.0, 100, 'Zhuo County');
+      ` : `
       INSERT INTO inventory_items (item_code, category, description, quantity, unit_cost_basis, location)
       VALUES
         ('COM-BAMBOO', 'RAW_MATERIAL', 'Tre Trúc U Châu (Nguyên liệu đan dệt)', 25, 12, 'Zhuo Workshop'),
         ('COM-LEATH', 'RAW_MATERIAL', 'Da Thuộc Gia Súc Trác Huyện', 8, 80, 'Zhuo Workshop'),
         ('COM-GRAIN', 'FOOD_STUFF', 'Lương Thảo Dự Trữ Xưởng Lương Thị', 5.0, 100, 'Zhuo Workshop'),
         ('PROD-MAT', 'FINISHED_GOOD', 'Chiếu Trúc Lương Gia Thành Phẩm', 12, 14, 'Zhuo Workshop');
+      `}
 
-      -- F. Seed Initial Workshop Business
+      -- F. Seed Initial Workshop Business (Only for non-commoner)
+      ${isCommoner ? '' : `
       INSERT INTO businesses (business_id, name, location_id, manager_npc_id, safe_cash, delegation_level, efficiency_multiplier, current_workforce, monthly_capacity_hours, monthly_rent, auto_procure, status)
       VALUES ('BIZ-0001', 'Lương Thị Chức Tác Phường', 'LOC-0001', 'NPC-0007', 3000, 2, 0.85, 4, 800, 200, 1, 'ACTIVE');
+      `}
 
       -- G. Seed Core Retainer NPCs from Master Characters
+      ${isCommoner ? `
+      INSERT INTO npc_state (npc_id, name, loyalty, morale, fatigue, int_attr, pol_attr, war_attr, ldr_attr, dip_attr, com_attr, log_attr, cra_attr, personality, motivation, assigned_business_id, assigned_role, monthly_wage)
+      VALUES
+        ('NPC-0007', 'Trần Bảo (Thợ Cả Trác Huyện)', 65, 100, 0, 58, 52, 45, 60, 55, 62, 65, 75, 'PRAGMATIC', 'SECURITY', NULL, 'CRAFTSMAN', 0),
+        ('NPC-0008', 'Triệu An (Thợ Mộc Trác Huyện)', 65, 95, 0, 50, 45, 42, 50, 48, 55, 60, 70, 'DILIGENT', 'SECURITY', NULL, 'CARPENTER', 0);
+      ` : `
       INSERT INTO npc_state (npc_id, name, loyalty, morale, fatigue, int_attr, pol_attr, war_attr, ldr_attr, dip_attr, com_attr, log_attr, cra_attr, personality, motivation, assigned_business_id, assigned_role, monthly_wage)
       VALUES
         ('NPC-0007', 'Trần Bảo (Thợ Cả Lương Gia)', 85, 100, 0, 58, 52, 45, 60, 55, 62, 65, 75, 'PRAGMATIC', 'LOYALTY', 'BIZ-0001', 'FOREMAN', 750),
         ('NPC-0008', 'Triệu An (Thợ Mộc Kỳ Cựu)', 80, 95, 0, 50, 45, 42, 50, 48, 55, 60, 70, 'DILIGENT', 'SECURITY', 'BIZ-0001', 'CARPENTER', 600);
+      `}
 
       -- H. Seed Initial Turn Log & Encounter Narrative
       INSERT INTO turn_log (turn_number, game_date, turn_title, location, summary, dilemma_choice)
       VALUES (
-        1, '${startDate}', 'Khởi Sự Nghiệp Lớn Tại Huyện Trác', 'Trang Viên Vườn Đào',
-        'Lương Diễn khởi nghiệp buôn chiếu đan khiên tại Huyện Trác, kết giao cùng các hào kiệt Lưu Huyền Đức, Quan Vân Trường, Trương Dực Đức.',
-        'Chọn chiến lược sản xuất thủ công kết hợp quân nhu bảo vệ quê hương'
+        1, '${startDate}', '${isCommoner ? 'Bố Y Khởi Thủy Tại Huyện Trác' : 'Khởi Sự Nghiệp Lớn Tại Huyện Trác'}', 'Trang Viên Vườn Đào',
+        '${isCommoner ? 'Lương Diễn hai bàn tay trắng đến Huyện Trác tìm cơ hội lập thân, gặp gỡ hào kiệt Lưu Quan Trương, đứng trước 5 đại phẩm lộ tương lai.' : 'Lương Diễn khởi nghiệp buôn chiếu đan khiên tại Huyện Trác, kết giao cùng các hào kiệt Lưu Huyền Đức, Quan Vân Trường, Trương Dực Đức.'}',
+        '${isCommoner ? 'Đi làm thuê công nhật tích lũy bạc vụn và năng lực, chuẩn bị cho bước rẽ tương lai' : 'Chọn chiến lược sản xuất thủ công kết hợp quân nhu bảo vệ quê hương'}'
       );
 
       -- I. Seed Initial Chat Chronicle Turn
@@ -217,8 +236,8 @@ class GameplayManager {
       VALUES (
         'turn_init_welcome', 1, '${startDate}', 'npc',
         'Trương Phi (Dực Đức)', 'Hào Kiệt Huyện Trác — WAR 97', '張',
-        'Trương Phi đặt vò rượu Trác Thành Trán Nương xuống gốc đào, lau miệng cười vang: "Lương Chí Viễn, đệ dệt đường thương rất nhanh! Lò mổ của lão Trương hôm nay vừa lột được da bò hảo hạng. Chúng ta cùng nâng chén bàn tính đại sự cứu giúp lê dân chứ?"',
-        NULL, '{"cash":"+15000 Qian","location":"Vườn Đào"}', 'Khởi tạo bối cảnh Tân Du Hý từ Master Blueprint.'
+        '${isCommoner ? 'Trương Phi xách vò rượu bước ra khỏi lò mổ, thấy Lương Diễn vai vác đòn gánh đứng nhìn bảng cáo thị, liền cười vang: "Tiểu huynh đệ! Thời loạn này, muốn lập thân thì trước tiên phải có cái ăn: nếu cần tiền thì tới lò mổ, lò rèn hoặc tửu quán phụ việc làm thuê kiếm tiền công nhật; nếu có chí thì rèn luyện võ nghệ tùng quân! Lão Trương ta nhìn ngươi có chí khí, mau tới uống chén rượu cùng ta!"' : 'Trương Phi đặt vò rượu Trác Thành Trán Nương xuống gốc đào, lau miệng cười vang: "Lương Chí Viễn, đệ dệt đường thương rất nhanh! Lò mổ của lão Trương hôm nay vừa lột được da bò hảo hạng. Chúng ta cùng nâng chén bàn tính đại sự cứu giúp lê dân chứ?"'}',
+        NULL, '{"cash":"+${arch.initial_liquid_cash} Qian","location":"Vườn Đào"}', 'Khởi tạo bối cảnh Tân Du Hý từ Master Blueprint.'
       );
 
       COMMIT;

@@ -23,6 +23,9 @@ const I18N_DICT = {
     btnInspectDossier: 'Hồ Sơ',
     btnCaravan: 'Thương Đoàn',
     btnCourierToggle: 'Phi Thư / Sứ Giả',
+    btnQuickLabor: 'Làm Thuê',
+    btnCareerRoadmap: 'Phẩm Lộ',
+    btnGrandHub: 'Quân Cơ Xứ',
     courierDrawerTitle: 'Phi Thư & Sứ Giả Viễn Trình',
     courierDrawerDesc: 'Truyền đạt mật lệnh, điều phối nhân lực hoặc luân chuyển quân nhu tới các cứ điểm khác mà không cần rời vị trí hiện tại.',
     btnSelect: 'Thi Hành',
@@ -145,6 +148,9 @@ const I18N_DICT = {
     btnInspectDossier: 'Dossier',
     btnCaravan: 'Caravans',
     btnCourierToggle: 'Courier / Envoy',
+    btnQuickLabor: 'Wage Work',
+    btnCareerRoadmap: 'Career Path',
+    btnGrandHub: 'Grand Hub',
     courierDrawerTitle: 'Remote Courier & Dispatch',
     courierDrawerDesc: 'Dispatch confidential missives, order logistics, or mobilize retainers without leaving current base.',
     btnSelect: 'Execute',
@@ -347,6 +353,15 @@ function applyLanguage() {
   });
 
   // World Map Button & Modal
+  const btnQuickLabor = document.getElementById('txt-btn-quick-labor');
+  if (btnQuickLabor) btnQuickLabor.innerText = dict.btnQuickLabor || 'Làm Thuê';
+
+  const btnCareerRoadmap = document.getElementById('txt-btn-career-roadmap');
+  if (btnCareerRoadmap) btnCareerRoadmap.innerText = dict.btnCareerRoadmap || 'Phẩm Lộ';
+
+  const btnGrandHub = document.getElementById('txt-btn-grand-hub');
+  if (btnGrandHub) btnGrandHub.innerText = dict.btnGrandHub || 'Quân Cơ Xứ';
+
   const btnWorldMap = document.getElementById('txt-btn-worldmap');
   if (btnWorldMap) btnWorldMap.innerText = dict.btnWorldMap;
 

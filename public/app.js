@@ -225,6 +225,89 @@ async function loadStatus() {
       const ageEl = document.getElementById('protagonist-age');
       if (ageEl) ageEl.innerText = `${p.age || 21} Tuổi`;
 
+      // Dynamic Title, Career Stage & 5-Path Mini Indicator
+      const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+      const netWorthVal = Number(f.netWorth || f.liquidCash || p.liquid_cash || 0);
+      const liquidCashVal = Number(f.liquidCash || p.liquid_cash || 0);
+      const craVal = Number(p.cra_attr || 50);
+      const comVal = Number(p.com_attr || 50);
+      const warVal = Number(p.war_attr || 50);
+      const intVal = Number(p.int_attr || 50);
+      const polVal = Number(p.pol_attr || 50);
+      const logVal = Number(p.log_attr || 50);
+      const ageVal = Number(p.age || 21);
+
+      let stageNum = 1;
+      let stageTitle = isEn ? 'Commoner • Self-Made Beginning' : 'Bố Y Thường Dân • Khởi Đầu Tay Trắng';
+      let stageBadge = isEn ? '🌾 Stage 1: Penniless Commoner' : '🌾 Bố Y Khởi Thủy';
+      let stageClass = 'stage-pauper';
+
+      if (netWorthVal >= 50000) {
+        stageNum = 4;
+        stageTitle = isEn ? 'Clan Patriarch • Regional Power' : 'Lương Thị Tông Chủ • Hùng Bá Một Phương';
+        stageBadge = isEn ? '👑 Stage 4: Dynastic Patriarch' : '👑 Phong Vân Hùng Chủ';
+        stageClass = 'stage-hegemon';
+      } else if (netWorthVal >= 12000 || comVal >= 75 || warVal >= 75) {
+        stageNum = 3;
+        if (comVal >= 75) {
+          stageTitle = isEn ? 'Gentry Merchant • Head Factor' : 'Thế Gia Thương Khách • Chưởng Quỹ Trác Huyện';
+          stageClass = 'stage-merchant';
+        } else if (warVal >= 75) {
+          stageTitle = isEn ? 'Martial Vanguard • Frontier Champion' : 'Hương Dũng Mãnh Tướng • Hiệp Khách Biên Cương';
+          stageClass = 'stage-martial';
+        } else {
+          stageTitle = isEn ? 'Renowned Master • Regional Figure' : 'Hào Kiệt Danh Khởi • Trác Huyện';
+          stageClass = 'stage-merchant';
+        }
+        stageBadge = isEn ? '🏛️ Stage 3: Renowned Master' : '🏛️ Hào Kiệt Danh Khởi';
+      } else if (netWorthVal >= 1500 || craVal >= 60 || warVal >= 60 || comVal >= 60) {
+        stageNum = 2;
+        if (craVal >= 60) {
+          stageTitle = isEn ? 'Master Artisan • Workshop Owner' : 'Thợ Cả Bách Nghệ • Chủ Xưởng Chế Tác';
+          stageClass = 'stage-artisan';
+        } else {
+          stageTitle = isEn ? 'Budding Factor • Zhuo County' : 'Tiểu Khang Doanh Gia • Trác Huyện';
+          stageClass = 'stage-artisan';
+        }
+        stageBadge = isEn ? '🏠 Stage 2: Budding Factor' : '🏠 Tiểu Khang Lập Nghiệp';
+      }
+
+      const titleEl = document.getElementById('protagonist-title');
+      if (titleEl) titleEl.innerText = stageTitle;
+
+      const badgeEl = document.getElementById('protagonist-career-badge');
+      if (badgeEl) {
+        badgeEl.innerText = stageBadge;
+        badgeEl.className = `career-stage-badge ${stageClass}`;
+      }
+
+      // Update 5 Path Indicator Dots
+      const dotArtisan = document.getElementById('dot-path-artisan');
+      if (dotArtisan) {
+        if (craVal >= 60) dotArtisan.classList.add('active');
+        else dotArtisan.classList.remove('active');
+      }
+      const dotMerchant = document.getElementById('dot-path-merchant');
+      if (dotMerchant) {
+        if (comVal >= 60 && logVal >= 55) dotMerchant.classList.add('active');
+        else dotMerchant.classList.remove('active');
+      }
+      const dotMartial = document.getElementById('dot-path-martial');
+      if (dotMartial) {
+        if (warVal >= 60) dotMartial.classList.add('active');
+        else dotMartial.classList.remove('active');
+      }
+      const dotScholar = document.getElementById('dot-path-scholar');
+      if (dotScholar) {
+        if (intVal >= 70 && polVal >= 60) dotScholar.classList.add('active');
+        else dotScholar.classList.remove('active');
+      }
+      const dotLineage = document.getElementById('dot-path-lineage');
+      if (dotLineage) {
+        if (ageVal >= 20 && netWorthVal >= 2000) dotLineage.classList.add('active');
+        else dotLineage.classList.remove('active');
+      }
+
       const hpEl = document.getElementById('protagonist-hp');
       if (hpEl) hpEl.innerText = `${p.health || 100}/100`;
 

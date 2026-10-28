@@ -2,6 +2,20 @@
 
 > **IMMUTABLE MASTER DATA**: Reference templates for starting new player campaigns.
 
+## Archetype 0: The Penniless Commoner (Thanh Niên Bố Y / Hai Bàn Tay Trắng)
+- **Archetype ID**: `ARCH-COMMONER-YOUTH`
+- **Starting Age**: 18 (Born 166 AD)
+- **Location**: Zhuo County (`LOC-0001`)
+- **Initial Float**: 100 Qian (Small pouch of coppers)
+- **Core Attributes**:
+  - `INT`: 60 | `POL`: 45 | `WAR`: 55 | `LDR`: 50 | `DIP`: 50 | `COM`: 52 | `LOG`: 52 | `CRA`: 58
+- **Starting Assets**: Coarse cloth tunic, bamboo pole, 100 copper coppers.
+- **Innate Talents**: Diligent Striker (`TLT-DILIGENT`), Street Smart (`TLT-STREET`).
+- **Initial Perks**: Free career choice across 5 Great Paths (Artisan, Merchant, Martial, Scholar, Patriarch) without ancestral constraints.
+- **Biography**: An ordinary youth of humble commoner birth. Starting with empty pockets and bare hands, he earns his bread through daily wage labor while forging his destiny toward great deeds.
+
+---
+
 ## Archetype 1: The Scholar-Artisan (Default: Liang Yan / Lương Nhan)
 - **Starting Age**: 21 (Born 163 AD)
 - **Location**: Zhuo County (`LOC-0001`)

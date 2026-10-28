@@ -122,6 +122,22 @@ console.log(` ✅ ${scenarios.length} Master Scenarios cataloged.`);
 console.log('\n[3/13] Ingesting Master Player Archetypes (player_template.md)...');
 const archetypes = [
   {
+    id: 'ARCH-COMMONER-YOUTH',
+    nameVi: 'Thanh Niên Bố Y (Hai bàn tay trắng lập nghiệp)',
+    nameEn: 'The Penniless Commoner (Zero-to-Hero)',
+    playerName: 'Lương Diễn',
+    styleName: 'Chí Viễn',
+    age: 18,
+    location: 'LOC-0001',
+    cash: 100,
+    int: 60, pol: 45, war: 55, ldr: 50, dip: 50, com: 52, log: 52, cra: 58,
+    assets: JSON.stringify(['Vải thô áo cộc', 'Đòn gánh tre', '100 Đồng tiền vụn']),
+    talents: JSON.stringify(['TLT-DILIGENT: Cần Cù Bền Bỉ', 'TLT-STREET: Nhạy Bén Thị Dân']),
+    perks: 'Không ràng buộc gia thế, tự do lựa chọn ngũ đại hướng rẽ',
+    bioVi: 'Thanh niên áo vải chốn hương thôn, hai bàn tay trắng, dựa vào đôi tay quai búa làm thuê kiếm sống và nuôi dưỡng chí lớn giữa thời loạn lạc.',
+    bioEn: 'A penniless youth of commoner birth. With empty pockets and bare hands, he earns his bread through daily toil while forging his own destiny across the 5 great paths.'
+  },
+  {
     id: 'ARCH-SCHOLAR-ARTISAN',
     nameVi: 'Sĩ Tộc Thương Khách (Mặc định: Lương Diễn / Lương Nhan)',
     nameEn: 'The Scholar-Artisan (Default: Liang Yan)',

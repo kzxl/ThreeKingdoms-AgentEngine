@@ -125,8 +125,18 @@
           </div>
 
           <div class="cmd-bar-right">
+            <!-- Quick Wage Labor Action -->
+            <button class="btn-quick-labor" id="btn-quick-labor" onclick="if(window.EnterpriseUI){EnterpriseUI.openEnterpriseModal('work');}" title="Lao Động Kiếm Sống / Đi Làm Thuê Thời Vụ">
+              <span class="hub-seal-sub labor-seal">工</span>
+              <span id="txt-btn-quick-labor">Làm Thuê</span>
+            </button>
+            <!-- Career Roadmap Trigger -->
+            <button class="btn-career-roadmap" id="btn-career-roadmap" onclick="if(window.GrandCommandHubUI){GrandCommandHubUI.open('career');}" title="Hành Trình Cuộc Đời & Ngũ Đại Phẩm Lộ">
+              <span class="hub-seal-sub roadmap-seal">路</span>
+              <span id="txt-btn-career-roadmap">Phẩm Lộ</span>
+            </button>
             <!-- Master Trigger: Grand Command Hub (Quân Cơ Xứ) -->
-            <button class="btn-grand-hub" id="btn-open-grand-hub" onclick="if(window.GrandCommandHubUI){GrandCommandHubUI.open('gear');}" title="Đại Bản Doanh / Quân Cơ Xứ (6 Đại Phân Hệ Chiến Lược)">
+            <button class="btn-grand-hub" id="btn-open-grand-hub" onclick="if(window.GrandCommandHubUI){GrandCommandHubUI.open('career');}" title="Đại Bản Doanh / Quân Cơ Xứ (6 Đại Phân Hệ Chiến Lược)">
               <span class="hub-seal">軍機</span>
               <span class="hub-label" id="txt-btn-grand-hub">Quân Cơ Xứ</span>
             </button>
@@ -197,7 +207,19 @@
               <span class="protagonist-style" id="protagonist-style">(Chí Viễn)</span>
               <span class="protagonist-age-badge" id="protagonist-age">21 Tuổi</span>
             </div>
-            <div class="protagonist-title" id="protagonist-title">Thế Gia Thương Nhân • Trác Huyện</div>
+            <div class="protagonist-title" id="protagonist-title">Bố Y Thường Dân • Khởi Đầu Tay Trắng</div>
+            <div class="protagonist-career-badge-row">
+              <span class="career-stage-badge stage-pauper" id="protagonist-career-badge" onclick="if(window.GrandCommandHubUI){GrandCommandHubUI.open('career');}" title="Nhấn để xem Hành Trình Cuộc Đời & Ngũ Đại Phẩm Lộ">
+                🌾 Bố Y Khởi Thủy
+              </span>
+              <div class="career-mini-icons" id="protagonist-paths-indicator" title="Tiến độ Ngũ Đại Phẩm Lộ: Thợ, Thương, Võ, Sĩ, Tông Tộc">
+                <span class="path-icon-dot" id="dot-path-artisan" title="Bách Nghệ / Thợ Cả" onclick="if(window.GrandCommandHubUI){GrandCommandHubUI.open('gear');}">🔨</span>
+                <span class="path-icon-dot" id="dot-path-merchant" title="Hành Thương / Cự Phú" onclick="if(window.GrandCommandHubUI){GrandCommandHubUI.open('caravan');}">💰</span>
+                <span class="path-icon-dot" id="dot-path-martial" title="Võ Hiệp / Quân Lữ" onclick="if(window.GrandCommandHubUI){GrandCommandHubUI.open('duel');}">⚔️</span>
+                <span class="path-icon-dot" id="dot-path-scholar" title="Sĩ Đồ / Quân Sư" onclick="if(window.GrandCommandHubUI){GrandCommandHubUI.open('career');}">📜</span>
+                <span class="path-icon-dot" id="dot-path-lineage" title="Tông Tộc / Thế Gia" onclick="if(window.GrandCommandHubUI){GrandCommandHubUI.open('family');}">🏯</span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -825,9 +847,13 @@
         <button class="grand-hub-close-btn" onclick="GrandCommandHubUI.close()" title="Đóng cửa sổ">&times;</button>
       </div>
 
-      <!-- Hub 6-Tab Navigation Bar -->
+      <!-- Hub 7-Tab Navigation Bar -->
       <nav class="grand-hub-tabs-bar" aria-label="Grand Command Hub Tabs">
-        <button class="grand-hub-tab-btn active" data-tab="gear" onclick="GrandCommandHubUI.switchTab('gear')">
+        <button class="grand-hub-tab-btn active" data-tab="career" onclick="GrandCommandHubUI.switchTab('career')">
+          <span class="hub-tab-seal">路</span>
+          <span class="hub-tab-text">Phẩm Lộ</span>
+        </button>
+        <button class="grand-hub-tab-btn" data-tab="gear" onclick="GrandCommandHubUI.switchTab('gear')">
           <span class="hub-tab-seal">武</span>
           <span class="hub-tab-text">Quân Trang</span>
         </button>

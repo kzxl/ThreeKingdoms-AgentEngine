@@ -42,7 +42,7 @@
   // Core Hub Controller: Open, Close, Switch Tab
   // --------------------------------------------------------------------------
 
-  function openHub(defaultTab = 'gear') {
+  function openHub(defaultTab = 'career') {
     const modal = document.getElementById('grand-command-hub-modal');
     if (!modal) {
       console.error('Grand Command Hub modal shell not found in DOM.');
@@ -89,6 +89,9 @@
     `;
 
     switch (tabKey) {
+      case 'career':
+        renderCareerTab(container);
+        break;
       case 'gear':
         renderGearTab(container);
         break;
@@ -108,8 +111,455 @@
         renderTavernTab(container);
         break;
       default:
-        renderGearTab(container);
+        renderCareerTab(container);
         break;
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // TAB 0: [路] PHẨM LỘ & HÀNH TRÌNH CUỘC ĐỜI (Career Roadmap & 5 Destinies)
+  // --------------------------------------------------------------------------
+
+  async function renderCareerTab(container) {
+    try {
+      const isEn = isEnglish();
+      const [statusRes, entRes, duelRes, lineageRes] = await Promise.all([
+        fetch('/api/status').then(r => r.json()).catch(() => ({ success: false })),
+        fetch('/api/enterprise/status').then(r => r.json()).catch(() => ({ success: false })),
+        fetch('/api/duels/leaderboard').then(r => r.json()).catch(() => ({ success: false })),
+        fetch('/api/lineage/state?characterId=PLY-0001').then(r => r.json()).catch(() => ({ success: false }))
+      ]);
+
+      const p = statusRes?.player || {};
+      const f = statusRes?.financials || {};
+      const netWorth = Number(f.netWorth || f.liquidCash || p.liquid_cash || 0);
+      const liquidCash = Number(f.liquidCash || p.liquid_cash || 0);
+      const businesses = entRes?.activeEnterprises || [];
+      const hasBusiness = businesses.length > 0;
+      const duelWins = (duelRes?.entries || []).find(e => e.characterId === 'PLY-0001')?.wins || 0;
+      const spouse = lineageRes?.lineage?.spouse;
+
+      const intVal = Number(p.int_attr || 50);
+      const pol = Number(p.pol_attr || 50);
+      const war = Number(p.war_attr || 50);
+      const ldr = Number(p.ldr_attr || 50);
+      const dip = Number(p.dip_attr || 50);
+      const com = Number(p.com_attr || 50);
+      const log = Number(p.log_attr || 50);
+      const cra = Number(p.cra_attr || 50);
+      const age = Number(p.age || 21);
+      const playerName = p.name === 'Liang Yan' ? 'Lương Diễn' : (p.name || 'Lương Diễn');
+      const playerStyle = p.style_name === 'Zhiyuan' ? 'Chí Viễn' : (p.style_name || 'Chí Viễn');
+
+      // Determine Life Stage (1 to 4)
+      let currentStage = 1;
+      if (netWorth >= 50000 || (hasBusiness && businesses.length >= 2 && netWorth >= 30000)) {
+        currentStage = 4;
+      } else if (netWorth >= 12000 || hasBusiness || war >= 75 || com >= 80) {
+        currentStage = 3;
+      } else if (netWorth >= 1500 || hasBusiness || cra >= 60 || war >= 60 || com >= 60) {
+        currentStage = 2;
+      } else {
+        currentStage = 1;
+      }
+
+      // Stage Metadata
+      const stageMeta = [
+        {
+          num: 1,
+          titleVi: 'Bố Y Khởi Thủy',
+          titleEn: 'Penniless Commoner',
+          criteriaVi: 'Hai bàn tay trắng, làm thuê công nhật mưu sinh, tích lũy từng đồng tiền công và EXP 8 trục',
+          criteriaEn: 'Empty pockets, daily wage toil, accumulating copper wages and 8-axis EXP',
+          seal: '布',
+          badgeClass: 'stage-pauper',
+          headlineVi: 'Áo vải chốn hương thôn • Tích lũy cơ bản',
+          headlineEn: 'Humble Village Youth • Laying Foundations',
+          descVi: 'Người chơi chưa có sản nghiệp riêng, dựa vào sức lao động để nuôi thân, tích lũy bạc vụn và năng lực trước khi mở lối rẽ lớn.',
+          descEn: 'Starting with bare hands, taking daily shifts to earn bread and stat EXP before embarking on great branching destinies.'
+        },
+        {
+          num: 2,
+          titleVi: 'Tiểu Khang Lập Nghiệp',
+          titleEn: 'Budding Factor',
+          criteriaVi: 'Tích lũy >1,500 Tiền, mở xưởng thủ công hoặc sắm xe la, định hình 1 trong 5 đại phẩm lộ',
+          criteriaEn: 'Net worth >1,500 Qian, own workshop or cart, choosing 1 of 5 career branches',
+          seal: '業',
+          badgeClass: 'stage-artisan',
+          headlineVi: 'Vốn liếng sơ khởi • Mở lối rẽ định hướng',
+          headlineEn: 'Initial Capital • Specializing Direction',
+          descVi: 'Đã thoát khỏi cảnh bần hàn, có thể tự mở xưởng chế tác, dẫn thương đoàn liên huyện hoặc gia nhập quân ngũ.',
+          descEn: 'Risen above poverty, capable of launching craft workshops, regional caravans, or answering the call to arms.'
+        },
+        {
+          num: 3,
+          titleVi: 'Hào Kiệt Danh Khởi',
+          titleEn: 'Renowned Master',
+          criteriaVi: 'Tài sản >12,000 Tiền, chế tạo Thần Binh, thương đoàn liên châu hoặc uy danh trận mạc',
+          criteriaEn: 'Net worth >12,000 Qian, bespoke God weapons, interstate caravans, or martial renown',
+          seal: '豪',
+          badgeClass: 'stage-merchant',
+          headlineVi: 'Danh chấn một phương • Lực lượng vững chắc',
+          headlineEn: 'Regional Prestige • Solid Enterprise Backbone',
+          descVi: 'Sở hữu quân trang đúc riêng, chiêu mộ hào kiệt môn hạ, uy thế lan tỏa khắp các quận hạt.',
+          descEn: 'Wielding bespoke god weapons, commanding trusted retainers, and commanding interstate influence.'
+        },
+        {
+          num: 4,
+          titleVi: 'Phong Vân Hùng Chủ',
+          titleEn: 'Dynastic Patriarch',
+          criteriaVi: 'Tài sản >50,000 Tiền, tông tộc truyền thừa, phân phong quan chức, xoay chuyển thời cuộc',
+          criteriaEn: 'Net worth >50,000 Qian, dynastic lineage, governance appointments, realm-shaping authority',
+          seal: '覇',
+          badgeClass: 'stage-hegemon',
+          headlineVi: 'Thế gia vọng tộc • Chư hầu tranh hùng',
+          headlineEn: 'Dynastic Clan • Realm-Shaping Master',
+          descVi: 'Cơ nghiệp vững như bàn thạch, gia tộc truyền đời, có khả năng phong tướng định quan, lưu danh sử sách.',
+          descEn: 'Rock-solid dynasty, multigen succession, capable of shaping historic campaigns and empire balance.'
+        }
+      ];
+
+      const curStage = stageMeta[currentStage - 1];
+
+      // Branch 1: Bách Nghệ / Thợ Cả
+      const craMet = cra >= 60;
+      const craProg = Math.min(100, Math.round((cra / 60) * 100));
+      const hasWorkshop = businesses.some(b => b.type === 'WORKSHOP' || b.type === 'BLACKSMITH');
+
+      // Branch 2: Hành Thương / Cự Phú
+      const comMet = com >= 60 && log >= 55;
+      const cashMet = liquidCash >= 1500;
+      const comProg = Math.min(100, Math.round(((com / 60) * 0.4 + (log / 55) * 0.3 + (Math.min(liquidCash, 1500) / 1500) * 0.3) * 100));
+
+      // Branch 3: Võ Hiệp / Quân Lữ
+      const warMet = war >= 60 && ldr >= 55;
+      const warProg = Math.min(100, Math.round(((war / 60) * 0.6 + (ldr / 55) * 0.4) * 100));
+
+      // Branch 4: Sĩ Đồ / Quân Sư
+      const scholarMet = intVal >= 70 && pol >= 60 && dip >= 60;
+      const scholarProg = Math.min(100, Math.round(((intVal / 70) * 0.4 + (pol / 60) * 0.3 + (dip / 60) * 0.3) * 100));
+
+      // Branch 5: Tông Tộc / Thế Gia
+      const lineageMet = age >= 20 && netWorth >= 2000;
+      const lineageProg = Math.min(100, Math.round(((Math.min(age, 20) / 20) * 0.5 + (Math.min(netWorth, 5000) / 5000) * 0.5) * 100));
+
+      container.innerHTML = `
+        <div class="grand-hub-view-container career-roadmap-view">
+          
+          <!-- Hero Identity & Stage Banner -->
+          <div class="career-hero-banner">
+            <div class="career-stage-icon-box ${curStage.badgeClass}">
+              <span class="stage-huge-seal">${curStage.seal}</span>
+            </div>
+            <div class="career-hero-info">
+              <div class="career-hero-title-row">
+                <span class="career-hero-name">${playerName} (${playerStyle})</span>
+                <span class="career-hero-age">${age} ${isEn ? 'Years' : 'Tuổi'}</span>
+                <span class="career-stage-chip ${curStage.badgeClass}">${isEn ? curStage.titleEn : curStage.titleVi}</span>
+              </div>
+              <div class="career-hero-headline">${isEn ? curStage.headlineEn : curStage.headlineVi}</div>
+              <div class="career-hero-sub">${isEn ? curStage.descEn : curStage.descVi}</div>
+            </div>
+            <div class="career-quick-action-col">
+              <button class="tactical-btn tactical-btn--gold" onclick="if(window.EnterpriseUI){EnterpriseUI.openEnterpriseModal('work');GrandCommandHubUI.close();}">
+                <span class="hub-seal-sub labor-seal">工</span> ${isEn ? 'Take Wage Labor Shift' : 'Đi Làm Thuê Kiếm Sống'}
+              </button>
+              <div class="career-cash-stat">
+                <span style="color:#94a3b8;">${isEn ? 'Net Worth:' : 'Tài Sản Ròng:'}</span>
+                <span class="stat-val font-mono gold-text font-bold">${netWorth.toLocaleString()} ${isEn ? 'Qian' : 'Tiền'}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4-Stage Lifelong Progression Timeline -->
+          <div class="career-progression-track">
+            <div class="track-header">
+              <span class="track-title">${isEn ? 'LIFELONG RPG PROGRESSION TIMELINE (4 STAGES)' : 'CỘT MỐC TIẾN TRÌNH CUỘC ĐỜI (4 ĐẠI THỜI KỲ)'}</span>
+              <span class="track-hint">${isEn ? 'From empty-handed youth to realm-shaping master' : 'Từ thanh niên tay trắng tới hùng chủ phân tranh'}</span>
+            </div>
+            <div class="track-steps-grid">
+              ${stageMeta.map(st => {
+                const isPassed = st.num < currentStage;
+                const isActive = st.num === currentStage;
+                const cls = isActive ? 'active' : (isPassed ? 'passed' : '');
+                return `
+                  <div class="track-step ${cls}">
+                    <span class="track-step-num">${isEn ? 'STAGE ' + st.num : 'BẬC ' + st.num}</span>
+                    <span class="track-step-title">${isEn ? st.titleEn : st.titleVi}</span>
+                    <span class="track-step-criteria">${isEn ? st.criteriaEn : st.criteriaVi}</span>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+
+          <!-- 5 Great Branching Destinies Grid -->
+          <div class="career-branches-container">
+            <div class="branches-header">
+              <span class="branches-title">${isEn ? 'THE 5 BRANCHING DESTINIES (NGŨ ĐẠI PHẨM LỘ)' : 'NGŨ ĐẠI PHẨM LỘ • LỐI RẼ LẬP NGHIỆP THỜI LOẠN'}</span>
+              <span class="branches-hint">${isEn ? 'Specialize your path or master multiple disciplines concurrently' : 'Định hình chí hướng theo sở trường hoặc phát triển đa ngành song song'}</span>
+            </div>
+            <div class="branches-grid">
+
+              <!-- BRANCH 1: CRAFTSMAN -->
+              <div class="branch-card ${craMet ? 'qualified' : ''}">
+                <div class="branch-card-header">
+                  <div class="branch-seal-group">
+                    <span class="branch-seal-badge seal-artisan">工</span>
+                    <div>
+                      <div class="branch-name">${isEn ? 'Artisan & Master Armorer' : 'Bách Nghệ / Thợ Cả'}</div>
+                      <div class="branch-motto">${isEn ? '"Crafting divine works by hands"' : 'Dĩ nghệ lập thân • Xảo đoạt thiên công'}</div>
+                    </div>
+                  </div>
+                  <span class="branch-status-pill ${hasWorkshop ? 'qualified' : (craMet ? 'qualified' : 'progressing')}">
+                    ${hasWorkshop ? (isEn ? 'OWNING WORKSHOP' : 'ĐÃ LẬP XƯỞNG') : (craMet ? (isEn ? 'QUALIFIED' : 'ĐỦ ĐIỀU KIỆN') : (isEn ? 'PROGRESSING' : 'ĐANG TÍCH LŨY'))}
+                  </span>
+                </div>
+                <div class="branch-progress-box">
+                  <div class="branch-progress-label-row">
+                    <span>${isEn ? 'Craft Mastery' : 'Độ Thuần Thục Khéo Léo'} (CRA)</span>
+                    <span class="font-mono text-emerald font-bold">${cra}/60 (${craProg}%)</span>
+                  </div>
+                  <div class="branch-progress-bar">
+                    <div class="branch-progress-fill bg-emerald" style="width:${craProg}%;"></div>
+                  </div>
+                </div>
+                <div class="branch-reqs-row">
+                  <span class="req-pill ${craMet ? 'met' : 'unmet'}">CRA ≥ 60 (${cra})</span>
+                  <span class="req-pill ${liquidCash >= 1000 ? 'met' : 'unmet'}">${isEn ? 'Cash' : 'Vốn'} ≥ 1,000 (${liquidCash.toLocaleString()})</span>
+                </div>
+                <ul class="branch-perks-list">
+                  <li>${isEn ? 'Launch & manage craft workshops or blacksmith armories' : 'Khai mở & vận hành xưởng chế tác, lò rèn quân nhu'}</li>
+                  <li>${isEn ? 'Forge bespoke god weapons with five-phase elements' : 'Rèn đúc thần binh độc bản, cường hóa trang bị ngũ hành'}</li>
+                  <li>${isEn ? 'Trigger cross-discipline emergent craft breakthroughs' : 'Đại ngộ cảnh giới sáng tạo nghề thủ công mới độc bản'}</li>
+                </ul>
+                <div class="branch-actions-row">
+                  <button class="tactical-btn tactical-btn--sm" onclick="if(window.EnterpriseUI){EnterpriseUI.openEnterpriseModal('work');GrandCommandHubUI.close();}">
+                    ${isEn ? 'Forge Work Shift' : 'Quai Búa Lò Rèn'}
+                  </button>
+                  <button class="tactical-btn tactical-btn--primary tactical-btn--sm" onclick="GrandCommandHubUI.switchTab('enterprise');">
+                    ${hasWorkshop ? (isEn ? 'Manage Workshop' : 'Vào Xưởng Riêng') : (isEn ? 'Launch Workshop' : 'Mở Cơ Sở')}
+                  </button>
+                  <button class="tactical-btn tactical-btn--gold tactical-btn--sm" onclick="GrandCommandHubUI.switchTab('gear');">
+                    ${isEn ? 'Forge Weapons' : 'Đúc Thần Binh'}
+                  </button>
+                </div>
+              </div>
+
+              <!-- BRANCH 2: MERCHANT -->
+              <div class="branch-card ${comMet && cashMet ? 'qualified' : ''}">
+                <div class="branch-card-header">
+                  <div class="branch-seal-group">
+                    <span class="branch-seal-badge seal-merchant">商</span>
+                    <div>
+                      <div class="branch-name">${isEn ? 'Merchant & Caravan Master' : 'Hành Thương / Cự Phú'}</div>
+                      <div class="branch-motto">${isEn ? '"Interstate trade yields realm-level wealth"' : 'Thông thương trục lợi • Phú khả địch quốc'}</div>
+                    </div>
+                  </div>
+                  <span class="branch-status-pill ${comMet && cashMet ? 'qualified' : 'progressing'}">
+                    ${comMet && cashMet ? (isEn ? 'READY TO TRADE' : 'ĐỦ ĐIỀU KIỆN') : (isEn ? 'ACCUMULATING' : 'ĐANG GOM VỐN')}
+                  </span>
+                </div>
+                <div class="branch-progress-box">
+                  <div class="branch-progress-label-row">
+                    <span>${isEn ? 'Commerce & Logistics' : 'Thương Nghiệp & Hậu Cần'}</span>
+                    <span class="font-mono text-gold font-bold">${com}/60 • ${log}/55 (${comProg}%)</span>
+                  </div>
+                  <div class="branch-progress-bar">
+                    <div class="branch-progress-fill bg-gold" style="width:${comProg}%;"></div>
+                  </div>
+                </div>
+                <div class="branch-reqs-row">
+                  <span class="req-pill ${com >= 60 ? 'met' : 'unmet'}">COM ≥ 60 (${com})</span>
+                  <span class="req-pill ${log >= 55 ? 'met' : 'unmet'}">LOG ≥ 55 (${log})</span>
+                  <span class="req-pill ${cashMet ? 'met' : 'unmet'}">${isEn ? 'Cash' : 'Vốn'} ≥ 1,500 (${liquidCash.toLocaleString()})</span>
+                </div>
+                <ul class="branch-perks-list">
+                  <li>${isEn ? 'Dispatch interstate trading caravans (Youzhou, Jizhou, Luoyang)' : 'Phái xuất thương đoàn liên châu (U Châu, Ký Châu, Lạc Dương)'}</li>
+                  <li>${isEn ? 'Commodity arbitrage: salt, grain, silk, iron' : 'Buôn chuyến chênh lệch: muối duyên hải, lương thực, tơ lụa'}</li>
+                  <li>${isEn ? 'Open taverns and manage safe cash reserves' : 'Mở tửu quán thu thập tin tức, quản lý két sắt an toàn'}</li>
+                </ul>
+                <div class="branch-actions-row">
+                  <button class="tactical-btn tactical-btn--sm" onclick="if(window.EnterpriseUI){EnterpriseUI.openEnterpriseModal('work');GrandCommandHubUI.close();}">
+                    ${isEn ? 'Tavern Shift' : 'Chạy Bàn Tửu Quán'}
+                  </button>
+                  <button class="tactical-btn tactical-btn--primary tactical-btn--sm" onclick="GrandCommandHubUI.switchTab('caravan');">
+                    ${isEn ? 'Manage Caravans' : 'Điều Thương Đoàn'}
+                  </button>
+                  <button class="tactical-btn tactical-btn--gold tactical-btn--sm" onclick="GrandCommandHubUI.switchTab('enterprise');">
+                    ${isEn ? 'Launch Tavern' : 'Mở Khách Điếm'}
+                  </button>
+                </div>
+              </div>
+
+              <!-- BRANCH 3: MARTIAL GENERAL -->
+              <div class="branch-card ${warMet ? 'qualified' : ''}">
+                <div class="branch-card-header">
+                  <div class="branch-seal-group">
+                    <span class="branch-seal-badge seal-martial">武</span>
+                    <div>
+                      <div class="branch-name">${isEn ? 'Martial Hero & Vanguard General' : 'Võ Hiệp / Quân Lữ'}</div>
+                      <div class="branch-motto">${isEn ? '"Victorious in hundred battles, sweeping battlefields"' : 'Bách chiến bách thắng • Uy chấn sa trường'}</div>
+                    </div>
+                  </div>
+                  <span class="branch-status-pill ${warMet ? 'qualified' : 'progressing'}">
+                    ${warMet ? (isEn ? 'PROVEN WARRIOR' : 'DŨNG SĨ SẴN SÀNG') : (isEn ? 'IN TRAINING' : 'ĐANG LUYỆN VÕ')}
+                  </span>
+                </div>
+                <div class="branch-progress-box">
+                  <div class="branch-progress-label-row">
+                    <span>${isEn ? 'Martial Prowess & Leadership' : 'Võ Lực & Thống Soái'}</span>
+                    <span class="font-mono text-red font-bold">${war}/60 • ${ldr}/55 (${warProg}%)</span>
+                  </div>
+                  <div class="branch-progress-bar">
+                    <div class="branch-progress-fill bg-red" style="width:${warProg}%;"></div>
+                  </div>
+                </div>
+                <div class="branch-reqs-row">
+                  <span class="req-pill ${war >= 60 ? 'met' : 'unmet'}">WAR ≥ 60 (${war})</span>
+                  <span class="req-pill ${ldr >= 55 ? 'met' : 'unmet'}">LDR ≥ 55 (${ldr})</span>
+                  <span class="req-pill ${duelWins > 0 ? 'met' : 'unmet'}">${isEn ? 'Duel Wins' : 'Trận Thắng Đấu Võ'} ≥ 1 (${duelWins})</span>
+                </div>
+                <ul class="branch-perks-list">
+                  <li>${isEn ? 'Enter single combat duels and arena challenges across 4 ranks' : 'Thượng đài Diễn Võ tỉ thí đơn đả độc đấu 4 bậc lôi đài'}</li>
+                  <li>${isEn ? 'Lead militia detachments and earn military promotions' : 'Thống suất hương binh tùng quân lập công, nhận phong hiệu úy'}</li>
+                  <li>${isEn ? 'Defeat bandit strongholds and claim bounties' : 'Tiễu phạt sơn phỉ, bình định cướp bóc, giành phần thưởng'}</li>
+                </ul>
+                <div class="branch-actions-row">
+                  <button class="tactical-btn tactical-btn--sm" onclick="if(window.EnterpriseUI){EnterpriseUI.openEnterpriseModal('work');GrandCommandHubUI.close();}">
+                    ${isEn ? 'Wild Gathering' : 'Khai Quặng Rừng Sâu'}
+                  </button>
+                  <button class="tactical-btn tactical-btn--primary tactical-btn--sm" onclick="GrandCommandHubUI.switchTab('duel');">
+                    ${isEn ? 'Enter Arena Duel' : 'Lên Đài Diễn Võ'}
+                  </button>
+                  <button class="tactical-btn tactical-btn--gold tactical-btn--sm" onclick="if(window.openWorldMap){openWorldMap();GrandCommandHubUI.close();}">
+                    ${isEn ? 'Scout Citadels' : 'Dư Đồ Chiến Địa'}
+                  </button>
+                </div>
+              </div>
+
+              <!-- BRANCH 4: SCHOLAR STRATEGIST -->
+              <div class="branch-card ${scholarMet ? 'qualified' : ''}">
+                <div class="branch-card-header">
+                  <div class="branch-seal-group">
+                    <span class="branch-seal-badge seal-scholar">士</span>
+                    <div>
+                      <div class="branch-name">${isEn ? 'Scholar & Grand Advisor' : 'Sĩ Đồ / Quân Sư'}</div>
+                      <div class="branch-motto">${isEn ? '"Deliberating in tents, deciding thousands of leagues"' : 'Vận trù duy ác • Quyết thắng thiên lý'}</div>
+                    </div>
+                  </div>
+                  <span class="branch-status-pill ${scholarMet ? 'qualified' : 'progressing'}">
+                    ${scholarMet ? (isEn ? 'REPUTED SCHOLAR' : 'DANH SĨ SÁCH LƯỢC') : (isEn ? 'STUDYING' : 'DÙI MÀI KINH SỬ')}
+                  </span>
+                </div>
+                <div class="branch-progress-box">
+                  <div class="branch-progress-label-row">
+                    <span>${isEn ? 'Intellect & Politics' : 'Trí Lực & Chính Trị'}</span>
+                    <span class="font-mono text-cyan font-bold">${intVal}/70 • ${pol}/60 (${scholarProg}%)</span>
+                  </div>
+                  <div class="branch-progress-bar">
+                    <div class="branch-progress-fill bg-cyan" style="width:${scholarProg}%;"></div>
+                  </div>
+                </div>
+                <div class="branch-reqs-row">
+                  <span class="req-pill ${intVal >= 70 ? 'met' : 'unmet'}">INT ≥ 70 (${intVal})</span>
+                  <span class="req-pill ${pol >= 60 ? 'met' : 'unmet'}">POL ≥ 60 (${pol})</span>
+                  <span class="req-pill ${dip >= 60 ? 'met' : 'unmet'}">DIP ≥ 60 (${dip})</span>
+                </div>
+                <ul class="branch-perks-list">
+                  <li>${isEn ? 'Resolve county litigations, recommend talent, serve as advisor' : 'Xử lý công án nha môn, tiến cử Hiếu Liêm, làm quân sư mưu chủ'}</li>
+                  <li>${isEn ? 'Open apothecaries to treat wounded and brew medicines' : 'Mở Dược Y Quán tế thế, cứu giúp dân lành qua cơn loạn'}</li>
+                  <li>${isEn ? 'Intervene in grand historical events and alter Three Kingdoms fate' : 'Tham gia quyết sách biến cố lịch sử, định hướng tam phân thiên hạ'}</li>
+                </ul>
+                <div class="branch-actions-row">
+                  <button class="tactical-btn tactical-btn--sm" onclick="if(window.EnterpriseUI){EnterpriseUI.openEnterpriseModal('work');GrandCommandHubUI.close();}">
+                    ${isEn ? 'Apothecary Shift' : 'Bốc Thuốc Y Quán'}
+                  </button>
+                  <button class="tactical-btn tactical-btn--primary tactical-btn--sm" onclick="GrandCommandHubUI.switchTab('enterprise');">
+                    ${isEn ? 'Launch Apothecary' : 'Mở Y Quán Tế Thế'}
+                  </button>
+                  <button class="tactical-btn tactical-btn--gold tactical-btn--sm" onclick="if(window.openEventParticipationModal){openEventParticipationModal();GrandCommandHubUI.close();}">
+                    ${isEn ? 'Historic Decisions' : 'Quyết Sách Lịch Sử'}
+                  </button>
+                </div>
+              </div>
+
+              <!-- BRANCH 5: DYNASTIC LINEAGE -->
+              <div class="branch-card ${lineageMet ? 'qualified' : ''}">
+                <div class="branch-card-header">
+                  <div class="branch-seal-group">
+                    <span class="branch-seal-badge seal-lineage">家</span>
+                    <div>
+                      <div class="branch-name">${isEn ? 'Patriarch & Dynastic Lineage' : 'Tông Tộc / Thế Gia'}</div>
+                      <div class="branch-motto">${isEn ? '"Passing down bloodlines, eternal clan legacy"' : 'Huyết mạch truyền thừa • Vạn thế gia phong'}</div>
+                    </div>
+                  </div>
+                  <span class="branch-status-pill ${spouse ? 'qualified' : (lineageMet ? 'qualified' : 'progressing')}">
+                    ${spouse ? (isEn ? 'MARRIED & EXPANDING' : 'ĐÃ THÀNH GIA THẤT') : (lineageMet ? (isEn ? 'READY TO MARRY' : 'ĐỦ THẾ LẬP THẤT') : (isEn ? 'BUILDING BASE' : 'CHỜ THÀNH NIÊN'))}
+                  </span>
+                </div>
+                <div class="branch-progress-box">
+                  <div class="branch-progress-label-row">
+                    <span>${isEn ? 'Maturity & Clan Wealth' : 'Tuổi Tác & Thế Gia'}</span>
+                    <span class="font-mono text-purple font-bold">${age}/20 • ${netWorth.toLocaleString()} (${lineageProg}%)</span>
+                  </div>
+                  <div class="branch-progress-bar">
+                    <div class="branch-progress-fill bg-purple" style="width:${lineageProg}%;"></div>
+                  </div>
+                </div>
+                <div class="branch-reqs-row">
+                  <span class="req-pill ${age >= 20 ? 'met' : 'unmet'}">${isEn ? 'Age' : 'Tuổi'} ≥ 20 (${age})</span>
+                  <span class="req-pill ${netWorth >= 2000 ? 'met' : 'unmet'}">${isEn ? 'Wealth' : 'Tài sản'} ≥ 2,000 (${netWorth.toLocaleString()})</span>
+                  <span class="req-pill ${spouse ? 'met' : 'unmet'}">${spouse ? (isEn ? 'Spouse: ' + spouse.name : 'Đã có phu thê') : (isEn ? 'Unwed' : 'Chưa thành hôn')}</span>
+                </div>
+                <ul class="branch-perks-list">
+                  <li>${isEn ? 'Host brotherhood banquets and swear vows with renowned heroes' : 'Mở tửu yến chiêu đãi hào kiệt, kết nghĩa kim lan huynh đệ'}</li>
+                  <li>${isEn ? 'Court prominent ladies, marry, and establish a dynastic manor' : 'Cầu thân giai nhân, thành gia lập thất, sinh hạ quý tử kế nghiệp'}</li>
+                  <li>${isEn ? 'Mentor offspring, inherit stats and skills across generations' : 'Dưỡng dục thế hệ kế thừa, truyền thừa võ công & bách nghệ đời đời'}</li>
+                </ul>
+                <div class="branch-actions-row">
+                  <button class="tactical-btn tactical-btn--sm" onclick="GrandCommandHubUI.switchTab('tavern');">
+                    ${isEn ? 'Host Banquet' : 'Mở Tiệc Tụ Nghĩa'}
+                  </button>
+                  <button class="tactical-btn tactical-btn--primary tactical-btn--sm" onclick="GrandCommandHubUI.switchTab('family');">
+                    ${spouse ? (isEn ? 'Dynasty Manor' : 'Trang Viên Gia Thất') : (isEn ? 'Courtship' : 'Cầu Thân Kết Tóc')}
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Strategic Handbook for Pauper Start (Cẩm Nang Khởi Nghiệp Tay Trắng) -->
+          <div class="career-onboarding-card">
+            <div class="onboarding-title">
+              <span>🌾</span> ${isEn ? 'COMMONER ZERO-TO-HERO SURVIVAL HANDBOOK' : 'CẨM NANG KHỞI NGHIỆP DÀNH CHO THANH NIÊN TAY TRẮNG'}
+            </div>
+            <div class="onboarding-steps">
+              <div class="onboarding-step-item">
+                <strong>1. ${isEn ? 'Mưu Sinh Kiếm Tiền:' : 'Mưu Sinh Kiếm Tiền:'}</strong><br>
+                ${isEn ? 'Click "Take Wage Labor Shift" to work daily shifts (Blacksmith, Tavern, Herbs). Earn 35-60 coins per shift without needing capital.' : 'Bấm nút "Làm Thuê" trên thanh lệnh để đi làm ca nhật công (Lò rèn, Khách điếm, Hái thuốc). Mỗi ca nhận 35-60 tiền và tăng điểm EXP tương ứng.'}
+              </div>
+              <div class="onboarding-step-item">
+                <strong>2. ${isEn ? 'Tích Lũy Ban Đầu:' : 'Tích Lũy Ban Đầu:'}</strong><br>
+                ${isEn ? 'Reach 500 - 1,500 coins. Purchase basic gear, brew tea/wine to restore stamina, and befriend local figures like Zhang Fei or Liu Bei.' : 'Tích lũy từ 500 - 1,500 tiền. Sắm vũ khí phòng thân, uống trà/rượu hồi phục thể lực, kết giao cùng các hào kiệt như Trương Phi, Lưu Bị.'}
+              </div>
+              <div class="onboarding-step-item">
+                <strong>3. ${isEn ? 'Mở Lối Rẽ Đầu Tiên:' : 'Mở Lối Rẽ Đầu Tiên:'}</strong><br>
+                ${isEn ? 'When a career branch illuminates, take your milestone action: open your first workshop, buy draft mules for a caravan, or challenge the arena!' : 'Khi một trong 5 Phẩm Lộ sáng lên, mở cơ sở đầu tiên (xưởng/lò rèn), mua lừa thồ lập thương đội, hoặc bước lên lôi đài tỉ thí tranh hùng!'}
+              </div>
+            </div>
+          </div>
+
+        </div>
+      `;
+    } catch (err) {
+      console.error('Failed to render career tab:', err);
+      container.innerHTML = `
+        <div class="grand-hub-error">
+          <p>${isEnglish() ? 'Failed to load career records: ' : 'Không thể tải hồ sơ phẩm lộ: '} ${err.message}</p>
+        </div>
+      `;
     }
   }
 
@@ -1313,6 +1763,8 @@
     close: closeHub,
     switchTab,
     renderTabContent,
+    renderCareerTab,
+    openCareer: () => openHub('career'),
     executeWorkShift,
     collectProfit,
     switchLineageSubTab,
