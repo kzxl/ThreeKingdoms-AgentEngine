@@ -119,6 +119,8 @@ class SimulationCore {
         return this._executeRewardNpc(action);
       case 'MOVE_LOCATION':
         return this._executeMoveLocation(action);
+      case 'PERSONAL_GROWTH':
+        return this._executePersonalGrowth(action);
       default:
         return { success: false, code: 'UNKNOWN_ACTION', error: `Unknown action type: ${action.type}` };
     }
@@ -579,6 +581,74 @@ class SimulationCore {
       success: true,
       data: {
         newLocation: new_location
+      }
+    };
+  }
+
+  // PERSONAL_GROWTH: Self-cultivation, training martial skills, studying tactics, or resting
+  _executePersonalGrowth(action) {
+    const { sub_type = 'TRAIN_MARTIAL', exp_skill, exp_amount = 10, fatigue_delta = 10, morale_delta = 5, memo = '', game_date = '184-05-02', idempotency_key } = action;
+
+    const playerRows = runSqlJson(this.dbPath, `SELECT * FROM player_state LIMIT 1;`);
+    if (!playerRows || playerRows.length === 0) {
+      return { success: false, code: 'NO_PLAYER', error: 'player_state not found.' };
+    }
+    const player = playerRows[0];
+    const currentFatigue = Number(player.fatigue || 0);
+    const currentMorale = Number(player.morale || 100);
+
+    let newFatigue = currentFatigue;
+    let newMorale = currentMorale;
+
+    if (sub_type === 'REST_RECOVERY') {
+      newFatigue = Math.max(0, currentFatigue - Math.abs(fatigue_delta || 30));
+      newMorale = Math.min(100, currentMorale + Math.abs(morale_delta || 15));
+    } else {
+      newFatigue = Math.min(100, currentFatigue + Math.abs(fatigue_delta || 10));
+      newMorale = Math.min(100, currentMorale + (morale_delta || 5));
+    }
+
+    const actionId = `ACT-${Date.now()}`;
+    let skillUpdateSql = '';
+
+    if (exp_skill) {
+      const skillRow = runSqlJson(this.dbPath, `SELECT * FROM player_skills WHERE skill_code = '${exp_skill}' LIMIT 1;`)[0];
+      if (skillRow) {
+        let newExp = Number(skillRow.current_exp) + Number(exp_amount);
+        let newTier = Number(skillRow.tier);
+        let maxExp = Number(skillRow.max_exp);
+        if (newExp >= maxExp && newTier < 5) {
+          newTier += 1;
+          newExp = newExp - maxExp;
+          maxExp = Math.round(maxExp * 1.5);
+        }
+        skillUpdateSql = `UPDATE player_skills SET current_exp = ${newExp}, tier = ${newTier}, max_exp = ${maxExp} WHERE skill_code = '${exp_skill}';`;
+      }
+    }
+
+    const sql = `
+      UPDATE player_state SET fatigue = ${newFatigue}, morale = ${newMorale};
+      ${skillUpdateSql}
+      INSERT INTO action_log (action_id, idempotency_key, turn_number, game_date, action_type, payload, result, status)
+      VALUES ('${actionId}', ${idempotency_key ? `'${idempotency_key}'` : 'NULL'}, (SELECT active_turn FROM campaign_meta LIMIT 1), '${game_date}', 'PERSONAL_GROWTH', '${JSON.stringify(action).replace(/'/g, "''")}', '{"fatigue": ${newFatigue}, "morale": ${newMorale}, "expGained": ${exp_amount || 0}}', 'SUCCESS');
+    `;
+
+    const batchRes = runSqlBatch(this.dbPath, sql);
+    if (!batchRes.success) {
+      return { success: false, code: 'GROWTH_FAILED', error: batchRes.error };
+    }
+
+    this._project();
+
+    return {
+      success: true,
+      data: {
+        subType: sub_type,
+        fatigue: newFatigue,
+        morale: newMorale,
+        skillCode: exp_skill,
+        expGained: exp_amount || 0,
+        memo: memo || 'Tu thân dưỡng tính hoàn tất'
       }
     };
   }

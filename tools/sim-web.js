@@ -2177,6 +2177,19 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
     ];
   }
 
+  // 4-Pillar Dynamic Contextual Action Matrix Engine
+  const actionEngine = globalThis.__CONTEXT_ACTION_ENGINE__;
+  if (actionEngine && typeof actionEngine.generateChoices === 'function') {
+    try {
+      const dynamicChoices = actionEngine.generateChoices(currentLocKey, player, inventory, meta);
+      if (dynamicChoices && dynamicChoices.length > 0) {
+        options = dynamicChoices;
+      }
+    } catch (e) {
+      console.warn('[ContextActionEngine] Error generating choices:', e.message);
+    }
+  }
+
   return {
     success: true,
     campaign: {

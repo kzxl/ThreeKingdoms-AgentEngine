@@ -242,6 +242,14 @@ async function executeChoiceDirect(optId) {
   const opt = currentScene.options.find(o => o.id === optId);
   if (!opt) return;
 
+  if (opt.disabled) {
+    const reason = (typeof currentLang !== 'undefined' && currentLang === 'en')
+      ? (opt.disabledReasonEn || 'This action cannot be taken under current conditions.')
+      : (opt.disabledReasonVi || 'Không đủ điều kiện thực hiện thao tác này.');
+    showToast(`⚠️ ${reason}`, true);
+    return;
+  }
+
   const cardEl = document.getElementById(`choice-card-${optId}`);
   selectChoice(optId);
 
@@ -257,7 +265,63 @@ async function executeChoiceDirect(optId) {
   setProcessingLock(true, cardEl, opt.title);
 
   try {
-    // Location Movement Choice
+    // Kizuna Social Interaction via DailyInteractionEngine
+    if (opt.action && opt.action.type === 'KIZUNA_INTERACT') {
+      showToast(`Đang tương tác với ${opt.action.npc_name || 'Hào Kiệt'}...`);
+      const kizunaRes = await fetch('/api/kizuna/interact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          npcId: opt.action.npc_id,
+          actionType: opt.action.action_type || 'TEA_CONVERSE',
+          prompt: opt.action.prompt || opt.title
+        })
+      });
+      const kizunaData = await kizunaRes.json();
+      if (!kizunaData.success) {
+        showToast(`Tương tác thất bại: ${kizunaData.error}`, true);
+        return;
+      }
+      const res = kizunaData.result;
+      const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+      const npcName = isEn ? (res.npcNameEn || res.npcNameVi || opt.action.npc_name) : (res.npcNameVi || opt.action.npc_name);
+      const speakerAvatar = opt.action.npc_name ? opt.action.npc_name.charAt(0) : '漢';
+      const quoteText = isEn ? (res.dialogueNarrativeEn || res.dialogueNarrativeVi) : res.dialogueNarrativeVi;
+      const deltaAffinity = res.deltas?.affinityChange || 0;
+      const deltaRespect = res.deltas?.respectChange || 0;
+      const roll = res.diceRoll || {};
+      const formulaStr = `[D20: ${roll.d20 ?? 10}] + [Thuộc tính: ${roll.statBonus ?? 0}] + [Sở thích: ${roll.hobbyBonus ?? 0}] = ${roll.total ?? 10}`;
+      
+      const diceBadge = {
+        status: res.outcome === 'CRITICAL_SUCCESS' ? 'ĐẠI HẢO' : res.outcome === 'SUCCESS' ? 'HỢP Ý' : res.outcome === 'CRITICAL_FAILURE' ? 'XUNG ĐỘT' : 'KHÁCH SÁO',
+        type: `ĐỔ XÚC XẮC D20 (${isEn ? (res.actionTitleEn || res.actionType) : (res.actionTitleVi || res.actionType)})`,
+        score: roll.total ?? 15,
+        dc: 15,
+        formula: formulaStr
+      };
+
+      appendStoryTurn({
+        type: 'npc',
+        speaker: npcName,
+        title: `${isEn ? (res.outcomeTitleEn || res.outcome) : (res.outcomeTitleVi || res.outcome)} • Hảo Cảm ${deltaAffinity >= 0 ? '+' : ''}${deltaAffinity}`,
+        avatar: speakerAvatar,
+        text: quoteText,
+        diceBadge: diceBadge,
+        deltas: {
+          relations: `${npcName} (+${deltaAffinity} Hảo cảm, +${deltaRespect} Kính trọng)`,
+          audit: 'Ghi nhận Hảo cảm'
+        },
+        reasoning: `Xúc xắc D20: ${roll.total}. Tương tác đời thường thành công rực rỡ.`
+      });
+
+      // Refresh scene and deck
+      await loadScene(activeSubLocation);
+      renderAgentSimulationFeedback(`Tương tác cùng ${npcName} thành công. Tăng +${deltaAffinity} Hảo Cảm.`, { relations: `+${deltaAffinity}`, audit: '94/94 Khớp' });
+      await Promise.all([loadStatus(), loadDeckNpcs(), loadDeckLedger()]);
+      return;
+    }
+
+    // Location Movement Choice (Fallback compatibility)
     if (opt.action && opt.action.type === 'MOVE_LOCATION') {
       showToast(`Đang di chuyển tới ${opt.action.new_location}...`);
       opt.action.idempotency_key = `OPT_${optId}_${Date.now()}`;
@@ -337,6 +401,21 @@ async function executeChoiceDirect(optId) {
         } else {
           turnText = `${speaker} cảm kích khôn xiết: *"Đa tạ công tử trọng thưởng! Xin dốc toàn lực vì đại nghiệp!"*`;
         }
+      } else if (opt.action.type === 'RECORD_BOUNTY') {
+        turnType = 'system';
+        speaker = opt.action.counterparty || 'Bắc Quân Quân Lệnh Cục';
+        title = 'Nhận Thưởng Quân Công';
+        avatar = '🎖️';
+        turnText = `Bộ chỉ huy đã giải ngân ban thưởng quân công **${opt.title}**. Số dư lưu động tăng thêm +${opt.action.amount} Tiền.`;
+      } else if (opt.action.type === 'PERSONAL_GROWTH') {
+        turnType = 'action';
+        speaker = 'Lương Diễn';
+        title = 'Tu Thân & Bồi Dưỡng';
+        avatar = opt.icon || '🧘';
+        const isRest = opt.action.sub_type === 'REST_RECOVERY';
+        turnText = isRest 
+          ? `Lương Diễn tĩnh tọa nghỉ ngơi dưỡng sức. Khí huyết hồi phục (Thể lực giảm bớt, Sĩ khí vươn cao).`
+          : `Lương Diễn đã hoàn tất rèn luyện: **${opt.title}**.\n\n*${result.data?.memo || 'Thể lực và tâm thế được củng cố vững vàng.'}*`;
       }
 
       // Append result into chronicle
@@ -375,6 +454,14 @@ async function executeChoiceAi(optId) {
   if (!currentScene || !currentScene.options) return;
   const opt = currentScene.options.find(o => o.id === optId);
   if (!opt) return;
+
+  if (opt.disabled) {
+    const reason = (typeof currentLang !== 'undefined' && currentLang === 'en')
+      ? (opt.disabledReasonEn || 'This action cannot be taken under current conditions.')
+      : (opt.disabledReasonVi || 'Không đủ điều kiện thực hiện thao tác này.');
+    showToast(`⚠️ ${reason}`, true);
+    return;
+  }
 
   const cardEl = document.getElementById(`choice-card-${optId}`);
   selectChoice(optId);

@@ -346,24 +346,53 @@ function renderChoices(options) {
   if (!container) return;
 
   const dict = I18N_DICT[currentLang] || I18N_DICT.vi;
+  const isEn = (currentLang === 'en');
 
   if (!options || options.length === 0) {
-    container.innerHTML = `<div style="padding: 16px; text-align: center; color: var(--text-muted); font-size: 11px;">${currentLang === 'en' ? 'No action proposals for current context.' : 'Không có đề xuất hành động cho bối cảnh hiện tại.'}</div>`;
+    container.innerHTML = `<div style="padding: 16px; text-align: center; color: var(--text-muted); font-size: 11px;">${isEn ? 'No action proposals for current context.' : 'Không có đề xuất hành động cho bối cảnh hiện tại.'}</div>`;
     return;
   }
 
   container.innerHTML = options.map((opt) => {
     const isSelected = (window.selectedChoiceId === opt.id);
+    const isDisabled = Boolean(opt.disabled);
+    const pillarLabel = isEn ? (opt.pillarLabelEn || opt.pillar) : (opt.pillarLabelVi || opt.pillar);
+    const titleText = isEn ? (opt.titleEn || opt.title) : opt.title;
+    const descText = isEn ? (opt.descEn || opt.desc) : opt.desc;
+    const disabledReason = isEn ? (opt.disabledReasonEn || opt.disabledReasonVi) : opt.disabledReasonVi;
+    const badgeClass = opt.badgeClass || (
+      opt.pillar === 'KIZUNA_SOCIAL' ? 'pillar-kizuna' :
+      opt.pillar === 'FACILITY_OPERATION' ? 'pillar-facility' :
+      opt.pillar === 'OPPORTUNITY_INCIDENT' ? 'pillar-opportunity' : 'pillar-growth'
+    );
+
     return `
-      <div class="choice-card ${isSelected ? 'active' : ''}" id="choice-card-${opt.id}" onclick="selectChoice('${opt.id}')">
+      <div class="choice-card ${isSelected ? 'active' : ''} ${isDisabled ? 'choice-card--disabled' : ''}" 
+           id="choice-card-${opt.id}" 
+           onclick="selectChoice('${opt.id}')"
+           title="${isDisabled && disabledReason ? disabledReason : ''}">
         <div class="choice-icon">${opt.icon || '⚔️'}</div>
         <div class="choice-details">
-          <div class="choice-title">${opt.title}</div>
-          <div class="choice-desc">${opt.desc}</div>
+          <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
+            ${pillarLabel ? `<span class="choice-pillar-badge ${badgeClass}">${pillarLabel}</span>` : ''}
+            <div class="choice-title" style="${isDisabled ? 'color: var(--text-muted);' : ''}">${titleText}</div>
+          </div>
+          <div class="choice-desc">${descText}</div>
+          ${isDisabled && disabledReason ? `<div class="choice-disabled-tag">⚠️ ${disabledReason}</div>` : ''}
         </div>
         <div class="choice-actions">
-          <button class="btn-choice-select" id="btn-select-${opt.id}" onclick="event.stopPropagation(); executeChoiceDirect('${opt.id}')">${dict.btnSelect}</button>
-          <button class="btn-choice-ai" id="btn-ai-${opt.id}" onclick="event.stopPropagation(); executeChoiceAi('${opt.id}')">${dict.btnAi}</button>
+          <button class="btn-choice-select ${isDisabled ? 'btn-disabled' : ''}" 
+                  id="btn-select-${opt.id}" 
+                  ${isDisabled ? 'disabled' : ''} 
+                  onclick="event.stopPropagation(); executeChoiceDirect('${opt.id}')">
+            ${dict.btnSelect}
+          </button>
+          <button class="btn-choice-ai ${isDisabled ? 'btn-disabled' : ''}" 
+                  id="btn-ai-${opt.id}" 
+                  ${isDisabled ? 'disabled' : ''} 
+                  onclick="event.stopPropagation(); executeChoiceAi('${opt.id}')">
+            ${dict.btnAi}
+          </button>
         </div>
       </div>
     `;
