@@ -113,6 +113,14 @@ function calculatePlayerStamina(player) {
   };
 }
 
+try {
+  require('tsx/cjs');
+  const { calculatePlayerStamina: canonicalStamina } = require('../src/shared/character-stats/index.ts');
+  if (typeof canonicalStamina === 'function') {
+    calculatePlayerStamina = canonicalStamina;
+  }
+} catch (e) {}
+
 module.exports = {
   COMMODITY_PRICE_INDEX,
   BILL_OF_MATERIALS,

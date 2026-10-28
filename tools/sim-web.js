@@ -68,6 +68,19 @@ function getInstanceManagerService() {
   return instanceManagerService;
 }
 
+let characterStatsModule = null;
+function getCharacterStatsModule() {
+  if (!characterStatsModule) {
+    try {
+      require('tsx/cjs');
+      characterStatsModule = require('../src/shared/character-stats/index.ts');
+    } catch (e) {
+      console.warn('[sim-web.js] characterStatsModule initialization note:', e.message);
+    }
+  }
+  return characterStatsModule;
+}
+
 const ROOT_DIR = path.resolve(__dirname, '..');
 const PUBLIC_DIR = path.join(ROOT_DIR, 'public');
 const SAVES_DIR = path.join(ROOT_DIR, 'saves');
@@ -188,7 +201,10 @@ function processPassiveStaminaRecovery(player) {
     return player;
   }
   const warAttr = Number(player.war_attr || 50);
-  const intervalSeconds = Math.max(8, 30 - Math.floor((warAttr - 50) * 0.4));
+  const statsMod = getCharacterStatsModule();
+  const intervalSeconds = statsMod
+    ? statsMod.calculatePassiveRecoveryInterval(warAttr)
+    : Math.max(8, 30 - Math.floor((warAttr - 50) * 0.4));
   const elapsedSeconds = Math.floor((Date.now() - lastPassiveStaminaCheck) / 1000);
   if (elapsedSeconds >= intervalSeconds) {
     const pointsToRecover = Math.floor(elapsedSeconds / intervalSeconds);
@@ -429,32 +445,41 @@ const server = http.createServer(async (req, res) => {
       const bizCount = runSqlJson(`SELECT COUNT(*) as count FROM businesses;`)[0]?.count || 0;
       const npcs = runSqlJson(`SELECT COUNT(*) as count FROM npc_state;`)[0]?.count || 0;
 
-      // Equipment bonuses & effective stats calculation
+      // Equipment bonuses & effective stats calculation (Canonical Character-Stats Engine)
       const eqpRows = runSqlJson(`
         SELECT slot_type, item_code, custom_name, stat_modifiers 
         FROM character_equipment 
         WHERE character_id = 'PLY-0001';
       `);
-      const eqpBonuses = { war: 0, ldr: 0, int: 0, pol: 0, dip: 0, com: 0, log: 0, cra: 0 };
-      for (const eq of eqpRows) {
-        try {
-          const mods = typeof eq.stat_modifiers === 'string' ? JSON.parse(eq.stat_modifiers) : (eq.stat_modifiers || {});
-          for (const [k, v] of Object.entries(mods)) {
-            const normK = k.toLowerCase().replace(/_attr$|_exp$/, '').trim();
-            if (eqpBonuses.hasOwnProperty(normK)) {
-              eqpBonuses[normK] += Math.min(5, Math.max(1, Math.round(Number(v) || 0)));
+      const statsMod = getCharacterStatsModule();
+      let eqpBonuses = { war: 0, ldr: 0, int: 0, pol: 0, dip: 0, com: 0, log: 0, cra: 0 };
+      let effectiveStats = {};
+      let isOver100 = {};
+
+      if (statsMod) {
+        const effResult = statsMod.calculateEffectiveAttributes(player, eqpRows);
+        eqpBonuses = effResult.equipmentBuffs;
+        effectiveStats = effResult.effective;
+        isOver100 = effResult.isOver100;
+      } else {
+        for (const eq of eqpRows) {
+          try {
+            const mods = typeof eq.stat_modifiers === 'string' ? JSON.parse(eq.stat_modifiers) : (eq.stat_modifiers || {});
+            for (const [k, v] of Object.entries(mods)) {
+              const normK = k.toLowerCase().replace(/_attr$|_exp$/, '').trim();
+              if (eqpBonuses.hasOwnProperty(normK)) {
+                eqpBonuses[normK] += Math.min(5, Math.max(1, Math.round(Number(v) || 0)));
+              }
             }
-          }
-        } catch (e) {}
-      }
-      const effectiveStats = {};
-      const isOver100 = {};
-      const attrs = ['war', 'ldr', 'int', 'pol', 'dip', 'com', 'log', 'cra'];
-      for (const a of attrs) {
-        const base = Number(player[`${a}_attr`] || 50);
-        const eff = base + (eqpBonuses[a] || 0);
-        effectiveStats[a] = eff;
-        isOver100[a] = eff > 100;
+          } catch (e) {}
+        }
+        const attrs = ['war', 'ldr', 'int', 'pol', 'dip', 'com', 'log', 'cra'];
+        for (const a of attrs) {
+          const base = Number(player[`${a}_attr`] || 50);
+          const eff = base + (eqpBonuses[a] || 0);
+          effectiveStats[a] = eff;
+          isOver100[a] = eff > 100;
+        }
       }
 
       const liquidCash = Number(player.liquid_cash || 0);

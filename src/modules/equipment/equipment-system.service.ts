@@ -16,6 +16,7 @@
 
 import { DatabaseService } from '../../core/database';
 import { AttributeType, VALID_ATTRIBUTES } from '../progression/attribute-progression.service';
+import { clampStatModifier as canonicalClampStatModifier } from '../../shared/character-stats';
 
 export type EquipmentSlot = 'WEAPON' | 'ARMOR' | 'STEED' | 'TREASURE';
 
@@ -28,13 +29,9 @@ export const VALID_EQUIPMENT_SLOTS: readonly EquipmentSlot[] = [
 
 /**
  * STRICT USER CONSTRAINT:
- * Clamps a single attribute stat bonus to strictly between +1 and +5 points.
+ * Re-exports canonical stat modifier clamp [+1..+5] from shared character-stats domain.
  */
-export function clampStatModifier(value: number): number {
-  const rounded = Math.round(Number(value));
-  if (isNaN(rounded)) return 0;
-  return Math.min(5, Math.max(1, rounded));
-}
+export const clampStatModifier = canonicalClampStatModifier;
 
 /**
  * Parses and strictly clamps all attribute modifiers between +1 and +5.

@@ -22,7 +22,8 @@
  */
 
 import { DatabaseService } from '../../core/database';
-import { EquipmentSystemService, clampStatModifier } from '../equipment/equipment-system.service';
+import { EquipmentSystemService } from '../equipment/equipment-system.service';
+import { clampStatModifier } from '../../shared/character-stats';
 import { ProgressionExpService } from '../progression/attribute-progression.service';
 
 // ---------------------------------------------------------------------------

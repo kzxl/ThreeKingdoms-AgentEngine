@@ -21,7 +21,7 @@ import {
   BespokeForgeRatesDTO,
   EquipmentQuality
 } from './bespoke-forge.dto';
-import { calculatePlayerStamina } from '../wage-labor/wage-labor.service';
+import { calculatePlayerStamina, clampStatModifier } from '../../../../shared/character-stats';
 
 export class BespokeForgeService {
   private static instance: BespokeForgeService | null = null;

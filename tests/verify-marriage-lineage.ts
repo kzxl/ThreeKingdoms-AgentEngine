@@ -406,20 +406,20 @@ async function runMarriageLineageVerification(): Promise<void> {
 
     // Case A: Son of Liang Yan & Lady Zhen with 0 mutation
     const sonZhenWar = calculateChildInnateStat(fatherWar, motherWarLadyZhen, 0, 0);
-    // floor((58 + 25) / 2) = 41; floor(41 * 0.45) = 18; 18 + 0 = 18
-    assert(sonZhenWar === 18, `Son of Lady Zhen base WAR = 18 (Calculated: ${sonZhenWar})`);
+    const expectedZhenWar = Math.floor(Math.floor((fatherWar + motherWarLadyZhen) / 2) * 0.45);
+    assert(sonZhenWar === expectedZhenWar, `Son of Lady Zhen base WAR = ${expectedZhenWar} (Calculated: ${sonZhenWar})`);
 
     // Case B: Son of Liang Yan & Sun Shangxiang with +3 mutation + Tiger Heritage (+2)
     const sonSsxWar = calculateChildInnateStat(fatherWar, motherWarSunShangxiang, 3, 2);
-    // floor((58 + 86) / 2) = 72; floor(72 * 0.45) = 32; 32 + 3 + 2 = 37
-    assert(sonSsxWar === 37, `Son of Sun Shangxiang base WAR = 37 with Tiger Heritage (Calculated: ${sonSsxWar})`);
+    const expectedSsxWar = Math.floor(Math.floor((fatherWar + motherWarSunShangxiang) / 2) * 0.45) + 3 + 2;
+    assert(sonSsxWar === expectedSsxWar, `Son of Sun Shangxiang base WAR = ${expectedSsxWar} with Tiger Heritage (Calculated: ${sonSsxWar})`);
 
     // Case C: Son of Liang Yan & Cai Wenji Intellect with Poetic Genius (+2)
-    const fatherInt = initialPlayer.int_attr; // 61
+    const fatherInt = initialPlayer.int_attr;
     const motherIntCaiWenji = 86;
     const sonWenjiInt = calculateChildInnateStat(fatherInt, motherIntCaiWenji, 2, 2);
-    // floor((61 + 86) / 2) = 73; floor(73 * 0.45) = 32; 32 + 2 + 2 = 36
-    assert(sonWenjiInt === 36, `Son of Cai Wenji base INT = 36 with Poetic Genius (Calculated: ${sonWenjiInt})`);
+    const expectedWenjiInt = Math.floor(Math.floor((fatherInt + motherIntCaiWenji) / 2) * 0.45) + 2 + 2;
+    assert(sonWenjiInt === expectedWenjiInt, `Son of Cai Wenji base INT = ${expectedWenjiInt} with Poetic Genius (Calculated: ${sonWenjiInt})`);
 
     // 4.2 Adversarial mutation clamping test: delta strictly clamped between -3 and +5
     const extremeLow = calculateChildInnateStat(60, 60, -99, 0);

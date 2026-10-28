@@ -19,52 +19,12 @@ import {
   WageLaborOverviewDTO,
   WorkShiftExecutionDTO
 } from './wage-labor.dto';
+import { calculatePlayerStamina as canonicalCalculatePlayerStamina } from '../../../../shared/character-stats';
 
 /**
- * Calculates a character's canonical stamina profile based on War (WAR),
- * Vigor (Health), and current accumulated Fatigue.
+ * Re-exports canonical stamina profile calculation from shared character-stats domain.
  */
-export function calculatePlayerStamina(player: {
-  war_attr?: number;
-  health?: number;
-  fatigue?: number;
-  [key: string]: any;
-}): StaminaProfileDTO {
-  const warAttr = Number(player?.war_attr !== undefined ? player.war_attr : 50);
-  const healthVal = Number(player?.health !== undefined ? player.health : 100);
-  const fatigueVal = Number(player?.fatigue || 0);
-
-  const maxStamina =
-    WAGE_LABOR_RULES.BASE_MAX_STAMINA +
-    Math.max(
-      0,
-      Math.round(
-        (warAttr - WAGE_LABOR_RULES.WAR_SCALE_THRESHOLD) *
-          WAGE_LABOR_RULES.WAR_SCALE_FACTOR
-      )
-    ) +
-    Math.floor(healthVal / WAGE_LABOR_RULES.VIGOR_HEALTH_DIVISOR);
-
-  const currentStamina = Math.max(0, maxStamina - fatigueVal);
-  const staminaPct = Math.min(
-    100,
-    Math.max(0, Math.round((currentStamina / maxStamina) * 100))
-  );
-  const fatiguePct = Math.min(
-    100,
-    Math.max(0, Math.round((fatigueVal / WAGE_LABOR_RULES.MAX_FATIGUE_LIMIT) * 100))
-  );
-
-  return {
-    maxStamina,
-    currentStamina,
-    fatigue: fatigueVal,
-    staminaPct,
-    fatiguePct,
-    health: healthVal,
-    warAttr
-  };
-}
+export const calculatePlayerStamina = canonicalCalculatePlayerStamina;
 
 export class WageLaborService {
   private static instance: WageLaborService | null = null;
