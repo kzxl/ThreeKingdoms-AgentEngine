@@ -3,8 +3,6 @@
  * Renders dialogue turns, narrative markdown, dynamic quick chips, dice badges, delta pills, and relations
  */
 
-let lastEncounterSubLocation = null;
-
 function formatNarrativeQuotes(text) {
   if (!text) return '';
   return text.replace(/"([^"]+)"/g, '<em>"$1"</em>');

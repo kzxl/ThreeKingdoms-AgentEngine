@@ -3,8 +3,6 @@
  * Tab deck handling: Inventory, Retinue/NPCs, Financial Ledger, and Agent Activity Logs
  */
 
-let currentInventory = [];
-
 async function loadDeckInventory() {
   try {
     const data = await apiFetchInventory();

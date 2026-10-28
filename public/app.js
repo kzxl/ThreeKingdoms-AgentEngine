@@ -4,8 +4,6 @@
  * Modular sub-components located in /public/js/
  */
 
-let selectedChoiceId = null;
-
 // ==========================================================================
 // 1. DATA INITIALIZATION & ORCHESTRATION
 // ==========================================================================

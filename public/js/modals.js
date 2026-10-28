@@ -3,8 +3,6 @@
  * Quick Trade Modal, Anti-piling Action Locks, and Toast Notifications
  */
 
-let isProcessingAction = false;
-
 function showToast(message, isError = false) {
   const toast = document.getElementById('toast');
   if (!toast) return;
