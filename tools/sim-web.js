@@ -54,11 +54,39 @@ function getBespokeForgeService() {
   return bespokeForgeService;
 }
 
+let instanceManagerService = null;
+function getInstanceManagerService() {
+  if (!instanceManagerService) {
+    try {
+      require('tsx/cjs');
+      const { InstanceManagerService } = require('../src/modules/instances/instances.service.ts');
+      instanceManagerService = InstanceManagerService.getInstance();
+    } catch (e) {
+      console.warn('[sim-web.js] InstanceManagerService initialization note:', e.message);
+    }
+  }
+  return instanceManagerService;
+}
+
 const ROOT_DIR = path.resolve(__dirname, '..');
 const PUBLIC_DIR = path.join(ROOT_DIR, 'public');
 const SAVES_DIR = path.join(ROOT_DIR, 'saves');
 const DB_PATH = process.env.SIM_DB_PATH || path.join(SAVES_DIR, 'session.db');
 const DEFAULT_PORT = parseInt(process.env.PORT || process.argv[2] || '3300', 10);
+
+let currentActiveDbPath = DB_PATH;
+
+function resolveRequestDbPath(req) {
+  const parsed = url.parse(req.url, true);
+  const instanceId = req.headers['x-instance-id'] || parsed.query.instanceId;
+  if (instanceId) {
+    const instSvc = getInstanceManagerService();
+    if (instSvc) {
+      return instSvc.resolveDbPath(instanceId);
+    }
+  }
+  return currentActiveDbPath || DB_PATH;
+}
 
 const gameplayManager = new GameplayManager(DB_PATH);
 const eventManager = new EventManager(DB_PATH);
@@ -89,12 +117,13 @@ function logAgentSimulationEvent(event) {
   if (agentActivityStream.length > 50) agentActivityStream.pop();
 }
 
-function runSqlJson(sql) {
-  if (!fs.existsSync(DB_PATH)) return [];
+function runSqlJson(sql, targetDbPath = null) {
+  const dbFile = targetDbPath || currentActiveDbPath || DB_PATH;
+  if (!fs.existsSync(dbFile)) return [];
   const tempFile = path.join(SAVES_DIR, `web_tmp_${Date.now()}_${Math.random().toString(36).substr(2, 4)}.sql`);
   fs.writeFileSync(tempFile, sql, 'utf8');
   try {
-    const stdout = execSync(`sqlite3 -json "${DB_PATH}" < "${tempFile}"`, {
+    const stdout = execSync(`sqlite3 -json "${dbFile}" < "${tempFile}"`, {
       encoding: 'utf8',
       stdio: ['pipe', 'pipe', 'pipe']
     });
@@ -111,12 +140,13 @@ function runSqlJson(sql) {
   }
 }
 
-function runSqlRaw(sql) {
-  if (!fs.existsSync(DB_PATH)) return false;
+function runSqlRaw(sql, targetDbPath = null) {
+  const dbFile = targetDbPath || currentActiveDbPath || DB_PATH;
+  if (!fs.existsSync(dbFile)) return false;
   const tempFile = path.join(SAVES_DIR, `web_raw_${Date.now()}_${Math.random().toString(36).substr(2, 4)}.sql`);
   fs.writeFileSync(tempFile, sql, 'utf8');
   try {
-    execSync(`sqlite3 "${DB_PATH}" < "${tempFile}"`, {
+    execSync(`sqlite3 "${dbFile}" < "${tempFile}"`, {
       encoding: 'utf8',
       stdio: ['pipe', 'pipe', 'pipe']
     });
@@ -218,6 +248,12 @@ if (!globalThis.__GRAND_STRATEGY_ROUTER__) {
 }
 
 const server = http.createServer(async (req, res) => {
+  currentActiveDbPath = resolveRequestDbPath(req);
+  try {
+    const { DatabaseService } = require('../src/core/database.ts');
+    DatabaseService.getInstance(currentActiveDbPath);
+  } catch (e) {}
+
   // Delegate to Modular Controller Router if present
   if (globalThis.__GRAND_STRATEGY_ROUTER__) {
     try {
@@ -245,6 +281,142 @@ const server = http.createServer(async (req, res) => {
   // -------------------------------------------------------------
   // API ROUTING
   // -------------------------------------------------------------
+
+  // 0a. GET /api/instances - List all playthrough instances
+  if (req.method === 'GET' && pathname === '/api/instances') {
+    const instSvc = getInstanceManagerService();
+    if (!instSvc) {
+      sendJson(res, 500, { success: false, error: 'InstanceManagerService unavailable' });
+      return;
+    }
+    const currentId = req.headers['x-instance-id'] || parsedUrl.query.instanceId || (currentActiveDbPath === DB_PATH ? 'default' : path.basename(currentActiveDbPath, '.db'));
+    const list = instSvc.listInstances(currentId);
+    let archetypes = [];
+    try {
+      const { ARCHETYPE_PRESETS } = require('../src/modules/instances/instances.constants.ts');
+      archetypes = Object.values(ARCHETYPE_PRESETS);
+    } catch (e) {}
+    sendJson(res, 200, {
+      success: true,
+      instances: list,
+      currentInstanceId: currentId,
+      archetypes
+    });
+    return;
+  }
+
+  // 0b. POST /api/instances/new - Create new playthrough instance
+  if (req.method === 'POST' && pathname === '/api/instances/new') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        const instSvc = getInstanceManagerService();
+        if (!instSvc) throw new Error('InstanceManagerService unavailable');
+        const newInst = instSvc.createInstance(payload);
+        currentActiveDbPath = newInst.filepath;
+        try {
+          const { DatabaseService } = require('../src/core/database.ts');
+          DatabaseService.getInstance(currentActiveDbPath);
+        } catch (e) {}
+        sendJson(res, 200, {
+          success: true,
+          instanceId: newInst.id,
+          instance: newInst,
+          messageVi: `Khởi tạo thành công phiên chơi mới [${newInst.name}] (${newInst.archetypeNameVi})!`
+        });
+      } catch (err) {
+        sendJson(res, 400, { success: false, error: err.message });
+      }
+    });
+    return;
+  }
+
+  // 0c. POST /api/instances/select - Select & activate an instance
+  if (req.method === 'POST' && pathname === '/api/instances/select') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        const instId = payload.instanceId || 'default';
+        const instSvc = getInstanceManagerService();
+        if (!instSvc) throw new Error('InstanceManagerService unavailable');
+        const dbPath = instSvc.resolveDbPath(instId);
+        currentActiveDbPath = dbPath;
+        try {
+          const { DatabaseService } = require('../src/core/database.ts');
+          DatabaseService.getInstance(currentActiveDbPath);
+        } catch (e) {}
+        const instance = instSvc.getInstance(instId);
+        sendJson(res, 200, {
+          success: true,
+          instanceId: instId,
+          instance,
+          messageVi: `Đã kích hoạt phiên chơi [${instance?.name || instId}]!`
+        });
+      } catch (err) {
+        sendJson(res, 400, { success: false, error: err.message });
+      }
+    });
+    return;
+  }
+
+  // 0d. DELETE /api/instances/:id or POST /api/instances/delete - Delete instance
+  if ((req.method === 'DELETE' && pathname.startsWith('/api/instances/')) || (req.method === 'POST' && pathname === '/api/instances/delete')) {
+    let instId = pathname.replace('/api/instances/', '');
+    const doDelete = (id) => {
+      try {
+        const instSvc = getInstanceManagerService();
+        if (!instSvc) throw new Error('InstanceManagerService unavailable');
+        const deleted = instSvc.deleteInstance(id);
+        sendJson(res, 200, { success: deleted, messageVi: `Đã xóa phiên chơi [${id}].` });
+      } catch (err) {
+        sendJson(res, 400, { success: false, error: err.message });
+      }
+    };
+
+    if (req.method === 'POST') {
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', () => {
+        try {
+          const payload = JSON.parse(body || '{}');
+          doDelete(payload.instanceId || instId);
+        } catch (err) {
+          sendJson(res, 400, { success: false, error: err.message });
+        }
+      });
+      return;
+    }
+
+    doDelete(instId);
+    return;
+  }
+
+  // 0e. POST /api/instances/clone - Clone instance
+  if (req.method === 'POST' && pathname === '/api/instances/clone') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        const instSvc = getInstanceManagerService();
+        if (!instSvc) throw new Error('InstanceManagerService unavailable');
+        const cloned = instSvc.cloneInstance(payload);
+        sendJson(res, 200, {
+          success: true,
+          instanceId: cloned.id,
+          instance: cloned,
+          messageVi: `Đã nhân bản nhánh chơi mới [${cloned.id}]!`
+        });
+      } catch (err) {
+        sendJson(res, 400, { success: false, error: err.message });
+      }
+    });
+    return;
+  }
 
   // 1. GET /api/status - Complete Overview State
   if (req.method === 'GET' && pathname === '/api/status') {
