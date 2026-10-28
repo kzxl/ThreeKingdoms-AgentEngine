@@ -22,6 +22,7 @@ import { registerMilitaryRoutes } from '../modules/military/military.controller'
 import { registerProfessionsRoutes } from '../modules/professions/professions.controller';
 import { registerEcologyRoutes } from '../modules/ecology-logistics/ecology.controller';
 import { registerKizunaRoutes } from '../modules/social-kizuna/kizuna.controller';
+import { registerBlacksmithForgeRoutes } from '../modules/professions/blacksmith-forge.service';
 import { DailyInteractionEngine } from '../modules/social-kizuna/daily-interaction.engine';
 import { ContextActionEngine } from '../modules/contextual-actions/context-action.engine';
 
@@ -79,6 +80,7 @@ export function createGrandStrategyRouter(): Router {
   registerProfessionsRoutes(router);
   registerEcologyRoutes(router);
   registerKizunaRoutes(router);
+  registerBlacksmithForgeRoutes(router);
   return router;
 }
 

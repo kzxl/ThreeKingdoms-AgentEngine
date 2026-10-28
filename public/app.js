@@ -293,29 +293,64 @@ async function loadStatus() {
           : (typeof currentLang !== 'undefined' && currentLang === 'en' ? '⚡ Normal' : '⚡ Bình ổn');
       }
 
-      const attrInt = document.getElementById('attr-int');
-      if (attrInt) attrInt.innerText = p.int_attr || 80;
+      // 8-Axis Attributes & ROTK Equipment Stat Progression System
+      const isEn = typeof currentLang !== 'undefined' && currentLang === 'en';
+      const eqpData = data.equipment || {};
+      const eqpBonuses = eqpData.bonuses || {};
 
-      const attrCom = document.getElementById('attr-com');
-      if (attrCom) attrCom.innerText = p.com_attr || 78;
+      const attrConfig = [
+        { key: 'int', labelVi: 'Trí Lực', labelEn: 'Intelligence', descVi: 'Mưu lược, sách lược' },
+        { key: 'com', labelVi: 'Thương Nghiệp', labelEn: 'Commerce', descVi: 'Mua bán, định giá' },
+        { key: 'dip', labelVi: 'Ngoại Giao', labelEn: 'Diplomacy', descVi: 'Thuyết phục hào kiệt' },
+        { key: 'ldr', labelVi: 'Thống Soái', labelEn: 'Leadership', descVi: 'Chỉ huy quân ngũ & gia đinh' },
+        { key: 'log', labelVi: 'Hậu Cần', labelEn: 'Logistics', descVi: 'Vận lương, kế toán' },
+        { key: 'pol', labelVi: 'Chính Trị', labelEn: 'Politics', descVi: 'Quan phủ, giấy phép' },
+        { key: 'cra', labelVi: 'Khéo Léo', labelEn: 'Crafting', descVi: 'Giám định, rèn đúc' },
+        { key: 'war', labelVi: 'Võ Lực', labelEn: 'War / Martial', descVi: 'Tự vệ, cưỡi ngựa' }
+      ];
 
-      const attrDip = document.getElementById('attr-dip');
-      if (attrDip) attrDip.innerText = p.dip_attr || 74;
+      for (const attr of attrConfig) {
+        const baseVal = Number(p[`${attr.key}_attr`] || 50);
+        const bonus = Number(eqpBonuses[attr.key] || 0);
+        const effectiveVal = baseVal + bonus;
+        const currentExp = Number(p[`${attr.key}_exp`] || 0);
 
-      const attrLdr = document.getElementById('attr-ldr');
-      if (attrLdr) attrLdr.innerText = p.ldr_attr || 70;
+        // ROTK Required EXP Formula (<=90: 100, 91..99: 150, >=100: 250)
+        const reqExp = baseVal <= 90 ? 100 : (baseVal <= 99 ? 150 : 250);
+        const expPct = Math.min(100, Math.max(0, Math.round((currentExp / reqExp) * 100)));
 
-      const attrLog = document.getElementById('attr-log');
-      if (attrLog) attrLog.innerText = p.log_attr || 70;
+        // Update attribute number display
+        const attrNumEl = document.getElementById(`attr-${attr.key}`);
+        if (attrNumEl) {
+          if (bonus > 0) {
+            attrNumEl.innerText = `${effectiveVal} (${baseVal}+${bonus})`;
+          } else {
+            attrNumEl.innerText = `${effectiveVal}`;
+          }
+        }
 
-      const attrPol = document.getElementById('attr-pol');
-      if (attrPol) attrPol.innerText = p.pol_attr || 68;
+        // Update mini EXP progress bar
+        const expBarEl = document.getElementById(`exp-bar-${attr.key}`);
+        if (expBarEl) {
+          expBarEl.style.width = `${expPct}%`;
+        }
 
-      const attrCra = document.getElementById('attr-cra');
-      if (attrCra) attrCra.innerText = p.cra_attr || 62;
+        // Update pill container, tooltip, and >100 golden cap highlight
+        const pillEl = document.getElementById(`attr-pill-${attr.key}`);
+        if (pillEl) {
+          const attrLabel = isEn ? attr.labelEn : attr.labelVi;
+          const tooltipExp = isEn
+            ? `${attrLabel}: ${effectiveVal} [Base ${baseVal}${bonus > 0 ? ` + ${bonus} Gear` : ''}] • EXP: ${currentExp}/${reqExp} (${expPct}%)`
+            : `${attrLabel}: ${effectiveVal} [Gốc ${baseVal}${bonus > 0 ? ` + ${bonus} Trang bị` : ''}] • EXP: ${currentExp}/${reqExp} (${expPct}%) — ${attr.descVi}`;
+          pillEl.title = tooltipExp;
 
-      const attrWar = document.getElementById('attr-war');
-      if (attrWar) attrWar.innerText = p.war_attr || 58;
+          if (effectiveVal > 100) {
+            pillEl.classList.add('stat-over-100');
+          } else {
+            pillEl.classList.remove('stat-over-100');
+          }
+        }
+      }
     }
 
     return data;

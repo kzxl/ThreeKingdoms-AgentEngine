@@ -2334,16 +2334,66 @@ button:disabled,
   border-radius: var(--radius-xs);
   padding: 3px 6px;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 2px;
   font-size: 10.5px;
   min-width: 0;
-  transition: all 0.15s ease;
+  transition: all 0.2s ease;
+  position: relative;
 }
 
 .attr-pill:hover {
   border-color: var(--border-gold-subtle);
   background-color: var(--bg-surface-elevated);
+}
+
+.attr-pill-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.attr-exp-bar {
+  height: 3px;
+  background: rgba(0, 0, 0, 0.45);
+  border-radius: 2px;
+  overflow: hidden;
+  width: 100%;
+  margin-top: 1px;
+}
+
+.attr-exp-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.attr-exp-fill.cyan { background-color: #38bdf8; }
+.attr-exp-fill.gold { background-color: #f59e0b; }
+.attr-exp-fill.orange { background-color: #fb923c; }
+.attr-exp-fill.green { background-color: #34d399; }
+.attr-exp-fill.purple { background-color: #c084fc; }
+.attr-exp-fill.amber { background-color: #fbbf24; }
+.attr-exp-fill.red { background-color: #f87171; }
+
+/* Golden glow when attribute exceeds ROTK 100 cap */
+.attr-pill.stat-over-100 {
+  border-color: #fbbf24 !important;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(15, 23, 42, 0.8)) !important;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.35) !important;
+  animation: goldPulse 2.5s infinite alternate;
+}
+
+.attr-pill.stat-over-100 .attr-num {
+  color: #fbbf24 !important;
+  font-weight: 800 !important;
+  text-shadow: 0 0 6px rgba(251, 191, 36, 0.7);
+}
+
+@keyframes goldPulse {
+  0% { box-shadow: 0 0 4px rgba(245, 158, 11, 0.2); }
+  100% { box-shadow: 0 0 10px rgba(245, 158, 11, 0.55); }
 }
 
 .attr-name {

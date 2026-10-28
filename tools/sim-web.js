@@ -214,6 +214,34 @@ const server = http.createServer(async (req, res) => {
       const bizCount = runSqlJson(`SELECT COUNT(*) as count FROM businesses;`)[0]?.count || 0;
       const npcs = runSqlJson(`SELECT COUNT(*) as count FROM npc_state;`)[0]?.count || 0;
 
+      // Equipment bonuses & effective stats calculation
+      const eqpRows = runSqlJson(`
+        SELECT slot_type, item_code, custom_name, stat_modifiers 
+        FROM character_equipment 
+        WHERE character_id = 'PLY-0001';
+      `);
+      const eqpBonuses = { war: 0, ldr: 0, int: 0, pol: 0, dip: 0, com: 0, log: 0, cra: 0 };
+      for (const eq of eqpRows) {
+        try {
+          const mods = typeof eq.stat_modifiers === 'string' ? JSON.parse(eq.stat_modifiers) : (eq.stat_modifiers || {});
+          for (const [k, v] of Object.entries(mods)) {
+            const normK = k.toLowerCase().replace(/_attr$|_exp$/, '').trim();
+            if (eqpBonuses.hasOwnProperty(normK)) {
+              eqpBonuses[normK] += Math.min(5, Math.max(1, Math.round(Number(v) || 0)));
+            }
+          }
+        } catch (e) {}
+      }
+      const effectiveStats = {};
+      const isOver100 = {};
+      const attrs = ['war', 'ldr', 'int', 'pol', 'dip', 'com', 'log', 'cra'];
+      for (const a of attrs) {
+        const base = Number(player[`${a}_attr`] || 50);
+        const eff = base + (eqpBonuses[a] || 0);
+        effectiveStats[a] = eff;
+        isOver100[a] = eff > 100;
+      }
+
       const liquidCash = Number(player.liquid_cash || 0);
       const safeCash = Number(player.safe_cash || 0);
       const invVal = Math.round(Number(invSummary.inv_val || 0));
@@ -225,6 +253,12 @@ const server = http.createServer(async (req, res) => {
         meta,
         player,
         skills,
+        equipment: {
+          items: eqpRows,
+          bonuses: eqpBonuses,
+          effectiveStats,
+          isOver100
+        },
         financials: {
           liquidCash,
           safeCash,
@@ -715,6 +749,532 @@ const server = http.createServer(async (req, res) => {
         } else {
           sendJson(res, 500, { success: false, error: 'Professions module not initialized' });
         }
+      } catch (err) {
+        sendJson(res, 500, { success: false, error: err.message });
+      }
+    });
+    return;
+  }
+
+  // 4s1. GET /api/equipment - Inspect Character Equipment & Warehouse Compatibility
+  if (req.method === 'GET' && pathname === '/api/equipment') {
+    try {
+      const characterId = parsedUrl.query.characterId || 'PLY-0001';
+      const isPlayer = characterId.startsWith('PLY');
+      let charName = 'Lương Diễn';
+      let styleName = 'Chí Viễn';
+      let baseAttrs = { war: 58, ldr: 70, int: 80, pol: 68, dip: 74, com: 78, log: 70, cra: 62 };
+
+      if (isPlayer) {
+        const p = runSqlJson(`SELECT * FROM player_state WHERE player_id = '${characterId.replace(/'/g, "''")}' LIMIT 1;`)[0];
+        if (p) {
+          charName = p.name === 'Liang Yan' ? 'Lương Diễn' : (p.name || 'Lương Diễn');
+          styleName = p.style_name || 'Chí Viễn';
+          baseAttrs = {
+            war: Number(p.war_attr || 58),
+            ldr: Number(p.ldr_attr || 70),
+            int: Number(p.int_attr || 80),
+            pol: Number(p.pol_attr || 68),
+            dip: Number(p.dip_attr || 74),
+            com: Number(p.com_attr || 78),
+            log: Number(p.log_attr || 70),
+            cra: Number(p.cra_attr || 62)
+          };
+        }
+      } else {
+        const npc = runSqlJson(`SELECT * FROM npc_state WHERE npc_id = '${characterId.replace(/'/g, "''")}' LIMIT 1;`)[0];
+        if (npc) {
+          charName = npc.name;
+          styleName = '';
+          baseAttrs = {
+            war: Number(npc.war_attr || 50),
+            ldr: Number(npc.ldr_attr || 50),
+            int: Number(npc.int_attr || 50),
+            pol: Number(npc.pol_attr || 50),
+            dip: Number(npc.dip_attr || 50),
+            com: Number(npc.com_attr || 50),
+            log: Number(npc.log_attr || 50),
+            cra: Number(npc.cra_attr || 50)
+          };
+        }
+      }
+
+      const rows = runSqlJson(`
+        SELECT ce.*, mi.name_vi, mi.name_en, mi.category
+        FROM character_equipment ce
+        LEFT JOIN master_items mi ON ce.item_code = mi.item_code
+        WHERE ce.character_id = '${characterId.replace(/'/g, "''")}';
+      `);
+
+      const slots = { WEAPON: null, ARMOR: null, STEED: null, TREASURE: null };
+      const equipmentBuffs = { war: 0, ldr: 0, int: 0, pol: 0, dip: 0, com: 0, log: 0, cra: 0 };
+
+      for (const r of rows) {
+        let mods = {};
+        try { mods = typeof r.stat_modifiers === 'string' ? JSON.parse(r.stat_modifiers) : r.stat_modifiers; } catch (e) {}
+        const clampedMods = {};
+        for (const [k, v] of Object.entries(mods)) {
+          const normK = k.toLowerCase().replace(/_attr$|_exp$/, '').trim();
+          const clamped = Math.min(5, Math.max(1, Math.round(Number(v) || 0)));
+          clampedMods[normK] = clamped;
+          if (equipmentBuffs.hasOwnProperty(normK)) {
+            equipmentBuffs[normK] += clamped;
+          }
+        }
+        slots[r.slot_type] = {
+          id: r.id,
+          characterId: r.character_id,
+          slotType: r.slot_type,
+          itemCode: r.item_code,
+          customName: r.custom_name || r.name_vi,
+          nameVi: r.name_vi || r.custom_name || r.item_code,
+          nameEn: r.name_en || r.item_code,
+          quality: 'NORMAL',
+          statModifiers: clampedMods,
+          slotIcon: r.slot_type === 'WEAPON' ? '⚔️' : r.slot_type === 'ARMOR' ? '🛡️' : r.slot_type === 'STEED' ? '🐎' : '📜',
+          slotLabelVi: r.slot_type === 'WEAPON' ? 'Binh Khí' : r.slot_type === 'ARMOR' ? 'Khôi Giáp' : r.slot_type === 'STEED' ? 'Chiến Mã' : 'Bảo Vật'
+        };
+      }
+
+      const effectiveAttributes = {};
+      const exceedsLimit = {};
+      for (const [k, baseVal] of Object.entries(baseAttrs)) {
+        const total = baseVal + (equipmentBuffs[k] || 0);
+        effectiveAttributes[k] = total;
+        exceedsLimit[k] = total > 100;
+      }
+
+      const compatible = runSqlJson(`
+        SELECT ii.item_code, ii.quantity, ii.unit_cost_basis, mi.name_vi, mi.name_en, mi.category, mi.stat_modifiers
+        FROM inventory_items ii
+        JOIN master_items mi ON ii.item_code = mi.item_code
+        WHERE ii.quantity > 0 AND (
+          mi.category IN ('WEAPON', 'ARMOR', 'STEED', 'TREASURE', 'EQUIPMENT') OR
+          ii.item_code LIKE 'COM-SWORD%' OR
+          ii.item_code LIKE 'COM-SPEAR%' OR
+          ii.item_code LIKE 'PROD-SHIELD%' OR
+          ii.item_code LIKE 'EQP-%' OR
+          ii.item_code LIKE 'GOD-%'
+        );
+      `);
+
+      sendJson(res, 200, {
+        success: true,
+        overview: {
+          characterId,
+          characterName: charName,
+          styleName,
+          isPlayer,
+          baseAttributes: baseAttrs,
+          equipmentBuffs,
+          effectiveAttributes,
+          exceedsLimit,
+          slots
+        },
+        compatibleWarehouseItems: compatible
+      });
+    } catch (err) {
+      sendJson(res, 500, { success: false, error: err.message });
+    }
+    return;
+  }
+
+  // 4s2. POST /api/equipment/equip - Equip Item into Designated Slot
+  if (req.method === 'POST' && pathname === '/api/equipment/equip') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        const characterId = payload.characterId || 'PLY-0001';
+        const slotType = (payload.slotType || '').toUpperCase().trim();
+        const itemCode = payload.itemCode;
+        let customName = payload.customName || '';
+        let statMods = payload.statModifiers || {};
+
+        if (!slotType || !itemCode) {
+          sendJson(res, 400, { success: false, error: 'slotType and itemCode are required.' });
+          return;
+        }
+
+        // Clamp modifiers strictly between 1 and 5
+        const clampedMods = {};
+        for (const [k, v] of Object.entries(statMods)) {
+          const normK = k.toLowerCase().replace(/_attr$|_exp$/, '').trim();
+          clampedMods[normK] = Math.min(5, Math.max(1, Math.round(Number(v) || 1)));
+        }
+
+        // Fetch master item details if mods empty
+        if (Object.keys(clampedMods).length === 0) {
+          const mItem = runSqlJson(`SELECT * FROM master_items WHERE item_code = '${itemCode.replace(/'/g, "''")}' LIMIT 1;`)[0];
+          if (mItem) {
+            if (!customName) customName = mItem.name_vi;
+            if (mItem.stat_modifiers) {
+              try {
+                const parsed = JSON.parse(mItem.stat_modifiers);
+                for (const [k, v] of Object.entries(parsed)) {
+                  clampedMods[k.toLowerCase()] = Math.min(5, Math.max(1, Math.round(Number(v) || 1)));
+                }
+              } catch (e) {}
+            }
+          }
+        }
+        if (Object.keys(clampedMods).length === 0) {
+          clampedMods.war = 2; // Default fallback buff
+        }
+
+        const modsJson = JSON.stringify(clampedMods).replace(/'/g, "''");
+        const safeName = customName.replace(/'/g, "''");
+
+        runSqlRaw(`
+          INSERT INTO character_equipment (character_id, slot_type, item_code, custom_name, stat_modifiers)
+          VALUES ('${characterId.replace(/'/g, "''")}', '${slotType}', '${itemCode.replace(/'/g, "''")}', '${safeName}', '${modsJson}')
+          ON CONFLICT(character_id, slot_type) DO UPDATE SET
+            item_code = excluded.item_code,
+            custom_name = excluded.custom_name,
+            stat_modifiers = excluded.stat_modifiers,
+            equipped_at = CURRENT_TIMESTAMP;
+        `);
+
+        sendJson(res, 200, {
+          success: true,
+          characterId,
+          slotType,
+          itemCode,
+          itemName: customName,
+          statModifiers: clampedMods,
+          messageVi: `Trang bị thành công ${customName} vào vị trí [${slotType}]!`
+        });
+      } catch (err) {
+        sendJson(res, 500, { success: false, error: err.message });
+      }
+    });
+    return;
+  }
+
+  // 4s3. POST /api/equipment/unequip - Unequip Slot
+  if (req.method === 'POST' && pathname === '/api/equipment/unequip') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        const characterId = payload.characterId || 'PLY-0001';
+        const slotType = (payload.slotType || '').toUpperCase().trim();
+        if (!slotType) {
+          sendJson(res, 400, { success: false, error: 'slotType is required.' });
+          return;
+        }
+
+        runSqlRaw(`
+          DELETE FROM character_equipment 
+          WHERE character_id = '${characterId.replace(/'/g, "''")}' AND slot_type = '${slotType}';
+        `);
+
+        sendJson(res, 200, {
+          success: true,
+          unequipped: true,
+          slotType,
+          messageVi: `Đã tháo trang bị khỏi vị trí [${slotType}] thành công.`
+        });
+      } catch (err) {
+        sendJson(res, 500, { success: false, error: err.message });
+      }
+    });
+    return;
+  }
+
+  // 4s4. POST /api/professions/forge/bespoke - Master Blacksmith Bespoke God Weapon Forging
+  if (req.method === 'POST' && pathname === '/api/professions/forge/bespoke') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        const characterId = payload.characterId || 'PLY-0001';
+        const player = runSqlJson(`SELECT cra_attr, fatigue, cra_exp FROM player_state WHERE player_id = '${characterId.replace(/'/g, "''")}' LIMIT 1;`)[0] || {};
+        const craAttr = Number(player.cra_attr || 50);
+        const fatigue = Number(player.fatigue || 0);
+
+        if (craAttr < 60) {
+          sendJson(res, 400, {
+            success: false,
+            error: `Kỹ Nghệ (CRA) hiện tại là ${craAttr}, chưa đạt ngưỡng 60 của Đại Tượng Sư để rèn Thần Binh.`
+          });
+          return;
+        }
+
+        if (fatigue + 25 > 95) {
+          sendJson(res, 400, {
+            success: false,
+            error: `Thể lực kiệt quệ (${fatigue}/100)! Không đủ khí lực kéo bễ đúc thần binh.`
+          });
+          return;
+        }
+
+        // Deduct materials from inventory if available
+        runSqlRaw(`UPDATE inventory_items SET quantity = MAX(0, quantity - 5) WHERE item_code = 'RAW-IRON';`);
+        runSqlRaw(`UPDATE inventory_items SET quantity = MAX(0, quantity - 5) WHERE item_code = 'RAW-COAL';`);
+        runSqlRaw(`UPDATE inventory_items SET quantity = MAX(0, quantity - 2) WHERE item_code = 'RAW-TIMBER';`);
+        runSqlRaw(`UPDATE inventory_items SET quantity = MAX(0, quantity - 2) WHERE item_code = 'RAW-LEATHER';`);
+
+        // Deduct fatigue +25 & award EXP
+        runSqlRaw(`UPDATE player_state SET fatigue = MIN(100, fatigue + 25), cra_exp = cra_exp + 45 WHERE player_id = '${characterId.replace(/'/g, "''")}';`);
+
+        // Quality roll based on CRA
+        const roll = Math.random() * 100;
+        let quality = 'NORMAL';
+        let qualityLabelVi = 'Phổ Thông Hảo Binh';
+        let warBuff = 2;
+        let ldrBuff = 1;
+
+        if (craAttr >= 90 && roll > 60) {
+          quality = 'LEGENDARY';
+          qualityLabelVi = 'Tuyệt Thế Thần Binh';
+          warBuff = 5;
+          ldrBuff = 2;
+        } else if (craAttr >= 75 && roll > 40) {
+          quality = 'MASTERWORK';
+          qualityLabelVi = 'Bách Luyện Tinh Cương';
+          warBuff = 4;
+          ldrBuff = 2;
+        } else if (roll > 30) {
+          quality = 'FINE';
+          qualityLabelVi = 'Tinh Luyện Thượng Phẩm';
+          warBuff = 3;
+          ldrBuff = 1;
+        }
+
+        // Enforce strict +1..+5 clamp
+        warBuff = Math.min(5, Math.max(1, warBuff));
+        ldrBuff = Math.min(5, Math.max(1, ldrBuff));
+
+        const weaponType = payload.weaponType || 'BLADE';
+        const customName = payload.customName || (quality === 'LEGENDARY' ? 'Thần Viêm Bảo Đao' : 'Bách Luyện Hảo Đao');
+        const itemCode = `GOD-${weaponType}-${Date.now().toString().slice(-6)}`;
+        const statModifiers = { war: warBuff, ldr: ldrBuff };
+
+        // Save into master_items & inventory_items
+        runSqlRaw(`
+          INSERT INTO master_items (item_code, name_vi, name_en, category, stat_modifiers, baseline_peace_price, current_market_price)
+          VALUES ('${itemCode}', '${customName.replace(/'/g, "''")}', 'God Weapon', 'WEAPON', '${JSON.stringify(statModifiers)}', 2000, 3000);
+          INSERT INTO inventory_items (item_code, category, description, quantity, unit_cost_basis, location)
+          VALUES ('${itemCode}', 'WEAPON', '${customName.replace(/'/g, "''")}', 1, 1500, 'Zhuo Workshop')
+          ON CONFLICT(item_code) DO UPDATE SET quantity = quantity + 1;
+        `);
+
+        // Auto equip if requested
+        if (payload.targetDestination === 'EQUIP_IMMEDIATELY') {
+          runSqlRaw(`
+            INSERT INTO character_equipment (character_id, slot_type, item_code, custom_name, stat_modifiers)
+            VALUES ('${characterId.replace(/'/g, "''")}', 'WEAPON', '${itemCode}', '${customName.replace(/'/g, "''")}', '${JSON.stringify(statModifiers)}')
+            ON CONFLICT(character_id, slot_type) DO UPDATE SET
+              item_code = excluded.item_code,
+              custom_name = excluded.custom_name,
+              stat_modifiers = excluded.stat_modifiers,
+              equipped_at = CURRENT_TIMESTAMP;
+          `);
+        }
+
+        sendJson(res, 200, {
+          success: true,
+          itemCode,
+          customName,
+          nameVi: customName,
+          quality,
+          qualityLabelVi,
+          statModifiers,
+          fatigueConsumed: 25,
+          expGained: 45,
+          destination: payload.targetDestination || 'WAREHOUSE',
+          messageVi: `Luyện thành thần binh [${customName}] phẩm cấp [${qualityLabelVi}] (+${warBuff} Võ Lực, +${ldrBuff} Thống Soái)!`
+        });
+      } catch (err) {
+        sendJson(res, 500, { success: false, error: err.message });
+      }
+    });
+    return;
+  }
+
+  // 4s5. POST /api/professions/forge/standard - Standard Armament Production
+  if (req.method === 'POST' && pathname === '/api/professions/forge/standard') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        const characterId = payload.characterId || 'PLY-0001';
+        const armCode = payload.armamentCode || 'COM-SWORD';
+        const qty = Math.max(1, parseInt(payload.quantity || 1, 10));
+
+        const names = {
+          'COM-SWORD': 'Hán Kiếm Tiêu Chuẩn',
+          'COM-SPEAR': 'Thiết Thương Quân Dụng',
+          'PROD-SHIELD-BAM': 'Thuẫn Mây Gia Cố',
+          'EQP-ARMOR-LEATHER': 'Ngực Giáp Da Trâu'
+        };
+        const armName = names[armCode] || armCode;
+
+        runSqlRaw(`
+          INSERT INTO inventory_items (item_code, category, description, quantity, unit_cost_basis, location)
+          VALUES ('${armCode}', 'EQUIPMENT', '${armName}', ${qty}, 35, 'Zhuo Workshop')
+          ON CONFLICT(item_code) DO UPDATE SET quantity = quantity + ${qty};
+          UPDATE player_state SET fatigue = MIN(100, fatigue + ${10 * qty}), cra_exp = cra_exp + ${15 * qty} WHERE player_id = '${characterId.replace(/'/g, "''")}';
+        `);
+
+        sendJson(res, 200, {
+          success: true,
+          armamentCode: armCode,
+          nameVi: armName,
+          quantity: qty,
+          fatigueConsumed: 10 * qty,
+          messageVi: `Rèn thành công ${qty} ${armName} nhập vào kho vũ khí!`
+        });
+      } catch (err) {
+        sendJson(res, 500, { success: false, error: err.message });
+      }
+    });
+    return;
+  }
+
+  // 4s6. GET /api/enterprise/status - Active Businesses & Labor Options
+  if (req.method === 'GET' && pathname === '/api/enterprise/status') {
+    try {
+      const characterId = parsedUrl.query.characterId || 'PLY-0001';
+      const player = runSqlJson(`SELECT liquid_cash, fatigue, cra_attr, com_attr, log_attr FROM player_state WHERE player_id = '${characterId.replace(/'/g, "''")}' LIMIT 1;`)[0] || {};
+      const activeBusinesses = runSqlJson(`
+        SELECT business_id, name, owner_character_id, location, business_type, workforce_count, daily_revenue_avg, monthly_rent, safe_cash
+        FROM businesses
+        WHERE owner_character_id = '${characterId.replace(/'/g, "''")}';
+      `);
+
+      sendJson(res, 200, {
+        success: true,
+        status: {
+          characterId,
+          playerCash: Number(player.liquid_cash || 0),
+          playerFatigue: Number(player.fatigue || 0),
+          activeEnterprises: activeBusinesses,
+          totalDailyRevenue: activeBusinesses.reduce((s, b) => s + (Number(b.daily_revenue_avg) || 0), 0),
+          totalWorkforce: activeBusinesses.reduce((s, b) => s + (Number(b.workforce_count) || 0), 0)
+        }
+      });
+    } catch (err) {
+      sendJson(res, 500, { success: false, error: err.message });
+    }
+    return;
+  }
+
+  // 4s7. POST /api/enterprise/work - Take Wage Labor Shift
+  if (req.method === 'POST' && pathname === '/api/enterprise/work') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        const characterId = payload.characterId || 'PLY-0001';
+        const shiftId = payload.shiftId;
+
+        const shifts = {
+          JOB_TAVERN_COOK: { title: 'Đầu Bếp Quán Rượu', wage: 65, fatigue: 15, attr: 'cra', exp: 15 },
+          JOB_TAVERN_STAFF: { title: 'Tiểu Nhị Tửu Quán', wage: 40, fatigue: 10, attr: 'com', exp: 10 },
+          JOB_APOTHECARY_COMPOUNDER: { title: 'Dược Đồng Bào Chế', wage: 60, fatigue: 15, attr: 'cra', exp: 15 },
+          JOB_HERB_GATHERER: { title: 'Thái Dược Sơn Dân', wage: 45, fatigue: 15, attr: 'log', exp: 15 },
+          JOB_FORGE_HAND: { title: 'Phụ Lò Rèn', wage: 75, fatigue: 20, attr: 'cra', exp: 20 },
+          JOB_WEAVER: { title: 'Thợ Dệt Vải Gai', wage: 50, fatigue: 10, attr: 'cra', exp: 10 }
+        };
+
+        const job = shifts[shiftId] || shifts.JOB_TAVERN_COOK;
+        const player = runSqlJson(`SELECT fatigue, liquid_cash FROM player_state WHERE player_id = '${characterId.replace(/'/g, "''")}' LIMIT 1;`)[0] || {};
+        const currentFatigue = Number(player.fatigue || 0);
+
+        if (currentFatigue + job.fatigue > 95) {
+          sendJson(res, 400, {
+            success: false,
+            error: `Khí lực kiệt quệ (${currentFatigue}/100)! Không đủ sức làm trọn ca ${job.title}. Cần nghỉ ngơi hồi phục.`
+          });
+          return;
+        }
+
+        const newFatigue = currentFatigue + job.fatigue;
+        const newCash = Number(player.liquid_cash || 0) + job.wage;
+        const currentDate = runSqlJson(`SELECT current_date FROM campaign_meta LIMIT 1;`)[0]?.current_date || '184-05-02';
+
+        runSqlRaw(`
+          UPDATE player_state 
+          SET fatigue = ${newFatigue}, liquid_cash = ${newCash}, ${job.attr}_exp = ${job.attr}_exp + ${job.exp} 
+          WHERE player_id = '${characterId.replace(/'/g, "''")}';
+          INSERT INTO cashflow_ledger (txn_id, game_date, counterparty, category, inflow, outflow, balance, memo)
+          VALUES ('TXN-WAGE-${Date.now()}', '${currentDate}', 'Chủ quán bản địa', ${job.wage}, 0, ${newCash}, 'Tiền công ca làm thuê: ${job.title}');
+        `);
+
+        sendJson(res, 200, {
+          success: true,
+          shiftId,
+          titleVi: job.title,
+          wagePaid: job.wage,
+          fatigueConsumed: job.fatigue,
+          remainingStamina: Math.max(0, 100 - newFatigue),
+          newBalance: newCash,
+          expGained: job.exp,
+          messageVi: `Hoàn tất ca làm việc [${job.title}]! Nhận +${job.wage} Tiền công và +${job.exp} EXP.`
+        });
+      } catch (err) {
+        sendJson(res, 500, { success: false, error: err.message });
+      }
+    });
+    return;
+  }
+
+  // 4s8. POST /api/enterprise/open - Open New Enterprise
+  if (req.method === 'POST' && pathname === '/api/enterprise/open') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        const characterId = payload.characterId || 'PLY-0001';
+        const bType = payload.businessType || 'TAVERN';
+        const configs = {
+          WORKSHOP: { name: 'Xưởng Dệt & Chế Tác', capital: 1000, rent: 200, rev: 140, staff: 4 },
+          TAVERN: { name: 'Tửu Quán & Khách Điếm', capital: 1500, rent: 250, rev: 200, staff: 3 },
+          APOTHECARY: { name: 'Dược Điếm & Y Quán', capital: 1200, rent: 220, rev: 180, staff: 2 },
+          BLACKSMITH: { name: 'Lò Rèn Bách Nghệ', capital: 2000, rent: 300, rev: 260, staff: 4 }
+        };
+        const cfg = configs[bType] || configs.TAVERN;
+        const name = payload.customName || cfg.name;
+        const player = runSqlJson(`SELECT liquid_cash FROM player_state WHERE player_id = '${characterId.replace(/'/g, "''")}' LIMIT 1;`)[0] || {};
+        const cash = Number(player.liquid_cash || 0);
+
+        if (cash < cfg.capital) {
+          sendJson(res, 400, {
+            success: false,
+            error: `Ngân quỹ không đủ! Cần tối thiểu ${cfg.capital} Tiền vốn khởi nghiệp (hiện có ${cash} Tiền).`
+          });
+          return;
+        }
+
+        const newCash = cash - cfg.capital;
+        const bId = `BIZ-${Date.now().toString().slice(-4)}`;
+        const currentDate = runSqlJson(`SELECT current_date FROM campaign_meta LIMIT 1;`)[0]?.current_date || '184-05-02';
+
+        runSqlRaw(`
+          UPDATE player_state SET liquid_cash = ${newCash} WHERE player_id = '${characterId.replace(/'/g, "''")}';
+          INSERT INTO businesses (business_id, name, owner_character_id, location, business_type, workforce_count, daily_revenue_avg, monthly_rent, safe_cash)
+          VALUES ('${bId}', '${name.replace(/'/g, "''")}', '${characterId.replace(/'/g, "''")}', 'LOC-0001', '${bType}', ${cfg.staff}, ${cfg.rev}, ${cfg.rent}, ${cfg.capital});
+          INSERT INTO cashflow_ledger (txn_id, game_date, counterparty, category, inflow, outflow, balance, memo)
+          VALUES ('TXN-BIZ-${Date.now()}', '${currentDate}', 'Khai trương ${name.replace(/'/g, "''")}', 0, ${cfg.capital}, ${newCash}, 'Đầu tư mở cơ sở kinh doanh ${name.replace(/'/g, "''")}');
+        `);
+
+        sendJson(res, 200, {
+          success: true,
+          businessId: bId,
+          type: bType,
+          name,
+          initialCapital: cfg.capital,
+          remainingPlayerCash: newCash,
+          messageVi: `Chúc mừng! Khai trương thành công cơ sở [${name}] với ${cfg.capital} Tiền vốn an toàn!`
+        });
       } catch (err) {
         sendJson(res, 500, { success: false, error: err.message });
       }

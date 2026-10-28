@@ -127,6 +127,16 @@
           </div>
 
           <div class="cmd-bar-right">
+            <!-- Equipment Modal Toggle Button -->
+            <button class="btn-cmd-dossier" id="btn-open-equipment" onclick="if(window.EquipmentUI){window.EquipmentUI.openEquipmentModal('gear');}else if(window.openEquipmentModal){window.openEquipmentModal('gear');}" title="Binh Khí & Bảo Vật (Trang bị / Đoán tạo thần binh)">
+              <span class="cmd-btn-icon">🗡️</span>
+              <span id="txt-btn-equipment">Trang Bị</span>
+            </button>
+            <!-- Enterprise & Labor Toggle Button -->
+            <button class="btn-cmd-dossier" id="btn-open-enterprise" onclick="if(window.EnterpriseUI){window.EnterpriseUI.openEnterpriseModal('work');}else if(window.openEnterpriseModal){window.openEnterpriseModal('work');}" title="Gia Sản & Việc Làm (Làm chủ / Làm thuê)">
+              <span class="cmd-btn-icon">🏮</span>
+              <span id="txt-btn-enterprise">Gia Sản</span>
+            </button>
             <!-- Courier / Remote Orders Toggle Button -->
             <button class="btn-courier-toggle" id="btn-courier-toggle" onclick="toggleCourierDrawer()" title="Phái sứ giả / Phi thư tín viễn trình">
               <span class="courier-btn-icon">✉️</span>
@@ -226,39 +236,79 @@
           </div>
         </div>
 
-        <!-- RPG Attributes 4x2 Mini-Grid -->
+        <!-- RPG Attributes 4x2 Mini-Grid with 8-Axis EXP Bars -->
         <div class="protagonist-attrs-grid">
-          <div class="attr-pill" title="Trí Lực (INT): 80 — Mưu lược, sách lược">
-            <span class="attr-name" id="attr-name-int">Trí Lực</span>
-            <span class="attr-num cyan-text" id="attr-int">80</span>
+          <div class="attr-pill" id="attr-pill-int" title="Trí Lực (INT): 80 — Mưu lược, sách lược">
+            <div class="attr-pill-main">
+              <span class="attr-name" id="attr-name-int">Trí Lực</span>
+              <span class="attr-num cyan-text" id="attr-int">80</span>
+            </div>
+            <div class="attr-exp-bar" title="EXP Trí Lực">
+              <div class="attr-exp-fill cyan" id="exp-bar-int" style="width: 0%;"></div>
+            </div>
           </div>
-          <div class="attr-pill" title="Thương Nghiệp (COM): 78 — Mua bán, định giá">
-            <span class="attr-name" id="attr-name-com">Thương Nghiệp</span>
-            <span class="attr-num gold-text" id="attr-com">78</span>
+          <div class="attr-pill" id="attr-pill-com" title="Thương Nghiệp (COM): 78 — Mua bán, định giá">
+            <div class="attr-pill-main">
+              <span class="attr-name" id="attr-name-com">Thương Nghiệp</span>
+              <span class="attr-num gold-text" id="attr-com">78</span>
+            </div>
+            <div class="attr-exp-bar" title="EXP Thương Nghiệp">
+              <div class="attr-exp-fill gold" id="exp-bar-com" style="width: 0%;"></div>
+            </div>
           </div>
-          <div class="attr-pill" title="Ngoại Giao (DIP): 74 — Thuyết phục hào kiệt">
-            <span class="attr-name" id="attr-name-dip">Ngoại Giao</span>
-            <span class="attr-num orange-text" id="attr-dip">74</span>
+          <div class="attr-pill" id="attr-pill-dip" title="Ngoại Giao (DIP): 74 — Thuyết phục hào kiệt">
+            <div class="attr-pill-main">
+              <span class="attr-name" id="attr-name-dip">Ngoại Giao</span>
+              <span class="attr-num orange-text" id="attr-dip">74</span>
+            </div>
+            <div class="attr-exp-bar" title="EXP Ngoại Giao">
+              <div class="attr-exp-fill orange" id="exp-bar-dip" style="width: 0%;"></div>
+            </div>
           </div>
-          <div class="attr-pill" title="Thống Soái (LDR): 70 — Chỉ huy gia đinh">
-            <span class="attr-name" id="attr-name-ldr">Thống Soái</span>
-            <span class="attr-num" id="attr-ldr">70</span>
+          <div class="attr-pill" id="attr-pill-ldr" title="Thống Soái (LDR): 70 — Chỉ huy gia đinh">
+            <div class="attr-pill-main">
+              <span class="attr-name" id="attr-name-ldr">Thống Soái</span>
+              <span class="attr-num green-text" id="attr-ldr">70</span>
+            </div>
+            <div class="attr-exp-bar" title="EXP Thống Soái">
+              <div class="attr-exp-fill green" id="exp-bar-ldr" style="width: 0%;"></div>
+            </div>
           </div>
-          <div class="attr-pill" title="Hậu Cần (LOG): 70 — Vận lương, kế toán">
-            <span class="attr-name" id="attr-name-log">Hậu Cần</span>
-            <span class="attr-num" id="attr-log">70</span>
+          <div class="attr-pill" id="attr-pill-log" title="Hậu Cần (LOG): 70 — Vận lương, kế toán">
+            <div class="attr-pill-main">
+              <span class="attr-name" id="attr-name-log">Hậu Cần</span>
+              <span class="attr-num" id="attr-log">70</span>
+            </div>
+            <div class="attr-exp-bar" title="EXP Hậu Cần">
+              <div class="attr-exp-fill cyan" id="exp-bar-log" style="width: 0%;"></div>
+            </div>
           </div>
-          <div class="attr-pill" title="Chính Trị (POL): 68 — Quan phủ, giấy phép">
-            <span class="attr-name" id="attr-name-pol">Chính Trị</span>
-            <span class="attr-num" id="attr-pol">68</span>
+          <div class="attr-pill" id="attr-pill-pol" title="Chính Trị (POL): 68 — Quan phủ, giấy phép">
+            <div class="attr-pill-main">
+              <span class="attr-name" id="attr-name-pol">Chính Trị</span>
+              <span class="attr-num purple-text" id="attr-pol">68</span>
+            </div>
+            <div class="attr-exp-bar" title="EXP Chính Trị">
+              <div class="attr-exp-fill purple" id="exp-bar-pol" style="width: 0%;"></div>
+            </div>
           </div>
-          <div class="attr-pill" title="Khéo Léo (CRA): 62 — Giám định, rèn đúc">
-            <span class="attr-name" id="attr-name-cra">Khéo Léo</span>
-            <span class="attr-num" id="attr-cra">62</span>
+          <div class="attr-pill" id="attr-pill-cra" title="Khéo Léo (CRA): 62 — Giám định, rèn đúc">
+            <div class="attr-pill-main">
+              <span class="attr-name" id="attr-name-cra">Khéo Léo</span>
+              <span class="attr-num amber-text" id="attr-cra">62</span>
+            </div>
+            <div class="attr-exp-bar" title="EXP Khéo Léo">
+              <div class="attr-exp-fill amber" id="exp-bar-cra" style="width: 0%;"></div>
+            </div>
           </div>
-          <div class="attr-pill" title="Võ Lực (WAR): 58 — Tự vệ, cưỡi ngựa">
-            <span class="attr-name" id="attr-name-war">Võ Lực</span>
-            <span class="attr-num red-text" id="attr-war">58</span>
+          <div class="attr-pill" id="attr-pill-war" title="Võ Lực (WAR): 58 — Tự vệ, cưỡi ngựa">
+            <div class="attr-pill-main">
+              <span class="attr-name" id="attr-name-war">Võ Lực</span>
+              <span class="attr-num red-text" id="attr-war">58</span>
+            </div>
+            <div class="attr-exp-bar" title="EXP Võ Lực">
+              <div class="attr-exp-fill red" id="exp-bar-war" style="width: 0%;"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -779,6 +829,8 @@
   <script src="/js/modals.js"></script>
   <script src="/js/tactical-battle-ui.js"></script>
   <script src="/js/npc-dossier-modal.js"></script>
+  <script src="/js/equipment-ui.js"></script>
+  <script src="/js/enterprise-ui.js"></script>
   <script src="/js/story.js"></script>
   <script src="/js/deck.js"></script>
   <script src="/app.js"></script>
