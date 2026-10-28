@@ -2595,7 +2595,17 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
   // Normalize subLocation
   let currentLocKey = 'Vườn Đào';
   const subLower = (subLocation || '').toLowerCase();
-  if (subLower.includes('chợ') || subLower.includes('đông môn') || subLower.includes('market')) {
+  if (subLower.includes('thiết điếm') || subLower.includes('lò rèn') || subLower.includes('smithy') || subLower.includes('forge')) {
+    currentLocKey = 'Thiết Điếm Trác Huyện';
+  } else if (subLower.includes('tửu quán') || subLower.includes('quán rượu') || subLower.includes('tavern')) {
+    currentLocKey = 'Tửu Quán Trác Huyện';
+  } else if (subLower.includes('lôi đài') || subLower.includes('giáo trường') || subLower.includes('arena') || subLower.includes('drill')) {
+    currentLocKey = 'Lôi Đài Giáo Trường';
+  } else if (subLower.includes('dịch trạm') || subLower.includes('mã xa') || subLower.includes('depot') || subLower.includes('caravan')) {
+    currentLocKey = 'Mã Xa Dịch Trạm';
+  } else if (subLower.includes('tư trạch') || subLower.includes('lương phủ') || subLower.includes('residence') || subLower.includes('manor')) {
+    currentLocKey = 'Tư Trạch Vườn Đào';
+  } else if (subLower.includes('chợ') || subLower.includes('đông môn') || subLower.includes('market')) {
     currentLocKey = 'Chợ Đông Môn';
   } else if (subLower.includes('xưởng') || subLower.includes('chức tác') || subLower.includes('workshop')) {
     currentLocKey = 'Xưởng Lương Thị';
@@ -2649,7 +2659,247 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
   let options = [];
   let locationFull = '';
 
-  if (currentLocKey === 'Vườn Đào') {
+  if (currentLocKey === 'Thiết Điếm Trác Huyện') {
+    locationFull = 'Thiết Điếm Lò Rèn Trác Huyện — Khu Phố Thợ Rèn';
+    npc = {
+      id: 'NPC-0005',
+      name: 'Trần Bảo (Thợ Cả)',
+      title: 'Đại Tượng Sư Lò Rèn — CRA 75',
+      sentiment: 85,
+      sentimentStatus: 'Trung thành: 85% • Thân thiết'
+    };
+    lastCheck = {
+      status: 'THÀNH CÔNG',
+      type: 'KIỂM TRA ĐOÁN TẠO & LUYỆN KIM (CRA)',
+      title: 'Kéo Bễ Lò Than & Tôi Thép Thần Binh',
+      score: 55,
+      dc: 40,
+      formula: `[CRA ${player.cra_attr || 62} * 0.5 = 31] + [Luyện thép +14] + [D20: 10] = 55 >= DC 40`
+    };
+    narrative = lastNarrative || 'Lửa lò rực đỏ soi sáng những vệt than đen trên vách đá. Tiếng đe búa chan chát vang vọng cả góc phố. Thợ cả Trần Bảo quệt mồ hôi, nhấc thanh thép đỏ rực bốc khói ngùn ngụt: "Lương công tử tới đúng lúc lắm! Bễ lò than đước đang hừng hực, nếu ngài muốn tự tay rèn đúc thần binh độc bản hay phụ việc kéo bễ nung kiếm thì hôm nay chính là thời khắc đắc địa!"';
+    options = [
+      {
+        id: 'OPT_1',
+        icon: '工',
+        title: 'Tự tay kéo bễ lò nung phụ việc rèn đao (Lao động kiếm 50 Tiền công)',
+        desc: '+50 Tiền mặt • +15 CRA EXP • Tiêu hao 15 Thể lực • Kỹ nghệ thợ lò',
+        action: { type: 'WORK_SHIFT', shift_id: 'SHIFT_FORGE_HAND', counterparty: 'Thợ Cả Trần Bảo', game_date: meta.current_date || '184-05-02' }
+      },
+      {
+        id: 'OPT_2',
+        icon: '鍛',
+        title: 'Mở lò rèn đại tượng sư đúc thần binh bách luyện (Bespoke Forge)',
+        desc: 'Tôi luyện bảo kiếm, thương mâu độc bản • Tự chọn tên và phẩm cấp • CRA Check',
+        action: { type: 'OPEN_BESPOKE_FORGE', counterparty: 'Thiết Điếm Trác Huyện', game_date: meta.current_date || '184-05-02' }
+      },
+      {
+        id: 'OPT_3',
+        icon: '商',
+        title: 'Thu mua 10 Thỏi Sắt Tinh Luyện từ thợ cả (Chi 850 Tiền)',
+        desc: '+10 RAW-IRON-INGOT vào kho • Chi 850 Tiền mặt • Nguyên liệu rèn đao',
+        action: { type: 'TRADE_BUY', item_code: 'RAW-IRON-INGOT', quantity: 10, unit_price: 85, counterparty: 'Thợ Cả Trần Bảo', game_date: meta.current_date || '184-05-02' }
+      },
+      {
+        id: 'OPT_4',
+        icon: '行',
+        title: 'Rời Thiết Điếm, rảo bước sang Tửu Quán Trác Huyện (0.8 dặm)',
+        desc: 'Cơ động sang tửu quán trung tâm phố thị uống rượu kết giao hào kiệt',
+        action: { type: 'MOVE_LOCATION', new_location: 'Tửu Quán Trác Huyện', game_date: meta.current_date || '184-05-02' }
+      }
+    ];
+  } else if (currentLocKey === 'Tửu Quán Trác Huyện') {
+    locationFull = 'Tửu Quán Trác Huyện — Trung Tâm Phố Chợ';
+    npc = {
+      id: 'NPC-0002',
+      name: 'Trương Phi (Dực Đức)',
+      title: 'Hào Hiệp Đào Viên — WAR 97 / Tửu Lượng Vô Song',
+      sentiment: 75,
+      sentimentStatus: 'Huynh đệ tri kỷ • Hảo cảm: +35'
+    };
+    lastCheck = {
+      status: 'THÀNH CÔNG',
+      type: 'KIỂM TRA TỬU LƯỢNG & HÀO KHÍ (WAR/CHA)',
+      title: 'Nâng Chén Đào Viên Luận Anh Hùng',
+      score: 52,
+      dc: 35,
+      formula: `[WAR ${player.war_attr || 58} * 0.5 = 29] + [Tửu lượng +15] + [D20: 8] = 52 >= DC 35`
+    };
+    narrative = lastNarrative || 'Hương rượu nếp Trác Thành nồng nàn lan tỏa khắp gian quán. Hào kiệt bốn phương nâng bát lớn chạm nhau chan chát. Trương Phi vừa vỗ bàn cười vang rung chuyển xà nhà: "Ha ha ha! Lương đệ tới thật đúng lúc! Rượu ngon thịt béo đã bày sẵn, mau vào uống cạn ba vò cùng lão Trương ta rồi tính chuyện chiêu mộ thêm hào kiệt cứu nguy quốc gia!"';
+    options = [
+      {
+        id: 'OPT_1',
+        icon: '飲',
+        title: 'Gọi vò Trác Thành Trán Nương uống rượu giải sầu (Hồi 35 Thể Lực, Chi 45 Tiền)',
+        desc: '-45 Tiền • Hồi phục 35 Thể Lực • Sĩ khí +10 • Xua tan kiệt sức',
+        action: { type: 'BANQUET_DRINK', item_code: 'COM-WINE-ZHUO', amount: 45, counterparty: 'Chưởng Quỹ Tửu Quán', game_date: meta.current_date || '184-05-02' }
+      },
+      {
+        id: 'OPT_2',
+        icon: '宴',
+        title: 'Mở tiệc rượu Tiểu Yến thết đãi hào kiệt bốn phương (Chi 300 Tiền)',
+        desc: '-300 Tiền • Hảo cảm danh sĩ +15 • Tăng danh vọng vùng • Mời Trương Phi, Quan Vũ',
+        action: { type: 'HOST_BANQUET', tier: 'TIER_1_LOCAL', cost: 300, game_date: meta.current_date || '184-05-02' }
+      },
+      {
+        id: 'OPT_3',
+        icon: '義',
+        title: 'Tìm kiếm và chiêu mộ hảo hán giang hồ làm môn khách (Tụ Nghĩa)',
+        desc: 'Mời mọc tráng sĩ lưu lạc gia nhập trướng hạ • Tăng gia đinh hộ vệ',
+        action: { type: 'RECRUIT_HERO', counterparty: 'Hảo Hán Tửu Quán', game_date: meta.current_date || '184-05-02' }
+      },
+      {
+        id: 'OPT_4',
+        icon: '行',
+        title: 'Rời Tửu Quán, sang Lôi Đài Giáo Trường Bắc Môn đọ sức (0.8 dặm)',
+        desc: 'Cơ động sang võ đài giáo trường giao lưu thương pháp và tỉ võ',
+        action: { type: 'MOVE_LOCATION', new_location: 'Lôi Đài Giáo Trường', game_date: meta.current_date || '184-05-02' }
+      }
+    ];
+  } else if (currentLocKey === 'Lôi Đài Giáo Trường') {
+    locationFull = 'Lôi Đài Giáo Trường Bắc Môn — Huyện Trác';
+    npc = {
+      id: 'NPC-0033',
+      name: 'Hoa Hùng (Võ Sĩ Lôi Đài)',
+      title: 'Tây Lương Kiêu Tướng — WAR 92',
+      sentiment: 50,
+      sentimentStatus: 'Ngang tài ngang sức • Đấu võ đài'
+    };
+    lastCheck = {
+      status: 'THÀNH CÔNG',
+      type: 'KIỂM TRA VÕ NGHỆ ĐƠN ĐẢ (WAR/DUEL)',
+      title: 'Thao Diễn Chiến Trận & Tỉ Võ 1v1',
+      score: 58,
+      dc: 45,
+      formula: `[WAR ${player.war_attr || 58} * 0.5 = 29] + [Đơn đả +18] + [D20: 11] = 58 >= DC 45`
+    };
+    narrative = lastNarrative || 'Võ đài lim dựng cao sừng sững giữa giáo trường, cờ xí bay phần phật trong gió bắc. Tiếng hò reo vang dội khi các võ sĩ chạm thương chém kiếm tóe lửa. Trương Phi và Quan Vũ đứng tựa binh giá, khẽ mỉm cười gật đầu: "Lương đệ, võ đạo quý ở thực chiến! Mau lên đài đấu vài hiệp để tôi luyện khí phách!"';
+    options = [
+      {
+        id: 'OPT_1',
+        icon: '武',
+        title: 'Lên đài thỉnh giáo thương pháp cùng Trương Phi (Miễn phí)',
+        desc: 'Đấu thương 1v1 • Nhận +10 WAR EXP, +1 WAR • Hảo cảm Trương Phi +5',
+        action: { type: 'SPARRING_DUEL', opponent_id: 'NPC-0002', counterparty: 'Trương Phi (Dực Đức)', game_date: meta.current_date || '184-05-02' }
+      },
+      {
+        id: 'OPT_2',
+        icon: '演',
+        title: 'Đăng đài thách đấu giải vô địch Lôi Đài 3 cấp độ (Tranh đoạt tiền thưởng)',
+        desc: 'Mở giao diện Đơn Đả Đấu Trường • Khiêu chiến Hoa Hùng, Lữ Bố nhận 300 - 3000 Tiền',
+        action: { type: 'OPEN_ARENA_MODAL', counterparty: 'Lôi Đài Giáo Trường', game_date: meta.current_date || '184-05-02' }
+      },
+      {
+        id: 'OPT_3',
+        icon: '武',
+        title: 'Thỉnh giáo Thanh Long đao pháp cùng Quan Vũ (Hảo cảm +5, +12 WAR EXP)',
+        desc: 'Giao lưu đao pháp Xuân Thu • Lĩnh ngộ thế thủ kiên cố • WAR Check',
+        action: { type: 'SPARRING_DUEL', opponent_id: 'NPC-0003', counterparty: 'Quan Vũ (Vân Trường)', game_date: meta.current_date || '184-05-02' }
+      },
+      {
+        id: 'OPT_4',
+        icon: '行',
+        title: 'Rời võ đài, sang Tửu Quán Trác Huyện khao quân uống rượu (0.8 dặm)',
+        desc: 'Rời giáo trường về tửu quán phố chợ ăn mừng chiến tích',
+        action: { type: 'MOVE_LOCATION', new_location: 'Tửu Quán Trác Huyện', game_date: meta.current_date || '184-05-02' }
+      }
+    ];
+  } else if (currentLocKey === 'Mã Xa Dịch Trạm') {
+    locationFull = 'Mã Xa Dịch Trạm & Thương Hội — Đông Môn Khách Điếm';
+    npc = {
+      id: 'NPC-0011',
+      name: 'Dịch Quan Trác Huyện',
+      title: 'Đốc Vận Sứ • Thương Hội Huyện Trác',
+      sentiment: 60,
+      sentimentStatus: 'Giao hảo quan dịch'
+    };
+    lastCheck = {
+      status: 'THÀNH CÔNG',
+      type: 'KIỂM TRA HẬU CẦN & VẬN TẢI (LOG/COM)',
+      title: 'Khảo Sát Thương Lộ & Định Cước Phí',
+      score: 53,
+      dc: 38,
+      formula: `[LOG ${player.log_attr || 50} * 0.5 = 25] + [Hậu cần +18] + [D20: 10] = 53 >= DC 38`
+    };
+    narrative = lastNarrative || 'Hàng chục cỗ xe ngựa xếp dài trước trạm dịch, phu xe hối hả chằng buộc hàng hóa và cho ngựa ăn cỏ. Dịch quan tay cầm sổ sách ngẩng đầu bẩm báo: "Lương đông gia! Quan đạo xuôi nam tới Ký Châu và Lạc Dương hiện đang có thương đội gom hàng lớn. Ngài muốn xuất phát đoàn xe nào vượt biên giao thương hay tuyển thêm hộ vệ tiêu sư?"';
+    options = [
+      {
+        id: 'OPT_1',
+        icon: '商',
+        title: 'Tổ chức thương đoàn viễn chinh liên châu (Mở bảng điều phối Thương Đoàn)',
+        desc: 'Mở giao diện Thương Đoàn • Chọn lộ trình vận chuyển, hàng hóa và hộ vệ',
+        action: { type: 'OPEN_CARAVAN_MODAL', counterparty: 'Thương Hội Trác Huyện', game_date: meta.current_date || '184-05-02' }
+      },
+      {
+        id: 'OPT_2',
+        icon: '車',
+        title: 'Mua 1 cỗ Xe Ngựa Viễn Chinh gia cố (Chi 2500 Tiền, Tăng tải trọng)',
+        desc: '-2500 Tiền mặt • +1 Cỗ xe viễn chinh • Tăng 1000kg tải trọng hàng hóa',
+        action: { type: 'TRADE_BUY', item_code: 'EQP-CARAVAN-WAGON', quantity: 1, unit_price: 2500, counterparty: 'Mã Xa Dịch Trạm', game_date: meta.current_date || '184-05-02' }
+      },
+      {
+        id: 'OPT_3',
+        icon: '衛',
+        title: 'Tuyển mộ 5 Tiêu Sư hộ vệ tinh nhuệ chống thổ phỉ (Chi 500 Tiền)',
+        desc: '-500 Tiền • +5 Tiêu Sư hộ tống thương đoàn • Giảm 50% tỷ lệ bị cướp bóc',
+        action: { type: 'HIRE_GUARDS', quantity: 5, unit_price: 100, counterparty: 'Tiêu Cục Trác Huyện', game_date: meta.current_date || '184-05-02' }
+      },
+      {
+        id: 'OPT_4',
+        icon: '行',
+        title: 'Rời dịch trạm, đi ra Chợ Đông Môn thu mua nông sản hàng hóa (1 dặm)',
+        desc: 'Cơ động ra chợ huyện gom hàng lụa, muối và ngũ cốc chuẩn bị tải hàng',
+        action: { type: 'MOVE_LOCATION', new_location: 'Chợ Đông Môn', game_date: meta.current_date || '184-05-02' }
+      }
+    ];
+  } else if (currentLocKey === 'Tư Trạch Vườn Đào') {
+    locationFull = 'Tư Trạch Vườn Đào • Lương Phủ Nội Viện';
+    npc = {
+      id: 'NPC-0088',
+      name: 'Chân Cơ (Chân Lạc)',
+      title: 'Chánh Thê Lương Gia • Hiền Thục Đoan Trang',
+      sentiment: 95,
+      sentimentStatus: 'Gia đạo êm ấm • Tình nghĩa phu thê'
+    };
+    lastCheck = {
+      status: 'THÀNH CÔNG',
+      type: 'KIỂM TRA GIA ĐẠO & TÔNG TỘC (POL/DIP)',
+      title: 'Hòa Hợp Gia Thất & Dưỡng Dục Thế Tử',
+      score: 56,
+      dc: 30,
+      formula: `[DIP ${player.dip_attr || 50} * 0.5 = 25] + [Gia đạo +20] + [D20: 11] = 56 >= DC 30`
+    };
+    narrative = lastNarrative || 'Khung cảnh nội viện thanh tịnh an hòa, hương hoa đào thoang thoảng bên song cửa. Chân Cơ mỉm cười dịu dàng tự tay dâng chén trà thơm nóng: "Phu quân bôn ba bốn phương vất vả, hãy ngồi xuống nghỉ ngơi dưỡng sức. Trong nhà mọi việc củi đuốc gia nhân, thiếp đều đã thu xếp chu toàn. Các con cũng đang chăm chỉ học tập võ lược."';
+    options = [
+      {
+        id: 'OPT_1',
+        icon: '休',
+        title: 'Nghỉ ngơi an giấc tại phòng trong (Hồi phục 35 Thể Lực, +20 Sinh Lực HP)',
+        desc: 'Nghỉ ngơi tĩnh dưỡng • Thể lực phục hồi 35 điểm • Sinh lực +20 • Giải trừ kiệt sức',
+        action: { type: 'REST_RESIDENCE', counterparty: 'Tư Trạch Lương Gia', game_date: meta.current_date || '184-05-02' }
+      },
+      {
+        id: 'OPT_2',
+        icon: '家',
+        title: 'Đàm đạo tâm tình cùng phu nhân, bồi đắp tình cảm gia đình (Tăng hảo cảm)',
+        desc: 'Bồi đắp tình cảm phu thê • Tăng hảo cảm +5 • Mở khóa cơ duyên mang thai',
+        action: { type: 'TALK_SPOUSE', npc_id: 'NPC-0088', counterparty: 'Chân Cơ', game_date: meta.current_date || '184-05-02' }
+      },
+      {
+        id: 'OPT_3',
+        icon: '嗣',
+        title: 'Kiểm tra bài vở, dạy dỗ sách lược và võ công cho thế tử',
+        desc: 'Dạy bảo con cái • Tăng EXP thuộc tính cho con cái • Định hướng sở trường',
+        action: { type: 'TUTOR_HEIRS', counterparty: 'Hậu Duệ Lương Gia', game_date: meta.current_date || '184-05-02' }
+      },
+      {
+        id: 'OPT_4',
+        icon: '行',
+        title: 'Rời tư trạch, đi tới Thiết Điếm Trác Huyện rèn đao (1.2 dặm)',
+        desc: 'Cất bước ra phố thợ rèn để tôi luyện binh khí hộ thân',
+        action: { type: 'MOVE_LOCATION', new_location: 'Thiết Điếm Trác Huyện', game_date: meta.current_date || '184-05-02' }
+      }
+    ];
+  } else if (currentLocKey === 'Vườn Đào') {
     locationFull = 'Trang Viên Vườn Đào Hạ Trạch — Nam Thành Huyện Trác';
     npc = {
       id: 'NPC-0002',

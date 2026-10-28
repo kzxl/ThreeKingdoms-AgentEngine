@@ -605,6 +605,72 @@ async function executeChoiceDirect(optId) {
       return;
     }
 
+    // Contextual Spatial POI Modal Triggers & On-site Actions
+    if (opt.action && opt.action.type === 'OPEN_BESPOKE_FORGE') {
+      if (window.EquipmentUI && typeof window.EquipmentUI.openEquipmentModal === 'function') {
+        window.EquipmentUI.openEquipmentModal('PLY-0001', 'forge_bespoke');
+      }
+      return;
+    }
+    if (opt.action && opt.action.type === 'OPEN_CARAVAN_MODAL') {
+      if (window.CaravanUI) {
+        if (typeof window.CaravanUI.open === 'function') window.CaravanUI.open('dispatch');
+        else if (typeof window.CaravanUI.openCaravanModal === 'function') window.CaravanUI.openCaravanModal('dispatch');
+      }
+      return;
+    }
+    if (opt.action && (opt.action.type === 'OPEN_TAVERN_MODAL' || opt.action.type === 'HOST_BANQUET' || opt.action.type === 'RECRUIT_HERO')) {
+      if (window.SpatialPoiModals && typeof window.SpatialPoiModals.openTavernModal === 'function') {
+        const tab = opt.action.type === 'RECRUIT_HERO' ? 'recruit' : 'banquet';
+        window.SpatialPoiModals.openTavernModal(tab);
+      }
+      return;
+    }
+    if (opt.action && (opt.action.type === 'DRINK_WINE' || opt.action.type === 'BANQUET_DRINK')) {
+      if (window.SpatialPoiModals && typeof window.SpatialPoiModals.openTavernModal === 'function') {
+        window.SpatialPoiModals.openTavernModal('drink');
+      }
+      return;
+    }
+    if (opt.action && (opt.action.type === 'OPEN_ARENA_MODAL' || opt.action.type === 'SPARRING_DUEL')) {
+      if (window.SpatialPoiModals && typeof window.SpatialPoiModals.openArenaModal === 'function') {
+        const tab = opt.action.type === 'SPARRING_DUEL' ? 'spar' : 'tournament';
+        window.SpatialPoiModals.openArenaModal(tab);
+      }
+      return;
+    }
+    if (opt.action && opt.action.type === 'REST_RESIDENCE') {
+      if (window.SpatialPoiModals && typeof window.SpatialPoiModals.quickRestResidence === 'function') {
+        window.SpatialPoiModals.quickRestResidence();
+      }
+      return;
+    }
+    if (opt.action && opt.action.type === 'TALK_SPOUSE') {
+      if (window.SpatialPoiModals && typeof window.SpatialPoiModals.openResidenceModal === 'function') {
+        window.SpatialPoiModals.openResidenceModal('spouse');
+      }
+      return;
+    }
+    if (opt.action && opt.action.type === 'TUTOR_HEIRS') {
+      if (window.SpatialPoiModals && typeof window.SpatialPoiModals.openResidenceModal === 'function') {
+        window.SpatialPoiModals.openResidenceModal('heir');
+      }
+      return;
+    }
+    if (opt.action && opt.action.type === 'SPAR_ZHANG_FEI') {
+      if (window.SpatialPoiModals && typeof window.SpatialPoiModals.quickSpar === 'function') {
+        window.SpatialPoiModals.quickSpar('NPC-0002');
+      }
+      return;
+    }
+    if (opt.action && opt.action.type === 'WORK_SHIFT') {
+      if (window.EnterpriseUI && typeof window.EnterpriseUI.takeWorkShift === 'function') {
+        await window.EnterpriseUI.takeWorkShift(opt.action.shift_id || 'SHIFT_FORGE_HAND');
+        await Promise.all([loadStatus(), loadScene(activeSubLocation)]);
+        return;
+      }
+    }
+
     // Location Movement Choice (Fallback compatibility)
     if (opt.action && opt.action.type === 'MOVE_LOCATION') {
       showToast(`Đang di chuyển tới ${opt.action.new_location}...`);

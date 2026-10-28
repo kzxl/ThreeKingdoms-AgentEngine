@@ -132,6 +132,11 @@
           </div>
 
           <div class="cmd-bar-right">
+            <!-- Dynamic Spatial POI Contextual Button (Adapts to Active Location) -->
+            <button class="btn-spatial-action" id="btn-spatial-action" onclick="if(window.SpatialPoiController){SpatialPoiController.triggerActivePoiAction();}" title="Hành Động Đặc Thù Địa Điểm Hiện Tại">
+              <span class="hub-seal-sub" id="spatial-action-seal">🏛️</span>
+              <span id="txt-spatial-action">Gia Thất</span>
+            </button>
             <!-- Quick Wage Labor Action -->
             <button class="btn-quick-labor" id="btn-quick-labor" onclick="if(window.EnterpriseUI){EnterpriseUI.openEnterpriseModal('work');}" title="Lao Động Kiếm Sống / Đi Làm Thuê Thời Vụ">
               <span class="hub-seal-sub labor-seal">工</span>
@@ -942,6 +947,8 @@
   <script src="/js/turn-advance.js"></script>
   <script src="/js/grand-command-hub-ui.js"></script>
   <script src="/js/personal-journal-ui.js"></script>
+  <script src="/js/spatial-poi-modals.js"></script>
+  <script src="/js/spatial-poi-controller.js"></script>
   <script src="/js/title-screen-ui.js"></script>
   <script src="/js/story.js"></script>
   <script src="/js/deck.js"></script>

@@ -224,6 +224,12 @@ function renderStoryChronicle() {
 
 const LOCATION_NPC_MAP = {
   'Vườn Đào': { id: 'NPC-0002', nameVi: 'Trương Phi', nameEn: 'Zhang Fei', titleVi: 'Dực Đức • Trác Huyện', titleEn: 'Yide • Champion' },
+  'Tư Trạch Vườn Đào': { id: 'NPC-0088', nameVi: 'Chân Cơ', nameEn: 'Lady Zhen', titleVi: 'Chánh Thê Lương Gia', titleEn: 'Liang First Lady' },
+  'Thiết Điếm Trác Huyện': { id: 'NPC-0005', nameVi: 'Trần Bảo', nameEn: 'Chen Bao', titleVi: 'Đại Tượng Sư Lò Rèn', titleEn: 'Master Smith' },
+  'Tửu Quán Trác Huyện': { id: 'NPC-0002', nameVi: 'Trương Phi', nameEn: 'Zhang Fei', titleVi: 'Dực Đức • Tửu Hào', titleEn: 'Yide • Tavern Champion' },
+  'Lôi Đài Giáo Trường': { id: 'NPC-0033', nameVi: 'Hoa Hùng', nameEn: 'Hua Xiong', titleVi: 'Võ Sĩ Lôi Đài • Kiêu Tướng', titleEn: 'Arena Champion' },
+  'Mã Xa Dịch Trạm': { id: 'NPC-0011', nameVi: 'Dịch Quan Trác Huyện', nameEn: 'Zhuo Post Master', titleVi: 'Đốc Vận Sứ • Thương Hội', titleEn: 'Trade Caravan Master' },
+  'Chợ Đông Môn & Sạp Trà': { id: 'NPC-0003', nameVi: 'Quan Vũ', nameEn: 'Guan Yu', titleVi: 'Vân Trường • Nghĩa Sĩ', titleEn: 'Yunchang • Heroic Knight' },
   'Chợ Đông Môn': { id: 'NPC-0003', nameVi: 'Quan Vũ', nameEn: 'Guan Yu', titleVi: 'Vân Trường • Nghĩa Sĩ', titleEn: 'Yunchang • Heroic Knight' },
   'Xưởng Lương Thị': { id: 'NPC-0007', nameVi: 'Trần Bảo', nameEn: 'Chen Bao', titleVi: 'Thợ Cả Lương Gia', titleEn: 'Master Craftsman' },
   'Bắc Bình Soái Phủ': { id: 'NPC-0060', nameVi: 'Công Tôn Toản', nameEn: 'Gongsun Zan', titleVi: 'Bạch Mã Tướng Quân', titleEn: 'White Horse General' },
@@ -571,6 +577,11 @@ function renderSceneFromData(data, customNarrative = null) {
 
   // Dynamic Contextual Quick Chips & Locality Banner
   renderDynamicQuickChips(activeSubLocation);
+
+  // Dynamic Contextual Action Dock for Physical POI
+  if (window.SpatialPoiController && typeof window.SpatialPoiController.updateActionDock === 'function') {
+    window.SpatialPoiController.updateActionDock(activeSubLocation);
+  }
 
   // Story Chronicle Stream: Append encounter turn if chronicle is empty, location changed, or custom narrative supplied
   const shouldAppendTurn = storyChronicle.length === 0 || 
