@@ -2716,13 +2716,14 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
 });
 
 function startServer(port = DEFAULT_PORT) {
-  server.listen(port, () => {
+  server.listen(port, '0.0.0.0', () => {
     console.log('====================================================');
     console.log(` 🏯 ThreeKingdoms-AgentEngine: Web UI Server`);
     console.log('====================================================');
-    console.log(` URL      : http://localhost:${port}`);
-    console.log(` Database : ${DB_PATH}`);
-    console.log(` Status   : 🟢 ONLINE & READY`);
+    console.log(` URL (Local)   : http://localhost:${port}`);
+    console.log(` URL (IPv4)    : http://127.0.0.1:${port}`);
+    console.log(` Database      : ${DB_PATH}`);
+    console.log(` Status        : 🟢 ONLINE & READY`);
     console.log('====================================================');
   });
 
