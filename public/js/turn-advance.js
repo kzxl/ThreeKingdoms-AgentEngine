@@ -150,6 +150,26 @@ function renderTurnAdvanceReport(res) {
     </div>
   `;
 
+  const npcList = res.npcLogs || [];
+  const npcHtml = npcList.length > 0 ? npcList.map(n => `
+    <div class="turn-rpt-item">
+      <div class="turn-rpt-item-title">⚔️ ${n.name || 'Hào Kiệt'}</div>
+      <div class="turn-rpt-item-meta">${n.action || n.text || ''}</div>
+    </div>
+  `).join('') : `<div class="turn-rpt-empty">${isEn ? 'NPCs quietly maintaining active duties.' : 'Quần hùng duy trì huấn luyện và thường trực quân vụ.'}</div>`;
+
+  const eco = res.ecologyResults || {};
+  const ecoHtml = `
+    <div class="turn-rpt-stat-row">
+      <span>${isEn ? 'Season:' : 'Thời Tiết & Khí Hậu:'}</span>
+      <strong class="cyan-text">${eco.season || 'Hạ Khởi'} • ${eco.weather || 'Quang đãng, thuận lợi giao thương'}</strong>
+    </div>
+    <div class="turn-rpt-stat-row">
+      <span>${isEn ? 'Market Outlook:' : 'Xu Hướng Thị Trường:'}</span>
+      <span class="gold-text">${eco.marketTrend || 'Nhu cầu muối và kim khí ổn định'}</span>
+    </div>
+  `;
+
   container.innerHTML = `
     <div class="turn-adv-report-box">
       <div class="turn-rpt-header">
@@ -194,13 +214,25 @@ function renderTurnAdvanceReport(res) {
           </div>
         </div>
 
+        <!-- Living World Heroes -->
+        <div class="turn-rpt-card full-width">
+          <div class="turn-rpt-card-hdr">
+            <span class="icon">👥</span>
+            <span class="title">${isEn ? 'Autonomous Heroes & Retainers' : 'Quần Hùng Thiên Hạ & Gia Nhân Tự Chủ'}</span>
+          </div>
+          <div class="turn-rpt-card-body">
+            ${npcHtml}
+          </div>
+        </div>
+
         <!-- Realm & Politics -->
         <div class="turn-rpt-card full-width">
           <div class="turn-rpt-card-hdr">
             <span class="icon">📜</span>
-            <span class="title">${isEn ? 'Dynastic Intrigues & Faction Maneuvers' : 'Thời Cuộc Thiên Hạ & Động Thái Chư Hầu'}</span>
+            <span class="title">${isEn ? 'Dynastic Intrigues & Seasonal Outlook' : 'Thời Cuộc Thiên Hạ & Khí Hậu Mùa Vụ'}</span>
           </div>
           <div class="turn-rpt-card-body">
+            ${ecoHtml}
             ${polHtml}
           </div>
         </div>
