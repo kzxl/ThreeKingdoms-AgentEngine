@@ -11,6 +11,8 @@ import { DatabaseService } from '../../core/database';
 import { ModuleRegistry } from '../../core/module-registry';
 import { ProfessionsModule } from './professions.module';
 
+import { WageLaborController } from './features/wage-labor/wage-labor.controller';
+
 function getProfessionsModule(): ProfessionsModule | undefined {
   const gsm = (globalThis as any).__GRAND_STRATEGY_MODULES__;
   if (gsm?.professions) return gsm.professions as ProfessionsModule;
@@ -326,4 +328,10 @@ export function registerProfessionsRoutes(router: Router): void {
       sendJson(res, 500, { success: false, error: err.message });
     }
   });
+
+  // -------------------------------------------------------------
+  // 7. Wage Labor Vertical Slice: /api/labor/status & /api/labor/work
+  // -------------------------------------------------------------
+  const wageLaborController = new WageLaborController();
+  wageLaborController.registerRoutes(router);
 }

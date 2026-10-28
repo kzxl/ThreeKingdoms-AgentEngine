@@ -8,6 +8,7 @@
  * 4. Boundary safety: Insufficient capital prevention and fatigue exhaustion guard.
  */
 
+import path from 'path';
 import { DatabaseService } from '../src/core/database';
 import {
   EnterpriseLaborService,
@@ -15,6 +16,7 @@ import {
   ENTERPRISE_CONFIGS
 } from '../src/modules/professions/enterprise-labor.service';
 import { seedMasterRecipes } from '../src/modules/professions/recipes-seed';
+const { renderProgressMarkdown } = require('../engine/projector');
 
 function assert(condition: boolean, message: string): void {
   if (!condition) {
@@ -31,8 +33,17 @@ async function runVerification(): Promise<void> {
   const db = DatabaseService.getInstance();
   const service = new EnterpriseLaborService(db);
 
+  // Snapshot database state for Zero-Drift guarantee
+  const initialCashflow = db.query<any>('SELECT * FROM cashflow_ledger ORDER BY rowid ASC;');
+  const initialPlayer = db.queryOne<any>('SELECT * FROM player_state WHERE player_id = ?;', ['PLY-0001']);
+
+  const testOwnerId = 'CHAR-VERIFY-OWNER-01';
+  const testWorkerId = 'CHAR-VERIFY-WORKER-01';
+
   let passedTests = 0;
   const totalTests = 12;
+
+  try {
 
   // -------------------------------------------------------------------------
   // TEST GROUP 1: Master Recipes Presence and BOM Validation
@@ -111,12 +122,11 @@ async function runVerification(): Promise<void> {
   // -------------------------------------------------------------------------
   console.log('>>> [TEST GROUP 2] Owner Mode: Enterprise Opening & Profit Management');
 
-  const testOwnerId = 'CHAR-VERIFY-OWNER-01';
   db.execute('DELETE FROM player_state WHERE player_id = ?;', [testOwnerId]);
   db.execute('DELETE FROM businesses WHERE owner_character_id = ?;', [testOwnerId]);
   db.execute(
-    'DELETE FROM cashflow_ledger WHERE counterparty LIKE ? OR counterparty LIKE ? OR memo LIKE ? OR txn_id LIKE ?;',
-    ['%Đào Viên Khách Điếm%', '%Tế Dân Dược Quán%', '%Tiền công làm thuê%', 'TXN-WAGE-%']
+    'DELETE FROM cashflow_ledger WHERE counterparty LIKE ? OR counterparty LIKE ?;',
+    ['%Đào Viên Khách Điếm & Tửu Quán%', '%Tế Dân Dược Quán & Y Điếm%']
   );
 
   db.execute(`
@@ -202,7 +212,6 @@ async function runVerification(): Promise<void> {
   // -------------------------------------------------------------------------
   console.log('>>> [TEST GROUP 3] Wage Worker Mode: Zero Capital, Wages, Fatigue, EXP');
 
-  const testWorkerId = 'CHAR-VERIFY-WORKER-01';
   db.execute('DELETE FROM player_state WHERE player_id = ?;', [testWorkerId]);
   db.execute('DELETE FROM character_professions WHERE character_id = ?;', [testWorkerId]);
 
@@ -312,22 +321,40 @@ async function runVerification(): Promise<void> {
   passedTests++;
   console.log('  PASS 12: Available jobs catalog lists all 6 roleplay labor positions.\n');
 
-  const cleanup = () => {
+  } finally {
+    // -------------------------------------------------------------------------
+    // CLEANUP & ZERO-DRIFT RESTORATION
+    // -------------------------------------------------------------------------
+    console.log('\n>>> [TEARDOWN] Reverting test artifacts to maintain SQLite audit invariants...');
     try {
-      db.execute('DELETE FROM player_state WHERE player_id IN (?, ?);', [testOwnerId, testWorkerId]);
-      db.execute('DELETE FROM businesses WHERE owner_character_id IN (?, ?);', [testOwnerId, testWorkerId]);
-      db.execute('DELETE FROM character_professions WHERE character_id IN (?, ?);', [testOwnerId, testWorkerId]);
-      db.execute(
-        'DELETE FROM cashflow_ledger WHERE counterparty LIKE ? OR counterparty LIKE ? OR memo LIKE ? OR txn_id LIKE ?;',
-        ['%Đào Viên Khách Điếm%', '%Tế Dân Dược Quán%', '%Tiền công làm thuê%', 'TXN-WAGE-%']
-      );
-    } catch (e) {}
-  };
+      db.getDb().pragma('foreign_keys = OFF');
+      db.transaction(() => {
+        db.execute('DELETE FROM player_state WHERE player_id IN (?, ?);', [testOwnerId, testWorkerId]);
+        db.execute('DELETE FROM businesses WHERE owner_character_id IN (?, ?);', [testOwnerId, testWorkerId]);
+        db.execute('DELETE FROM character_professions WHERE character_id IN (?, ?);', [testOwnerId, testWorkerId]);
+        
+        // Exact restoration of cashflow_ledger
+        db.execute('DELETE FROM cashflow_ledger;');
+        for (const r of initialCashflow) {
+          db.execute(
+            'INSERT INTO cashflow_ledger (txn_id, game_date, counterparty, category, inflow, outflow, balance, memo, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);',
+            [r.txn_id, r.game_date, r.counterparty, r.category, r.inflow, r.outflow, r.balance, r.memo, r.status]
+          );
+        }
 
-  // -------------------------------------------------------------------------
-  // CLEANUP TEST ENTITIES
-  // -------------------------------------------------------------------------
-  cleanup();
+        if (initialPlayer) {
+          db.execute(
+            'UPDATE player_state SET liquid_cash = ?, safe_cash = ?, fatigue = ?, morale = ? WHERE player_id = ?;',
+            [initialPlayer.liquid_cash, initialPlayer.safe_cash, initialPlayer.fatigue, initialPlayer.morale, 'PLY-0001']
+          );
+        }
+      });
+      db.getDb().pragma('foreign_keys = ON');
+      renderProgressMarkdown(db.getDbPath(), path.join(process.cwd(), 'game', 'PROGRESS.md'));
+    } catch (e: any) {
+      console.warn('  [WARN] Teardown error:', e.message);
+    }
+  }
 
   console.log('======================================================================');
   console.log(`   VERIFICATION COMPLETE: ${passedTests}/${totalTests} TESTS PASSED SUCCESSFULLY!`);

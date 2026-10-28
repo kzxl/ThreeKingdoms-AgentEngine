@@ -17,6 +17,7 @@ const { WorkshopEngine } = require('../engine/workshop-engine');
 const { GameplayManager } = require('../engine/gameplay-manager');
 const { EventManager } = require('../engine/event-manager');
 const { TravelManager } = require('../engine/travel-manager');
+const { calculatePlayerStamina } = require('../engine/rules');
 const {
   auditSqliteCashflow,
   auditSqliteInventory,
@@ -24,6 +25,20 @@ const {
   auditProjectionSync,
   auditNpcAndBusinesses
 } = require('./sim-audit');
+
+let wageLaborService = null;
+function getWageLaborService() {
+  if (!wageLaborService) {
+    try {
+      require('tsx/cjs');
+      const { WageLaborService } = require('../src/modules/professions/features/wage-labor/wage-labor.service.ts');
+      wageLaborService = WageLaborService.getInstance();
+    } catch (e) {
+      console.warn('[sim-web.js] WageLaborService initialization note:', e.message);
+    }
+  }
+  return wageLaborService;
+}
 
 const ROOT_DIR = path.resolve(__dirname, '..');
 const PUBLIC_DIR = path.join(ROOT_DIR, 'public');
@@ -1268,7 +1283,8 @@ const server = http.createServer(async (req, res) => {
   if (req.method === 'GET' && pathname === '/api/enterprise/status') {
     try {
       const characterId = parsedUrl.query.characterId || 'PLY-0001';
-      const player = runSqlJson(`SELECT liquid_cash, safe_cash, fatigue, cra_attr, com_attr, log_attr, int_attr FROM player_state WHERE player_id = '${characterId.replace(/'/g, "''")}' LIMIT 1;`)[0] || {};
+      const player = runSqlJson(`SELECT liquid_cash, safe_cash, fatigue, health, war_attr, cra_attr, com_attr, log_attr, int_attr FROM player_state WHERE player_id = '${characterId.replace(/'/g, "''")}' LIMIT 1;`)[0] || {};
+      const stamina = calculatePlayerStamina(player);
       const rawBusinesses = runSqlJson(`
         SELECT business_id, name, location_id, manager_npc_id, safe_cash, delegation_level, 
                efficiency_multiplier, current_workforce, monthly_capacity_hours, monthly_rent,
@@ -1499,14 +1515,19 @@ const server = http.createServer(async (req, res) => {
           characterId,
           playerCash,
           playerSafeCash: Number(player.safe_cash || 0),
-          playerFatigue,
+          playerFatigue: stamina.fatigue,
+          stamina,
           ownedBusinesses: activeBusinesses,
           activeEnterprises: activeBusinesses,
           totalDailyRevenue: activeBusinesses.reduce((s, b) => s + (Number(b.daily_revenue) || 0), 0),
           totalWorkforce: activeBusinesses.reduce((s, b) => s + (Number(b.current_workforce) || 0), 0),
           totalAccumulatedProfit: activeBusinesses.reduce((s, b) => s + (Number(b.accumulated_profit) || 0), 0),
           openableTypes,
-          laborShifts
+          laborShifts: laborShifts.map(s => ({
+            ...s,
+            staminaCost: s.staminaCost || s.fatigueCost,
+            canPerform: stamina.currentStamina >= (s.staminaCost || s.fatigueCost) && (stamina.fatigue + s.fatigueCost <= 100)
+          }))
         }
       });
     } catch (err) {
@@ -1515,7 +1536,7 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // 4s7. POST /api/enterprise/work - Take Wage Labor Shift
+  // 4s7. POST /api/enterprise/work - Take Wage Labor Shift (Delegated to WageLaborService)
   if (req.method === 'POST' && pathname === '/api/enterprise/work') {
     let body = '';
     req.on('data', chunk => { body += chunk; });
@@ -1525,71 +1546,18 @@ const server = http.createServer(async (req, res) => {
         const characterId = payload.characterId || 'PLY-0001';
         const shiftId = payload.shiftId || payload.jobType || 'SHIFT_FORGE_HAND';
 
-        const shifts = {
-          SHIFT_FORGE_HAND: { title: 'Thợ Phụ Kéo Bễ & Đập Búa Lò Rèn', wage: 140, fatigue: 20, attr: 'cra', exp: 40, workplace: 'Lò Rèn Bách Nghệ Trác Quận' },
-          JOB_FORGE_HAND: { title: 'Thợ Phụ Kéo Bễ & Đập Búa Lò Rèn', wage: 140, fatigue: 20, attr: 'cra', exp: 40, workplace: 'Lò Rèn Bách Nghệ Trác Quận' },
-          SHIFT_CHEF_TAVERN: { title: 'Đầu Bếp & Điều Rượu Tại Tửu Điếm', wage: 110, fatigue: 15, attr: 'com', exp: 30, workplace: 'Tửu Điếm Đào Viên' },
-          JOB_TAVERN_COOK: { title: 'Đầu Bếp Quán Rượu', wage: 110, fatigue: 15, attr: 'com', exp: 30, workplace: 'Tửu Điếm Đào Viên' },
-          SHIFT_HERBALIST: { title: 'Dược Đồng Bào Chế Thuốc Tại Hiệu Dược', wage: 120, fatigue: 15, attr: 'int', exp: 35, workplace: 'Hồi Xuân Dược Đường' },
-          JOB_APOTHECARY_COMPOUNDER: { title: 'Dược Đồng Bào Chế', wage: 120, fatigue: 15, attr: 'int', exp: 35, workplace: 'Hồi Xuân Dược Đường' },
-          SHIFT_WEAVER: { title: 'Thợ Thủ Công Đan Phên Tre & Bện Sọt', wage: 95, fatigue: 12, attr: 'cra', exp: 25, workplace: 'Xưởng Thủ Công Lương Gia' },
-          JOB_WEAVER: { title: 'Thợ Dệt Vải Gai', wage: 95, fatigue: 12, attr: 'cra', exp: 25, workplace: 'Xưởng Thủ Công Lương Gia' },
-          SHIFT_MINER: { title: 'Phu Mỏ Khai Khoáng & Bốc Vác Quặng Sắt', wage: 130, fatigue: 18, attr: 'log', exp: 35, workplace: 'Mỏ Sắt Tây Sơn Trác Quận' },
-          JOB_MINER_CARRIER: { title: 'Phu Mỏ Khai Khoáng & Bốc Vác Quặng Sắt', wage: 130, fatigue: 18, attr: 'log', exp: 35, workplace: 'Mỏ Sắt Tây Sơn Trác Quận' },
-          SHIFT_WAITER: { title: 'Tiểu Nhị Tiếp Tân Tửu Điếm & Trà Quán', wage: 85, fatigue: 10, attr: 'com', exp: 20, workplace: 'Trà Quán Bình Dân Trác Huyện' },
-          JOB_TAVERN_STAFF: { title: 'Tiểu Nhị Tửu Quán', wage: 85, fatigue: 10, attr: 'com', exp: 20, workplace: 'Trà Quán Bình Dân Trác Huyện' }
-        };
-
-        const job = shifts[shiftId] || shifts.SHIFT_FORGE_HAND;
-        const player = runSqlJson(`SELECT fatigue, liquid_cash, ${job.attr}_attr, ${job.attr}_exp FROM player_state WHERE player_id = '${characterId.replace(/'/g, "''")}' LIMIT 1;`)[0] || {};
-        const currentFatigue = Number(player.fatigue || 0);
-
-        if (currentFatigue + job.fatigue > 100) {
-          sendJson(res, 400, {
-            success: false,
-            error: `Khí lực kiệt quệ (${currentFatigue}/100)! Không đủ sức làm trọn ca ${job.title}. Cần nghỉ ngơi hồi phục.`
-          });
-          return;
+        const laborSvc = getWageLaborService();
+        if (laborSvc) {
+          try {
+            const result = laborSvc.executeShift(characterId, shiftId);
+            sendJson(res, 200, result);
+            return;
+          } catch (execErr) {
+            sendJson(res, 400, { success: false, error: execErr.message });
+            return;
+          }
         }
-
-        const newFatigue = currentFatigue + job.fatigue;
-        const newCash = Number(player.liquid_cash || 0) + job.wage;
-        const currentDate = runSqlJson(`SELECT current_date FROM campaign_meta LIMIT 1;`)[0]?.current_date || '184-05-02';
-
-        let attrExp = Number(player[`${job.attr}_exp`] || 0) + 15;
-        let attrVal = Number(player[`${job.attr}_attr`] || 50);
-        if (attrExp >= 100) {
-          attrVal += 1;
-          attrExp -= 100;
-        }
-
-        runSqlRaw(`
-          UPDATE player_state 
-          SET fatigue = ${newFatigue}, liquid_cash = ${newCash}, ${job.attr}_attr = ${attrVal}, ${job.attr}_exp = ${attrExp}
-          WHERE player_id = '${characterId.replace(/'/g, "''")}';
-          INSERT INTO cashflow_ledger (txn_id, game_date, counterparty, category, inflow, outflow, balance, memo, status)
-          VALUES ('TXN-WAGE-${Date.now()}', '${currentDate}', '${job.workplace.replace(/'/g, "''")}', 'LABOR_WAGE', ${job.wage}, 0, ${newCash}, 'Tiền công ca làm thuê: ${job.title.replace(/'/g, "''")}', 'Confirmed');
-        `);
-
-        sendJson(res, 200, {
-          success: true,
-          shiftId,
-          titleVi: job.title,
-          wagePaid: job.wage,
-          wageEarned: job.wage,
-          fatigueCost: job.fatigue,
-          fatigueConsumed: job.fatigue,
-          remainingStamina: Math.max(0, 100 - newFatigue),
-          newFatigue,
-          newLiquidCash: newCash,
-          newBalance: newCash,
-          expGained: job.exp,
-          professionExpGained: job.exp,
-          attributeExpGained: 15,
-          attributeTarget: job.attr,
-          messageVi: `Hoàn tất ca làm việc [${job.title}]! Nhận +${job.wage} Tiền công và +${job.exp} EXP.`,
-          message: `Hoàn tất ca làm việc [${job.title}]! Nhận +${job.wage} Tiền công và +${job.exp} EXP.`
-        });
+        sendJson(res, 500, { success: false, error: 'WageLaborService is unavailable.' });
       } catch (err) {
         sendJson(res, 500, { success: false, error: err.message });
       }

@@ -88,10 +88,36 @@ function calculateDefectRate(baseDefect, craftsmanship, fatigue = 0) {
   return Math.max(0.02, Math.min(0.50, netDefect));
 }
 
+/**
+ * Calculates a character's canonical stamina profile based on War (WAR),
+ * Vigor (Health), and current accumulated Fatigue.
+ */
+function calculatePlayerStamina(player) {
+  const warAttr = Number(player?.war_attr !== undefined ? player.war_attr : (player?.war !== undefined ? player.war : 50));
+  const healthVal = Number(player?.health !== undefined ? player.health : 100);
+  const fatigueVal = Number(player?.fatigue || 0);
+
+  const maxStamina = 100 + Math.max(0, Math.round((warAttr - 50) * 1.5)) + Math.floor(healthVal / 10);
+  const currentStamina = Math.max(0, maxStamina - fatigueVal);
+  const staminaPct = Math.min(100, Math.max(0, Math.round((currentStamina / maxStamina) * 100)));
+  const fatiguePct = Math.min(100, Math.max(0, Math.round((fatigueVal / 100) * 100)));
+
+  return {
+    maxStamina,
+    currentStamina,
+    fatigue: fatigueVal,
+    staminaPct,
+    fatiguePct,
+    health: healthVal,
+    warAttr
+  };
+}
+
 module.exports = {
   COMMODITY_PRICE_INDEX,
   BILL_OF_MATERIALS,
   resolveSkillCheck,
   calculateWorkshopCapacity,
-  calculateDefectRate
+  calculateDefectRate,
+  calculatePlayerStamina
 };

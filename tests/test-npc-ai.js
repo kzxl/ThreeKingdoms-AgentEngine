@@ -20,6 +20,8 @@ function setupSandbox() {
   if (!fs.existsSync(SANDBOX_DIR)) fs.mkdirSync(SANDBOX_DIR, { recursive: true });
   if (fs.existsSync(SANDBOX_DB)) fs.unlinkSync(SANDBOX_DB);
   fs.copyFileSync(LIVE_DB, SANDBOX_DB);
+  // Ensure sandbox workshop has operating capital for test cycle
+  execSync(`sqlite3 "${SANDBOX_DB}" "UPDATE businesses SET safe_cash = 3000 WHERE business_id = 'BIZ-0001';"`);
 }
 
 function cleanupSandbox() {
@@ -159,6 +161,8 @@ function runTests() {
     const dbB = path.join(SANDBOX_DIR, 'db_b.db');
     fs.copyFileSync(LIVE_DB, dbA);
     fs.copyFileSync(LIVE_DB, dbB);
+    execSync(`sqlite3 "${dbA}" "UPDATE businesses SET safe_cash = 3000 WHERE business_id = 'BIZ-0001';"`);
+    execSync(`sqlite3 "${dbB}" "UPDATE businesses SET safe_cash = 3000 WHERE business_id = 'BIZ-0001';"`);
 
     const engineA = new WorkshopEngine(dbA, null);
     const engineB = new WorkshopEngine(dbB, null);

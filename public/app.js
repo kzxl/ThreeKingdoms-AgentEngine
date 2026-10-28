@@ -314,13 +314,20 @@ async function loadStatus() {
       const barHp = document.getElementById('bar-hp');
       if (barHp) barHp.style.width = `${p.health || 100}%`;
 
-      // Dynamic Stamina Calculation based on STR (WAR) and Vigor (HP)
+      // Canonical Stamina Calculation using shared stamina calculator
+      const staminaProfile = (typeof calculateStamina === 'function')
+        ? calculateStamina(p)
+        : {
+            maxStamina: 100 + Math.max(0, Math.round(((Number(p.war_attr || 50)) - 50) * 1.5)) + Math.floor((Number(p.health || 100)) / 10),
+            currentStamina: Math.max(0, (100 + Math.max(0, Math.round(((Number(p.war_attr || 50)) - 50) * 1.5)) + Math.floor((Number(p.health || 100)) / 10)) - Number(p.fatigue || 0)),
+            fatigue: Number(p.fatigue || 0),
+            staminaPct: 100
+          };
+      const maxStamina = staminaProfile.maxStamina;
+      const currentStamina = staminaProfile.currentStamina;
+      const staminaPct = staminaProfile.staminaPct;
+      const fatigueVal = staminaProfile.fatigue;
       const warAttr = Number(p.war_attr || 50);
-      const healthVal = Number(p.health || 100);
-      const fatigueVal = Number(p.fatigue || 0);
-      const maxStamina = 100 + Math.max(0, Math.round((warAttr - 50) * 1.5)) + Math.floor(healthVal / 10);
-      const currentStamina = Math.max(0, maxStamina - fatigueVal);
-      const staminaPct = Math.min(100, Math.max(0, Math.round((currentStamina / maxStamina) * 100)));
 
       // Trigger recovery animation if stamina increased
       if (prevStaminaValue !== null && currentStamina > prevStaminaValue) {

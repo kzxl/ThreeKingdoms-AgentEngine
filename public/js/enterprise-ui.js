@@ -398,7 +398,14 @@
     const isEn = isEnglish();
     const st = cachedStatus || {};
     const cash = Number(st.playerCash || 0);
-    const fatigue = Number(st.playerFatigue || 0);
+    const p = window.currentScene?.player || {};
+    const stamina = st.stamina || (typeof calculateStamina === 'function' ? calculateStamina(p) : {
+      maxStamina: 100,
+      currentStamina: Math.max(0, 100 - Number(st.playerFatigue || 0)),
+      fatigue: Number(st.playerFatigue || 0),
+      staminaPct: Math.max(0, 100 - Number(st.playerFatigue || 0))
+    });
+    const staminaColor = stamina.staminaPct <= 20 ? '#ef4444' : stamina.staminaPct <= 45 ? '#fbbf24' : '#06b6d4';
 
     modalEl.innerHTML = `
       <div class="modal-card ent-modal-card">
@@ -411,7 +418,9 @@
             <span style="font-size:11px; color:#94a3b8;">
               ${isEn ? 'Campaign Region: Zhuo County & North Frontier' : 'Địa bàn: Trác Quận • U Châu'} • 
               <strong style="color:#34d399; font-family:'JetBrains Mono',monospace;">${cash.toLocaleString()} Tiền</strong> • 
-              <strong style="color:${fatigue > 80 ? '#ef4444' : '#fbbf24'}; font-family:'JetBrains Mono',monospace;">${fatigue}/100 Thể Lực</strong>
+              <strong style="color:${staminaColor}; font-family:'JetBrains Mono',monospace;" title="Thể Lực khả dụng: ${stamina.currentStamina}/${stamina.maxStamina} | Độ mệt mỏi: ${stamina.fatigue}/100">
+                ${stamina.currentStamina}/${stamina.maxStamina} Thể Lực (${stamina.fatigue}/100 Mệt)
+              </strong>
             </span>
           </div>
           <button class="modal-close-btn" onclick="EnterpriseUI.closeEnterpriseModal()">&times;</button>
@@ -452,8 +461,14 @@
     const isEn = isEnglish();
     const st = cachedStatus || {};
     const shifts = st.laborShifts || [];
-    const playerFatigue = Number(st.playerFatigue || 0);
-    const staminaRemaining = Math.max(0, 100 - playerFatigue);
+    const p = window.currentScene?.player || {};
+    const stamina = st.stamina || (typeof calculateStamina === 'function' ? calculateStamina(p) : {
+      maxStamina: 100,
+      currentStamina: Math.max(0, 100 - Number(st.playerFatigue || 0)),
+      fatigue: Number(st.playerFatigue || 0),
+      staminaPct: Math.max(0, 100 - Number(st.playerFatigue || 0))
+    });
+    const staminaColor = stamina.staminaPct <= 20 ? '#ef4444' : stamina.staminaPct <= 45 ? '#fbbf24' : '#06b6d4';
 
     return `
       <!-- STAMINA METRIC HEADER -->
@@ -463,24 +478,28 @@
             ${isEn ? 'Daily Labor Market Opportunities in Zhuo County:' : 'Cơ Hội Lao Động Kiếm Sống Hàng Ngày Tại Trác Quận:'}
           </h4>
           <span style="font-size:11.5px; font-family:'JetBrains Mono',monospace;">
-            Thể Lực: <strong style="color:${playerFatigue > 80 ? '#ef4444' : '#fbbf24'};">${playerFatigue}/100</strong> 
-            (Khí lực: <strong style="color:#34d399;">${staminaRemaining}</strong>)
+            Thể Lực: <strong style="color:${staminaColor};">${stamina.currentStamina}/${stamina.maxStamina}</strong> 
+            (Mệt mỏi: <strong style="color:${stamina.fatigue > 80 ? '#ef4444' : '#94a3b8'};">${stamina.fatigue}/100</strong>)
           </span>
         </div>
         <p style="margin:0 0 6px 0; font-size:11px; color:#94a3b8;">
           ${isEn
-            ? 'Earn immediate cash wages and increase profession & attribute EXP through physical crafts.'
-            : 'Đem sức lực và tài nghệ đổi lấy tiền công cầm tay, đồng thời rèn luyện tăng điểm EXP nghề nghiệp. Chú ý thể lực không vượt quá 100.'}
+            ? 'Earn immediate cash wages and increase profession & attribute EXP through physical crafts. Each shift consumes Stamina and accumulates Fatigue.'
+            : 'Đem sức lực và tài nghệ đổi lấy tiền công cầm tay, đồng thời rèn luyện tăng điểm EXP nghề nghiệp. Mỗi ca làm tiêu hao Thể Lực và tích lũy Mệt Mỏi.'}
         </p>
-        <div class="ent-fatigue-bar-track">
-          <div class="ent-fatigue-bar-fill" style="width: ${playerFatigue}%; background: ${playerFatigue > 80 ? '#ef4444' : playerFatigue > 50 ? '#f59e0b' : '#10b981'};"></div>
+        <div class="ent-fatigue-bar-track" title="Thể Lực khả dụng: ${stamina.currentStamina}/${stamina.maxStamina} (${stamina.staminaPct}%)">
+          <div class="ent-fatigue-bar-fill" style="width: ${stamina.staminaPct}%; background: ${staminaColor};"></div>
         </div>
       </div>
 
       <!-- SHIFTS GRID -->
       <div class="ent-grid-shifts">
         ${shifts.map(shift => {
-          const wouldExceed = playerFatigue + shift.fatigueCost > 100;
+          const reqStamina = shift.staminaCost || shift.fatigueCost || 15;
+          const reqFatigue = shift.fatigueCost || shift.staminaCost || 15;
+          const wouldExceed = (shift.canPerform !== undefined && !shift.canPerform) ||
+            stamina.currentStamina < reqStamina ||
+            (stamina.fatigue + reqFatigue > 100);
 
           return `
             <div class="ent-shift-card">
@@ -501,8 +520,8 @@
                   <span class="ent-metric-pill ent-metric-pill--wage">
                     +${shift.wage} Tiền
                   </span>
-                  <span class="ent-metric-pill ent-metric-pill--fatigue">
-                    -${shift.fatigueCost} Thể lực
+                  <span class="ent-metric-pill ent-metric-pill--fatigue" title="Tiêu hao ${reqStamina} Thể Lực, tăng ${reqFatigue} Mệt Mỏi">
+                    -${reqStamina} Thể lực (+${reqFatigue} Mệt)
                   </span>
                   <span class="ent-metric-pill ent-metric-pill--exp">
                     +${shift.expGain} EXP Nghề
@@ -520,7 +539,7 @@
                   ${isWorking
                     ? (isEn ? 'Working...' : 'Đang làm việc...')
                     : wouldExceed
-                    ? (isEn ? 'Exhausted (Rest Needed)' : 'Khí lực kiệt quệ')
+                    ? (isEn ? 'Exhausted (Rest Needed)' : 'Khí Lực Kiệt Quệ (Cần Nghỉ)')
                     : (isEn ? 'Take Shift' : 'Nhận việc')}
                 </button>
               </div>
