@@ -15,13 +15,17 @@ const I18N_DICT = {
     auditPassed: '100% Khớp',
     logsBtn: 'Logs',
     langToggle: 'VI',
-    // Action Console
-    localityPresence: '📍 HIỆN DIỆN:',
-    localityCourierHint: '✉️ <em>(Muốn điều phối nơi khác: Phái sứ giả / Phi thư tín)</em>',
-    choiceHeader: 'QUYẾT SÁCH BỐI CẢNH (CHIẾN LƯỢC HÀNH TRÌNH):',
-    choiceMode: 'Chế độ: <strong>Text-Based RPG + SimCore</strong>',
-    btnSelect: '+ Chọn -',
-    btnAi: 'AI',
+    // Action Console & Tactical Decisions
+    choiceHeader: 'QUYẾT SÁCH BỐI CẢNH',
+    choiceSub: '4 Trụ Cột Chiến Lược',
+    btnExecuteDirect: 'Thi Hành',
+    btnExecuteAi: '✦ AI',
+    btnInspectDossier: 'Hồ Sơ',
+    btnCourierToggle: 'Phi Thư / Sứ Giả',
+    courierDrawerTitle: 'Phi Thư & Sứ Giả Viễn Trình',
+    courierDrawerDesc: 'Truyền đạt mật lệnh, điều phối nhân lực hoặc luân chuyển quân nhu tới các cứ điểm khác mà không cần rời vị trí hiện tại.',
+    btnSelect: 'Thi Hành',
+    btnAi: '✦ AI',
     btnOmniAi: 'Gửi AI Core',
     btnOmniInstant: 'Tức Thì',
     // Protagonist Card
@@ -132,13 +136,17 @@ const I18N_DICT = {
     auditPassed: '100% Match',
     logsBtn: 'Logs',
     langToggle: 'EN',
-    // Action Console
-    localityPresence: '📍 PRESENCE:',
-    localityCourierHint: '✉️ <em>(To direct elsewhere: Dispatch courier / Send letter)</em>',
-    choiceHeader: 'CONTEXTUAL STRATEGY DECISIONS:',
-    choiceMode: 'Mode: <strong>Text-Based RPG + SimCore</strong>',
-    btnSelect: '+ Select -',
-    btnAi: 'AI',
+    // Action Console & Tactical Decisions
+    choiceHeader: 'TACTICAL DECISIONS',
+    choiceSub: '4 Strategic Pillars',
+    btnExecuteDirect: 'Execute',
+    btnExecuteAi: '✦ AI',
+    btnInspectDossier: 'Dossier',
+    btnCourierToggle: 'Courier / Envoy',
+    courierDrawerTitle: 'Remote Courier & Dispatch',
+    courierDrawerDesc: 'Dispatch confidential missives, order logistics, or mobilize retainers without leaving current base.',
+    btnSelect: 'Execute',
+    btnAi: '✦ AI',
     btnOmniAi: 'Send AI Core',
     btnOmniInstant: 'Instant',
     // Protagonist Card
@@ -258,19 +266,24 @@ function applyLanguage() {
   const btnLogs = document.getElementById('btn-toggle-logs');
   if (btnLogs) btnLogs.innerText = dict.logsBtn;
 
-  // Locality Banner
-  const locTag = document.getElementById('locality-tag');
-  if (locTag) locTag.innerText = dict.localityPresence;
-
-  const locHint = document.getElementById('locality-courier-hint');
-  if (locHint) locHint.innerHTML = dict.localityCourierHint;
-
-  // Choices Header & Omni Buttons
+  // Tactical Command Bar & Choices Header
   const choicesLabel = document.getElementById('choices-label');
   if (choicesLabel) choicesLabel.innerText = dict.choiceHeader;
 
   const choicesSub = document.getElementById('choices-sub');
-  if (choicesSub) choicesSub.innerHTML = `${dict.choiceMode}`;
+  if (choicesSub) choicesSub.innerText = dict.choiceSub;
+
+  const btnCourierText = document.getElementById('txt-btn-courier');
+  if (btnCourierText) btnCourierText.innerText = dict.btnCourierToggle;
+
+  const courierTitle = document.getElementById('courier-drawer-title');
+  if (courierTitle) courierTitle.innerText = dict.courierDrawerTitle;
+
+  const courierDesc = document.getElementById('courier-drawer-desc');
+  if (courierDesc) courierDesc.innerText = dict.courierDrawerDesc;
+
+  const txtBtnNpc = document.getElementById('txt-btn-local-npc');
+  if (txtBtnNpc) txtBtnNpc.innerText = dict.btnInspectDossier;
 
   const txtOmniAi = document.getElementById('txt-omni-ai');
   if (txtOmniAi) txtOmniAi.innerText = dict.btnOmniAi;

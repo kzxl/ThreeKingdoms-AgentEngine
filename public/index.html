@@ -106,41 +106,73 @@
         <!-- Message turns appended dynamically here -->
       </div>
 
-      <!-- 3. Docked Action Console & Decision Deck (Always accessible) -->
+      <!-- 3. Streamlined Tactical Action Console & Decision Deck -->
       <div class="action-dock" id="action-dock">
-        <!-- Locality & Physical Presence Banner -->
-        <div class="dock-locality-banner" id="dock-locality-banner">
-          <div class="dock-locality-left">
-            <span class="dock-locality-tag" id="locality-tag">HIỆN DIỆN:</span>
-            <span class="dock-locality-target" id="locality-target">Trang Viên Vườn Đào (Trực diện: Trương Phi)</span>
-          </div>
-          <div class="dock-locality-right">
-            <button class="btn-local-npc-dossier" id="btn-local-npc-dossier" onclick="openCurrentLocationNpcDossier()" title="Mở Hồ Sơ & Tương Tác Hào Kiệt / Open Hero Dossier & Interactions">
-              <span class="npc-btn-icon">✦</span>
-              <span id="txt-btn-local-npc">Giao Tiếp Hào Kiệt: Trương Phi</span>
-            </button>
-            <div class="dock-locality-courier-hint" id="locality-courier-hint">
-              <em>(Phái sứ giả / Phi thư tín)</em>
+        <!-- Sleek Executive Command Bar (Context + Encountered Hero + Utilities) -->
+        <div class="tactical-command-bar" id="tactical-command-bar">
+          <div class="cmd-bar-left">
+            <div class="cmd-context-pill">
+              <span class="cmd-loc-icon">📍</span>
+              <span class="cmd-loc-name" id="locality-target">Trang Viên Vườn Đào</span>
             </div>
+            <div class="cmd-hero-pill" id="cmd-hero-pill" onclick="openCurrentLocationNpcDossier()" title="Nhấn để xem Hồ Sơ & Sương Mù Hào Kiệt">
+              <span class="cmd-hero-avatar" id="cmd-hero-avatar">張</span>
+              <span class="cmd-hero-name" id="cmd-hero-name">Trương Phi (Dực Đức)</span>
+              <span class="cmd-hero-sentiment" id="cmd-hero-sentiment">+5 Thân Thiện</span>
+            </div>
+            <button class="btn-cmd-dossier" id="btn-local-npc-dossier" onclick="openCurrentLocationNpcDossier()" title="Xem Hồ Sơ & Quan Hệ Nhân Vật">
+              <span class="cmd-btn-icon">📖</span>
+              <span id="txt-btn-local-npc">Hồ Sơ</span>
+            </button>
+          </div>
+
+          <div class="cmd-bar-right">
+            <!-- Courier / Remote Orders Toggle Button -->
+            <button class="btn-courier-toggle" id="btn-courier-toggle" onclick="toggleCourierDrawer()" title="Phái sứ giả / Phi thư tín viễn trình">
+              <span class="courier-btn-icon">✉️</span>
+              <span id="txt-btn-courier">Phi Thư / Sứ Giả</span>
+              <span class="courier-badge-count" id="courier-badge-count">0</span>
+            </button>
           </div>
         </div>
 
-        <!-- Dynamic Contextual Action Suggestion Chips (Local vs Courier vs Travel) -->
-        <div class="quick-prompt-chips" id="quick-prompt-chips">
-          <!-- Dynamically populated based on activeSubLocation -->
+        <!-- Collapsible Remote Courier Dispatch Drawer (Clean, Non-Intrusive) -->
+        <div class="courier-drawer hidden" id="courier-drawer">
+          <div class="courier-drawer-header">
+            <div class="courier-drawer-title-group">
+              <span class="courier-drawer-icon">✉️</span>
+              <span class="courier-drawer-title" id="courier-drawer-title">Phi Thư & Sứ Giả Viễn Trình</span>
+            </div>
+            <button class="courier-drawer-close" onclick="toggleCourierDrawer()" title="Đóng">&times;</button>
+          </div>
+          <div class="courier-drawer-desc" id="courier-drawer-desc">
+            Truyền đạt mật lệnh, điều phối nhân lực hoặc luân chuyển quân nhu tới các cứ điểm khác mà không cần rời vị trí hiện tại.
+          </div>
+          <div class="courier-chips-list" id="courier-chips-list">
+            <!-- Dynamically populated with courier actions only -->
+          </div>
         </div>
 
         <!-- 4 Contextual Branching Choice Cards (2x2 Grid) -->
         <div class="choices-container">
           <div class="choices-header">
-            <span class="choices-label" id="choices-label">QUYẾT SÁCH BỐI CẢNH (CHIẾN LƯỢC HÀNH TRÌNH):</span>
-            <span class="choices-sub" id="choices-sub">Chế độ: <strong>Text-Based RPG + SimCore</strong></span>
+            <div class="choices-header-left">
+              <span class="choices-title" id="choices-label">QUYẾT SÁCH BỐI CẢNH</span>
+              <span class="choices-divider">|</span>
+              <span class="choices-hint" id="choices-sub">4 Trụ Cột Chiến Lược</span>
+            </div>
+            <div class="choices-pillar-legend">
+              <span class="legend-pill kizuna">🤝 Xã Giao</span>
+              <span class="legend-pill facility">🏭 Sản Nghiệp</span>
+              <span class="legend-pill opportunity">📜 Cơ Duyên</span>
+              <span class="legend-pill growth">⚔️ Tu Thân</span>
+            </div>
           </div>
 
           <div class="choices-grid" id="choices-grid">
             <!-- Populated dynamically based on location & narrative context -->
-            <div style="grid-column: span 2; padding: 10px; text-align: center; color: var(--text-muted); font-size: 11px;">
-              Đang tổng hợp các phương án hành động...
+            <div style="grid-column: span 2; padding: 12px; text-align: center; color: var(--text-muted); font-size: 11px;">
+              Đang phân tích các phương án chiến lược...
             </div>
           </div>
         </div>

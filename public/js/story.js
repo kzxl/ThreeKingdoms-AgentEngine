@@ -265,16 +265,34 @@ function getLocalNpcForLocation(location) {
 }
 
 function updateLocalNpcButtonLabel(location = activeSubLocation) {
-  const btn = document.getElementById('txt-btn-local-npc');
-  if (!btn) return;
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
   const npcInfo = LOCATION_NPC_MAP[location] || (window.currentScene?.npc ? {
     nameVi: window.currentScene.npc.name,
     nameEn: window.currentScene.npc.name,
   } : { nameVi: 'Trương Phi', nameEn: 'Zhang Fei' });
 
-  const name = isEn ? npcInfo.nameEn : npcInfo.nameVi;
-  btn.innerText = isEn ? `Converse: ${name} (Dossier & Actions)` : `Giao Tiếp: ${name} (Hồ Sơ & Hành Động)`;
+  const name = isEn ? (npcInfo.nameEn || npcInfo.nameVi) : npcInfo.nameVi;
+  const avatarChar = name ? name.charAt(0) : '漢';
+
+  const avatarEl = document.getElementById('cmd-hero-avatar');
+  if (avatarEl) avatarEl.innerText = avatarChar;
+
+  const nameEl = document.getElementById('cmd-hero-name');
+  if (nameEl) nameEl.innerText = name;
+
+  const sentimentEl = document.getElementById('cmd-hero-sentiment');
+  if (sentimentEl) {
+    const rels = window.currentScene?.relations || [];
+    const rel = rels.find(r => r.name === name || r.nameVi === name || r.nameEn === name);
+    const score = rel ? rel.score : 5;
+    const status = rel ? (isEn ? (rel.statusEn || rel.status) : rel.status) : (isEn ? 'Friendly' : 'Thân Thiện');
+    sentimentEl.innerText = `${score >= 0 ? '+' : ''}${score} ${status}`;
+  }
+
+  const btnText = document.getElementById('txt-btn-local-npc');
+  if (btnText) {
+    btnText.innerText = isEn ? 'Dossier' : 'Hồ Sơ';
+  }
 }
 
 function openCurrentLocationNpcDossier() {
@@ -282,6 +300,57 @@ function openCurrentLocationNpcDossier() {
   if (typeof openNpcDossierModal === 'function') {
     openNpcDossierModal(npcId);
   }
+}
+
+function toggleCourierDrawer() {
+  const drawer = document.getElementById('courier-drawer');
+  if (!drawer) return;
+  drawer.classList.toggle('hidden');
+}
+
+async function dispatchCourierAction(promptText) {
+  toggleCourierDrawer();
+  await dispatchQuickAction(promptText);
+}
+
+function handleChoiceCardClick(optId) {
+  if (typeof isProcessingAction !== 'undefined' && isProcessingAction) return;
+  if (typeof selectChoice === 'function') selectChoice(optId);
+  if (typeof executeChoiceDirect === 'function') executeChoiceDirect(optId);
+}
+
+function parseImpactsFromDesc(desc, pillar) {
+  if (!desc) return { badges: [], note: '' };
+  const parts = desc.split('•').map(s => s.trim()).filter(Boolean);
+  const badges = [];
+  const notes = [];
+
+  for (const p of parts) {
+    const pLower = p.toLowerCase();
+    if (p.includes('D20') || pLower.includes('check') || pLower.includes('kiểm định')) {
+      badges.push({ text: p, type: 'dice' });
+    } else if ((p.includes('+') || pLower.includes('tăng ')) && (pLower.includes('hảo cảm') || pLower.includes('affinity') || pLower.includes('kính trọng'))) {
+      badges.push({ text: p, type: 'positive' });
+    } else if (pLower.includes('tiền') && (p.includes('-') || pLower.includes('chi ') || pLower.includes('cost'))) {
+      badges.push({ text: p, type: 'cost' });
+    } else if ((p.includes('+') || pLower.includes('tăng ')) && (pLower.includes('exp') || pLower.includes('võ') || pLower.includes('trí') || pLower.includes('thể lực'))) {
+      badges.push({ text: p, type: 'stat' });
+    } else if ((p.includes('+') || pLower.includes('nhập ')) && (pLower.includes('kho') || p.includes('COM-') || p.includes('PROD-') || pLower.includes('da ') || pLower.includes('lương'))) {
+      badges.push({ text: p, type: 'gain' });
+    } else {
+      notes.push(p);
+    }
+  }
+
+  // Fallback badge if none detected
+  if (badges.length === 0) {
+    if (pillar === 'KIZUNA_SOCIAL') badges.push({ text: '🤝 Hảo Cảm', type: 'positive' });
+    else if (pillar === 'FACILITY_OPERATION') badges.push({ text: '🏭 Cơ Sở', type: 'gain' });
+    else if (pillar === 'OPPORTUNITY_INCIDENT') badges.push({ text: '📜 Cơ Duyên', type: 'dice' });
+    else if (pillar === 'PERSONAL_GROWTH') badges.push({ text: '⚔️ Bồi Dưỡng', type: 'stat' });
+  }
+
+  return { badges, note: notes.join(' • ') || desc };
 }
 
 async function dispatchQuickAction(promptText) {
@@ -327,43 +396,62 @@ async function dispatchQuickAction(promptText) {
 }
 
 function renderDynamicQuickChips(location = activeSubLocation) {
-  const container = document.getElementById('quick-prompt-chips');
   const targetEl = document.getElementById('locality-target');
   const locData = QUICK_CHIPS_DATA[location] || QUICK_CHIPS_DATA['Vườn Đào'];
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
 
   if (targetEl) {
-    targetEl.innerText = currentLang === 'en' ? locData.presenceEn : locData.presenceVi;
+    const poiMeta = (typeof getPoiMeta === 'function') ? getPoiMeta(location) : null;
+    const cleanLocName = poiMeta ? (isEn ? poiMeta.en : poiMeta.vi) : location;
+    targetEl.innerText = cleanLocName;
   }
 
-  // Update dynamic hero interaction button
+  // Update dynamic hero interaction pill & label
   updateLocalNpcButtonLabel(location);
 
-  if (!container) return;
+  // Populate Courier Dispatch Drawer
+  const courierContainer = document.getElementById('courier-chips-list');
+  const badgeCount = document.getElementById('courier-badge-count');
+  const courierChips = (locData.chips || []).filter(c => c.type === 'courier');
 
-  container.innerHTML = locData.chips.map(chip => {
-    if (chip.divider) {
-      return `<span class="chip-divider"></span>`;
+  if (badgeCount) {
+    badgeCount.innerText = courierChips.length;
+    badgeCount.style.display = courierChips.length > 0 ? 'inline-block' : 'none';
+  }
+
+  if (courierContainer) {
+    if (courierChips.length === 0) {
+      courierContainer.innerHTML = `<div style="font-size: 10px; color: var(--text-muted); font-style: italic; padding: 4px;">${isEn ? 'No courier routes established from this outpost.' : 'Chưa có tuyến phi thư viễn trình nào từ cứ điểm này.'}</div>`;
+    } else {
+      courierContainer.innerHTML = courierChips.map(chip => {
+        const label = isEn ? chip.labelEn : chip.labelVi;
+        const promptText = isEn ? chip.promptEn : chip.promptVi;
+        const promptEsc = promptText.replace(/'/g, "\\'");
+        return `
+          <button class="courier-action-card" onclick="dispatchCourierAction('${promptEsc}')">
+            <div class="courier-action-left">
+              <span class="courier-action-icon">${chip.icon || '✉️'}</span>
+              <div>
+                <div class="courier-action-name">${label}</div>
+                <div class="courier-action-prompt">${promptText}</div>
+              </div>
+            </div>
+            <span class="courier-action-arrow">${isEn ? 'Dispatch →' : 'Phái Đi →'}</span>
+          </button>
+        `;
+      }).join('');
     }
-    const label = currentLang === 'en' ? chip.labelEn : chip.labelVi;
-    const promptText = currentLang === 'en' ? chip.promptEn : chip.promptVi;
-    const promptEsc = promptText.replace(/'/g, "\\'");
-    return `
-      <button class="quick-chip ${chip.type}" onclick="dispatchQuickAction('${promptEsc}')">
-        ${chip.icon} ${label}
-      </button>
-    `;
-  }).join('');
+  }
 }
 
 function renderChoices(options) {
   const container = document.getElementById('choices-grid');
   if (!container) return;
 
-  const dict = I18N_DICT[currentLang] || I18N_DICT.vi;
-  const isEn = (currentLang === 'en');
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
 
   if (!options || options.length === 0) {
-    container.innerHTML = `<div style="padding: 16px; text-align: center; color: var(--text-muted); font-size: 11px;">${isEn ? 'No action proposals for current context.' : 'Không có đề xuất hành động cho bối cảnh hiện tại.'}</div>`;
+    container.innerHTML = `<div style="grid-column: span 2; padding: 16px; text-align: center; color: var(--text-muted); font-size: 11px;">${isEn ? 'No action proposals for current context.' : 'Không có đề xuất hành động cho bối cảnh hiện tại.'}</div>`;
     return;
   }
 
@@ -374,38 +462,58 @@ function renderChoices(options) {
     const titleText = isEn ? (opt.titleEn || opt.title) : opt.title;
     const descText = isEn ? (opt.descEn || opt.desc) : opt.desc;
     const disabledReason = isEn ? (opt.disabledReasonEn || opt.disabledReasonVi) : opt.disabledReasonVi;
+
+    // Strip ugly internal IDs like "OPT_1 [XÃ GIAO HÀO KIỆT]" from title
+    const cleanTitle = titleText.replace(/^OPT_\d+\s*(\[.*?\])?\s*/i, '').trim();
+
     const badgeClass = opt.badgeClass || (
       opt.pillar === 'KIZUNA_SOCIAL' ? 'pillar-kizuna' :
       opt.pillar === 'FACILITY_OPERATION' ? 'pillar-facility' :
       opt.pillar === 'OPPORTUNITY_INCIDENT' ? 'pillar-opportunity' : 'pillar-growth'
     );
 
+    const { badges, note } = parseImpactsFromDesc(descText, opt.pillar);
+    const impactChipsHtml = badges.map(b => `<span class="impact-chip ${b.type}">${b.text}</span>`).join('');
+
     return `
-      <div class="choice-card ${isSelected ? 'active' : ''} ${isDisabled ? 'choice-card--disabled' : ''}" 
+      <div class="choice-card ${isSelected ? 'active' : ''} ${isDisabled ? 'choice-card--disabled' : ''} ${badgeClass}-card" 
            id="choice-card-${opt.id}" 
-           onclick="selectChoice('${opt.id}')"
-           title="${isDisabled && disabledReason ? disabledReason : ''}">
-        <div class="choice-icon">${opt.icon || '⚔️'}</div>
-        <div class="choice-details">
-          <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
+           onclick="handleChoiceCardClick('${opt.id}')"
+           title="${isDisabled && disabledReason ? disabledReason : cleanTitle}">
+        
+        <!-- Card Top: Pillar Tag & AI Secondary Action -->
+        <div class="choice-card-top">
+          <div class="choice-pillar-group">
+            <span class="choice-icon-badge">${opt.icon || '⚔️'}</span>
             ${pillarLabel ? `<span class="choice-pillar-badge ${badgeClass}">${pillarLabel}</span>` : ''}
-            <div class="choice-title" style="${isDisabled ? 'color: var(--text-muted);' : ''}">${titleText}</div>
           </div>
-          <div class="choice-desc">${descText}</div>
-          ${isDisabled && disabledReason ? `<div class="choice-disabled-tag">⚠️ ${disabledReason}</div>` : ''}
+          <div class="choice-top-actions">
+            <button class="btn-choice-ai-icon ${isDisabled ? 'btn-disabled' : ''}" 
+                    id="btn-ai-${opt.id}" 
+                    ${isDisabled ? 'disabled' : ''} 
+                    onclick="event.stopPropagation(); executeChoiceAi('${opt.id}')"
+                    title="${isEn ? 'Execute with AI Storyteller Bridge' : 'Thi hành kèm AI Dẫn Chuyện & Cốt Truyện'}">
+              <span>✦ AI</span>
+            </button>
+          </div>
         </div>
-        <div class="choice-actions">
-          <button class="btn-choice-select ${isDisabled ? 'btn-disabled' : ''}" 
+
+        <!-- Card Body: Clean Title, Impact Chips & Note -->
+        <div class="choice-card-body">
+          <div class="choice-title" style="${isDisabled ? 'color: var(--text-muted);' : ''}">${cleanTitle}</div>
+          <div class="choice-impact-chips">${impactChipsHtml}</div>
+          ${note ? `<div class="choice-note">${note}</div>` : ''}
+          ${isDisabled && disabledReason ? `<div class="choice-disabled-banner"><span class="lock-icon">🔒</span> ${disabledReason}</div>` : ''}
+        </div>
+
+        <!-- Card Footer: Direct Execution -->
+        <div class="choice-card-footer">
+          <button class="btn-choice-execute ${isDisabled ? 'btn-disabled' : ''}" 
                   id="btn-select-${opt.id}" 
                   ${isDisabled ? 'disabled' : ''} 
                   onclick="event.stopPropagation(); executeChoiceDirect('${opt.id}')">
-            ${dict.btnSelect}
-          </button>
-          <button class="btn-choice-ai ${isDisabled ? 'btn-disabled' : ''}" 
-                  id="btn-ai-${opt.id}" 
-                  ${isDisabled ? 'disabled' : ''} 
-                  onclick="event.stopPropagation(); executeChoiceAi('${opt.id}')">
-            ${dict.btnAi}
+            <span>${isEn ? 'Execute' : 'Thi Hành'}</span>
+            <span class="btn-arrow">→</span>
           </button>
         </div>
       </div>
@@ -557,3 +665,7 @@ window.renderChoices = renderChoices;
 window.renderRelations = renderRelations;
 window.renderSceneFromData = renderSceneFromData;
 window.renderAgentSimulationFeedback = renderAgentSimulationFeedback;
+window.toggleCourierDrawer = toggleCourierDrawer;
+window.dispatchCourierAction = dispatchCourierAction;
+window.handleChoiceCardClick = handleChoiceCardClick;
+window.parseImpactsFromDesc = parseImpactsFromDesc;
