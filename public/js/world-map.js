@@ -187,26 +187,26 @@ function renderWorldMapSvg() {
     const isSelected = (selectedMapNodeId === key);
 
     const themeMap = {
-      'zhuo_xian': { fill: '#064e3b', stroke: '#10b981', icon: '🌸' },
-      'ji_cheng': { fill: '#0f172a', stroke: '#38bdf8', icon: '🐎' },
-      'ye_cheng': { fill: '#1e1b4b', stroke: '#818cf8', icon: '🏛️' },
-      'guang_zong': { fill: '#450a0a', stroke: '#ef4444', icon: '⚔️' },
-      'ping_yuan': { fill: '#0f172a', stroke: '#06b6d4', icon: '🛡️' },
-      'luo_yang': { fill: '#451a03', stroke: '#f59e0b', icon: '👑' },
-      'chang_an': { fill: '#3b0764', stroke: '#a855f7', icon: '🏯' },
-      'xu_chang': { fill: '#1e293b', stroke: '#3b82f6', icon: '⚔️' },
-      'xia_pi': { fill: '#042f2e', stroke: '#14b8a6', icon: '🏰' },
-      'xiang_yang': { fill: '#0c4a6e', stroke: '#0284c7', icon: '🌊' },
-      'jiang_ling': { fill: '#164e63', stroke: '#06b6d4', icon: '⛵' },
-      'chi_bi': { fill: '#450a0a', stroke: '#f97316', icon: '🔥' },
-      'jian_ye': { fill: '#14532d', stroke: '#22c55e', icon: '🐅' },
-      'han_zhong': { fill: '#292524', stroke: '#a8a29e', icon: '🏔️' },
-      'cheng_du': { fill: '#064e3b', stroke: '#10b981', icon: '🎋' }
+      'zhuo_xian': { fill: '#064e3b', stroke: '#10b981', icon: '涿' },
+      'ji_cheng': { fill: '#0f172a', stroke: '#38bdf8', icon: '薊' },
+      'ye_cheng': { fill: '#1e1b4b', stroke: '#818cf8', icon: '鄴' },
+      'guang_zong': { fill: '#450a0a', stroke: '#ef4444', icon: '宗' },
+      'ping_yuan': { fill: '#0f172a', stroke: '#06b6d4', icon: '平' },
+      'luo_yang': { fill: '#451a03', stroke: '#f59e0b', icon: '洛' },
+      'chang_an': { fill: '#3b0764', stroke: '#a855f7', icon: '長' },
+      'xu_chang': { fill: '#1e293b', stroke: '#3b82f6', icon: '昌' },
+      'xia_pi': { fill: '#042f2e', stroke: '#14b8a6', icon: '邳' },
+      'xiang_yang': { fill: '#0c4a6e', stroke: '#0284c7', icon: '襄' },
+      'jiang_ling': { fill: '#164e63', stroke: '#06b6d4', icon: '陵' },
+      'chi_bi': { fill: '#450a0a', stroke: '#f97316', icon: '壁' },
+      'jian_ye': { fill: '#14532d', stroke: '#22c55e', icon: '建' },
+      'han_zhong': { fill: '#292524', stroke: '#a8a29e', icon: '漢' },
+      'cheng_du': { fill: '#064e3b', stroke: '#10b981', icon: '成' }
     };
 
-    let theme = themeMap[key] || { fill: '#0f172a', stroke: '#3b82f6', icon: '🛡️' };
+    let theme = themeMap[key] || { fill: '#0f172a', stroke: '#3b82f6', icon: '鎮' };
     if (isCurrent) {
-      theme = { fill: '#064e3b', stroke: '#10b981', icon: '📍' };
+      theme = { fill: '#064e3b', stroke: '#10b981', icon: theme.icon };
     }
 
     const displayName = typeof getShortNodeName === 'function' ? getShortNodeName(node, isEn) : (isEn ? node.nameEn : node.nameVi);
@@ -217,7 +217,7 @@ function renderWorldMapSvg() {
         ${isCurrent ? `
           <circle cx="${node.coords.x}" cy="${node.coords.y}" r="22" fill="none" stroke="#10b981" stroke-width="2" opacity="0.8" class="map-pulse-ring" />
           <rect x="${node.coords.x - 34}" y="${node.coords.y - 28}" width="68" height="13" rx="3" fill="#064e3b" stroke="#10b981" stroke-width="1" />
-          <text x="${node.coords.x}" y="${node.coords.y - 19}" fill="#34d399" font-size="7.5" font-weight="700" text-anchor="middle">📍 ${isEn ? 'CURRENT' : 'HIỆN TẠI'}</text>
+          <text x="${node.coords.x}" y="${node.coords.y - 19}" fill="#34d399" font-size="7.5" font-weight="700" text-anchor="middle">[${isEn ? 'CURRENT' : 'HIỆN TẠI'}]</text>
         ` : ''}
 
         ${isSelected ? `
@@ -236,14 +236,14 @@ function renderWorldMapSvg() {
   container.innerHTML = `
     <!-- Floating Zoom Toolbar -->
     <div class="map-zoom-toolbar">
-      <button class="map-zoom-btn" onclick="zoomWorldMap(0.25)" title="${isEn ? 'Zoom In' : 'Phóng to'}">➕</button>
+      <button class="map-zoom-btn" onclick="zoomWorldMap(0.25)" title="${isEn ? 'Zoom In' : 'Phóng to'}">+</button>
       <span class="map-zoom-level" id="map-zoom-level-badge">${Math.round(worldMapZoom * 100)}%</span>
-      <button class="map-zoom-btn" onclick="zoomWorldMap(-0.25)" title="${isEn ? 'Zoom Out' : 'Thu nhỏ'}">➖</button>
-      <button class="map-zoom-btn" onclick="resetWorldMapZoom()" title="${isEn ? 'Reset View' : 'Khôi phục'}">🎯</button>
+      <button class="map-zoom-btn" onclick="zoomWorldMap(-0.25)" title="${isEn ? 'Zoom Out' : 'Thu nhỏ'}">-</button>
+      <button class="map-zoom-btn" onclick="resetWorldMapZoom()" title="${isEn ? 'Reset View' : 'Khôi phục'}">1:1</button>
     </div>
 
     <!-- Navigation Hint -->
-    <div class="map-nav-hint">${isEn ? '🖱️ Scroll to zoom • Drag to pan' : '🖱️ Cuộn chuột để zoom • Kéo chuột để di chuyển'}</div>
+    <div class="map-nav-hint">${isEn ? 'Scroll to zoom • Drag to pan' : 'Cuộn chuột để zoom • Kéo chuột để di chuyển'}</div>
 
     <svg viewBox="0 0 600 500" xmlns="http://www.w3.org/2000/svg">
       <defs>
@@ -358,7 +358,7 @@ function renderWorldMapIntel(nodeId = selectedMapNodeId) {
     <div class="intel-target-header">
       <div>
         <div class="intel-target-name">${title}</div>
-        <div class="intel-target-province">📍 ${prov}</div>
+        <div class="intel-target-province">${prov}</div>
       </div>
       <span class="intel-status-badge ${badgeClass}">${badgeText}</span>
     </div>
@@ -383,22 +383,22 @@ function renderWorldMapIntel(nodeId = selectedMapNodeId) {
     </div>
 
     <div class="intel-section">
-      <div class="intel-sec-title">📜 ${dict.lblIntel}</div>
+      <div class="intel-sec-title">${dict.lblIntel}</div>
       <div class="intel-sec-body">${intel}</div>
     </div>
 
     <div class="intel-section">
-      <div class="intel-sec-title">👥 ${dict.lblFigures}</div>
+      <div class="intel-sec-title">${dict.lblFigures}</div>
       <div class="intel-sec-body">${figures}</div>
     </div>
 
     ${isCurrent ? `
       <button class="btn-march" disabled>
-        <span>📍 ${dict.btnCurrentPos}</span>
+        <span>${dict.btnCurrentPos}</span>
       </button>
     ` : `
       <button class="btn-march" onclick="executeMarchToSelectedNode('${nodeId}')">
-        <span>🏇 ${dict.btnMarchTo} ${title}</span>
+        <span>${dict.btnMarchTo} ${title}</span>
       </button>
     `}
   `;
@@ -406,7 +406,7 @@ function renderWorldMapIntel(nodeId = selectedMapNodeId) {
 
 async function executeMarchToSelectedNode(nodeId) {
   if (isProcessingAction) {
-    showToast(currentLang === 'en' ? '⚠️ Action in progress, please wait!' : '⚠️ Đang thực thi thao tác khác, vui lòng chờ!', true);
+    showToast(currentLang === 'en' ? 'Action in progress, please wait!' : 'Thao tác đang thực thi, vui lòng chờ!', true);
     return;
   }
 

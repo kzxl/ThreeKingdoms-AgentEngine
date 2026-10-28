@@ -86,7 +86,7 @@ async function loadDeckNpcs() {
           <div class="deck-npc-footer">
             <span style="color: var(--text-muted); font-size: 10px;">${dict.deckPersonality || 'Tính cách:'} <strong>${npc.personality || 'Chăm chỉ'}</strong></span>
             <button class="btn btn-sm btn-gold" onclick="rewardNpc('${npc.npc_id}', 100)">
-              ${dict.btnReward || '🎁 Thưởng 100 Tiền'}
+              ${dict.btnReward || 'Thưởng 100 Tiền'}
             </button>
           </div>
         </div>
@@ -154,11 +154,11 @@ async function loadDeckAgentLogs() {
           <span class="deck-agent-log-type">${l.type}</span>
           <span class="deck-agent-log-time">${l.timestamp}</span>
         </div>
-        <div class="deck-agent-log-prompt">💬 ${l.prompt}</div>
-        <div class="deck-agent-log-reason">🧠 ${l.reasoning}</div>
+        <div class="deck-agent-log-prompt"><strong>Chỉ thị:</strong> ${l.prompt}</div>
+        <div class="deck-agent-log-reason"><strong>Luận cứ:</strong> ${l.reasoning}</div>
         ${l.delta && Object.keys(l.delta).length > 0 ? `
           <div class="deck-agent-log-delta">
-            ⚖️ ${Object.entries(l.delta).map(([k, v]) => `${k}: ${v}`).join(' • ')}
+            ${Object.entries(l.delta).map(([k, v]) => `${k}: ${v}`).join(' • ')}
           </div>
         ` : ''}
       </div>

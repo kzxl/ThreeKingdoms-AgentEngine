@@ -28,22 +28,22 @@ function renderDeltaBarHtml(delta) {
   const pills = [];
   if (delta.cash) {
     const isPositive = String(delta.cash).startsWith('+');
-    pills.push(`<span class="agent-delta-pill ${isPositive ? 'cash-plus' : 'cash-minus'}">🪙 ${delta.cash}</span>`);
+    pills.push(`<span class="agent-delta-pill ${isPositive ? 'cash-plus' : 'cash-minus'}">Tiền: ${delta.cash}</span>`);
   }
   if (delta.inventory) {
-    pills.push(`<span class="agent-delta-pill inv">📦 ${delta.inventory}</span>`);
+    pills.push(`<span class="agent-delta-pill inv">Kho: ${delta.inventory}</span>`);
   }
   if (delta.relations || delta.npc) {
-    pills.push(`<span class="agent-delta-pill rel">🤝 ${delta.relations || delta.npc}</span>`);
+    pills.push(`<span class="agent-delta-pill rel">Hảo cảm: ${delta.relations || delta.npc}</span>`);
   }
   if (delta.location) {
-    pills.push(`<span class="agent-delta-pill rel">📍 ${delta.location}</span>`);
+    pills.push(`<span class="agent-delta-pill rel">Địa điểm: ${delta.location}</span>`);
   }
   if (delta.action) {
-    pills.push(`<span class="agent-delta-pill rel">⚡ ${delta.action}</span>`);
+    pills.push(`<span class="agent-delta-pill rel">Hành động: ${delta.action}</span>`);
   }
   if (delta.audit) {
-    pills.push(`<span class="agent-delta-pill rel">⚖️ ${delta.audit}</span>`);
+    pills.push(`<span class="agent-delta-pill rel">Khớp: ${delta.audit}</span>`);
   }
   if (pills.length === 0) return '';
   return `<div class="story-delta-bar">${pills.join('')}</div>`;
@@ -335,10 +335,10 @@ function parseImpactsFromDesc(desc, pillar) {
 
   // Fallback badge if none detected
   if (badges.length === 0) {
-    if (pillar === 'KIZUNA_SOCIAL') badges.push({ text: '🤝 Hảo Cảm', type: 'positive' });
-    else if (pillar === 'FACILITY_OPERATION') badges.push({ text: '🏭 Cơ Sở', type: 'gain' });
-    else if (pillar === 'OPPORTUNITY_INCIDENT') badges.push({ text: '📜 Cơ Duyên', type: 'dice' });
-    else if (pillar === 'PERSONAL_GROWTH') badges.push({ text: '⚔️ Bồi Dưỡng', type: 'stat' });
+    if (pillar === 'KIZUNA_SOCIAL') badges.push({ text: 'Hảo Cảm', type: 'positive' });
+    else if (pillar === 'FACILITY_OPERATION') badges.push({ text: 'Cơ Sở', type: 'gain' });
+    else if (pillar === 'OPPORTUNITY_INCIDENT') badges.push({ text: 'Cơ Duyên', type: 'dice' });
+    else if (pillar === 'PERSONAL_GROWTH') badges.push({ text: 'Bồi Dưỡng', type: 'stat' });
   }
 
   return { badges, note: notes.join(' • ') || desc };
@@ -421,7 +421,7 @@ function renderDynamicQuickChips(location = activeSubLocation) {
         return `
           <button class="courier-action-card" onclick="dispatchCourierAction('${promptEsc}')">
             <div class="courier-action-left">
-              <span class="courier-action-icon">${chip.icon || '✉️'}</span>
+              <span class="courier-action-icon">${chip.icon || '信'}</span>
               <div>
                 <div class="courier-action-name">${label}</div>
                 <div class="courier-action-prompt">${promptText}</div>
@@ -465,6 +465,13 @@ function renderChoices(options) {
 
     const { badges, note } = parseImpactsFromDesc(descText, opt.pillar);
     const impactChipsHtml = badges.map(b => `<span class="impact-chip ${b.type}">${b.text}</span>`).join('');
+    const pillarSealMap = {
+      'KIZUNA_SOCIAL': '交',
+      'FACILITY_OPERATION': '業',
+      'OPPORTUNITY_INCIDENT': '機',
+      'PERSONAL_GROWTH': '修'
+    };
+    const choiceSeal = pillarSealMap[opt.pillar] || '策';
 
     return `
       <div class="choice-card ${isSelected ? 'active' : ''} ${isDisabled ? 'choice-card--disabled' : ''} ${badgeClass}-card" 
@@ -475,7 +482,7 @@ function renderChoices(options) {
         <!-- Card Top: Pillar Tag & AI Secondary Action -->
         <div class="choice-card-top">
           <div class="choice-pillar-group">
-            <span class="choice-icon-badge">${opt.icon || '⚔️'}</span>
+            <span class="choice-icon-badge">${choiceSeal}</span>
             ${pillarLabel ? `<span class="choice-pillar-badge ${badgeClass}">${pillarLabel}</span>` : ''}
           </div>
           <div class="choice-top-actions">
@@ -484,7 +491,7 @@ function renderChoices(options) {
                     ${isDisabled ? 'disabled' : ''} 
                     onclick="event.stopPropagation(); executeChoiceAi('${opt.id}')"
                     title="${isEn ? 'Execute with AI Storyteller Bridge' : 'Thi hành kèm AI Dẫn Chuyện & Cốt Truyện'}">
-              <span>✦ AI</span>
+              <span>AI</span>
             </button>
           </div>
         </div>
@@ -494,7 +501,7 @@ function renderChoices(options) {
           <div class="choice-title" style="${isDisabled ? 'color: var(--text-muted);' : ''}">${cleanTitle}</div>
           <div class="choice-impact-chips">${impactChipsHtml}</div>
           ${note ? `<div class="choice-note">${note}</div>` : ''}
-          ${isDisabled && disabledReason ? `<div class="choice-disabled-banner"><span class="lock-icon">🔒</span> ${disabledReason}</div>` : ''}
+          ${isDisabled && disabledReason ? `<div class="choice-disabled-banner"><span class="lock-icon">[Khóa]</span> ${disabledReason}</div>` : ''}
         </div>
 
         <!-- Card Footer: Direct Execution -->
@@ -609,16 +616,16 @@ function renderAgentSimulationFeedback(reasoning, delta) {
     const pills = [];
     if (delta.cash) {
       const isPositive = String(delta.cash).startsWith('+');
-      pills.push(`<span class="agent-delta-pill ${isPositive ? 'cash-plus' : 'cash-minus'}">🪙 Tiền: ${delta.cash}</span>`);
+      pills.push(`<span class="agent-delta-pill ${isPositive ? 'cash-plus' : 'cash-minus'}">Tiền: ${delta.cash}</span>`);
     }
     if (delta.inventory) {
-      pills.push(`<span class="agent-delta-pill inv">📦 Kho: ${delta.inventory}</span>`);
+      pills.push(`<span class="agent-delta-pill inv">Kho: ${delta.inventory}</span>`);
     }
     if (delta.relations || delta.npc) {
-      pills.push(`<span class="agent-delta-pill rel">🤝 ${delta.relations || delta.npc}</span>`);
+      pills.push(`<span class="agent-delta-pill rel">Hảo cảm: ${delta.relations || delta.npc}</span>`);
     }
     if (delta.audit) {
-      pills.push(`<span class="agent-delta-pill rel">⚖️ ${delta.audit}</span>`);
+      pills.push(`<span class="agent-delta-pill rel">Khớp: ${delta.audit}</span>`);
     }
     if (pills.length > 0) {
       chipsContainer.innerHTML = pills.join('');

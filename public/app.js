@@ -102,7 +102,7 @@ function triggerStaminaRecoveryAnimation(amount) {
 
   const gainEl = document.createElement('span');
   gainEl.className = 'vital-gain-indicator';
-  gainEl.innerText = `+${amount} ⚡`;
+  gainEl.innerText = `+${amount}`;
   container.appendChild(gainEl);
   setTimeout(() => gainEl.remove(), 1400);
 }
@@ -118,7 +118,7 @@ function updateStaminaRegenDisplay(fatigueVal, maxStamina, currentStamina, warAt
 
   if (fatigueVal <= 0) {
     timerEl.className = 'vital-sub-timer full';
-    timerEl.innerHTML = `<span class="icon">⚡</span> ${isEn ? 'Full' : 'Đầy'}`;
+    timerEl.innerHTML = isEn ? 'Full' : 'Đầy';
     if (barEl) barEl.classList.remove('recovering');
     if (containerEl) {
       containerEl.title = isEn 
@@ -140,7 +140,7 @@ function updateStaminaRegenDisplay(fatigueVal, maxStamina, currentStamina, warAt
   const timeStr = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 
   timerEl.className = 'vital-sub-timer recovering';
-  timerEl.innerHTML = `<span class="icon">⚡</span> ${timeStr} <span style="opacity:0.75; font-size:7.5px;">(+1/${staminaIntervalSecs}s)</span>`;
+  timerEl.innerHTML = `${timeStr} <span style="opacity:0.75; font-size:7.5px;">(+1/${staminaIntervalSecs}s)</span>`;
 
   if (containerEl) {
     containerEl.title = isEn
@@ -275,8 +275,8 @@ async function loadStatus() {
       const hpTimerEl = document.getElementById('hp-timer-row');
       if (hpTimerEl) {
         hpTimerEl.innerText = healthVal >= 80 
-          ? (typeof currentLang !== 'undefined' && currentLang === 'en' ? '❤️ Robust' : '❤️ Khang kiện') 
-          : (typeof currentLang !== 'undefined' && currentLang === 'en' ? '⚠️ Injured' : '⚠️ Thể tổn');
+          ? (typeof currentLang !== 'undefined' && currentLang === 'en' ? 'Robust' : 'Khang kiện') 
+          : (typeof currentLang !== 'undefined' && currentLang === 'en' ? 'Injured' : 'Thể tổn');
       }
 
       const moraleEl = document.getElementById('protagonist-morale');
@@ -289,8 +289,8 @@ async function loadStatus() {
       const moraleTimerEl = document.getElementById('morale-timer-row');
       if (moraleTimerEl) {
         moraleTimerEl.innerText = moraleVal >= 80 
-          ? (typeof currentLang !== 'undefined' && currentLang === 'en' ? '🔥 High' : '🔥 Hăng hái') 
-          : (typeof currentLang !== 'undefined' && currentLang === 'en' ? '⚡ Normal' : '⚡ Bình ổn');
+          ? (typeof currentLang !== 'undefined' && currentLang === 'en' ? 'High' : 'Hăng hái') 
+          : (typeof currentLang !== 'undefined' && currentLang === 'en' ? 'Normal' : 'Bình ổn');
       }
 
       // 8-Axis Attributes & ROTK Equipment Stat Progression System
@@ -372,13 +372,13 @@ async function checkAuditStatus() {
         badge.className = 'badge-audit';
         badge.innerText = '100% Khớp';
         badge.title = `${data.totalInvariantsVerified} Bất biến SQLite đã xác minh hoàn hảo`;
-        if (hudAudit) hudAudit.innerText = `✅ INVARIANTS: ${data.totalInvariantsVerified}/${data.totalInvariantsVerified} KHỚP`;
+        if (hudAudit) hudAudit.innerText = `INVARIANTS: ${data.totalInvariantsVerified}/${data.totalInvariantsVerified} KHỚP`;
       } else {
         badge.className = 'badge-audit text-danger';
         badge.style.borderColor = 'var(--state-danger)';
         badge.style.color = '#f87171';
         badge.innerText = `${data.discrepanciesCount} Lệch`;
-        if (hudAudit) hudAudit.innerText = `⚠️ LỆCH: ${data.discrepanciesCount} INVARIANTS`;
+        if (hudAudit) hudAudit.innerText = `LỆCH: ${data.discrepanciesCount} INVARIANTS`;
       }
     }
   } catch (err) {
@@ -405,7 +405,7 @@ async function loadScene(targetSubLoc = activeSubLocation, customNarrative = nul
 // 2.1 Dynamic Sub-location Switching
 async function switchSubLocation(locName) {
   if (isProcessingAction) {
-    showToast('⚠️ Đang thực thi thao tác khác, vui lòng chờ!', true);
+    showToast('Đang thực thi thao tác khác, vui lòng chờ!', true);
     return;
   }
   if (activeSubLocation === locName) return;
@@ -428,7 +428,7 @@ function selectChoice(optId) {
 // 2.3 Direct Mechanical Choice Execution (Anti-Piling Guarded)
 async function executeChoiceDirect(optId) {
   if (isProcessingAction) {
-    showToast('⚠️ Đang thực thi điều lệnh trước, vui lòng không nhấn dồn!', true);
+    showToast('Đang thực thi điều lệnh trước, vui lòng không nhấn dồn!', true);
     return;
   }
 
@@ -440,7 +440,7 @@ async function executeChoiceDirect(optId) {
     const reason = (typeof currentLang !== 'undefined' && currentLang === 'en')
       ? (opt.disabledReasonEn || 'This action cannot be taken under current conditions.')
       : (opt.disabledReasonVi || 'Không đủ điều kiện thực hiện thao tác này.');
-    showToast(`⚠️ ${reason}`, true);
+    showToast(reason, true);
     return;
   }
 
@@ -529,7 +529,7 @@ async function executeChoiceDirect(optId) {
         type: 'system',
         speaker: 'Hành Trình',
         title: 'Chuyển Đổi Địa Điểm',
-        avatar: '📍',
+        avatar: '行',
         text: `Lương Diễn đã rời bước, đặt chân tới **${opt.action.new_location}**. Bối cảnh xung quanh bắt đầu thay đổi.`,
         deltas: { location: activeSubLocation, audit: 'Cập nhật tọa độ' }
       });
@@ -555,7 +555,7 @@ async function executeChoiceDirect(optId) {
       let turnType = 'system';
       let speaker = 'SimCore Kiểm Toán';
       let title = 'Ghi Nhận Sổ Cái SQLite';
-      let avatar = '⚖️';
+      let avatar = '核';
       let turnText = `Điều lệnh **${opt.title}** đã thực thi thành công và ghi sổ bất biến.`;
 
       if (opt.action.type === 'PRODUCTION_BATCH') {
@@ -569,21 +569,21 @@ async function executeChoiceDirect(optId) {
           turnType = 'courier';
           speaker = 'Gia Nhân Tiếp Vận (Phi Thư)';
           title = 'Mật Lệnh Sản Xuất Tới Xưởng';
-          avatar = '✉️';
+          avatar = '信';
           turnText = `Gia nhân phi ngựa mang mật lệnh bài về Xưởng Lương Thị. Thợ cả Trần Bảo mở thư tuân lệnh, hạ lệnh thợ xưởng hoàn thiện ${opt.action.batch_size} thành phẩm!`;
         }
       } else if (opt.action.type === 'TRADE_BUY' || opt.action.type === 'TRADE_SELL') {
         turnType = 'action';
         speaker = opt.action.counterparty || 'Thương Vụ Lương Gia';
         title = opt.action.type === 'TRADE_BUY' ? 'Thu Mua Vật Tư' : 'Xuất Bán Hàng Hóa';
-        avatar = opt.icon || '📦';
+        avatar = '商';
         turnText = `Giao dịch thương nghiệp **${opt.title}** đã hoàn tất giao nhận và đối ứng ngân khố.`;
       } else if (opt.action.type === 'REWARD_NPC') {
         turnType = 'npc';
         const sceneNpc = currentScene?.npc;
         speaker = sceneNpc?.name || opt.action.counterparty || 'Hào Kiệt';
         title = sceneNpc?.title || 'Đàm Đạo & Ban Thưởng';
-        avatar = sceneNpc?.name ? sceneNpc.name.charAt(0) : '🎁';
+        avatar = sceneNpc?.name ? sceneNpc.name.charAt(0) : '賞';
         if (speaker.includes('Quan Vũ')) {
           turnText = `Quan Vân Trường vuốt ròm râu dài, nâng chén trà thơm mỉm cười: *"Đa tạ Chí Viễn thịnh tình! Đại trượng phu gặp được tri kỷ cùng chung chí hướng binh pháp như đệ quả là đại hạnh!"*`;
         } else if (speaker.includes('Trương Phi')) {
@@ -597,13 +597,13 @@ async function executeChoiceDirect(optId) {
         turnType = 'system';
         speaker = opt.action.counterparty || 'Bắc Quân Quân Lệnh Cục';
         title = 'Nhận Thưởng Quân Công';
-        avatar = '🎖️';
+        avatar = '勳';
         turnText = `Bộ chỉ huy đã giải ngân ban thưởng quân công **${opt.title}**. Số dư lưu động tăng thêm +${opt.action.amount} Tiền.`;
       } else if (opt.action.type === 'PERSONAL_GROWTH') {
         turnType = 'action';
         speaker = 'Lương Diễn';
         title = 'Tu Thân & Bồi Dưỡng';
-        avatar = opt.icon || '🧘';
+        avatar = '修';
         const isRest = opt.action.sub_type === 'REST_RECOVERY';
         turnText = isRest 
           ? `Lương Diễn tĩnh tọa nghỉ ngơi dưỡng sức. Khí huyết hồi phục (Thể lực giảm bớt, Sĩ khí vươn cao).`
@@ -639,7 +639,7 @@ async function executeChoiceDirect(optId) {
 // 2.4 AI-Assisted Choice Execution (Anti-Piling Guarded)
 async function executeChoiceAi(optId) {
   if (isProcessingAction) {
-    showToast('⚠️ Đang gửi yêu cầu cho AI Bridge, vui lòng không bấm liên tục!', true);
+    showToast('Đang gửi yêu cầu cho AI Bridge, vui lòng không bấm liên tục!', true);
     return;
   }
 
@@ -651,7 +651,7 @@ async function executeChoiceAi(optId) {
     const reason = (typeof currentLang !== 'undefined' && currentLang === 'en')
       ? (opt.disabledReasonEn || 'This action cannot be taken under current conditions.')
       : (opt.disabledReasonVi || 'Không đủ điều kiện thực hiện thao tác này.');
-    showToast(`⚠️ ${reason}`, true);
+    showToast(reason, true);
     return;
   }
 
@@ -723,13 +723,13 @@ function appendAgentResultTurn(result) {
       type = 'courier';
       speaker = isEn ? 'Courier Dispatch (Messenger)' : 'Gia Nhân Tiếp Vận (Phi Thư)';
       title = isEn ? 'Remote Order / Dispatch' : 'Mật Thư Điều Phối Từ Xa';
-      avatar = '✉️';
+      avatar = '信';
       diceBadge = null;
     } else if (result.dispatchType === 'TRAVEL') {
       type = 'travel';
       speaker = isEn ? 'Post Road Journey' : 'Lữ Trình Quan Đạo';
       title = isEn ? 'Scene Relocation' : 'Chuyển Cảnh Địa Lý';
-      avatar = '🏇';
+      avatar = '馬';
       diceBadge = null;
     } else if (result.executedAction && result.executedAction.type === 'PRODUCTION_BATCH') {
       type = 'action';
@@ -762,7 +762,7 @@ function appendAgentResultTurn(result) {
 // 2.6 Command Dispatcher (Anti-Piling Guarded)
 async function dispatchOmniCommand(mode = 'ai', explicitPrompt = null) {
   if (isProcessingAction) {
-    showToast('⚠️ Hệ thống đang tính toán lệnh trước, vui lòng không spam lệnh!', true);
+    showToast('Hệ thống đang tính toán lệnh trước, vui lòng không gửi dồn dập!', true);
     return;
   }
 
@@ -840,7 +840,7 @@ async function dispatchDirectAction(payload) {
 // 2.8 NPC Retainer Reward Quick Action
 async function rewardNpc(npcId, amount = 100) {
   if (isProcessingAction) {
-    showToast('⚠️ Đang thực thi thao tác khác, vui lòng chờ!', true);
+    showToast('Đang thực thi thao tác khác, vui lòng chờ!', true);
     return;
   }
 
@@ -854,7 +854,7 @@ async function rewardNpc(npcId, amount = 100) {
   const npcInfo = npcNameMap[npcId] || { 
     name: currentScene?.npc?.name || npcId, 
     title: currentScene?.npc?.title || 'Nhân Sĩ', 
-    avatar: currentScene?.npc?.name ? currentScene.npc.name.charAt(0) : '🎁', 
+    avatar: currentScene?.npc?.name ? currentScene.npc.name.charAt(0) : '賞', 
     quote: `${currentScene?.npc?.name || npcId} nhận ban thưởng phấn khởi: *"Đa tạ công tử hậu đãi!"*` 
   };
 

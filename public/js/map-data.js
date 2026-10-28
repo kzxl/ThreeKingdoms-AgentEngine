@@ -9,15 +9,15 @@ const QUICK_CHIPS_DATA = {
     placeholderVi: 'Lương Diễn đối thoại với Trương Phi... (hoặc gõ: "Phi thư về xưởng đóng khiên...")',
     placeholderEn: 'Liang Yan talks to Zhang Fei... (or type: "Send courier to workshop...")',
     chips: [
-      { type: 'local', icon: '⚔️', labelVi: 'Đấu Thương Trương Phi', labelEn: 'Spar with Zhang Fei', promptVi: 'Thỉnh giáo Trương Phi đấu thương thực chiến đợt 2', promptEn: 'Spar with Zhang Fei in spear combat round 2' },
-      { type: 'local', icon: '🛒', labelVi: 'Mua 8 Da Bò', labelEn: 'Buy 8 Leather', promptVi: 'Mua sỉ 8 tấm da thuộc của Trương Phi', promptEn: 'Buy 8 leather hides from Zhang Fei' },
-      { type: 'local', icon: '🍷', labelVi: 'Rượu Đào Viên', labelEn: 'Peach Wine', promptVi: 'Cùng Trương Phi uống rượu Đào Viên đàm đạo hào kiệt', promptEn: 'Drink wine with Zhang Fei discussing heroes' },
+      { type: 'local', icon: '武', labelVi: 'Đấu Thương Trương Phi', labelEn: 'Spar with Zhang Fei', promptVi: 'Thỉnh giáo Trương Phi đấu thương thực chiến đợt 2', promptEn: 'Spar with Zhang Fei in spear combat round 2' },
+      { type: 'local', icon: '商', labelVi: 'Mua 8 Da Bò', labelEn: 'Buy 8 Leather', promptVi: 'Mua sỉ 8 tấm da thuộc của Trương Phi', promptEn: 'Buy 8 leather hides from Zhang Fei' },
+      { type: 'local', icon: '飲', labelVi: 'Rượu Đào Viên', labelEn: 'Peach Wine', promptVi: 'Cùng Trương Phi uống rượu Đào Viên đàm đạo hào kiệt', promptEn: 'Drink wine with Zhang Fei discussing heroes' },
       { divider: true },
-      { type: 'courier', icon: '✉️', labelVi: 'Phi thư về Xưởng', labelEn: 'Courier to Workshop', promptVi: 'Phái gia nhân phi thư về Xưởng Lương Thị lệnh đóng 5 khiên trúc', promptEn: 'Send courier to Workshop ordering 5 shields' },
-      { type: 'courier', icon: '✉️', labelVi: 'Phái người ra Chợ', labelEn: 'Retainer to Market', promptVi: 'Sai gia đinh mang thư ra Chợ Đông Môn xuất bán 10 đấu muối', promptEn: 'Dispatch retainer to East Gate Market to sell 10 salt' },
+      { type: 'courier', icon: '信', labelVi: 'Phi thư về Xưởng', labelEn: 'Courier to Workshop', promptVi: 'Phái gia nhân phi thư về Xưởng Lương Thị lệnh đóng 5 khiên trúc', promptEn: 'Send courier to Workshop ordering 5 shields' },
+      { type: 'courier', icon: '信', labelVi: 'Phái người ra Chợ', labelEn: 'Retainer to Market', promptVi: 'Sai gia đinh mang thư ra Chợ Đông Môn xuất bán 10 đấu muối', promptEn: 'Dispatch retainer to East Gate Market to sell 10 salt' },
       { divider: true },
-      { type: 'travel', icon: '🏇', labelVi: 'Đến Chợ Đông Môn', labelEn: 'Go to Market', promptVi: 'Rời Vườn Đào, rảo bước đi tới Chợ Đông Môn', promptEn: 'Leave Peach Garden and travel to East Gate Market' },
-      { type: 'travel', icon: '🏇', labelVi: 'Đến Xưởng Lương Thị', labelEn: 'Go to Workshop', promptVi: 'Rời Vườn Đào, đi tới Lương Thị Chức Tác Phường', promptEn: 'Travel to Liang Textile & Craft Workshop' }
+      { type: 'travel', icon: '行', labelVi: 'Đến Chợ Đông Môn', labelEn: 'Go to Market', promptVi: 'Rời Vườn Đào, rảo bước đi tới Chợ Đông Môn', promptEn: 'Leave Peach Garden and travel to East Gate Market' },
+      { type: 'travel', icon: '行', labelVi: 'Đến Xưởng Lương Thị', labelEn: 'Go to Workshop', promptVi: 'Rời Vườn Đào, đi tới Lương Thị Chức Tác Phường', promptEn: 'Travel to Liang Textile & Craft Workshop' }
     ]
   },
   'Chợ Đông Môn': {
@@ -26,15 +26,15 @@ const QUICK_CHIPS_DATA = {
     placeholderVi: 'Lương Diễn đàm đạo tại Chợ... (hoặc gõ: "Phái gia nhân sang Vườn Đào...")',
     placeholderEn: 'Liang Yan dialogues at Market... (or type: "Dispatch messenger to Peach Garden...")',
     chips: [
-      { type: 'local', icon: '🎋', labelVi: 'Bán 10 Chiếu Trúc', labelEn: 'Sell 10 Mats', promptVi: 'Xuất bán 10 tấm Chiếu Trúc Lương Gia cho Thương đoàn Ký Châu', promptEn: 'Sell 10 bamboo mats to Jizhou merchant caravan' },
-      { type: 'local', icon: '🌾', labelVi: 'Mua 5 Lương Thảo', labelEn: 'Buy 5 Grain', promptVi: 'Thu mua 5 thạch lương tiểu mạch dự trữ', promptEn: 'Purchase 5 piculs of strategic grain' },
-      { type: 'local', icon: '🍵', labelVi: 'Đàm Đạo Quan Vũ', labelEn: 'Tea with Guan Yu', promptVi: 'Mời Quan Vũ uống trà đàm đạo binh pháp Xuân Thu', promptEn: 'Invite Guan Yu for tea discussing strategy' },
+      { type: 'local', icon: '商', labelVi: 'Bán 10 Chiếu Trúc', labelEn: 'Sell 10 Mats', promptVi: 'Xuất bán 10 tấm Chiếu Trúc Lương Gia cho Thương đoàn Ký Châu', promptEn: 'Sell 10 bamboo mats to Jizhou merchant caravan' },
+      { type: 'local', icon: '商', labelVi: 'Mua 5 Lương Thảo', labelEn: 'Buy 5 Grain', promptVi: 'Thu mua 5 thạch lương tiểu mạch dự trữ', promptEn: 'Purchase 5 piculs of strategic grain' },
+      { type: 'local', icon: '茶', labelVi: 'Đàm Đạo Quan Vũ', labelEn: 'Tea with Guan Yu', promptVi: 'Mời Quan Vũ uống trà đàm đạo binh pháp Xuân Thu', promptEn: 'Invite Guan Yu for tea discussing strategy' },
       { divider: true },
-      { type: 'courier', icon: '✉️', labelVi: 'Báo tin Trương Phi', labelEn: 'Courier to Zhang Fei', promptVi: 'Phái gia nhân sang Vườn Đào báo tin cho Trương Phi', promptEn: 'Send courier to Peach Garden to inform Zhang Fei' },
-      { type: 'courier', icon: '✉️', labelVi: 'Lệnh nhập kho Xưởng', labelEn: 'Stock order to Workshop', promptVi: 'Viết thư lệnh vận chuyển nguyên liệu tre da về Xưởng Lương Thị', promptEn: 'Dispatch letter to transfer raw materials to Workshop' },
+      { type: 'courier', icon: '信', labelVi: 'Báo tin Trương Phi', labelEn: 'Courier to Zhang Fei', promptVi: 'Phái gia nhân sang Vườn Đào báo tin cho Trương Phi', promptEn: 'Send courier to Peach Garden to inform Zhang Fei' },
+      { type: 'courier', icon: '信', labelVi: 'Lệnh nhập kho Xưởng', labelEn: 'Stock order to Workshop', promptVi: 'Viết thư lệnh vận chuyển nguyên liệu tre da về Xưởng Lương Thị', promptEn: 'Dispatch letter to transfer raw materials to Workshop' },
       { divider: true },
-      { type: 'travel', icon: '🏇', labelVi: 'Về Vườn Đào', labelEn: 'To Peach Garden', promptVi: 'Rời Chợ Đông Môn, tới Trang Viên Vườn Đào', promptEn: 'Return to Peach Garden Manor' },
-      { type: 'travel', icon: '🏇', labelVi: 'Đến Xưởng Lương Thị', labelEn: 'To Workshop', promptVi: 'Rời Chợ Đông Môn, tới Lương Thị Chức Tác Phường', promptEn: 'Travel to Liang Craft Workshop' }
+      { type: 'travel', icon: '行', labelVi: 'Về Vườn Đào', labelEn: 'To Peach Garden', promptVi: 'Rời Chợ Đông Môn, tới Trang Viên Vườn Đào', promptEn: 'Return to Peach Garden Manor' },
+      { type: 'travel', icon: '行', labelVi: 'Đến Xưởng Lương Thị', labelEn: 'To Workshop', promptVi: 'Rời Chợ Đông Môn, tới Lương Thị Chức Tác Phường', promptEn: 'Travel to Liang Craft Workshop' }
     ]
   },
   'Xưởng Lương Thị': {
@@ -43,15 +43,15 @@ const QUICK_CHIPS_DATA = {
     placeholderVi: 'Lương Diễn chỉ đạo tại Xưởng... (hoặc gõ: "Phái xe hàng ra chợ bán...")',
     placeholderEn: 'Liang Yan manages Workshop... (or type: "Dispatch wagon to market...")',
     chips: [
-      { type: 'local', icon: '🛡️', labelVi: 'Đóng 5 Khiên Trúc', labelEn: 'Craft 5 Shields', promptVi: 'Chỉ đạo thợ cả Trần Bảo khởi động đóng 5 khiên trúc', promptEn: 'Direct Chen Bao to craft 5 bamboo shields' },
-      { type: 'local', icon: '🎋', labelVi: 'Dệt 10 Chiếu Trúc', labelEn: 'Weave 10 Mats', promptVi: 'Khởi ca dệt 10 tấm Chiếu Trúc Lương Gia', promptEn: 'Start batch weaving 10 bamboo mats' },
-      { type: 'local', icon: '🎁', labelVi: 'Thưởng 100 Tiền', labelEn: 'Reward 100 Qian', promptVi: 'Khen thưởng 100 tiền cho thợ cả Trần Bảo động viên thợ', promptEn: 'Reward 100 Qian to master craftsman Chen Bao' },
+      { type: 'local', icon: '工', labelVi: 'Đóng 5 Khiên Trúc', labelEn: 'Craft 5 Shields', promptVi: 'Chỉ đạo thợ cả Trần Bảo khởi động đóng 5 khiên trúc', promptEn: 'Direct Chen Bao to craft 5 bamboo shields' },
+      { type: 'local', icon: '商', labelVi: 'Dệt 10 Chiếu Trúc', labelEn: 'Weave 10 Mats', promptVi: 'Khởi ca dệt 10 tấm Chiếu Trúc Lương Gia', promptEn: 'Start batch weaving 10 bamboo mats' },
+      { type: 'local', icon: '賞', labelVi: 'Thưởng 100 Tiền', labelEn: 'Reward 100 Qian', promptVi: 'Khen thưởng 100 tiền cho thợ cả Trần Bảo động viên thợ', promptEn: 'Reward 100 Qian to master craftsman Chen Bao' },
       { divider: true },
-      { type: 'courier', icon: '✉️', labelVi: 'Xe hàng ra Chợ', labelEn: 'Wagon to Market', promptVi: 'Phái gia nhân áp tải xe hàng chiếu trúc ra Chợ Đông Môn', promptEn: 'Dispatch retainer wagon with mats to East Gate Market' },
-      { type: 'courier', icon: '✉️', labelVi: 'Báo Bắc Quân', labelEn: 'Report to Army', promptVi: 'Phi thư báo cho Bắc Quân Đại Doanh về tiến độ khiên giáp', promptEn: 'Send courier to Northern Army on shield readiness' },
+      { type: 'courier', icon: '信', labelVi: 'Xe hàng ra Chợ', labelEn: 'Wagon to Market', promptVi: 'Phái gia nhân áp tải xe hàng chiếu trúc ra Chợ Đông Môn', promptEn: 'Dispatch retainer wagon with mats to East Gate Market' },
+      { type: 'courier', icon: '信', labelVi: 'Báo Bắc Quân', labelEn: 'Report to Army', promptVi: 'Phi thư báo cho Bắc Quân Đại Doanh về tiến độ khiên giáp', promptEn: 'Send courier to Northern Army on shield readiness' },
       { divider: true },
-      { type: 'travel', icon: '🏇', labelVi: 'Ra Chợ Đông Môn', labelEn: 'To Market', promptVi: 'Rời xưởng Lương Thị, đi tới Chợ Đông Môn', promptEn: 'Leave workshop and head to East Gate Market' },
-      { type: 'travel', icon: '🏇', labelVi: 'Về Vườn Đào', labelEn: 'To Peach Garden', promptVi: 'Rời xưởng Lương Thị, quay về Trang Viên Vườn Đào', promptEn: 'Return to Peach Garden Manor' }
+      { type: 'travel', icon: '行', labelVi: 'Ra Chợ Đông Môn', labelEn: 'To Market', promptVi: 'Rời xưởng Lương Thị, đi tới Chợ Đông Môn', promptEn: 'Leave workshop and head to East Gate Market' },
+      { type: 'travel', icon: '行', labelVi: 'Về Vườn Đào', labelEn: 'To Peach Garden', promptVi: 'Rời xưởng Lương Thị, quay về Trang Viên Vườn Đào', promptEn: 'Return to Peach Garden Manor' }
     ]
   },
   'Bắc Bình Soái Phủ': {
@@ -60,13 +60,13 @@ const QUICK_CHIPS_DATA = {
     placeholderVi: 'Lương Diễn đàm đạo cùng Công Tôn Toản... (hoặc gõ: "Mua ngựa chiến...")',
     placeholderEn: 'Liang Yan negotiates with Gongsun Zan... (or type: "Buy warhorses...")',
     chips: [
-      { type: 'local', icon: '🐎', labelVi: 'Mua 3 Ngựa Chiến U Châu', labelEn: 'Buy 3 Horses', promptVi: 'Thu mua 3 tuấn mã U Châu của Bạch Mã Nghĩa Tòng', promptEn: 'Purchase 3 Youzhou warhorses from White Horse Cavalry' },
-      { type: 'local', icon: '🛡️', labelVi: 'Tiếp Tế 10 Khiên Trúc', labelEn: 'Supply 10 Shields', promptVi: 'Cung cấp 10 Khiên Trúc Lương Gia chi viện quân biên cương', promptEn: 'Deliver 10 Liang shields to garrison border forces' },
-      { type: 'local', icon: '🤝', labelVi: 'Liên Minh Huyện Trác', labelEn: 'Alliance Pact', promptVi: 'Đàm phán hiệp ước tương trợ quân nhu Huyện Trác và Bắc Bình', promptEn: 'Negotiate mutual defense supply pact with Gongsun Zan' },
+      { type: 'local', icon: '行', labelVi: 'Mua 3 Ngựa Chiến U Châu', labelEn: 'Buy 3 Horses', promptVi: 'Thu mua 3 tuấn mã U Châu của Bạch Mã Nghĩa Tòng', promptEn: 'Purchase 3 Youzhou warhorses from White Horse Cavalry' },
+      { type: 'local', icon: '工', labelVi: 'Tiếp Tế 10 Khiên Trúc', labelEn: 'Supply 10 Shields', promptVi: 'Cung cấp 10 Khiên Trúc Lương Gia chi viện quân biên cương', promptEn: 'Deliver 10 Liang shields to garrison border forces' },
+      { type: 'local', icon: '交', labelVi: 'Liên Minh Huyện Trác', labelEn: 'Alliance Pact', promptVi: 'Đàm phán hiệp ước tương trợ quân nhu Huyện Trác và Bắc Bình', promptEn: 'Negotiate mutual defense supply pact with Gongsun Zan' },
       { divider: true },
-      { type: 'courier', icon: '✉️', labelVi: 'Báo tin Lưu Bị', labelEn: 'Courier to Liu Bei', promptVi: 'Phi thư về Huyện Trác báo cho Lưu Bị về tình hình Công Tôn Toản', promptEn: 'Dispatch courier to Liu Bei regarding Gongsun Zan alliance' },
+      { type: 'courier', icon: '信', labelVi: 'Báo tin Lưu Bị', labelEn: 'Courier to Liu Bei', promptVi: 'Phi thư về Huyện Trác báo cho Lưu Bị về tình hình Công Tôn Toản', promptEn: 'Dispatch courier to Liu Bei regarding Gongsun Zan alliance' },
       { divider: true },
-      { type: 'travel', icon: '🏇', labelVi: 'Về Huyện Trác', labelEn: 'To Zhuo County', promptVi: 'Rời Bắc Bình, xuôi quan đạo trở về Huyện Trác', promptEn: 'Return along post road back to Zhuo County' }
+      { type: 'travel', icon: '行', labelVi: 'Về Huyện Trác', labelEn: 'To Zhuo County', promptVi: 'Rời Bắc Bình, xuôi quan đạo trở về Huyện Trác', promptEn: 'Return along post road back to Zhuo County' }
     ]
   },
   'Nghiệp Thành Đại Phủ': {
@@ -75,14 +75,14 @@ const QUICK_CHIPS_DATA = {
     placeholderVi: 'Lương Diễn yết kiến Viên Bản Sơ... (hoặc gõ: "Ký kết thương ước gấm lụa...")',
     placeholderEn: 'Liang Yan confers with Yuan Shao... (or type: "Sign luxury textile pact...")',
     chips: [
-      { type: 'local', icon: '🏛️', labelVi: 'Bán 20 Tấm Chiếu Trúc', labelEn: 'Sell 20 Mats', promptVi: 'Xuất bán 20 tấm Chiếu Trúc Lương Gia cho các đại tộc Nghiệp Thành', promptEn: 'Sell 20 Liang bamboo mats to Jizhou patricians' },
-      { type: 'local', icon: '🌾', labelVi: 'Mua 15 Thạch Lương Ký Châu', labelEn: 'Buy 15 Grain', promptVi: 'Gom mua 15 thạch lương Ký Châu giá sỉ từ đại thương nhân', promptEn: 'Wholesale purchase 15 piculs of prime Jizhou grain' },
-      { type: 'local', icon: '🍷', labelVi: 'Dự Yến Viên Bản Sơ', labelEn: 'Banquet Yuan Shao', promptVi: 'Tham gia dạ yến phủ Viên Thiệu đàm đạo thời thế', promptEn: 'Attend grand banquet at Yuan Shao estate discussing politics' },
+      { type: 'local', icon: '政', labelVi: 'Bán 20 Tấm Chiếu Trúc', labelEn: 'Sell 20 Mats', promptVi: 'Xuất bán 20 tấm Chiếu Trúc Lương Gia cho các đại tộc Nghiệp Thành', promptEn: 'Sell 20 Liang bamboo mats to Jizhou patricians' },
+      { type: 'local', icon: '商', labelVi: 'Mua 15 Thạch Lương Ký Châu', labelEn: 'Buy 15 Grain', promptVi: 'Gom mua 15 thạch lương Ký Châu giá sỉ từ đại thương nhân', promptEn: 'Wholesale purchase 15 piculs of prime Jizhou grain' },
+      { type: 'local', icon: '飲', labelVi: 'Dự Yến Viên Bản Sơ', labelEn: 'Banquet Yuan Shao', promptVi: 'Tham gia dạ yến phủ Viên Thiệu đàm đạo thời thế', promptEn: 'Attend grand banquet at Yuan Shao estate discussing politics' },
       { divider: true },
-      { type: 'courier', icon: '✉️', labelVi: 'Lệnh chuyển hàng về Xưởng', labelEn: 'Logistics Courier', promptVi: 'Phi thư lệnh chuyển nguyên liệu Ký Châu về Xưởng Huyện Trác', promptEn: 'Send logistical courier to route materials to Zhuo Workshop' },
+      { type: 'courier', icon: '信', labelVi: 'Lệnh chuyển hàng về Xưởng', labelEn: 'Logistics Courier', promptVi: 'Phi thư lệnh chuyển nguyên liệu Ký Châu về Xưởng Huyện Trác', promptEn: 'Send logistical courier to route materials to Zhuo Workshop' },
       { divider: true },
-      { type: 'travel', icon: '🏇', labelVi: 'Đến Quảng Tông', labelEn: 'To Guangzong', promptVi: 'Tiến về phía Đông Bắc đến tiền tuyến Quảng Tông', promptEn: 'March northeast toward Guangzong front' },
-      { type: 'travel', icon: '🏇', labelVi: 'Về Huyện Trác', labelEn: 'To Zhuo County', promptVi: 'Rời Nghiệp Thành, theo đường bắc tiến về Huyện Trác', promptEn: 'Return north back to Zhuo County' }
+      { type: 'travel', icon: '行', labelVi: 'Đến Quảng Tông', labelEn: 'To Guangzong', promptVi: 'Tiến về phía Đông Bắc đến tiền tuyến Quảng Tông', promptEn: 'March northeast toward Guangzong front' },
+      { type: 'travel', icon: '行', labelVi: 'Về Huyện Trác', labelEn: 'To Zhuo County', promptVi: 'Rời Nghiệp Thành, theo đường bắc tiến về Huyện Trác', promptEn: 'Return north back to Zhuo County' }
     ]
   },
   'Quảng Tông Quân Doanh': {
@@ -91,14 +91,14 @@ const QUICK_CHIPS_DATA = {
     placeholderVi: 'Lương Diễn tham vấn tại Quân Doanh... (hoặc gõ: "Phi thư về Trác Huyện...")',
     placeholderEn: 'Liang Yan confers with General... (or type: "Send courier to Zhuo County...")',
     chips: [
-      { type: 'local', icon: '🎖️', labelVi: 'Yết Kiến Lư Thực', labelEn: 'Audience Lu Zhi', promptVi: 'Yết kiến Trung Lang Tướng Lư Thực nhận thưởng quân công', promptEn: 'Audience with General Lu Zhi to claim bounty' },
-      { type: 'local', icon: '🌾', labelVi: 'Tiếp Tế Quân Lương', labelEn: 'Supply Grain', promptVi: 'Tiếp tế 5 thạch lương tiểu mạch cho Quân Nhu Cục', promptEn: 'Deliver 5 piculs of grain to supply depot' },
-      { type: 'local', icon: '🗺️', labelVi: 'Tham Mưu Sa Bàn', labelEn: 'Strategy Map', promptVi: 'Cùng Lư Thực tham mưu sa bàn phá vỡ vòng vây Khăn Vàng', promptEn: 'Consult strategy battle map with Lu Zhi' },
+      { type: 'local', icon: '勳', labelVi: 'Yết Kiến Lư Thực', labelEn: 'Audience Lu Zhi', promptVi: 'Yết kiến Trung Lang Tướng Lư Thực nhận thưởng quân công', promptEn: 'Audience with General Lu Zhi to claim bounty' },
+      { type: 'local', icon: '商', labelVi: 'Tiếp Tế Quân Lương', labelEn: 'Supply Grain', promptVi: 'Tiếp tế 5 thạch lương tiểu mạch cho Quân Nhu Cục', promptEn: 'Deliver 5 piculs of grain to supply depot' },
+      { type: 'local', icon: '圖', labelVi: 'Tham Mưu Sa Bàn', labelEn: 'Strategy Map', promptVi: 'Cùng Lư Thực tham mưu sa bàn phá vỡ vòng vây Khăn Vàng', promptEn: 'Consult strategy battle map with Lu Zhi' },
       { divider: true },
-      { type: 'courier', icon: '✉️', labelVi: 'Phi thư về Huyện Trác', labelEn: 'Courier to Zhuo County', promptVi: 'Phi thư hỏa tốc về Huyện Trác chuẩn bị thêm 20 xe quân lương', promptEn: 'Send urgent courier to Zhuo County for 20 grain wagons' },
+      { type: 'courier', icon: '信', labelVi: 'Phi thư về Huyện Trác', labelEn: 'Courier to Zhuo County', promptVi: 'Phi thư hỏa tốc về Huyện Trác chuẩn bị thêm 20 xe quân lương', promptEn: 'Send urgent courier to Zhuo County for 20 grain wagons' },
       { divider: true },
-      { type: 'travel', icon: '🏇', labelVi: 'Sang Bình Nguyên', labelEn: 'To Pingyuan', promptVi: 'Hành quân sang Trọng Trấn Bình Nguyên hội quân', promptEn: 'March to Pingyuan stronghold' },
-      { type: 'travel', icon: '🏇', labelVi: 'Về Lại Huyện Trác', labelEn: 'Return to Zhuo County', promptVi: 'Rời quân doanh Quảng Tông, quay trở về Huyện Trác', promptEn: 'Leave Guangzong and return to Zhuo County' }
+      { type: 'travel', icon: '行', labelVi: 'Sang Bình Nguyên', labelEn: 'To Pingyuan', promptVi: 'Hành quân sang Trọng Trấn Bình Nguyên hội quân', promptEn: 'March to Pingyuan stronghold' },
+      { type: 'travel', icon: '行', labelVi: 'Về Lại Huyện Trác', labelEn: 'Return to Zhuo County', promptVi: 'Rời quân doanh Quảng Tông, quay trở về Huyện Trác', promptEn: 'Leave Guangzong and return to Zhuo County' }
     ]
   },
   'Bình Nguyên Trọng Trấn': {
@@ -107,14 +107,14 @@ const QUICK_CHIPS_DATA = {
     placeholderVi: 'Lương Diễn điều phối tại Bình Nguyên... (hoặc gõ: "Hành quân sang Quảng Tông...")',
     placeholderEn: 'Liang Yan coordinates in Pingyuan... (or type: "March to Guangzong...")',
     chips: [
-      { type: 'local', icon: '🛡️', labelVi: 'Bán 5 Khiên Trúc', labelEn: 'Sell 5 Shields', promptVi: 'Cung cấp 5 Khiên Trúc Lương Gia cho Dân Binh Xã Tắc', promptEn: 'Supply 5 Liang bamboo shields to local militia' },
-      { type: 'local', icon: '🌾', labelVi: 'Mua Lương Thanh Châu', labelEn: 'Buy Grain', promptVi: 'Thu mua lương thảo ngô khoai Thanh Châu tiếp tế', promptEn: 'Purchase provisions from Qingzhou merchants' },
-      { type: 'local', icon: '📜', labelVi: 'Kế Hoạch Dịch Trạm', labelEn: 'Post Relay Plan', promptVi: 'Hiến kế thiết lập hệ thống phong hỏa đài cảnh giới liên hoàn', promptEn: 'Advise on border beacon signaling network' },
+      { type: 'local', icon: '工', labelVi: 'Bán 5 Khiên Trúc', labelEn: 'Sell 5 Shields', promptVi: 'Cung cấp 5 Khiên Trúc Lương Gia cho Dân Binh Xã Tắc', promptEn: 'Supply 5 Liang bamboo shields to local militia' },
+      { type: 'local', icon: '商', labelVi: 'Mua Lương Thanh Châu', labelEn: 'Buy Grain', promptVi: 'Thu mua lương thảo ngô khoai Thanh Châu tiếp tế', promptEn: 'Purchase provisions from Qingzhou merchants' },
+      { type: 'local', icon: '策', labelVi: 'Kế Hoạch Dịch Trạm', labelEn: 'Post Relay Plan', promptVi: 'Hiến kế thiết lập hệ thống phong hỏa đài cảnh giới liên hoàn', promptEn: 'Advise on border beacon signaling network' },
       { divider: true },
-      { type: 'courier', icon: '✉️', labelVi: 'Phi thư về Xưởng', labelEn: 'Courier to Workshop', promptVi: 'Phi thư về Xưởng Lương Thị chỉ đạo chuẩn bị thêm 10 khiên trúc', promptEn: 'Dispatch courier to Workshop for 10 shields' },
+      { type: 'courier', icon: '信', labelVi: 'Phi thư về Xưởng', labelEn: 'Courier to Workshop', promptVi: 'Phi thư về Xưởng Lương Thị chỉ đạo chuẩn bị thêm 10 khiên trúc', promptEn: 'Dispatch courier to Workshop for 10 shields' },
       { divider: true },
-      { type: 'travel', icon: '🏇', labelVi: 'Sang Quảng Tông', labelEn: 'To Guangzong', promptVi: 'Hành quân sang đại doanh Quảng Tông hội quân cùng Lư Thực', promptEn: 'March to Guangzong army camp to rendezvous with Lu Zhi' },
-      { type: 'travel', icon: '🏇', labelVi: 'Về Huyện Trác', labelEn: 'To Zhuo County', promptVi: 'Hành quân trở về Hậu Phương Trang Viên Vườn Đào Huyện Trác', promptEn: 'Return to Peach Garden Manor in Zhuo County' }
+      { type: 'travel', icon: '行', labelVi: 'Sang Quảng Tông', labelEn: 'To Guangzong', promptVi: 'Hành quân sang đại doanh Quảng Tông hội quân cùng Lư Thực', promptEn: 'March to Guangzong army camp to rendezvous with Lu Zhi' },
+      { type: 'travel', icon: '行', labelVi: 'Về Huyện Trác', labelEn: 'To Zhuo County', promptVi: 'Hành quân trở về Hậu Phương Trang Viên Vườn Đào Huyện Trác', promptEn: 'Return to Peach Garden Manor in Zhuo County' }
     ]
   },
   'Hứa Xương Tướng Phủ': {
@@ -123,14 +123,14 @@ const QUICK_CHIPS_DATA = {
     placeholderVi: 'Lương Diễn đàm đạo cùng Tào Tháo... (hoặc gõ: "Tiếp tế quân bị...")',
     placeholderEn: 'Liang Yan confers with Cao Cao... (or type: "Supply armaments...")',
     chips: [
-      { type: 'local', icon: '⚔️', labelVi: 'Chi Viện Khí Giới', labelEn: 'Supply Arms', promptVi: 'Cung cấp 10 Khiên Trúc bọc da cho Hổ Báo Kỵ của Tào Tháo', promptEn: 'Supply 10 reinforced shields to Cao Cao Tiger-Leopard cavalry' },
-      { type: 'local', icon: '🌾', labelVi: 'Bán 10 Thạch Lương', labelEn: 'Sell 10 Grain', promptVi: 'Xuất bán 10 thạch lương tiếp tế đồn điền Dự Châu', promptEn: 'Sell 10 grain piculs for Yuzhou agricultural military camps' },
-      { type: 'local', icon: '📜', labelVi: 'Đàm Luận Anh Hùng', labelEn: 'Discuss Heroes', promptVi: 'Cùng Tào Tháo luận đàm anh hùng thiên hạ và thế cuộc', promptEn: 'Discuss grand strategy and contemporary heroes with Cao Cao' },
+      { type: 'local', icon: '武', labelVi: 'Chi Viện Khí Giới', labelEn: 'Supply Arms', promptVi: 'Cung cấp 10 Khiên Trúc bọc da cho Hổ Báo Kỵ của Tào Tháo', promptEn: 'Supply 10 reinforced shields to Cao Cao Tiger-Leopard cavalry' },
+      { type: 'local', icon: '商', labelVi: 'Bán 10 Thạch Lương', labelEn: 'Sell 10 Grain', promptVi: 'Xuất bán 10 thạch lương tiếp tế đồn điền Dự Châu', promptEn: 'Sell 10 grain piculs for Yuzhou agricultural military camps' },
+      { type: 'local', icon: '策', labelVi: 'Đàm Luận Anh Hùng', labelEn: 'Discuss Heroes', promptVi: 'Cùng Tào Tháo luận đàm anh hùng thiên hạ và thế cuộc', promptEn: 'Discuss grand strategy and contemporary heroes with Cao Cao' },
       { divider: true },
-      { type: 'courier', icon: '✉️', labelVi: 'Báo tiệp Huyện Trác', labelEn: 'Courier to Zhuo', promptVi: 'Phi thư về Huyện Trác thông báo quan hệ hợp tác với Tào Tháo', promptEn: 'Send courier to Zhuo County reporting ties with Cao Cao' },
+      { type: 'courier', icon: '信', labelVi: 'Báo tiệp Huyện Trác', labelEn: 'Courier to Zhuo', promptVi: 'Phi thư về Huyện Trác thông báo quan hệ hợp tác với Tào Tháo', promptEn: 'Send courier to Zhuo County reporting ties with Cao Cao' },
       { divider: true },
-      { type: 'travel', icon: '🏇', labelVi: 'Tiến Vào Lạc Dương', labelEn: 'To Luoyang', promptVi: 'Vượt Hổ Lao Quan tiến về Kinh Sư Lạc Dương', promptEn: 'Pass Hulao Pass to Imperial Luoyang' },
-      { type: 'travel', icon: '🏇', labelVi: 'Đến Hạ Phì', labelEn: 'To Xiapi', promptVi: 'Hành quân về phía đông sang Từ Châu Hạ Phì', promptEn: 'March east to Xiapi in Xuzhou' }
+      { type: 'travel', icon: '行', labelVi: 'Tiến Vào Lạc Dương', labelEn: 'To Luoyang', promptVi: 'Vượt Hổ Lao Quan tiến về Kinh Sư Lạc Dương', promptEn: 'Pass Hulao Pass to Imperial Luoyang' },
+      { type: 'travel', icon: '行', labelVi: 'Đến Hạ Phì', labelEn: 'To Xiapi', promptVi: 'Hành quân về phía đông sang Từ Châu Hạ Phì', promptEn: 'March east to Xiapi in Xuzhou' }
     ]
   },
   'Hạ Phì Thành Lũy': {
@@ -139,13 +139,13 @@ const QUICK_CHIPS_DATA = {
     placeholderVi: 'Lương Diễn yết kiến Thứ Sử Từ Châu... (hoặc gõ: "Giao thương muối cá...")',
     placeholderEn: 'Liang Yan negotiates in Xiapi... (or type: "Trade fishery & salt...")',
     chips: [
-      { type: 'local', icon: '🐟', labelVi: 'Mua Muối & Thủy Sản', labelEn: 'Buy Salt & Fish', promptVi: 'Thu mua 15 đấu muối biển và hải sản Từ Châu', promptEn: 'Procure 15 sea salt and coastal rations from Xuzhou' },
-      { type: 'local', icon: '🛡️', labelVi: 'Hỗ Trợ Thành Phòng', labelEn: 'Citadel Defense', promptVi: 'Hiến kế củng cố tường lũy Hạ Phì phòng thủ giặc cướp', promptEn: 'Advise on fortification reinforcement against raiders' },
-      { type: 'local', icon: '🤝', labelVi: 'Kết Giao Mi Trúc', labelEn: 'Meet Mi Zhu', promptVi: 'Tiếp xúc cự phú Mi Trúc bàn kế hoạch liên minh thương hội', promptEn: 'Meet merchant magnate Mi Zhu to establish trade confederation' },
+      { type: 'local', icon: '商', labelVi: 'Mua Muối & Thủy Sản', labelEn: 'Buy Salt & Fish', promptVi: 'Thu mua 15 đấu muối biển và hải sản Từ Châu', promptEn: 'Procure 15 sea salt and coastal rations from Xuzhou' },
+      { type: 'local', icon: '工', labelVi: 'Hỗ Trợ Thành Phòng', labelEn: 'Citadel Defense', promptVi: 'Hiến kế củng cố tường lũy Hạ Phì phòng thủ giặc cướp', promptEn: 'Advise on fortification reinforcement against raiders' },
+      { type: 'local', icon: '交', labelVi: 'Kết Giao Mi Trúc', labelEn: 'Meet Mi Zhu', promptVi: 'Tiếp xúc cự phú Mi Trúc bàn kế hoạch liên minh thương hội', promptEn: 'Meet merchant magnate Mi Zhu to establish trade confederation' },
       { divider: true },
-      { type: 'courier', icon: '✉️', labelVi: 'Phi thư về Huyện Trác', labelEn: 'Courier to Zhuo', promptVi: 'Gửi thư báo tin tình hình hải thương Từ Châu về Huyện Trác', promptEn: 'Dispatch merchant report to Zhuo County' },
+      { type: 'courier', icon: '信', labelVi: 'Phi thư về Huyện Trác', labelEn: 'Courier to Zhuo', promptVi: 'Gửi thư báo tin tình hình hải thương Từ Châu về Huyện Trác', promptEn: 'Dispatch merchant report to Zhuo County' },
       { divider: true },
-      { type: 'travel', icon: '🏇', labelVi: 'Về Hứa Xương', labelEn: 'To Xuchang', promptVi: 'Rời Hạ Phì, hành quân về phía tây đến Hứa Xương', promptEn: 'March west back to Xuchang' }
+      { type: 'travel', icon: '行', labelVi: 'Về Hứa Xương', labelEn: 'To Xuchang', promptVi: 'Rời Hạ Phì, hành quân về phía tây đến Hứa Xương', promptEn: 'March west back to Xuchang' }
     ]
   },
   'Kinh Đô Lạc Dương': {
@@ -154,14 +154,14 @@ const QUICK_CHIPS_DATA = {
     placeholderVi: 'Lương Diễn yết kiến triều đình Lạc Dương... (hoặc gõ: "Dâng biểu quân công...")',
     placeholderEn: 'Liang Yan at Imperial Court... (or type: "Submit memorial...")',
     chips: [
-      { type: 'local', icon: '🎖️', labelVi: 'Nhận Sắc Phong Triều Đình', labelEn: 'Claim Imperial Bounty', promptVi: 'Nhận sắc phong Quân Nhu Tán Quan & Thưởng 2,500 Tiền từ Triều Đình', promptEn: 'Claim imperial commission and 2,500 Qian bounty' },
-      { type: 'local', icon: '🏛️', labelVi: 'Mở Phân Hiệu Kinh Đô', labelEn: 'Found Capital Branch', promptVi: 'Đăng ký môn bài chi nhánh Lương Gia Thương Hội tại Kinh Sư', promptEn: 'Register Liang Merchant Guild branch in the Capital' },
-      { type: 'local', icon: '🍵', labelVi: 'Gặp Binh Bộ Thượng Thư', labelEn: 'Court Networking', promptVi: 'Biếu lễ vật tiếp xúc Binh Bộ Thượng Thư nắm bắt thời cuộc', promptEn: 'Audience with Minister of War to discuss contracts' },
+      { type: 'local', icon: '勳', labelVi: 'Nhận Sắc Phong Triều Đình', labelEn: 'Claim Imperial Bounty', promptVi: 'Nhận sắc phong Quân Nhu Tán Quan & Thưởng 2,500 Tiền từ Triều Đình', promptEn: 'Claim imperial commission and 2,500 Qian bounty' },
+      { type: 'local', icon: '政', labelVi: 'Mở Phân Hiệu Kinh Đô', labelEn: 'Found Capital Branch', promptVi: 'Đăng ký môn bài chi nhánh Lương Gia Thương Hội tại Kinh Sư', promptEn: 'Register Liang Merchant Guild branch in the Capital' },
+      { type: 'local', icon: '茶', labelVi: 'Gặp Binh Bộ Thượng Thư', labelEn: 'Court Networking', promptVi: 'Biếu lễ vật tiếp xúc Binh Bộ Thượng Thư nắm bắt thời cuộc', promptEn: 'Audience with Minister of War to discuss contracts' },
       { divider: true },
-      { type: 'courier', icon: '✉️', labelVi: 'Chỉ đạo Xưởng Trác Huyện', labelEn: 'Direct Zhuo Workshop', promptVi: 'Phi thư về Huyện Trác chỉ đạo mở rộng quy mô xưởng dệt gấp đôi', promptEn: 'Dispatch instructions to Zhuo County to expand workshop' },
+      { type: 'courier', icon: '信', labelVi: 'Chỉ đạo Xưởng Trác Huyện', labelEn: 'Direct Zhuo Workshop', promptVi: 'Phi thư về Huyện Trác chỉ đạo mở rộng quy mô xưởng dệt gấp đôi', promptEn: 'Dispatch instructions to Zhuo County to expand workshop' },
       { divider: true },
-      { type: 'travel', icon: '🏇', labelVi: 'Sang Trường An', labelEn: 'To Changan', promptVi: 'Vượt Đồng Quan tiến sang Tây Đô Trường An', promptEn: 'Cross Tong Pass to Western Capital Changan' },
-      { type: 'travel', icon: '🏇', labelVi: 'Về Huyện Trác', labelEn: 'To Zhuo County', promptVi: 'Rời Kinh Sư Lạc Dương, cất bước trở về Trang Viên Vườn Đào Huyện Trác', promptEn: 'Depart Luoyang and return to Peach Garden Manor in Zhuo County' }
+      { type: 'travel', icon: '行', labelVi: 'Sang Trường An', labelEn: 'To Changan', promptVi: 'Vượt Đồng Quan tiến sang Tây Đô Trường An', promptEn: 'Cross Tong Pass to Western Capital Changan' },
+      { type: 'travel', icon: '行', labelVi: 'Về Huyện Trác', labelEn: 'To Zhuo County', promptVi: 'Rời Kinh Sư Lạc Dương, cất bước trở về Trang Viên Vườn Đào Huyện Trác', promptEn: 'Depart Luoyang and return to Peach Garden Manor in Zhuo County' }
     ]
   },
   'Trường An Cung Phủ': {
@@ -170,14 +170,14 @@ const QUICK_CHIPS_DATA = {
     placeholderVi: 'Lương Diễn thị sát Tây Đô Trường An... (hoặc gõ: "Mua chiến mã Tây Lương...")',
     placeholderEn: 'Liang Yan observes Changan... (or type: "Procure Xiliang steeds...")',
     chips: [
-      { type: 'local', icon: '🐎', labelVi: 'Mua Ngựa Tây Lương', labelEn: 'Buy Xiliang Steeds', promptVi: 'Thu mua 5 tuấn mã Tây Lương dũng mãnh cho đoàn kỵ mã', promptEn: 'Procure 5 fierce Xiliang steeds for escort brigade' },
-      { type: 'local', icon: '🗡️', labelVi: 'Giao Tiếp Quan Trường', labelEn: 'Court Diplomacy', promptVi: 'Gặp gỡ Tư Đồ Vương Doãn tìm hiểu mật mưu triều chính', promptEn: 'Audience with Minister Wang Yun regarding court dynamics' },
-      { type: 'local', icon: '🌾', labelVi: 'Bán Lương Quan Trung', labelEn: 'Sell Grain', promptVi: 'Xuất bán 8 thạch lương thực cho kho đồn trú Trường An', promptEn: 'Supply 8 grain piculs to Changan garrison storehouses' },
+      { type: 'local', icon: '行', labelVi: 'Mua Ngựa Tây Lương', labelEn: 'Buy Xiliang Steeds', promptVi: 'Thu mua 5 tuấn mã Tây Lương dũng mãnh cho đoàn kỵ mã', promptEn: 'Procure 5 fierce Xiliang steeds for escort brigade' },
+      { type: 'local', icon: '武', labelVi: 'Giao Tiếp Quan Trường', labelEn: 'Court Diplomacy', promptVi: 'Gặp gỡ Tư Đồ Vương Doãn tìm hiểu mật mưu triều chính', promptEn: 'Audience with Minister Wang Yun regarding court dynamics' },
+      { type: 'local', icon: '商', labelVi: 'Bán Lương Quan Trung', labelEn: 'Sell Grain', promptVi: 'Xuất bán 8 thạch lương thực cho kho đồn trú Trường An', promptEn: 'Supply 8 grain piculs to Changan garrison storehouses' },
       { divider: true },
-      { type: 'courier', icon: '✉️', labelVi: 'Mật báo Lạc Dương', labelEn: 'Dispatch to Luoyang', promptVi: 'Phi thư mật bảo tình hình Tây Vực và Quan Trung về Lạc Dương', promptEn: 'Send confidential courier report to Luoyang' },
+      { type: 'courier', icon: '信', labelVi: 'Mật báo Lạc Dương', labelEn: 'Dispatch to Luoyang', promptVi: 'Phi thư mật bảo tình hình Tây Vực và Quan Trung về Lạc Dương', promptEn: 'Send confidential courier report to Luoyang' },
       { divider: true },
-      { type: 'travel', icon: '🏇', labelVi: 'Qua Hán Trung', labelEn: 'To Hanzhong', promptVi: 'Vượt Tần Lĩnh sạn đạo tiến về phía nam đến Hán Trung', promptEn: 'Traverse Qinling mountain plank roads south to Hanzhong' },
-      { type: 'travel', icon: '🏇', labelVi: 'Về Lạc Dương', labelEn: 'To Luoyang', promptVi: 'Qua ải Đồng Quan quay trở lại Đông Đô Lạc Dương', promptEn: 'Return east through Tong Pass to Luoyang' }
+      { type: 'travel', icon: '行', labelVi: 'Qua Hán Trung', labelEn: 'To Hanzhong', promptVi: 'Vượt Tần Lĩnh sạn đạo tiến về phía nam đến Hán Trung', promptEn: 'Traverse Qinling mountain plank roads south to Hanzhong' },
+      { type: 'travel', icon: '行', labelVi: 'Về Lạc Dương', labelEn: 'To Luoyang', promptVi: 'Qua ải Đồng Quan quay trở lại Đông Đô Lạc Dương', promptEn: 'Return east through Tong Pass to Luoyang' }
     ]
   },
   'Tương Dương Châu Phủ': {
@@ -187,13 +187,13 @@ const QUICK_CHIPS_DATA = {
     placeholderEn: 'Liang Yan meets Liu Biao... (or type: "Procure shipbuilding timber...")',
     chips: [
       { type: 'local', icon: '🪵', labelVi: 'Mua Gỗ Đóng Thuyền', labelEn: 'Procure Timber', promptVi: 'Thu mua 10 khối gỗ Thiết Mộc Kinh Châu chuẩn bị đóng thuyền', promptEn: 'Purchase 10 bundles of Jingzhou ironwood for vessels' },
-      { type: 'local', icon: '📜', labelVi: 'Đàm Đạo Nho Sĩ', labelEn: 'Scholarly Discourse', promptVi: 'Đến Thủy Kính Trang đàm đạo cùng Tư Mã Huy về nhân tài', promptEn: 'Visit Water Mirror Manor to confer with Sima Hui on talents' },
-      { type: 'local', icon: '🌾', labelVi: 'Bán Muối Biển', labelEn: 'Sell Salt', promptVi: 'Xuất bán 12 đấu muối biển cho các thương đoàn Tương Dương', promptEn: 'Sell 12 sea salt units to Xiangyang river merchants' },
+      { type: 'local', icon: '策', labelVi: 'Đàm Đạo Nho Sĩ', labelEn: 'Scholarly Discourse', promptVi: 'Đến Thủy Kính Trang đàm đạo cùng Tư Mã Huy về nhân tài', promptEn: 'Visit Water Mirror Manor to confer with Sima Hui on talents' },
+      { type: 'local', icon: '商', labelVi: 'Bán Muối Biển', labelEn: 'Sell Salt', promptVi: 'Xuất bán 12 đấu muối biển cho các thương đoàn Tương Dương', promptEn: 'Sell 12 sea salt units to Xiangyang river merchants' },
       { divider: true },
-      { type: 'courier', icon: '✉️', labelVi: 'Phi thư về Huyện Trác', labelEn: 'Courier to Zhuo', promptVi: 'Gửi thư tín đường sông về Huyện Trác báo tin Kinh Châu yên bình', promptEn: 'Dispatch river relay courier to Zhuo County' },
+      { type: 'courier', icon: '信', labelVi: 'Phi thư về Huyện Trác', labelEn: 'Courier to Zhuo', promptVi: 'Gửi thư tín đường sông về Huyện Trác báo tin Kinh Châu yên bình', promptEn: 'Dispatch river relay courier to Zhuo County' },
       { divider: true },
-      { type: 'travel', icon: '🏇', labelVi: 'Đến Giang Lăng', labelEn: 'To Jiangling', promptVi: 'Xuôi dòng Hán Thủy tiến về đại bản doanh Giang Lăng', promptEn: 'Travel down Han River toward Jiangling base' },
-      { type: 'travel', icon: '🏇', labelVi: 'Về Hứa Xương', labelEn: 'To Xuchang', promptVi: 'Hành quân ngược bắc trở lại Hứa Xương', promptEn: 'March north back toward Xuchang' }
+      { type: 'travel', icon: '行', labelVi: 'Đến Giang Lăng', labelEn: 'To Jiangling', promptVi: 'Xuôi dòng Hán Thủy tiến về đại bản doanh Giang Lăng', promptEn: 'Travel down Han River toward Jiangling base' },
+      { type: 'travel', icon: '行', labelVi: 'Về Hứa Xương', labelEn: 'To Xuchang', promptVi: 'Hành quân ngược bắc trở lại Hứa Xương', promptEn: 'March north back toward Xuchang' }
     ]
   },
   'Giang Lăng Thủy Doanh': {
@@ -202,12 +202,12 @@ const QUICK_CHIPS_DATA = {
     placeholderVi: 'Lương Diễn thị sát chiến thuyền Giang Lăng... (hoặc gõ: "Tiếp tế thủy quân...")',
     placeholderEn: 'Liang Yan inspects Jiangling naval dock... (or type: "Supply fleet...")',
     chips: [
-      { type: 'local', icon: '⛵', labelVi: 'Đóng Thuyền Mông Xung', labelEn: 'Build War Galley', promptVi: 'Đầu tư đóng 1 thuyền lướt sóng Mông Xung tuần tra Trường Giang', promptEn: 'Commission fast Mengchong assault vessel on Yangtze' },
-      { type: 'local', icon: '🛡️', labelVi: 'Cung Cấp Khiên Chống Tên', labelEn: 'Archery Shields', promptVi: 'Cung cấp 10 Khiên Trúc bọc da chống tên lửa cho thủy binh', promptEn: 'Deliver 10 fire-resistant bamboo shields to marines' },
-      { type: 'local', icon: '🐟', labelVi: 'Gom Lương Thảo Ngư Phẩm', labelEn: 'Naval Rations', promptVi: 'Thu mua 10 thạch cá khô và gạo dự trữ cho hạm đội', promptEn: 'Stockpile 10 dried fish and grain provisions for fleet' },
+      { type: 'local', icon: '行', labelVi: 'Đóng Thuyền Mông Xung', labelEn: 'Build War Galley', promptVi: 'Đầu tư đóng 1 thuyền lướt sóng Mông Xung tuần tra Trường Giang', promptEn: 'Commission fast Mengchong assault vessel on Yangtze' },
+      { type: 'local', icon: '工', labelVi: 'Cung Cấp Khiên Chống Tên', labelEn: 'Archery Shields', promptVi: 'Cung cấp 10 Khiên Trúc bọc da chống tên lửa cho thủy binh', promptEn: 'Deliver 10 fire-resistant bamboo shields to marines' },
+      { type: 'local', icon: '商', labelVi: 'Gom Lương Thảo Ngư Phẩm', labelEn: 'Naval Rations', promptVi: 'Thu mua 10 thạch cá khô và gạo dự trữ cho hạm đội', promptEn: 'Stockpile 10 dried fish and grain provisions for fleet' },
       { divider: true },
-      { type: 'travel', icon: '🏇', labelVi: 'Đến Xích Bích', labelEn: 'To Chibi', promptVi: 'Thuyền chiến xuôi dòng Trường Giang tiến tới Xích Bích', promptEn: 'Sail downriver along Yangtze to Chibi outpost' },
-      { type: 'travel', icon: '🏇', labelVi: 'Về Tương Dương', labelEn: 'To Xiangyang', promptVi: 'Ngược dòng tiến về phủ Tương Dương', promptEn: 'Return north to Xiangyang' }
+      { type: 'travel', icon: '行', labelVi: 'Đến Xích Bích', labelEn: 'To Chibi', promptVi: 'Thuyền chiến xuôi dòng Trường Giang tiến tới Xích Bích', promptEn: 'Sail downriver along Yangtze to Chibi outpost' },
+      { type: 'travel', icon: '行', labelVi: 'Về Tương Dương', labelEn: 'To Xiangyang', promptVi: 'Ngược dòng tiến về phủ Tương Dương', promptEn: 'Return north to Xiangyang' }
     ]
   },
   'Xích Bích Thủy Trại': {
@@ -216,12 +216,12 @@ const QUICK_CHIPS_DATA = {
     placeholderVi: 'Lương Diễn tham vấn cùng Chu Du... (hoặc gõ: "Chuẩn bị hỏa công...")',
     placeholderEn: 'Liang Yan confers with Zhou Yu... (or type: "Prepare fire ships...")',
     chips: [
-      { type: 'local', icon: '🔥', labelVi: 'Tiếp Tế Dầu Hỏa Công', labelEn: 'Supply Fire Oil', promptVi: 'Vận chuyển 20 thùng dầu hỏa và lau sậy phục vụ hỏa công', promptEn: 'Transport 20 barrels of flammable pitch and reeds' },
-      { type: 'local', icon: '🏹', labelVi: 'Chế Tác Cung Nỏ', labelEn: 'Craft Crossbows', promptVi: 'Cung cấp vật liệu tre dẻo gia cố 10 bộ liên nỏ thủy chiến', promptEn: 'Supply high-grade bamboo for 10 repeating crossbows' },
-      { type: 'local', icon: '💨', labelVi: 'Quan Sát Hướng Gió', labelEn: 'Observe Wind', promptVi: 'Cùng mưu sĩ khảo sát thủy văn và quy luật gió đông Trường Giang', promptEn: 'Survey river hydrology and east wind patterns with tacticians' },
+      { type: 'local', icon: '陣', labelVi: 'Tiếp Tế Dầu Hỏa Công', labelEn: 'Supply Fire Oil', promptVi: 'Vận chuyển 20 thùng dầu hỏa và lau sậy phục vụ hỏa công', promptEn: 'Transport 20 barrels of flammable pitch and reeds' },
+      { type: 'local', icon: '武', labelVi: 'Chế Tác Cung Nỏ', labelEn: 'Craft Crossbows', promptVi: 'Cung cấp vật liệu tre dẻo gia cố 10 bộ liên nỏ thủy chiến', promptEn: 'Supply high-grade bamboo for 10 repeating crossbows' },
+      { type: 'local', icon: '風', labelVi: 'Quan Sát Hướng Gió', labelEn: 'Observe Wind', promptVi: 'Cùng mưu sĩ khảo sát thủy văn và quy luật gió đông Trường Giang', promptEn: 'Survey river hydrology and east wind patterns with tacticians' },
       { divider: true },
-      { type: 'travel', icon: '🏇', labelVi: 'Tiến Vào Kiến Nghiệp', labelEn: 'To Jianye', promptVi: 'Xuôi hạ lưu Trường Giang tiến về Kinh Đô Kiến Nghiệp', promptEn: 'Sail down Yangtze estuary to Jianye capital' },
-      { type: 'travel', icon: '🏇', labelVi: 'Về Giang Lăng', labelEn: 'To Jiangling', promptVi: 'Ngược dòng Trường Giang trở lại Giang Lăng', promptEn: 'Sail upriver back to Jiangling' }
+      { type: 'travel', icon: '行', labelVi: 'Tiến Vào Kiến Nghiệp', labelEn: 'To Jianye', promptVi: 'Xuôi hạ lưu Trường Giang tiến về Kinh Đô Kiến Nghiệp', promptEn: 'Sail down Yangtze estuary to Jianye capital' },
+      { type: 'travel', icon: '行', labelVi: 'Về Giang Lăng', labelEn: 'To Jiangling', promptVi: 'Ngược dòng Trường Giang trở lại Giang Lăng', promptEn: 'Sail upriver back to Jiangling' }
     ]
   },
   'Kiến Nghiệp Đô Thành': {
@@ -230,13 +230,13 @@ const QUICK_CHIPS_DATA = {
     placeholderVi: 'Lương Diễn yết kiến Giang Đông Chi Chủ... (hoặc gõ: "Mở thương hội Giang Đông...")',
     placeholderEn: 'Liang Yan confers with Sun Quan... (or type: "Open Eastern Wu guild...")',
     chips: [
-      { type: 'local', icon: '🍵', labelVi: 'Mua Trà & Gốm Sứ', labelEn: 'Buy Tea & Porcelain', promptVi: 'Thu mua 10 kiện Trà Giang Đông và gốm men xanh xuất sắc', promptEn: 'Procure 10 crates of Jiangnan tea and celadon porcelain' },
-      { type: 'local', icon: '🏛️', labelVi: 'Lập Hội Quán U - Ngô', labelEn: 'Found Trade Guild', promptVi: 'Thành lập phân hội thương gia kết nối giao thương Bắc Nam', promptEn: 'Establish North-South merchant lodge in Jianye' },
-      { type: 'local', icon: '🐅', labelVi: 'Yết Kiến Tôn Trọng Mưu', labelEn: 'Audience Sun Quan', promptVi: 'Yết kiến Tôn Quyền đàm đạo thế chân vạc giang sơn', promptEn: 'Audience with Sun Quan debating the tripartite balance' },
+      { type: 'local', icon: '茶', labelVi: 'Mua Trà & Gốm Sứ', labelEn: 'Buy Tea & Porcelain', promptVi: 'Thu mua 10 kiện Trà Giang Đông và gốm men xanh xuất sắc', promptEn: 'Procure 10 crates of Jiangnan tea and celadon porcelain' },
+      { type: 'local', icon: '政', labelVi: 'Lập Hội Quán U - Ngô', labelEn: 'Found Trade Guild', promptVi: 'Thành lập phân hội thương gia kết nối giao thương Bắc Nam', promptEn: 'Establish North-South merchant lodge in Jianye' },
+      { type: 'local', icon: '威', labelVi: 'Yết Kiến Tôn Trọng Mưu', labelEn: 'Audience Sun Quan', promptVi: 'Yết kiến Tôn Quyền đàm đạo thế chân vạc giang sơn', promptEn: 'Audience with Sun Quan debating the tripartite balance' },
       { divider: true },
-      { type: 'courier', icon: '✉️', labelVi: 'Phi thư về Huyện Trác', labelEn: 'Courier to Zhuo', promptVi: 'Phái thuyền buôn mang bạc trắng và đặc sản về Huyện Trác', promptEn: 'Dispatch trading boat with silver and specialties to Zhuo' },
+      { type: 'courier', icon: '信', labelVi: 'Phi thư về Huyện Trác', labelEn: 'Courier to Zhuo', promptVi: 'Phái thuyền buôn mang bạc trắng và đặc sản về Huyện Trác', promptEn: 'Dispatch trading boat with silver and specialties to Zhuo' },
       { divider: true },
-      { type: 'travel', icon: '🏇', labelVi: 'Về Xích Bích', labelEn: 'To Chibi', promptVi: 'Ngược dòng Trường Giang tiến tới tiền đồn Xích Bích', promptEn: 'Sail up Yangtze to Chibi outpost' }
+      { type: 'travel', icon: '行', labelVi: 'Về Xích Bích', labelEn: 'To Chibi', promptVi: 'Ngược dòng Trường Giang tiến tới tiền đồn Xích Bích', promptEn: 'Sail up Yangtze to Chibi outpost' }
     ]
   },
   'Hán Trung Thiên Sư Phủ': {
@@ -245,12 +245,12 @@ const QUICK_CHIPS_DATA = {
     placeholderVi: 'Lương Diễn đàm đạo tại Hán Trung... (hoặc gõ: "Thu mua dược liệu Tần Lĩnh...")',
     placeholderEn: 'Liang Yan in Hanzhong... (or type: "Procure mountain herbs...")',
     chips: [
-      { type: 'local', icon: '🌿', labelVi: 'Thu Mua Thảo Dược', labelEn: 'Buy Rare Herbs', promptVi: 'Thu mua 10 vị thảo dược quý Tần Lĩnh trị thương cho quân sĩ', promptEn: 'Purchase 10 rare mountain herbal remedies for wounded soldiers' },
-      { type: 'local', icon: '🌾', labelVi: 'Quyên Góp Nghĩa Mễ', labelEn: 'Donate Charity Rice', promptVi: 'Góp 5 thạch lương vào nghĩa xá tạo phúc đức và tăng danh vọng', promptEn: 'Contribute 5 grain piculs to communal charity lodges' },
-      { type: 'local', icon: '🏔️', labelVi: 'Khảo Sát Kiếm Các', labelEn: 'Scout Mountain Pass', promptVi: 'Khảo sát độ hiểm trở của hiểm quan Kiếm Các vào đất Thục', promptEn: 'Survey fortified mountain defile of Jiange pass into Shu' },
+      { type: 'local', icon: '草', labelVi: 'Thu Mua Thảo Dược', labelEn: 'Buy Rare Herbs', promptVi: 'Thu mua 10 vị thảo dược quý Tần Lĩnh trị thương cho quân sĩ', promptEn: 'Purchase 10 rare mountain herbal remedies for wounded soldiers' },
+      { type: 'local', icon: '商', labelVi: 'Quyên Góp Nghĩa Mễ', labelEn: 'Donate Charity Rice', promptVi: 'Góp 5 thạch lương vào nghĩa xá tạo phúc đức và tăng danh vọng', promptEn: 'Contribute 5 grain piculs to communal charity lodges' },
+      { type: 'local', icon: '山', labelVi: 'Khảo Sát Kiếm Các', labelEn: 'Scout Mountain Pass', promptVi: 'Khảo sát độ hiểm trở của hiểm quan Kiếm Các vào đất Thục', promptEn: 'Survey fortified mountain defile of Jiange pass into Shu' },
       { divider: true },
-      { type: 'travel', icon: '🏇', labelVi: 'Vào Thành Đô', labelEn: 'To Chengdu', promptVi: 'Vượt Kiếm Các hiểm trở tiến vào Thiên Phủ Thành Đô', promptEn: 'Traverse treacherous Jiange pass into Chengdu' },
-      { type: 'travel', icon: '🏇', labelVi: 'Về Trường An', labelEn: 'To Changan', promptVi: 'Theo sạn đạo vượt Tần Lĩnh quay về Trường An', promptEn: 'Trek north across Qinling plank paths back to Changan' }
+      { type: 'travel', icon: '行', labelVi: 'Vào Thành Đô', labelEn: 'To Chengdu', promptVi: 'Vượt Kiếm Các hiểm trở tiến vào Thiên Phủ Thành Đô', promptEn: 'Traverse treacherous Jiange pass into Chengdu' },
+      { type: 'travel', icon: '行', labelVi: 'Về Trường An', labelEn: 'To Changan', promptVi: 'Theo sạn đạo vượt Tần Lĩnh quay về Trường An', promptEn: 'Trek north across Qinling plank paths back to Changan' }
     ]
   },
   'Thành Đô Ích Châu Phủ': {
@@ -259,13 +259,13 @@ const QUICK_CHIPS_DATA = {
     placeholderVi: 'Lương Diễn chiêm ngưỡng Đất Thục... (hoặc gõ: "Mua Thục Cẩm thượng hạng...")',
     placeholderEn: 'Liang Yan at Chengdu... (or type: "Procure Shu Brocade...")',
     chips: [
-      { type: 'local', icon: '🎋', labelVi: 'Mua Thục Cẩm Thượng Hạng', labelEn: 'Buy Shu Brocade', promptVi: 'Thu mua 10 sấp Thục Cẩm lừng danh thiên hạ từ phường dệt', promptEn: 'Procure 10 bolts of world-renowned Shu brocade silks' },
-      { type: 'local', icon: '⛏️', labelVi: 'Mua Quặng Sắt Tây Thục', labelEn: 'Buy Iron Ore', promptVi: 'Thu mua 15 khối quặng sắt tinh khiết rèn đao kiếm', promptEn: 'Procure 15 units of high-grade Shu mountain iron ore' },
-      { type: 'local', icon: '🍷', labelVi: 'Dự Tiệc Tây Thục', labelEn: 'Shu Banquet', promptVi: 'Thưởng thức mỹ tửu và hòa tấu nhạc thục tại phủ Lưu Chương', promptEn: 'Attend festive court banquet enjoying Shu music and wine' },
+      { type: 'local', icon: '商', labelVi: 'Mua Thục Cẩm Thượng Hạng', labelEn: 'Buy Shu Brocade', promptVi: 'Thu mua 10 sấp Thục Cẩm lừng danh thiên hạ từ phường dệt', promptEn: 'Procure 10 bolts of world-renowned Shu brocade silks' },
+      { type: 'local', icon: '工️', labelVi: 'Mua Quặng Sắt Tây Thục', labelEn: 'Buy Iron Ore', promptVi: 'Thu mua 15 khối quặng sắt tinh khiết rèn đao kiếm', promptEn: 'Procure 15 units of high-grade Shu mountain iron ore' },
+      { type: 'local', icon: '飲', labelVi: 'Dự Tiệc Tây Thục', labelEn: 'Shu Banquet', promptVi: 'Thưởng thức mỹ tửu và hòa tấu nhạc thục tại phủ Lưu Chương', promptEn: 'Attend festive court banquet enjoying Shu music and wine' },
       { divider: true },
-      { type: 'courier', icon: '✉️', labelVi: 'Phi thư về Huyện Trác', labelEn: 'Courier to Zhuo', promptVi: 'Gửi thư tín đường bộ báo tin đã mở rộng mạng lưới vào đất Thục', promptEn: 'Dispatch courier dispatch to Zhuo confirming western route' },
+      { type: 'courier', icon: '信', labelVi: 'Phi thư về Huyện Trác', labelEn: 'Courier to Zhuo', promptVi: 'Gửi thư tín đường bộ báo tin đã mở rộng mạng lưới vào đất Thục', promptEn: 'Dispatch courier dispatch to Zhuo confirming western route' },
       { divider: true },
-      { type: 'travel', icon: '🏇', labelVi: 'Về Hán Trung', labelEn: 'To Hanzhong', promptVi: 'Vượt Kiếm Các quan ải quay trở lại Hán Trung', promptEn: 'Trek back through Jiange pass toward Hanzhong' }
+      { type: 'travel', icon: '行', labelVi: 'Về Hán Trung', labelEn: 'To Hanzhong', promptVi: 'Vượt Kiếm Các quan ải quay trở lại Hán Trung', promptEn: 'Trek back through Jiange pass toward Hanzhong' }
     ]
   }
 };
@@ -591,28 +591,28 @@ const WORLD_MAP_NODES = {
 function getPoiMeta(locName) {
   const dict = {
     // Zhuo County
-    'Vườn Đào': { vi: 'Trang Viên Vườn Đào Hạ Trạch', en: 'Peach Garden Manor', icon: '🌸', distFromZhuo: '0 dặm' },
-    'Chợ Đông Môn': { vi: 'Chợ Đông Môn & Sạp Trà', en: 'East Gate Market & Tea Stall', icon: '🏪', distFromZhuo: '1 dặm' },
-    'Xưởng Lương Thị': { vi: 'Lương Thị Chức Tác Phường', en: 'Liang Textile Workshop', icon: '🏭', distFromZhuo: '2 dặm' },
+    'Vườn Đào': { vi: 'Trang Viên Vườn Đào Hạ Trạch', en: 'Peach Garden Manor', icon: '花', distFromZhuo: '0 dặm' },
+    'Chợ Đông Môn': { vi: 'Chợ Đông Môn & Sạp Trà', en: 'East Gate Market & Tea Stall', icon: '市', distFromZhuo: '1 dặm' },
+    'Xưởng Lương Thị': { vi: 'Lương Thị Chức Tác Phường', en: 'Liang Textile Workshop', icon: '坊', distFromZhuo: '2 dặm' },
     // 15 Historical Citadels
-    'Bắc Bình Soái Phủ': { vi: 'Bắc Bình Soái Phủ (U Châu)', en: 'Beiping Headquarters', icon: '🐎', distFromZhuo: '120 dặm' },
-    'Nghiệp Thành Đại Phủ': { vi: 'Nghiệp Thành Đại Phủ (Ký Châu)', en: 'Yecheng Grand Hall', icon: '🏛️', distFromZhuo: '330 dặm' },
-    'Quảng Tông Quân Doanh': { vi: 'Bắc Quân Đại Doanh (Quảng Tông)', en: 'Northern Army Headquarters', icon: '⛺', distFromZhuo: '280 dặm' },
-    'Bình Nguyên Trọng Trấn': { vi: 'Bình Nguyên Trọng Trấn', en: 'Pingyuan Stronghold', icon: '🛡️', distFromZhuo: '360 dặm' },
-    'Hứa Xương Tướng Phủ': { vi: 'Hứa Xương Tướng Phủ (Dự Châu)', en: 'Xuchang Headquarters', icon: '⚔️', distFromZhuo: '580 dặm' },
-    'Hạ Phì Thành Lũy': { vi: 'Hạ Phì Thành Lũy (Từ Châu)', en: 'Xiapi Citadel', icon: '🏰', distFromZhuo: '640 dặm' },
-    'Kinh Đô Lạc Dương': { vi: 'Kinh Đô Lạc Dương (Tư Lệ)', en: 'Imperial Capital Luoyang', icon: '👑', distFromZhuo: '750 dặm' },
-    'Trường An Cung Phủ': { vi: 'Trường An Cung Phủ (Quan Trung)', en: 'Changan Palace Hall', icon: '🏯', distFromZhuo: '920 dặm' },
-    'Tương Dương Châu Phủ': { vi: 'Tương Dương Châu Phủ (Kinh Châu)', en: 'Xiangyang Prefecture', icon: '🌊', distFromZhuo: '880 dặm' },
-    'Giang Lăng Thủy Doanh': { vi: 'Giang Lăng Thủy Doanh (Nam Quận)', en: 'Jiangling Naval Base', icon: '⛵', distFromZhuo: '1050 dặm' },
-    'Xích Bích Thủy Trại': { vi: 'Xích Bích Thủy Trại (Trường Giang)', en: 'Chibi Naval Base', icon: '🔥', distFromZhuo: '1150 dặm' },
-    'Kiến Nghiệp Đô Thành': { vi: 'Kiến Nghiệp Đô Thành (Giang Đông)', en: 'Jianye Capital of Wu', icon: '🐅', distFromZhuo: '1100 dặm' },
-    'Hán Trung Thiên Sư Phủ': { vi: 'Hán Trung Thiên Sư Phủ (Hán Xuyên)', en: 'Hanzhong Daoist Hall', icon: '🏔️', distFromZhuo: '1250 dặm' },
-    'Thành Đô Ích Châu Phủ': { vi: 'Thành Đô Ích Châu Phủ (Ba Thục)', en: 'Chengdu Capital of Shu', icon: '🎋', distFromZhuo: '1550 dặm' },
+    'Bắc Bình Soái Phủ': { vi: 'Bắc Bình Soái Phủ (U Châu)', en: 'Beiping Headquarters', icon: '行', distFromZhuo: '120 dặm' },
+    'Nghiệp Thành Đại Phủ': { vi: 'Nghiệp Thành Đại Phủ (Ký Châu)', en: 'Yecheng Grand Hall', icon: '政', distFromZhuo: '330 dặm' },
+    'Quảng Tông Quân Doanh': { vi: 'Bắc Quân Đại Doanh (Quảng Tông)', en: 'Northern Army Headquarters', icon: '營', distFromZhuo: '280 dặm' },
+    'Bình Nguyên Trọng Trấn': { vi: 'Bình Nguyên Trọng Trấn', en: 'Pingyuan Stronghold', icon: '工', distFromZhuo: '360 dặm' },
+    'Hứa Xương Tướng Phủ': { vi: 'Hứa Xương Tướng Phủ (Dự Châu)', en: 'Xuchang Headquarters', icon: '武', distFromZhuo: '580 dặm' },
+    'Hạ Phì Thành Lũy': { vi: 'Hạ Phì Thành Lũy (Từ Châu)', en: 'Xiapi Citadel', icon: '城', distFromZhuo: '640 dặm' },
+    'Kinh Đô Lạc Dương': { vi: 'Kinh Đô Lạc Dương (Tư Lệ)', en: 'Imperial Capital Luoyang', icon: '朝', distFromZhuo: '750 dặm' },
+    'Trường An Cung Phủ': { vi: 'Trường An Cung Phủ (Quan Trung)', en: 'Changan Palace Hall', icon: '府', distFromZhuo: '920 dặm' },
+    'Tương Dương Châu Phủ': { vi: 'Tương Dương Châu Phủ (Kinh Châu)', en: 'Xiangyang Prefecture', icon: '津', distFromZhuo: '880 dặm' },
+    'Giang Lăng Thủy Doanh': { vi: 'Giang Lăng Thủy Doanh (Nam Quận)', en: 'Jiangling Naval Base', icon: '行', distFromZhuo: '1050 dặm' },
+    'Xích Bích Thủy Trại': { vi: 'Xích Bích Thủy Trại (Trường Giang)', en: 'Chibi Naval Base', icon: '陣', distFromZhuo: '1150 dặm' },
+    'Kiến Nghiệp Đô Thành': { vi: 'Kiến Nghiệp Đô Thành (Giang Đông)', en: 'Jianye Capital of Wu', icon: '威', distFromZhuo: '1100 dặm' },
+    'Hán Trung Thiên Sư Phủ': { vi: 'Hán Trung Thiên Sư Phủ (Hán Xuyên)', en: 'Hanzhong Daoist Hall', icon: '山', distFromZhuo: '1250 dặm' },
+    'Thành Đô Ích Châu Phủ': { vi: 'Thành Đô Ích Châu Phủ (Ba Thục)', en: 'Chengdu Capital of Shu', icon: '商', distFromZhuo: '1550 dặm' },
     // Backwards Compatibility / Fallback
-    'Trường Xã Tiền Tuyến': { vi: 'Hứa Xương & Trường Xã Tiền Tuyến', en: 'Changshe & Xuchang Frontline', icon: '🔥', distFromZhuo: '580 dặm' }
+    'Trường Xã Tiền Tuyến': { vi: 'Hứa Xương & Trường Xã Tiền Tuyến', en: 'Changshe & Xuchang Frontline', icon: '陣', distFromZhuo: '580 dặm' }
   };
-  return dict[locName] || { vi: locName, en: locName, icon: '📍', distFromZhuo: '1 dặm' };
+  return dict[locName] || { vi: locName, en: locName, icon: '鎮', distFromZhuo: '1 dặm' };
 }
 
 function getLocalPoiDistance(fromLoc, toLoc) {
@@ -688,7 +688,7 @@ function renderLocalPoiNav(loc = activeSubLocation) {
   // 3. Dynamic Local Walking POIs
   const localPois = (currentRegion.subLocations || []).filter(sl => sl !== loc);
   if (localPois.length === 0) {
-    localPoiGroup.innerHTML = `<span style="font-size: 11px; color: var(--text-muted); font-style: italic;">${isEn ? '📍 Local outpost area' : '📍 Khu vực tiền tuyến'}</span>`;
+    localPoiGroup.innerHTML = `<span style="font-size: 11px; color: var(--text-muted); font-style: italic;">${isEn ? '鎮 Local outpost area' : '鎮 Khu vực tiền tuyến'}</span>`;
   } else {
     localPoiGroup.innerHTML = localPois.map(targetLoc => {
       const meta = getPoiMeta(targetLoc);
@@ -697,7 +697,7 @@ function renderLocalPoiNav(loc = activeSubLocation) {
       const distLabel = isEn ? dist.replace('dặm', 'li') : dist;
       return `
         <button class="local-poi-btn" onclick="travelLocalPoi('${targetLoc}')" title="${isEn ? 'Walk to ' + name : 'Đi bộ tới ' + name}">
-          <span>🚶 ${meta.icon} ${name}</span>
+          <span>行 ${meta.icon} ${name}</span>
           <span style="font-size: 9.5px; opacity: 0.75; font-family: var(--font-mono);">(${distLabel})</span>
         </button>
       `;
@@ -707,7 +707,7 @@ function renderLocalPoiNav(loc = activeSubLocation) {
 
 async function travelLocalPoi(targetLoc) {
   if (isProcessingAction) {
-    showToast(currentLang === 'en' ? '⚠️ Action in progress, please wait!' : '⚠️ Đang thực thi thao tác khác, vui lòng chờ!', true);
+    showToast(currentLang === 'en' ? '警️ Action in progress, please wait!' : '警️ Đang thực thi thao tác khác, vui lòng chờ!', true);
     return;
   }
   if (activeSubLocation === targetLoc) return;

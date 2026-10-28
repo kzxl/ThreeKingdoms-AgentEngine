@@ -112,7 +112,6 @@
         <div class="tactical-command-bar" id="tactical-command-bar">
           <div class="cmd-bar-left">
             <div class="cmd-context-pill">
-              <span class="cmd-loc-icon">📍</span>
               <span class="cmd-loc-name" id="locality-target">Trang Viên Vườn Đào</span>
             </div>
             <div class="cmd-hero-pill" id="cmd-hero-pill" onclick="openCurrentLocationNpcDossier()" title="Nhấn để xem Hồ Sơ & Sương Mù Hào Kiệt">
@@ -121,7 +120,6 @@
               <span class="cmd-hero-sentiment" id="cmd-hero-sentiment">+5 Thân Thiện</span>
             </div>
             <button class="btn-cmd-dossier" id="btn-local-npc-dossier" onclick="openCurrentLocationNpcDossier()" title="Xem Hồ Sơ & Quan Hệ Nhân Vật">
-              <span class="cmd-btn-icon">📖</span>
               <span id="txt-btn-local-npc">Hồ Sơ</span>
             </button>
           </div>
@@ -129,17 +127,14 @@
           <div class="cmd-bar-right">
             <!-- Equipment Modal Toggle Button -->
             <button class="btn-cmd-dossier" id="btn-open-equipment" onclick="if(window.EquipmentUI){window.EquipmentUI.openEquipmentModal('gear');}else if(window.openEquipmentModal){window.openEquipmentModal('gear');}" title="Binh Khí & Bảo Vật (Trang bị / Đoán tạo thần binh)">
-              <span class="cmd-btn-icon">🗡️</span>
-              <span id="txt-btn-equipment">Trang Bị</span>
+              <span id="txt-btn-equipment">Quân Trang</span>
             </button>
             <!-- Enterprise & Labor Toggle Button -->
             <button class="btn-cmd-dossier" id="btn-open-enterprise" onclick="if(window.EnterpriseUI){window.EnterpriseUI.openEnterpriseModal('work');}else if(window.openEnterpriseModal){window.openEnterpriseModal('work');}" title="Gia Sản & Việc Làm (Làm chủ / Làm thuê)">
-              <span class="cmd-btn-icon">🏮</span>
-              <span id="txt-btn-enterprise">Gia Sản</span>
+              <span id="txt-btn-enterprise">Sản Nghiệp</span>
             </button>
             <!-- Courier / Remote Orders Toggle Button -->
             <button class="btn-courier-toggle" id="btn-courier-toggle" onclick="toggleCourierDrawer()" title="Phái sứ giả / Phi thư tín viễn trình">
-              <span class="courier-btn-icon">✉️</span>
               <span id="txt-btn-courier">Phi Thư / Sứ Giả</span>
               <span class="courier-badge-count" id="courier-badge-count">0</span>
             </button>
@@ -150,7 +145,7 @@
         <div class="courier-drawer hidden" id="courier-drawer">
           <div class="courier-drawer-header">
             <div class="courier-drawer-title-group">
-              <span class="courier-drawer-icon">✉️</span>
+              <span class="courier-drawer-icon">信</span>
               <span class="courier-drawer-title" id="courier-drawer-title">Phi Thư & Sứ Giả Viễn Trình</span>
             </div>
             <button class="courier-drawer-close" onclick="toggleCourierDrawer()" title="Đóng">&times;</button>
@@ -172,10 +167,10 @@
               <span class="choices-hint" id="choices-sub">4 Trụ Cột Chiến Lược</span>
             </div>
             <div class="choices-pillar-legend">
-              <span class="legend-pill kizuna">🤝 Xã Giao</span>
-              <span class="legend-pill facility">🏭 Sản Nghiệp</span>
-              <span class="legend-pill opportunity">📜 Cơ Duyên</span>
-              <span class="legend-pill growth">⚔️ Tu Thân</span>
+              <span class="legend-pill kizuna">Xã Giao</span>
+              <span class="legend-pill facility">Sản Nghiệp</span>
+              <span class="legend-pill opportunity">Cơ Duyên</span>
+              <span class="legend-pill growth">Tu Thân</span>
             </div>
           </div>
 
@@ -216,7 +211,7 @@
               <span class="vital-val green-text" id="protagonist-hp">100/100</span>
             </div>
             <div class="vital-bar"><div class="vital-bar-fill green" id="bar-hp" style="width: 100%;"></div></div>
-            <div class="vital-sub-timer full" id="hp-timer-row">❤️ Khang kiện</div>
+            <div class="vital-sub-timer full" id="hp-timer-row">Khang kiện</div>
           </div>
           <div class="vital-item" id="vital-stamina-item" title="Thể Lực (Năng lượng): Tăng theo Võ Lực (WAR). Tiêu hao khi luyện tập, hồi phục qua ẩm trà, rót rượu và thời gian">
             <div class="vital-label-row">
@@ -224,7 +219,7 @@
               <span class="vital-val cyan-text" id="protagonist-stamina">122/122</span>
             </div>
             <div class="vital-bar"><div class="vital-bar-fill cyan" id="bar-stamina" style="width: 100%;"></div></div>
-            <div class="vital-sub-timer full" id="stamina-timer-row">⚡ Đầy</div>
+            <div class="vital-sub-timer full" id="stamina-timer-row">Đầy</div>
           </div>
           <div class="vital-item" title="Sĩ Khí (Tinh thần): Quyết tâm chiến đấu và sự sắc bén">
             <div class="vital-label-row">
@@ -232,7 +227,7 @@
               <span class="vital-val gold-text" id="protagonist-morale">100%</span>
             </div>
             <div class="vital-bar"><div class="vital-bar-fill gold" id="bar-morale" style="width: 100%;"></div></div>
-            <div class="vital-sub-timer full" id="morale-timer-row">🔥 Hăng hái</div>
+            <div class="vital-sub-timer full" id="morale-timer-row">Hăng hái</div>
           </div>
         </div>
 

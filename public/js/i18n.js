@@ -19,20 +19,20 @@ const I18N_DICT = {
     choiceHeader: 'QUYẾT SÁCH BỐI CẢNH',
     choiceSub: '4 Trụ Cột Chiến Lược',
     btnExecuteDirect: 'Thi Hành',
-    btnExecuteAi: '✦ AI',
+    btnExecuteAi: 'AI',
     btnInspectDossier: 'Hồ Sơ',
     btnCourierToggle: 'Phi Thư / Sứ Giả',
     courierDrawerTitle: 'Phi Thư & Sứ Giả Viễn Trình',
     courierDrawerDesc: 'Truyền đạt mật lệnh, điều phối nhân lực hoặc luân chuyển quân nhu tới các cứ điểm khác mà không cần rời vị trí hiện tại.',
     btnSelect: 'Thi Hành',
-    btnAi: '✦ AI',
+    btnAi: 'AI',
     btnOmniAi: 'Gửi AI Core',
     btnOmniInstant: 'Tức Thì',
     // Protagonist Card
     protagSubtitle: 'Thế Gia Thương Nhân • Trác Huyện',
     ageUnit: 'Tuổi',
-    hpLabel: '❤️ Sinh Lực',
-    moraleLabel: '⚡ Sĩ Khí',
+    hpLabel: 'Sinh Lực',
+    moraleLabel: 'Sĩ Khí',
     attrInt: 'Trí Lực',
     attrCom: 'Thương Nghiệp',
     attrDip: 'Ngoại Giao',
@@ -47,10 +47,10 @@ const I18N_DICT = {
     relationsHint: 'Mức độ tín nhiệm & hảo cảm của các nhân sĩ trọng yếu đối với Lương Diễn (-100 đến +100).',
     completedTag: '(Đạt)',
     // Tabs
-    tabInv: '📦 Kho Xưởng',
-    tabNpc: '👥 Lương Nhân',
-    tabLedger: '📜 Sổ Cái TXN',
-    tabAiFeed: '🤖 AI Feed',
+    tabInv: 'Kho Xưởng',
+    tabNpc: 'Lương Nhân',
+    tabLedger: 'Sổ Cái TXN',
+    tabAiFeed: 'AI Feed',
     // Table
     thSku: 'Mã SKU',
     thDesc: 'Mô tả',
@@ -59,7 +59,7 @@ const I18N_DICT = {
     thAction: 'Thao tác',
     btnSell: 'Bán',
     btnBuy: 'Mua',
-    btnReward: '🎁 Thưởng 100 Tiền',
+    btnReward: 'Thưởng 100 Tiền',
     // Modal
     modalTradeTitle: 'Giao Dịch Vật Phẩm',
     modalSkuLabel: 'Mã Mặt Hàng (SKU Code)',
@@ -72,7 +72,7 @@ const I18N_DICT = {
     // Location & World Map
     btnWorldMap: 'Dư Đồ Tam Quốc',
     btnClearChat: 'Làm Mới Chat',
-    worldMapTitle: '🗺️ Dư Đồ Tam Quốc • Chiến Tuyến Khởi Nghĩa Khăn Vàng (184 SCN)',
+    worldMapTitle: 'Dư Đồ Tam Quốc • Chiến Tuyến Khởi Nghĩa Khăn Vàng (184 SCN)',
     worldMapSub: 'Khảo sát lộ trình hành quân, cự ly dịch trạm, an ninh và quân lương tiêu hao',
     lblDist: 'Cự Ly Hành Quân',
     lblDuration: 'Thời Gian Di Chuyển',
@@ -80,8 +80,8 @@ const I18N_DICT = {
     lblThreat: 'Tình Trạng An Ninh',
     lblIntel: 'Quân Tình & Bối Cảnh',
     lblFigures: 'Hào Kiệt & Quan Binh Hiện Diện',
-    btnCurrentPos: '📍 Đang Ở Khu Vực Này',
-    btnMarchTo: '🏇 Khởi Hành Hành Quân Đến',
+    btnCurrentPos: 'Đang Ở Khu Vực Này',
+    btnMarchTo: 'Khởi Hành Đến',
     legendCurrent: 'Vị trí hiện tại',
     legendBattle: 'Chiến trường giao tranh',
     legendSafe: 'Trọng trấn an định',
@@ -140,20 +140,20 @@ const I18N_DICT = {
     choiceHeader: 'TACTICAL DECISIONS',
     choiceSub: '4 Strategic Pillars',
     btnExecuteDirect: 'Execute',
-    btnExecuteAi: '✦ AI',
+    btnExecuteAi: 'AI',
     btnInspectDossier: 'Dossier',
     btnCourierToggle: 'Courier / Envoy',
     courierDrawerTitle: 'Remote Courier & Dispatch',
     courierDrawerDesc: 'Dispatch confidential missives, order logistics, or mobilize retainers without leaving current base.',
     btnSelect: 'Execute',
-    btnAi: '✦ AI',
+    btnAi: 'AI',
     btnOmniAi: 'Send AI Core',
     btnOmniInstant: 'Instant',
     // Protagonist Card
     protagSubtitle: 'Merchant Gentry • Zhuo County',
     ageUnit: 'Y/O',
-    hpLabel: '❤️ Health',
-    moraleLabel: '⚡ Morale',
+    hpLabel: 'Health',
+    moraleLabel: 'Morale',
     attrInt: 'Intellect',
     attrCom: 'Commerce',
     attrDip: 'Diplomacy',
@@ -168,10 +168,10 @@ const I18N_DICT = {
     relationsHint: 'Trust & sentiment ratings of prominent figures toward Liang Yan (-100 to +100).',
     completedTag: '(Achieved)',
     // Tabs
-    tabInv: '📦 Warehouse',
-    tabNpc: '👥 Retainers',
-    tabLedger: '📜 TXN Ledger',
-    tabAiFeed: '🤖 AI Feed',
+    tabInv: 'Warehouse',
+    tabNpc: 'Retainers',
+    tabLedger: 'TXN Ledger',
+    tabAiFeed: 'AI Feed',
     // Table
     thSku: 'SKU Code',
     thDesc: 'Description',
@@ -180,7 +180,7 @@ const I18N_DICT = {
     thAction: 'Actions',
     btnSell: 'Sell',
     btnBuy: 'Buy',
-    btnReward: '🎁 Reward 100 Qian',
+    btnReward: 'Reward 100 Qian',
     // Modal
     modalTradeTitle: 'Trade Commodities',
     modalSkuLabel: 'Item Code (SKU)',
@@ -193,7 +193,7 @@ const I18N_DICT = {
     // Location & World Map
     btnWorldMap: 'Three Kingdoms Map',
     btnClearChat: 'Clear Chat',
-    worldMapTitle: '🗺️ Three Kingdoms Cartography • Yellow Turban Frontlines (184 AD)',
+    worldMapTitle: 'Three Kingdoms Cartography • Yellow Turban Frontlines (184 AD)',
     worldMapSub: 'Inspect march routes, relay station distances, threats, and grain provisions',
     lblDist: 'March Distance',
     lblDuration: 'March Duration',
@@ -201,8 +201,8 @@ const I18N_DICT = {
     lblThreat: 'Security & Threat',
     lblIntel: 'Strategic Intelligence',
     lblFigures: 'Key Figures Present',
-    btnCurrentPos: '📍 Currently Located Here',
-    btnMarchTo: '🏇 March Expedition to',
+    btnCurrentPos: 'Currently Located Here',
+    btnMarchTo: 'March Expedition to',
     legendCurrent: 'Current Location',
     legendBattle: 'Active Battlefield',
     legendSafe: 'Secured Stronghold',
@@ -255,7 +255,7 @@ function applyLanguage() {
   if (titleEl) titleEl.innerText = dict.appTitle;
 
   const btnMenu = document.getElementById('btn-main-menu');
-  if (btnMenu) btnMenu.innerHTML = `<span class="icon">🏛️</span> ${dict.mainMenu}`;
+  if (btnMenu) btnMenu.innerText = dict.mainMenu;
 
   const langLabel = document.getElementById('lang-label');
   if (langLabel) langLabel.innerText = dict.langToggle;

@@ -273,13 +273,13 @@
     if (isCoPresent) {
       proximityBadgeHtml = `
         <span class="tactical-badge tactical-badge--success" style="border-color: #22c55e; color: #4ade80; font-size: 10px;">
-          🟢 ${isEn ? 'Co-Present (Same Scene)' : 'Đồng Hiện (Cùng Bối Cảnh)'}
+          ${isEn ? 'Co-Present (Same Scene)' : 'Đồng Hiện (Cùng Bối Cảnh)'}
         </span>
       `;
     } else if (isIntraSettlement) {
       proximityBadgeHtml = `
         <span class="tactical-badge tactical-badge--warning" style="border-color: #f59e0b; color: #fbbf24; font-size: 10px;">
-          🟡 ${isEn ? 'Intra-County (Approx 2 Li)' : 'Nội Huyện Cách Biệt (Cách 2 dặm)'}
+          ${isEn ? 'Intra-County (Approx 2 Li)' : 'Nội Huyện Cách Biệt (Cách 2 dặm)'}
         </span>
       `;
     } else {
