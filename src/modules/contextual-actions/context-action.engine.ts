@@ -1211,29 +1211,731 @@ export class ContextActionEngine {
     ];
   }
 
-  // Placeholder methods for other specific castles:
+  /**
+   * Yecheng Grand Estate (Nghiệp Thành Đại Phủ)
+   * Host: Yuan Shao (NPC-0018)
+   */
   private generateYechengChoices(liquidCash: number, fatigue: number, gameDate: string): ContextualChoice[] {
-    return this.generateGenericChoices('Nghiệp Thành Đại Phủ', liquidCash, fatigue, gameDate);
+    return [
+      {
+        id: 'OPT_1',
+        pillar: 'KIZUNA_SOCIAL',
+        pillarLabelVi: 'XÃ GIAO HÀO KIỆT',
+        pillarLabelEn: 'HERO KIZUNA',
+        badgeClass: 'pillar-kizuna',
+        icon: '👑',
+        title: 'Yết kiến Ký Châu Mục Viên Thiệu, đàm luận danh vọng Tứ Thế Tam Công',
+        titleEn: 'Audience with Lord Yuan Shao, discussing Four Generations of Ducal glory',
+        desc: 'Đổ D20 [DIP/POL Check] • Hảo cảm Viên Thiệu +5 • Gia thế hiển hách',
+        descEn: 'Roll D20 [DIP/POL Check] • Yuan Shao Affinity +5',
+        action: {
+          type: 'KIZUNA_INTERACT',
+          npc_id: 'NPC-0018',
+          npc_name: 'Viên Thiệu (Bản Sơ)',
+          action_type: 'TEA_CONVERSE',
+          prompt: 'Yết kiến Ký Châu Mục Viên Thiệu tại đại phủ Nghiệp Thành'
+        }
+      },
+      {
+        id: 'OPT_2',
+        pillar: 'FACILITY_OPERATION',
+        pillarLabelVi: 'CHUYÊN MÔN CƠ SỞ',
+        pillarLabelEn: 'FACILITY OPERATION',
+        badgeClass: 'pillar-facility',
+        icon: '🎋',
+        title: 'Xuất bán 15 Tấm Chiếu Trúc Lương Gia cho các danh gia vọng tộc Nghiệp Thành',
+        titleEn: 'Sell 15 Liang Bamboo Mats to prominent Jizhou patrician clans',
+        desc: '-15 PROD-MAT • Thu về +1,200 Tiền mặt (@80 Tiền/tấm) • Ghi sổ kép',
+        descEn: '-15 PROD-MAT • Receive +1,200 Qian (@80/ea)',
+        action: {
+          type: 'TRADE_SELL',
+          item_code: 'PROD-MAT',
+          quantity: 15,
+          unit_price: 80,
+          counterparty: 'Vọng tộc Nghiệp Thành',
+          game_date: gameDate
+        }
+      },
+      {
+        id: 'OPT_3',
+        pillar: 'OPPORTUNITY_INCIDENT',
+        pillarLabelVi: 'CƠ HỘI / SỰ VỤ',
+        pillarLabelEn: 'LOCAL INCIDENT',
+        badgeClass: 'pillar-opportunity',
+        icon: '🌾',
+        title: 'Thu mua 10 Thạch Lương Ký Châu giá sỉ dự trữ chiến lược (Chi 1,500 Tiền)',
+        titleEn: 'Procure 10 Dan of Jizhou strategic grain reserve (Cost 1,500 Qian)',
+        desc: '+10 COM-GRAIN • Giá sỉ ưu đãi 150 Tiền/thạch • Tích trữ lương thảo',
+        descEn: '+10 COM-GRAIN • Wholesale 150 Qian/dan',
+        disabled: liquidCash < 1500,
+        disabledReasonVi: `Không đủ 1,500 Tiền (Hiện có ${liquidCash})`,
+        disabledReasonEn: `Insufficient funds (Have ${liquidCash} Qian)`,
+        action: {
+          type: 'TRADE_BUY',
+          item_code: 'COM-GRAIN',
+          quantity: 10,
+          unit_price: 150,
+          counterparty: 'Lương thương Ký Châu',
+          game_date: gameDate
+        }
+      },
+      {
+        id: 'OPT_4',
+        pillar: 'PERSONAL_GROWTH',
+        pillarLabelVi: 'TU THÂN / BỒI DƯỠNG',
+        pillarLabelEn: 'SELF CULTIVATION',
+        badgeClass: 'pillar-growth',
+        icon: '📜',
+        title: 'Nghiên cứu gia phả và mạng lưới liên minh sĩ tộc thế gia Hà Bắc',
+        titleEn: 'Study patrician genealogies and gentry alliance networks of Hebei',
+        desc: 'EXP Chính Trị & Binh Pháp +15 • Tăng hiểu biết về thế lực chư hầu',
+        descEn: 'Politics & Stratagem EXP +15',
+        action: {
+          type: 'PERSONAL_GROWTH',
+          sub_type: 'STUDY_TACTICS',
+          exp_amount: 15,
+          fatigue_delta: 8,
+          morale_delta: 5,
+          memo: 'Nghiên cứu mạng lưới sĩ tộc tại Nghiệp Thành',
+          game_date: gameDate
+        }
+      }
+    ];
   }
+
+  /**
+   * Xiapi Fortress (Hạ Phì Thành Lũy)
+   * Host: Lu Bu (NPC-0057) / Chen Gong (NPC-0058)
+   */
   private generateXiapiChoices(liquidCash: number, fatigue: number, gameDate: string): ContextualChoice[] {
-    return this.generateGenericChoices('Hạ Phì Thành Lũy', liquidCash, fatigue, gameDate);
+    return [
+      {
+        id: 'OPT_1',
+        pillar: 'KIZUNA_SOCIAL',
+        pillarLabelVi: 'XÃ GIAO HÀO KIỆT',
+        pillarLabelEn: 'HERO KIZUNA',
+        badgeClass: 'pillar-kizuna',
+        icon: '⚡',
+        title: 'Yết kiến Ôn Hầu Lữ Bố, thỉnh giáo thuật kích pháp Phương Thiên Họa Kích',
+        titleEn: 'Audience with Marquis Lu Bu, seeking counsel on Halberd martial mastery',
+        desc: 'Đổ D20 [WAR Check] • Hảo cảm Lữ Bố +5 • Khí phách Chiến Thần vô song',
+        descEn: 'Roll D20 [WAR Check] • Lu Bu Affinity +5',
+        action: {
+          type: 'KIZUNA_INTERACT',
+          npc_id: 'NPC-0057',
+          npc_name: 'Lữ Bố (Phụng Tiên)',
+          action_type: 'SPAR_DEBATE',
+          prompt: 'Thỉnh giáo kích pháp và cung thuật cự ly xa cùng Lữ Bố'
+        }
+      },
+      {
+        id: 'OPT_2',
+        pillar: 'FACILITY_OPERATION',
+        pillarLabelVi: 'CHUYÊN MÔN CƠ SỞ',
+        pillarLabelEn: 'FACILITY OPERATION',
+        badgeClass: 'pillar-facility',
+        icon: '🛡️',
+        title: 'Cung cấp 10 Khiên Trúc Bọc Da cho Thiết Kỵ Binh Từ Châu (Thu 2,400 Tiền)',
+        titleEn: 'Supply 10 Leather-Faced Bamboo Shields to Xuzhou Cavalry (Earn 2,400 Qian)',
+        desc: '-10 PROD-SHIELD-BAM • +2,400 Tiền quân phí Hạ Phì (@240 Tiền/khiên)',
+        descEn: '-10 PROD-SHIELD-BAM • +2,400 Qian revenue',
+        action: {
+          type: 'TRADE_SELL',
+          item_code: 'PROD-SHIELD-BAM',
+          quantity: 10,
+          unit_price: 240,
+          counterparty: 'Hạ Phì Quân Khố',
+          game_date: gameDate
+        }
+      },
+      {
+        id: 'OPT_3',
+        pillar: 'OPPORTUNITY_INCIDENT',
+        pillarLabelVi: 'CƠ HỘI / SỰ VỤ',
+        pillarLabelEn: 'LOCAL INCIDENT',
+        badgeClass: 'pillar-opportunity',
+        icon: '📜',
+        title: 'Mật đàm cùng mưu thần Trần Cung phân tích thế cục chư hầu Trung Nguyên',
+        titleEn: 'Private counsel with strategist Chen Gong on Central Plains rivalries',
+        desc: 'EXP Binh Pháp Kế Mưu +20 • Thấu triệt điểm yếu phòng thủ Từ Châu',
+        descEn: 'Stratagem EXP +20',
+        action: {
+          type: 'KIZUNA_INTERACT',
+          npc_id: 'NPC-0058',
+          npc_name: 'Trần Cung (Công Đài)',
+          action_type: 'TEA_CONVERSE',
+          prompt: 'Đàm đạo cùng quân sư Trần Cung về kế hoạch giữ vững Từ Châu'
+        }
+      },
+      {
+        id: 'OPT_4',
+        pillar: 'PERSONAL_GROWTH',
+        pillarLabelVi: 'TU THÂN / BỒI DƯỠNG',
+        pillarLabelEn: 'SELF CULTIVATION',
+        badgeClass: 'pillar-growth',
+        icon: '🌊',
+        title: 'Khảo sát địa hình hào lũy sông Nghi Thủy và điểm yếu thủy công Hạ Phì',
+        titleEn: 'Inspect Yi River moats and hydraulic engineering vulnerabilities of Xiapi',
+        desc: 'EXP Địa Hình & Binh Pháp +15 • Sĩ khí +5 • Tiêu hao 8 Thể lực',
+        descEn: 'Terrain & Tactics EXP +15',
+        action: {
+          type: 'PERSONAL_GROWTH',
+          sub_type: 'STUDY_TACTICS',
+          exp_amount: 15,
+          fatigue_delta: 8,
+          morale_delta: 5,
+          memo: 'Khảo sát hào lũy sông Nghi Thủy tại Hạ Phì',
+          game_date: gameDate
+        }
+      }
+    ];
   }
+
+  /**
+   * Chang'an Palace & Stronghold (Trường An Cung Phủ)
+   * Host: Dong Zhuo (NPC-0023) / Wang Yun (NPC-0015)
+   */
   private generateChanganChoices(liquidCash: number, fatigue: number, gameDate: string): ContextualChoice[] {
-    return this.generateGenericChoices('Trường An Cung Phủ', liquidCash, fatigue, gameDate);
+    return [
+      {
+        id: 'OPT_1',
+        pillar: 'KIZUNA_SOCIAL',
+        pillarLabelVi: 'XÃ GIAO HÀO KIỆT',
+        pillarLabelEn: 'HERO KIZUNA',
+        badgeClass: 'pillar-kizuna',
+        icon: '🐅',
+        title: 'Yết kiến Thái Sư Đổng Trác tại My Ổ, thận trọng ứng đối giữ hòa khí',
+        titleEn: 'Audience with Grand Preceptor Dong Zhuo at Mei Citadel, diplomatic tact',
+        desc: 'Đổ D20 [DIP/POL Check] • Tránh va chạm kiêu hùng Tây Lương • Tăng uy vọng',
+        descEn: 'Roll D20 [DIP/POL Check] • Navigate West Liang hegemony',
+        action: {
+          type: 'KIZUNA_INTERACT',
+          npc_id: 'NPC-0023',
+          npc_name: 'Đổng Trác (Trọng Dĩnh)',
+          action_type: 'TEA_CONVERSE',
+          prompt: 'Yết kiến Thái Sư Đổng Trác tại My Ổ trình diện thương gia U Châu'
+        }
+      },
+      {
+        id: 'OPT_2',
+        pillar: 'FACILITY_OPERATION',
+        pillarLabelVi: 'CHUYÊN MÔN CƠ SỞ',
+        pillarLabelEn: 'FACILITY OPERATION',
+        badgeClass: 'pillar-facility',
+        icon: '🧶',
+        title: 'Thu mua da thú Tây Vực và len dạ Lương Châu giá sỉ (Chi 1,000 Tiền)',
+        titleEn: 'Procure Western Region pelts and Liangzhou wool in bulk (Cost 1,000 Qian)',
+        desc: '+10 COM-LEATH đặc chủng Tây Vực • Bổ sung nguyên liệu chế tạo cao cấp',
+        descEn: '+10 COM-LEATH exotic pelts • High-tier craft materials',
+        disabled: liquidCash < 1000,
+        disabledReasonVi: `Không đủ 1,000 Tiền (Hiện có ${liquidCash})`,
+        disabledReasonEn: `Insufficient funds (Have ${liquidCash} Qian)`,
+        action: {
+          type: 'TRADE_BUY',
+          item_code: 'COM-LEATH',
+          quantity: 10,
+          unit_price: 100,
+          counterparty: 'Tây Lương Mã Đội',
+          game_date: gameDate
+        }
+      },
+      {
+        id: 'OPT_3',
+        pillar: 'OPPORTUNITY_INCIDENT',
+        pillarLabelVi: 'CƠ HỘI / SỰ VỤ',
+        pillarLabelEn: 'LOCAL INCIDENT',
+        badgeClass: 'pillar-opportunity',
+        icon: '📜',
+        title: 'Mật kiến Tư Đồ Vương Doãn tại tư gia, bàn việc an nguy giang sơn xã tắc',
+        titleEn: 'Secret audience with Minister Wang Yun on empire restoration',
+        desc: 'EXP Chính Trị Triều Đình +20 • Thiết lập mạng lưới ngầm sĩ phu Hán thất',
+        descEn: 'Imperial Politics EXP +20',
+        action: {
+          type: 'KIZUNA_INTERACT',
+          npc_id: 'NPC-0015',
+          npc_name: 'Vương Doãn (Tử Sư)',
+          action_type: 'TEA_CONVERSE',
+          prompt: 'Đàm đạo cơ mật cùng Tư Đồ Vương Doãn tại Trường An'
+        }
+      },
+      {
+        id: 'OPT_4',
+        pillar: 'PERSONAL_GROWTH',
+        pillarLabelVi: 'TU THÂN / BỒI DƯỠNG',
+        pillarLabelEn: 'SELF CULTIVATION',
+        badgeClass: 'pillar-growth',
+        icon: '⛰️',
+        title: 'Khảo sát hiểm trở Hàm Cốc Quan và thế núi Đồng Quan phòng vệ Quan Trung',
+        titleEn: 'Survey rugged terrain of Hangu Pass and Tong Pass defending Guanzhong',
+        desc: 'EXP Địa lý Quân sự +15 • Nắm vững yết hầu phòng thủ ngàn dặm',
+        descEn: 'Military Geography EXP +15',
+        action: {
+          type: 'PERSONAL_GROWTH',
+          sub_type: 'STUDY_TACTICS',
+          exp_amount: 15,
+          fatigue_delta: 8,
+          morale_delta: 5,
+          memo: 'Khảo sát địa hình hiểm trở Quan Trung tại Trường An',
+          game_date: gameDate
+        }
+      }
+    ];
   }
+
+  /**
+   * Xiangyang Commandery (Tương Dương Châu Phủ)
+   * Host: Liu Biao (NPC-0016)
+   */
   private generateXiangyangChoices(liquidCash: number, fatigue: number, gameDate: string): ContextualChoice[] {
-    return this.generateGenericChoices('Tương Dương Châu Phủ', liquidCash, fatigue, gameDate);
+    return [
+      {
+        id: 'OPT_1',
+        pillar: 'KIZUNA_SOCIAL',
+        pillarLabelVi: 'XÃ GIAO HÀO KIỆT',
+        pillarLabelEn: 'HERO KIZUNA',
+        badgeClass: 'pillar-kizuna',
+        icon: '📜',
+        title: 'Yết kiến Kinh Châu Thứ Sử Lưu Biểu, thưởng ngoạn thư họa đàm đạo điển tịch',
+        titleEn: 'Audience with Governor Liu Biao, appreciating calligraphy and classical texts',
+        desc: 'Đổ D20 [INT/POL Check] • Hảo cảm Lưu Biểu +5 • Phong thái Bát Tuấn danh sĩ',
+        descEn: 'Roll D20 [INT/POL Check] • Liu Biao Affinity +5',
+        action: {
+          type: 'KIZUNA_INTERACT',
+          npc_id: 'NPC-0016',
+          npc_name: 'Lưu Biểu (Cảnh Thăng)',
+          action_type: 'TEA_CONVERSE',
+          prompt: 'Đàm đạo văn chương điển tích cùng Kinh Châu Thứ Sử Lưu Biểu'
+        }
+      },
+      {
+        id: 'OPT_2',
+        pillar: 'FACILITY_OPERATION',
+        pillarLabelVi: 'CHUYÊN MÔN CƠ SỞ',
+        pillarLabelEn: 'FACILITY OPERATION',
+        badgeClass: 'pillar-facility',
+        icon: '🌾',
+        title: 'Thu mua 10 Thạch Lương gạo thơm Hán Thủy dự trữ (Chi 1,400 Tiền)',
+        titleEn: 'Procure 10 Dan of Han River fragrant rice rations (Cost 1,400 Qian)',
+        desc: '+10 COM-GRAIN • Giá tốt 140 Tiền/thạch • Lương thảo phì nhiêu Kinh Tương',
+        descEn: '+10 COM-GRAIN • Fertile Jingchu grain reserve',
+        disabled: liquidCash < 1400,
+        disabledReasonVi: `Không đủ 1,400 Tiền (Hiện có ${liquidCash})`,
+        disabledReasonEn: `Insufficient funds (Have ${liquidCash} Qian)`,
+        action: {
+          type: 'TRADE_BUY',
+          item_code: 'COM-GRAIN',
+          quantity: 10,
+          unit_price: 140,
+          counterparty: 'Nông thương Kinh Châu',
+          game_date: gameDate
+        }
+      },
+      {
+        id: 'OPT_3',
+        pillar: 'OPPORTUNITY_INCIDENT',
+        pillarLabelVi: 'CƠ HỘI / SỰ VỤ',
+        pillarLabelEn: 'LOCAL INCIDENT',
+        badgeClass: 'pillar-opportunity',
+        icon: '🍵',
+        title: 'Thăm viếng Thủy Kính Trang tại Long Trung, dò hỏi tung tích hiền tài ẩn dật',
+        titleEn: 'Visit Water Mirror Manor at Longzhong, inquiring on recluse masterminds',
+        desc: 'EXP Trinh sát & Nhận diện Nhân tài +20 • Mở rộng manh mối Ngọa Long - Phượng Sồ',
+        descEn: 'Talent Recon EXP +20 • Clues on Crouching Dragon & Fledgling Phoenix',
+        action: {
+          type: 'PERSONAL_GROWTH',
+          sub_type: 'STUDY_TACTICS',
+          exp_amount: 20,
+          fatigue_delta: 8,
+          morale_delta: 10,
+          memo: 'Thăm Thủy Kính Trang tại Long Trung Tương Dương',
+          game_date: gameDate
+        }
+      },
+      {
+        id: 'OPT_4',
+        pillar: 'PERSONAL_GROWTH',
+        pillarLabelVi: 'TU THÂN / BỒI DƯỠNG',
+        pillarLabelEn: 'SELF CULTIVATION',
+        badgeClass: 'pillar-growth',
+        icon: '📚',
+        title: 'Đọc sách tại Tương Dương Học Viện, đàm đạo kinh sử cùng các danh sĩ Kinh Tương',
+        titleEn: 'Study at Xiangyang Academy, debating history and statecraft with scholars',
+        desc: 'EXP Chính Trị & Binh Pháp +15 • Tĩnh tâm trau dồi học thuật',
+        descEn: 'Politics & Philosophy EXP +15',
+        action: {
+          type: 'PERSONAL_GROWTH',
+          sub_type: 'STUDY_TACTICS',
+          exp_amount: 15,
+          fatigue_delta: 8,
+          morale_delta: 5,
+          memo: 'Trau dồi học thuật tại Tương Dương Học Viện',
+          game_date: gameDate
+        }
+      }
+    ];
   }
+
+  /**
+   * Naval Stronghold & Fleet Camps (Giang Lăng & Xích Bích Thủy Doanh)
+   * Host: Zhou Yu (NPC-0017) / Huang Gai (NPC-0052)
+   */
   private generateNavalCampChoices(liquidCash: number, fatigue: number, gameDate: string): ContextualChoice[] {
-    return this.generateGenericChoices('Thủy Trại Tiền Tuyến', liquidCash, fatigue, gameDate);
+    return [
+      {
+        id: 'OPT_1',
+        pillar: 'KIZUNA_SOCIAL',
+        pillarLabelVi: 'XÃ GIAO HÀO KIỆT',
+        pillarLabelEn: 'HERO KIZUNA',
+        badgeClass: 'pillar-kizuna',
+        icon: '⛵',
+        title: 'Yết kiến Giang Đông Đại Đô Đốc Chu Du, đàm luận thủy chiến trận đồ & âm nhạc',
+        titleEn: 'Audience with Grand Commander Zhou Yu, discussing naval stratagems & music',
+        desc: 'Đổ D20 [INT/CHA Check] • Hảo cảm Chu Du +5 • Khúc hữu ngộ Chu Lang cố',
+        descEn: 'Roll D20 [INT/CHA Check] • Zhou Yu Affinity +5',
+        action: {
+          type: 'KIZUNA_INTERACT',
+          npc_id: 'NPC-0017',
+          npc_name: 'Chu Du (Công Cẩn)',
+          action_type: 'TEA_CONVERSE',
+          prompt: 'Đàm luận thủy chiến trận pháp và phong thổ Trường Giang cùng Chu Du'
+        }
+      },
+      {
+        id: 'OPT_2',
+        pillar: 'FACILITY_OPERATION',
+        pillarLabelVi: 'CHUYÊN MÔN CƠ SỞ',
+        pillarLabelEn: 'FACILITY OPERATION',
+        badgeClass: 'pillar-facility',
+        icon: '🛡️',
+        title: 'Tiếp tế 10 Khiên Trúc Bọc Da chống tên lửa cho Thủy Sư Giang Đông (Thu 2,500 Tiền)',
+        titleEn: 'Supply 10 Fire-resistant Bamboo Shields to Dongwu Navy (Earn 2,500 Qian)',
+        desc: '-10 PROD-SHIELD-BAM • +2,500 Tiền quân nhu thủy trại (@250 Tiền/khiên)',
+        descEn: '-10 PROD-SHIELD-BAM • +2,500 Qian revenue',
+        action: {
+          type: 'TRADE_SELL',
+          item_code: 'PROD-SHIELD-BAM',
+          quantity: 10,
+          unit_price: 250,
+          counterparty: 'Thủy Sư Quân Nhu Khố',
+          game_date: gameDate
+        }
+      },
+      {
+        id: 'OPT_3',
+        pillar: 'OPPORTUNITY_INCIDENT',
+        pillarLabelVi: 'CƠ HỘI / SỰ VỤ',
+        pillarLabelEn: 'LOCAL INCIDENT',
+        badgeClass: 'pillar-opportunity',
+        icon: '🔥',
+        title: 'Khảo sát quy luật gió đông nam và luồng thủy triều Trường Giang chuẩn bị hỏa công',
+        titleEn: 'Survey southeast wind patterns and Yangtze tidal currents for fire attacks',
+        desc: 'EXP Khí tượng & Thủy chiến +20 • Thấu triệt chiến trường Xích Bích',
+        descEn: 'Naval Tactics & Meteorology EXP +20',
+        action: {
+          type: 'PERSONAL_GROWTH',
+          sub_type: 'STUDY_TACTICS',
+          exp_amount: 20,
+          fatigue_delta: 8,
+          morale_delta: 10,
+          memo: 'Khảo sát khí tượng gió nước Trường Giang',
+          game_date: gameDate
+        }
+      },
+      {
+        id: 'OPT_4',
+        pillar: 'PERSONAL_GROWTH',
+        pillarLabelVi: 'TU THÂN / BỒI DƯỠNG',
+        pillarLabelEn: 'SELF CULTIVATION',
+        badgeClass: 'pillar-growth',
+        icon: '🌊',
+        title: 'Luyện tập điều khiển thuyền bè và chiến đấu trên sóng nước Trường Giang',
+        titleEn: 'Drill in boat navigation and aquatic combat upon turbulent Yangtze waves',
+        desc: 'EXP Thủy chiến +15 • Tăng cường thể lực và thăng bằng • Tiêu hao 10 Thể lực',
+        descEn: 'Naval Combat EXP +15 • Morale +5 • Costs 10 Fatigue',
+        action: {
+          type: 'PERSONAL_GROWTH',
+          sub_type: 'TRAIN_MARTIAL',
+          exp_amount: 15,
+          fatigue_delta: 10,
+          morale_delta: 5,
+          memo: 'Luyện tập thủy chiến trên sông Trường Giang',
+          game_date: gameDate
+        }
+      }
+    ];
   }
+
+  /**
+   * Jianye Capital (Kiến Nghiệp Đô Thành)
+   * Host: Sun Quan (NPC-0019)
+   */
   private generateJianyeChoices(liquidCash: number, fatigue: number, gameDate: string): ContextualChoice[] {
-    return this.generateGenericChoices('Kiến Nghiệp Đô Thành', liquidCash, fatigue, gameDate);
+    return [
+      {
+        id: 'OPT_1',
+        pillar: 'KIZUNA_SOCIAL',
+        pillarLabelVi: 'XÃ GIAO HÀO KIỆT',
+        pillarLabelEn: 'HERO KIZUNA',
+        badgeClass: 'pillar-kizuna',
+        icon: '🐅',
+        title: 'Yết kiến Ngô Chủ Tôn Quyền, đàm luận chính sách an dân và khai khẩn Giang Đông',
+        titleEn: 'Audience with Lord Sun Quan, conferring on settlement and Jiangnan development',
+        desc: 'Đổ D20 [POL/DIP Check] • Hảo cảm Tôn Quyền +5 • Khí phách thiếu niên anh chúa',
+        descEn: 'Roll D20 [POL/DIP Check] • Sun Quan Affinity +5',
+        action: {
+          type: 'KIZUNA_INTERACT',
+          npc_id: 'NPC-0019',
+          npc_name: 'Tôn Quyền (Trọng Mưu)',
+          action_type: 'TEA_CONVERSE',
+          prompt: 'Đàm luận cùng Ngô Chủ Tôn Quyền về định hướng phát triển Giang Nam'
+        }
+      },
+      {
+        id: 'OPT_2',
+        pillar: 'FACILITY_OPERATION',
+        pillarLabelVi: 'CHUYÊN MÔN CƠ SỞ',
+        pillarLabelEn: 'FACILITY OPERATION',
+        badgeClass: 'pillar-facility',
+        icon: '🎋',
+        title: 'Xuất bán 20 Tấm Chiếu Trúc Lương Gia sang thương cảng Giang Nam (Thu 1,600 Tiền)',
+        titleEn: 'Export 20 Liang Bamboo Mats to Jiangnan seaport market (Earn 1,600 Qian)',
+        desc: '-20 PROD-MAT • +1,600 Tiền thương cảng (@80 Tiền/tấm) • Ghi sổ kép',
+        descEn: '-20 PROD-MAT • +1,600 Qian trade revenue',
+        action: {
+          type: 'TRADE_SELL',
+          item_code: 'PROD-MAT',
+          quantity: 20,
+          unit_price: 80,
+          counterparty: 'Thương hội Giang Nam',
+          game_date: gameDate
+        }
+      },
+      {
+        id: 'OPT_3',
+        pillar: 'OPPORTUNITY_INCIDENT',
+        pillarLabelVi: 'CƠ HỘI / SỰ VỤ',
+        pillarLabelEn: 'LOCAL INCIDENT',
+        badgeClass: 'pillar-opportunity',
+        icon: '⚓',
+        title: 'Đăng ký giấy phép mậu dịch đường biển và khai thác quặng đồng Đan Dương (Chi 1,000 Tiền)',
+        titleEn: 'Register maritime trade permit & Danyang copper mining license (Cost 1,000 Qian)',
+        desc: 'Mở rộng tiềm năng khoáng sản • Tăng uy vọng kinh thương toàn cõi Giang Đông',
+        descEn: 'Expand mineral procurement • Boost Wu prestige',
+        disabled: liquidCash < 1000,
+        disabledReasonVi: `Không đủ 1,000 Tiền giấy phép (Hiện có ${liquidCash})`,
+        disabledReasonEn: `Insufficient funds (Have ${liquidCash} Qian)`,
+        action: {
+          type: 'TRADE_BUY',
+          item_code: 'LIC-JIANYE',
+          quantity: 1,
+          unit_price: 1000,
+          counterparty: 'Ngô Đô Thị Lệnh',
+          game_date: gameDate
+        }
+      },
+      {
+        id: 'OPT_4',
+        pillar: 'PERSONAL_GROWTH',
+        pillarLabelVi: 'TU THÂN / BỒI DƯỠNG',
+        pillarLabelEn: 'SELF CULTIVATION',
+        badgeClass: 'pillar-growth',
+        icon: '🏰',
+        title: 'Khảo sát kiến trúc thành trì và hệ thống âu thuyền chiến lược Kiến Nghiệp',
+        titleEn: 'Inspect citadel fortifications and strategic drydocks of Jianye',
+        desc: 'EXP Quản trị Đô thị +15 • Nắm vững cấu trúc phòng thủ thủ phủ Giang Đông',
+        descEn: 'Urban Governance EXP +15',
+        action: {
+          type: 'PERSONAL_GROWTH',
+          sub_type: 'STUDY_TACTICS',
+          exp_amount: 15,
+          fatigue_delta: 8,
+          morale_delta: 5,
+          memo: 'Khảo sát thành trì Kiến Nghiệp',
+          game_date: gameDate
+        }
+      }
+    ];
   }
+
+  /**
+   * Hanzhong Celestial Master Hold (Hán Trung Thiên Sư Phủ)
+   * Host: Zhang Lu (NPC-0020)
+   */
   private generateHanzhongChoices(liquidCash: number, fatigue: number, gameDate: string): ContextualChoice[] {
-    return this.generateGenericChoices('Hán Trung Thiên Sư Phủ', liquidCash, fatigue, gameDate);
+    return [
+      {
+        id: 'OPT_1',
+        pillar: 'KIZUNA_SOCIAL',
+        pillarLabelVi: 'XÃ GIAO HÀO KIỆT',
+        pillarLabelEn: 'HERO KIZUNA',
+        badgeClass: 'pillar-kizuna',
+        icon: '☯️',
+        title: 'Yết kiến Thiên Sư Trương Lỗ, đàm đạo giáo lý Ngũ Đấu Mễ Đạo và nghĩa xá từ thiện',
+        titleEn: 'Audience with Master Zhang Lu, discussing Five Pecks of Rice doctrines & charity',
+        desc: 'Đổ D20 [INT/POL Check] • Hảo cảm Trương Lỗ +5 • Phong thái đạo gia thanh tịnh',
+        descEn: 'Roll D20 [INT/POL Check] • Zhang Lu Affinity +5',
+        action: {
+          type: 'KIZUNA_INTERACT',
+          npc_id: 'NPC-0020',
+          npc_name: 'Trương Lỗ (Công Kỳ)',
+          action_type: 'TEA_CONVERSE',
+          prompt: 'Đàm luận triết lý đạo giáo và mô hình nghĩa xá an dân cùng Trương Lỗ'
+        }
+      },
+      {
+        id: 'OPT_2',
+        pillar: 'FACILITY_OPERATION',
+        pillarLabelVi: 'CHUYÊN MÔN CƠ SỞ',
+        pillarLabelEn: 'FACILITY OPERATION',
+        badgeClass: 'pillar-facility',
+        icon: '🌿',
+        title: 'Thu mua dược liệu quý núi Tần Lĩnh và quế chi Hán Xuyên (Chi 800 Tiền)',
+        titleEn: 'Procure rare Qinling herbal medicines and Hanzhong cassia (Cost 800 Qian)',
+        desc: '+8 Dược liệu quý • Bổ sung vật phẩm bồi bổ thể lực và giao thương viễn xứ',
+        descEn: '+8 Rare herbs • Medicinal and trade reserves',
+        disabled: liquidCash < 800,
+        disabledReasonVi: `Không đủ 800 Tiền (Hiện có ${liquidCash})`,
+        disabledReasonEn: `Insufficient funds (Have ${liquidCash} Qian)`,
+        action: {
+          type: 'TRADE_BUY',
+          item_code: 'COM-HERB',
+          quantity: 8,
+          unit_price: 100,
+          counterparty: 'Dược phòng Hán Trung',
+          game_date: gameDate
+        }
+      },
+      {
+        id: 'OPT_3',
+        pillar: 'OPPORTUNITY_INCIDENT',
+        pillarLabelVi: 'CƠ HỘI / SỰ VỤ',
+        pillarLabelEn: 'LOCAL INCIDENT',
+        badgeClass: 'pillar-opportunity',
+        icon: '📜',
+        title: 'Đàm phán thông hành lộ bài bảo đảm an toàn qua Kiếm Các vào Ba Thục (Chi 500 Tiền)',
+        titleEn: 'Negotiate safe-passage transit pact through Jiange Pass into Shu (Cost 500 Qian)',
+        desc: 'Đảm bảo thương đội di chuyển không bị ngăn trở • Tăng quan hệ với Hán Trung',
+        descEn: 'Ensure unimpeded expedition transit into Shu',
+        disabled: liquidCash < 500,
+        disabledReasonVi: `Không đủ 500 Tiền (Hiện có ${liquidCash})`,
+        disabledReasonEn: `Insufficient funds (Have ${liquidCash} Qian)`,
+        action: {
+          type: 'TRADE_BUY',
+          item_code: 'LIC-JIANGE',
+          quantity: 1,
+          unit_price: 500,
+          counterparty: 'Quan ải Hán Trung',
+          game_date: gameDate
+        }
+      },
+      {
+        id: 'OPT_4',
+        pillar: 'PERSONAL_GROWTH',
+        pillarLabelVi: 'TU THÂN / BỒI DƯỠNG',
+        pillarLabelEn: 'SELF CULTIVATION',
+        badgeClass: 'pillar-growth',
+        icon: '🧘',
+        title: 'Tĩnh tọa tu tâm tại Đạo Quán núi Dương Lỗ, hồi phục hoàn toàn khí huyết',
+        titleEn: 'Meditate and cleanse spirit at Yanglu Mountain Taoist retreat',
+        desc: 'Thể lực -35 • Sĩ khí +20 • Tẩy trừ mệt mỏi hành quân hiểm trở',
+        descEn: 'Fatigue -35 • Morale +20 • Full recovery',
+        action: {
+          type: 'PERSONAL_GROWTH',
+          sub_type: 'REST_RECOVERY',
+          fatigue_delta: 35,
+          morale_delta: 20,
+          memo: 'Tĩnh tọa dưỡng sinh tại Đạo quán Hán Trung',
+          game_date: gameDate
+        }
+      }
+    ];
   }
+
+  /**
+   * Chengdu Capital (Thành Đô Ích Châu Phủ)
+   * Host: Liu Zhang (NPC-0021) / Fa Zheng (NPC-0027)
+   */
   private generateChengduChoices(liquidCash: number, fatigue: number, gameDate: string): ContextualChoice[] {
-    return this.generateGenericChoices('Thành Đô Ích Châu Phủ', liquidCash, fatigue, gameDate);
+    return [
+      {
+        id: 'OPT_1',
+        pillar: 'KIZUNA_SOCIAL',
+        pillarLabelVi: 'XÃ GIAO HÀO KIỆT',
+        pillarLabelEn: 'HERO KIZUNA',
+        badgeClass: 'pillar-kizuna',
+        icon: '🍷',
+        title: 'Yết kiến Ích Châu Mục Lưu Chương, tham gia tiệc rượu Thục Đô thưởng thức nhạc vũ',
+        titleEn: 'Audience with Governor Liu Zhang, attending grand Chengdu banquet',
+        desc: 'Đổ D20 [CHA/DIP Check] • Hảo cảm Lưu Chương +5 • Tận hưởng thanh bình Tây Thục',
+        descEn: 'Roll D20 [CHA/DIP Check] • Liu Zhang Affinity +5',
+        action: {
+          type: 'KIZUNA_INTERACT',
+          npc_id: 'NPC-0021',
+          npc_name: 'Lưu Chương (Quý Ngọc)',
+          action_type: 'BANQUET_DRINK',
+          prompt: 'Dự yến tiệc phủ Ích Châu Mục thưởng thức Thục Cẩm và rượu Tây Thục'
+        }
+      },
+      {
+        id: 'OPT_2',
+        pillar: 'FACILITY_OPERATION',
+        pillarLabelVi: 'CHUYÊN MÔN CƠ SỞ',
+        pillarLabelEn: 'FACILITY OPERATION',
+        badgeClass: 'pillar-facility',
+        icon: '🎋',
+        title: 'Xuất bán 20 Tấm Chiếu Trúc Lương Gia sang Chợ Gấm Thành Đô (Thu 1,800 Tiền)',
+        titleEn: 'Export 20 Liang Bamboo Mats to Chengdu Brocade Market (Earn 1,800 Qian)',
+        desc: '-20 PROD-MAT • +1,800 Tiền giá cao (@90 Tiền/tấm do vật phẩm thủ công phương Bắc quý hiếm)',
+        descEn: '-20 PROD-MAT • +1,800 Qian premium trade revenue',
+        action: {
+          type: 'TRADE_SELL',
+          item_code: 'PROD-MAT',
+          quantity: 20,
+          unit_price: 90,
+          counterparty: 'Thục Cẩm Thương Hội',
+          game_date: gameDate
+        }
+      },
+      {
+        id: 'OPT_3',
+        pillar: 'OPPORTUNITY_INCIDENT',
+        pillarLabelVi: 'CƠ HỘI / SỰ VỤ',
+        pillarLabelEn: 'LOCAL INCIDENT',
+        badgeClass: 'pillar-opportunity',
+        icon: '📜',
+        title: 'Bí mật kết giao cùng kỳ mưu sĩ Pháp Chính, phân tích tiền đồ và cơ hội tại Tây Thục',
+        titleEn: 'Secret counsel with mastermind Fa Zheng, analyzing future prospects in Shu',
+        desc: 'EXP Binh Pháp Kế Mưu +20 • Mở khóa liên kết mật với mưu sĩ đắc lực',
+        descEn: 'Stratagem EXP +20 • Form confidential bond with Fa Zheng',
+        action: {
+          type: 'KIZUNA_INTERACT',
+          npc_id: 'NPC-0027',
+          npc_name: 'Pháp Chính (Hiếu Trực)',
+          action_type: 'TEA_CONVERSE',
+          prompt: 'Mật đàm cùng kỳ mưu sĩ Pháp Chính tại Thành Đô về tương lai Tây Thục'
+        }
+      },
+      {
+        id: 'OPT_4',
+        pillar: 'PERSONAL_GROWTH',
+        pillarLabelVi: 'TU THÂN / BỒI DƯỠNG',
+        pillarLabelEn: 'SELF CULTIVATION',
+        badgeClass: 'pillar-growth',
+        icon: '🌊',
+        title: 'Khảo sát công trình thủy lợi Đô Giang Yển và đất đai trù phú Thiên Phủ Chi Quốc',
+        titleEn: 'Inspect Dujiangyan irrigation engineering and Land of Abundance granaries',
+        desc: 'EXP Thủy lợi & Quản trị Nông nghiệp +20 • Sĩ khí +10 • Tiêu hao 8 Thể lực',
+        descEn: 'Irrigation & Agricultural Management EXP +20',
+        action: {
+          type: 'PERSONAL_GROWTH',
+          sub_type: 'STUDY_TACTICS',
+          exp_amount: 20,
+          fatigue_delta: 8,
+          morale_delta: 10,
+          memo: 'Khảo sát thủy lợi Đô Giang Yển tại Thành Đô',
+          game_date: gameDate
+        }
+      }
+    ];
   }
 }
