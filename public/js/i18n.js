@@ -126,7 +126,14 @@ const I18N_DICT = {
     gmLabelPlayerName: 'Tên Nhân Vật:',
     gmLabelPlayerStyle: 'Biểu Tự:',
     gmAlertNote: 'Bảo đảm toàn vẹn: Khởi tạo màn chơi mới sẽ tái lập sổ sách theo chuẩn mực kế toán kép SQLite (Dr = Cr).',
-    gmBtnStartGame: 'Khởi Lập Điển Tích Mới'
+    gmBtnStartGame: 'Khởi Lập Điển Tích Mới',
+    // Turn Advance & World Travel
+    btnAdvanceTurn: 'Tiến Lượt / Kết Thúc Lượt',
+    btnAdvanceTurnTitle: 'Tiến Lượt / Kết Thúc Lượt & Mô Phỏng Thế Giới',
+    btnTurnDock: 'Qua Lượt Mới',
+    btnTurnDockTitle: 'Tiến Lượt / Kết Thúc Lượt & Mô Phỏng Thế Giới',
+    travelModalTitle: 'Lộ Trình Viễn Chinh • Dặm Trường Phong Vân',
+    travelModalSub: 'Hành quân liên châu, khảo sát địa hình và ứng biến trước hiểm họa dọc đường'
   },
   en: {
     appTitle: 'THREE KINGDOMS • LIANG CHRONICLES',
@@ -251,7 +258,14 @@ const I18N_DICT = {
     gmLabelPlayerName: 'Character Name:',
     gmLabelPlayerStyle: 'Style Name:',
     gmAlertNote: 'Integrity Guaranteed: Starting a new game safely resets session tables while strictly preserving 100% SQLite double-entry ledger balance.',
-    gmBtnStartGame: 'Launch Historical Campaign'
+    gmBtnStartGame: 'Launch Historical Campaign',
+    // Turn Advance & World Travel
+    btnAdvanceTurn: 'Next Turn / End Turn',
+    btnAdvanceTurnTitle: 'Advance Turn / End Turn & Living World Simulation',
+    btnTurnDock: 'Advance Turn',
+    btnTurnDockTitle: 'Advance Turn / End Turn & Living World Simulation',
+    travelModalTitle: 'Expedition March & Transit Station',
+    travelModalSub: 'Regional highway transit, tactical patrols, and road encounter resolution'
   }
 };
 
@@ -361,6 +375,23 @@ function applyLanguage() {
 
   const btnGrandHub = document.getElementById('txt-btn-grand-hub');
   if (btnGrandHub) btnGrandHub.innerText = dict.btnGrandHub || 'Quân Cơ Xứ';
+
+  // Turn Progression Buttons (Header & Dock)
+  const txtAdvTurn = document.getElementById('txt-btn-advance-turn');
+  if (txtAdvTurn) txtAdvTurn.innerText = dict.btnAdvanceTurn || (currentLang === 'en' ? 'Next Turn / End Turn' : 'Tiến Lượt / Kết Thúc Lượt');
+  const btnAdvTurn = document.getElementById('btn-advance-turn');
+  if (btnAdvTurn) btnAdvTurn.title = dict.btnAdvanceTurnTitle || (currentLang === 'en' ? 'Advance Turn / End Turn & Living World Simulation' : 'Tiến Lượt / Kết Thúc Lượt & Mô Phỏng Thế Giới');
+
+  const txtTurnDock = document.getElementById('txt-btn-turn-dock');
+  if (txtTurnDock) txtTurnDock.innerText = dict.btnTurnDock || (currentLang === 'en' ? 'Advance Turn' : 'Qua Lượt Mới');
+  const btnTurnDock = document.getElementById('btn-turn-dock');
+  if (btnTurnDock) btnTurnDock.title = dict.btnTurnDockTitle || (currentLang === 'en' ? 'Advance Turn / End Turn & Living World Simulation' : 'Tiến Lượt / Kết Thúc Lượt & Mô Phỏng Thế Giới');
+
+  // Travel Transit Modal Header
+  const trvModalTitle = document.getElementById('travel-modal-title');
+  if (trvModalTitle) trvModalTitle.innerText = dict.travelModalTitle || (currentLang === 'en' ? 'Expedition March & Transit Station' : 'Lộ Trình Viễn Chinh • Dặm Trường Phong Vân');
+  const trvModalSub = document.getElementById('travel-modal-sub');
+  if (trvModalSub) trvModalSub.innerText = dict.travelModalSub || (currentLang === 'en' ? 'Regional highway transit, tactical patrols, and road encounter resolution' : 'Hành quân liên châu, khảo sát địa hình và ứng biến trước hiểm họa dọc đường');
 
   const btnWorldMap = document.getElementById('txt-btn-worldmap');
   if (btnWorldMap) btnWorldMap.innerText = dict.btnWorldMap;

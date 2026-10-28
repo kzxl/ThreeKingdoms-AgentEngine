@@ -11,65 +11,18 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
+const { runSqlJson, runSqlBatch, escapeSql } = require('./db-adapter');
+const {
+  NODE_TO_LOC_MAP,
+  LOC_TO_NODE_MAP,
+  resolveLocationId,
+  resolveNodeId,
+  calculateDirectDistanceLi
+} = require('./spatial-registry');
 
 const ROOT_DIR = path.resolve(__dirname, '..');
 const SAVES_DIR = path.join(ROOT_DIR, 'saves');
 const DB_PATH = process.env.SIM_DB_PATH || path.join(SAVES_DIR, 'session.db');
-
-function runSqlJson(dbPath, sql) {
-  if (!fs.existsSync(dbPath)) return [];
-  const tempFile = path.join(SAVES_DIR, `trv_json_${Date.now()}_${Math.random().toString(36).substr(2, 4)}.sql`);
-  fs.writeFileSync(tempFile, sql, 'utf8');
-  try {
-    const raw = execSync(`sqlite3 "${dbPath}" -json < "${tempFile}"`, { encoding: 'utf8' }).trim();
-    if (!raw) return [];
-    return JSON.parse(raw);
-  } catch (err) {
-    if (err.stdout) {
-      try { return JSON.parse(err.stdout); } catch (e) {}
-    }
-    return [];
-  } finally {
-    if (fs.existsSync(tempFile)) {
-      try { fs.unlinkSync(tempFile); } catch (e) {}
-    }
-  }
-}
-
-function runSqlBatch(dbPath, sql) {
-  if (!fs.existsSync(dbPath)) return { success: false, error: 'Database file missing' };
-  const tempFile = path.join(SAVES_DIR, `trv_batch_${Date.now()}_${Math.random().toString(36).substr(2, 4)}.sql`);
-  fs.writeFileSync(tempFile, sql, 'utf8');
-  try {
-    execSync(`sqlite3 "${dbPath}" < "${tempFile}"`, { encoding: 'utf8' });
-    return { success: true };
-  } catch (err) {
-    return { success: false, error: err.message };
-  } finally {
-    if (fs.existsSync(tempFile)) {
-      try { fs.unlinkSync(tempFile); } catch (e) {}
-    }
-  }
-}
-
-const NODE_TO_LOC_MAP = {
-  'zhuo_xian': 'LOC-0001',
-  'luo_yang': 'LOC-0002',
-  'guang_zong': 'LOC-0003',
-  'ping_yuan': 'LOC-0004',
-  'chang_an': 'LOC-0005',
-  'ye_cheng': 'LOC-0006',
-  'xu_chang': 'LOC-0007',
-  'ji_cheng': 'LOC-0008',
-  'xia_pi': 'LOC-0009',
-  'xiang_yang': 'LOC-0010',
-  'chi_bi': 'LOC-0011',
-  'jiang_ling': 'LOC-0012',
-  'jian_ye': 'LOC-0013',
-  'han_zhong': 'LOC-0014',
-  'cheng_du': 'LOC-0015'
-};
 
 const TRAVEL_EVENTS_POOL = [
   {

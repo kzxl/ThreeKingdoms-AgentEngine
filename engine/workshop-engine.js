@@ -6,55 +6,10 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
+const { runSqlJson, runSqlBatch } = require('./db-adapter');
 const { BILL_OF_MATERIALS, calculateDefectRate } = require('./rules');
 const { SeededRandom } = require('./random');
 const { renderProgressMarkdown } = require('./projector');
-
-const ROOT_DIR = path.resolve(__dirname, '..');
-const GAME_DIR = path.join(ROOT_DIR, 'game');
-
-function runSqlJson(dbPath, sql) {
-  const dir = path.dirname(dbPath);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  const tempFile = path.join(dir, `ws_tmp_${Date.now()}_${Math.random().toString(36).substr(2, 4)}.sql`);
-  fs.writeFileSync(tempFile, sql, 'utf8');
-  try {
-    const stdout = execSync(`sqlite3 -json "${dbPath}" < "${tempFile}"`, {
-      encoding: 'utf8',
-      stdio: ['pipe', 'pipe', 'pipe']
-    });
-    return stdout && stdout.trim() ? JSON.parse(stdout) : [];
-  } catch (err) {
-    if (err.stdout && err.stdout.trim().startsWith('[')) {
-      try { return JSON.parse(err.stdout); } catch (e) {}
-    }
-    return [];
-  } finally {
-    if (fs.existsSync(tempFile)) {
-      try { fs.unlinkSync(tempFile); } catch (e) {}
-    }
-  }
-}
-
-function runSqlBatch(dbPath, sqlStatements) {
-  const dir = path.dirname(dbPath);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  const tempFile = path.join(dir, `ws_batch_${Date.now()}_${Math.random().toString(36).substr(2, 4)}.sql`);
-  const fullSql = `PRAGMA foreign_keys = ON;\nBEGIN TRANSACTION;\n${sqlStatements}\nCOMMIT;\n`;
-  fs.writeFileSync(tempFile, fullSql, 'utf8');
-  try {
-    execSync(`sqlite3 "${dbPath}" < "${tempFile}"`, { stdio: ['pipe', 'pipe', 'pipe'] });
-    return { success: true };
-  } catch (err) {
-    const errorMsg = err.stderr ? err.stderr.toString() : err.message;
-    return { success: false, error: errorMsg };
-  } finally {
-    if (fs.existsSync(tempFile)) {
-      try { fs.unlinkSync(tempFile); } catch (e) {}
-    }
-  }
-}
 
 class WorkshopEngine {
   constructor(dbPath, progressPath = null) {

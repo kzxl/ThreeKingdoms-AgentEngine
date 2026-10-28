@@ -8,24 +8,13 @@
  */
 
 import { DatabaseService } from '../../core/database';
+import {
+  NODE_TO_LOC_MAP,
+  resolveLocationId,
+  resolveNodeId
+} from './spatial-registry';
 
-export const NODE_TO_LOC_MAP: Record<string, string> = {
-  'zhuo_xian': 'LOC-0001',
-  'luo_yang': 'LOC-0002',
-  'guang_zong': 'LOC-0003',
-  'ping_yuan': 'LOC-0004',
-  'chang_an': 'LOC-0005',
-  'ye_cheng': 'LOC-0006',
-  'xu_chang': 'LOC-0007',
-  'ji_cheng': 'LOC-0008',
-  'xia_pi': 'LOC-0009',
-  'xiang_yang': 'LOC-0010',
-  'chi_bi': 'LOC-0011',
-  'jiang_ling': 'LOC-0012',
-  'jian_ye': 'LOC-0013',
-  'han_zhong': 'LOC-0014',
-  'cheng_du': 'LOC-0015'
-};
+export { NODE_TO_LOC_MAP, resolveLocationId, resolveNodeId };
 
 export interface MasterRouteRow {
   route_id: string;

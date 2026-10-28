@@ -5,28 +5,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
-
-function runSqlJson(dbPath, sql) {
-  const tempFile = path.join(path.dirname(dbPath), `proj_tmp_${Date.now()}_${Math.random().toString(36).substr(2, 4)}.sql`);
-  fs.writeFileSync(tempFile, sql, 'utf8');
-  try {
-    const stdout = execSync(`sqlite3 -json "${dbPath}" < "${tempFile}"`, {
-      encoding: 'utf8',
-      stdio: ['pipe', 'pipe', 'pipe']
-    });
-    return stdout && stdout.trim() ? JSON.parse(stdout) : [];
-  } catch (err) {
-    if (err.stdout && err.stdout.trim().startsWith('[')) {
-      try { return JSON.parse(err.stdout); } catch (e) {}
-    }
-    return [];
-  } finally {
-    if (fs.existsSync(tempFile)) {
-      try { fs.unlinkSync(tempFile); } catch (e) {}
-    }
-  }
-}
+const { runSqlJson } = require('./db-adapter');
 
 function renderProgressMarkdown(dbPath, outputPath) {
   const meta = runSqlJson(dbPath, `SELECT * FROM campaign_meta LIMIT 1;`)[0] || {};

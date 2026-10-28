@@ -12,46 +12,12 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
+const { runSqlJson, runSqlBatch, escapeSql } = require('./db-adapter');
+const { advanceCalendarMonth, parseGameDate, formatGameDate, getSeasonInfo } = require('./date-utils');
 
 const ROOT_DIR = path.resolve(__dirname, '..');
 const SAVES_DIR = path.join(ROOT_DIR, 'saves');
 const DB_PATH = process.env.SIM_DB_PATH || path.join(SAVES_DIR, 'session.db');
-
-function runSqlJson(dbPath, sql) {
-  if (!fs.existsSync(dbPath)) return [];
-  const tempFile = path.join(SAVES_DIR, `gp_tmp_${Date.now()}_${Math.random().toString(36).substr(2, 4)}.sql`);
-  fs.writeFileSync(tempFile, sql, 'utf8');
-  try {
-    const stdout = execSync(`sqlite3 -json "${dbPath}" < "${tempFile}"`, { encoding: 'utf8' });
-    return stdout && stdout.trim() ? JSON.parse(stdout) : [];
-  } catch (err) {
-    if (err.stdout && err.stdout.trim().startsWith('[')) {
-      try { return JSON.parse(err.stdout); } catch (e) {}
-    }
-    return [];
-  } finally {
-    if (fs.existsSync(tempFile)) {
-      try { fs.unlinkSync(tempFile); } catch (e) {}
-    }
-  }
-}
-
-function runSqlBatch(dbPath, sql) {
-  if (!fs.existsSync(dbPath)) return { success: false, error: 'Database file missing' };
-  const tempFile = path.join(SAVES_DIR, `gp_batch_${Date.now()}_${Math.random().toString(36).substr(2, 4)}.sql`);
-  fs.writeFileSync(tempFile, sql, 'utf8');
-  try {
-    execSync(`sqlite3 "${dbPath}" < "${tempFile}"`, { encoding: 'utf8' });
-    return { success: true };
-  } catch (err) {
-    return { success: false, error: err.message };
-  } finally {
-    if (fs.existsSync(tempFile)) {
-      try { fs.unlinkSync(tempFile); } catch (e) {}
-    }
-  }
-}
 
 class GameplayManager {
   constructor(dbPath = DB_PATH) {
@@ -304,20 +270,7 @@ class GameplayManager {
     const prevDate = meta.current_date || '184-05-02';
 
     // 2. Advance game date to the 1st of next month
-    let nextDate = '184-06-01';
-    try {
-      const parts = prevDate.split('-').map(Number);
-      let y = parts[0] || 184;
-      let m = parts[1] || 5;
-      m += 1;
-      if (m > 12) {
-        m = 1;
-        y += 1;
-      }
-      nextDate = `${y}-${String(m).padStart(2, '0')}-01`;
-    } catch {
-      nextDate = '184-06-01';
-    }
+    const nextDate = advanceCalendarMonth(prevDate, 1, true);
 
     // 3. Player State Fatigue Recovery & Morale Stabilization
     const player = runSqlJson(this.dbPath, `SELECT * FROM player_state LIMIT 1;`)[0];
