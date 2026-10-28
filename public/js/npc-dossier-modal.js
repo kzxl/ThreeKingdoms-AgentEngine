@@ -175,18 +175,22 @@
     const warRank = isEn ? (stats.war?.rankEn || stats.war?.rankVi || '') : (stats.war?.rankVi || '');
     const intRank = isEn ? (stats.int?.rankEn || stats.int?.rankVi || '') : (stats.int?.rankVi || '');
     const polRank = isEn ? (stats.pol?.rankEn || stats.pol?.rankVi || '') : (stats.pol?.rankVi || '');
-    const craRank = isEn ? (stats.cra?.rankEn || stats.cra?.rankVi || '') : (stats.cra?.rankVi || '');
+    const dipRank = isEn ? (stats.dip?.rankEn || stats.dip?.rankVi || '') : (stats.dip?.rankVi || '');
     const comRank = isEn ? (stats.com?.rankEn || stats.com?.rankVi || '') : (stats.com?.rankVi || '');
+    const logRank = isEn ? (stats.log?.rankEn || stats.log?.rankVi || '') : (stats.log?.rankVi || '');
+    const craRank = isEn ? (stats.cra?.rankEn || stats.cra?.rankVi || '') : (stats.cra?.rankVi || '');
 
     const ldrDisp = isEn ? (stats.ldr?.displayEn || stats.ldr?.display || '???') : (stats.ldr?.displayVi || stats.ldr?.display || '???');
     const warDisp = isEn ? (stats.war?.displayEn || stats.war?.display || '???') : (stats.war?.displayVi || stats.war?.display || '???');
     const intDisp = isEn ? (stats.int?.displayEn || stats.int?.display || '???') : (stats.int?.displayVi || stats.int?.display || '???');
     const polDisp = isEn ? (stats.pol?.displayEn || stats.pol?.display || '???') : (stats.pol?.displayVi || stats.pol?.display || '???');
-    const craDisp = isEn ? (stats.cra?.displayEn || stats.cra?.display || '???') : (stats.cra?.displayVi || stats.cra?.display || '???');
+    const dipDisp = isEn ? (stats.dip?.displayEn || stats.dip?.display || '???') : (stats.dip?.displayVi || stats.dip?.display || '???');
     const comDisp = isEn ? (stats.com?.displayEn || stats.com?.display || '???') : (stats.com?.displayVi || stats.com?.display || '???');
+    const logDisp = isEn ? (stats.log?.displayEn || stats.log?.display || '???') : (stats.log?.displayVi || stats.log?.display || '???');
+    const craDisp = isEn ? (stats.cra?.displayEn || stats.cra?.display || '???') : (stats.cra?.displayVi || stats.cra?.display || '???');
 
     modalEl.innerHTML = `
-      <div class="modal-box modal-box--large" style="max-width: 760px;">
+      <div class="modal-box modal-box--large" style="max-width: 820px;">
         <div class="modal-header">
           <div style="display: flex; align-items: center; gap: 8px;">
             <span class="tactical-badge tactical-badge--primary">${modalTitleBadge}</span>
@@ -234,41 +238,51 @@
             </div>
           </div>
 
-          <!-- 2. Six-Axis Attributes with Fog of Information -->
+          <!-- 2. Eight-Axis Attributes with Fog of Information -->
           <div>
             <div style="font-size: 11px; font-weight: bold; letter-spacing: 0.05em; color: var(--brand-primary); margin-bottom: 6px; text-transform: uppercase;">
-              ${isEn ? '[HEXAGONAL ATTRIBUTES] — FOG OF INFORMATION:' : '[LỤC VỊ THUỘC TÍNH] — SƯƠNG MÙ TÌNH BÁO:'}
+              ${isEn ? '[OCTAGONAL ATTRIBUTES] — FOG OF INFORMATION:' : '[BÁT VỊ THUỘC TÍNH] — SƯƠNG MÙ TÌNH BÁO:'}
             </div>
-            <div class="tactical-stat-grid" style="grid-template-columns: repeat(6, 1fr);">
-              <div class="tactical-stat-item">
-                <span class="tactical-stat-label">${isEn ? 'Command' : 'Thống soái'}</span>
-                <span class="tactical-stat-value" style="font-variant-numeric: tabular-nums;">${ldrDisp}</span>
-                <span style="font-size: 9px; color: var(--text-muted);">${ldrRank}</span>
+            <div class="tactical-stat-grid" style="grid-template-columns: repeat(8, 1fr); gap: 4px;">
+              <div class="tactical-stat-item" style="padding: 6px 4px; text-align: center;">
+                <span class="tactical-stat-label" style="font-size: 10px;">${isEn ? 'Command' : 'Soái (LDR)'}</span>
+                <span class="tactical-stat-value" style="font-variant-numeric: tabular-nums; font-size: 13px; color: #c084fc;">${ldrDisp}</span>
+                <span style="font-size: 8.5px; color: var(--text-muted);">${ldrRank}</span>
               </div>
-              <div class="tactical-stat-item">
-                <span class="tactical-stat-label">${isEn ? 'Warfare' : 'Võ lực'}</span>
-                <span class="tactical-stat-value" style="font-variant-numeric: tabular-nums; color: #f87171;">${warDisp}</span>
-                <span style="font-size: 9px; color: var(--text-muted);">${warRank}</span>
+              <div class="tactical-stat-item" style="padding: 6px 4px; text-align: center;">
+                <span class="tactical-stat-label" style="font-size: 10px;">${isEn ? 'Warfare' : 'Võ (WAR)'}</span>
+                <span class="tactical-stat-value" style="font-variant-numeric: tabular-nums; font-size: 13px; color: #f87171;">${warDisp}</span>
+                <span style="font-size: 8.5px; color: var(--text-muted);">${warRank}</span>
               </div>
-              <div class="tactical-stat-item">
-                <span class="tactical-stat-label">${isEn ? 'Strategy' : 'Trí lực'}</span>
-                <span class="tactical-stat-value" style="font-variant-numeric: tabular-nums; color: #60a5fa;">${intDisp}</span>
-                <span style="font-size: 9px; color: var(--text-muted);">${intRank}</span>
+              <div class="tactical-stat-item" style="padding: 6px 4px; text-align: center;">
+                <span class="tactical-stat-label" style="font-size: 10px;">${isEn ? 'Strategy' : 'Trí (INT)'}</span>
+                <span class="tactical-stat-value" style="font-variant-numeric: tabular-nums; font-size: 13px; color: #60a5fa;">${intDisp}</span>
+                <span style="font-size: 8.5px; color: var(--text-muted);">${intRank}</span>
               </div>
-              <div class="tactical-stat-item">
-                <span class="tactical-stat-label">${isEn ? 'Politics' : 'Chính trị'}</span>
-                <span class="tactical-stat-value" style="font-variant-numeric: tabular-nums;">${polDisp}</span>
-                <span style="font-size: 9px; color: var(--text-muted);">${polRank}</span>
+              <div class="tactical-stat-item" style="padding: 6px 4px; text-align: center;">
+                <span class="tactical-stat-label" style="font-size: 10px;">${isEn ? 'Politics' : 'Chính (POL)'}</span>
+                <span class="tactical-stat-value" style="font-variant-numeric: tabular-nums; font-size: 13px; color: #93c5fd;">${polDisp}</span>
+                <span style="font-size: 8.5px; color: var(--text-muted);">${polRank}</span>
               </div>
-              <div class="tactical-stat-item">
-                <span class="tactical-stat-label">${isEn ? 'Craft' : 'Kỹ nghệ'}</span>
-                <span class="tactical-stat-value" style="font-variant-numeric: tabular-nums; color: #34d399;">${craDisp}</span>
-                <span style="font-size: 9px; color: var(--text-muted);">${craRank}</span>
+              <div class="tactical-stat-item" style="padding: 6px 4px; text-align: center;">
+                <span class="tactical-stat-label" style="font-size: 10px;">${isEn ? 'Diplomacy' : 'Ngoại (DIP)'}</span>
+                <span class="tactical-stat-value" style="font-variant-numeric: tabular-nums; font-size: 13px; color: #f59e0b;">${dipDisp}</span>
+                <span style="font-size: 8.5px; color: var(--text-muted);">${dipRank}</span>
               </div>
-              <div class="tactical-stat-item">
-                <span class="tactical-stat-label">${isEn ? 'Commerce' : 'Thương vụ'}</span>
-                <span class="tactical-stat-value" style="font-variant-numeric: tabular-nums; color: #fbbf24;">${comDisp}</span>
-                <span style="font-size: 9px; color: var(--text-muted);">${comRank}</span>
+              <div class="tactical-stat-item" style="padding: 6px 4px; text-align: center;">
+                <span class="tactical-stat-label" style="font-size: 10px;">${isEn ? 'Commerce' : 'Thương (COM)'}</span>
+                <span class="tactical-stat-value" style="font-variant-numeric: tabular-nums; font-size: 13px; color: #fbbf24;">${comDisp}</span>
+                <span style="font-size: 8.5px; color: var(--text-muted);">${comRank}</span>
+              </div>
+              <div class="tactical-stat-item" style="padding: 6px 4px; text-align: center;">
+                <span class="tactical-stat-label" style="font-size: 10px;">${isEn ? 'Logistics' : 'Hậu (LOG)'}</span>
+                <span class="tactical-stat-value" style="font-variant-numeric: tabular-nums; font-size: 13px; color: #2dd4bf;">${logDisp}</span>
+                <span style="font-size: 8.5px; color: var(--text-muted);">${logRank}</span>
+              </div>
+              <div class="tactical-stat-item" style="padding: 6px 4px; text-align: center;">
+                <span class="tactical-stat-label" style="font-size: 10px;">${isEn ? 'Craft' : 'Khéo (CRA)'}</span>
+                <span class="tactical-stat-value" style="font-variant-numeric: tabular-nums; font-size: 13px; color: #34d399;">${craDisp}</span>
+                <span style="font-size: 8.5px; color: var(--text-muted);">${craRank}</span>
               </div>
             </div>
           </div>

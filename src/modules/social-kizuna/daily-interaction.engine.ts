@@ -50,8 +50,10 @@ export interface NpcProfile {
   int: number;
   ldr: number;
   pol: number;
-  cra: number;
+  dip: number;
   com: number;
+  log: number;
+  cra: number;
   personality: string;
   motivation: string;
   bioVi: string;
@@ -107,12 +109,14 @@ export interface NpcDossierView {
   currentMoodLabelEn: string;
   // Attributes under Fog
   stats: {
+    ldr: { display: string; displayVi: string; displayEn: string; value?: number; rankVi: string; rankEn: string };
     war: { display: string; displayVi: string; displayEn: string; value?: number; rankVi: string; rankEn: string };
     int: { display: string; displayVi: string; displayEn: string; value?: number; rankVi: string; rankEn: string };
-    ldr: { display: string; displayVi: string; displayEn: string; value?: number; rankVi: string; rankEn: string };
     pol: { display: string; displayVi: string; displayEn: string; value?: number; rankVi: string; rankEn: string };
-    cra: { display: string; displayVi: string; displayEn: string; value?: number; rankVi: string; rankEn: string };
+    dip: { display: string; displayVi: string; displayEn: string; value?: number; rankVi: string; rankEn: string };
     com: { display: string; displayVi: string; displayEn: string; value?: number; rankVi: string; rankEn: string };
+    log: { display: string; displayVi: string; displayEn: string; value?: number; rankVi: string; rankEn: string };
+    cra: { display: string; displayVi: string; displayEn: string; value?: number; rankVi: string; rankEn: string };
   };
   // Hobbies & Dislikes under Fog
   hobbies: { code: string; labelVi: string; labelEn: string; isRevealed: boolean }[];
@@ -248,12 +252,14 @@ export class DailyInteractionEngine {
     const bioVi = char?.bio_vi || 'Hào kiệt thời loạn thế Tam Quốc, chí hướng phi phàm.';
     const bioEn = char?.bio_en || 'Prominent historical figure of the Three Kingdoms era, of extraordinary caliber.';
 
-    const war = Number(char?.war_attr || state?.war_attr || 50);
-    const int = Number(char?.int_attr || state?.int_attr || 50);
-    const ldr = Number(char?.ldr_attr || state?.ldr_attr || 50);
-    const pol = Number(char?.pol_attr || state?.pol_attr || 50);
-    const cra = Number(char?.cra_attr || state?.cra_attr || (npcId === 'NPC-0007' ? 71 : 40));
-    const com = Number(char?.com_attr || state?.com_attr || 45);
+    const war = Number(state?.war_attr ?? char?.war_attr ?? 50);
+    const int = Number(state?.int_attr ?? char?.int_attr ?? 50);
+    const ldr = Number(state?.ldr_attr ?? char?.ldr_attr ?? 50);
+    const pol = Number(state?.pol_attr ?? char?.pol_attr ?? 50);
+    const dip = Number(state?.dip_attr ?? char?.dip_attr ?? 50);
+    const com = Number(state?.com_attr ?? char?.com_attr ?? 45);
+    const log = Number(state?.log_attr ?? char?.log_attr ?? 50);
+    const cra = Number(state?.cra_attr ?? char?.cra_attr ?? 40);
 
     let personality = char?.personality || state?.personality || 'STOIC';
     let motivation = char?.motivation || state?.motivation || 'PEACE_AND_ORDER';
@@ -341,7 +347,10 @@ export class DailyInteractionEngine {
       }
     }
 
-    const baselineLocation = char?.baseline_location || 'LOC-0001';
+    let baselineLocation = char?.baseline_location || 'LOC-0001';
+    if (npcId === 'NPC-0007' || state?.assigned_business_id === 'BIZ-0001') {
+      baselineLocation = 'LOC-0007';
+    }
     const LOCATION_LOOKUP: Record<string, { vi: string; en: string }> = {
       'LOC-0001': { vi: 'Vườn Đào (Trác Huyện)', en: 'Peach Garden (Zhuo County)' },
       'LOC-0002': { vi: 'Chợ Đông Môn (Trác Huyện)', en: 'East Gate Market (Zhuo County)' },
@@ -377,8 +386,10 @@ export class DailyInteractionEngine {
       int,
       ldr,
       pol,
-      cra,
+      dip,
       com,
+      log,
+      cra,
       personality,
       motivation,
       bioVi,
@@ -607,7 +618,7 @@ export class DailyInteractionEngine {
       positionEn: profile.positionEn || 'Local Champion',
       locationVi: profile.locationVi || 'LOC-0001',
       locationEn: profile.locationEn || profile.baselineLocation || 'LOC-0001',
-      avatarChar: profile.nameVi.charAt(0),
+      avatarChar: profile.nameHan ? profile.nameHan.charAt(0) : (profile.nameVi ? profile.nameVi.charAt(0) : '漢'),
       bioVi: profile.bioVi,
       bioEn: profile.bioEn,
       intelLevel: tier,
@@ -621,12 +632,14 @@ export class DailyInteractionEngine {
       currentMoodLabelVi: MOOD_LABELS[fog.currentMood]?.vi || 'Bình thản',
       currentMoodLabelEn: MOOD_LABELS[fog.currentMood]?.en || 'Calm',
       stats: {
+        ldr: makeStatView('ldr', profile.ldr),
         war: makeStatView('war', profile.war),
         int: makeStatView('int', profile.int),
-        ldr: makeStatView('ldr', profile.ldr),
         pol: makeStatView('pol', profile.pol),
-        cra: makeStatView('cra', profile.cra),
-        com: makeStatView('com', profile.com)
+        dip: makeStatView('dip', profile.dip),
+        com: makeStatView('com', profile.com),
+        log: makeStatView('log', profile.log),
+        cra: makeStatView('cra', profile.cra)
       },
       hobbies: hobbiesView,
       dislikes: dislikesView,

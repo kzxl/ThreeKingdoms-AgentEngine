@@ -1183,6 +1183,75 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+// Live Relational Mesh: Dynamically queries DailyInteractionEngine and SQLite relationship deltas
+function getLiveSceneRelations() {
+  const trackedNpcIds = ['NPC-0001', 'NPC-0002', 'NPC-0003', 'NPC-0012', 'NPC-0007'];
+  const results = [];
+  const kizunaEngine = globalThis.__DAILY_INTERACTION_ENGINE__;
+
+  for (const npcId of trackedNpcIds) {
+    const char = runSqlJson(`SELECT * FROM master_characters WHERE npc_id = '${npcId}' LIMIT 1;`)[0];
+    if (!char) continue;
+
+    let score = 25;
+    let statusVi = 'Người Xa Lạ';
+    let statusEn = 'Stranger';
+
+    if (kizunaEngine && typeof kizunaEngine.getNpcSentiment === 'function') {
+      try {
+        const sentiment = kizunaEngine.getNpcSentiment(npcId);
+        score = sentiment.affinity;
+        statusVi = sentiment.titleVi;
+        statusEn = sentiment.titleEn;
+      } catch (e) {
+        // Fallback below
+      }
+    }
+
+    if (statusVi === 'Người Xa Lạ') {
+      const base = runSqlJson(`SELECT baseline_sentiment, relationship_type_vi, relationship_type_en FROM master_relations_baseline WHERE source_entity_id = '${npcId}' LIMIT 1;`)[0];
+      const deltaRow = runSqlJson(`SELECT SUM(sentiment_delta) as total_delta FROM npc_relationship_deltas WHERE npc_id = '${npcId}';`)[0];
+      const initialSentiment = base ? Number(base.baseline_sentiment) : 25;
+      const addedDelta = deltaRow?.total_delta ? Number(deltaRow.total_delta) : 0;
+      score = Math.max(0, Math.min(100, initialSentiment + addedDelta));
+
+      if (score >= 80) {
+        statusVi = 'Kim Lan Sinh Tử (Sworn Brother)';
+        statusEn = 'Sworn Brother (Life & Death)';
+      } else if (score >= 60) {
+        statusVi = 'Tâm Phúc Tri Kỷ (Confidant)';
+        statusEn = 'Trusted Confidant';
+      } else if (score >= 40) {
+        statusVi = 'Bằng Hữu Thân Quen (Familiar)';
+        statusEn = 'Familiar Companion';
+      } else if (score >= 20) {
+        statusVi = 'Sơ Giao Đồng Hương (Acquaintance)';
+        statusEn = 'Acquaintance';
+      }
+      if (base?.relationship_type_vi && score >= 60) {
+        statusVi = `${base.relationship_type_vi} (${statusVi})`;
+      }
+      if (base?.relationship_type_en && score >= 60) {
+        statusEn = `${base.relationship_type_en} (${statusEn})`;
+      }
+    }
+
+    results.push({
+      npcId,
+      name: char.name_vi,
+      nameEn: char.name_en,
+      role: char.baseline_position_vi || 'Hào Kiệt Bản Địa',
+      roleEn: char.baseline_position_en || 'Local Champion',
+      score,
+      target: 100,
+      status: statusVi,
+      statusEn: statusEn
+    });
+  }
+
+  return results;
+}
+
 // Dynamic Scene Context Engine: Generates contextual NPC, transparent D20 formulas & 4 tactical choices
 function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction = null, lastNarrative = null) {
   const player = runSqlJson(`SELECT * FROM player_state LIMIT 1;`)[0] || {};
@@ -1228,48 +1297,7 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
     currentLocKey = 'Vườn Đào';
   }
 
-  const relations = [
-    { 
-      name: 'Lưu Bị (Huyền Đức)', 
-      nameEn: 'Liu Bei (Xuande)', 
-      role: 'Nghĩa Quân Thống Lĩnh', 
-      roleEn: 'Volunteer Commander', 
-      score: 70, 
-      target: 100, 
-      status: 'Tâm Phúc Quân Sư',
-      statusEn: 'Sworn Confidant & Strategist'
-    },
-    { 
-      name: 'Trương Phi (Dực Đức)', 
-      nameEn: 'Zhang Fei (Yide)', 
-      role: 'Tiên Phong Mãnh Tướng', 
-      roleEn: 'Vanguard General', 
-      score: 65, 
-      target: 100, 
-      status: 'Tử Sinh Huynh Đệ',
-      statusEn: 'Sworn Brother'
-    },
-    { 
-      name: 'Quan Vũ (Vân Trường)', 
-      nameEn: 'Guan Yu (Yunchang)', 
-      role: 'Tiên Phong Mãnh Tướng', 
-      roleEn: 'Vanguard General', 
-      score: 60, 
-      target: 100, 
-      status: 'Kính Trọng Mưu Lược',
-      statusEn: 'Deep Martial Respect'
-    },
-    { 
-      name: 'Lư Thực (Tử Cán)', 
-      nameEn: 'Lu Zhi (Zigan)', 
-      role: 'Bắc Quân Trung Lang Tướng', 
-      roleEn: 'General of the Household', 
-      score: 50, 
-      target: 100, 
-      status: 'Ân Sư Kính Mến',
-      statusEn: 'Revered Imperial Mentor'
-    }
-  ];
+  const relations = getLiveSceneRelations();
 
   const subLocationsList = ['Vườn Đào', 'Chợ Đông Môn', 'Xưởng Lương Thị', 'Quảng Tông Quân Doanh'];
 

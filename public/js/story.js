@@ -71,7 +71,8 @@ function resolveNpcIdFromName(name) {
   if (n.includes('bị') || n.includes('huyền đức') || n.includes('liu bei') || n.includes('xuande')) return 'NPC-0001';
   if (n.includes('thực') || n.includes('tử cán') || n.includes('lu zhi') || n.includes('zigan')) return 'NPC-0012';
   if (n.includes('bảo') || n.includes('trần bảo') || n.includes('chen bao')) return 'NPC-0007';
-  if (n.includes('toản') || n.includes('bá khuê') || n.includes('gongsun zan')) return 'NPC-0011';
+  if (n.includes('toản') || n.includes('bá khuê') || n.includes('gongsun zan')) return 'NPC-0060';
+  if (n.includes('cảnh') || n.includes('cung cảnh') || n.includes('gong jing')) return 'NPC-0011';
   if (n.includes('vân') || n.includes('tử long') || n.includes('zhao yun') || n.includes('zilong')) return 'NPC-0024';
   if (n.includes('lượng') || n.includes('khổng minh') || n.includes('zhuge') || n.includes('kongming')) return 'NPC-0025';
   if (n.includes('thống') || n.includes('sĩ nguyên') || n.includes('pang tong')) return 'NPC-0026';
@@ -234,7 +235,7 @@ const LOCATION_NPC_MAP = {
   'Vườn Đào': { id: 'NPC-0002', nameVi: 'Trương Phi', nameEn: 'Zhang Fei', titleVi: 'Dực Đức • Trác Huyện', titleEn: 'Yide • Champion' },
   'Chợ Đông Môn': { id: 'NPC-0003', nameVi: 'Quan Vũ', nameEn: 'Guan Yu', titleVi: 'Vân Trường • Nghĩa Sĩ', titleEn: 'Yunchang • Heroic Knight' },
   'Xưởng Lương Thị': { id: 'NPC-0007', nameVi: 'Trần Bảo', nameEn: 'Chen Bao', titleVi: 'Thợ Cả Lương Gia', titleEn: 'Master Craftsman' },
-  'Bắc Bình Soái Phủ': { id: 'NPC-0011', nameVi: 'Công Tôn Toản', nameEn: 'Gongsun Zan', titleVi: 'Bạch Mã Tướng Quân', titleEn: 'White Horse General' },
+  'Bắc Bình Soái Phủ': { id: 'NPC-0060', nameVi: 'Công Tôn Toản', nameEn: 'Gongsun Zan', titleVi: 'Bạch Mã Tướng Quân', titleEn: 'White Horse General' },
   'Huyện Nha': { id: 'NPC-0001', nameVi: 'Lưu Bị', nameEn: 'Liu Bei', titleVi: 'Huyền Đức • Tôn Thất', titleEn: 'Xuande • Han Scion' },
   'Quân Doanh': { id: 'NPC-0003', nameVi: 'Quan Vũ', nameEn: 'Guan Yu', titleVi: 'Vân Trường • Đô Đốc', titleEn: 'Yunchang • General' }
 };
