@@ -4,9 +4,7 @@
  * accumulates personal wealth, masters skills, recruits personal troops, and generates historical milestones.
  */
 
-import fs from 'fs';
-import path from 'path';
-import { execSync } from 'child_process';
+import { DatabaseService } from '../../core/database';
 import { IFeatureModule, ModuleContext, CharacterId } from '../../core/types';
 
 export type NpcAmbitionType =
@@ -55,42 +53,11 @@ export class NpcLifecycleModule implements IFeatureModule {
   public readonly version = '1.0.0';
 
   private ctx!: ModuleContext;
-
-  private runSql(sql: string): any[] {
-    const tempFile = path.join(path.dirname(this.ctx.dbPath), `npc_life_${Date.now()}_${Math.random().toString(36).substring(2, 6)}.sql`);
-    fs.writeFileSync(tempFile, sql, 'utf8');
-    try {
-      const stdout = execSync(`sqlite3 -json "${this.ctx.dbPath}" < "${tempFile}"`, {
-        encoding: 'utf8',
-        stdio: ['pipe', 'pipe', 'pipe']
-      });
-      return stdout && stdout.trim() ? JSON.parse(stdout) : [];
-    } catch (err) {
-      return [];
-    } finally {
-      if (fs.existsSync(tempFile)) {
-        try { fs.unlinkSync(tempFile); } catch (e) {}
-      }
-    }
-  }
-
-  private runSqlRaw(sql: string): boolean {
-    const tempFile = path.join(path.dirname(this.ctx.dbPath), `npc_life_raw_${Date.now()}_${Math.random().toString(36).substring(2, 6)}.sql`);
-    fs.writeFileSync(tempFile, sql, 'utf8');
-    try {
-      execSync(`sqlite3 "${this.ctx.dbPath}" < "${tempFile}"`, { stdio: ['pipe', 'pipe', 'pipe'] });
-      return true;
-    } catch (err) {
-      return false;
-    } finally {
-      if (fs.existsSync(tempFile)) {
-        try { fs.unlinkSync(tempFile); } catch (e) {}
-      }
-    }
-  }
+  private db!: DatabaseService;
 
   public init(ctx: ModuleContext): void {
     this.ctx = ctx;
+    this.db = DatabaseService.getInstance(ctx.dbPath);
     this.ensureBaselineProgressions();
 
     // Listen to world month tick to advance living NPC cycles
@@ -105,7 +72,7 @@ export class NpcLifecycleModule implements IFeatureModule {
    * Initializes baseline ambitions and progression stats for core NPCs
    */
   public ensureBaselineProgressions(): void {
-    const existing = this.runSql(`SELECT npc_id FROM npc_personal_progression;`);
+    const existing = this.db.query<{ npc_id: string }>(`SELECT npc_id FROM npc_personal_progression;`);
     const existingIds = new Set(existing.map(r => r.npc_id));
 
     const defaultNpcBaselines: Array<{
@@ -126,14 +93,16 @@ export class NpcLifecycleModule implements IFeatureModule {
       { npcId: 'NPC-0010', ambition: 'DEVOTED_RETAINER', focus: 'Luyện tập côn bổng phòng vệ', cash: 520, prestige: 40, troops: 0, title: 'Dũng Lực Mộc Tượng' }
     ];
 
-    for (const b of defaultNpcBaselines) {
-      if (!existingIds.has(b.npcId)) {
-        this.runSqlRaw(`
-          INSERT INTO npc_personal_progression (npc_id, life_ambition, current_focus, personal_cash, prestige, personal_troops, milestone_title)
-          VALUES ('${b.npcId}', '${b.ambition}', '${b.focus}', ${b.cash}, ${b.prestige}, ${b.troops}, '${b.title}');
-        `);
+    this.db.transaction(() => {
+      for (const b of defaultNpcBaselines) {
+        if (!existingIds.has(b.npcId)) {
+          this.db.execute(`
+            INSERT INTO npc_personal_progression (npc_id, life_ambition, current_focus, personal_cash, prestige, personal_troops, milestone_title)
+            VALUES (?, ?, ?, ?, ?, ?, ?);
+          `, [b.npcId, b.ambition, b.focus, b.cash, b.prestige, b.troops, b.title]);
+        }
       }
-    }
+    });
   }
 
   /**
@@ -141,26 +110,24 @@ export class NpcLifecycleModule implements IFeatureModule {
    */
   public simulateNpcTurn(npcId: CharacterId, turnNumber: number, gameDate: string): NpcJourneyLog | null {
     // 1. Fetch current progression state
-    const progRows = this.runSql(`SELECT * FROM npc_personal_progression WHERE npc_id = '${npcId}';`);
-    let prog = progRows[0];
+    let prog = this.db.queryOne<any>(`SELECT * FROM npc_personal_progression WHERE npc_id = ?;`, [npcId]);
     if (!prog) {
       this.ensureBaselineProgressions();
-      const refetched = this.runSql(`SELECT * FROM npc_personal_progression WHERE npc_id = '${npcId}';`);
-      prog = refetched[0];
+      prog = this.db.queryOne<any>(`SELECT * FROM npc_personal_progression WHERE npc_id = ?;`, [npcId]);
       if (!prog) return null;
     }
 
     // 2. Fetch NPC info
-    const charRows = this.runSql(`
-      SELECT coalesce(n.name, m.name_vi, '${npcId}') as name,
+    const charRows = this.db.query<any>(`
+      SELECT coalesce(n.name, m.name_vi, ?) as name,
              coalesce(n.war_attr, m.war_attr, 50) as war_attr,
              coalesce(n.int_attr, m.int_attr, 50) as int_attr,
              coalesce(n.cra_attr, m.cra_attr, 50) as cra_attr,
              coalesce(n.com_attr, m.com_attr, 50) as com_attr
-      FROM (SELECT '${npcId}' as target_id)
+      FROM (SELECT ? as target_id)
       LEFT JOIN npc_state n ON target_id = n.npc_id
       LEFT JOIN master_characters m ON target_id = m.npc_id;
-    `);
+    `, [npcId, npcId]);
     const npc = charRows[0] || { name: npcId, war_attr: 50, int_attr: 50, cra_attr: 50, com_attr: 50 };
 
     // 3. Determine autonomous action based on ambition and focus
@@ -241,19 +208,21 @@ export class NpcLifecycleModule implements IFeatureModule {
       createdAt: new Date().toISOString()
     };
 
-    this.runSqlRaw(`
-      INSERT INTO npc_journey_logs (id, npc_id, turn_number, game_date, action_type, title_vi, narrative_vi, stat_changes_json)
-      VALUES ('${log.id}', '${log.npcId}', ${log.turnNumber}, '${log.gameDate}', '${log.actionType}',
-              '${log.titleVi.replace(/'/g, "''")}', '${log.narrativeVi.replace(/'/g, "''")}',
-              '${JSON.stringify(log.statChanges).replace(/'/g, "''")}');
+    this.db.transaction(() => {
+      this.db.execute(`
+        INSERT INTO npc_journey_logs (id, npc_id, turn_number, game_date, action_type, title_vi, narrative_vi, stat_changes_json)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+      `, [log.id, log.npcId, log.turnNumber, log.gameDate, log.actionType, log.titleVi, log.narrativeVi, JSON.stringify(log.statChanges)]);
 
-      UPDATE npc_personal_progression
-      SET personal_cash = ${prog.personal_cash},
-          prestige = ${prog.prestige},
-          personal_troops = ${prog.personal_troops},
-          updated_at = CURRENT_TIMESTAMP
-      WHERE npc_id = '${npcId}';
-    `);
+      this.db.execute(`
+        UPDATE npc_personal_progression
+        SET personal_cash = ?,
+            prestige = ?,
+            personal_troops = ?,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE npc_id = ?;
+      `, [prog.personal_cash, prog.prestige, prog.personal_troops, npcId]);
+    });
 
     // 5. Publish to EventBus
     this.ctx.eventBus.publish('NPC_JOURNEY_STEP_COMPLETED', log);
@@ -328,23 +297,26 @@ export class NpcLifecycleModule implements IFeatureModule {
     const shiftId = `SFT-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
     const consequences = { newRole, wageUpdate, newMilestoneTitle };
 
-    this.runSqlRaw(`
-      INSERT INTO npc_career_shifts (shift_id, npc_id, turn_number, game_date, shift_category, old_tier, new_tier, old_role, new_role, title_vi, narrative_vi, consequences_json)
-      VALUES ('${shiftId}', '${npcId}', ${turnNumber}, '${gameDate}', '${shiftCategory}', '${oldTier}', '${newTier}', '${oldRole}', '${newRole}',
-              '${titleVi.replace(/'/g, "''")}', '${narrativeVi.replace(/'/g, "''")}', '${JSON.stringify(consequences).replace(/'/g, "''")}');
+    this.db.transaction(() => {
+      this.db.execute(`
+        INSERT INTO npc_career_shifts (shift_id, npc_id, turn_number, game_date, shift_category, old_tier, new_tier, old_role, new_role, title_vi, narrative_vi, consequences_json)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+      `, [shiftId, npcId, turnNumber, gameDate, shiftCategory, oldTier, newTier, oldRole, newRole, titleVi, narrativeVi, JSON.stringify(consequences)]);
 
-      UPDATE npc_personal_progression
-      SET milestone_title = '${newMilestoneTitle}'
-      WHERE npc_id = '${npcId}';
-    `);
+      this.db.execute(`
+        UPDATE npc_personal_progression
+        SET milestone_title = ?
+        WHERE npc_id = ?;
+      `, [newMilestoneTitle, npcId]);
 
-    if (wageUpdate > 0) {
-      this.runSqlRaw(`
-        UPDATE npc_state
-        SET assigned_role = '${newRole}', monthly_wage = ${wageUpdate}
-        WHERE npc_id = '${npcId}';
-      `);
-    }
+      if (wageUpdate > 0) {
+        this.db.execute(`
+          UPDATE npc_state
+          SET assigned_role = ?, monthly_wage = ?
+          WHERE npc_id = ?;
+        `, [newRole, wageUpdate, npcId]);
+      }
+    });
 
     const shiftData = { shiftId, npcId, turnNumber, gameDate, shiftCategory, oldTier, newTier, titleVi, narrativeVi };
     this.ctx.eventBus.publish('NPC_CAREER_PARADIGM_SHIFT', shiftData);
@@ -397,24 +369,26 @@ export class NpcLifecycleModule implements IFeatureModule {
       }
     ];
 
-    const results = [];
-    for (const p of peerPairs) {
-      const pairKey = p.idA < p.idB ? `${p.idA}:${p.idB}` : `${p.idB}:${p.idA}`;
-      const id = `PEER-${pairKey}`;
-      const history = JSON.stringify([{ turnNumber, gameDate, notes: p.notesVi }]);
+    const results: any[] = [];
+    this.db.transaction(() => {
+      for (const p of peerPairs) {
+        const pairKey = p.idA < p.idB ? `${p.idA}:${p.idB}` : `${p.idB}:${p.idA}`;
+        const id = `PEER-${pairKey}`;
+        const history = JSON.stringify([{ turnNumber, gameDate, notes: p.notesVi }]);
 
-      this.runSqlRaw(`
-        INSERT INTO npc_peer_relations (id, npc_id_a, npc_id_b, affinity, respect, relation_type, interaction_history_json)
-        VALUES ('${id}', '${p.idA}', '${p.idB}', ${p.affinity}, ${p.respect}, '${p.relationType}', '${history.replace(/'/g, "''")}')
-        ON CONFLICT(npc_id_a, npc_id_b) DO UPDATE SET
-          affinity = ${p.affinity},
-          respect = ${p.respect},
-          relation_type = '${p.relationType}',
-          interaction_history_json = '${history.replace(/'/g, "''")}',
-          updated_at = CURRENT_TIMESTAMP;
-      `);
-      results.push({ id, ...p });
-    }
+        this.db.execute(`
+          INSERT INTO npc_peer_relations (id, npc_id_a, npc_id_b, affinity, respect, relation_type, interaction_history_json)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+          ON CONFLICT(npc_id_a, npc_id_b) DO UPDATE SET
+            affinity = excluded.affinity,
+            respect = excluded.respect,
+            relation_type = excluded.relation_type,
+            interaction_history_json = excluded.interaction_history_json,
+            updated_at = CURRENT_TIMESTAMP;
+        `, [id, p.idA, p.idB, p.affinity, p.respect, p.relationType, history]);
+        results.push({ id, ...p });
+      }
+    });
 
     this.ctx.eventBus.publish('CROSS_NPC_INTERACTIONS_SIMULATED', { turnNumber, gameDate, results });
     return results;
@@ -424,7 +398,7 @@ export class NpcLifecycleModule implements IFeatureModule {
    * Advances autonomous progression for all registered active NPCs
    */
   public simulateAllActiveNpcs(turnNumber: number, gameDate: string): NpcJourneyLog[] {
-    const list = this.runSql(`SELECT npc_id FROM npc_personal_progression;`);
+    const list = this.db.query<{ npc_id: string }>(`SELECT npc_id FROM npc_personal_progression;`);
     const logs: NpcJourneyLog[] = [];
 
     for (const row of list) {
@@ -442,24 +416,26 @@ export class NpcLifecycleModule implements IFeatureModule {
    * Queries career paradigm shifts
    */
   public getCareerShifts(npcId?: CharacterId, limit = 20): any[] {
-    const where = npcId ? `WHERE s.npc_id = '${npcId}'` : '';
-    return this.runSql(`
+    const where = npcId ? `WHERE s.npc_id = ?` : '';
+    const params = npcId ? [npcId, limit] : [limit];
+    return this.db.query(`
       SELECT s.*, coalesce(n.name, m.name_vi, s.npc_id) as npc_name
       FROM npc_career_shifts s
       LEFT JOIN npc_state n ON s.npc_id = n.npc_id
       LEFT JOIN master_characters m ON s.npc_id = m.npc_id
       ${where}
       ORDER BY s.rowid DESC
-      LIMIT ${limit};
-    `);
+      LIMIT ?;
+    `, params);
   }
 
   /**
    * Queries cross-NPC peer relationships
    */
   public getPeerRelations(npcId?: CharacterId): any[] {
-    const where = npcId ? `WHERE p.npc_id_a = '${npcId}' OR p.npc_id_b = '${npcId}'` : '';
-    return this.runSql(`
+    const where = npcId ? `WHERE p.npc_id_a = ? OR p.npc_id_b = ?` : '';
+    const params = npcId ? [npcId, npcId] : [];
+    return this.db.query(`
       SELECT p.*,
              coalesce(na.name, ma.name_vi, p.npc_id_a) as name_a,
              coalesce(nb.name, mb.name_vi, p.npc_id_b) as name_b
@@ -470,23 +446,24 @@ export class NpcLifecycleModule implements IFeatureModule {
       LEFT JOIN master_characters mb ON p.npc_id_b = mb.npc_id
       ${where}
       ORDER BY p.affinity DESC;
-    `);
+    `, params);
   }
 
   /**
    * Queries journey history logs
    */
   public getJourneyLogs(npcId?: CharacterId, limit = 20): NpcJourneyLog[] {
-    const where = npcId ? `WHERE j.npc_id = '${npcId}'` : '';
-    const rows = this.runSql(`
+    const where = npcId ? `WHERE j.npc_id = ?` : '';
+    const params = npcId ? [npcId, limit] : [limit];
+    const rows = this.db.query<any>(`
       SELECT j.*, coalesce(n.name, m.name_vi, j.npc_id) as npc_name
       FROM npc_journey_logs j
       LEFT JOIN npc_state n ON j.npc_id = n.npc_id
       LEFT JOIN master_characters m ON j.npc_id = m.npc_id
       ${where}
       ORDER BY j.rowid DESC
-      LIMIT ${limit};
-    `);
+      LIMIT ?;
+    `, params);
 
     return rows.map(r => ({
       id: r.id,
@@ -506,7 +483,7 @@ export class NpcLifecycleModule implements IFeatureModule {
    * Queries personal progression stats for all or a specific NPC
    */
   public getProgressionOverview(): any[] {
-    return this.runSql(`
+    return this.db.query(`
       SELECT p.*, coalesce(n.name, m.name_vi, p.npc_id) as npc_name,
              coalesce(n.assigned_role, 'HISTORICAL') as role,
              coalesce(n.war_attr, m.war_attr, 50) as war_attr,

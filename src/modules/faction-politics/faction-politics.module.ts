@@ -6,9 +6,7 @@
  * Adheres to AgentOption Universe Modular Architecture v4.0.
  */
 
-import fs from 'fs';
-import path from 'path';
-import { execSync } from 'child_process';
+import { DatabaseService } from '../../core/database';
 import {
   IFeatureModule,
   ModuleContext,
@@ -28,38 +26,11 @@ export class FactionPoliticsModule implements IFeatureModule {
   public readonly version = '1.0.0';
 
   private ctx!: ModuleContext;
-
-  private runSql(sql: string): any[] {
-    const tempFile = path.join(
-      path.dirname(this.ctx.dbPath),
-      `faction_pol_${Date.now()}_${Math.random().toString(36).substring(2, 6)}.sql`
-    );
-    fs.writeFileSync(tempFile, sql, 'utf8');
-    try {
-      const stdout = execSync(`sqlite3 -json "${this.ctx.dbPath}" < "${tempFile}"`, {
-        encoding: 'utf8',
-        stdio: ['pipe', 'pipe', 'pipe']
-      });
-      return stdout && stdout.trim() ? JSON.parse(stdout) : [];
-    } catch (err: any) {
-      if (err.stdout && err.stdout.trim().startsWith('[')) {
-        try {
-          return JSON.parse(err.stdout);
-        } catch (e) {}
-      }
-      if (!err.stderr || err.stderr.trim() === '') return [];
-      throw new Error(`FactionPolitics SQL failed: ${err.stderr || err.message}`);
-    } finally {
-      if (fs.existsSync(tempFile)) {
-        try {
-          fs.unlinkSync(tempFile);
-        } catch (e) {}
-      }
-    }
-  }
+  private db!: DatabaseService;
 
   public async init(ctx: ModuleContext): Promise<void> {
     this.ctx = ctx;
+    this.db = DatabaseService.getInstance(ctx.dbPath);
     this.ensureTablesAndSeedData();
 
     // Subscribe to turn changes or world ticks
@@ -72,19 +43,19 @@ export class FactionPoliticsModule implements IFeatureModule {
 
   private ensureTablesAndSeedData(): void {
     // 1. Check factions count
-    const factionCount = this.runSql(`SELECT count(*) as count FROM session_factions;`)[0]?.count || 0;
+    const factionCount = this.db.queryOne<{ count: number }>(`SELECT count(*) as count FROM session_factions;`)?.count || 0;
     if (factionCount === 0) {
       this.seedInitialFactions();
     }
 
     // 2. Check settlements count
-    const settlementCount = this.runSql(`SELECT count(*) as count FROM session_settlements;`)[0]?.count || 0;
+    const settlementCount = this.db.queryOne<{ count: number }>(`SELECT count(*) as count FROM session_settlements;`)?.count || 0;
     if (settlementCount === 0) {
       this.seedInitialSettlements();
     }
 
     // 3. Check officers count
-    const officerCount = this.runSql(`SELECT count(*) as count FROM faction_officers;`)[0]?.count || 0;
+    const officerCount = this.db.queryOne<{ count: number }>(`SELECT count(*) as count FROM faction_officers;`)?.count || 0;
     if (officerCount === 0) {
       this.seedInitialOfficers();
     }
@@ -100,7 +71,7 @@ export class FactionPoliticsModule implements IFeatureModule {
       ('FAC-YELLOW-TURBAN', 'Thái Bình Đạo Khăn Vàng', 'Yellow Turban Host', 'NPC-0004', 'guang_zong', 35000, 4200.0, 8000, 190, 'REBEL', '#eab308'),
       ('FAC-HAN', 'Đại Hán Triều Đình', 'Eastern Han Imperial Court', 'NPC-0012', 'luo_yang', 250000, 15000.0, 12000, 450, 'ROYALIST', '#dc2626');
     `;
-    this.runSql(seedSql);
+    this.db.execute(seedSql);
   }
 
   private seedInitialSettlements(): void {
@@ -125,7 +96,7 @@ export class FactionPoliticsModule implements IFeatureModule {
       ('han_zhong', 'Hán Trung', 'Hanzhong', 'Ích Châu Bắc', 'North Yizhou', 'FAC-HAN', NULL, 72, 1200, 70, 60, 85),
       ('wu_ling', 'Vũ Lăng', 'Wuling', 'Kinh Nam', 'South Jingzhou', 'FAC-HAN', NULL, 65, 800, 55, 50, 60);
     `;
-    this.runSql(seedSql);
+    this.db.execute(seedSql);
   }
 
   private seedInitialOfficers(): void {
@@ -143,7 +114,7 @@ export class FactionPoliticsModule implements IFeatureModule {
       ('NPC-0004', 'FAC-YELLOW-TURBAN', 'RULER', 100, 95, 'guang_zong', 0.0),
       ('NPC-0012', 'FAC-HAN', 'CHIEF_COMMANDER', 92, 40, 'luo_yang', 0.05);
     `;
-    this.runSql(seedSql);
+    this.db.execute(seedSql);
   }
 
   /**
@@ -170,7 +141,7 @@ export class FactionPoliticsModule implements IFeatureModule {
    * Evaluates all officers and updates betrayal risk in the database
    */
   public recalculateAllOfficerRisks(): void {
-    const officers = this.runSql(`
+    const officers = this.db.query<any>(`
       SELECT 
         fo.officer_id,
         fo.faction_id,
@@ -185,34 +156,38 @@ export class FactionPoliticsModule implements IFeatureModule {
       LEFT JOIN npc_personal_progression np ON fo.officer_id = np.npc_id;
     `);
 
-    for (const off of officers) {
-      if (off.court_rank === 'RULER') {
-        this.runSql(`UPDATE faction_officers SET betrayal_risk = 0.0 WHERE officer_id = '${off.officer_id}' AND faction_id = '${off.faction_id}';`);
-        continue;
+    this.db.transaction(() => {
+      for (const off of officers) {
+        if (off.court_rank === 'RULER') {
+          this.db.execute(
+            `UPDATE faction_officers SET betrayal_risk = 0.0 WHERE officer_id = ? AND faction_id = ?;`,
+            [off.officer_id, off.faction_id]
+          );
+          continue;
+        }
+
+        const isGovernor = !!off.appointed_settlement_id;
+        const risk = this.calculateBetrayalRisk(
+          off.loyalty,
+          off.ambition,
+          off.faction_prestige || 100,
+          isGovernor,
+          off.personal_troops || 0
+        );
+
+        this.db.execute(
+          `UPDATE faction_officers SET betrayal_risk = ?, updated_at = CURRENT_TIMESTAMP WHERE officer_id = ? AND faction_id = ?;`,
+          [risk, off.officer_id, off.faction_id]
+        );
       }
-
-      const isGovernor = !!off.appointed_settlement_id;
-      const risk = this.calculateBetrayalRisk(
-        off.loyalty,
-        off.ambition,
-        off.faction_prestige || 100,
-        isGovernor,
-        off.personal_troops || 0
-      );
-
-      this.runSql(`
-        UPDATE faction_officers 
-        SET betrayal_risk = ${risk}, updated_at = CURRENT_TIMESTAMP 
-        WHERE officer_id = '${off.officer_id}' AND faction_id = '${off.faction_id}';
-      `);
-    }
+    });
   }
 
   /**
    * Retrieves high-level overview of factions, territory and officer strength
    */
   public getFactionOverview(): FactionState[] {
-    const factions = this.runSql(`
+    const factions = this.db.query<any>(`
       SELECT 
         f.faction_id as factionId,
         f.name_vi as nameVi,
@@ -235,14 +210,18 @@ export class FactionPoliticsModule implements IFeatureModule {
       ORDER BY f.prestige DESC;
     `);
 
-    return factions;
+    return factions.map(f => ({
+      ...f,
+      isActive: Boolean(f.isActive)
+    }));
   }
 
   /**
    * Retrieves all officers with status and betrayal tension
    */
   public getOfficers(factionId?: string): any[] {
-    const filter = factionId ? `WHERE fo.faction_id = '${factionId}'` : '';
+    const filter = factionId ? `WHERE fo.faction_id = ?` : '';
+    const params = factionId ? [factionId] : [];
     const sql = `
       SELECT 
         fo.officer_id as officerId,
@@ -269,7 +248,7 @@ export class FactionPoliticsModule implements IFeatureModule {
       ${filter}
       ORDER BY fo.betrayal_risk DESC;
     `;
-    return this.runSql(sql);
+    return this.db.query(sql, params);
   }
 
   /**
@@ -297,7 +276,7 @@ export class FactionPoliticsModule implements IFeatureModule {
       LEFT JOIN npc_state ns ON s.governor_id = ns.npc_id
       ORDER BY s.province_vi, s.name_vi;
     `;
-    return this.runSql(sql);
+    return this.db.query(sql);
   }
 
   /**
@@ -318,9 +297,9 @@ export class FactionPoliticsModule implements IFeatureModule {
         consequences_json as consequences
       FROM faction_political_events
       ORDER BY created_at DESC
-      LIMIT ${limit};
+      LIMIT ?;
     `;
-    const rows = this.runSql(sql);
+    const rows = this.db.query<any>(sql, [limit]);
     return rows.map(r => ({
       ...r,
       consequences: typeof r.consequences === 'string' ? JSON.parse(r.consequences || '{}') : r.consequences
@@ -336,7 +315,7 @@ export class FactionPoliticsModule implements IFeatureModule {
     const events: FactionPoliticalEvent[] = [];
 
     // Find high-risk officers (> 0.65)
-    const disgruntledOfficers = this.runSql(`
+    const disgruntledOfficers = this.db.query<any>(`
       SELECT 
         fo.officer_id,
         fo.faction_id,
@@ -362,7 +341,7 @@ export class FactionPoliticsModule implements IFeatureModule {
         const eventId = `EVT-SEC-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`;
         const titleVi = `Biến cố Thái thú: ${off.officer_name} Cát Cứ Tại ${off.settlement_name}!`;
         const narrativeVi = `Thái thú ${off.officer_name} nuôi dã tâm lớn, bất mãn với sự điều hành của chúa công ${off.faction_name}. Tận dụng sự kiểm soát tại ${off.settlement_name}, y đã đóng cửa thành trì, tự xưng Tiết Độ Sứ, từ chối nộp thuế khóa và tuyên bố độc lập!`;
-        
+
         const consequences = {
           secedingOfficer: off.officer_id,
           settlementId: off.appointed_settlement_id,
@@ -370,13 +349,19 @@ export class FactionPoliticsModule implements IFeatureModule {
           loyaltyDrop: -20
         };
 
-        this.runSql(`
-          INSERT INTO faction_political_events (event_id, turn_number, game_date, event_type, source_faction_id, instigator_officer_id, title_vi, narrative_vi, consequences_json)
-          VALUES ('${eventId}', ${turnNumber}, '${gameDate}', 'SECESSION_WARLORD', '${off.faction_id}', '${off.officer_id}', '${titleVi.replace(/'/g, "''")}', '${narrativeVi.replace(/'/g, "''")}', '${JSON.stringify(consequences)}');
-        `);
+        this.db.transaction(() => {
+          this.db.execute(
+            `INSERT INTO faction_political_events (event_id, turn_number, game_date, event_type, source_faction_id, instigator_officer_id, title_vi, narrative_vi, consequences_json)
+             VALUES (?, ?, ?, 'SECESSION_WARLORD', ?, ?, ?, ?, ?);`,
+            [eventId, turnNumber, gameDate, off.faction_id, off.officer_id, titleVi, narrativeVi, JSON.stringify(consequences)]
+          );
 
-        // Lower loyalty further
-        this.runSql(`UPDATE faction_officers SET loyalty = MAX(10, loyalty - 15) WHERE officer_id = '${off.officer_id}' AND faction_id = '${off.faction_id}';`);
+          // Lower loyalty further
+          this.db.execute(
+            `UPDATE faction_officers SET loyalty = MAX(10, loyalty - 15) WHERE officer_id = ? AND faction_id = ?;`,
+            [off.officer_id, off.faction_id]
+          );
+        });
 
         events.push({
           eventId,
@@ -401,10 +386,11 @@ export class FactionPoliticsModule implements IFeatureModule {
           betrayalRisk: off.betrayal_risk
         };
 
-        this.runSql(`
-          INSERT INTO faction_political_events (event_id, turn_number, game_date, event_type, source_faction_id, instigator_officer_id, title_vi, narrative_vi, consequences_json)
-          VALUES ('${eventId}', ${turnNumber}, '${gameDate}', 'OFFICER_DEFECT', '${off.faction_id}', '${off.officer_id}', '${titleVi.replace(/'/g, "''")}', '${narrativeVi.replace(/'/g, "''")}', '${JSON.stringify(consequences)}');
-        `);
+        this.db.execute(
+          `INSERT INTO faction_political_events (event_id, turn_number, game_date, event_type, source_faction_id, instigator_officer_id, title_vi, narrative_vi, consequences_json)
+           VALUES (?, ?, ?, 'OFFICER_DEFECT', ?, ?, ?, ?, ?);`,
+          [eventId, turnNumber, gameDate, off.faction_id, off.officer_id, titleVi, narrativeVi, JSON.stringify(consequences)]
+        );
 
         events.push({
           eventId,
@@ -421,7 +407,7 @@ export class FactionPoliticsModule implements IFeatureModule {
     }
 
     // Faction economic pulse: collect tax from controlled cities
-    this.runSql(`
+    this.db.execute(`
       UPDATE session_factions 
       SET 
         treasury_cash = treasury_cash + (
@@ -445,45 +431,52 @@ export class FactionPoliticsModule implements IFeatureModule {
    */
   public appointGovernor(settlementId: string, officerId: string, factionId: string, turnNumber = 1, gameDate = '184-02-15'): any {
     // 1. Verify officer belongs to faction
-    const officer = this.runSql(`
+    const officer = this.db.queryOne<any>(`
       SELECT fo.*, COALESCE(mc.name_vi, ns.name, fo.officer_id) as officer_name 
       FROM faction_officers fo 
       LEFT JOIN npc_state ns ON fo.officer_id = ns.npc_id
       LEFT JOIN master_characters mc ON fo.officer_id = mc.npc_id
-      WHERE fo.officer_id = '${officerId}' AND fo.faction_id = '${factionId}';
-    `)[0];
+      WHERE fo.officer_id = ? AND fo.faction_id = ?;
+    `, [officerId, factionId]);
 
     if (!officer) {
       throw new Error(`Officer ${officerId} not found in faction ${factionId}`);
     }
 
-    const settlement = this.runSql(`SELECT * FROM session_settlements WHERE settlement_id = '${settlementId}';`)[0];
+    const settlement = this.db.queryOne<any>(`SELECT * FROM session_settlements WHERE settlement_id = ?;`, [settlementId]);
     if (!settlement) {
       throw new Error(`Settlement ${settlementId} not found`);
     }
 
-    // 2. Clear old settlement of this officer if any
-    this.runSql(`UPDATE faction_officers SET appointed_settlement_id = NULL WHERE officer_id = '${officerId}';`);
-
-    // 3. Clear old governor of this settlement if any
-    this.runSql(`UPDATE session_settlements SET governor_id = '${officerId}', ruler_faction_id = '${factionId}' WHERE settlement_id = '${settlementId}';`);
-
-    // 4. Update officer
-    this.runSql(`
-      UPDATE faction_officers 
-      SET appointed_settlement_id = '${settlementId}', court_rank = 'GOVERNOR', loyalty = MIN(100, loyalty + 15), updated_at = CURRENT_TIMESTAMP 
-      WHERE officer_id = '${officerId}' AND faction_id = '${factionId}';
-    `);
-
-    // 5. Chronicle event
     const eventId = `EVT-APP-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`;
     const titleVi = `Bổ Nhiệm Thái Thú: ${officer.officer_name} Trấn Thủ ${settlement.name_vi}`;
     const narrativeVi = `Chúa công phái ${officer.officer_name} đảm nhiệm chức vị Thái thú ${settlement.name_vi}, ban cờ tiết chỉ huy toàn bộ quân dân trong hạt. Tướng lĩnh vô cùng cảm kích, lòng trung thành gia tăng.`;
 
-    this.runSql(`
-      INSERT INTO faction_political_events (event_id, turn_number, game_date, event_type, source_faction_id, instigator_officer_id, title_vi, narrative_vi, consequences_json)
-      VALUES ('${eventId}', ${turnNumber}, '${gameDate}', 'GOVERNOR_APPOINTED', '${factionId}', '${officerId}', '${titleVi.replace(/'/g, "''")}', '${narrativeVi.replace(/'/g, "''")}', '{"settlementId":"${settlementId}","loyaltyBoost":15}');
-    `);
+    this.db.transaction(() => {
+      // 2. Clear old settlement of this officer if any
+      this.db.execute(`UPDATE faction_officers SET appointed_settlement_id = NULL WHERE officer_id = ?;`, [officerId]);
+
+      // 3. Clear old governor of this settlement if any
+      this.db.execute(
+        `UPDATE session_settlements SET governor_id = ?, ruler_faction_id = ? WHERE settlement_id = ?;`,
+        [officerId, factionId, settlementId]
+      );
+
+      // 4. Update officer
+      this.db.execute(
+        `UPDATE faction_officers 
+         SET appointed_settlement_id = ?, court_rank = 'GOVERNOR', loyalty = MIN(100, loyalty + 15), updated_at = CURRENT_TIMESTAMP 
+         WHERE officer_id = ? AND faction_id = ?;`,
+        [settlementId, officerId, factionId]
+      );
+
+      // 5. Chronicle event
+      this.db.execute(
+        `INSERT INTO faction_political_events (event_id, turn_number, game_date, event_type, source_faction_id, instigator_officer_id, title_vi, narrative_vi, consequences_json)
+         VALUES (?, ?, ?, 'GOVERNOR_APPOINTED', ?, ?, ?, ?, ?);`,
+        [eventId, turnNumber, gameDate, factionId, officerId, titleVi, narrativeVi, JSON.stringify({ settlementId, loyaltyBoost: 15 })]
+      );
+    });
 
     this.recalculateAllOfficerRisks();
 
@@ -500,13 +493,13 @@ export class FactionPoliticsModule implements IFeatureModule {
    * Action: Invest Title / Promote Rank
    */
   public investTitle(officerId: string, factionId: string, newRank: CourtRank, turnNumber = 1, gameDate = '184-02-15'): any {
-    const officer = this.runSql(`
+    const officer = this.db.queryOne<any>(`
       SELECT fo.*, COALESCE(mc.name_vi, ns.name, fo.officer_id) as officer_name 
       FROM faction_officers fo 
       LEFT JOIN npc_state ns ON fo.officer_id = ns.npc_id
       LEFT JOIN master_characters mc ON fo.officer_id = mc.npc_id
-      WHERE fo.officer_id = '${officerId}' AND fo.faction_id = '${factionId}';
-    `)[0];
+      WHERE fo.officer_id = ? AND fo.faction_id = ?;
+    `, [officerId, factionId]);
 
     if (!officer) {
       throw new Error(`Officer ${officerId} not found in faction ${factionId}`);
@@ -523,21 +516,24 @@ export class FactionPoliticsModule implements IFeatureModule {
     };
 
     const titleViDesc = rankTitlesVi[newRank] || newRank;
-
-    this.runSql(`
-      UPDATE faction_officers 
-      SET court_rank = '${newRank}', loyalty = MIN(100, loyalty + 20), ambition = MAX(10, ambition - 10), updated_at = CURRENT_TIMESTAMP 
-      WHERE officer_id = '${officerId}' AND faction_id = '${factionId}';
-    `);
-
     const eventId = `EVT-INV-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`;
     const titleVi = `Phong Quan Tiến Chức: ${officer.officer_name} Thụ Phong ${titleViDesc}`;
     const narrativeVi = `Nhận thấy tài năng và cống hiến vượt bậc, chúa công ban chiếu chỉ tấn phong ${officer.officer_name} lên hàng ${titleViDesc}. Cả phủ đệ hân hoan, lòng trung thành tăng thêm 20 điểm.`;
 
-    this.runSql(`
-      INSERT INTO faction_political_events (event_id, turn_number, game_date, event_type, source_faction_id, instigator_officer_id, title_vi, narrative_vi, consequences_json)
-      VALUES ('${eventId}', ${turnNumber}, '${gameDate}', 'TITLE_INVESTED', '${factionId}', '${officerId}', '${titleVi.replace(/'/g, "''")}', '${narrativeVi.replace(/'/g, "''")}', '{"newRank":"${newRank}","loyaltyBoost":20}');
-    `);
+    this.db.transaction(() => {
+      this.db.execute(
+        `UPDATE faction_officers 
+         SET court_rank = ?, loyalty = MIN(100, loyalty + 20), ambition = MAX(10, ambition - 10), updated_at = CURRENT_TIMESTAMP 
+         WHERE officer_id = ? AND faction_id = ?;`,
+        [newRank, officerId, factionId]
+      );
+
+      this.db.execute(
+        `INSERT INTO faction_political_events (event_id, turn_number, game_date, event_type, source_faction_id, instigator_officer_id, title_vi, narrative_vi, consequences_json)
+         VALUES (?, ?, ?, 'TITLE_INVESTED', ?, ?, ?, ?, ?);`,
+        [eventId, turnNumber, gameDate, factionId, officerId, titleVi, narrativeVi, JSON.stringify({ newRank, loyaltyBoost: 20 })]
+      );
+    });
 
     this.recalculateAllOfficerRisks();
 
@@ -554,18 +550,18 @@ export class FactionPoliticsModule implements IFeatureModule {
    * Action: Grant Reward / Gold Bonus from Faction Treasury
    */
   public grantReward(officerId: string, factionId: string, amount: number, turnNumber = 1, gameDate = '184-02-15'): any {
-    const faction = this.runSql(`SELECT * FROM session_factions WHERE faction_id = '${factionId}';`)[0];
+    const faction = this.db.queryOne<any>(`SELECT * FROM session_factions WHERE faction_id = ?;`, [factionId]);
     if (!faction || faction.treasury_cash < amount) {
       throw new Error(`Quân khố của thế lực không đủ ${amount} tiền.`);
     }
 
-    const officer = this.runSql(`
+    const officer = this.db.queryOne<any>(`
       SELECT fo.*, COALESCE(mc.name_vi, ns.name, fo.officer_id) as officer_name 
       FROM faction_officers fo 
       LEFT JOIN npc_state ns ON fo.officer_id = ns.npc_id
       LEFT JOIN master_characters mc ON fo.officer_id = mc.npc_id
-      WHERE fo.officer_id = '${officerId}' AND fo.faction_id = '${factionId}';
-    `)[0];
+      WHERE fo.officer_id = ? AND fo.faction_id = ?;
+    `, [officerId, factionId]);
 
     if (!officer) {
       throw new Error(`Officer ${officerId} not found in faction ${factionId}`);
@@ -573,21 +569,23 @@ export class FactionPoliticsModule implements IFeatureModule {
 
     const loyaltyBoost = Math.min(30, Math.floor(amount / 20));
 
-    // Deduct from faction treasury
-    this.runSql(`UPDATE session_factions SET treasury_cash = treasury_cash - ${amount} WHERE faction_id = '${factionId}';`);
+    this.db.transaction(() => {
+      // Deduct from faction treasury
+      this.db.execute(`UPDATE session_factions SET treasury_cash = treasury_cash - ? WHERE faction_id = ?;`, [amount, factionId]);
 
-    // Add to personal cash of officer
-    this.runSql(`
-      INSERT INTO npc_personal_progression (npc_id, personal_cash) VALUES ('${officerId}', ${amount})
-      ON CONFLICT(npc_id) DO UPDATE SET personal_cash = personal_cash + ${amount};
-    `);
+      // Add to personal cash of officer
+      this.db.execute(`
+        INSERT INTO npc_personal_progression (npc_id, personal_cash) VALUES (?, ?)
+        ON CONFLICT(npc_id) DO UPDATE SET personal_cash = personal_cash + excluded.personal_cash;
+      `, [officerId, amount]);
 
-    // Increase officer loyalty
-    this.runSql(`
-      UPDATE faction_officers 
-      SET loyalty = MIN(100, loyalty + ${loyaltyBoost}), updated_at = CURRENT_TIMESTAMP 
-      WHERE officer_id = '${officerId}' AND faction_id = '${factionId}';
-    `);
+      // Increase officer loyalty
+      this.db.execute(`
+        UPDATE faction_officers 
+        SET loyalty = MIN(100, loyalty + ?), updated_at = CURRENT_TIMESTAMP 
+        WHERE officer_id = ? AND faction_id = ?;
+      `, [loyaltyBoost, officerId, factionId]);
+    });
 
     this.recalculateAllOfficerRisks();
 

@@ -6,9 +6,9 @@
  * Adheres to AgentOption Universe Modular Architecture v4.0.
  */
 
-import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
+import { DatabaseService } from '../../core/database';
 import {
   IFeatureModule,
   ModuleContext,
@@ -25,50 +25,23 @@ export class ProfessionsModule implements IFeatureModule {
   public readonly version = '1.0.0';
 
   private ctx!: ModuleContext;
-
-  private runSql(sql: string): any[] {
-    const tempFile = path.join(
-      path.dirname(this.ctx.dbPath),
-      `prof_${Date.now()}_${Math.random().toString(36).substring(2, 6)}.sql`
-    );
-    fs.writeFileSync(tempFile, sql, 'utf8');
-    try {
-      const stdout = execSync(`sqlite3 -json "${this.ctx.dbPath}" < "${tempFile}"`, {
-        encoding: 'utf8',
-        stdio: ['pipe', 'pipe', 'pipe']
-      });
-      return stdout && stdout.trim() ? JSON.parse(stdout) : [];
-    } catch (err: any) {
-      if (err.stdout && err.stdout.trim().startsWith('[')) {
-        try {
-          return JSON.parse(err.stdout);
-        } catch (e) {}
-      }
-      if (!err.stderr || err.stderr.trim() === '') return [];
-      throw new Error(`ProfessionsModule SQL failed: ${err.stderr || err.message}`);
-    } finally {
-      if (fs.existsSync(tempFile)) {
-        try {
-          fs.unlinkSync(tempFile);
-        } catch (e) {}
-      }
-    }
-  }
+  private db!: DatabaseService;
 
   public async init(ctx: ModuleContext): Promise<void> {
     this.ctx = ctx;
+    this.db = DatabaseService.getInstance(ctx.dbPath);
     this.ensureTablesAndSeedData();
   }
 
   private ensureTablesAndSeedData(): void {
     // 1. Seed Gathering Nodes if empty
-    const nodeCount = this.runSql(`SELECT count(*) as count FROM gathering_nodes;`)[0]?.count || 0;
+    const nodeCount = this.db.queryOne<{ count: number }>(`SELECT count(*) as count FROM gathering_nodes;`)?.count || 0;
     if (nodeCount === 0) {
       this.seedGatheringNodes();
     }
 
     // 2. Seed Initial Professions for Player & Key NPCs if empty
-    const profCount = this.runSql(`SELECT count(*) as count FROM character_professions;`)[0]?.count || 0;
+    const profCount = this.db.queryOne<{ count: number }>(`SELECT count(*) as count FROM character_professions;`)?.count || 0;
     if (profCount === 0) {
       this.seedInitialProfessions();
     }
@@ -85,7 +58,7 @@ export class ProfessionsModule implements IFeatureModule {
       ('NODE-PINGYUAN-SALT', 'ping_yuan', 'Bãi Nấu Muối Duyên Hải', 'Pingyuan Coastal Salt Flats', 'SALT_WELL', 'COM-SALT-SEA', 'Muối Hạt Biển Từ Châu', 3.0, 8.0, 14, 'Ruộng muối duyên hải Thanh Châu, dân phu dùng chảo lớn chưng cất nước biển lấy muối hạt trắng tinh khiết.'),
       ('NODE-CHENGDU-HERB', 'cheng_du', 'Dược Lĩnh Nga Mi Sơn', 'Emei Mountain Medicine Ridge', 'HERB', 'RAW-HERB-WILD', 'Thảo Dược Rừng Tươi', 4.0, 8.0, 16, 'Địa linh Ba Thục quanh năm mây mù, sinh trưởng vô số kỳ hoa dị thảo quý giá bậc nhất thiên hạ.');
     `;
-    this.runSql(seedSql);
+    this.db.execute(seedSql);
   }
 
   private seedInitialProfessions(): void {
@@ -101,14 +74,15 @@ export class ProfessionsModule implements IFeatureModule {
       ('NPC-0009', 'PROF_HERBALIST', 'Thái Dược Thảo Dân', 'Herbal Forager', 'GATHERING', 2, 50, 100, 1),
       ('NPC-0010', 'PROF_CARPENTER', 'Thợ Mộc Khí Giới', 'Woodcraft Artisan', 'CRAFTING', 2, 40, 100, 1);
     `;
-    this.runSql(seedSql);
+    this.db.execute(seedSql);
   }
 
   /**
    * Retrieves all gathering spots on the map
    */
   public getGatheringNodes(settlementId?: string): GatheringNode[] {
-    const filter = settlementId ? `WHERE settlement_id = '${settlementId}'` : '';
+    const filter = settlementId ? `WHERE settlement_id = ?` : '';
+    const params = settlementId ? [settlementId] : [];
     const sql = `
       SELECT 
         node_id as nodeId,
@@ -127,7 +101,7 @@ export class ProfessionsModule implements IFeatureModule {
       ${filter}
       ORDER BY settlement_id, resource_type;
     `;
-    return this.runSql(sql);
+    return this.db.query<GatheringNode>(sql, params);
   }
 
   /**
@@ -147,28 +121,32 @@ export class ProfessionsModule implements IFeatureModule {
         is_primary as isPrimary,
         unlocked_at as unlockedAt
       FROM character_professions
-      WHERE character_id = '${characterId}'
+      WHERE character_id = ?
       ORDER BY is_primary DESC, tier DESC;
     `;
-    return this.runSql(sql);
+    const rows = this.db.query<any>(sql, [characterId]);
+    return rows.map(r => ({
+      ...r,
+      isPrimary: Boolean(r.isPrimary)
+    }));
   }
 
   /**
    * Action: Gather resources at a specific node (Khai Mỏ, Hái Thuốc, Đốn Củi...)
    */
   public gatherResource(characterId: string, nodeId: string, turnNumber = 6, gameDate = '184-05-01'): any {
-    const node = this.runSql(`SELECT * FROM gathering_nodes WHERE node_id = '${nodeId}';`)[0];
+    const node = this.db.queryOne<any>(`SELECT * FROM gathering_nodes WHERE node_id = ?;`, [nodeId]);
     if (!node) {
       throw new Error(`Điểm thu thập ${nodeId} không tồn tại trên sa bàn.`);
     }
 
     // Check player fatigue if player
     if (characterId === 'PLY-0001') {
-      const player = this.runSql(`SELECT fatigue, health FROM player_state WHERE player_id = 'PLY-0001';`)[0];
+      const player = this.db.queryOne<any>(`SELECT fatigue, health FROM player_state WHERE player_id = 'PLY-0001';`);
       if (player && player.fatigue + node.fatigue_cost > 90) {
         throw new Error(`Khí lực kiệt quệ (${player.fatigue}/100)! Cần nghỉ ngơi ẩm trà hoặc dưỡng sức trước khi tiếp tục lên núi khai thác.`);
       }
-      this.runSql(`UPDATE player_state SET fatigue = MIN(100, fatigue + ${node.fatigue_cost}) WHERE player_id = 'PLY-0001';`);
+      this.db.execute(`UPDATE player_state SET fatigue = MIN(100, fatigue + ?) WHERE player_id = 'PLY-0001';`, [node.fatigue_cost]);
     }
 
     // Determine corresponding profession category
@@ -181,10 +159,10 @@ export class ProfessionsModule implements IFeatureModule {
     const profCode = profCodeMap[node.resource_type] || 'PROF_MINER';
 
     // Get character profession tier
-    const prof = this.runSql(`
-      SELECT * FROM character_professions 
-      WHERE character_id = '${characterId}' AND profession_code = '${profCode}';
-    `)[0];
+    const prof = this.db.queryOne<any>(
+      `SELECT * FROM character_professions WHERE character_id = ? AND profession_code = ?;`,
+      [characterId, profCode]
+    );
 
     const tier = prof ? prof.tier : 1;
     const tierBonus = 1.0 + (tier - 1) * 0.25;
@@ -193,65 +171,73 @@ export class ProfessionsModule implements IFeatureModule {
     const baseYield = node.yield_quantity_min + Math.random() * (node.yield_quantity_max - node.yield_quantity_min);
     const totalYield = Math.round(baseYield * tierBonus * 10) / 10;
 
-    // 1. Physically deposit into inventory_items (Safe conservation)
-    this.runSql(`
-      INSERT INTO inventory_items (item_code, category, description, quantity, unit_cost_basis, location)
-      VALUES ('${node.yield_item_code}', 'RAW_MATERIAL', '${node.yield_item_name_vi}', ${totalYield}, 10, 'Zhuo Workshop')
-      ON CONFLICT(item_code) DO UPDATE SET quantity = quantity + ${totalYield};
-    `);
-
-    // 2. Log stock movement
-    const movId = `MOV-GATH-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`;
-    this.runSql(`
-      INSERT INTO stock_movements (mov_id, game_date, item_code, movement_type, quantity, unit_cost, balance_after, ref_txn)
-      VALUES (
-        '${movId}', 
-        '${gameDate}', 
-        '${node.yield_item_code}', 
-        'GATHERING_HARVEST', 
-        ${totalYield}, 
-        10, 
-        (SELECT quantity FROM inventory_items WHERE item_code = '${node.yield_item_code}'), 
-        '${nodeId}'
-      );
-    `);
-
-    // 3. Award Profession EXP and check tier upgrade
     const expGain = 25;
     let upgradedTier = tier;
     let expMsg = `+${expGain} EXP nghề ${node.resource_type}`;
 
+    let newExp = 0;
+    let newMaxExp = 0;
     if (prof) {
-      let newExp = prof.current_exp + expGain;
-      let newMaxExp = prof.max_exp;
+      newExp = prof.current_exp + expGain;
+      newMaxExp = prof.max_exp;
       if (newExp >= prof.max_exp && prof.tier < 5) {
         newExp = newExp - prof.max_exp;
         upgradedTier = prof.tier + 1;
         newMaxExp = Math.round(prof.max_exp * 1.5);
         expMsg = `🌟 Đột phá cảnh giới nghề lên Bậc ${upgradedTier}! (${newExp}/${newMaxExp} EXP)`;
       }
+    }
 
-      this.runSql(`
-        UPDATE character_professions 
-        SET tier = ${upgradedTier}, current_exp = ${newExp}, max_exp = ${newMaxExp}
-        WHERE character_id = '${characterId}' AND profession_code = '${profCode}';
-      `);
-    } else {
-      // Auto-unlock entry-level profession
-      const profNameMap: Record<string, { vi: string; en: string }> = {
-        PROF_MINER: { vi: 'Khai Khoáng & Luyện Quặng', en: 'Miner & Smelter' },
-        PROF_HERBALIST: { vi: 'Thái Dược & Biện Thảo', en: 'Herbalist & Forager' },
-        PROF_CARPENTER: { vi: 'Mộc Công Khí Cụ', en: 'Woodcraft Artisan' },
-        PROF_SALT_MAKER: { vi: 'Chử Hải Chế Diêm', en: 'Salt Boiler' }
-      };
-      const names = profNameMap[profCode] || { vi: 'Bách Nghệ Khai Mở', en: 'Artisan' };
-
-      this.runSql(`
-        INSERT INTO character_professions (character_id, profession_code, profession_name_vi, profession_name_en, category, tier, current_exp, max_exp, is_primary)
-        VALUES ('${characterId}', '${profCode}', '${names.vi}', '${names.en}', 'GATHERING', 1, ${expGain}, 80, 0);
-      `);
+    const profNameMap: Record<string, { vi: string; en: string }> = {
+      PROF_MINER: { vi: 'Khai Khoáng & Luyện Quặng', en: 'Miner & Smelter' },
+      PROF_HERBALIST: { vi: 'Thái Dược & Biện Thảo', en: 'Herbalist & Forager' },
+      PROF_CARPENTER: { vi: 'Mộc Công Khí Cụ', en: 'Woodcraft Artisan' },
+      PROF_SALT_MAKER: { vi: 'Chử Hải Chế Diêm', en: 'Salt Boiler' }
+    };
+    const names = profNameMap[profCode] || { vi: 'Bách Nghệ Khai Mở', en: 'Artisan' };
+    if (!prof) {
       expMsg = `🌿 Bắt đầu nhập môn nghề mới: ${names.vi}! (+${expGain} EXP)`;
     }
+
+    const movId = `MOV-GATH-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`;
+
+    this.db.transaction(() => {
+      // 1. Physically deposit into inventory_items (Safe conservation)
+      this.db.execute(`
+        INSERT INTO inventory_items (item_code, category, description, quantity, unit_cost_basis, location)
+        VALUES (?, 'RAW_MATERIAL', ?, ?, 10, 'Zhuo Workshop')
+        ON CONFLICT(item_code) DO UPDATE SET quantity = quantity + excluded.quantity;
+      `, [node.yield_item_code, node.yield_item_name_vi, totalYield]);
+
+      // 2. Log stock movement
+      this.db.execute(`
+        INSERT INTO stock_movements (mov_id, game_date, item_code, movement_type, quantity, unit_cost, balance_after, ref_txn)
+        VALUES (
+          ?, 
+          ?, 
+          ?, 
+          'GATHERING_HARVEST', 
+          ?, 
+          10, 
+          (SELECT quantity FROM inventory_items WHERE item_code = ?), 
+          ?
+        );
+      `, [movId, gameDate, node.yield_item_code, totalYield, node.yield_item_code, nodeId]);
+
+      // 3. Award Profession EXP and check tier upgrade
+      if (prof) {
+        this.db.execute(`
+          UPDATE character_professions 
+          SET tier = ?, current_exp = ?, max_exp = ?
+          WHERE character_id = ? AND profession_code = ?;
+        `, [upgradedTier, newExp, newMaxExp, characterId, profCode]);
+      } else {
+        this.db.execute(`
+          INSERT INTO character_professions (character_id, profession_code, profession_name_vi, profession_name_en, category, tier, current_exp, max_exp, is_primary)
+          VALUES (?, ?, ?, ?, 'GATHERING', 1, ?, 80, 0);
+        `, [characterId, profCode, names.vi, names.en, expGain]);
+      }
+    });
 
     // 4. Check for Emergent Breakthrough Synthesis
     const breakthrough = this.checkAndTriggerBreakthrough(characterId, turnNumber, gameDate);
@@ -285,9 +271,11 @@ export class ProfessionsModule implements IFeatureModule {
     const profMap = new Map<string, number>();
     profs.forEach(p => profMap.set(p.professionCode, p.tier));
 
-    const existingInnovations = new Set<string>(
-      this.runSql(`SELECT profession_code FROM emergent_innovations WHERE character_id = '${characterId}';`).map(r => r.profession_code)
+    const existingRows = this.db.query<{ profession_code: string }>(
+      `SELECT profession_code FROM emergent_innovations WHERE character_id = ?;`,
+      [characterId]
     );
+    const existingInnovations = new Set<string>(existingRows.map(r => r.profession_code));
 
     // Breakthrough Condition 1: Daoist Alchemist & Pyrotechnic Artisan
     // Condition: Miner Tier >= 2 AND Herbalist >= 2
@@ -299,14 +287,20 @@ export class ProfessionsModule implements IFeatureModule {
         const innoId = `INNO-DAO-${Date.now()}`;
         const titleVi = `Đột Phá Bí Truyền: Sáng Tạo Nghề Phương Thuật Đan Dược Sư!`;
         const narrativeVi = `Nhờ am hiểu sâu sắc về khoáng thạch lưu huỳnh, chu sa và dược tính thảo mộc sơn lâm, bạn đã dung hòa hai đạo lý Khai Khoáng và Thái Dược, sáng tạo ra Đạo Dược Luyện Đan phái. Mở khóa bí kíp điều chế "Hồi Nguyên Hoàn" và hỏa công chiến trường!`;
+        const recipes = ['REC-REVIVE-PILL'];
+        const statBoosts = { int: 15, dip: 10 };
 
-        this.runSql(`
-          INSERT INTO character_professions (character_id, profession_code, profession_name_vi, profession_name_en, category, tier, current_exp, max_exp, is_primary)
-          VALUES ('${characterId}', 'EMERGENT_DAOIST_ALCHEMIST', 'Phương Thuật Đan Dược Sư', 'Daoist Pyrotechnic Alchemist', 'EMERGENT_INNOVATION', 1, 0, 200, 0);
+        this.db.transaction(() => {
+          this.db.execute(`
+            INSERT INTO character_professions (character_id, profession_code, profession_name_vi, profession_name_en, category, tier, current_exp, max_exp, is_primary)
+            VALUES (?, 'EMERGENT_DAOIST_ALCHEMIST', 'Phương Thuật Đan Dược Sư', 'Daoist Pyrotechnic Alchemist', 'EMERGENT_INNOVATION', 1, 0, 200, 0);
+          `, [characterId]);
 
-          INSERT INTO emergent_innovations (innovation_id, character_id, turn_number, game_date, profession_code, title_vi, narrative_vi, unlocked_recipes_json, stat_boosts_json)
-          VALUES ('${innoId}', '${characterId}', ${turnNumber}, '${gameDate}', 'EMERGENT_DAOIST_ALCHEMIST', '${titleVi.replace(/'/g, "''")}', '${narrativeVi.replace(/'/g, "''")}', '["REC-REVIVE-PILL"]', '{"int":15,"dip":10}');
-        `);
+          this.db.execute(`
+            INSERT INTO emergent_innovations (innovation_id, character_id, turn_number, game_date, profession_code, title_vi, narrative_vi, unlocked_recipes_json, stat_boosts_json)
+            VALUES (?, ?, ?, ?, 'EMERGENT_DAOIST_ALCHEMIST', ?, ?, ?, ?);
+          `, [innoId, characterId, turnNumber, gameDate, titleVi, narrativeVi, JSON.stringify(recipes), JSON.stringify(statBoosts)]);
+        });
 
         return {
           innovationId: innoId,
@@ -316,8 +310,8 @@ export class ProfessionsModule implements IFeatureModule {
           professionCode: 'EMERGENT_DAOIST_ALCHEMIST',
           titleVi,
           narrativeVi,
-          unlockedRecipes: ['REC-REVIVE-PILL'],
-          statBoosts: { int: 15, dip: 10 }
+          unlockedRecipes: recipes,
+          statBoosts
         };
       }
     }
@@ -332,14 +326,20 @@ export class ProfessionsModule implements IFeatureModule {
         const innoId = `INNO-SURG-${Date.now()}`;
         const titleVi = `Đột Phá Quân Y: Khai Sáng Nghề Chiến Địa Ngoại Khoa Sư!`;
         const narrativeVi = `Kết hợp sự khéo léo của tay nghề thêu dệt và dược lý cầm máu thảo dược, bạn sáng tạo nên phương pháp khâu vá vết đao thương chiến trận và cao dán trị độc. Binh sĩ dưới trướng giảm thiểu $75\\%$ nguy cơ tử vong do nhiễm trùng!`;
+        const recipes = ['REC-TRAUMA-SALVE'];
+        const statBoosts = { int: 10, war: 10 };
 
-        this.runSql(`
-          INSERT INTO character_professions (character_id, profession_code, profession_name_vi, profession_name_en, category, tier, current_exp, max_exp, is_primary)
-          VALUES ('${characterId}', 'EMERGENT_MILITARY_SURGEON', 'Chiến Địa Ngoại Khoa Sư', 'Military Trauma Surgeon', 'EMERGENT_INNOVATION', 1, 0, 200, 0);
+        this.db.transaction(() => {
+          this.db.execute(`
+            INSERT INTO character_professions (character_id, profession_code, profession_name_vi, profession_name_en, category, tier, current_exp, max_exp, is_primary)
+            VALUES (?, 'EMERGENT_MILITARY_SURGEON', 'Chiến Địa Ngoại Khoa Sư', 'Military Trauma Surgeon', 'EMERGENT_INNOVATION', 1, 0, 200, 0);
+          `, [characterId]);
 
-          INSERT INTO emergent_innovations (innovation_id, character_id, turn_number, game_date, profession_code, title_vi, narrative_vi, unlocked_recipes_json, stat_boosts_json)
-          VALUES ('${innoId}', '${characterId}', ${turnNumber}, '${gameDate}', 'EMERGENT_MILITARY_SURGEON', '${titleVi.replace(/'/g, "''")}', '${narrativeVi.replace(/'/g, "''")}', '["REC-TRAUMA-SALVE"]', '{"int":10,"war":10}');
-        `);
+          this.db.execute(`
+            INSERT INTO emergent_innovations (innovation_id, character_id, turn_number, game_date, profession_code, title_vi, narrative_vi, unlocked_recipes_json, stat_boosts_json)
+            VALUES (?, ?, ?, ?, 'EMERGENT_MILITARY_SURGEON', ?, ?, ?, ?);
+          `, [innoId, characterId, turnNumber, gameDate, titleVi, narrativeVi, JSON.stringify(recipes), JSON.stringify(statBoosts)]);
+        });
 
         return {
           innovationId: innoId,
@@ -349,8 +349,8 @@ export class ProfessionsModule implements IFeatureModule {
           professionCode: 'EMERGENT_MILITARY_SURGEON',
           titleVi,
           narrativeVi,
-          unlockedRecipes: ['REC-TRAUMA-SALVE'],
-          statBoosts: { int: 10, war: 10 }
+          unlockedRecipes: recipes,
+          statBoosts
         };
       }
     }
@@ -362,7 +362,8 @@ export class ProfessionsModule implements IFeatureModule {
    * Retrieves all historical emergent innovations discovered in session
    */
   public getInnovations(characterId?: string): EmergentInnovation[] {
-    const filter = characterId ? `WHERE character_id = '${characterId}'` : '';
+    const filter = characterId ? `WHERE character_id = ?` : '';
+    const params = characterId ? [characterId] : [];
     const sql = `
       SELECT 
         innovation_id as innovationId,
@@ -378,7 +379,7 @@ export class ProfessionsModule implements IFeatureModule {
       ${filter}
       ORDER BY created_at DESC;
     `;
-    const rows = this.runSql(sql);
+    const rows = this.db.query<any>(sql, params);
     return rows.map(r => ({
       ...r,
       unlockedRecipes: typeof r.unlockedRecipes === 'string' ? JSON.parse(r.unlockedRecipes || '[]') : r.unlockedRecipes,

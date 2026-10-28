@@ -148,7 +148,17 @@ const MIME_TYPES = {
   '.svg': 'image/svg+xml'
 };
 
-const server = http.createServer((req, res) => {
+const server = http.createServer(async (req, res) => {
+  // Delegate to Modular Controller Router if present
+  if (globalThis.__GRAND_STRATEGY_ROUTER__) {
+    try {
+      const handled = await globalThis.__GRAND_STRATEGY_ROUTER__.handle(req, res);
+      if (handled) return;
+    } catch (err) {
+      console.error('[Modular Router Error]:', err);
+    }
+  }
+
   const parsedUrl = url.parse(req.url, true);
   const pathname = parsedUrl.pathname;
 

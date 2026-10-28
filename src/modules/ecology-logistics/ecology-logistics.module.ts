@@ -6,9 +6,9 @@
  * Adheres to AgentOption Universe Modular Architecture v4.0.
  */
 
-import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
+import { DatabaseService } from '../../core/database';
 import {
   IFeatureModule,
   ModuleContext,
@@ -26,38 +26,11 @@ export class EcologyLogisticsModule implements IFeatureModule {
   public readonly version = '1.0.0';
 
   private ctx!: ModuleContext;
-
-  private runSql(sql: string): any[] {
-    const tempFile = path.join(
-      path.dirname(this.ctx.dbPath),
-      `eco_${Date.now()}_${Math.random().toString(36).substring(2, 6)}.sql`
-    );
-    fs.writeFileSync(tempFile, sql, 'utf8');
-    try {
-      const stdout = execSync(`sqlite3 -json "${this.ctx.dbPath}" < "${tempFile}"`, {
-        encoding: 'utf8',
-        stdio: ['pipe', 'pipe', 'pipe']
-      });
-      return stdout && stdout.trim() ? JSON.parse(stdout) : [];
-    } catch (err: any) {
-      if (err.stdout && err.stdout.trim().startsWith('[')) {
-        try {
-          return JSON.parse(err.stdout);
-        } catch (e) {}
-      }
-      if (!err.stderr || err.stderr.trim() === '') return [];
-      throw new Error(`EcologyLogistics SQL failed: ${err.stderr || err.message}`);
-    } finally {
-      if (fs.existsSync(tempFile)) {
-        try {
-          fs.unlinkSync(tempFile);
-        } catch (e) {}
-      }
-    }
-  }
+  private db!: DatabaseService;
 
   public async init(ctx: ModuleContext): Promise<void> {
     this.ctx = ctx;
+    this.db = DatabaseService.getInstance(ctx.dbPath);
     this.ensureTablesAndSeedData();
 
     // Subscribe to turn advanced event
@@ -70,19 +43,22 @@ export class EcologyLogisticsModule implements IFeatureModule {
 
   private ensureTablesAndSeedData(): void {
     // 1. Seed initial Bandit Strongholds if empty
-    const strongholdCount = this.runSql(`SELECT count(*) as count FROM bandit_strongholds;`)[0]?.count || 0;
+    const strongholdCount =
+      this.db.queryOne<{ count: number }>(`SELECT count(*) as count FROM bandit_strongholds;`)?.count || 0;
     if (strongholdCount === 0) {
       this.seedBanditStrongholds();
     }
 
     // 2. Seed initial Trade Caravans if empty
-    const caravanCount = this.runSql(`SELECT count(*) as count FROM trade_caravans;`)[0]?.count || 0;
+    const caravanCount =
+      this.db.queryOne<{ count: number }>(`SELECT count(*) as count FROM trade_caravans;`)?.count || 0;
     if (caravanCount === 0) {
       this.seedInitialCaravans();
     }
 
     // 3. Seed baseline Ecological Crisis if empty (Drought in Yecheng & Yellow Turban unrest)
-    const crisisCount = this.runSql(`SELECT count(*) as count FROM regional_ecological_crises;`)[0]?.count || 0;
+    const crisisCount =
+      this.db.queryOne<{ count: number }>(`SELECT count(*) as count FROM regional_ecological_crises;`)?.count || 0;
     if (crisisCount === 0) {
       this.seedBaselineCrises();
     }
@@ -95,7 +71,7 @@ export class EcologyLogisticsModule implements IFeatureModule {
       ('STRONGHOLD-TONGGUAN', 'Bạch Mã Đạo Phỉ', 'luo_yang', 'Bạch Ba Tặc Quách Thái', 220, 800, 800, 'ACTIVE'),
       ('STRONGHOLD-TAISHAN', 'Thái Sơn Tặc Doanh', 'ping_yuan', 'Tang Bá & Ngô Đôn', 280, 1100, 1000, 'ACTIVE');
     `;
-    this.runSql(sql);
+    this.db.execute(sql);
   }
 
   private seedInitialCaravans(): void {
@@ -105,7 +81,7 @@ export class EcologyLogisticsModule implements IFeatureModule {
       ('CARAVAN-02', 'Lương Thị Bảo Tiêu Thương Đội (Trác Huyện -> Bắc Bình)', 'FAC-LIANG-CLAN', 'zhuo_xian', 'ji_cheng', 'PROD-SHIELD-BAM', 12.0, 1080, 30, 0.25, 'EN_ROUTE', 6),
       ('CARAVAN-03', 'Thanh Châu Diêm Thương (Bình Nguyên -> Lạc Dương)', 'FAC-HAN', 'ping_yuan', 'luo_yang', 'COM-SALT-SEA', 25.0, 1800, 50, 0.60, 'EN_ROUTE', 6);
     `;
-    this.runSql(sql);
+    this.db.execute(sql);
   }
 
   private seedBaselineCrises(): void {
@@ -114,14 +90,15 @@ export class EcologyLogisticsModule implements IFeatureModule {
       ('CRISIS-184-YE', 'ye_cheng', 'GREAT_DROUGHT', 1.5, 3, 0.5, 25, 2.5, 1, 'Đại Hạn Hán Hà Bắc Thiêu Đốt Cánh Đồng Ký Châu', 'Nắng hạn kéo dài 4 tháng không một giọt mưa, lòng sông cạn trơ đáy bùn nứt nẻ. Sản lượng lúa mì Ký Châu sụt giảm một nửa, giá lương tăng vọt, lưu dân bắt đầu lũ lượt kéo về hướng Nam.'),
       ('CRISIS-184-GZ', 'guang_zong', 'PEASANT_REBELLION', 2.0, 4, 0.7, 40, 3.0, 1, 'Cuồng Triều Khăn Vàng Nổi Dậy Chiếm Đóng Kho Lương', 'Nạn đói cùng cực kích phát tín đồ Thái Bình Đạo vùng Cự Lộc đồng loạt vũ trang khởi nghĩa, cướp bóc kho lương quan phủ và bao vây các thành trì lân cận.');
     `;
-    this.runSql(sql);
+    this.db.execute(sql);
   }
 
   /**
    * Retrieves all active ecological crises and environmental status
    */
   public getCrises(activeOnly = true): EcologicalCrisis[] {
-    const filter = activeOnly ? `WHERE is_active = 1` : '';
+    const filter = activeOnly ? `WHERE is_active = ?` : '';
+    const params = activeOnly ? [1] : [];
     const sql = `
       SELECT 
         crisis_id as crisisId,
@@ -139,7 +116,11 @@ export class EcologyLogisticsModule implements IFeatureModule {
       ${filter}
       ORDER BY severity_level DESC;
     `;
-    return this.runSql(sql);
+    const rows = this.db.query<any>(sql, params);
+    return rows.map(r => ({
+      ...r,
+      isActive: Boolean(r.isActive)
+    }));
   }
 
   /**
@@ -171,7 +152,7 @@ export class EcologyLogisticsModule implements IFeatureModule {
       LEFT JOIN master_items mi ON c.cargo_item_code = mi.item_code
       ORDER BY c.status, c.route_progress DESC;
     `;
-    return this.runSql(sql);
+    return this.db.query<TradeCaravan>(sql);
   }
 
   /**
@@ -191,49 +172,61 @@ export class EcologyLogisticsModule implements IFeatureModule {
       FROM bandit_strongholds
       ORDER BY status ASC, plundered_wealth DESC;
     `;
-    return this.runSql(sql);
+    return this.db.query<BanditStronghold>(sql);
   }
 
   /**
    * Action: Dispatch Grain Relief to quell crisis and peasant uprising
    */
   public dispatchGrainRelief(settlementId: string, grainAmount = 5.0, turnNumber = 6, gameDate = '184-05-01'): any {
-    const crisis = this.runSql(`
-      SELECT * FROM regional_ecological_crises 
-      WHERE settlement_id = '${settlementId}' AND is_active = 1;
-    `)[0];
+    const crisis = this.db.queryOne<any>(
+      `SELECT * FROM regional_ecological_crises WHERE settlement_id = ? AND is_active = 1;`,
+      [settlementId]
+    );
 
     if (!crisis) {
       throw new Error(`Quận huyện ${settlementId} hiện tại không có thiên tai hay nạn đói bùng phát.`);
     }
 
     // Verify player has strategic grain in player_state or inventory
-    const player = this.runSql(`SELECT liquid_cash, strategic_grain FROM player_state WHERE player_id = 'PLY-0001';`)[0];
-    if (player.strategic_grain < grainAmount) {
+    const player = this.db.queryOne<any>(
+      `SELECT liquid_cash, strategic_grain FROM player_state WHERE player_id = 'PLY-0001';`
+    );
+    if (!player || player.strategic_grain < grainAmount) {
       throw new Error(`Kho lương thảo chiến lược của bạn không đủ ${grainAmount} thạch để phát chẩn.`);
     }
 
-    // Deduct grain from player
-    this.runSql(`UPDATE player_state SET strategic_grain = strategic_grain - ${grainAmount} WHERE player_id = 'PLY-0001';`);
-
-    // Restore settlement public order and reduce crisis duration
-    this.runSql(`
-      UPDATE session_settlements 
-      SET public_order = MIN(100, public_order + 35) 
-      WHERE settlement_id = '${settlementId}';
-
-      UPDATE regional_ecological_crises 
-      SET duration_turns_left = MAX(0, duration_turns_left - 2) 
-      WHERE crisis_id = '${crisis.crisis_id}';
-    `);
-
-    // Check if crisis resolved
     let resolved = false;
-    const updated = this.runSql(`SELECT duration_turns_left FROM regional_ecological_crises WHERE crisis_id = '${crisis.crisis_id}';`)[0];
-    if (updated.duration_turns_left <= 0) {
-      this.runSql(`UPDATE regional_ecological_crises SET is_active = 0 WHERE crisis_id = '${crisis.crisis_id}';`);
-      resolved = true;
-    }
+    this.db.transaction(() => {
+      // Deduct grain from player
+      this.db.execute(
+        `UPDATE player_state SET strategic_grain = strategic_grain - ? WHERE player_id = 'PLY-0001';`,
+        [grainAmount]
+      );
+
+      // Restore settlement public order and reduce crisis duration
+      this.db.execute(
+        `UPDATE session_settlements SET public_order = MIN(100, public_order + 35) WHERE settlement_id = ?;`,
+        [settlementId]
+      );
+
+      this.db.execute(
+        `UPDATE regional_ecological_crises SET duration_turns_left = MAX(0, duration_turns_left - 2) WHERE crisis_id = ?;`,
+        [crisis.crisis_id]
+      );
+
+      const updated = this.db.queryOne<any>(
+        `SELECT duration_turns_left FROM regional_ecological_crises WHERE crisis_id = ?;`,
+        [crisis.crisis_id]
+      );
+      if (updated && updated.duration_turns_left <= 0) {
+        this.db.execute(
+          `UPDATE regional_ecological_crises SET is_active = 0 WHERE crisis_id = ?;`,
+          [crisis.crisis_id]
+        );
+        resolved = true;
+      }
+    });
 
     // Sync projection to progress.md
     try {
@@ -255,7 +248,10 @@ export class EcologyLogisticsModule implements IFeatureModule {
    * Action: Attack Bandit Stronghold to recover plundered goods and claim bounty
    */
   public attackBanditStronghold(characterId = 'PLY-0001', strongholdId: string, turnNumber = 6, gameDate = '184-05-01'): any {
-    const stronghold = this.runSql(`SELECT * FROM bandit_strongholds WHERE stronghold_id = '${strongholdId}';`)[0];
+    const stronghold = this.db.queryOne<any>(
+      `SELECT * FROM bandit_strongholds WHERE stronghold_id = ?;`,
+      [strongholdId]
+    );
     if (!stronghold) {
       throw new Error(`Sơn trại ${strongholdId} không tồn tại.`);
     }
@@ -264,7 +260,13 @@ export class EcologyLogisticsModule implements IFeatureModule {
     }
 
     // Player martial prowess calculation
-    const player = this.runSql(`SELECT war_attr, ldr_attr, health, fatigue, liquid_cash FROM player_state WHERE player_id = 'PLY-0001';`)[0];
+    const player = this.db.queryOne<any>(
+      `SELECT war_attr, ldr_attr, health, fatigue, liquid_cash FROM player_state WHERE player_id = ?;`,
+      [characterId]
+    );
+    if (!player) {
+      throw new Error(`Nhân vật ${characterId} không tồn tại.`);
+    }
     if (player.fatigue > 75) {
       throw new Error(`Thể lực quá mỏi mệt (${player.fatigue}/100), không thể thống lĩnh binh mã công sơn kích trại!`);
     }
@@ -278,15 +280,17 @@ export class EcologyLogisticsModule implements IFeatureModule {
       const totalReward = lootCash + bounty;
 
       // Update player cash and fatigue
-      this.runSql(`
-        UPDATE player_state 
-        SET liquid_cash = liquid_cash + ${totalReward}, fatigue = MIN(100, fatigue + 30) 
-        WHERE player_id = 'PLY-0001';
+      this.db.transaction(() => {
+        this.db.execute(
+          `UPDATE player_state SET liquid_cash = liquid_cash + ?, fatigue = MIN(100, fatigue + 30) WHERE player_id = ?;`,
+          [totalReward, characterId]
+        );
 
-        UPDATE bandit_strongholds 
-        SET status = 'SUBDUED', plundered_wealth = 0 
-        WHERE stronghold_id = '${strongholdId}';
-      `);
+        this.db.execute(
+          `UPDATE bandit_strongholds SET status = 'SUBDUED', plundered_wealth = 0 WHERE stronghold_id = ?;`,
+          [strongholdId]
+        );
+      });
 
       // Sync projection
       try {
@@ -304,11 +308,10 @@ export class EcologyLogisticsModule implements IFeatureModule {
         message: `Đại thắng! Thống lĩnh quân sĩ phá tan ${stronghold.name_vi}, trảm tướng cướp ${stronghold.bandit_chief_name}, thu hồi ${lootCash} tiền của thương đoàn bị cướp và lĩnh thưởng ${bounty} tiền quân công triều đình!`
       };
     } else {
-      this.runSql(`
-        UPDATE player_state 
-        SET health = MAX(30, health - 20), fatigue = MIN(100, fatigue + 40) 
-        WHERE player_id = 'PLY-0001';
-      `);
+      this.db.execute(
+        `UPDATE player_state SET health = MAX(30, health - 20), fatigue = MIN(100, fatigue + 40) WHERE player_id = ?;`,
+        [characterId]
+      );
 
       return {
         success: false,
@@ -326,27 +329,26 @@ export class EcologyLogisticsModule implements IFeatureModule {
     const events: string[] = [];
 
     // 1. Advance Caravans
-    const activeCaravans = this.runSql(`SELECT * FROM trade_caravans WHERE status = 'EN_ROUTE';`);
+    const activeCaravans = this.db.query<any>(`SELECT * FROM trade_caravans WHERE status = 'EN_ROUTE';`);
     for (const car of activeCaravans) {
       const newProgress = Math.min(1.0, Math.round((car.route_progress + 0.35) * 100) / 100);
 
       // Ambush check at midway (0.4 to 0.7)
-      let ambushed = false;
       if (newProgress >= 0.4 && newProgress <= 0.7 && Math.random() < 0.30) {
         // Find nearest active bandit stronghold
-        const stronghold = this.runSql(`SELECT * FROM bandit_strongholds WHERE status = 'ACTIVE' LIMIT 1;`)[0];
+        const stronghold = this.db.queryOne<any>(`SELECT * FROM bandit_strongholds WHERE status = 'ACTIVE' LIMIT 1;`);
         if (stronghold && stronghold.bandit_power > car.guard_troops * 2) {
           // Caravan Plundered!
-          ambushed = true;
-          this.runSql(`
-            UPDATE trade_caravans 
-            SET status = 'PLUNDERED', updated_at = CURRENT_TIMESTAMP 
-            WHERE caravan_id = '${car.caravan_id}';
-
-            UPDATE bandit_strongholds 
-            SET plundered_wealth = plundered_wealth + ${car.cargo_value_qian} 
-            WHERE stronghold_id = '${stronghold.stronghold_id}';
-          `);
+          this.db.transaction(() => {
+            this.db.execute(
+              `UPDATE trade_caravans SET status = 'PLUNDERED', updated_at = CURRENT_TIMESTAMP WHERE caravan_id = ?;`,
+              [car.caravan_id]
+            );
+            this.db.execute(
+              `UPDATE bandit_strongholds SET plundered_wealth = plundered_wealth + ? WHERE stronghold_id = ?;`,
+              [car.cargo_value_qian, stronghold.stronghold_id]
+            );
+          });
 
           events.push(`⚠️ ${car.caravan_name} đã bị ${stronghold.name_vi} mai phục cướp sạch hàng hóa trị giá ${car.cargo_value_qian} tiền!`);
           continue;
@@ -355,35 +357,41 @@ export class EcologyLogisticsModule implements IFeatureModule {
 
       if (newProgress >= 1.0) {
         // Arrived and traded successfully!
-        this.runSql(`
-          UPDATE trade_caravans 
-          SET status = 'SUCCESS_TRADED', route_progress = 1.0, updated_at = CURRENT_TIMESTAMP 
-          WHERE caravan_id = '${car.caravan_id}';
-
-          UPDATE session_factions 
-          SET treasury_cash = treasury_cash + ${Math.round(car.cargo_value_qian * 1.35)} 
-          WHERE faction_id = '${car.owner_faction_id}';
-        `);
+        this.db.transaction(() => {
+          this.db.execute(
+            `UPDATE trade_caravans SET status = 'SUCCESS_TRADED', route_progress = 1.0, updated_at = CURRENT_TIMESTAMP WHERE caravan_id = ?;`,
+            [car.caravan_id]
+          );
+          this.db.execute(
+            `UPDATE session_factions SET treasury_cash = treasury_cash + ? WHERE faction_id = ?;`,
+            [Math.round(car.cargo_value_qian * 1.35), car.owner_faction_id]
+          );
+        });
 
         events.push(`🏁 ${car.caravan_name} đã cập bến an toàn, xuất bán toàn bộ hàng hóa thu lãi +${Math.round(car.cargo_value_qian * 0.35)} tiền!`);
       } else {
-        this.runSql(`
-          UPDATE trade_caravans 
-          SET route_progress = ${newProgress}, updated_at = CURRENT_TIMESTAMP 
-          WHERE caravan_id = '${car.caravan_id}';
-        `);
+        this.db.execute(
+          `UPDATE trade_caravans SET route_progress = ?, updated_at = CURRENT_TIMESTAMP WHERE caravan_id = ?;`,
+          [newProgress, car.caravan_id]
+        );
       }
     }
 
     // 2. Tick Ecological Crises
-    const crises = this.runSql(`SELECT * FROM regional_ecological_crises WHERE is_active = 1;`);
+    const crises = this.db.query<any>(`SELECT * FROM regional_ecological_crises WHERE is_active = 1;`);
     for (const c of crises) {
       const remainingTurns = c.duration_turns_left - 1;
       if (remainingTurns <= 0) {
-        this.runSql(`UPDATE regional_ecological_crises SET is_active = 0, duration_turns_left = 0 WHERE crisis_id = '${c.crisis_id}';`);
+        this.db.execute(
+          `UPDATE regional_ecological_crises SET is_active = 0, duration_turns_left = 0 WHERE crisis_id = ?;`,
+          [c.crisis_id]
+        );
         events.push(`🌤️ Thiên tai tại ${c.settlement_id} (${c.title_vi}) đã qua đi, đất đai hồi sinh.`);
       } else {
-        this.runSql(`UPDATE regional_ecological_crises SET duration_turns_left = ${remainingTurns} WHERE crisis_id = '${c.crisis_id}';`);
+        this.db.execute(
+          `UPDATE regional_ecological_crises SET duration_turns_left = ? WHERE crisis_id = ?;`,
+          [remainingTurns, c.crisis_id]
+        );
       }
     }
 

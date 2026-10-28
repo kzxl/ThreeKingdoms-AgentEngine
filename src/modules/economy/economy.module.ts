@@ -5,6 +5,17 @@
  */
 
 import { IFeatureModule, ModuleContext, MarketCommodityState, SettlementState } from '../../core/types';
+import {
+  MarketElasticityEngine,
+  MarketQuoteInput,
+  MarketQuoteResult,
+  SettlementMarketQuote,
+  CommodityElasticityConfig,
+  calculateSettlementMarketQuotes,
+  calculateElasticPrice
+} from './market-elasticity';
+
+export * from './market-elasticity';
 
 export class EconomyModule implements IFeatureModule {
   public readonly id = 'module.economy';
@@ -26,18 +37,45 @@ export class EconomyModule implements IFeatureModule {
   }
 
   /**
-   * Calculates dynamic market price given current inventory stock and demand
-   * Formula: Price = BasePrice * (1 + Elasticity * ((Demand - Stock) / Max(1, Demand)))
-   * Clamped between 0.3 * BasePrice and 4.0 * BasePrice
+   * Calculates dynamic market price given current inventory stock and demand.
+   * Formula:
+   *   P_dynamic = P_base * (1 + ElasticityFactor * (TargetStock - CurrentStock) / Math.max(1, TargetStock)) * CrisisMultiplier
+   * Clamped between 0.4 * P_base and 3.5 * P_base to prevent runaway hyperinflation or deflation.
    */
-  public calculateDynamicPrice(item: MarketCommodityState): number {
-    const deficitRatio = (item.demandUnits - item.stockUnits) / Math.max(1, item.demandUnits);
-    const rawPrice = item.basePrice * (1 + item.priceElasticity * deficitRatio);
+  public calculateDynamicPrice(item: MarketCommodityState, crisisMultiplier = 1.0): number {
+    return MarketElasticityEngine.calculateFromState(item, crisisMultiplier);
+  }
 
-    const minFloor = item.basePrice * 0.35;
-    const maxCeiling = item.basePrice * 4.0;
+  /**
+   * Calculates complete market quote for an item with full diagnostic breakdown
+   */
+  public getMarketQuote(input: MarketQuoteInput): MarketQuoteResult {
+    return calculateElasticPrice(input);
+  }
 
-    return Math.round(Math.max(minFloor, Math.min(maxCeiling, rawPrice)) * 10) / 10;
+  /**
+   * Generates a comprehensive market catalog quote for all standard commodities in a settlement
+   */
+  public calculateSettlementQuotes(
+    settlement: SettlementState,
+    stockMap?: Record<string, number>,
+    activeCrises?: string[]
+  ): SettlementMarketQuote {
+    return calculateSettlementMarketQuotes(settlement, stockMap, activeCrises);
+  }
+
+  /**
+   * Retrieves configuration parameters for a commodity
+   */
+  public getCommodityConfig(commodityCode: string): CommodityElasticityConfig | undefined {
+    return MarketElasticityEngine.getConfig(commodityCode);
+  }
+
+  /**
+   * Retrieves all supported commodity configurations
+   */
+  public getAllCommodityConfigs(): CommodityElasticityConfig[] {
+    return MarketElasticityEngine.getAllConfigs();
   }
 
   /**

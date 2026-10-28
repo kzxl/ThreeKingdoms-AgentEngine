@@ -16,6 +16,24 @@ const SAVES_DIR = path.join(ROOT_DIR, 'saves');
 const SCHEMA_PATH = path.join(__dirname, 'schema.sql');
 const DEFAULT_DB_PATH = path.join(SAVES_DIR, 'session.db');
 
+let betterSqlite = null;
+try {
+  betterSqlite = require('better-sqlite3');
+} catch (e) {}
+
+const nativeDbPool = new Map();
+function getNativeDb(dbPath) {
+  if (!betterSqlite) return null;
+  if (!nativeDbPool.has(dbPath)) {
+    ensureSavesDir();
+    const db = new betterSqlite(dbPath);
+    db.pragma('journal_mode = WAL');
+    db.pragma('foreign_keys = ON');
+    nativeDbPool.set(dbPath, db);
+  }
+  return nativeDbPool.get(dbPath);
+}
+
 function ensureSavesDir() {
   if (!fs.existsSync(SAVES_DIR)) {
     fs.mkdirSync(SAVES_DIR, { recursive: true });
@@ -28,6 +46,21 @@ function getDbPath() {
 
 function runSql(dbPath, sql) {
   ensureSavesDir();
+  const nativeDb = getNativeDb(dbPath);
+  if (nativeDb) {
+    try {
+      const trimmed = sql.trim();
+      if (/^(SELECT|WITH|PRAGMA)\b/i.test(trimmed)) {
+        return nativeDb.prepare(sql).all();
+      } else {
+        nativeDb.exec(sql);
+        return [];
+      }
+    } catch (nativeErr) {
+      // Fallback to CLI execution on error
+    }
+  }
+
   // Escape double quotes for Windows shell execution
   const tempSqlFile = path.join(SAVES_DIR, `temp_${Date.now()}_${Math.random().toString(36).substr(2, 5)}.sql`);
   fs.writeFileSync(tempSqlFile, sql, 'utf8');

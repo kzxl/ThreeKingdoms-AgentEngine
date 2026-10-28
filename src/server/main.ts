@@ -16,6 +16,11 @@ import { NpcLifecycleModule } from '../modules/npc-lifecycle/npc-lifecycle.modul
 import { FactionPoliticsModule } from '../modules/faction-politics/faction-politics.module';
 import { ProfessionsModule } from '../modules/professions/professions.module';
 import { EcologyLogisticsModule } from '../modules/ecology-logistics/ecology-logistics.module';
+import { Router } from './router';
+import { registerEconomyRoutes } from '../modules/economy/economy.controller';
+import { registerMilitaryRoutes } from '../modules/military/military.controller';
+import { registerProfessionsRoutes } from '../modules/professions/professions.controller';
+import { registerEcologyRoutes } from '../modules/ecology-logistics/ecology.controller';
 
 // Resolve database path
 const ROOT_DIR = path.resolve(__dirname, '../..');
@@ -64,12 +69,26 @@ export async function bootstrapGrandStrategy() {
   };
 }
 
+export function createGrandStrategyRouter(): Router {
+  const router = new Router();
+  registerEconomyRoutes(router);
+  registerMilitaryRoutes(router);
+  registerProfessionsRoutes(router);
+  registerEcologyRoutes(router);
+  return router;
+}
+
 // Start standalone or attach to sim-web
 async function main() {
   const modules = await bootstrapGrandStrategy();
 
   // Attach to global for Web Server route handlers
   (globalThis as any).__GRAND_STRATEGY_MODULES__ = modules;
+
+  // Initialize modular HTTP router
+  const router = createGrandStrategyRouter();
+  (globalThis as any).__GRAND_STRATEGY_ROUTER__ = router;
+  console.log(`[Bootstrap] 🌐 Modular Router active with ${router.getRoutes().length} registered endpoints.`);
 
   // Import existing web server
   const simWeb = require('../../tools/sim-web.js');
