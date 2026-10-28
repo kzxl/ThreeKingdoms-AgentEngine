@@ -164,6 +164,10 @@ export interface CourtshipCandidateDTO {
   nameVi: string;
   nameEn: string;
   baselineLocation: string;
+  locationNameVi?: string;
+  locationNameEn?: string;
+  clueVi?: string;
+  clueEn?: string;
   keyStats: {
     war: number;
     int: number;
@@ -173,9 +177,11 @@ export interface CourtshipCandidateDTO {
     dip: number;
     cra: number;
   };
+  isEncountered: boolean;
   affinity: number;
   respect: number;
   relationshipTitleVi: string;
+  relationshipTitleEn?: string;
   canPropose: boolean;
   recommendedDowryCash: number;
   recommendedDowryItems: Array<{ itemCode: string; itemNameVi: string; quantity: number }>;
@@ -606,6 +612,43 @@ export class FamilyLineageService implements IFamilyLineageService {
   // 2. COURTSHIP & BETROTHAL
   // =========================================================================
 
+  /**
+   * Determines whether the protagonist has encountered / met an NPC.
+   * Requirement: Player must have actually met/interacted with the character,
+   * established relationship deltas, or unlocked intelligence fog interaction,
+   * or already have married them.
+   */
+  public hasEncounteredNpc(npcId: string): boolean {
+    try {
+      // 1. Check if relation deltas exist (banquet, conversation, gift, spar)
+      const delta = this.db.queryOne<any>(
+        'SELECT 1 FROM npc_relationship_deltas WHERE npc_id = ? LIMIT 1;',
+        [npcId]
+      );
+      if (delta) return true;
+
+      // 2. Check if intel fog has recorded interactions
+      const fog = this.db.queryOne<any>(
+        'SELECT interaction_count FROM npc_intel_fog WHERE npc_id = ? LIMIT 1;',
+        [npcId]
+      );
+      if (fog && Number(fog.interaction_count) > 0) {
+        return true;
+      }
+
+      // 3. Check if already spouse
+      const spouse = this.db.queryOne<any>(
+        'SELECT 1 FROM family_spouses WHERE wife_id = ? LIMIT 1;',
+        [npcId]
+      );
+      if (spouse) return true;
+
+      return false;
+    } catch {
+      return false;
+    }
+  }
+
   public getCourtshipCandidates(): CourtshipCandidateDTO[] {
     const prominentHeroines = [
       {
@@ -615,6 +658,8 @@ export class FamilyLineageService implements IFamilyLineageService {
         baselineLocation: 'LOC-0006',
         dowryCash: 6000,
         dowryItems: [{ itemCode: 'COM-SILK', itemNameVi: 'Tơ Lụa Thượng Phẩm', quantity: 5 }],
+        clueVi: 'Danh môn khuê tú Ký Châu Chân thị, tài sắc quán tuyệt, thường ngụ tại Nghiệp Thành phủ đệ.',
+        clueEn: 'Noble lady of the Zhen clan in Jizhou, often residing at Yecheng manor.',
         maternalTrait: {
           traitCode: 'TLT-SILK-ACUMEN',
           traitNameVi: 'Lạc Thần Thương Trí',
@@ -628,6 +673,8 @@ export class FamilyLineageService implements IFamilyLineageService {
         baselineLocation: 'LOC-0013',
         dowryCash: 8000,
         dowryItems: [{ itemCode: 'COM-HORSE-W', itemNameVi: 'Chiến Mã Thuần Chủng', quantity: 2 }],
+        clueVi: 'Giang Đông Kiêu Cơ, ái muội đao cung võ bị, thường cùng nữ binh luyện võ tại Kiến Nghiệp doanh đài.',
+        clueEn: 'Fierce martial maiden of Jiangdong, often training with archers at Jianye parade grounds.',
         maternalTrait: {
           traitCode: 'TLT-TIGER-HERITAGE',
           traitNameVi: 'Kiêu Cơ Vũ Huyết',
@@ -641,6 +688,8 @@ export class FamilyLineageService implements IFamilyLineageService {
         baselineLocation: 'LOC-0013',
         dowryCash: 5000,
         dowryItems: [{ itemCode: 'COM-SILK', itemNameVi: 'Tơ Lụa Thượng Phẩm', quantity: 3 }],
+        clueVi: 'Kiều gia trưởng nữ tại Hoàn Thành - Giang Đông, cầm kỳ thi họa, trang nhã ôn nhu, ẩn cư khuê các.',
+        clueEn: 'Elder Qiao maiden of Jiangdong, poised and graceful, practicing guqin at Wan County.',
         maternalTrait: {
           traitCode: 'TLT-MASTER-ARTISAN',
           traitNameVi: 'Quỳnh Hoa Xảo Thủ',
@@ -654,6 +703,8 @@ export class FamilyLineageService implements IFamilyLineageService {
         baselineLocation: 'LOC-0011',
         dowryCash: 5000,
         dowryItems: [{ itemCode: 'COM-WINE', itemNameVi: 'Đỗ Khang Mỹ Tửu', quantity: 5 }],
+        clueVi: 'Kiều gia thứ nữ tuyệt sắc khuynh thành, tinh thông âm luật, thường dạo chơi ngắm cảnh vùng Sài Tang & Xích Bích.',
+        clueEn: 'Younger Qiao maiden of celestial beauty, fond of melodious arts near Saitang and Chibi.',
         maternalTrait: {
           traitCode: 'TLT-HARMONIOUS-AESTHETIC',
           traitNameVi: 'Quốc Sắc Thiên Hương',
@@ -667,6 +718,8 @@ export class FamilyLineageService implements IFamilyLineageService {
         baselineLocation: 'LOC-0002',
         dowryCash: 6000,
         dowryItems: [{ itemCode: 'COM-SILK', itemNameVi: 'Tơ Lụa Thượng Phẩm', quantity: 4 }],
+        clueVi: 'Ái nữ Thái Ung đại phu, học rộng thi thư, tinh thông Hồ Gia Thập Bát Phách tại Kinh Đô Lạc Dương.',
+        clueEn: 'Daughter of Master Cai Yong, famous poet and musician residing in Imperial Capital Luoyang.',
         maternalTrait: {
           traitCode: 'TLT-POETIC-GENIUS',
           traitNameVi: 'Hồ Gia Thi Vận',
@@ -686,21 +739,47 @@ export class FamilyLineageService implements IFamilyLineageService {
         [h.npcId]
       ) || {};
 
-      let sentiment: { affinity: number; respect: number; titleVi: string };
-      try {
-        sentiment = kizunaEngine.getNpcSentiment(h.npcId);
-      } catch {
-        sentiment = { affinity: 85, respect: 80, titleVi: 'Tri Kỷ Hảo Cảm' };
+      const locRow = this.db.queryOne<any>(
+        'SELECT name_vi, name_en FROM master_locations WHERE location_id = ?;',
+        [char.baseline_location || h.baselineLocation]
+      );
+      const locationNameVi = locRow?.name_vi || 'Phương xa';
+      const locationNameEn = locRow?.name_en || 'Distant Province';
+
+      const isEncountered = this.hasEncounteredNpc(h.npcId);
+
+      let affinity = 0;
+      let respect = 0;
+      let relationshipTitleVi = 'Chưa Tương Ngộ (Chưa Gặp)';
+      let relationshipTitleEn = 'Unencountered (Unknown)';
+
+      if (isEncountered) {
+        try {
+          const sentiment = kizunaEngine.getNpcSentiment(h.npcId);
+          affinity = sentiment.affinity;
+          respect = sentiment.respect;
+          relationshipTitleVi = sentiment.titleVi;
+          relationshipTitleEn = sentiment.titleEn;
+        } catch {
+          affinity = 25;
+          respect = 25;
+          relationshipTitleVi = 'Sơ Giao';
+          relationshipTitleEn = 'Acquaintance';
+        }
       }
 
       const isAlreadyMarried = activeSpouseIds.has(h.npcId);
-      const canPropose = sentiment.affinity >= 80 && !isAlreadyMarried;
+      const canPropose = isEncountered && affinity >= 80 && !isAlreadyMarried;
 
       return {
         npcId: h.npcId,
         nameVi: char.name_vi || h.nameVi,
         nameEn: char.name_en || h.nameEn,
         baselineLocation: char.baseline_location || h.baselineLocation,
+        locationNameVi,
+        locationNameEn,
+        clueVi: h.clueVi,
+        clueEn: h.clueEn,
         keyStats: {
           war: Number(char.war_attr || 30),
           int: Number(char.int_attr || 70),
@@ -710,9 +789,11 @@ export class FamilyLineageService implements IFamilyLineageService {
           dip: Number(char.dip_attr || 70),
           cra: Number(char.cra_attr || 50)
         },
-        affinity: sentiment.affinity,
-        respect: sentiment.respect,
-        relationshipTitleVi: sentiment.titleVi,
+        isEncountered,
+        affinity,
+        respect,
+        relationshipTitleVi,
+        relationshipTitleEn,
         canPropose,
         recommendedDowryCash: h.dowryCash,
         recommendedDowryItems: h.dowryItems,
@@ -755,7 +836,14 @@ export class FamilyLineageService implements IFamilyLineageService {
         throw new Error(`Không tìm thấy hồ sơ mỹ nhân ${targetWifeId} trong thiên hạ lục!`);
       }
 
-      // 3. Check Affinity >= 80
+      // 3. Check Encounter Prerequisite (Must have met before proposing)
+      if (!this.hasEncounteredNpc(targetWifeId)) {
+        throw new Error(
+          `Bạn chưa từng diện kiến hay tương ngộ ${character.name_vi}! Phải diện kiến tương ngộ và bồi đắp hảo cảm (≥ 80) mới có thể nạp sính lễ cầu hôn.`
+        );
+      }
+
+      // 4. Check Affinity >= 80
       const kizunaEngine = DailyInteractionEngine.getInstance();
       const sentiment = kizunaEngine.getNpcSentiment(targetWifeId);
       if (sentiment.affinity < 80) {

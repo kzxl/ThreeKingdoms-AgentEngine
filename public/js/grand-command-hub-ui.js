@@ -980,6 +980,8 @@
       const candRes = await fetch('/api/lineage/courtship-candidates');
       const candData = await candRes.json();
       const candidates = candData.candidates || [];
+      const encountered = candidates.filter(c => c.isEncountered);
+      const unmet = candidates.filter(c => !c.isEncountered);
 
       subview.innerHTML = `
         <div>
@@ -1005,45 +1007,137 @@
               </div>
             `).join('') : `
               <div class="tactical-card" style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 18px;">
-                ${isEn ? 'Player currently has no married spouses. Propose to a courtship candidate below.' : 'Hiện tại Lương Diễn chưa lập gia thất. Hãy kết giao và cầu hôn các giai nhân Tam Quốc.'}
+                ${isEn ? 'Player currently has no married spouses. Propose to an encountered maiden below.' : 'Hiện tại Lương Diễn chưa lập gia thất. Hãy kết giao, diện kiến và cầu hôn các giai nhân Tam Quốc.'}
               </div>
             `}
           </div>
 
-          <!-- Eligible Courtship Candidates -->
-          <div class="hub-section-subtitle">${isEn ? 'Eligible Courtship Candidates (Affinity ≥ 80 Required):' : 'Danh Sách Tài Nữ Tam Quốc Có Thể Cầu Hôn (Hảo Cảm ≥ 80):'}</div>
-          <div class="grand-hub-grid-3">
-            ${candidates.map(cand => {
-              const eligible = cand.affinity >= 80;
-              return `
-                <div class="tactical-card" style="border: 1px solid ${eligible ? '#4ade80' : 'rgba(255,255,255,0.08)'};">
-                  <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
-                    <div>
-                      <strong style="color: #f1f5f9;">${cand.nameVi}</strong>
-                      <div style="font-size: 10.5px; color: var(--text-muted);">${cand.titleVi}</div>
-                    </div>
-                    <span class="tactical-badge ${eligible ? 'tactical-badge--success' : 'tactical-badge--warning'}">
-                      Hảo Cảm: ${cand.affinity}/100
-                    </span>
-                  </div>
-
-                  <div style="font-size: 11px; color: #cbd5e1; margin-bottom: 6px;">
-                    Sính lễ định ước: <b style="color: #fbbf24;">${formatNumber(cand.dowryCash)} Qian</b>
-                  </div>
-
-                  <div style="font-size: 10.5px; color: #38bdf8; background: rgba(56,189,248,0.1); padding: 4px 8px; border-radius: 4px; margin-bottom: 8px;">
-                    Đặc tính mẫu thân: <b>${cand.maternalTraitNameVi || 'Hiền Thục Bội Phần'}</b>
-                  </div>
-
-                  <button class="tactical-btn ${eligible ? 'tactical-btn--primary' : 'tactical-btn--disabled'} tactical-btn--sm" style="width: 100%;"
-                    ${eligible ? `onclick="GrandCommandHubUI.submitCourtship('${cand.npcId}', ${cand.dowryCash})"` : 'disabled'}
-                    title="${eligible ? 'Tiến hành lễ dạm ngõ sính lễ chính thức' : 'Chưa đủ 80 Hảo cảm để ngỏ lời cầu hôn'}">
-                    ${eligible ? 'Cầu Hôn Gia Thất →' : '[CHƯA ĐỦ HẢO CẢM]'}
-                  </button>
-                </div>
-              `;
-            }).join('')}
+          <!-- Section 1: Encountered Maidens (Interactive & Eligible) -->
+          <div class="hub-section-subtitle" style="display: flex; justify-content: space-between; align-items: center;">
+            <span>${isEn ? 'Encountered Heroines & Courtship (Affinity ≥ 80 Required):' : 'Giai Nhân Đã Tương Ngộ & Dạm Ngõ Cầu Hôn (Hảo Cảm ≥ 80):'}</span>
+            <span style="font-size: 11px; color: #a855f7; font-weight: normal;">${encountered.length} ${isEn ? 'encountered' : 'đã tương ngộ'}</span>
           </div>
+
+          ${encountered.length === 0 ? `
+            <div class="tactical-card" style="border-left: 3px solid #f59e0b; background: rgba(245, 158, 11, 0.05); margin-bottom: 20px; padding: 18px 20px;">
+              <div style="display: flex; align-items: flex-start; gap: 14px;">
+                <div style="font-size: 32px; line-height: 1;">🌸</div>
+                <div style="flex: 1;">
+                  <h4 style="margin: 0 0 6px 0; font-size: 14px; color: #fbbf24; font-weight: 600;">
+                    ${isEn ? 'No Maiden Encountered Yet' : 'Chưa Tương Ngộ Tuyệt Sắc Giai Nhân Nào'}
+                  </h4>
+                  <p style="margin: 0 0 10px 0; font-size: 12px; color: #cbd5e1; line-height: 1.5;">
+                    ${isEn
+                      ? 'You have not yet met or interacted with any prominent maidens in the realm. To unlock marriage proposals and family founding, you must first seek and encounter them.'
+                      : 'Lương Diễn hiện chưa từng diện kiến hay kết giao với tuyệt sắc giai nhân nào trong thiên hạ. Gia thất không thể tự tiện kết ước khi chưa từng tương ngộ.'}
+                  </p>
+                  <div style="font-size: 11.5px; color: #94a3b8; background: rgba(0,0,0,0.35); padding: 10px 14px; border-radius: 6px; border: 1px dashed rgba(255,255,255,0.12);">
+                    <strong style="color: #38bdf8;">${isEn ? '💡 Pathways to encounter heroines:' : '💡 Phương thức tương ngộ giai nhân:'}</strong>
+                    <ul style="margin: 6px 0 0 0; padding-left: 18px; line-height: 1.6;">
+                      <li><b>${isEn ? 'Travel to Regions:' : 'Hành tẩu châu quận:'}</b> ${isEn ? 'Visit cities where maidens reside (Yecheng, Luoyang, Jianye, Saitang).' : 'Di chuyển đến nơi các nàng ngụ cư (Nghiệp Thành, Lạc Dương, Kiến Nghiệp, Sài Tang...).'}</li>
+                      <li><b>${isEn ? 'Tavern Banquets & Gatherings:' : 'Yến tiệc tửu quán & Kết giao:'}</b> ${isEn ? 'Host banquets or visit taverns to trigger encounters and news.' : 'Mở yến tiệc tửu quán hoặc đàm đạo danh sĩ để mở rộng mạng lưới giao hảo.'}</li>
+                      <li><b>${isEn ? 'Kizuna Daily Interactions:' : 'Bồi đắp Hảo Cảm (Kizuna):'}</b> ${isEn ? 'Once encountered, converse, share tea, or present gifts to reach Affinity ≥ 80 before proposing.' : 'Sau khi diện kiến, đàm đạo, dâng lễ vật, mời trà để nâng Hảo Cảm đạt ≥ 80 điểm mới có thể dạm ngõ sính lễ.'}</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ` : `
+            <div class="grand-hub-grid-3" style="margin-bottom: 20px;">
+              ${encountered.map(cand => {
+                const eligible = cand.affinity >= 80;
+                const dowry = cand.recommendedDowryCash || cand.dowryCash || 5000;
+                const trait = cand.maternalTraitPerk?.traitNameVi || cand.maternalTraitNameVi || 'Hiền Thục Bội Phần';
+                return `
+                  <div class="tactical-card" style="border: 1px solid ${eligible ? '#4ade80' : '#ec4899'};">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
+                      <div>
+                        <strong style="color: #f1f5f9;">${cand.nameVi}</strong>
+                        <div style="font-size: 10.5px; color: var(--text-muted);">${cand.relationshipTitleVi || cand.titleVi || 'Tương Ngộ'}</div>
+                      </div>
+                      <span class="tactical-badge ${eligible ? 'tactical-badge--success' : 'tactical-badge--warning'}">
+                        Hảo Cảm: ${cand.affinity}/100
+                      </span>
+                    </div>
+
+                    <div style="font-size: 11px; color: #38bdf8; margin-bottom: 4px;">
+                      📍 Địa bàn: <b>${cand.locationNameVi || cand.baselineLocation}</b>
+                    </div>
+
+                    <div style="font-size: 11px; color: #cbd5e1; margin-bottom: 6px;">
+                      Sính lễ định ước: <b style="color: #fbbf24;">${formatNumber(dowry)} Qian</b>
+                    </div>
+
+                    <div style="font-size: 10.5px; color: #ec4899; background: rgba(236,72,153,0.1); padding: 4px 8px; border-radius: 4px; margin-bottom: 8px;">
+                      Đặc tính mẫu thân: <b>${trait}</b>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                      <button class="tactical-btn ${eligible ? 'tactical-btn--primary' : 'tactical-btn--disabled'} tactical-btn--sm" style="width: 100%;"
+                        ${eligible ? `onclick="GrandCommandHubUI.submitCourtship('${cand.npcId}', ${dowry})"` : 'disabled'}
+                        title="${eligible ? 'Tiến hành lễ dạm ngõ sính lễ chính thức' : `Chưa đủ 80 Hảo cảm để ngỏ lời cầu hôn (Hiện tại: ${cand.affinity}/80)`}">
+                        ${eligible ? 'Cầu Hôn Gia Thất →' : `[CHƯA ĐỦ HẢO CẢM (${cand.affinity}/80)]`}
+                      </button>
+                      <button class="tactical-btn tactical-btn--sm" style="font-size: 10.5px;" onclick="if(typeof openNpcDossierModal==='function')openNpcDossierModal('${cand.npcId}')">
+                        💬 ${isEn ? 'Converse & Cultivate Bond' : 'Đàm Đạo & Bồi Đắp Hảo Cảm'}
+                      </button>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          `}
+
+          <!-- Section 2: Unmet Maidens / Rumors under Fog of War -->
+          ${unmet.length > 0 ? `
+            <div class="hub-section-subtitle" style="display: flex; justify-content: space-between; align-items: center; margin-top: 18px;">
+              <span>${isEn ? 'Maiden Intel & Rumors (Unencountered • Under Fog):' : 'Manh Mối & Tung Tích Giai Nhân Trong Thiên Hạ (Chưa Tương Ngộ):'}</span>
+              <span style="font-size: 11px; color: #94a3b8; font-weight: normal;">${unmet.length} ${isEn ? 'unmet' : 'ẩn sĩ'}</span>
+            </div>
+            <div class="grand-hub-grid-3">
+              ${unmet.map(cand => {
+                const dowry = cand.recommendedDowryCash || cand.dowryCash || 5000;
+                const trait = cand.maternalTraitPerk?.traitNameVi || cand.maternalTraitNameVi || 'Hiền Thục Bội Phần';
+                return `
+                  <div class="tactical-card" style="border: 1px dashed rgba(255,255,255,0.15); background: rgba(15,23,42,0.55); opacity: 0.88;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
+                      <div>
+                        <strong style="color: #cbd5e1;">${cand.nameVi}</strong>
+                        <div style="font-size: 10.5px; color: #94a3b8;">${cand.relationshipTitleVi || 'Chưa Tương Ngộ'}</div>
+                      </div>
+                      <span class="tactical-badge" style="background: rgba(100,116,139,0.2); color: #94a3b8; border: 1px solid rgba(148,163,184,0.3);">
+                        🔒 Chưa Tương Ngộ
+                      </span>
+                    </div>
+
+                    <div style="font-size: 11px; color: #38bdf8; margin-bottom: 4px;">
+                      📍 Ngụ cư: <b>${cand.locationNameVi || cand.baselineLocation}</b>
+                    </div>
+
+                    <div style="font-size: 10.5px; color: #94a3b8; font-style: italic; background: rgba(0,0,0,0.25); padding: 5px 8px; border-radius: 4px; margin-bottom: 8px; line-height: 1.4;">
+                      "${cand.clueVi || 'Tung tích mịt mờ trong loạn thế...'}"
+                    </div>
+
+                    <div style="font-size: 10.5px; color: #64748b; margin-bottom: 8px;">
+                      Sính lễ ước định: <span style="color: #94a3b8;">${formatNumber(dowry)} Qian</span> • Đặc tính: <span style="color: #94a3b8;">${trait}</span>
+                    </div>
+
+                    <div style="display: flex; gap: 6px;">
+                      <button class="tactical-btn tactical-btn--disabled tactical-btn--sm" style="flex: 1; cursor: not-allowed;" disabled
+                        title="${isEn ? 'You have not encountered this maiden yet. Visit her region to meet.' : 'Bạn chưa từng diện kiến nhân vật này. Cần tương ngộ diện kiến trước.'}">
+                        🔒 [CHƯA TƯƠNG NGỘ]
+                      </button>
+                      <button class="tactical-btn tactical-btn--sm" style="font-size: 11px; padding: 4px 8px;"
+                        onclick="if(typeof openNpcDossierModal==='function')openNpcDossierModal('${cand.npcId}')"
+                        title="${isEn ? 'Inspect Rumor Dossier' : 'Thám thính hồ sơ tình báo'}">
+                        🔍
+                      </button>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          ` : ''}
         </div>
       `;
     } else if (activeLineageSubTab === 'heirs') {
