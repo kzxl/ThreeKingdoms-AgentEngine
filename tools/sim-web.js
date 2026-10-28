@@ -2194,6 +2194,9 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
         let replyNarrative = '';
         let dispatchType = null; // 'LOCAL' | 'COURIER' | 'TRAVEL'
         let targetLoc = null;
+        let diceCheck = null;
+        let tacticalReasoning = '';
+        let delta = {};
 
         // Direct ChoiceId Resolution from Current Scene
         if (payload.choiceId) {
@@ -2466,14 +2469,54 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
             dispatchType = 'COURIER';
           }
         } else {
-          // General dialogue / consultation response
-          let heroName = 'Trương Phi (Dực Đức)';
-          if (subLocation === 'Chợ Đông Môn') heroName = 'Quan Vũ (Vân Trường)';
-          else if (subLocation === 'Xưởng Lương Thị') heroName = 'Trần Bảo (Thợ Cả)';
-          else if (subLocation === 'Quảng Tông Quân Doanh') heroName = 'Lư Thực (Trung Lang Tướng)';
+          // Dynamic Everyday Socio-Behavioral Interaction Engine with Fog of Information
+          let currentNpcId = 'NPC-0002'; // default Trương Phi (Vườn Đào)
+          if (subLocation.includes('Đông Môn') || subLocation.includes('Chợ')) currentNpcId = 'NPC-0003'; // Quan Vũ
+          else if (subLocation.includes('Xưởng')) currentNpcId = 'NPC-0007'; // Trần Bảo
+          else if (subLocation.includes('Quảng Tông')) currentNpcId = 'NPC-0012'; // Lư Thực
+          else if (subLocation.includes('Bắc Bình')) currentNpcId = 'NPC-0011'; // Công Tôn Toản
 
-          replyNarrative = `Lương Diễn tại ${subLocation} trầm ngâm đàm đạo cùng ${heroName}: "${payload.prompt}". Các nhân sĩ nghe xong đều gật gù khen ngợi kiến giải sâu sắc, nhuệ khí tăng cao!`;
-          dispatchType = 'LOCAL';
+          if (globalThis.__DAILY_INTERACTION_ENGINE__) {
+            const pLower = (payload.prompt || '').toLowerCase();
+            let actionType = 'TEA_CONVERSE';
+            if (pLower.includes('rượu') || pLower.includes('uống') || pLower.includes('say') || pLower.includes('chén') || pLower.includes('nhậu') || pLower.includes('ẩm')) {
+              actionType = 'BANQUET_DRINK';
+            } else if (pLower.includes('so tài') || pLower.includes('tỉ thí') || pLower.includes('đấu') || pLower.includes('mâu') || pLower.includes('kiếm') || pLower.includes('võ') || pLower.includes('đao')) {
+              actionType = 'SPAR_DEBATE';
+            } else if (pLower.includes('thỉnh giáo') || pLower.includes('chỉ giáo') || pLower.includes('dạy') || pLower.includes('học') || pLower.includes('bái sư')) {
+              actionType = 'LEARN_MENTOR';
+            } else if (pLower.includes('tặng') || pLower.includes('biếu') || pLower.includes('gửi ít') || pLower.includes('thưởng')) {
+              actionType = 'GIFT_TREASURE';
+            } else if (pLower.includes('tâm sự') || pLower.includes('chí hướng') || pLower.includes('hoài bão') || pLower.includes('ước nguyện')) {
+              actionType = 'HEART_CONFESSION';
+            }
+
+            const dailyRes = globalThis.__DAILY_INTERACTION_ENGINE__.executeDailyInteraction(currentNpcId, actionType, payload.prompt);
+            replyNarrative = dailyRes.dialogueNarrativeVi;
+            dispatchType = 'LOCAL';
+            diceCheck = {
+              roll: dailyRes.diceRoll.total,
+              badge: `[D20: ${dailyRes.diceRoll.total}] ${dailyRes.outcomeTitleVi}`,
+              dc: 15,
+              passed: dailyRes.outcome === 'SUCCESS' || dailyRes.outcome === 'CRITICAL_SUCCESS'
+            };
+            tacticalReasoning = `Đổ xúc xắc giao tế D20: [${dailyRes.diceRoll.total}/20] -> Đạt trạng thái ${dailyRes.outcomeTitleVi}. Tác động Hảo cảm ${dailyRes.deltas.affinityChange > 0 ? '+' : ''}${dailyRes.deltas.affinityChange}, giải mã sương mù thông tin.`;
+            delta = {
+              cash: dailyRes.deltas.cashCost > 0 ? `-${dailyRes.deltas.cashCost} Qian` : 'Bảo toàn',
+              inventory: 'Bảo toàn',
+              relations: `Hảo cảm ${dailyRes.deltas.affinityChange > 0 ? '+' : ''}${dailyRes.deltas.affinityChange} • ${dailyRes.outcomeTitleVi}`,
+              dispatch: '📍 Giao tế đời thường',
+              audit: 'Khớp Nợ Chi Phí / Có Tiền Mặt'
+            };
+          } else {
+            let heroName = 'Trương Phi (Dực Đức)';
+            if (subLocation === 'Chợ Đông Môn') heroName = 'Quan Vũ (Vân Trường)';
+            else if (subLocation === 'Xưởng Lương Thị') heroName = 'Trần Bảo (Thợ Cả)';
+            else if (subLocation === 'Quảng Tông Quân Doanh') heroName = 'Lư Thực (Trung Lang Tướng)';
+
+            replyNarrative = `Lương Diễn tại ${subLocation} trầm ngâm đàm đạo cùng ${heroName}: "${payload.prompt}". Các nhân sĩ nghe xong đều gật gù khen ngợi kiến giải sâu sắc, nhuệ khí tăng cao!`;
+            dispatchType = 'LOCAL';
+          }
         }
 
         let execResult = null;
@@ -2481,9 +2524,6 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
           actionToRun.idempotency_key = `AGT_${Date.now()}`;
           execResult = core.executeAction(actionToRun);
         }
-
-        let tacticalReasoning = '';
-        let delta = {};
 
         if (actionToRun && actionToRun.type === 'TRADE_BUY') {
           tacticalReasoning = dispatchType === 'COURIER'
@@ -2557,7 +2597,7 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
         let speakerName = 'Hệ Thống Phản Hồi';
         let speakerTitle = 'Mô Phỏng & Đối Soát';
         let avatarChar = '⚙️';
-        let diceCheck = null;
+        // Preserve diceCheck if already calculated by DailyInteractionEngine
 
         if (dispatchType === 'COURIER') {
           turnType = 'courier';

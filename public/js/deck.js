@@ -54,9 +54,9 @@ async function loadDeckNpcs() {
         <div class="deck-npc-item">
           <div class="deck-npc-header">
             <div class="deck-npc-title-row">
-              <div class="deck-npc-avatar">${initial}</div>
+              <div class="deck-npc-avatar" style="cursor:pointer;" onclick="if(typeof openNpcDossierModal==='function')openNpcDossierModal('${npc.npc_id}')" title="Xem Hồ Sơ & Sương Mù">${initial}</div>
               <div>
-                <div class="deck-npc-name">${npc.name} (${npc.npc_id})</div>
+                <div class="deck-npc-name" style="cursor:pointer; text-decoration: underline dotted;" onclick="if(typeof openNpcDossierModal==='function')openNpcDossierModal('${npc.npc_id}')" title="Xem Hồ Sơ & Sương Mù">${npc.name} (${npc.npc_id})</div>
                 <div class="deck-npc-role">${npc.assigned_role || 'Thành viên'} @ ${npc.assigned_business_id || 'Trác Quận'}</div>
               </div>
             </div>

@@ -21,6 +21,8 @@ import { registerEconomyRoutes } from '../modules/economy/economy.controller';
 import { registerMilitaryRoutes } from '../modules/military/military.controller';
 import { registerProfessionsRoutes } from '../modules/professions/professions.controller';
 import { registerEcologyRoutes } from '../modules/ecology-logistics/ecology.controller';
+import { registerKizunaRoutes } from '../modules/social-kizuna/kizuna.controller';
+import { DailyInteractionEngine } from '../modules/social-kizuna/daily-interaction.engine';
 
 // Resolve database path
 const ROOT_DIR = path.resolve(__dirname, '../..');
@@ -75,6 +77,7 @@ export function createGrandStrategyRouter(): Router {
   registerMilitaryRoutes(router);
   registerProfessionsRoutes(router);
   registerEcologyRoutes(router);
+  registerKizunaRoutes(router);
   return router;
 }
 
@@ -88,6 +91,7 @@ async function main() {
   // Initialize modular HTTP router
   const router = createGrandStrategyRouter();
   (globalThis as any).__GRAND_STRATEGY_ROUTER__ = router;
+  (globalThis as any).__DAILY_INTERACTION_ENGINE__ = DailyInteractionEngine.getInstance();
   console.log(`[Bootstrap] 🌐 Modular Router active with ${router.getRoutes().length} registered endpoints.`);
 
   // Import existing web server

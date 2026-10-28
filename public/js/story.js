@@ -61,19 +61,42 @@ function renderReasoningHtml(reasoning) {
   return `<div class="story-reasoning">🧠 <strong>Agent Reasoning:</strong> ${reasoning}</div>`;
 }
 
+function resolveNpcIdFromName(name) {
+  if (!name) return 'NPC-0002';
+  const n = name.toLowerCase();
+  if (n.includes('phi') || n.includes('dực đức')) return 'NPC-0002';
+  if (n.includes('vũ') || n.includes('vân trường')) return 'NPC-0003';
+  if (n.includes('bị') || n.includes('huyền đức')) return 'NPC-0001';
+  if (n.includes('thực') || n.includes('tử cán')) return 'NPC-0012';
+  if (n.includes('bảo') || n.includes('trần bảo')) return 'NPC-0007';
+  if (n.includes('toản') || n.includes('bá khuê')) return 'NPC-0011';
+  if (n.includes('vân') || n.includes('tử long')) return 'NPC-0024';
+  if (n.includes('lượng') || n.includes('khổng minh')) return 'NPC-0025';
+  if (n.includes('thống') || n.includes('sĩ nguyên')) return 'NPC-0026';
+  return 'NPC-0002';
+}
+
+function handleSpeakerClick(speaker) {
+  if (typeof openNpcDossierModal === 'function') {
+    const npcId = resolveNpcIdFromName(speaker);
+    openNpcDossierModal(npcId);
+  }
+}
+
 function renderTurnHtml(turn) {
   const diceHtml = renderDiceBadgeHtml(turn.diceBadge);
   const deltaHtml = renderDeltaBarHtml(turn.deltas);
   const reasoningHtml = renderReasoningHtml(turn.reasoning);
   const formattedText = formatStoryText(turn.text);
+  const speakerEsc = (turn.speaker || '').replace(/'/g, "\\'");
 
   return `
     <div class="story-turn ${turn.type || 'npc'}" id="turn-${turn.id}">
-      <div class="story-turn-avatar">${turn.avatar || (turn.type === 'player' ? '梁' : '漢')}</div>
+      <div class="story-turn-avatar" onclick="handleSpeakerClick('${speakerEsc}')" style="cursor: pointer;" title="Xem Hồ Sơ & Sương Mù">${turn.avatar || (turn.type === 'player' ? '梁' : '漢')}</div>
       <div class="story-turn-content">
         <div class="story-turn-header">
           <div>
-            <span class="story-speaker-name">${turn.speaker || 'Nhân Vật'}</span>
+            <span class="story-speaker-name" onclick="handleSpeakerClick('${speakerEsc}')" style="cursor: pointer;" title="Xem Hồ Sơ & Sương Mù">${turn.speaker || 'Nhân Vật'}</span>
             ${turn.title ? `<span class="story-speaker-title">• ${turn.title}</span>` : ''}
           </div>
           <span class="story-time">${turn.time || '184-05-02'}</span>
@@ -294,7 +317,7 @@ function renderRelations(relations) {
     const status = isEn ? (rel.statusEn || rel.status) : rel.status;
 
     return `
-      <div class="rel-item">
+      <div class="rel-item" style="cursor: pointer;" onclick="handleSpeakerClick('${name}')" title="Nhấn để xem Hồ Sơ & Sương Mù Thông Tin">
         <div class="rel-info">
           <div class="rel-name-group">
             <span class="rel-name">${name}</span>
