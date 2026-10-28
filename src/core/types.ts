@@ -259,7 +259,8 @@ export type CaravanStatus =
   | 'ARRIVED'
   | 'AMBUSHED_FIGHTING'
   | 'PLUNDERED'
-  | 'SUCCESS_TRADED';
+  | 'SUCCESS_TRADED'
+  | 'COMPLETED';
 
 export interface TradeCaravan {
   caravanId: string;

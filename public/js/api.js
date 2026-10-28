@@ -382,6 +382,63 @@ async function apiSimulateEcologyTurn() {
   return data;
 }
 
+// ------------------------------------------------------------------
+// Regional Market & Inter-City Caravan APIs
+// ------------------------------------------------------------------
+async function apiFetchRegionalPrices(settlementId, itemCode) {
+  const q = new URLSearchParams();
+  if (settlementId) q.append('settlement', settlementId);
+  if (itemCode) q.append('itemCode', itemCode);
+  const res = await fetch(`${API_BASE}/api/economy/regional-prices?${q.toString()}`);
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Failed to fetch regional prices');
+  return data;
+}
+
+async function apiFetchArbitrage(fromLoc) {
+  const q = fromLoc ? `?from=${encodeURIComponent(fromLoc)}` : '';
+  const res = await fetch(`${API_BASE}/api/economy/arbitrage${q}`);
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Failed to fetch arbitrage opportunities');
+  return data;
+}
+
+async function apiDispatchCaravan(payload) {
+  const res = await fetch(`${API_BASE}/api/caravans/dispatch`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Failed to dispatch caravan');
+  return data;
+}
+
+async function apiTickCaravanProgress() {
+  const res = await fetch(`${API_BASE}/api/caravans/tick-progress`, { method: 'POST' });
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Failed to tick caravan progress');
+  return data;
+}
+
+async function apiClaimCaravan(caravanId) {
+  const res = await fetch(`${API_BASE}/api/caravans/claim`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ caravanId })
+  });
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Failed to claim caravan');
+  return data;
+}
+
+async function apiFetchPlayerCaravans() {
+  const res = await fetch(`${API_BASE}/api/caravans/player`);
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Failed to fetch player caravans');
+  return data;
+}
+
 // Global exposure
 window.apiFetchStatus = apiFetchStatus;
 window.apiFetchAudit = apiFetchAudit;
@@ -427,6 +484,12 @@ window.apiFetchStrongholds = apiFetchStrongholds;
 window.apiDispatchRelief = apiDispatchRelief;
 window.apiAttackStronghold = apiAttackStronghold;
 window.apiSimulateEcologyTurn = apiSimulateEcologyTurn;
+window.apiFetchRegionalPrices = apiFetchRegionalPrices;
+window.apiFetchArbitrage = apiFetchArbitrage;
+window.apiDispatchCaravan = apiDispatchCaravan;
+window.apiTickCaravanProgress = apiTickCaravanProgress;
+window.apiClaimCaravan = apiClaimCaravan;
+window.apiFetchPlayerCaravans = apiFetchPlayerCaravans;
 
 
 

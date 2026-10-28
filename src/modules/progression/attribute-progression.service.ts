@@ -81,6 +81,17 @@ export class AttributeProgressionService {
   }
 
   /**
+   * Static helper shortcut to award EXP directly.
+   */
+  public static awardAttributeExp(
+    characterId: string,
+    attrKey: string,
+    amount: number
+  ): AwardExpResult {
+    return AttributeProgressionService.getInstance().awardAttributeExp(characterId, attrKey, amount);
+  }
+
+  /**
    * Normalizes an attribute key string (e.g. 'war', 'WAR', 'war_attr', 'war_exp')
    * into a canonical AttributeType.
    */
@@ -339,3 +350,5 @@ export class AttributeProgressionService {
     );
   }
 }
+
+export const ProgressionExpService = AttributeProgressionService;

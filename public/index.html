@@ -133,6 +133,10 @@
             <button class="btn-cmd-dossier" id="btn-open-enterprise" onclick="if(window.EnterpriseUI){window.EnterpriseUI.openEnterpriseModal('work');}else if(window.openEnterpriseModal){window.openEnterpriseModal('work');}" title="Gia Sản & Việc Làm (Làm chủ / Làm thuê)">
               <span id="txt-btn-enterprise">Sản Nghiệp</span>
             </button>
+            <!-- Inter-City Caravan Trade Toggle Button -->
+            <button class="btn-cmd-dossier" id="btn-open-caravan" onclick="if(window.CaravanUI){window.CaravanUI.open('arbitrage');}else if(window.openCaravanModal){window.openCaravanModal('arbitrage');}" title="Thương Đoàn Buôn Chuyến & Thị Trường Liên Thành">
+              <span id="txt-btn-caravan">Thương Đoàn</span>
+            </button>
             <!-- Courier / Remote Orders Toggle Button -->
             <button class="btn-courier-toggle" id="btn-courier-toggle" onclick="toggleCourierDrawer()" title="Phái sứ giả / Phi thư tín viễn trình">
               <span id="txt-btn-courier">Phi Thư / Sứ Giả</span>
@@ -826,6 +830,7 @@
   <script src="/js/npc-dossier-modal.js"></script>
   <script src="/js/equipment-ui.js"></script>
   <script src="/js/enterprise-ui.js"></script>
+  <script src="/js/caravan-ui.js"></script>
   <script src="/js/story.js"></script>
   <script src="/js/deck.js"></script>
   <script src="/app.js"></script>

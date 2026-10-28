@@ -10,6 +10,8 @@ import { Router, sendJson, RouteContext } from '../../server/router';
 import { DatabaseService } from '../../core/database';
 import { ModuleRegistry } from '../../core/module-registry';
 import { EconomyModule } from './economy.module';
+import { RegionalMarketService, SETTLEMENT_PROFILES } from './regional-market.service';
+import { CaravanLogisticsService } from '../ecology-logistics/caravan-logistics.service';
 
 function getEconomyModule(): EconomyModule | undefined {
   const gsm = (globalThis as any).__GRAND_STRATEGY_MODULES__;
@@ -532,4 +534,170 @@ export function registerEconomyRoutes(router: Router): void {
 
   router.get('/api/caravans', handleGetCaravans);
   router.get('/api/economy/caravans', handleGetCaravans);
+
+  // -------------------------------------------------------------
+  // 7. GET /api/economy/regional-prices?settlement=<id>&itemCode=<item>
+  // -------------------------------------------------------------
+  const handleGetRegionalPrices = async (_req: any, res: any, ctx: RouteContext) => {
+    try {
+      const settlementId =
+        (ctx.query.settlement as string) || (ctx.query.settlementId as string) || 'zhuo_xian';
+      const itemCode = (ctx.query.itemCode as string) || (ctx.query.item as string) || undefined;
+      const marketService = RegionalMarketService.getInstance();
+      const catalog = marketService.getSettlementMarketCatalog(settlementId);
+      const price = itemCode ? marketService.calculateSettlementPrice(settlementId, itemCode) : undefined;
+      sendJson(res, 200, {
+        success: true,
+        settlementId,
+        itemCode,
+        price,
+        count: catalog.length,
+        catalog
+      });
+    } catch (err: any) {
+      sendJson(res, 500, { success: false, error: err.message });
+    }
+  };
+
+  router.get('/api/economy/regional-prices', handleGetRegionalPrices);
+
+  // -------------------------------------------------------------
+  // 8. GET /api/economy/arbitrage?from=<id>
+  // -------------------------------------------------------------
+  const handleGetArbitrage = async (_req: any, res: any, ctx: RouteContext) => {
+    try {
+      const fromSettlementId =
+        (ctx.query.from as string) || (ctx.query.fromSettlementId as string) || 'zhuo_xian';
+      const marketService = RegionalMarketService.getInstance();
+      const opportunities = marketService.getArbitrageOpportunities(fromSettlementId);
+      const settlements = Object.values(SETTLEMENT_PROFILES).map((p) => ({
+        settlementId: p.settlementId,
+        nameVi: p.nameVi,
+        provinceVi: p.provinceVi
+      }));
+      sendJson(res, 200, {
+        success: true,
+        fromSettlementId,
+        settlements,
+        count: opportunities.length,
+        opportunities
+      });
+    } catch (err: any) {
+      sendJson(res, 500, { success: false, error: err.message });
+    }
+  };
+
+  router.get('/api/economy/arbitrage', handleGetArbitrage);
+
+  // -------------------------------------------------------------
+  // 9. POST /api/caravans/dispatch & /api/economy/caravans/dispatch
+  // -------------------------------------------------------------
+  const handleDispatchCaravan = async (_req: any, res: any, ctx: RouteContext) => {
+    try {
+      const {
+        cargoItemCode,
+        cargoQuantity,
+        fromSettlementId,
+        toSettlementId,
+        guardTier = 'VETERAN',
+        playerId = 'PLY-0001'
+      } = ctx.body || {};
+
+      if (!cargoItemCode || !cargoQuantity || !fromSettlementId || !toSettlementId) {
+        sendJson(res, 400, {
+          success: false,
+          error: 'cargoItemCode, cargoQuantity, fromSettlementId, và toSettlementId là các tham số bắt buộc.'
+        });
+        return;
+      }
+
+      const logisticsService = CaravanLogisticsService.getInstance();
+      const result = logisticsService.dispatchCaravan(
+        {
+          cargoItemCode,
+          cargoQuantity: parseFloat(cargoQuantity),
+          fromSettlementId,
+          toSettlementId,
+          guardTier
+        },
+        playerId
+      );
+
+      sendJson(res, 200, {
+        success: true,
+        ...result
+      });
+    } catch (err: any) {
+      sendJson(res, 400, { success: false, error: err.message });
+    }
+  };
+
+  router.post('/api/caravans/dispatch', handleDispatchCaravan);
+  router.post('/api/economy/caravans/dispatch', handleDispatchCaravan);
+
+  // -------------------------------------------------------------
+  // 10. POST /api/caravans/tick-progress & /api/economy/caravans/tick-progress
+  // -------------------------------------------------------------
+  const handleTickCaravans = async (_req: any, res: any, _ctx: RouteContext) => {
+    try {
+      const logisticsService = CaravanLogisticsService.getInstance();
+      const result = logisticsService.tickCaravans();
+      sendJson(res, 200, {
+        success: true,
+        ...result
+      });
+    } catch (err: any) {
+      sendJson(res, 500, { success: false, error: err.message });
+    }
+  };
+
+  router.post('/api/caravans/tick-progress', handleTickCaravans);
+  router.post('/api/economy/caravans/tick-progress', handleTickCaravans);
+
+  // -------------------------------------------------------------
+  // 11. POST /api/caravans/claim & /api/economy/caravans/claim
+  // -------------------------------------------------------------
+  const handleClaimCaravan = async (_req: any, res: any, ctx: RouteContext) => {
+    try {
+      const { caravanId, playerId = 'PLY-0001' } = ctx.body || {};
+      if (!caravanId) {
+        sendJson(res, 400, {
+          success: false,
+          error: 'caravanId là tham số bắt buộc.'
+        });
+        return;
+      }
+
+      const logisticsService = CaravanLogisticsService.getInstance();
+      const result = logisticsService.claimCaravan(caravanId, playerId);
+      sendJson(res, 200, result);
+    } catch (err: any) {
+      sendJson(res, 400, { success: false, error: err.message });
+    }
+  };
+
+  router.post('/api/caravans/claim', handleClaimCaravan);
+  router.post('/api/economy/caravans/claim', handleClaimCaravan);
+
+  // -------------------------------------------------------------
+  // 12. GET /api/caravans/player & /api/economy/caravans/player
+  // -------------------------------------------------------------
+  const handleGetPlayerCaravans = async (_req: any, res: any, ctx: RouteContext) => {
+    try {
+      const playerId = (ctx.query.playerId as string) || 'PLY-0001';
+      const logisticsService = CaravanLogisticsService.getInstance();
+      const caravans = logisticsService.getPlayerCaravans(playerId);
+      sendJson(res, 200, {
+        success: true,
+        playerId,
+        count: caravans.length,
+        caravans
+      });
+    } catch (err: any) {
+      sendJson(res, 500, { success: false, error: err.message });
+    }
+  };
+
+  router.get('/api/caravans/player', handleGetPlayerCaravans);
+  router.get('/api/economy/caravans/player', handleGetPlayerCaravans);
 }

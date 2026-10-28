@@ -21,6 +21,7 @@ const I18N_DICT = {
     btnExecuteDirect: 'Thi Hành',
     btnExecuteAi: 'AI',
     btnInspectDossier: 'Hồ Sơ',
+    btnCaravan: 'Thương Đoàn',
     btnCourierToggle: 'Phi Thư / Sứ Giả',
     courierDrawerTitle: 'Phi Thư & Sứ Giả Viễn Trình',
     courierDrawerDesc: 'Truyền đạt mật lệnh, điều phối nhân lực hoặc luân chuyển quân nhu tới các cứ điểm khác mà không cần rời vị trí hiện tại.',
@@ -142,6 +143,7 @@ const I18N_DICT = {
     btnExecuteDirect: 'Execute',
     btnExecuteAi: 'AI',
     btnInspectDossier: 'Dossier',
+    btnCaravan: 'Caravans',
     btnCourierToggle: 'Courier / Envoy',
     courierDrawerTitle: 'Remote Courier & Dispatch',
     courierDrawerDesc: 'Dispatch confidential missives, order logistics, or mobilize retainers without leaving current base.',
@@ -284,6 +286,9 @@ function applyLanguage() {
 
   const txtBtnNpc = document.getElementById('txt-btn-local-npc');
   if (txtBtnNpc) txtBtnNpc.innerText = dict.btnInspectDossier;
+
+  const txtBtnCaravan = document.getElementById('txt-btn-caravan');
+  if (txtBtnCaravan) txtBtnCaravan.innerText = dict.btnCaravan || (currentLang === 'en' ? 'Caravans' : 'Thương Đoàn');
 
   const txtOmniAi = document.getElementById('txt-omni-ai');
   if (txtOmniAi) txtOmniAi.innerText = dict.btnOmniAi;
