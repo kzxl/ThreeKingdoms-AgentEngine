@@ -23,6 +23,9 @@ import { registerProfessionsRoutes } from '../modules/professions/professions.co
 import { registerEcologyRoutes } from '../modules/ecology-logistics/ecology.controller';
 import { registerKizunaRoutes } from '../modules/social-kizuna/kizuna.controller';
 import { registerBlacksmithForgeRoutes } from '../modules/professions/blacksmith-forge.service';
+import { registerLineageRoutes } from '../modules/lineage-succession/lineage.controller';
+import { registerDuelRoutes } from '../modules/military/duel.controller';
+import { registerBanquetRoutes } from '../modules/social-kizuna/banquet.controller';
 import { DailyInteractionEngine } from '../modules/social-kizuna/daily-interaction.engine';
 import { ContextActionEngine } from '../modules/contextual-actions/context-action.engine';
 
@@ -56,7 +59,7 @@ export async function bootstrapGrandStrategy() {
 
   await registry.initAll(DB_PATH);
 
-  console.log(`[Bootstrap] 🟢 ${registry.getAll().length} Feature Modules Active:`);
+  console.log(`[Bootstrap] [ACTIVE] ${registry.getAll().length} Feature Modules Active:`);
   registry.getAll().forEach(m => console.log(`   ├─ [${m.id}] ${m.name} (v${m.version})`));
 
   return {
@@ -81,6 +84,9 @@ export function createGrandStrategyRouter(): Router {
   registerEcologyRoutes(router);
   registerKizunaRoutes(router);
   registerBlacksmithForgeRoutes(router);
+  registerLineageRoutes(router);
+  registerDuelRoutes(router);
+  registerBanquetRoutes(router);
   return router;
 }
 
@@ -96,7 +102,7 @@ async function main() {
   (globalThis as any).__GRAND_STRATEGY_ROUTER__ = router;
   (globalThis as any).__DAILY_INTERACTION_ENGINE__ = DailyInteractionEngine.getInstance();
   (globalThis as any).__CONTEXT_ACTION_ENGINE__ = ContextActionEngine.getInstance();
-  console.log(`[Bootstrap] 🌐 Modular Router active with ${router.getRoutes().length} registered endpoints.`);
+  console.log(`[Bootstrap] [HTTP] Modular Router active with ${router.getRoutes().length} registered endpoints.`);
 
   // Import existing web server
   const simWeb = require('../../tools/sim-web.js');

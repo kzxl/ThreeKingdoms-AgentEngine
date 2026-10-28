@@ -593,14 +593,14 @@ export class DailyInteractionEngine {
     });
 
     const ambitionView = {
-      displayVi: (tier >= 4 || fog.revealedAmbition) ? (profile.ambitionVi || profile.motivation) : '🔒 Khóa [Cần Hảo Cảm ≥ 60 để mở]',
-      displayEn: (tier >= 4 || fog.revealedAmbition) ? (profile.ambitionEn || profile.motivation) : '🔒 Locked [Requires Affinity ≥ 60]',
+      displayVi: (tier >= 4 || fog.revealedAmbition) ? (profile.ambitionVi || profile.motivation) : '[KHÓA] [Cần Hảo Cảm ≥ 60 để mở]',
+      displayEn: (tier >= 4 || fog.revealedAmbition) ? (profile.ambitionEn || profile.motivation) : '[LOCKED] [Requires Affinity ≥ 60]',
       isRevealed: tier >= 4 || fog.revealedAmbition
     };
 
     const secretView = {
-      displayVi: (tier >= 5 || fog.revealedSecrets) ? profile.secretStoryVi : '🔒 Khóa [Cần Kết Bái Huynh Đệ để mở]',
-      displayEn: (tier >= 5 || fog.revealedSecrets) ? profile.secretStoryEn : '🔒 Locked [Requires Sworn Bond]',
+      displayVi: (tier >= 5 || fog.revealedSecrets) ? profile.secretStoryVi : '[KHÓA] [Cần Kết Bái Huynh Đệ để mở]',
+      displayEn: (tier >= 5 || fog.revealedSecrets) ? profile.secretStoryEn : '[LOCKED] [Requires Sworn Bond]',
       isRevealed: tier >= 5 || fog.revealedSecrets
     };
 

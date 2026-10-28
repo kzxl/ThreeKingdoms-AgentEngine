@@ -174,6 +174,18 @@ const MIME_TYPES = {
   '.svg': 'image/svg+xml'
 };
 
+// Auto-initialize Grand Strategy Modular Router if not already initialized
+if (!globalThis.__GRAND_STRATEGY_ROUTER__) {
+  try {
+    require('tsx/cjs');
+    const { createGrandStrategyRouter } = require('../src/server/main.ts');
+    globalThis.__GRAND_STRATEGY_ROUTER__ = createGrandStrategyRouter();
+    console.log('[tools/sim-web.js] Attached Grand Strategy Router with full REST endpoints (Lineage, Duel, Banquet, etc.).');
+  } catch (err) {
+    console.warn('[tools/sim-web.js] Grand Strategy Router initialization notice:', err.message);
+  }
+}
+
 const server = http.createServer(async (req, res) => {
   // Delegate to Modular Controller Router if present
   if (globalThis.__GRAND_STRATEGY_ROUTER__) {
@@ -834,7 +846,7 @@ const server = http.createServer(async (req, res) => {
           nameEn: r.name_en || r.item_code,
           quality,
           statModifiers: clampedMods,
-          slotIcon: r.slot_type === 'WEAPON' ? '⚔️' : r.slot_type === 'ARMOR' ? '🛡️' : r.slot_type === 'STEED' ? '🐎' : '📜',
+          slotIcon: r.slot_type === 'WEAPON' ? '兵' : r.slot_type === 'ARMOR' ? '甲' : r.slot_type === 'STEED' ? '馬' : '策',
           slotLabelVi: r.slot_type === 'WEAPON' ? 'Binh Khí' : r.slot_type === 'ARMOR' ? 'Khôi Giáp' : r.slot_type === 'STEED' ? 'Chiến Mã' : 'Bảo Vật'
         };
 
@@ -2059,28 +2071,28 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
     options = [
       {
         id: 'OPT_1',
-        icon: '🛒',
+        icon: '商',
         title: 'Mua sỉ 8 tấm da thuộc của Trương Phi (Chi 800 Tiền)',
         desc: '+8 COM-LEATH vào kho • Hảo cảm Trương Phi +2 • COM Check DC 35',
         action: { type: 'TRADE_BUY', item_code: 'COM-LEATH', quantity: 8, unit_price: 100, counterparty: 'Trương Phi (Lò mổ Huyện Trác)', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_2',
-        icon: '⚔️',
+        icon: '武',
         title: 'Thỉnh giáo Trương Phi đấu thương thực chiến đợt 2 (Miễn phí)',
         desc: 'Luyện Thương Pháp (+8 EXP SKL-WAR-SPEAR, WAR +1) • Hảo cảm Trương Phi +5 • WAR Check DC 45',
         action: { type: 'REWARD_NPC', npc_id: 'NPC-0002', amount: 50, counterparty: 'Trương Phi (Dực Đức)', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_3',
-        icon: '🌸',
+        icon: '景',
         title: 'Rời Vườn Đào, đi tới Chợ Đông Môn tìm gặp Quan Vũ',
         desc: 'Chuyển cảnh sang Chợ Huyện Trác & Sạp Trà (1 dặm)',
         action: { type: 'MOVE_LOCATION', new_location: 'Chợ Đông Môn', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_4',
-        icon: '✉️',
+        icon: '信',
         title: 'Phi thư về Xưởng Lương Thị: Chỉ đạo đóng 5 Khiên trúc quân dụng',
         desc: 'Phái gia nhân phi ngựa mang mật lệnh về xưởng • Tiêu hao BOM Tre & Da',
         action: { type: 'PRODUCTION_BATCH', recipe: 'PROD-SHIELD-BAM', batch_size: 5, game_date: meta.current_date || '184-05-02' }
@@ -2112,28 +2124,28 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
       options = [
         {
           id: 'OPT_1',
-          icon: '🧂',
+          icon: '商',
           title: 'Xuất bán 10 Đấu Muối biển cho Thương đoàn Ký Châu (Thu 850 Tiền)',
           desc: '-10 COM-SALT • +850 Tiền mặt lưu động • COM Check DC 35',
           action: { type: 'TRADE_SELL', item_code: 'COM-SALT', quantity: 10, unit_price: 85, counterparty: 'Thương nhân Ký Châu', game_date: meta.current_date || '184-05-02' }
         },
         {
           id: 'OPT_2',
-          icon: '🌾',
+          icon: '農',
           title: 'Thu mua 5 Thạch Lương tiểu mạch dự trữ (Chi 800 Tiền)',
           desc: '+5 COM-GRAIN • Tiêu hao 800 Tiền • LOG Check DC 40',
           action: { type: 'TRADE_BUY', item_code: 'COM-GRAIN', quantity: 5, unit_price: 160, counterparty: 'Lương thương Huyện Trác', game_date: meta.current_date || '184-05-02' }
         },
         {
           id: 'OPT_3',
-          icon: '🍵',
+          icon: '茶',
           title: 'Mời Quan Vũ uống trà, bàn luận đại cục thiên hạ và Binh pháp',
           desc: 'Hảo cảm Quan Vũ +5 • Tăng EXP Kỹ năng Quân Sự • Chi 100 Tiền trà',
           action: { type: 'REWARD_NPC', npc_id: 'NPC-0003', amount: 100, counterparty: 'Quan Vũ (Vân Trường)', game_date: meta.current_date || '184-05-02' }
         },
         {
           id: 'OPT_4',
-          icon: '🏭',
+          icon: '工',
           title: 'Rời chợ Đông Môn, tới Lương Thị Chức Tác Phường (1.5 dặm)',
           desc: 'Cơ động sang xưởng thủ công kiểm tra tiến độ dệt đan khí giới',
           action: { type: 'MOVE_LOCATION', new_location: 'Xưởng Lương Thị', game_date: meta.current_date || '184-05-02' }
@@ -2144,7 +2156,7 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
       options = [
         {
           id: 'OPT_1',
-          icon: hasMatsToSell ? '🎋' : '🧂',
+          icon: hasMatsToSell ? '工' : '商',
           title: hasMatsToSell 
             ? 'Xuất bán 10 Tấm Chiếu Trúc Lương Gia cho Thương đoàn Ký Châu (Thu 800 Tiền)' 
             : 'Thu mua 10 Đấu Muối biển Ký Châu giá sỉ dự trữ (Chi 650 Tiền)',
@@ -2157,21 +2169,21 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
         },
         {
           id: 'OPT_2',
-          icon: '🌾',
+          icon: '農',
           title: 'Thu mua 5 Thạch Lương tiểu mạch dự trữ (Chi 800 Tiền)',
           desc: '+5 COM-GRAIN • Tiêu hao 800 Tiền • LOG Check DC 40',
           action: { type: 'TRADE_BUY', item_code: 'COM-GRAIN', quantity: 5, unit_price: 160, counterparty: 'Lương thương Huyện Trác', game_date: meta.current_date || '184-05-02' }
         },
         {
           id: 'OPT_3',
-          icon: '🍵',
+          icon: '茶',
           title: 'Mời Quan Vũ uống trà, bàn luận đại cục thiên hạ và Binh pháp',
           desc: 'Hảo cảm Quan Vũ +5 • Tăng EXP Kỹ năng Quân Sự • Chi 100 Tiền trà',
           action: { type: 'REWARD_NPC', npc_id: 'NPC-0003', amount: 100, counterparty: 'Quan Vũ (Vân Trường)', game_date: meta.current_date || '184-05-02' }
         },
         {
           id: 'OPT_4',
-          icon: '🏭',
+          icon: '工',
           title: 'Rời chợ Đông Môn, tới Lương Thị Chức Tác Phường (1.5 dặm)',
           desc: 'Cơ động sang xưởng thủ công kiểm tra tiến độ dệt đan khí giới',
           action: { type: 'MOVE_LOCATION', new_location: 'Xưởng Lương Thị', game_date: meta.current_date || '184-05-02' }
@@ -2199,28 +2211,28 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
     options = [
       {
         id: 'OPT_1',
-        icon: '🎋',
+        icon: '工',
         title: 'Khởi động ca sản xuất: Đóng 10 Chiếu Trúc Lương Gia',
         desc: 'Tiêu hao 2.5 Trúc, 1.0 Gai • Thu hoạch 10 Chiếu Trúc xuất xưởng',
         action: { type: 'PRODUCTION_BATCH', recipe: 'PROD-MAT', batch_size: 10, game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_2',
-        icon: '🛡️',
+        icon: '甲',
         title: 'Khởi động ca chế tạo: Đóng 5 Khiên Trúc Bọc Da Quân Dụng',
         desc: 'Tiêu hao 4.0 Trúc, 2.5 Da, 1.0 Gai • Thu hoạch 5 Khiên Trúc',
         action: { type: 'PRODUCTION_BATCH', recipe: 'PROD-SHIELD-BAM', batch_size: 5, game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_3',
-        icon: '🎁',
+        icon: '賞',
         title: 'Khen thưởng 100 Tiền cho Thợ Cả Trần Bảo động viên thợ xưởng',
         desc: 'Sĩ khí thợ xưởng 100% • Trung thành +2 • Chi 100 Tiền két an toàn',
         action: { type: 'REWARD_NPC', npc_id: 'NPC-0007', amount: 100, counterparty: 'Trần Bảo (Thợ Cả Lương Gia)', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_4',
-        icon: '🚶',
+        icon: '行',
         title: 'Rời xưởng Lương Thị, đi tới Chợ Đông Môn tìm thương đoàn',
         desc: 'Chuyển cảnh sang Chợ Huyện Trác',
         action: { type: 'MOVE_LOCATION', new_location: 'Chợ Đông Môn', game_date: meta.current_date || '184-05-02' }
@@ -2247,28 +2259,28 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
     options = [
       {
         id: 'OPT_1',
-        icon: '🎖️',
+        icon: '功',
         title: 'Nhận thưởng 2000 Tiền quân công phá giặc từ Tướng Quân Lư Thực',
         desc: '+2,000 Tiền mặt ngân khố • Ghi nhận quân huân Bắc Quân',
         action: { type: 'RECORD_BOUNTY', counterparty: 'Bắc Quân Tướng Quân Lư Thực', amount: 2000, memo: 'Thưởng quân công vận trù khí giới phá thành Quảng Tông', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_2',
-        icon: '🌾',
+        icon: '農',
         title: 'Tiếp tế 5 Thạch Lương tiểu mạch cho Quân Nhu Cục Bắc Quân',
         desc: '-5 COM-GRAIN • +900 Tiền thu mua quân nhu (@180 Tiền/thạch)',
         action: { type: 'TRADE_SELL', item_code: 'COM-GRAIN', quantity: 5, unit_price: 180, counterparty: 'Quân nhu cục Bắc Quân', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_3',
-        icon: '📜',
+        icon: '策',
         title: 'Hiến kế hoạch nghi binh vây thành, thắt chặt vòng vây Quảng Tông',
         desc: 'EXP Binh Pháp Mưu Lược +15 • Tín nhiệm Lư Thực +5',
         action: { type: 'REWARD_NPC', npc_id: 'NPC-0004', amount: 100, counterparty: 'Lư Thực (Tử Cán)', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_4',
-        icon: '🐎',
+        icon: '馬',
         title: 'Rút quân trở về hậu phương Trang Viên Vườn Đào Huyện Trác',
         desc: 'Chuyển cảnh về Vườn Đào Hạ Trạch',
         action: { type: 'MOVE_LOCATION', new_location: 'Vườn Đào', game_date: meta.current_date || '184-05-02' }
@@ -2295,28 +2307,28 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
     options = [
       {
         id: 'OPT_1',
-        icon: '🛡️',
+        icon: '甲',
         title: 'Cung cấp 5 Khiên Trúc Lương Gia cho Dân Binh Xã Tắc (Thu 1,200 Tiền)',
         desc: 'Hỗ trợ hương dũng Bình Nguyên phòng ngự • Tăng uy vọng địa phương',
         action: { type: 'TRADE_SELL', item_code: 'PROD-SHIELD-BAM', quantity: 5, unit_price: 240, counterparty: 'Quan phủ Huyện Bình Nguyên', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_2',
-        icon: '🌾',
+        icon: '農',
         title: 'Thu mua lương thảo ngô khoai Thanh Châu tiếp tế (Chi 600 Tiền)',
         desc: '+4 COM-GRAIN • Bổ sung quân nhu viễn chinh',
         action: { type: 'TRADE_BUY', item_code: 'COM-GRAIN', quantity: 4, unit_price: 150, counterparty: 'Thương hội Thanh Châu', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_3',
-        icon: '📜',
+        icon: '策',
         title: 'Hiến kế thiết lập hệ thống phong hỏa đài cảnh giới liên hoàn',
         desc: 'EXP Chính Trị & Binh Pháp +15 • Tín nhiệm Huyện Thừa +5',
         action: { type: 'REWARD_NPC', npc_id: 'NPC-0008', amount: 100, counterparty: 'Vương Triệt (Huyện Thừa Bình Nguyên)', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_4',
-        icon: '🐎',
+        icon: '馬',
         title: 'Hành quân trở về Hậu Phương Trang Viên Vườn Đào Huyện Trác',
         desc: 'Cơ động về bản doanh U Châu',
         action: { type: 'MOVE_LOCATION', new_location: 'Vườn Đào', game_date: meta.current_date || '184-05-02' }
@@ -2343,28 +2355,28 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
     options = [
       {
         id: 'OPT_1',
-        icon: '🔥',
+        icon: '火',
         title: 'Cung cấp 5 Khiên Trúc bọc da trợ chiến tiền phong hỏa công',
         desc: 'Chi viện khiên giáp che chắn đội mồi lửa • Hào cảm Hoàng Phủ Tung +10',
         action: { type: 'TRADE_SELL', item_code: 'PROD-SHIELD-BAM', quantity: 5, unit_price: 250, counterparty: 'Tả Quân Hoàng Phủ Tung', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_2',
-        icon: '🌾',
+        icon: '農',
         title: 'Tiếp tế 8 Thạch Lương thực khẩn cấp cho đại doanh Dự Châu (Thu 1,440 Tiền)',
         desc: '-8 COM-GRAIN • Thu 1,440 Tiền mặt ngân sách quân đội',
         action: { type: 'TRADE_SELL', item_code: 'COM-GRAIN', quantity: 8, unit_price: 180, counterparty: 'Quân nhu cục Dự Châu', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_3',
-        icon: '🐎',
+        icon: '馬',
         title: 'Bắt liên lạc hiệp đồng kỵ binh cứu viện của Kỵ Đô Úy Tào Tháo',
         desc: 'Mở rộng quan hệ thế lực Tào Tháo • EXP Quân sự +20',
         action: { type: 'REWARD_NPC', npc_id: 'NPC-0009', amount: 100, counterparty: 'Tào Tháo (Kỵ Đô Úy)', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_4',
-        icon: '🐎',
+        icon: '馬',
         title: 'Rút quân theo quan đạo trở về Hậu Phương Trang Viên Vườn Đào',
         desc: 'Cơ động về Trác Huyện U Châu',
         action: { type: 'MOVE_LOCATION', new_location: 'Vườn Đào', game_date: meta.current_date || '184-05-02' }
@@ -2391,28 +2403,28 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
     options = [
       {
         id: 'OPT_1',
-        icon: '🎖️',
+        icon: '功',
         title: 'Nhận sắc phong Quân Nhu Tán Quan & Thưởng 2,500 Tiền từ Triều Đình',
         desc: '+2,500 Tiền mặt ngân khố triều đình • Tăng danh vọng sĩ phu Lạc Dương',
         action: { type: 'RECORD_BOUNTY', counterparty: 'Đại Tướng Quân Phủ Lạc Dương', amount: 2500, memo: 'Ban thưởng công huân vận trù quân lương bình Khăn Vàng', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_2',
-        icon: '🏛️',
+        icon: '府',
         title: 'Đăng ký môn bài chi nhánh Lương Gia Thương Hội tại Kinh Sư (Chi 1,000 Tiền)',
         desc: 'Mở phân hiệu giao thương độc quyền kinh đô • Tăng tiềm năng thương vụ',
         action: { type: 'REWARD_NPC', npc_id: 'NPC-0010', amount: 100, counterparty: 'Hà Tiến (Đại Tướng Quân)', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_3',
-        icon: '🍵',
+        icon: '茶',
         title: 'Biếu lễ vật tiếp xúc Binh Bộ Thượng Thư nắm bắt thời cuộc',
         desc: 'Thu thập tin mật cung đình • EXP Chính Trị +25',
         action: { type: 'REWARD_NPC', npc_id: 'NPC-0010', amount: 100, counterparty: 'Binh Bộ Thượng Thư Lạc Dương', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_4',
-        icon: '🐎',
+        icon: '馬',
         title: 'Rời Kinh Sư Lạc Dương, cất bước trở về Trang Viên Vườn Đào Huyện Trác',
         desc: 'Cơ động về bản doanh U Châu',
         action: { type: 'MOVE_LOCATION', new_location: 'Vườn Đào', game_date: meta.current_date || '184-05-02' }
@@ -2439,28 +2451,28 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
     options = [
       {
         id: 'OPT_1',
-        icon: '🛡️',
+        icon: '甲',
         title: 'Cung cấp 10 Khiên Trúc Lương Gia chi viện quân biên cương (Thu 2,400 Tiền)',
         desc: 'Cung cấp khí giới cho phòng tuyến Bắc Bình • Danh vọng U Châu +15',
         action: { type: 'TRADE_SELL', item_code: 'PROD-SHIELD-BAM', quantity: 10, unit_price: 240, counterparty: 'Bắc Bình Soái Phủ Công Tôn Toản', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_2',
-        icon: '🐎',
+        icon: '馬',
         title: 'Thu mua 3 Tuấn Mã U Châu chất lượng cao (Chi 1,200 Tiền)',
         desc: '+3 COM-LEATH nguyên liệu da hảo hạng • Tăng tốc độ hành quân',
         action: { type: 'TRADE_BUY', item_code: 'COM-LEATH', quantity: 3, unit_price: 400, counterparty: 'Quân Mã Cục Bắc Bình', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_3',
-        icon: '🤝',
+        icon: '義',
         title: 'Đàm phán hiệp ước tương trợ quân nhu Trác Huyện và Bắc Bình',
         desc: 'EXP Ngoại Giao +20 • Tăng uy vọng chư hầu phương Bắc',
         action: { type: 'REWARD_NPC', npc_id: 'NPC-0011', amount: 100, counterparty: 'Công Tôn Toản (Bá Khuê)', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_4',
-        icon: '🐎',
+        icon: '馬',
         title: 'Rời Bắc Bình, xuôi quan đạo trở về Huyện Trác',
         desc: 'Cơ động về bản doanh Huyện Trác',
         action: { type: 'MOVE_LOCATION', new_location: 'Vườn Đào', game_date: meta.current_date || '184-05-02' }
@@ -2487,28 +2499,28 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
     options = [
       {
         id: 'OPT_1',
-        icon: '🎋',
+        icon: '工',
         title: 'Xuất bán 20 tấm Chiếu Trúc Lương Gia cho các đại tộc Nghiệp Thành (Thu 1,600 Tiền)',
         desc: 'Mở rộng thị trường thủ công mỹ nghệ cao cấp tại Ký Châu',
         action: { type: 'TRADE_SELL', item_code: 'PROD-MAT', quantity: 20, unit_price: 80, counterparty: 'Thế tộc Nghiệp Thành', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_2',
-        icon: '🌾',
+        icon: '農',
         title: 'Gom mua 15 thạch lương Ký Châu giá sỉ từ thương lái (Chi 2,100 Tiền)',
         desc: '+15 COM-GRAIN vào kho dự trữ • Tối ưu giá lương thảo',
         action: { type: 'TRADE_BUY', item_code: 'COM-GRAIN', quantity: 15, unit_price: 140, counterparty: 'Lương thương Ký Châu', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_3',
-        icon: '🍷',
+        icon: '宴',
         title: 'Dự dạ yến phủ Viên Thiệu đàm đạo thời thế hào kiệt',
         desc: 'EXP Chính Trị & Xã Giao +25 • Tăng thanh thế gia tộc Lương Thị',
         action: { type: 'REWARD_NPC', npc_id: 'NPC-0012', amount: 100, counterparty: 'Viên Thiệu (Bản Sơ)', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_4',
-        icon: '🐎',
+        icon: '馬',
         title: 'Rời Nghiệp Thành, theo đường bắc tiến về Huyện Trác',
         desc: 'Cơ động về Huyện Trác',
         action: { type: 'MOVE_LOCATION', new_location: 'Vườn Đào', game_date: meta.current_date || '184-05-02' }
@@ -2535,28 +2547,28 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
     options = [
       {
         id: 'OPT_1',
-        icon: '🛡️',
+        icon: '甲',
         title: 'Xuất bán 10 Khiên Trúc hỗ trợ dân binh Từ Châu phòng thủ (Thu 2,400 Tiền)',
         desc: 'Cung cấp khiên giáp giữ thành Hạ Phì • Thu 2,400 Tiền ngân khố Từ Châu',
         action: { type: 'TRADE_SELL', item_code: 'PROD-SHIELD-BAM', quantity: 10, unit_price: 240, counterparty: 'Từ Châu Thứ Sử Đào Khiêm', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_2',
-        icon: '🧂',
+        icon: '商',
         title: 'Thu mua 15 đấu muối biển duyên hải Từ Châu giá rẻ (Chi 900 Tiền)',
         desc: '+15 COM-SALT vào kho • Đơn giá ưu đãi 60 Tiền/đấu',
         action: { type: 'TRADE_BUY', item_code: 'COM-SALT', quantity: 15, unit_price: 60, counterparty: 'Diêm trường Hạ Phì', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_3',
-        icon: '🤝',
+        icon: '義',
         title: 'Tiếp xúc cự phú Mi Trúc bàn kế hoạch liên minh thương hội',
         desc: 'Kết giao đại tộc Từ Châu • EXP Thương Nghiệp +20',
         action: { type: 'REWARD_NPC', npc_id: 'NPC-0014', amount: 100, counterparty: 'Mi Trúc (Đại Phú Từ Châu)', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_4',
-        icon: '🐎',
+        icon: '馬',
         title: 'Rời Hạ Phì, trở về Hậu Phương Trang Viên Vườn Đào Huyện Trác',
         desc: 'Cơ động về bản doanh U Châu',
         action: { type: 'MOVE_LOCATION', new_location: 'Vườn Đào', game_date: meta.current_date || '184-05-02' }
@@ -2583,28 +2595,28 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
     options = [
       {
         id: 'OPT_1',
-        icon: '🎖️',
+        icon: '功',
         title: 'Nhận ban thưởng 2,500 Tiền ngân khố Quan Trung tiếp trợ triều đình',
         desc: '+2,500 Tiền mặt • Ghi nhận quân huân Tây Đô',
         action: { type: 'RECORD_BOUNTY', counterparty: 'Tư Đồ Phủ Trường An', amount: 2500, memo: 'Tiếp trợ ngân khố phòng ngự Tây Đô', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_2',
-        icon: '🌾',
+        icon: '農',
         title: 'Xuất bán 10 thạch lương cho kho đồn trú Trường An (Thu 1,900 Tiền)',
         desc: '-10 COM-GRAIN • Giá lương đồn trú Tây Đô cực cao',
         action: { type: 'TRADE_SELL', item_code: 'COM-GRAIN', quantity: 10, unit_price: 190, counterparty: 'Quân nhu Trường An', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_3',
-        icon: '🛒',
+        icon: '商',
         title: 'Mua 8 tấm da trâu hảo hạng Tây Lương (Chi 800 Tiền)',
         desc: '+8 COM-LEATH da thuộc dai bền chuẩn bị chế tác giáp',
         action: { type: 'TRADE_BUY', item_code: 'COM-LEATH', quantity: 8, unit_price: 100, counterparty: 'Thương nhân Quan Trung', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_4',
-        icon: '🐎',
+        icon: '馬',
         title: 'Rời Trường An, qua Đồng Quan trở về Lạc Dương',
         desc: 'Hành quân về phía đông sang Lạc Dương',
         action: { type: 'MOVE_LOCATION', new_location: 'Kinh Đô Lạc Dương', game_date: meta.current_date || '184-05-02' }
@@ -2631,28 +2643,28 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
     options = [
       {
         id: 'OPT_1',
-        icon: '🧂',
+        icon: '商',
         title: 'Xuất bán 10 đấu muối biển cho thương đoàn Kinh Tương (Thu 950 Tiền)',
         desc: '-10 COM-SALT • Kinh Châu khan hiếm muối biển, giá cao',
         action: { type: 'TRADE_SELL', item_code: 'COM-SALT', quantity: 10, unit_price: 95, counterparty: 'Thương đoàn Kinh Tương', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_2',
-        icon: '🌾',
+        icon: '農',
         title: 'Thu mua 10 thạch lúa gạo thơm Kinh Châu (Chi 1,500 Tiền)',
         desc: '+10 COM-GRAIN lúa gạo miền sông nước dự trữ dồi dào',
         action: { type: 'TRADE_BUY', item_code: 'COM-GRAIN', quantity: 10, unit_price: 150, counterparty: 'Thực túc cục Tương Dương', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_3',
-        icon: '📜',
+        icon: '策',
         title: 'Thăm hỏi danh sĩ Thủy Kính Trang đàm đạo về nhân tài thiên hạ',
         desc: 'EXP Mưu Lược & Nhân Mạch +20 • Mở rộng danh vọng',
         action: { type: 'REWARD_NPC', npc_id: 'NPC-0016', amount: 100, counterparty: 'Lưu Biểu (Kinh Châu Mục)', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_4',
-        icon: '🐎',
+        icon: '馬',
         title: 'Rời Tương Dương, trở về Hậu Phương Trang Viên Vườn Đào Huyện Trác',
         desc: 'Hành quân trở về U Châu',
         action: { type: 'MOVE_LOCATION', new_location: 'Vườn Đào', game_date: meta.current_date || '184-05-02' }
@@ -2679,28 +2691,28 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
     options = [
       {
         id: 'OPT_1',
-        icon: '🛡️',
+        icon: '甲',
         title: 'Cung cấp 8 Khiên Trúc bọc da chống tên cho thủy binh (Thu 2,000 Tiền)',
         desc: 'Trang bị khiên giáp bơi lội tốt cho đội thủy chiến',
         action: { type: 'TRADE_SELL', item_code: 'PROD-SHIELD-BAM', quantity: 8, unit_price: 250, counterparty: 'Thủy Sư Giang Lăng', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_2',
-        icon: '🛒',
+        icon: '商',
         title: 'Thu mua 8 tấm da trâu bọc mạn thuyền (Chi 800 Tiền)',
         desc: '+8 COM-LEATH da thuộc tuyển chọn từ thương nhân Trường Giang',
         action: { type: 'TRADE_BUY', item_code: 'COM-LEATH', quantity: 8, unit_price: 100, counterparty: 'Thương cảng Giang Lăng', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_3',
-        icon: '⛵',
+        icon: '舟',
         title: 'Huấn luyện phối hợp thủy chiến và kiểm tra tuần giang',
         desc: 'Tăng cường kinh nghiệm thủy chiến • EXP Quân Sự +20',
         action: { type: 'REWARD_NPC', npc_id: 'NPC-0017', amount: 100, counterparty: 'Thủy Sư Hiệu Úy Giang Lăng', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_4',
-        icon: '⛵',
+        icon: '舟',
         title: 'Thuyền chiến xuôi dòng Trường Giang tiến tới Xích Bích',
         desc: 'Cơ động bằng đường thủy sang Xích Bích',
         action: { type: 'MOVE_LOCATION', new_location: 'Xích Bích Thủy Trại', game_date: meta.current_date || '184-05-02' }
@@ -2727,28 +2739,28 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
     options = [
       {
         id: 'OPT_1',
-        icon: '🛡️',
+        icon: '甲',
         title: 'Chi viện 10 Khiên Trúc bọc da chống lửa cho hạm đội (Thu 2,500 Tiền)',
         desc: 'Hỗ trợ đội mồi lửa áp sát • Hảo cảm Chu Du +10',
         action: { type: 'TRADE_SELL', item_code: 'PROD-SHIELD-BAM', quantity: 10, unit_price: 250, counterparty: 'Đông Ngô Đô Đốc Chu Du', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_2',
-        icon: '🌾',
+        icon: '農',
         title: 'Tiếp tế 10 thạch quân lương cho thủy trại Sài Tang (Thu 1,800 Tiền)',
         desc: '-10 COM-GRAIN • Chi viện quân lương cấp bách',
         action: { type: 'TRADE_SELL', item_code: 'COM-GRAIN', quantity: 10, unit_price: 180, counterparty: 'Quân nhu Sài Tang', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_3',
-        icon: '🔥',
+        icon: '火',
         title: 'Cùng Chu Du khảo sát phong hướng và sa bàn thủy chiến Trường Giang',
         desc: 'EXP Binh Pháp Đỉnh Cao +30 • Uy danh vang dội Giang Đông',
         action: { type: 'REWARD_NPC', npc_id: 'NPC-0018', amount: 100, counterparty: 'Chu Du (Công Cẩn)', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_4',
-        icon: '⛵',
+        icon: '舟',
         title: 'Thuyền ngược dòng trở về căn cứ Giang Lăng',
         desc: 'Cơ động đường thủy về Giang Lăng',
         action: { type: 'MOVE_LOCATION', new_location: 'Giang Lăng Thủy Doanh', game_date: meta.current_date || '184-05-02' }
@@ -2775,28 +2787,28 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
     options = [
       {
         id: 'OPT_1',
-        icon: '🎋',
+        icon: '工',
         title: 'Xuất bán 20 Chiếu Trúc Lương Gia cho cung phủ Đông Ngô (Thu 1,800 Tiền)',
         desc: 'Chiếu trúc U Châu mát mẻ mùa hạ rất được quý tộc Giang Đông chuộng',
         action: { type: 'TRADE_SELL', item_code: 'PROD-MAT', quantity: 20, unit_price: 90, counterparty: 'Vương phủ Kiến Nghiệp', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_2',
-        icon: '🍵',
+        icon: '茶',
         title: 'Mua sỉ đặc sản gốm sứ và trà quý Giang Nam (Chi 1,000 Tiền)',
         desc: 'Thương phẩm đặc sắc giá trị cao • Tăng quan hệ thương mại',
         action: { type: 'REWARD_NPC', npc_id: 'NPC-0019', amount: 100, counterparty: 'Thương Điếm Giang Nam', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_3',
-        icon: '🐅',
+        icon: '虎',
         title: 'Yết kiến Tôn Quyền đàm đạo thế liên minh phòng thủ phương Bắc',
         desc: 'EXP Chính Trị & Ngoại Giao +25 • Tăng danh vọng Giang Đông',
         action: { type: 'REWARD_NPC', npc_id: 'NPC-0019', amount: 100, counterparty: 'Tôn Quyền (Trọng Mưu)', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_4',
-        icon: '🐎',
+        icon: '馬',
         title: 'Rời Kiến Nghiệp, trở về Hậu Phương Trang Viên Vườn Đào Huyện Trác',
         desc: 'Hành quân trở về U Châu',
         action: { type: 'MOVE_LOCATION', new_location: 'Vườn Đào', game_date: meta.current_date || '184-05-02' }
@@ -2823,28 +2835,28 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
     options = [
       {
         id: 'OPT_1',
-        icon: '🌾',
+        icon: '農',
         title: 'Quyên góp 5 thạch lương vào nghĩa xá tăng uy vọng (Thu 900 Tiền tạ lễ)',
         desc: 'Tạo phúc đức trong vùng • Tăng danh tiếng thiện nhân',
         action: { type: 'TRADE_SELL', item_code: 'COM-GRAIN', quantity: 5, unit_price: 180, counterparty: 'Nghĩa Xá Thiên Sư Đạo', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_2',
-        icon: '🛒',
+        icon: '商',
         title: 'Thu mua 8 vị thảo dược quý Tần Lĩnh trị thương (Chi 800 Tiền)',
         desc: '+8 COM-LEATH thuốc quý và da hươu núi chữa thương cho quân lính',
         action: { type: 'TRADE_BUY', item_code: 'COM-LEATH', quantity: 8, unit_price: 100, counterparty: 'Dược phòng Hán Trung', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_3',
-        icon: '🛡️',
+        icon: '甲',
         title: 'Cung cấp 5 Khiên Trúc bảo vệ dịch trạm đường núi Kiếm Các (Thu 1,250 Tiền)',
         desc: 'Hỗ trợ tuần binh đường đèo • Thu 1,250 Tiền từ quan phủ Hán Trung',
         action: { type: 'TRADE_SELL', item_code: 'PROD-SHIELD-BAM', quantity: 5, unit_price: 250, counterparty: 'Trấn Dân Phủ Hán Trung', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_4',
-        icon: '🐎',
+        icon: '馬',
         title: 'Vượt Kiếm Các quan ải hiểm trở tiến vào Thành Đô',
         desc: 'Tiến vào thủ phủ đất Thục',
         action: { type: 'MOVE_LOCATION', new_location: 'Thành Đô Ích Châu Phủ', game_date: meta.current_date || '184-05-02' }
@@ -2871,28 +2883,28 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
     options = [
       {
         id: 'OPT_1',
-        icon: '🎋',
+        icon: '工',
         title: 'Xuất bán 20 tấm Chiếu Trúc Lương Gia cho phủ Ích Châu (Thu 1,800 Tiền)',
         desc: 'Được giới quý tộc Thục Hán tán thưởng nhiệt liệt',
         action: { type: 'TRADE_SELL', item_code: 'PROD-MAT', quantity: 20, unit_price: 90, counterparty: 'Ích Châu Châu Phủ', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_2',
-        icon: '🌾',
+        icon: '農',
         title: 'Thu mua 10 thạch lúa gạo Thiên Phủ dồi dào dự trữ (Chi 1,400 Tiền)',
         desc: '+10 COM-GRAIN lúa gạo trù phú bồn địa Tứ Xuyên',
         action: { type: 'TRADE_BUY', item_code: 'COM-GRAIN', quantity: 10, unit_price: 140, counterparty: 'Lương điền Thành Đô', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_3',
-        icon: '🍷',
+        icon: '宴',
         title: 'Dự tiệc rượu Tây Thục thưởng thức nhạc vũ và Thục Cẩm tinh hoa',
         desc: 'EXP Chính Trị & Văn Hóa +25 • Tăng hòa hảo lãnh chúa Ích Châu',
         action: { type: 'REWARD_NPC', npc_id: 'NPC-0021', amount: 100, counterparty: 'Lưu Chương (Ích Châu Mục)', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_4',
-        icon: '🐎',
+        icon: '馬',
         title: 'Rời Thành Đô, vượt Kiếm Các quay về Hán Trung',
         desc: 'Cơ động ngược ra Hán Trung',
         action: { type: 'MOVE_LOCATION', new_location: 'Hán Trung Thiên Sư Phủ', game_date: meta.current_date || '184-05-02' }
@@ -3305,7 +3317,7 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
               relations: isClientEn 
                 ? `Affinity ${dailyRes.deltas.affinityChange > 0 ? '+' : ''}${dailyRes.deltas.affinityChange} • ${dailyRes.outcomeTitleEn || dailyRes.outcomeTitleVi}`
                 : `Hảo cảm ${dailyRes.deltas.affinityChange > 0 ? '+' : ''}${dailyRes.deltas.affinityChange} • ${dailyRes.outcomeTitleVi}`,
-              dispatch: isClientEn ? '📍 Everyday Social' : '📍 Giao tế đời thường',
+              dispatch: isClientEn ? '[TRỰC DIỆN] Everyday Social' : '[TRỰC DIỆN] Giao tế đời thường',
               audit: isClientEn ? 'Dr EXP-OPERATING / Cr CASH-ON-HAND' : 'Khớp Nợ Chi Phí / Có Tiền Mặt'
             };
           } else {
@@ -3332,7 +3344,7 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
           delta = { 
             cash: `-${actionToRun.quantity * actionToRun.unit_price} Qian`, 
             inventory: `+${actionToRun.quantity} ${actionToRun.item_code}`, 
-            dispatch: dispatchType === 'COURIER' ? `✉️ Phi thư tới ${targetLoc}` : '📍 Trực tiếp tại chỗ',
+            dispatch: dispatchType === 'COURIER' ? `[PHI THƯ] Phi thư tới ${targetLoc}` : '[TRỰC DIỆN] Trực tiếp tại chỗ',
             audit: 'Khớp Nợ Tồn Kho / Có Tiền Mặt' 
           };
         } else if (actionToRun && actionToRun.type === 'TRADE_SELL') {
@@ -3342,7 +3354,7 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
           delta = { 
             cash: `+${actionToRun.quantity * actionToRun.unit_price} Qian`, 
             inventory: `-${actionToRun.quantity} ${actionToRun.item_code}`, 
-            dispatch: dispatchType === 'COURIER' ? `✉️ Áp tải ra ${targetLoc}` : '📍 Trực tiếp tại chỗ',
+            dispatch: dispatchType === 'COURIER' ? `[PHI THƯ] Áp tải ra ${targetLoc}` : '[TRỰC DIỆN] Trực tiếp tại chỗ',
             audit: 'Khớp Nợ Tiền Mặt / Có Doanh Thu' 
           };
         } else if (actionToRun && actionToRun.type === 'PRODUCTION_BATCH') {
@@ -3352,7 +3364,7 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
           delta = { 
             cash: '0 Qian (Tiêu hao nguyên liệu)', 
             inventory: `+${actionToRun.batch_size} thành phẩm`, 
-            dispatch: dispatchType === 'COURIER' ? `✉️ Mật lệnh về ${targetLoc}` : '📍 Trực tiếp tại xưởng',
+            dispatch: dispatchType === 'COURIER' ? `[PHI THƯ] Mật lệnh về ${targetLoc}` : '[TRỰC DIỆN] Trực tiếp tại xưởng',
             audit: 'Bảo toàn BOM định mức' 
           };
         } else if (actionToRun && actionToRun.type === 'REWARD_NPC') {
@@ -3361,24 +3373,24 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
             cash: `-${actionToRun.amount} Qian`, 
             inventory: 'Bảo toàn', 
             npc: 'Sĩ khí 100% • Trung thành +2', 
-            dispatch: dispatchType === 'COURIER' ? `✉️ Gửi thưởng tới ${targetLoc}` : '📍 Ban thưởng tại chỗ',
+            dispatch: dispatchType === 'COURIER' ? `[PHI THƯ] Gửi thưởng tới ${targetLoc}` : '[TRỰC DIỆN] Ban thưởng tại chỗ',
             audit: 'Khớp Nợ Chi Phí / Có Tiền Mặt' 
           };
         } else if (actionToRun && actionToRun.type === 'MOVE_LOCATION') {
           tacticalReasoning = `Cơ động tới ${actionToRun.new_location} mở rộng mạng lưới giao thương và tiếp xúc các thế lực Tam Quốc.`;
-          delta = { cash: '0 Qian', inventory: 'Bảo toàn', location: actionToRun.new_location, dispatch: '🏇 Di chuyển thực tế', audit: 'Cập nhật vị trí chiến dịch' };
+          delta = { cash: '0 Qian', inventory: 'Bảo toàn', location: actionToRun.new_location, dispatch: '[HÀNH TRÌNH] Di chuyển thực tế', audit: 'Cập nhật vị trí chiến dịch' };
         } else if (actionToRun && actionToRun.type === 'RECORD_BOUNTY') {
           tacticalReasoning = `Ghi nhận quân thưởng quân công từ tiền tuyến phá giặc Khăn Vàng.`;
           delta = { 
             cash: `+${actionToRun.amount} Qian`, 
             inventory: 'Bảo toàn', 
             relations: 'Quân huân Bắc Quân +20', 
-            dispatch: dispatchType === 'COURIER' ? '✉️ Công văn tiền tuyến' : '📍 Trực diện tại soái trướng',
+            dispatch: dispatchType === 'COURIER' ? '[PHI THƯ] Công văn tiền tuyến' : '[TRỰC DIỆN] Trực diện tại soái trướng',
             audit: 'Khớp Nợ Tiền Mặt / Có Thu Nhập Khác' 
           };
         } else {
           tacticalReasoning = `Đàm đạo chiến lược và thăm dò tình hình thời cuộc cùng các hào kiệt tại ${subLocation}.`;
-          delta = { cash: '0 Qian', inventory: 'Bảo toàn', relations: 'Hảo cảm +5', dispatch: '📍 Đối thoại trực diện', audit: 'Bảo toàn trạng thái' };
+          delta = { cash: '0 Qian', inventory: 'Bảo toàn', relations: 'Hảo cảm +5', dispatch: '[TRỰC DIỆN] Đối thoại trực diện', audit: 'Bảo toàn trạng thái' };
         }
 
         logAgentSimulationEvent({
@@ -3396,20 +3408,20 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
         let turnType = 'npc';
         let speakerName = 'Hệ Thống Phản Hồi';
         let speakerTitle = 'Mô Phỏng & Đối Soát';
-        let avatarChar = '⚙️';
+        let avatarChar = '機';
         // Preserve diceCheck if already calculated by DailyInteractionEngine
 
         if (dispatchType === 'COURIER') {
           turnType = 'courier';
           speakerName = 'Gia Nhân Tiếp Vận (Phi Thư)';
           speakerTitle = targetLoc ? `Mật Thư Tới ${targetLoc}` : 'Chỉ Đạo Từ Xa';
-          avatarChar = '✉️';
+          avatarChar = '信';
           diceCheck = null;
         } else if (dispatchType === 'TRAVEL') {
           turnType = 'travel';
           speakerName = 'Lữ Trình Quan Đạo';
           speakerTitle = `Chuyển Cảnh Tới ${subLocation}`;
-          avatarChar = '🏇';
+          avatarChar = '騎';
           diceCheck = null;
         } else if (actionToRun && actionToRun.type === 'PRODUCTION_BATCH') {
           turnType = 'action';
@@ -3422,23 +3434,23 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
           speakerName = actionToRun.counterparty || 'Thương Đoàn Ký Châu';
           if (actionToRun.item_code === 'PROD-MAT') {
             speakerTitle = 'Gian Hàng Thủ Công & Chiếu Trúc';
-            avatarChar = '🎋';
+            avatarChar = '工';
           } else if (actionToRun.item_code === 'COM-SALT') {
             speakerTitle = 'Sạp Muối Chợ Đông Môn';
-            avatarChar = '🧂';
+            avatarChar = '商';
           } else if (actionToRun.item_code === 'COM-GRAIN') {
             speakerTitle = 'Kho Lương Đại Trại';
-            avatarChar = '🌾';
+            avatarChar = '農';
           } else {
             speakerTitle = 'Giao Thương Hàng Hóa';
-            avatarChar = '📦';
+            avatarChar = '貨';
           }
           diceCheck = null;
         } else if (actionToRun && actionToRun.type === 'TRADE_BUY' && subLocation === 'Chợ Đông Môn') {
           turnType = 'action';
           speakerName = 'Lương Thương Huyện Trác';
           speakerTitle = 'Kho Lương Chợ Đông Môn';
-          avatarChar = '🌾';
+          avatarChar = '農';
           diceCheck = null;
         } else if (actionToRun && actionToRun.type === 'TRADE_BUY' && subLocation === 'Vườn Đào') {
           turnType = 'npc';
@@ -3450,7 +3462,7 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
           turnType = 'npc';
           speakerName = actionToRun.counterparty || 'Lư Thực (Tử Cán)';
           speakerTitle = 'Quân Huân Tiền Tuyến';
-          avatarChar = '🎖️';
+          avatarChar = '功';
           diceCheck = null;
         } else if (actionToRun && actionToRun.type === 'REWARD_NPC') {
           turnType = 'npc';
@@ -3558,12 +3570,12 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
 function startServer(port = DEFAULT_PORT) {
   server.listen(port, '0.0.0.0', () => {
     console.log('====================================================');
-    console.log(` 🏯 ThreeKingdoms-AgentEngine: Web UI Server`);
+    console.log(` [軍機] ThreeKingdoms-AgentEngine: Web UI Server`);
     console.log('====================================================');
     console.log(` URL (Local)   : http://localhost:${port}`);
     console.log(` URL (IPv4)    : http://127.0.0.1:${port}`);
     console.log(` Database      : ${DB_PATH}`);
-    console.log(` Status        : 🟢 ONLINE & READY`);
+    console.log(` Status        : [ONLINE] READY`);
     console.log('====================================================');
   });
 

@@ -878,7 +878,7 @@ async function loadAndRenderNpcLife() {
                 <h4 class="tactical-card-title">${s.title_vi}</h4>
                 <div class="tactical-card-subtitle">Đột Phá Thân Phận • Lượt ${s.turn_number}</div>
               </div>
-              <span class="tactical-badge tactical-badge--primary">${s.old_tier} ➔ ${s.new_tier}</span>
+              <span class="tactical-badge tactical-badge--primary">${s.old_tier} → ${s.new_tier}</span>
             </div>
             <p class="tactical-narrative">${s.narrative_vi}</p>
           </div>
@@ -1573,7 +1573,7 @@ async function loadAndRenderEcology() {
                 <span class="tactical-badge ${st.badgeClass}">${st.label}</span>
               </div>
               <div style="font-size:11.5px; color:#cbd5e1;">
-                Lộ Trình: <b>${car.fromSettlementName || car.fromSettlementId}</b> ➔ <b>${car.toSettlementName || car.toSettlementId}</b>
+                Lộ Trình: <b>${car.fromSettlementName || car.fromSettlementId}</b> → <b>${car.toSettlementName || car.toSettlementId}</b>
               </div>
               <div class="tactical-progress-track">
                 <div class="tactical-progress-bar ${isPlundered ? 'tactical-progress-bar--danger' : ''}" style="width:${progressPercent}%;"></div>

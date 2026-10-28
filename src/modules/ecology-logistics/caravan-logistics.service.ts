@@ -264,7 +264,7 @@ export class CaravanLogisticsService {
 
       // 9. Generate Caravan record
       const caravanId = `CRV-${Date.now().toString().slice(-6)}`;
-      const caravanName = `Lương Thị Thương Đội (${fromProfile.nameVi} ➔ ${toProfile.nameVi})`;
+      const caravanName = `Lương Thị Thương Đội (${fromProfile.nameVi} → ${toProfile.nameVi})`;
       const ownerFactionId = 'FAC-LIANG-CLAN';
 
       this.db.execute(

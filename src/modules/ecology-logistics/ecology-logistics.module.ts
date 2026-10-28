@@ -350,7 +350,7 @@ export class EcologyLogisticsModule implements IFeatureModule {
             );
           });
 
-          events.push(`⚠️ ${car.caravan_name} đã bị ${stronghold.name_vi} mai phục cướp sạch hàng hóa trị giá ${car.cargo_value_qian} tiền!`);
+          events.push(`[CẢNH BÁO] ${car.caravan_name} đã bị ${stronghold.name_vi} mai phục cướp sạch hàng hóa trị giá ${car.cargo_value_qian} tiền!`);
           continue;
         }
       }
@@ -368,7 +368,7 @@ export class EcologyLogisticsModule implements IFeatureModule {
           );
         });
 
-        events.push(`🏁 ${car.caravan_name} đã cập bến an toàn, xuất bán toàn bộ hàng hóa thu lãi +${Math.round(car.cargo_value_qian * 0.35)} tiền!`);
+        events.push(`[CẬP BẾN] ${car.caravan_name} đã cập bến an toàn, xuất bán toàn bộ hàng hóa thu lãi +${Math.round(car.cargo_value_qian * 0.35)} tiền!`);
       } else {
         this.db.execute(
           `UPDATE trade_caravans SET route_progress = ?, updated_at = CURRENT_TIMESTAMP WHERE caravan_id = ?;`,
@@ -386,7 +386,7 @@ export class EcologyLogisticsModule implements IFeatureModule {
           `UPDATE regional_ecological_crises SET is_active = 0, duration_turns_left = 0 WHERE crisis_id = ?;`,
           [c.crisis_id]
         );
-        events.push(`🌤️ Thiên tai tại ${c.settlement_id} (${c.title_vi}) đã qua đi, đất đai hồi sinh.`);
+        events.push(`[THỜI TIẾT] Thiên tai tại ${c.settlement_id} (${c.title_vi}) đã qua đi, đất đai hồi sinh.`);
       } else {
         this.db.execute(
           `UPDATE regional_ecological_crises SET duration_turns_left = ? WHERE crisis_id = ?;`,

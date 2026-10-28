@@ -600,7 +600,7 @@ function executeEnrichment(dbPath) {
               insertChip.run(
                 locKey,
                 ch.type || 'local',
-                ch.icon || '⚔️',
+                ch.icon || '[武]',
                 ch.labelVi || 'Hành Động',
                 ch.labelEn || 'Action',
                 ch.promptVi || '',

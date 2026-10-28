@@ -184,7 +184,7 @@ export class ProfessionsModule implements IFeatureModule {
         newExp = newExp - prof.max_exp;
         upgradedTier = prof.tier + 1;
         newMaxExp = Math.round(prof.max_exp * 1.5);
-        expMsg = `🌟 Đột phá cảnh giới nghề lên Bậc ${upgradedTier}! (${newExp}/${newMaxExp} EXP)`;
+        expMsg = `[ĐỘT PHÁ] Đột phá cảnh giới nghề lên Bậc ${upgradedTier}! (${newExp}/${newMaxExp} EXP)`;
       }
     }
 
@@ -196,7 +196,7 @@ export class ProfessionsModule implements IFeatureModule {
     };
     const names = profNameMap[profCode] || { vi: 'Bách Nghệ Khai Mở', en: 'Artisan' };
     if (!prof) {
-      expMsg = `🌿 Bắt đầu nhập môn nghề mới: ${names.vi}! (+${expGain} EXP)`;
+      expMsg = `[NHẬP MÔN] Bắt đầu nhập môn nghề mới: ${names.vi}! (+${expGain} EXP)`;
     }
 
     const movId = `MOV-GATH-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`;

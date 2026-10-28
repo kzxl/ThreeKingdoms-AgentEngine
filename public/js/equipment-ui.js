@@ -30,6 +30,7 @@
     module.exports = factory();
   } else {
     const exports = factory();
+    root.EquipmentUI = exports;
     Object.assign(root, exports);
   }
 })(typeof self !== 'undefined' ? self : this, function () {
@@ -887,7 +888,7 @@
           <div style="text-align:right;">
             <div style="font-size:11px; color:#94a3b8;">${isEn ? 'Current Crafting Prowess (CRA):' : 'Kỹ Nghệ Đoán Tạo (CRA):'}</div>
             <div style="font-size:18px; font-weight:800; font-family:'JetBrains Mono',monospace; color:${canForge ? '#34d399' : '#ef4444'};">
-              ${craAttr} / 60 ${canForge ? '✓ ĐỦ TIÊU CHUẨN' : '✗ CHƯA ĐẠT'}
+              ${craAttr} / 60 [${canForge ? 'ĐỦ TIÊU CHUẨN' : 'CHƯA ĐẠT'}]
             </div>
           </div>
         </div>
@@ -1300,33 +1301,10 @@
   }
 
   /**
-   * Injects quick access trigger button into the DOM if not present
+   * Injects quick access trigger button - Purged in R4 in favor of Grand Command Hub
    */
   function injectTriggerButton() {
-    if (document.getElementById('btn-open-equipment-floating')) return;
-
-    // Check if header action area exists
-    const headerRight = document.querySelector('.header-right');
-    if (headerRight) {
-      const btn = document.createElement('button');
-      btn.id = 'btn-open-equipment-nav';
-      btn.className = 'btn-logs';
-      btn.style.borderColor = 'rgba(217, 119, 6, 0.6)';
-      btn.style.color = '#fbbf24';
-      btn.innerHTML = 'Quân trang';
-      btn.title = 'Mở Quân Trang Binh Khí & Lò Rèn Thần Binh';
-      btn.onclick = () => openEquipmentModal('PLY-0001', 'gear');
-      headerRight.insertBefore(btn, headerRight.firstChild);
-    } else {
-      // Floating button fallback
-      const floatBtn = document.createElement('button');
-      floatBtn.id = 'btn-open-equipment-floating';
-      floatBtn.className = 'eqp-floating-trigger';
-      floatBtn.innerHTML = 'Quân trang';
-      floatBtn.title = 'Mở Trang Bị & Lò Rèn Thần Binh';
-      floatBtn.onclick = () => openEquipmentModal('PLY-0001', 'gear');
-      document.body.appendChild(floatBtn);
-    }
+    // Purged in R4: Unified under Grand Command Hub (#btn-open-grand-hub)
   }
 
   // Auto-init styles & triggers on load
@@ -1348,6 +1326,7 @@
     switchEqpTab,
     selectSlotForEquip,
     equipItem,
+    unequipItem,
     unequipSlot,
     executeBespokeForge,
     executeStandardForge,

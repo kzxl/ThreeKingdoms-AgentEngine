@@ -835,7 +835,7 @@ export class BlacksmithForgeService {
 
   /**
    * Retrieves complete equipment overview for a character (Player or NPC).
-   * Renders 4 slots: ⚔️ Weapon, 🛡️ Armor, 🐎 Steed, 📜 Treasure.
+   * Renders 4 slots: [兵] Weapon, [甲] Armor, [馬] Steed, [策] Treasure.
    * Calculates individual buffs and effective attributes with golden highlight (>100).
    */
   public getCharacterEquipment(characterId: string = 'PLY-0001'): CharacterEquipmentOverview {
@@ -1281,7 +1281,7 @@ export class BlacksmithForgeService {
         baseWorkforce: 4,
         projectedMonthlyRevenueMin: 900,
         projectedMonthlyRevenueMax: 1800,
-        icon: '🔨'
+        icon: '鍛'
       },
       {
         typeId: 'TAVERN',
@@ -1297,7 +1297,7 @@ export class BlacksmithForgeService {
         baseWorkforce: 3,
         projectedMonthlyRevenueMin: 700,
         projectedMonthlyRevenueMax: 1400,
-        icon: '🍶'
+        icon: '酒'
       },
       {
         typeId: 'APOTHECARY',
@@ -1313,7 +1313,7 @@ export class BlacksmithForgeService {
         baseWorkforce: 3,
         projectedMonthlyRevenueMin: 800,
         projectedMonthlyRevenueMax: 1600,
-        icon: '🌿'
+        icon: '草'
       },
       {
         typeId: 'WORKSHOP',
@@ -1329,7 +1329,7 @@ export class BlacksmithForgeService {
         baseWorkforce: 4,
         projectedMonthlyRevenueMin: 600,
         projectedMonthlyRevenueMax: 1200,
-        icon: '🧺'
+        icon: '工'
       }
     ];
 
@@ -1347,7 +1347,7 @@ export class BlacksmithForgeService {
         expGain: 40,
         narrativeVi: 'Kéo bễ lò lửa đỏ rực, cùng đại sư quai búa rèn phôi sắt tôi nước lạnh. Tăng cường thể lực và tay nghề luyện cương.',
         narrativeEn: 'Stoked furnace fires and struck glowing billets alongside master smiths.',
-        icon: '⚒️'
+        icon: '鍛'
       },
       {
         shiftId: 'SHIFT_CHEF_TAVERN',
@@ -1361,7 +1361,7 @@ export class BlacksmithForgeService {
         expGain: 30,
         narrativeVi: 'Bổ củi nổi lửa, nấu cỗ nhắm và phục vụ rượu hoa đào cho khách thương. Thu thập tin tức tình báo các chư hầu.',
         narrativeEn: 'Prepared banquets and served fragrant wines while eavesdropping on regional gossip.',
-        icon: '🍲'
+        icon: '庖'
       },
       {
         shiftId: 'SHIFT_HERBALIST',
@@ -1375,7 +1375,7 @@ export class BlacksmithForgeService {
         expGain: 35,
         narrativeVi: 'Dùng cối đá nghiền nát thảo dược, sao chế cao dán kim sang và phân loại dược liệu cứu chữa bách tính.',
         narrativeEn: 'Ground wild roots and brewed soothing trauma balms for townspeople.',
-        icon: '🌱'
+        icon: '藥'
       },
       {
         shiftId: 'SHIFT_WEAVER',
@@ -1389,7 +1389,7 @@ export class BlacksmithForgeService {
         expGain: 25,
         narrativeVi: 'Vót nan tre bện sọt vận lương cho Bắc Quân. Rèn luyện sự tỉ mỉ và nhanh nhạy của đôi bàn tay.',
         narrativeEn: 'Wove heavy-duty supply baskets for northern imperial expeditions.',
-        icon: '🎋'
+        icon: '工'
       }
     ];
 
@@ -1714,7 +1714,7 @@ export function registerBlacksmithForgeRoutes(router: Router): void {
 if (typeof (globalThis as any).__GRAND_STRATEGY_ROUTER__ !== 'undefined') {
   try {
     registerBlacksmithForgeRoutes((globalThis as any).__GRAND_STRATEGY_ROUTER__);
-    console.log('[BlacksmithForgeService] 🛠️ Auto-attached routes to Grand Strategy Router.');
+    console.log('[BlacksmithForgeService] [ROUTER] Auto-attached routes to Grand Strategy Router.');
   } catch (err) {
     console.warn('[BlacksmithForgeService] Notice on auto-registering router:', err);
   }

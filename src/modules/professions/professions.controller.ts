@@ -295,7 +295,7 @@ export function registerProfessionsRoutes(router: Router): void {
         characterId,
         breakthrough: innovation || null,
         message: innovation
-          ? `🌟 Đại ngộ cảnh giới! Bạn đã sáng tạo thành công nghề mới: ${innovation.titleVi}!`
+          ? `[ĐẠI NGỘ] Đại ngộ cảnh giới! Bạn đã sáng tạo thành công nghề mới: ${innovation.titleVi}!`
           : 'Chưa đủ điều kiện giác ngộ đột phá đa ngành (Cần tối thiểu 2 nghề khác nhau đạt Bậc 2 trở lên).'
       });
     } catch (err: any) {

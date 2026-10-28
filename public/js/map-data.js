@@ -186,7 +186,7 @@ const QUICK_CHIPS_DATA = {
     placeholderVi: 'Lương Diễn diện kiến Lưu Biểu... (hoặc gõ: "Mua gỗ đóng thuyền...")',
     placeholderEn: 'Liang Yan meets Liu Biao... (or type: "Procure shipbuilding timber...")',
     chips: [
-      { type: 'local', icon: '🪵', labelVi: 'Mua Gỗ Đóng Thuyền', labelEn: 'Procure Timber', promptVi: 'Thu mua 10 khối gỗ Thiết Mộc Kinh Châu chuẩn bị đóng thuyền', promptEn: 'Purchase 10 bundles of Jingzhou ironwood for vessels' },
+      { type: 'local', icon: '木', labelVi: 'Mua Gỗ Đóng Thuyền', labelEn: 'Procure Timber', promptVi: 'Thu mua 10 khối gỗ Thiết Mộc Kinh Châu chuẩn bị đóng thuyền', promptEn: 'Purchase 10 bundles of Jingzhou ironwood for vessels' },
       { type: 'local', icon: '策', labelVi: 'Đàm Đạo Nho Sĩ', labelEn: 'Scholarly Discourse', promptVi: 'Đến Thủy Kính Trang đàm đạo cùng Tư Mã Huy về nhân tài', promptEn: 'Visit Water Mirror Manor to confer with Sima Hui on talents' },
       { type: 'local', icon: '商', labelVi: 'Bán Muối Biển', labelEn: 'Sell Salt', promptVi: 'Xuất bán 12 đấu muối biển cho các thương đoàn Tương Dương', promptEn: 'Sell 12 sea salt units to Xiangyang river merchants' },
       { divider: true },
@@ -260,7 +260,7 @@ const QUICK_CHIPS_DATA = {
     placeholderEn: 'Liang Yan at Chengdu... (or type: "Procure Shu Brocade...")',
     chips: [
       { type: 'local', icon: '商', labelVi: 'Mua Thục Cẩm Thượng Hạng', labelEn: 'Buy Shu Brocade', promptVi: 'Thu mua 10 sấp Thục Cẩm lừng danh thiên hạ từ phường dệt', promptEn: 'Procure 10 bolts of world-renowned Shu brocade silks' },
-      { type: 'local', icon: '工️', labelVi: 'Mua Quặng Sắt Tây Thục', labelEn: 'Buy Iron Ore', promptVi: 'Thu mua 15 khối quặng sắt tinh khiết rèn đao kiếm', promptEn: 'Procure 15 units of high-grade Shu mountain iron ore' },
+      { type: 'local', icon: '工', labelVi: 'Mua Quặng Sắt Tây Thục', labelEn: 'Buy Iron Ore', promptVi: 'Thu mua 15 khối quặng sắt tinh khiết rèn đao kiếm', promptEn: 'Procure 15 units of high-grade Shu mountain iron ore' },
       { type: 'local', icon: '飲', labelVi: 'Dự Tiệc Tây Thục', labelEn: 'Shu Banquet', promptVi: 'Thưởng thức mỹ tửu và hòa tấu nhạc thục tại phủ Lưu Chương', promptEn: 'Attend festive court banquet enjoying Shu music and wine' },
       { divider: true },
       { type: 'courier', icon: '信', labelVi: 'Phi thư về Huyện Trác', labelEn: 'Courier to Zhuo', promptVi: 'Gửi thư tín đường bộ báo tin đã mở rộng mạng lưới vào đất Thục', promptEn: 'Dispatch courier dispatch to Zhuo confirming western route' },
@@ -707,7 +707,7 @@ function renderLocalPoiNav(loc = activeSubLocation) {
 
 async function travelLocalPoi(targetLoc) {
   if (isProcessingAction) {
-    showToast(currentLang === 'en' ? '警️ Action in progress, please wait!' : '警️ Đang thực thi thao tác khác, vui lòng chờ!', true);
+    showToast(currentLang === 'en' ? '[警] Action in progress, please wait!' : '[警] Đang thực thi thao tác khác, vui lòng chờ!', true);
     return;
   }
   if (activeSubLocation === targetLoc) return;

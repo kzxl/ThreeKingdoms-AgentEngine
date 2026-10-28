@@ -24,6 +24,7 @@
     module.exports = factory();
   } else {
     const exports = factory();
+    root.EnterpriseUI = exports;
     Object.assign(root, exports);
   }
 })(typeof self !== 'undefined' ? self : this, function () {
@@ -789,33 +790,10 @@
   }
 
   /**
-   * Injects quick access trigger button into the DOM if not present
+   * Injects quick access trigger button - Purged in R4 in favor of Grand Command Hub
    */
   function injectTriggerButton() {
-    if (document.getElementById('btn-open-enterprise-floating')) return;
-
-    // Check if header action area exists
-    const headerRight = document.querySelector('.header-right');
-    if (headerRight) {
-      const btn = document.createElement('button');
-      btn.id = 'btn-open-enterprise-nav';
-      btn.className = 'btn-logs';
-      btn.style.borderColor = 'rgba(16, 185, 129, 0.6)';
-      btn.style.color = '#34d399';
-      btn.innerHTML = 'Sản nghiệp';
-      btn.title = 'Mở Quản Lý Sản Nghiệp & Thị Trường Làm Thuê';
-      btn.onclick = () => openEnterpriseModal('work');
-      headerRight.insertBefore(btn, headerRight.firstChild);
-    } else {
-      // Floating button fallback
-      const floatBtn = document.createElement('button');
-      floatBtn.id = 'btn-open-enterprise-floating';
-      floatBtn.className = 'ent-floating-trigger';
-      floatBtn.innerHTML = 'Sản nghiệp';
-      floatBtn.title = 'Mở Quản Lý Sản Nghiệp & Làm Thuê';
-      floatBtn.onclick = () => openEnterpriseModal('work');
-      document.body.appendChild(floatBtn);
-    }
+    // Purged in R4: Unified under Grand Command Hub (#btn-open-grand-hub)
   }
 
   // Auto-init styles & triggers on load

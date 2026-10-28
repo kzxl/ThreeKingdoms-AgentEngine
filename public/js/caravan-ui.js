@@ -236,7 +236,7 @@
               </div>
 
               <button class="tactical-btn tactical-btn--primary tactical-btn--sm" onclick="CaravanUI.prefillDispatch('${opp.itemCode}', '${selectedFromSettlement}', '${opp.bestDestination}')" style="width: 100%; margin-top: 6px;">
-                Thiết Lập Tuyến Này ➔
+                Thiết Lập Tuyến Này →
               </button>
             </div>
           `;
@@ -383,7 +383,7 @@
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; background: rgba(30, 41, 59, 0.5); padding: 8px 14px; border-radius: 6px;">
         <span style="font-size: 11.5px; color: var(--text-muted);">Tiến độ lưu thông trên các quan đạo liên tỉnh:</span>
         <button class="tactical-btn tactical-btn--sm" onclick="CaravanUI.tickProgress()" title="Cho thời gian trôi qua 1 chặng trên quan đạo">
-          Tiếp Bước Tuyến Đường ➔
+          Tiếp Bước Tuyến Đường →
         </button>
       </div>
 
@@ -429,7 +429,7 @@
 
                 ${isArrived ? `
                   <button class="tactical-btn tactical-btn--success tactical-btn--sm" onclick="CaravanUI.claimCaravan('${car.caravan_id}')">
-                    Quyết Toán & Thu Tiền ➔
+                    Quyết Toán & Thu Tiền →
                   </button>
                 ` : isCompleted ? `
                   <span style="font-size: 10px; color: var(--text-muted); font-style: italic;">Đã hoàn thành</span>

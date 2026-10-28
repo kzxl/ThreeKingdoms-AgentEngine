@@ -125,21 +125,15 @@
           </div>
 
           <div class="cmd-bar-right">
-            <!-- Equipment Modal Toggle Button -->
-            <button class="btn-cmd-dossier" id="btn-open-equipment" onclick="if(window.EquipmentUI){window.EquipmentUI.openEquipmentModal('gear');}else if(window.openEquipmentModal){window.openEquipmentModal('gear');}" title="Binh Khí & Bảo Vật (Trang bị / Đoán tạo thần binh)">
-              <span id="txt-btn-equipment">Quân Trang</span>
-            </button>
-            <!-- Enterprise & Labor Toggle Button -->
-            <button class="btn-cmd-dossier" id="btn-open-enterprise" onclick="if(window.EnterpriseUI){window.EnterpriseUI.openEnterpriseModal('work');}else if(window.openEnterpriseModal){window.openEnterpriseModal('work');}" title="Gia Sản & Việc Làm (Làm chủ / Làm thuê)">
-              <span id="txt-btn-enterprise">Sản Nghiệp</span>
-            </button>
-            <!-- Inter-City Caravan Trade Toggle Button -->
-            <button class="btn-cmd-dossier" id="btn-open-caravan" onclick="if(window.CaravanUI){window.CaravanUI.open('arbitrage');}else if(window.openCaravanModal){window.openCaravanModal('arbitrage');}" title="Thương Đoàn Buôn Chuyến & Thị Trường Liên Thành">
-              <span id="txt-btn-caravan">Thương Đoàn</span>
+            <!-- Master Trigger: Grand Command Hub (Quân Cơ Xứ) -->
+            <button class="btn-grand-hub" id="btn-open-grand-hub" onclick="if(window.GrandCommandHubUI){GrandCommandHubUI.open('gear');}" title="Đại Bản Doanh / Quân Cơ Xứ (6 Đại Phân Hệ Chiến Lược)">
+              <span class="hub-seal">軍機</span>
+              <span class="hub-label" id="txt-btn-grand-hub">Quân Cơ Xứ</span>
             </button>
             <!-- Courier / Remote Orders Toggle Button -->
             <button class="btn-courier-toggle" id="btn-courier-toggle" onclick="toggleCourierDrawer()" title="Phái sứ giả / Phi thư tín viễn trình">
-              <span id="txt-btn-courier">Phi Thư / Sứ Giả</span>
+              <span class="hub-seal-sub">信</span>
+              <span id="txt-btn-courier">Phi Thư</span>
               <span class="courier-badge-count" id="courier-badge-count">0</span>
             </button>
           </div>
@@ -816,6 +810,56 @@
     </div>
   </div>
 
+  <!-- UNIFIED GRAND COMMAND HUB MODAL (QUÂN CƠ XỨ / ĐẠI BẢN DOANH) -->
+  <div id="grand-command-hub-modal" class="modal-overlay hidden" role="dialog" aria-modal="true">
+    <div class="grand-hub-dialog">
+      <!-- Hub Header -->
+      <div class="grand-hub-header">
+        <div class="grand-hub-title-group">
+          <span class="grand-hub-master-seal">軍機</span>
+          <div>
+            <h2 class="grand-hub-title" id="grand-hub-title">QUÂN CƠ XỨ • ĐẠI BẢN DOANH</h2>
+            <div class="grand-hub-subtitle">Tam Quốc Hùng Đồ • Tổng Hành Dinh 6 Đại Phân Hệ Chiến Lược</div>
+          </div>
+        </div>
+        <button class="grand-hub-close-btn" onclick="GrandCommandHubUI.close()" title="Đóng cửa sổ">&times;</button>
+      </div>
+
+      <!-- Hub 6-Tab Navigation Bar -->
+      <nav class="grand-hub-tabs-bar" aria-label="Grand Command Hub Tabs">
+        <button class="grand-hub-tab-btn active" data-tab="gear" onclick="GrandCommandHubUI.switchTab('gear')">
+          <span class="hub-tab-seal">武</span>
+          <span class="hub-tab-text">Quân Trang</span>
+        </button>
+        <button class="grand-hub-tab-btn" data-tab="enterprise" onclick="GrandCommandHubUI.switchTab('enterprise')">
+          <span class="hub-tab-seal">業</span>
+          <span class="hub-tab-text">Sản Nghiệp</span>
+        </button>
+        <button class="grand-hub-tab-btn" data-tab="caravan" onclick="GrandCommandHubUI.switchTab('caravan')">
+          <span class="hub-tab-seal">商</span>
+          <span class="hub-tab-text">Thương Đoàn</span>
+        </button>
+        <button class="grand-hub-tab-btn" data-tab="family" onclick="GrandCommandHubUI.switchTab('family')">
+          <span class="hub-tab-seal">家</span>
+          <span class="hub-tab-text">Gia Thất</span>
+        </button>
+        <button class="grand-hub-tab-btn" data-tab="duel" onclick="GrandCommandHubUI.switchTab('duel')">
+          <span class="hub-tab-seal">演</span>
+          <span class="hub-tab-text">Diễn Võ</span>
+        </button>
+        <button class="grand-hub-tab-btn" data-tab="tavern" onclick="GrandCommandHubUI.switchTab('tavern')">
+          <span class="hub-tab-seal">義</span>
+          <span class="hub-tab-text">Tụ Nghĩa</span>
+        </button>
+      </nav>
+
+      <!-- Hub Content Container -->
+      <div id="grand-hub-tab-content" class="grand-hub-tab-content">
+        <!-- Dynamically rendered by GrandCommandHubUI -->
+      </div>
+    </div>
+  </div>
+
   <!-- Notification Toast -->
   <div id="toast" class="toast hidden"></div>
 
@@ -831,6 +875,7 @@
   <script src="/js/equipment-ui.js"></script>
   <script src="/js/enterprise-ui.js"></script>
   <script src="/js/caravan-ui.js"></script>
+  <script src="/js/grand-command-hub-ui.js"></script>
   <script src="/js/story.js"></script>
   <script src="/js/deck.js"></script>
   <script src="/app.js"></script>
