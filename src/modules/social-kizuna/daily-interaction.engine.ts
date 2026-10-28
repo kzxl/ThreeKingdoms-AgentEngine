@@ -436,27 +436,45 @@ export class DailyInteractionEngine {
     // Respect scales with affinity and NPC's perception of player prestige
     const respect = Math.max(10, Math.min(100, Math.floor(affinity * 0.85) + 10));
 
-    let titleVi = 'Người Xa Lạ';
-    let titleEn = 'Stranger';
+    let tierVi = 'Người Xa Lạ';
+    let tierEn = 'Stranger';
     if (affinity >= 80) {
-      titleVi = 'Kim Lan Sinh Tử (Sworn Brother)';
-      titleEn = 'Sworn Brother (Life & Death)';
+      tierVi = 'Kim Lan Sinh Tử';
+      tierEn = 'Sworn Brother';
     } else if (affinity >= 60) {
-      titleVi = 'Tâm Phúc Tri Kỷ (Confidant)';
-      titleEn = 'Trusted Confidant';
+      tierVi = 'Tâm Phúc Tri Kỷ';
+      tierEn = 'Trusted Confidant';
     } else if (affinity >= 40) {
-      titleVi = 'Bằng Hữu Thân Quen (Familiar)';
-      titleEn = 'Familiar Companion';
+      tierVi = 'Bằng Hữu Thân Quen';
+      tierEn = 'Familiar Companion';
     } else if (affinity >= 20) {
-      titleVi = 'Sơ Giao Đồng Hương (Acquaintance)';
-      titleEn = 'Acquaintance';
+      tierVi = 'Sơ Giao Đồng Hương';
+      tierEn = 'Acquaintance';
     }
 
-    if (base?.relationship_type_vi && affinity >= 60) {
-      titleVi = `${base.relationship_type_vi} (${titleVi})`;
+    let titleVi = tierVi;
+    let titleEn = tierEn;
+
+    if (base?.relationship_type_vi) {
+      const baseVi = base.relationship_type_vi.trim();
+      // If baseline already designates sworn brotherhood or identical tier, don't duplicate
+      if (baseVi.includes('Huynh Đệ') || baseVi.includes('Kim Lan') || baseVi.includes('Tử Sinh')) {
+        titleVi = baseVi;
+      } else if (affinity >= 60 && !baseVi.includes(tierVi)) {
+        titleVi = `${baseVi} • ${tierVi}`;
+      } else {
+        titleVi = baseVi;
+      }
     }
-    if (base?.relationship_type_en && affinity >= 60) {
-      titleEn = `${base.relationship_type_en} (${titleEn})`;
+    if (base?.relationship_type_en) {
+      const baseEn = base.relationship_type_en.trim();
+      if (baseEn.toLowerCase().includes('brother') || baseEn.toLowerCase().includes('arms')) {
+        titleEn = baseEn;
+      } else if (affinity >= 60 && !baseEn.toLowerCase().includes(tierEn.toLowerCase())) {
+        titleEn = `${baseEn} • ${tierEn}`;
+      } else {
+        titleEn = baseEn;
+      }
     }
 
     return { affinity, respect, titleVi, titleEn };
@@ -605,11 +623,11 @@ export class DailyInteractionEngine {
     };
 
     const tierLabelsVi: Record<FogTier, string> = {
-      1: 'Tầng 1: Xa Lạ (Stranger)',
-      2: 'Tầng 2: Sơ Giao (Acquaintance)',
-      3: 'Tầng 3: Thân Quen (Familiar)',
-      4: 'Tầng 4: Tri Kỷ (Confidant)',
-      5: 'Tầng 5: Kim Lan Sinh Tử (Sworn Bond)'
+      1: 'Tầng 1: Xa Lạ',
+      2: 'Tầng 2: Sơ Giao',
+      3: 'Tầng 3: Thân Quen',
+      4: 'Tầng 4: Tri Kỷ',
+      5: 'Tầng 5: Kim Lan Sinh Tử'
     };
 
     const tierLabelsEn: Record<FogTier, string> = {

@@ -1962,6 +1962,72 @@ button:disabled,
   overflow: hidden;
 }
 
+/* Tactical Strategy Dialog Containers */
+.modal-box {
+  background-color: #121622;
+  background: linear-gradient(180deg, #151928 0%, #0f121d 100%);
+  border: 1px solid rgba(245, 158, 11, 0.45);
+  border-radius: var(--radius-md, 8px);
+  width: 90%;
+  max-width: 640px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.95), 0 0 0 1px rgba(245, 158, 11, 0.18);
+  overflow: hidden;
+  position: relative;
+  z-index: 1001;
+  display: flex;
+  flex-direction: column;
+  animation: fadeInModal 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  color: var(--text-main, #f1f5f9);
+}
+
+.modal-box--large {
+  max-width: 860px;
+  width: 92vw;
+  max-height: 92vh;
+}
+
+.modal-box .modal-header {
+  padding: 12px 18px;
+  border-bottom: 1px solid rgba(245, 158, 11, 0.2);
+  background: #0a0d17;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.modal-box .modal-body {
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.btn-modal-close {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-muted, #94a3b8);
+  font-size: 18px;
+  line-height: 1;
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  padding: 0;
+}
+
+.btn-modal-close:hover {
+  color: #ffffff;
+  background: rgba(239, 68, 68, 0.25);
+  border-color: rgba(239, 68, 68, 0.5);
+}
+
 .modal-header {
   padding: 12px 16px;
   border-bottom: 1px solid var(--border-subtle);

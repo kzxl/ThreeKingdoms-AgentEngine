@@ -502,9 +502,9 @@ export class TavernBanquetService {
 
         // Determine relationship title
         let relTitleVi = 'Sơ Giao Đồng Hương';
-        if (affinityAfter >= 80) relTitleVi = 'Kim Lan Sinh Tử (Sworn Brother)';
-        else if (affinityAfter >= 60) relTitleVi = 'Tâm Phúc Tri Kỷ (Confidant)';
-        else if (affinityAfter >= 40) relTitleVi = 'Bằng Hữu Thân Quen (Familiar)';
+        if (affinityAfter >= 80) relTitleVi = 'Kim Lan Sinh Tử';
+        else if (affinityAfter >= 60) relTitleVi = 'Tâm Phúc Tri Kỷ';
+        else if (affinityAfter >= 40) relTitleVi = 'Bằng Hữu Thân Quen';
 
         // Insert into npc_relationship_deltas
         this.db.execute(

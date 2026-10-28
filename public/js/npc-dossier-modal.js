@@ -71,21 +71,24 @@
       document.body.appendChild(modalEl);
     }
 
-    const loadingTitle = isEn
-      ? '[OFFICER INTELLIGENCE] RETRIEVING ARCHIVES...'
-      : '[VÕ TƯỚNG TÌNH BÁO] ĐANG TRA CỨU HỒ SƠ...';
+    const loadingBadge = isEn ? '[OFFICER INTEL]' : '[VÕ TƯỚNG TÌNH BÁO]';
+    const loadingTitle = isEn ? 'Retrieving Archives...' : 'Đang tra cứu hồ sơ...';
     const loadingBody = isEn
       ? 'Decrypting officer stats, disposition, and relationship under Fog of Information...'
       : 'Đang giải mã bát vị thuộc tính, tâm tính và quan hệ sương mù tình báo...';
 
     modalEl.innerHTML = `
-      <div class="modal-box modal-box--large" style="max-width: 840px;">
+      <div class="modal-box modal-box--large" style="max-width: 860px;">
         <div class="modal-header">
-          <div class="modal-title">${loadingTitle}</div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="tactical-badge tactical-badge--primary">${loadingBadge}</span>
+            <div class="modal-title" style="letter-spacing: 0.05em; font-size: 13.5px; font-weight: 700; color: #fbbf24;">${loadingTitle}</div>
+          </div>
           <button class="btn-modal-close" onclick="closeNpcDossierModal()">&times;</button>
         </div>
-        <div class="modal-body" style="padding: 32px; text-align: center; color: var(--text-muted);">
-          ${loadingBody}
+        <div class="modal-body" style="padding: 36px 20px; text-align: center; color: var(--text-muted);">
+          <div style="display: inline-block; width: 24px; height: 24px; border: 2px solid var(--border-gold); border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 12px;"></div>
+          <div>${loadingBody}</div>
         </div>
       </div>
     `;
@@ -100,11 +103,15 @@
       currentDossierData = data.dossier;
       renderDossierContent(currentDossierData);
     } catch (err) {
-      const errTitle = isEn ? '[INTEL ERROR] FAILED TO LOAD DOSSIER' : '[LỖI TÌNH BÁO] KHÔNG THỂ TẢI HỒ SƠ';
+      const errBadge = isEn ? '[INTEL ERROR]' : '[LỖI TÌNH BÁO]';
+      const errTitle = isEn ? 'Failed to Load Dossier' : 'Không thể tải hồ sơ võ tướng';
       modalEl.innerHTML = `
         <div class="modal-box">
           <div class="modal-header">
-            <div class="modal-title">${errTitle}</div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span class="tactical-badge tactical-badge--danger">${errBadge}</span>
+              <div class="modal-title" style="color: #f87171;">${errTitle}</div>
+            </div>
             <button class="btn-modal-close" onclick="closeNpcDossierModal()">&times;</button>
           </div>
           <div class="modal-body" style="padding: 16px; color: var(--state-danger);">
@@ -129,14 +136,14 @@
    * Generates SVG 8-Axis Polygon Radar Chart (ROTK Classic)
    */
   function generateRadarChartSvg(stats, isEn) {
-    const cx = 115;
-    const cy = 100;
-    const r = 65;
+    const cx = 135;
+    const cy = 105;
+    const r = 62;
 
     // Stat definitions in clockwise order starting from top
     const axes = [
       { key: 'ldr', label: isEn ? 'Command' : 'Thống Soái', angle: -Math.PI / 2, color: '#c084fc' },
-      { key: 'war', label: isEn ? 'Warfare' : 'Võ Lực', angle: -Math.PI / 4, color: '#ef4444' },
+      { key: 'war', label: isEn ? 'Warfare' : 'Võ Lực', angle: -Math.PI / 4, color: '#f87171' },
       { key: 'cra', label: isEn ? 'Craft' : 'Khéo Léo', angle: 0, color: '#34d399' },
       { key: 'log', label: isEn ? 'Logistics' : 'Hậu Cần', angle: Math.PI / 4, color: '#2dd4bf' },
       { key: 'com', label: isEn ? 'Commerce' : 'Thương Nghiệp', angle: Math.PI / 2, color: '#fbbf24' },
@@ -154,14 +161,14 @@
         const y = cy + Math.sin(a.angle) * r * ringPct;
         return `${x.toFixed(1)},${y.toFixed(1)}`;
       }).join(' ');
-      gridSvg += `<polygon points="${ringPoints}" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="1" />`;
+      gridSvg += `<polygon points="${ringPoints}" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1" />`;
     });
 
     // Radial spokes from center
     axes.forEach(a => {
       const x = cx + Math.cos(a.angle) * r;
       const y = cy + Math.sin(a.angle) * r;
-      gridSvg += `<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,0.08)" stroke-width="1" />`;
+      gridSvg += `<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,0.09)" stroke-width="1" />`;
     });
 
     // Calculate character stat polygon points
@@ -174,7 +181,7 @@
       const px = cx + Math.cos(a.angle) * r * normVal;
       const py = cy + Math.sin(a.angle) * r * normVal;
       statPoints.push(`${px.toFixed(1)},${py.toFixed(1)}`);
-      statDots.push(`<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="3" fill="${a.color}" stroke="#111827" stroke-width="1" />`);
+      statDots.push(`<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="3" fill="${a.color}" stroke="#0b0f19" stroke-width="1.5" />`);
     });
 
     // Outer Axis Labels
@@ -182,21 +189,39 @@
     axes.forEach(a => {
       const sObj = stats[a.key] || {};
       const dispVal = sObj.display || sObj.displayVi || '??';
-      const labelRadius = r + 16;
-      const lx = cx + Math.cos(a.angle) * labelRadius;
-      const ly = cy + Math.sin(a.angle) * labelRadius;
-      const textAnchor = Math.abs(Math.cos(a.angle)) < 0.2 ? 'middle' : (Math.cos(a.angle) > 0 ? 'start' : 'end');
+      const cos = Math.cos(a.angle);
+      const sin = Math.sin(a.angle);
+
+      let lx, ly, textAnchor;
+      if (Math.abs(cos) < 0.15) {
+        // Vertical axes (Top / Bottom)
+        textAnchor = 'middle';
+        lx = cx;
+        ly = sin < 0 ? (cy - r - 8) : (cy + r + 15);
+      } else if (Math.abs(sin) < 0.15) {
+        // Horizontal axes (Right / Left)
+        textAnchor = cos > 0 ? 'start' : 'end';
+        lx = cos > 0 ? (cx + r + 8) : (cx - r - 8);
+        ly = cy + 3.5;
+      } else {
+        // Diagonal axes
+        textAnchor = cos > 0 ? 'start' : 'end';
+        const labelRadius = r + 12;
+        lx = cx + cos * labelRadius;
+        ly = cy + sin * labelRadius + (sin > 0 ? 4 : -1);
+      }
+
       labelsSvg += `
-        <text x="${lx.toFixed(1)}" y="${(ly + 4).toFixed(1)}" fill="${a.color}" font-size="9.5" font-family="'Cinzel', monospace" font-weight="bold" text-anchor="${textAnchor}">
-          ${a.label} ${dispVal}
+        <text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" font-size="9" font-family="var(--font-sans, -apple-system, sans-serif)" text-anchor="${textAnchor}">
+          <tspan fill="${a.color}" font-weight="600">${a.label}</tspan> <tspan fill="#f8fafc" font-weight="bold">${dispVal}</tspan>
         </text>
       `;
     });
 
     return `
-      <svg width="230" height="200" viewBox="0 0 230 200" style="display: block; margin: 0 auto; overflow: visible;">
+      <svg width="270" height="210" viewBox="0 0 270 210" style="display: block; margin: 0 auto; overflow: visible;">
         ${gridSvg}
-        <polygon points="${statPoints.join(' ')}" fill="rgba(217, 119, 6, 0.25)" stroke="#f59e0b" stroke-width="1.8" />
+        <polygon points="${statPoints.join(' ')}" fill="rgba(217, 119, 6, 0.22)" stroke="#f59e0b" stroke-width="1.8" />
         ${statDots.join('')}
         ${labelsSvg}
       </svg>
@@ -290,10 +315,8 @@
       `;
     }
 
-    // Modal Title Header
-    const modalTitle = isEn
-      ? `[OFFICER DOSSIER] ${primaryName}${styleName ? ' • Style: ' + styleName : ''}`
-      : `[HỒ SƠ VÕ TƯỚNG] ${primaryName}${styleName ? ' • Tự: ' + styleName : ''}`;
+    // Modal Title Header (clean, no duplicate tactical badge)
+    const modalTitle = `${primaryName}${styleName ? (isEn ? ' • Style: ' + styleName : ' • Tự: ' + styleName) : ''}`;
 
     // 3. Tab 1: Octagonal Attributes & Stats HTML
     const renderStatRow = (key, nameVi, nameEn, color) => {
@@ -319,7 +342,7 @@
     const radarChartSvg = generateRadarChartSvg(stats, isEn);
 
     const tab1Html = `
-      <div style="display: grid; grid-template-columns: 240px 1fr; gap: 16px; align-items: center; padding: 4px 0;">
+      <div style="display: grid; grid-template-columns: 275px 1fr; gap: 16px; align-items: center; padding: 4px 0;">
         <div style="background: rgba(0,0,0,0.25); border: 1px solid var(--border-neutral); padding: 12px; border-radius: var(--radius-sm); text-align: center;">
           <div style="font-size: 10.5px; font-weight: bold; color: var(--brand-primary); margin-bottom: 4px; letter-spacing: 0.05em;">
             ${isEn ? 'OCTAGONAL TACTICAL RADAR' : 'ĐA GIÁC BÁT VỊ QUÂN LƯỢC'}
@@ -474,22 +497,22 @@
       actionButtonsHtml = `
         <div style="display: flex; flex-wrap: wrap; gap: 8px;">
           <button class="tactical-btn" onclick="executeDossierAction('${dossier.npcId}', 'TEA_CONVERSE')" title="Hồi phục +15 Thể Lực, +5 Sĩ Khí">
-            ${isEn ? '[OFFER TEA] (-5 Qian, +15 Stamina)' : '[MỜI TRÀ ĐÀM ĐẠO] (-5 Tiền, +15 Thể Lực)'}
+            ${isEn ? 'Offer Tea (-5 Qian, +15 Stamina)' : 'Mời Trà Đàm Đạo (-5 Tiền, +15 Thể Lực)'}
           </button>
           <button class="tactical-btn tactical-btn--primary" onclick="executeDossierAction('${dossier.npcId}', 'BANQUET_DRINK')" title="Hồi phục +35 Thể Lực, +12 Sĩ Khí">
-            ${isEn ? '[HOST WINE BANQUET] (-30 Qian, +35 Stamina)' : '[RÓT RƯỢU ẨM THỰC] (-30 Tiền, +35 Thể Lực)'}
+            ${isEn ? 'Host Wine Banquet (-30 Qian, +35 Stamina)' : 'Rót Rượu Ẩm Thực (-30 Tiền, +35 Thể Lực)'}
           </button>
           <button class="tactical-btn" onclick="executeDossierAction('${dossier.npcId}', 'SPAR_DEBATE')" title="Tiêu hao 15 Thể Lực, luận bàn võ nghệ">
-            ${isEn ? '[SPAR & DEBATE] (-15 Stamina)' : '[LUẬN VÕ SO TÀI] (-15 Thể Lực)'}
+            ${isEn ? 'Spar & Debate (-15 Stamina)' : 'Luận Võ So Tài (-15 Thể Lực)'}
           </button>
           <button class="tactical-btn" onclick="executeDossierAction('${dossier.npcId}', 'LEARN_MENTOR')">
-            ${isEn ? '[SEEK MENTORSHIP] (-25 Qian)' : '[THỈNH GIÁO KỸ NGHỆ] (-25 Tiền)'}
+            ${isEn ? 'Seek Mentorship (-25 Qian)' : 'Thỉnh Giáo Kỹ Nghệ (-25 Tiền)'}
           </button>
           <button class="tactical-btn" onclick="executeDossierAction('${dossier.npcId}', 'GIFT_TREASURE')">
-            ${isEn ? '[PRESENT GIFT] (-50 Qian)' : '[TẶNG LỄ VẬT] (-50 Tiền)'}
+            ${isEn ? 'Present Gift (-50 Qian)' : 'Tặng Lễ Vật (-50 Tiền)'}
           </button>
           <button class="tactical-btn" onclick="executeDossierAction('${dossier.npcId}', 'HEART_CONFESSION')">
-            ${isEn ? '[CONFIDE AMBITION]' : '[TÂM SỰ HOÀI BÃO]'}
+            ${isEn ? 'Confide Ambition' : 'Tâm Sự Hoài Bão'}
           </button>
         </div>
       `;
@@ -499,17 +522,17 @@
       actionButtonsHtml = `
         <div style="display: flex; flex-wrap: wrap; gap: 8px;">
           <button class="tactical-btn tactical-btn--primary" onclick="travelToNpcLocation('${targetTravelLoc}')" title="Cất bước đi bộ đến địa điểm của nhân vật">
-            ${isEn ? `[VISIT LOCATION] (Travel to ${targetTravelLoc})` : `[ĐẾN TẬN NƠI GẶP MẶT] (Cơ động đến ${targetTravelLoc})`}
+            ${isEn ? `Visit Location (Travel to ${targetTravelLoc})` : `Đến Tận Nơi Gặp Mặt (Cơ động đến ${targetTravelLoc})`}
           </button>
           <button class="tactical-btn" onclick="executeDossierAction('${dossier.npcId}', 'SEND_COURIER_LETTER')" title="Phái gia nhân mang thư thăm hỏi">
-            ${isEn ? '[DISPATCH SERVANT LETTER] (-3 Qian)' : '[PHÁI GIA NHÂN GỬI THƯ] (-3 Tiền)'}
+            ${isEn ? 'Dispatch Servant Letter (-3 Qian)' : 'Phái Gia Nhân Gửi Thư (-3 Tiền)'}
           </button>
           <button class="tactical-btn" onclick="executeDossierAction('${dossier.npcId}', 'DISPATCH_GIFT_CARAVAN')" title="Ủy thác gia nhân mang lễ vật tận nơi">
-            ${isEn ? '[CONSIGN GIFT CARAVAN] (-55 Qian)' : '[ỦY THÁC CHUYỂN QUÀ TẬN TAY] (-55 Tiền)'}
+            ${isEn ? 'Consign Gift Caravan (-55 Qian)' : 'Ủy Thác Chuyển Quà Tận Tay (-55 Tiền)'}
           </button>
           ${isSubordinate ? `
             <button class="tactical-btn" style="border-color: #a855f7; color: #c084fc;" onclick="executeDossierAction('${dossier.npcId}', 'SUMMON_SUBORDINATE')" title="Triệu kiến thợ cả / gia nhân Lương Gia đến diện kiến">
-              ${isEn ? '[SUMMON SUBORDINATE]' : '[TRIỆU KIẾN VỀ DIỆN KIẾN]'}
+              ${isEn ? 'Summon Subordinate' : 'Triệu Kiến Về Diện Kiến'}
             </button>
           ` : ''}
         </div>
@@ -519,10 +542,10 @@
       actionButtonsHtml = `
         <div style="display: flex; flex-wrap: wrap; gap: 8px;">
           <button class="tactical-btn tactical-btn--primary" onclick="executeDossierAction('${dossier.npcId}', 'CARRIER_PIGEON_LETTER')" title="Thư bồ câu vượt vạn dặm">
-            ${isEn ? '[CARRIER PIGEON LETTER] (-15 Qian)' : '[PHI THƯ BỒ CÂU] (-15 Tiền)'}
+            ${isEn ? 'Carrier Pigeon Letter (-15 Qian)' : 'Phi Thư Bồ Câu (-15 Tiền)'}
           </button>
           <button class="tactical-btn" onclick="executeDossierAction('${dossier.npcId}', 'DISPATCH_GIFT_CARAVAN')" title="Phái đoàn tùy tùng mang lễ vật đi xa">
-            ${isEn ? '[DISPATCH TRIBUTE CARAVAN] (-55 Qian)' : '[ỦY THÁC CHUYỂN QUÀ BIẾU] (-55 Tiền)'}
+            ${isEn ? 'Dispatch Tribute Caravan (-55 Qian)' : 'Ủy Thác Chuyển Quà Biếu (-55 Tiền)'}
           </button>
         </div>
       `;
@@ -530,41 +553,41 @@
 
     // Modal Assembly
     modalEl.innerHTML = `
-      <div class="modal-box modal-box--large" style="max-width: 840px;">
+      <div class="modal-box modal-box--large" style="max-width: 860px;">
         <!-- Modal Top Bar -->
         <div class="modal-header">
           <div style="display: flex; align-items: center; gap: 8px;">
             <span class="tactical-badge tactical-badge--primary">${isEn ? '[OFFICER DOSSIER]' : '[HỒ SƠ VÕ TƯỚNG]'}</span>
-            <div class="modal-title" style="letter-spacing: 0.05em;">${modalTitle}</div>
+            <div class="modal-title" style="letter-spacing: 0.05em; font-size: 13.5px; font-weight: 700; color: #fbbf24;">${modalTitle}</div>
           </div>
-          <button class="btn-modal-close" onclick="closeNpcDossierModal()">&times;</button>
+          <button class="btn-modal-close" onclick="closeNpcDossierModal()" title="${isEn ? 'Close' : 'Đóng'}">&times;</button>
         </div>
 
         <div class="modal-body" style="padding: 16px; display: flex; flex-direction: column; gap: 12px;">
           <!-- 1. Fixed Header: Identity, Location, Proximity & Kizuna Aura -->
-          <div style="display: grid; grid-template-columns: 80px 1fr 1fr; gap: 16px; background: var(--surface-panel); padding: 12px; border: 1px solid var(--border-neutral); border-radius: var(--radius-sm);">
+          <div style="display: grid; grid-template-columns: 80px 1fr 1fr; gap: 16px; background: rgba(0, 0, 0, 0.28); padding: 12px 14px; border: 1px solid var(--border-neutral); border-radius: var(--radius-sm);">
             <!-- Avatar Portrait -->
-            <div style="width: 80px; height: 80px; background: #151824; border: 2px solid ${dossier.intelLevel >= 4 ? '#f59e0b' : 'var(--brand-primary)'}; display: flex; align-items: center; justify-content: center; font-size: 36px; font-weight: bold; color: var(--brand-primary); font-family: 'Cinzel', serif; box-shadow: 0 0 12px rgba(245, 158, 11, 0.15);">
+            <div style="width: 80px; height: 80px; background: #0c0f18; border: 2px solid ${dossier.intelLevel >= 4 ? '#f59e0b' : 'var(--brand-primary)'}; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 34px; font-weight: bold; color: var(--brand-primary); font-family: 'Noto Serif SC', 'Songti SC', serif; box-shadow: 0 0 14px rgba(245, 158, 11, 0.15);">
               ${dossier.avatarChar}
             </div>
 
             <!-- Identity Core -->
             <div style="display: flex; flex-direction: column; justify-content: center;">
               <div style="display: flex; align-items: baseline; gap: 6px;">
-                <span style="font-size: 16px; font-weight: bold; color: var(--text-main); font-family: 'Cinzel', serif;">${primaryName}</span>
-                ${dossier.nameHan ? `<span style="font-size: 13px; color: #94a3b8;">(${dossier.nameHan})</span>` : ''}
+                <span style="font-size: 17px; font-weight: 700; color: #f8fafc; font-family: var(--font-sans); letter-spacing: 0.02em;">${primaryName}</span>
+                ${dossier.nameHan ? `<span style="font-size: 13px; color: #94a3b8; font-family: 'Noto Serif SC', serif;">(${dossier.nameHan})</span>` : ''}
               </div>
-              <div style="font-size: 11px; color: var(--text-muted); margin: 2px 0 6px 0;">
+              <div style="font-size: 11.5px; color: var(--text-muted); margin: 3px 0 6px 0;">
                 ${styleName ? (isEn ? 'Style: ' + styleName + ' • ' : 'Tự: ' + styleName + ' • ') : ''}${position}
               </div>
               <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                <span style="font-size: 11px; color: #93c5fd;">${location}</span>
+                <span style="font-size: 11px; color: #93c5fd; font-family: var(--font-sans);">${location}</span>
                 ${proximityBadgeHtml}
               </div>
             </div>
 
             <!-- Kizuna & Disposition -->
-            <div style="display: flex; flex-direction: column; justify-content: center; gap: 6px;">
+            <div style="display: flex; flex-direction: column; justify-content: center; gap: 5px;">
               <div>
                 <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 2px;">
                   <span style="color: var(--text-muted);">${isEn ? 'Affinity:' : 'Thiện cảm:'}</span>
@@ -585,9 +608,15 @@
                 </div>
               </div>
 
-              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10px; margin-top: 2px;">
-                <span style="color: var(--text-muted);">${isEn ? 'Bond:' : 'Quan hệ:'} <strong style="color: #fde68a;">${relTitle}</strong></span>
-                <span style="color: var(--text-muted);">${isEn ? 'Mood:' : 'Khí sắc:'} <strong style="color: #60a5fa;">${moodLabel}</strong></span>
+              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10.5px; margin-top: 3px; padding-top: 4px; border-top: 1px dashed rgba(255,255,255,0.08); gap: 6px;">
+                <div style="display: flex; align-items: center; gap: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                  <span style="color: var(--text-muted); font-size: 10px;">${isEn ? 'Bond:' : 'Quan hệ:'}</span>
+                  <span class="dossier-pill-badge dossier-pill-badge--gold" style="font-size: 10px; padding: 1px 7px; font-weight: 600;">${relTitle}</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
+                  <span style="color: var(--text-muted); font-size: 10px;">${isEn ? 'Mood:' : 'Khí sắc:'}</span>
+                  <span style="color: #60a5fa; font-weight: 600; font-size: 10.5px;">${moodLabel}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -625,9 +654,9 @@
           <div id="dossier-interaction-feedback" class="hidden" style="background: #111420; border: 1px solid var(--border-neutral); padding: 12px; margin-top: 4px; border-radius: var(--radius-xs);"></div>
 
           <!-- Footer Modal Controls -->
-          <div style="display: flex; justify-content: flex-end; margin-top: 4px;">
-            <button class="tactical-btn" onclick="closeNpcDossierModal()">
-              ${isEn ? 'Close Dossier' : 'Đóng Hồ Sơ'}
+          <div style="display: flex; justify-content: flex-end; margin-top: 6px; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.05);">
+            <button class="tactical-btn" onclick="closeNpcDossierModal()" style="padding: 6px 16px; font-weight: 600;">
+              ${isEn ? '✕ Close Dossier' : '✕ Đóng Hồ Sơ'}
             </button>
           </div>
         </div>
