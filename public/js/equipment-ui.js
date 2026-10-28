@@ -855,6 +855,20 @@
     const craAttr = base.cra || 62;
     const canForge = craAttr >= 60;
 
+    // Calculate live anti-inflationary forge rate distribution
+    const fatigue = (window.simData && window.simData.player && window.simData.player.fatigue) || 0;
+    const fPenalty = Math.max(0, (fatigue - 40) / 3);
+    const S = Math.max(0, (craAttr - 60) - fPenalty);
+    const wL = 0.5 + 6.0 * Math.pow(S / 50, 2.2);
+    const wM = 5.0 + 25.0 * Math.pow(S / 50, 1.4);
+    const wF = 30.0 + 30.0 * Math.pow(S / 50, 0.9);
+    const wN = Math.max(15.0, 64.5 - 45.0 * (S / 50));
+    const totW = wL + wM + wF + wN;
+    const pL = ((wL / totW) * 100).toFixed(1);
+    const pM = ((wM / totW) * 100).toFixed(1);
+    const pF = ((wF / totW) * 100).toFixed(1);
+    const pN = Math.max(0, 100 - parseFloat(pL) - parseFloat(pM) - parseFloat(pF)).toFixed(1);
+
     return `
       <div class="eqp-forge-card">
         <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px; border-bottom:1px solid rgba(217,119,6,0.25); padding-bottom:10px;">
@@ -913,7 +927,7 @@
           <label class="eqp-form-label">${isEn ? 'Target Dispatch Destination:' : 'Mục Đích Đầu Ra Của Thần Binh:'}</label>
           <select id="bespoke-destination" class="eqp-form-select" onchange="EquipmentUI.toggleGiftSelector(this.value)">
             <option value="WAREHOUSE">📦 Nhập Kho Quân Nhu (Lưu trữ trong Warehouse Inventory)</option>
-            <option value="EQUIP_IMMEDIATELY">⚔️ Trang Bị Tức Thì (Lắp ngay vào ô Binh Khí của bản thân)</option>
+            <option value="EQUIP_IMMEDIATELY">⚔️ Trang Bị Tức Thì (Lắp ngay vào bảo vật sở hữu của bản thân)</option>
             <option value="GIFT_TO_NPC">🎁 Ban Tặng Hào Kiệt (Tặng ngay cho Võ Tướng để tăng đại lượng Hảo Cảm)</option>
           </select>
         </div>
@@ -929,16 +943,43 @@
           </select>
         </div>
 
-        <!-- QUALITY ROLL ODDS INFO -->
-        <div style="background:#090d16; border:1px solid rgba(148,163,184,0.15); border-radius:4px; padding:10px 14px; margin-bottom:16px;">
-          <div style="font-size:11px; font-weight:700; color:#fbbf24; margin-bottom:4px;">
-            ${isEn ? 'Quality Roll Distribution (Scaled by Crafting Prowess CRA):' : 'Tỷ Lệ Giác Ngộ Phẩm Cấp (Theo Kỹ Nghệ CRA):'}
+        <!-- QUALITY ROLL ODDS INFO (ANTI-INFLATION MATRIX) -->
+        <div style="background:#090d16; border:1px solid rgba(217,119,6,0.3); border-radius:6px; padding:12px 16px; margin-bottom:16px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <span style="font-size:12px; font-weight:700; color:#fbbf24;">
+              🎯 ${isEn ? 'Bespoke Quality Probability & Stat Roll Matrix:' : 'Bảng Tỷ Lệ Giác Ngộ Phẩm Cấp & Roll Chỉ Số (Hạn Chế Thần Binh):'}
+            </span>
+            <span style="font-size:11px; color:#94a3b8; font-family:'JetBrains Mono',monospace;">
+              ${isEn ? 'Smithing Mastery S:' : 'Điểm Tay Nghề S:'} <strong style="color:#60a5fa;">${S.toFixed(1)}</strong>
+              ${fPenalty > 0 ? `<span style="color:#ef4444; margin-left:4px;">(-${fPenalty.toFixed(1)} do mệt)</span>` : ''}
+            </span>
           </div>
-          <div style="display:flex; gap:8px; font-size:11px; flex-wrap:wrap;">
-            <span style="color:#94a3b8;">[Phổ Thông: +1-2 WAR]</span> •
-            <span style="color:#60a5fa;">[Tinh Luyện: +2-3 WAR, +1 LDR]</span> •
-            <span style="color:#fbbf24;">[Bách Luyện: +3-4 WAR, +1-2 LDR]</span> •
-            <span style="color:#f87171;">[Tuyệt Thế: +5 WAR, +2 LDR]</span>
+
+          <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:8px; text-align:center;">
+            <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(148,163,184,0.2); border-radius:4px; padding:8px;">
+              <div style="font-size:11px; font-weight:700; color:#94a3b8;">Phổ Thông Hảo Binh</div>
+              <div style="font-size:16px; font-weight:800; color:#cbd5e1; font-family:'JetBrains Mono',monospace;">${pN}%</div>
+              <div style="font-size:10px; color:#94a3b8; margin-top:2px;">WAR: +1~2 | LDR: +0~1</div>
+            </div>
+            <div style="background:rgba(59,130,246,0.06); border:1px solid rgba(59,130,246,0.3); border-radius:4px; padding:8px;">
+              <div style="font-size:11px; font-weight:700; color:#60a5fa;">Tinh Luyện Thượng Phẩm</div>
+              <div style="font-size:16px; font-weight:800; color:#60a5fa; font-family:'JetBrains Mono',monospace;">${pF}%</div>
+              <div style="font-size:10px; color:#93c5fd; margin-top:2px;">WAR: +2~3 | LDR: +1~2</div>
+            </div>
+            <div style="background:rgba(245,158,11,0.06); border:1px solid rgba(245,158,11,0.3); border-radius:4px; padding:8px;">
+              <div style="font-size:11px; font-weight:700; color:#fbbf24;">Bách Luyện Tinh Cương</div>
+              <div style="font-size:16px; font-weight:800; color:#fbbf24; font-family:'JetBrains Mono',monospace;">${pM}%</div>
+              <div style="font-size:10px; color:#fde68a; margin-top:2px;">WAR: +3~4 | LDR: +1~3</div>
+            </div>
+            <div style="background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.4); border-radius:4px; padding:8px; box-shadow:0 0 10px rgba(239,68,68,0.15);">
+              <div style="font-size:11px; font-weight:700; color:#f87171;">Tuyệt Thế Thần Binh</div>
+              <div style="font-size:16px; font-weight:800; color:#ef4444; font-family:'JetBrains Mono',monospace;">${pL}%</div>
+              <div style="font-size:10px; color:#fca5a5; margin-top:2px; font-weight:700;">WAR: +4~5 | LDR: +2~3</div>
+            </div>
+          </div>
+
+          <div style="font-size:10px; color:#64748b; margin-top:8px; line-height:1.4;">
+            💡 <em>${isEn ? 'Anti-Inflation Equation: P_Legendary capped at <= 8.5%. Individual stats strictly clamped to [+1, +5].' : 'Phương trình toán học: W_Legendary = 0.5 + 6.0*(S/50)^2.2. Trần xuất hiện Thần Binh <= 8.5%. Chỉ số kẹp cứng [+1, +5].'}</em>
           </div>
         </div>
 

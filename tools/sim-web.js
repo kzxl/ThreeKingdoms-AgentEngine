@@ -1046,38 +1046,57 @@ const server = http.createServer(async (req, res) => {
         // Deduct fatigue +25 & award EXP
         runSqlRaw(`UPDATE player_state SET fatigue = MIN(100, fatigue + 25), cra_exp = cra_exp + 45 WHERE player_id = '${characterId.replace(/'/g, "''")}';`);
 
-        // Quality roll based on CRA
+        // Anti-Inflationary Bespoke Quality Roll Engine
+        const fPenalty = Math.max(0, (fatigue - 40) / 3);
+        const S = Math.max(0, (craAttr - 60) - fPenalty);
+        const wLegendary = 0.5 + 6.0 * Math.pow(S / 50, 2.2);
+        const wMasterwork = 5.0 + 25.0 * Math.pow(S / 50, 1.4);
+        const wFine = 30.0 + 30.0 * Math.pow(S / 50, 0.9);
+        const wNormal = Math.max(15.0, 64.5 - 45.0 * (S / 50));
+        const totalW = wLegendary + wMasterwork + wFine + wNormal;
+
+        const pLegendary = (wLegendary / totalW) * 100;
+        const pMasterwork = (wMasterwork / totalW) * 100;
+        const pFine = (wFine / totalW) * 100;
+
         const roll = Math.random() * 100;
         let quality = 'NORMAL';
         let qualityLabelVi = 'Phổ Thông Hảo Binh';
-        let warBuff = 2;
-        let ldrBuff = 1;
+        let warBuff = 1;
+        let ldrBuff = 0;
 
-        if (craAttr >= 90 && roll > 60) {
+        if (roll < pLegendary) {
           quality = 'LEGENDARY';
           qualityLabelVi = 'Tuyệt Thế Thần Binh';
-          warBuff = 5;
-          ldrBuff = 2;
-        } else if (craAttr >= 75 && roll > 40) {
+          warBuff = Math.random() < 0.60 ? 5 : 4;
+          ldrBuff = Math.random() < 0.40 ? 3 : 2;
+        } else if (roll < pLegendary + pMasterwork) {
           quality = 'MASTERWORK';
           qualityLabelVi = 'Bách Luyện Tinh Cương';
-          warBuff = 4;
-          ldrBuff = 2;
-        } else if (roll > 30) {
+          warBuff = Math.random() < 0.45 ? 4 : 3;
+          const rLdr = Math.random();
+          ldrBuff = rLdr < 0.10 ? 3 : rLdr < 0.50 ? 2 : 1;
+        } else if (roll < pLegendary + pMasterwork + pFine) {
           quality = 'FINE';
           qualityLabelVi = 'Tinh Luyện Thượng Phẩm';
-          warBuff = 3;
-          ldrBuff = 1;
+          warBuff = Math.random() < 0.35 ? 3 : 2;
+          ldrBuff = Math.random() < 0.20 ? 2 : 1;
+        } else {
+          quality = 'NORMAL';
+          qualityLabelVi = 'Phổ Thông Hảo Binh';
+          warBuff = Math.random() < 0.20 ? 2 : 1;
+          ldrBuff = Math.random() < 0.15 ? 1 : 0;
         }
 
         // Enforce strict +1..+5 clamp
-        warBuff = Math.min(5, Math.max(1, warBuff));
-        ldrBuff = Math.min(5, Math.max(1, ldrBuff));
+        warBuff = Math.min(5, Math.max(1, Math.round(warBuff)));
+        ldrBuff = ldrBuff > 0 ? Math.min(5, Math.max(1, Math.round(ldrBuff))) : 0;
 
         const weaponType = payload.weaponType || 'BLADE';
         const customName = payload.customName || (quality === 'LEGENDARY' ? 'Thần Viêm Bảo Đao' : 'Bách Luyện Hảo Đao');
         const itemCode = `GOD-${weaponType}-${Date.now().toString().slice(-6)}`;
-        const statModifiers = { war: warBuff, ldr: ldrBuff };
+        const statModifiers = { war: warBuff };
+        if (ldrBuff > 0) statModifiers.ldr = ldrBuff;
 
         // Save into master_items & inventory_items
         runSqlRaw(`
@@ -1088,16 +1107,11 @@ const server = http.createServer(async (req, res) => {
           ON CONFLICT(item_code) DO UPDATE SET quantity = quantity + 1;
         `);
 
-        // Auto equip if requested
+        // Auto equip into possessions if requested (ROTK model: unlimited possessions)
         if (payload.targetDestination === 'EQUIP_IMMEDIATELY') {
           runSqlRaw(`
-            INSERT INTO character_equipment (character_id, slot_type, item_code, custom_name, stat_modifiers)
-            VALUES ('${characterId.replace(/'/g, "''")}', 'WEAPON', '${itemCode}', '${customName.replace(/'/g, "''")}', '${JSON.stringify(statModifiers)}')
-            ON CONFLICT(character_id, slot_type) DO UPDATE SET
-              item_code = excluded.item_code,
-              custom_name = excluded.custom_name,
-              stat_modifiers = excluded.stat_modifiers,
-              equipped_at = CURRENT_TIMESTAMP;
+            INSERT INTO character_equipment (character_id, slot_type, item_code, custom_name, stat_modifiers, equipped_at)
+            VALUES ('${characterId.replace(/'/g, "''")}', 'WEAPON', '${itemCode}', '${customName.replace(/'/g, "''")}', '${JSON.stringify(statModifiers)}', CURRENT_TIMESTAMP);
           `);
         }
 
@@ -1116,6 +1130,80 @@ const server = http.createServer(async (req, res) => {
         });
       } catch (err) {
         sendJson(res, 500, { success: false, error: err.message });
+      }
+    });
+    return;
+  }
+
+  // 4s4b. GET /api/professions/forge/rates - Anti-Inflationary Forge Probability Analysis
+  if (req.method === 'GET' && pathname === '/api/professions/forge/rates') {
+    const characterId = parsedUrl.query.characterId || 'PLY-0001';
+    const player = runSqlJson(`SELECT name, cra_attr, fatigue, cra_exp FROM player_state WHERE player_id = '${characterId.replace(/'/g, "''")}' LIMIT 1;`)[0] || {};
+    const cra = Math.max(60, Number(player.cra_attr || 50));
+    const f = Math.max(0, Math.min(100, Number(player.fatigue || 0)));
+    const fPenalty = Math.max(0, (f - 40) / 3);
+    const S = Math.max(0, (cra - 60) - fPenalty);
+
+    const wLegendary = 0.5 + 6.0 * Math.pow(S / 50, 2.2);
+    const wMasterwork = 5.0 + 25.0 * Math.pow(S / 50, 1.4);
+    const wFine = 30.0 + 30.0 * Math.pow(S / 50, 0.9);
+    const wNormal = Math.max(15.0, 64.5 - 45.0 * (S / 50));
+    const totalW = wLegendary + wMasterwork + wFine + wNormal;
+
+    const pLegendary = Math.round((wLegendary / totalW) * 1000) / 10;
+    const pMasterwork = Math.round((wMasterwork / totalW) * 1000) / 10;
+    const pFine = Math.round((wFine / totalW) * 1000) / 10;
+    const pNormal = Math.max(0, Math.round((100 - pLegendary - pMasterwork - pFine) * 10) / 10);
+
+    sendJson(res, 200, {
+      success: true,
+      player: {
+        name: player.name || 'Lương Diễn',
+        craAttr: cra,
+        fatigue: f
+      },
+      rates: {
+        effectiveMasteryScore: Math.round(S * 10) / 10,
+        fatiguePenalty: Math.round(fPenalty * 10) / 10,
+        formulaDescription: 'S = (CRA - 60) - max(0, (Fatigue - 40)/3). P(k) = W_k / sum(W_j).',
+        tiers: [
+          {
+            tier: 'NORMAL',
+            tierLabelVi: 'Phổ Thông Hảo Binh',
+            probabilityPercent: pNormal,
+            warRange: '+1 ~ +2',
+            ldrRange: '+0 ~ +1',
+            warOdds: [{ value: 1, chancePercent: 80 }, { value: 2, chancePercent: 20 }],
+            ldrOdds: [{ value: 0, chancePercent: 85 }, { value: 1, chancePercent: 15 }]
+          },
+          {
+            tier: 'FINE',
+            tierLabelVi: 'Tinh Luyện Thượng Phẩm',
+            probabilityPercent: pFine,
+            warRange: '+2 ~ +3',
+            ldrRange: '+1 ~ +2',
+            warOdds: [{ value: 2, chancePercent: 65 }, { value: 3, chancePercent: 35 }],
+            ldrOdds: [{ value: 1, chancePercent: 80 }, { value: 2, chancePercent: 20 }]
+          },
+          {
+            tier: 'MASTERWORK',
+            tierLabelVi: 'Bách Luyện Tinh Cương',
+            probabilityPercent: pMasterwork,
+            warRange: '+3 ~ +4',
+            ldrRange: '+1 ~ +3',
+            warOdds: [{ value: 3, chancePercent: 55 }, { value: 4, chancePercent: 45 }],
+            ldrOdds: [{ value: 1, chancePercent: 50 }, { value: 2, chancePercent: 40 }, { value: 3, chancePercent: 10 }]
+          },
+          {
+            tier: 'LEGENDARY',
+            tierLabelVi: 'Tuyệt Thế Thần Binh',
+            probabilityPercent: pLegendary,
+            warRange: '+4 ~ +5',
+            ldrRange: '+2 ~ +3',
+            warOdds: [{ value: 4, chancePercent: 40 }, { value: 5, chancePercent: 60 }],
+            ldrOdds: [{ value: 2, chancePercent: 60 }, { value: 3, chancePercent: 40 }]
+          }
+        ]
       }
     });
     return;

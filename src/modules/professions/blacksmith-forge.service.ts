@@ -68,6 +68,26 @@ export interface BespokeWeaponForgeParams {
   giftTargetNpcId?: string;
 }
 
+export interface ForgeRateTierDistribution {
+  tier: EquipmentQuality;
+  tierLabelVi: string;
+  probabilityPercent: number;
+  warRange: string;
+  ldrRange: string;
+  warOdds: Array<{ value: number; chancePercent: number }>;
+  ldrOdds: Array<{ value: number; chancePercent: number }>;
+}
+
+export interface ForgeRateAnalysis {
+  effectiveMasteryScore: number;
+  fatiguePenalty: number;
+  craAttr: number;
+  fatigue: number;
+  craftsmanTier: number;
+  tiers: ForgeRateTierDistribution[];
+  formulaDescription: string;
+}
+
 export interface BespokeWeaponForgeResult {
   success: boolean;
   itemCode: string;
@@ -186,6 +206,148 @@ export class BlacksmithForgeService {
    */
   public static clampStatModifier(value: number): number {
     return Math.min(5, Math.max(1, Math.round(value)));
+  }
+
+  /**
+   * Calculates anti-inflationary odds for bespoke weapon forging tiers and stat rolls.
+   * Ensures Legendary (Tuyệt Thế Thần Binh) is strictly rate-controlled (<= 8.5% at max mastery).
+   *
+   * Formulation:
+   * S = max(0, (CRA - 60) + 5*(Tier - 1) - max(0, (Fatigue - 40)/3) + Bonus)
+   * W_Legendary = 0.5 + 6.0 * (S / 50)^2.2
+   * W_Masterwork = 5.0 + 25.0 * (S / 50)^1.4
+   * W_Fine       = 30.0 + 30.0 * (S / 50)^0.9
+   * W_Normal     = max(15.0, 64.5 - 45.0 * (S / 50))
+   */
+  public static calculateForgeOdds(
+    craAttr: number,
+    fatigue: number = 0,
+    craftsmanTier: number = 1,
+    furnaceBonus: number = 0
+  ): ForgeRateAnalysis {
+    const cra = Math.max(60, Number(craAttr) || 60);
+    const f = Math.max(0, Math.min(100, Number(fatigue) || 0));
+    const tier = Math.max(1, Number(craftsmanTier) || 1);
+    const bonus = Math.max(0, Number(furnaceBonus) || 0);
+
+    const fatiguePenalty = Math.max(0, (f - 40) / 3);
+    const S = Math.max(0, (cra - 60) + 5 * (tier - 1) - fatiguePenalty + bonus);
+
+    // Unnormalized weights
+    const wLegendary = 0.5 + 6.0 * Math.pow(S / 50, 2.2);
+    const wMasterwork = 5.0 + 25.0 * Math.pow(S / 50, 1.4);
+    const wFine = 30.0 + 30.0 * Math.pow(S / 50, 0.9);
+    const wNormal = Math.max(15.0, 64.5 - 45.0 * (S / 50));
+
+    const totalWeight = wLegendary + wMasterwork + wFine + wNormal;
+
+    const pLegendary = Math.round((wLegendary / totalWeight) * 1000) / 10;
+    const pMasterwork = Math.round((wMasterwork / totalWeight) * 1000) / 10;
+    const pFine = Math.round((wFine / totalWeight) * 1000) / 10;
+    const pNormal = Math.max(0, Math.round((100 - pLegendary - pMasterwork - pFine) * 10) / 10);
+
+    const tiers: ForgeRateTierDistribution[] = [
+      {
+        tier: 'NORMAL',
+        tierLabelVi: 'Phổ Thông Hảo Binh',
+        probabilityPercent: pNormal,
+        warRange: '+1 ~ +2',
+        ldrRange: '+0 ~ +1',
+        warOdds: [
+          { value: 1, chancePercent: 80 },
+          { value: 2, chancePercent: 20 }
+        ],
+        ldrOdds: [
+          { value: 0, chancePercent: 85 },
+          { value: 1, chancePercent: 15 }
+        ]
+      },
+      {
+        tier: 'FINE',
+        tierLabelVi: 'Tinh Luyện Thượng Phẩm',
+        probabilityPercent: pFine,
+        warRange: '+2 ~ +3',
+        ldrRange: '+1 ~ +2',
+        warOdds: [
+          { value: 2, chancePercent: 65 },
+          { value: 3, chancePercent: 35 }
+        ],
+        ldrOdds: [
+          { value: 1, chancePercent: 80 },
+          { value: 2, chancePercent: 20 }
+        ]
+      },
+      {
+        tier: 'MASTERWORK',
+        tierLabelVi: 'Bách Luyện Tinh Cương',
+        probabilityPercent: pMasterwork,
+        warRange: '+3 ~ +4',
+        ldrRange: '+1 ~ +3',
+        warOdds: [
+          { value: 3, chancePercent: 55 },
+          { value: 4, chancePercent: 45 }
+        ],
+        ldrOdds: [
+          { value: 1, chancePercent: 50 },
+          { value: 2, chancePercent: 40 },
+          { value: 3, chancePercent: 10 }
+        ]
+      },
+      {
+        tier: 'LEGENDARY',
+        tierLabelVi: 'Tuyệt Thế Thần Binh',
+        probabilityPercent: pLegendary,
+        warRange: '+4 ~ +5',
+        ldrRange: '+2 ~ +3',
+        warOdds: [
+          { value: 4, chancePercent: 40 },
+          { value: 5, chancePercent: 60 }
+        ],
+        ldrOdds: [
+          { value: 2, chancePercent: 60 },
+          { value: 3, chancePercent: 40 }
+        ]
+      }
+    ];
+
+    return {
+      effectiveMasteryScore: Math.round(S * 10) / 10,
+      fatiguePenalty: Math.round(fatiguePenalty * 10) / 10,
+      craAttr: cra,
+      fatigue: f,
+      craftsmanTier: tier,
+      tiers,
+      formulaDescription: 'S = (CRA - 60) + 5*(Tier - 1) - max(0, (Fatigue - 40)/3) + Bonus. P(k) = W_k / sum(W_j).'
+    };
+  }
+
+  /**
+   * Retrieves player smithing stats for rate calculations.
+   */
+  public getPlayerSmithingStats(characterId: string = 'PLY-0001'): {
+    craAttr: number;
+    fatigue: number;
+    craftsmanTier: number;
+    craftsmanExp: number;
+    name: string;
+  } {
+    const player = this.db.queryOne<any>(
+      'SELECT name, cra_attr, fatigue, cra_exp FROM player_state WHERE player_id = ?;',
+      [characterId]
+    ) || {};
+
+    const prof = this.db.queryOne<any>(
+      "SELECT tier, current_exp FROM character_professions WHERE character_id = ? AND category = 'CRAFTING' LIMIT 1;",
+      [characterId]
+    );
+
+    return {
+      name: player.name || 'Lương Diễn',
+      craAttr: Number(player.cra_attr || 50),
+      fatigue: Number(player.fatigue || 0),
+      craftsmanTier: Number(prof?.tier || 1),
+      craftsmanExp: Number(prof?.current_exp || player.cra_exp || 0)
+    };
   }
 
   /**
@@ -321,38 +483,50 @@ export class BlacksmithForgeService {
         }
       }
 
-      // 3. Roll Quality (Normal, Fine, Masterwork, Legendary)
-      // Quality score formula: 1..60 (base) + (CRA - 60) * 1.25 + 1..20 (furnace luck)
-      const baseRoll = Math.floor(Math.random() * 60) + 1;
-      const craBonus = Math.floor((currentCra - 60) * 1.25);
-      const luckRoll = Math.floor(Math.random() * 20) + 1;
-      const totalScore = baseRoll + craBonus + luckRoll;
+      // 3. Roll Quality using Anti-Inflationary Forge Rate Engine
+      const prof = this.db.queryOne<any>(
+        "SELECT tier FROM character_professions WHERE character_id = ? AND category = 'CRAFTING' LIMIT 1;",
+        [characterId]
+      );
+      const craftsmanTier = prof?.tier || 1;
+
+      const odds = BlacksmithForgeService.calculateForgeOdds(currentCra, currentFatigue, craftsmanTier);
+      const roll100 = Math.random() * 100;
 
       let quality: EquipmentQuality = 'NORMAL';
-      let qualityLabelVi = 'Phổ Thông (Hảo Binh)';
+      let qualityLabelVi = 'Phổ Thông Hảo Binh';
       let rawWarMod = 1;
       let rawLdrMod = 0;
 
-      if (totalScore >= 90) {
+      const pLegendary = odds.tiers.find(t => t.tier === 'LEGENDARY')?.probabilityPercent || 0.5;
+      const pMasterwork = odds.tiers.find(t => t.tier === 'MASTERWORK')?.probabilityPercent || 5.0;
+      const pFine = odds.tiers.find(t => t.tier === 'FINE')?.probabilityPercent || 30.0;
+
+      if (roll100 < pLegendary) {
+        // Tuyệt Thế Thần Binh (Legendary) - Divine Rarity!
         quality = 'LEGENDARY';
         qualityLabelVi = 'Tuyệt Thế Thần Binh';
-        rawWarMod = 5;
-        rawLdrMod = 2;
-      } else if (totalScore >= 72) {
+        rawWarMod = Math.random() < 0.60 ? 5 : 4;
+        rawLdrMod = Math.random() < 0.40 ? 3 : 2;
+      } else if (roll100 < pLegendary + pMasterwork) {
+        // Bách Luyện Tinh Cương (Masterwork)
         quality = 'MASTERWORK';
         qualityLabelVi = 'Bách Luyện Tinh Cương';
-        rawWarMod = 4;
-        rawLdrMod = 1;
-      } else if (totalScore >= 45) {
+        rawWarMod = Math.random() < 0.45 ? 4 : 3;
+        const ldrRoll = Math.random();
+        rawLdrMod = ldrRoll < 0.10 ? 3 : ldrRoll < 0.50 ? 2 : 1;
+      } else if (roll100 < pLegendary + pMasterwork + pFine) {
+        // Tinh Luyện Thượng Phẩm (Fine)
         quality = 'FINE';
         qualityLabelVi = 'Tinh Luyện Thượng Phẩm';
-        rawWarMod = 3;
-        rawLdrMod = 1;
+        rawWarMod = Math.random() < 0.35 ? 3 : 2;
+        rawLdrMod = Math.random() < 0.20 ? 2 : 1;
       } else {
+        // Phổ Thông Hảo Binh (Normal)
         quality = 'NORMAL';
         qualityLabelVi = 'Phổ Thông Hảo Binh';
-        rawWarMod = 2;
-        rawLdrMod = 0;
+        rawWarMod = Math.random() < 0.20 ? 2 : 1;
+        rawLdrMod = Math.random() < 0.15 ? 1 : 0;
       }
 
       // STRICT CLAMPING INVARIANT: All stat modifiers strictly clamped between +1 and +5 points!
@@ -1464,6 +1638,22 @@ export function registerBlacksmithForgeRoutes(router: Router): void {
       sendJson(res, 200, result);
     } catch (err: any) {
       sendJson(res, 400, { success: false, error: err.message });
+    }
+  });
+
+  // 4b. GET /api/professions/forge/rates
+  router.get('/api/professions/forge/rates', async (_req: any, res: any, ctx: RouteContext) => {
+    try {
+      const characterId = (ctx.query.characterId as string) || 'PLY-0001';
+      const playerStats = service.getPlayerSmithingStats(characterId);
+      const rates = BlacksmithForgeService.calculateForgeOdds(
+        playerStats.craAttr,
+        playerStats.fatigue,
+        playerStats.craftsmanTier
+      );
+      sendJson(res, 200, { success: true, player: playerStats, rates });
+    } catch (err: any) {
+      sendJson(res, 500, { success: false, error: err.message });
     }
   });
 
