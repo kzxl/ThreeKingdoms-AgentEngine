@@ -54,7 +54,7 @@ ThreeKingdoms-AgentEngine is an autonomous Three Kingdoms simulation engine powe
   - Web Server & REST Dispatcher: `tools/sim-web.js`
   - Sanitized Assets: `public/js/map-data.js`, `public/js/caravan-ui.js`, `public/js/equipment-ui.js`, `src/modules/contextual-actions/context-action.engine.ts`
 - **Audit & Invariants**:
-  - `tools/sim-audit.js` (140/140 invariants: Cashflow, Inventory, Double-Entry, Projection, State)
+  - `tools/sim-audit.js` (193/193 invariants: Cashflow, Inventory, Double-Entry, Projection, State)
 
 ---
 
@@ -78,6 +78,11 @@ ThreeKingdoms-AgentEngine is an autonomous Three Kingdoms simulation engine powe
 | 15 | 6 High-Density Tabs | Tab 1 Quân Trang `[武]`, Tab 2 Sản Nghiệp `[業]`, Tab 3 Thương Đoàn `[商]`, Tab 4 Gia Thất `[家]`, Tab 5 Diễn Võ `[演]`, Tab 6 Tụ Nghĩa `[義]` | M4 | ORIGINAL_REQUEST §R4 |
 | 16 | Codebase-wide Anti-AI-Slop | Purge all emojis in UI and REST payloads (`map-data.js`, `caravan-ui.js`, `sim-web.js`, `context-action.engine.ts`), replace with Koei ROTK Hanzi seals | M4 | ORIGINAL_REQUEST §R4 |
 | 17 | E2E Testing Runner & Verification | 100% pass across Marriage, ROTK Duels, Tavern Banquets, existing suites (`verify-equipment-and-exp.ts`, `verify-enterprise-labor.ts`, `test-branch4-logistics.ts`), and 140/140 SQLite audit invariants | M5 | ORIGINAL_REQUEST §Acceptance |
+| 18 | ROTK Master Distillation & 20-Settlement Strategic Map | Enriched 120+ master items, 30+ talents, 150+ characters, 20 historical citadels, 24 tactical routes across 4 terrain profiles (`HIGHWAY`, `WATERWAY`, `MOUNTAIN_PASS`, `PLANK_ROAD`), 3 view modes (`overview`, `military`, `economy`), and route pulse animation | M6 | ROTK_GRAND_STRATEGY |
+| 19 | Specialist Workforce Recruitment (Loop 1) | 20 auxiliary specialists (`NPC-0201` to `NPC-0220`), recruitment signing bonus via double-entry journal, assignment to businesses boosting efficiency by +15% to +25% | M6 | ROTK_GRAND_STRATEGY |
+| 20 | 20-Settlement Arbitrage & Caravans (Loop 2) | Full price profile coverage for all 20 citadels, long-distance trade caravans with 3 guard tiers (`MILITIA`, `VETERAN`, `ELITE_RETINUE`), bandit ambushes, and destination liquidation | M6 | ROTK_GRAND_STRATEGY |
+| 21 | Garrisons & Citadel Siege Assaults (Loop 3) | Recruit and station garrison troops, wall defense ratings (10-100), vanguard siege assaults with defense destruction and war loot plundering (`WAR_LOOT`) | M6 | ROTK_GRAND_STRATEGY |
+| 22 | Double-Entry Transaction Engine & 193 Invariants | `src/shared/financial-transaction.ts`, atomic Dr == Cr accounting, `game/PROGRESS.md` synchronization, and 193/193 audit invariants verified | M6 | ROTK_GRAND_STRATEGY |
 
 ---
 
@@ -90,6 +95,7 @@ ThreeKingdoms-AgentEngine is an autonomous Three Kingdoms simulation engine powe
 | M3 | Tavern Hero Banquets & Brotherhood (R3) | Features 10-13: `TavernBanquetService`, gourmet dishes/Dukang wine consumption, brotherhood oath, retainer recruitment | none | DONE |
 | M4 | Grand Command Hub UI & Anti-AI-Slop (R4) | Features 14-16: Unified `#grand-command-hub-modal`, 6 tabs, REST wiring in `sim-web.js`, emoji eradication | M1, M2, M3 | DONE |
 | M5 | Final E2E Suite Pass & Adversarial Hardening | Feature 17: Pass 100% E2E tests, verify 140/140 audit invariants, forensic auditor review, Tier 5 hardening | E2E, M1-M4 | DONE |
+| M6 | ROTK Grand Strategy & 3-Loop Expansion | Features 18-22: 20-settlement 3-layer world map, specialist workforce, 20-city arbitrage caravans, siege assaults, and 193/193 audit invariants | M1-M5 | DONE |
 
 ---
 

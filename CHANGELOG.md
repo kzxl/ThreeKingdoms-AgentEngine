@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.3.0] - 2026-10-28
+
+### Added
+- **ROTK Master Data Distillation**: Enriched SQLite databases (`saves/master.db` & `saves/session.db`) with 120+ master items (weapons, steeds, treatises, commodities), 30+ master talents (combat, strategy, crafting, commerce), 150+ historical characters, and 20 auxiliary hireable specialists (`NPC-0201` to `NPC-0220`).
+- **Strategic 3-Layer Interactive World Map (`public/js/world-map.js`, `public/js/map-data.js`)**:
+  - Modeled 20 historical ROTK citadels across ancient provinces with authoritative garrison troop breakdowns, wall defense ratings (10-100), granary reserves, treasuries, and regional trade profiles.
+  - Plotted 24 tactical routes across 4 ROTK terrain profiles (`HIGHWAY`, `WATERWAY`, `MOUNTAIN_PASS`, `PLANK_ROAD`) with travel duration and grain provisioning metrics.
+  - Implemented 3 interactive View Modes (`Overview`, `Military`, `Economy`), route pulse SVG animations, and a rich 3-tab Intel Dossier panel.
+- **Loop 1: Specialist Workforce Recruitment & Enterprise Assignment (`src/modules/professions/features/workforce/`)**:
+  - Implemented `SpecialistWorkforceService` and REST endpoints (`/api/workforce/specialists`, `/api/workforce/hire`, `/api/workforce/businesses`).
+  - Added hiring signing bonus mechanism with balanced double-entry accounting (`EXP-OPERATING` / `CASH-ON-HAND`).
+  - Assigning hired specialists to enterprises increases operational workforce and boosts enterprise efficiency multiplier by +15% to +25%.
+- **Loop 2: 20-Settlement Regional Arbitrage & Caravan Logistics (`src/modules/economy/regional-market.service.ts`, `src/modules/ecology-logistics/caravan-logistics.service.ts`)**:
+  - Configured economic profiles and commodity price elasticities for all 20 settlements.
+  - Supported long-distance caravan dispatch with 3 guard protection tiers (`MILITIA`, `VETERAN`, `ELITE_RETINUE`), chokepoint bandit ambushes, and liquidation at destination.
+- **Loop 3: Garrison Deployment & Citadel Siege Assault (`src/modules/military/military.controller.ts`)**:
+  - Added `/api/garrisons/reinforce` allowing players to recruit and station troops at friendly/allied citadels, reinforcing defense ratings.
+  - Added `/api/military/assault` resolving siege battles against hostile citadels with wall defense destruction, casualty calculations, and war loot plundering (`WAR_LOOT`).
+- **Double-Entry Financial Transaction Engine (`src/shared/financial-transaction.ts`)**: Atomic transaction helper recording `cashflow_ledger`, Dr == Cr `account_journal`, updating player liquid cash, and synchronizing `game/PROGRESS.md`.
+- **E2E Grand Strategy Test Suite (`tests/verify-rotk-grand-loop.ts`)**: Comprehensive integration test suite verifying all 3 strategic loops and audit invariants.
+
+### Changed
+- **Audit Suite Expansion (`tools/sim-audit.js`)**: Expanded verified database invariants from 140 to 193/193 with zero discrepancies.
+- **Spatial Registry Synchronization (`src/modules/ecology-logistics/spatial-registry.ts`)**: Synchronized TypeScript spatial registry with all 20 settlements and regional coordinates.
+
+---
+
 ## [1.2.0] - 2026-10-27
 
 ### Added

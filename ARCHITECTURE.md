@@ -56,14 +56,18 @@ graph TD
 
 ## 3. SQLite Schema & Invariant Enforcement
 
-All dynamic campaign state is maintained in `saves/session.db` using the schema defined in `tools/schema.sql`:
+All dynamic campaign state is maintained in `saves/session.db` using the schema defined in `tools/schema.sql` (audited across 193 invariants):
 
-1. **`player_state`**: Tracks attributes (INT, POL, WAR, LDR, DIP, COM, LOG, CRA), current location, cash balances, grain, and net worth.
+1. **`player_state`**: Tracks attributes (INT, POL, WAR, LDR, DIP, COM, LOG, CRA), current location, liquid cash, safe cash, fixed capital, grain, and net worth.
 2. **`cashflow_ledger`**: Strict double-entry ledger enforcing:
    $$\text{Closing Balance} = \text{Opening Balance} + \sum \text{Inflow} - \sum \text{Outflow}$$
-3. **`inventory_items` & `stock_movements`**: Enforces physical conservation of goods (bamboo, grain, weapons, salt).
-4. **`npc_relationship_deltas`**: Stores delta shifts (`sentiment_delta`) relative to the master seed dossiers, leaving master NPC files untouched:
-   $$\text{Current Sentiment} = \text{Master Sentiment} + \sum \text{Deltas}$$
+3. **`account_journal`**: Balanced double-entry financial journal ($Debit == Credit$) categorizing operational expenses, revenues, signing bonuses, and war spoils.
+4. **`inventory_items` & `stock_movements`**: Enforces physical conservation of goods (bamboo, grain, weapons, salt, leather).
+5. **`session_settlements`**: 20 historical ROTK citadels with authoritative garrisons, wall defenses (10-100), granaries, and treasuries.
+6. **`master_routes`**: 24 strategic connecting routes classified by 4 terrain profiles (`HIGHWAY`, `WATERWAY`, `MOUNTAIN_PASS`, `PLANK_ROAD`).
+7. **`trade_caravans`**: Long-distance expedition caravans with route transit progression, guard retinue tiers, and settlement liquidation.
+8. **`businesses` & `npc_state`**: Enterprise operations boosted by hired auxiliary specialists (+15% to +25% efficiency multipliers).
+9. **`npc_relationship_deltas`**: Stores relational shifts (Affinity, Respect) relative to master character seed dossiers.
 
 ---
 
