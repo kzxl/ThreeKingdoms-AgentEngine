@@ -11,6 +11,7 @@ import { DatabaseService } from '../../core/database';
 import { ModuleRegistry } from '../../core/module-registry';
 import { MilitaryModule } from './military.module';
 import { EcologyLogisticsModule } from '../ecology-logistics/ecology-logistics.module';
+import { recordFinancialTransaction } from '../../shared/financial-transaction';
 
 function getMilitaryModule(): MilitaryModule | undefined {
   const gsm = (globalThis as any).__GRAND_STRATEGY_MODULES__;
@@ -251,7 +252,14 @@ export function registerMilitaryRoutes(router: Router): void {
         const newDefense = Math.min(100, Math.max(10, settlement.defense + defenseDelta));
 
         if (delta > 0) {
-          db.execute('UPDATE player_state SET liquid_cash = liquid_cash - ? WHERE player_id = "PLY-0001"', [totalCost]);
+          recordFinancialTransaction(db, {
+            category: 'MILITARY_REINFORCE',
+            counterparty: settlement.name_vi,
+            memo: `Điều phối tăng cường ${delta} binh sĩ đồn trú tại ${settlement.name_vi}`,
+            outflow: totalCost,
+            debitAccount: 'EXP-OPERATING',
+            creditAccount: 'CASH-ON-HAND'
+          });
         }
 
         db.execute(
@@ -431,8 +439,17 @@ export function registerMilitaryRoutes(router: Router): void {
             lootQian,
             targetSettlementId
           ]);
-          db.execute('UPDATE player_state SET liquid_cash = liquid_cash + ?, fatigue = MIN(100, fatigue + 35) WHERE player_id = ?', [
-            lootQian,
+          if (lootQian > 0) {
+            recordFinancialTransaction(db, {
+              category: 'WAR_LOOT',
+              counterparty: target.name_vi,
+              memo: `Công phá đại thắng ${target.name_vi}, thu giữ ${lootQian} tiền chiến phí`,
+              inflow: lootQian,
+              debitAccount: 'CASH-ON-HAND',
+              creditAccount: 'REV-SALES'
+            });
+          }
+          db.execute('UPDATE player_state SET fatigue = MIN(100, fatigue + 35) WHERE player_id = ?', [
             commanderId
           ]);
         } else {

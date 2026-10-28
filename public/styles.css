@@ -2990,6 +2990,78 @@ button:disabled,
   justify-content: space-between;
 }
 
+.intel-action-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.btn-intel-tactical {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 4px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: var(--radius-xs);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 1.2;
+}
+
+.btn-intel-reinforce {
+  background: rgba(59, 130, 246, 0.18);
+  border: 1px solid rgba(59, 130, 246, 0.5);
+  color: #93c5fd;
+}
+.btn-intel-reinforce:hover {
+  background: rgba(59, 130, 246, 0.35);
+  border-color: #60a5fa;
+  color: #ffffff;
+}
+
+.btn-intel-assault {
+  background: rgba(239, 68, 68, 0.18);
+  border: 1px solid rgba(239, 68, 68, 0.5);
+  color: #fca5a5;
+}
+.btn-intel-assault:hover {
+  background: rgba(239, 68, 68, 0.35);
+  border-color: #f87171;
+  color: #ffffff;
+}
+
+.btn-intel-caravan {
+  background: rgba(245, 158, 11, 0.18);
+  border: 1px solid rgba(245, 158, 11, 0.5);
+  color: #fde68a;
+  width: 100%;
+}
+.btn-intel-caravan:hover {
+  background: rgba(245, 158, 11, 0.35);
+  border-color: #fbbf24;
+  color: #ffffff;
+}
+
+.btn-intel-recruit {
+  background: rgba(16, 185, 129, 0.2);
+  border: 1px solid rgba(16, 185, 129, 0.5);
+  color: #6ee7b7;
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.btn-intel-recruit:hover {
+  background: rgba(16, 185, 129, 0.4);
+  border-color: #34d399;
+  color: #ffffff;
+}
+
 /* ==========================================================================
    GAME MANAGER & PLAYTHROUGH LIFECYCLE MODAL
    ========================================================================== */

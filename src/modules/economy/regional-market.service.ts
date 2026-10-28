@@ -287,8 +287,77 @@ export const SETTLEMENT_PROFILES: Record<string, SettlementProfile> = {
       surplusItems: ['COM-TIMBER', 'RAW-HERB-WILD', 'COM-BAMBOO', 'COM-MEAT', 'RAW-BAMBOO-POLE'],
       deficitItems: ['COM-IRON', 'COM-SWORD', 'COM-CERAMIC', 'COM-SILK']
     }
+  },
+  chi_bi: {
+    settlementId: 'chi_bi',
+    nameVi: 'Xích Bích & Sài Tang',
+    provinceVi: 'Kinh / Giang Đông',
+    coordX: 380,
+    coordY: 410,
+    specialization: {
+      surplusMultiplier: 0.68,
+      deficitMultiplier: 1.55,
+      surplusItems: ['RAW-SULFUR', 'RAW-PITCH-OIL', 'COM-BAMBOO', 'COM-CROSSBOW'],
+      deficitItems: ['COM-GRAIN', 'COM-IRON', 'COM-SALT', 'COM-SALT-SEA']
+    }
+  },
+  jiang_ling: {
+    settlementId: 'jiang_ling',
+    nameVi: 'Giang Lăng',
+    provinceVi: 'Kinh Châu',
+    coordX: 270,
+    coordY: 430,
+    specialization: {
+      surplusMultiplier: 0.70,
+      deficitMultiplier: 1.50,
+      surplusItems: ['COM-FISH-DRIED', 'COM-TIMBER', 'EQP-SPEAR-IRON', 'COMM-YANGTZE-TIMBER'],
+      deficitItems: ['COM-HORSE-W', 'RAW-PITCH-OIL', 'COM-SALT', 'COM-SALT-SEA']
+    }
+  },
+  shang_dang: {
+    settlementId: 'shang_dang',
+    nameVi: 'Thượng Đảng',
+    provinceVi: 'Tịnh Châu',
+    coordX: 280,
+    coordY: 190,
+    specialization: {
+      surplusMultiplier: 0.62,
+      deficitMultiplier: 1.65,
+      surplusItems: ['COMM-SHANGDANG-ORE', 'RAW-IRON-ORE', 'COM-IRON', 'COM-SWORD'],
+      deficitItems: ['COM-GRAIN', 'COM-SILK', 'COM-TEA', 'COM-TEA-DRIED']
+    }
+  },
+  wu_wei: {
+    settlementId: 'wu_wei',
+    nameVi: 'Vũ Uy & Tây Lương',
+    provinceVi: 'Lương Châu',
+    coordX: 80,
+    coordY: 200,
+    specialization: {
+      surplusMultiplier: 0.60,
+      deficitMultiplier: 1.70,
+      surplusItems: ['COMM-XILIANG-HORSE', 'COM-HORSE-W', 'COM-LEATH', 'EQP-ARMOR-LEATHER'],
+      deficitItems: ['COM-GRAIN', 'COM-SILK', 'COM-TEA', 'COM-CERAMIC']
+    }
+  },
+  jiao_zhi: {
+    settlementId: 'jiao_zhi',
+    nameVi: 'Giao Chỉ',
+    provinceVi: 'Giao Châu',
+    coordX: 340,
+    coordY: 500,
+    specialization: {
+      surplusMultiplier: 0.58,
+      deficitMultiplier: 1.75,
+      surplusItems: ['COMM-JIAOZHI-INCENSE', 'RAW-PEARL-SEA', 'COM-HERB', 'RAW-HERB-WILD'],
+      deficitItems: ['COM-IRON', 'COM-GRAIN', 'EQP-SPEAR-IRON', 'COM-SWORD']
+    }
   }
 };
+
+// Aliases for flawless coordinate and trade lookup
+SETTLEMENT_PROFILES['chang_an'] = SETTLEMENT_PROFILES['changan'];
+SETTLEMENT_PROFILES['xi_liang'] = SETTLEMENT_PROFILES['wu_wei'];
 
 /**
  * Calculates inter-city march distance in ancient Li (dặm).

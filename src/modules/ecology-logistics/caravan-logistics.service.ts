@@ -180,7 +180,7 @@ export class CaravanLogisticsService {
     const effectiveDate = meta.currentDate;
     const distanceLi = calculateDistanceLi(fromSettlementId, toSettlementId);
 
-    return this.db.transaction(() => {
+    const result = this.db.transaction(() => {
       // 1. Verify player stock in inventory_items
       const stock = this.db.queryOne<{ quantity: number; unit_cost_basis: number }>(
         'SELECT quantity, unit_cost_basis FROM inventory_items WHERE item_code = ?;',
@@ -310,6 +310,16 @@ export class CaravanLogisticsService {
         message: `Đã phái xuất ${caravanName} khởi hành! Áp tải ${cargoQuantity} ${item.name_vi}, hộ vệ ${guardConfig.troops} binh mã. Khoảng cách: ${distanceLi} dặm.`
       };
     });
+
+    // Keep PROGRESS.md synchronized
+    try {
+      const rootDir = process.cwd();
+      execSync(`node "${path.join(rootDir, 'tools', 'sim-db.js')}" export-progress`, {
+        stdio: 'ignore'
+      });
+    } catch {}
+
+    return result;
   }
 
   /**

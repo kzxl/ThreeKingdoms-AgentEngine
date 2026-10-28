@@ -27,6 +27,7 @@ import { registerLineageRoutes } from '../modules/lineage-succession/lineage.con
 import { registerDuelRoutes } from '../modules/military/duel.controller';
 import { registerBanquetRoutes } from '../modules/social-kizuna/banquet.controller';
 import { registerProgressionRoutes } from '../modules/progression/progression.controller';
+import { registerSpecialistWorkforceRoutes } from '../modules/professions/features/workforce/specialist-workforce.controller';
 import { DailyInteractionEngine } from '../modules/social-kizuna/daily-interaction.engine';
 import { ContextActionEngine } from '../modules/contextual-actions/context-action.engine';
 
@@ -89,6 +90,7 @@ export function createGrandStrategyRouter(): Router {
   registerDuelRoutes(router);
   registerBanquetRoutes(router);
   registerProgressionRoutes(router);
+  registerSpecialistWorkforceRoutes(router);
   return router;
 }
 
