@@ -12,6 +12,7 @@
  */
 
 import { DatabaseService } from '../../core/database';
+import { ContextDialogueService } from './context-dialogue.service';
 import path from 'path';
 import { execSync } from 'child_process';
 
@@ -146,6 +147,8 @@ export interface DailyInteractionResult {
   };
   dialogueNarrativeVi: string;
   dialogueNarrativeEn: string;
+  dialogueSource?: string;
+  isDialogueCached?: boolean;
   deltas: {
     affinityChange: number;
     respectChange: number;
@@ -750,71 +753,26 @@ export class DailyInteractionEngine {
       cashCost = 50; // Cash gift
     }
 
-    // 4. Generate Narrative according to Archetype & Outcome
-    let dialogueNarrativeVi = '';
-    let dialogueNarrativeEn = '';
+    // 4. Resolve Contextual Dialogue (SQLite Cache-First -> Lazy Seeding -> Archetype Fallback)
     const heroName = profile.nameVi;
     const heroNameEn = profile.nameEn || profile.nameVi;
+    const dialogueService = ContextDialogueService.getInstance();
+    const resolvedDialogue = dialogueService.resolveDialogue({
+      npcId,
+      actionType,
+      outcomeTier: outcome,
+      relationshipTier: fog.relationshipTitleVi,
+      heroNameVi: heroName,
+      heroNameEn: heroNameEn,
+      personality: profile.personality,
+      motivation: profile.motivation,
+      customPrompt
+    });
 
-    if (actionType === 'BANQUET_DRINK') {
-      if (outcome === 'CRITICAL_SUCCESS') {
-        dialogueNarrativeVi = `${heroName} nâng bát rượu đầy sóng sánh, uống cạn trong một hơi rồi cười vang hào sảng: "Ha ha ha! Lương huynh mang tới rượu ngon thế này thật hợp ý ta! Thời buổi loạn lạc, tìm được tri âm cùng say một trận khó hơn ngàn vàng!"`;
-        dialogueNarrativeEn = `${heroNameEn} raises a brimming bowl of fine wine, drains it in a single draught, and roars with hearty laughter: "Hahaha! Brother Liang brings such exquisite wine, truly hitting the spot! In this turbulent age, finding a kindred spirit to share drinks with is worth more than a thousand bars of gold!"`;
-      } else if (outcome === 'SUCCESS') {
-        dialogueNarrativeVi = `${heroName} vui vẻ chạm chén cùng Lương Diễn: "Rượu ấm lòng người! Đàm đạo chuyện thế sự cùng huynh quả thật khiến người ta giải tỏa bao nỗi nhọc nhằn."`;
-        dialogueNarrativeEn = `${heroNameEn} warmly clinks bowls with Liang Yan: "Warm wine comforts the soul! Discussing worldly affairs with you truly banishes all worldly weariness."`;
-      } else if (outcome === 'AWKWARD') {
-        dialogueNarrativeVi = `${heroName} nhấp nhẹ ngụm rượu, nhìn sang hướng khác trầm ngâm: "Rượu tuy có, nhưng tâm trạng ta hôm nay không được thanh thản cho lắm..."`;
-        dialogueNarrativeEn = `${heroNameEn} takes a brief sip of wine, looking aside pensively: "The wine is present, but my heart is heavy with concerns today..."`;
-      } else {
-        dialogueNarrativeVi = `${heroName} buông chén rượu xuống bàn vẻ không vui: "Lương huynh lời lẽ có phần khách sáo gượng gạo, lão huynh ta tính vốn bộc trực, không thích kiểu tiệc tùng hình thức này!"`;
-        dialogueNarrativeEn = `${heroNameEn} sets down the wine bowl with displeasure: "Your words feel stilted and forced, Brother Liang. I am a blunt soul and have no patience for empty ceremonial banquets!"`;
-      }
-    } else if (actionType === 'LEARN_MENTOR') {
-      if (outcome === 'CRITICAL_SUCCESS') {
-        dialogueNarrativeVi = `${heroName} đích thân cầm binh khí thị phạm từng thế đánh tinh vi, ánh mắt đầy tán thưởng: "Hảo kiếm pháp! Lương đệ ngộ tính trác tuyệt, chỉ cần điểm xuyết vài yếu lĩnh trận địa này là đủ xưng hùng một phương!"`;
-        dialogueNarrativeEn = `${heroNameEn} personally demonstrates intricate maneuvers, eyes gleaming with admiration: "Superb execution! Brother Liang possesses extraordinary talent; mastering these few tactical principles is enough to hold your own anywhere!"`;
-      } else if (outcome === 'SUCCESS') {
-        dialogueNarrativeVi = `${heroName} kiên nhẫn chỉ dẫn các thế tấn và bí quyết vận khí: "Võ nghệ hay mưu lược đều cần công phu tích lũy từng ngày. Đệ nắm bắt thế này là rất có căn cơ!"`;
-        dialogueNarrativeEn = `${heroNameEn} patiently instructs stances and timing: "Martial arts and strategy require diligent daily mastery. You grasp the fundamentals remarkably well!"`;
-      } else {
-        dialogueNarrativeVi = `${heroName} lắc đầu thở dài: "Tâm chưa tịnh thì luyện võ mưu đồ chỉ tổ chuốc họa. Hôm nay tạm dừng ở đây thôi."`;
-        dialogueNarrativeEn = `${heroNameEn} shakes his head with a sigh: "Without a calm spirit, training in arms or strategy will only invite folly. Let us conclude for today."`;
-      }
-    } else if (actionType === 'SPAR_DEBATE') {
-      if (outcome === 'CRITICAL_SUCCESS') {
-        dialogueNarrativeVi = `Hai bên giao tranh kịch liệt hơn 30 hiệp! ${heroName} thu thế thủ, vuốt râu khen ngợi: "Tuyệt diệu! Đòn công vừa rồi của Lương đệ quả là sắc bén kinh người, khiến ta cũng phải dốc bảy phần thực lực mới hóa giải nổi!"`;
-        dialogueNarrativeEn = `Both sides clash fiercely for over thirty exchanges! ${heroNameEn} lowers his guard and praises warmly: "Magnificent! That offensive stroke was razor-sharp, compelling me to exert seventy percent of my might to parry it!"`;
-      } else {
-        dialogueNarrativeVi = `Hai bên trao đổi chiêu thức chừng mươi hiệp. ${heroName} mỉm cười gật đầu: "Giao lưu võ nghệ giúp thông suốt gân cốt, nhuệ khí đôi bên đều tăng tiến rõ rệt!"`;
-        dialogueNarrativeEn = `Both sides exchange martial blows across a dozen passes. ${heroNameEn} nods in approval: "Sparring clears the mind and invigorates the limbs; our fighting spirit is noticeably heightened!"`;
-      }
-    } else if (actionType === 'GIFT_TREASURE') {
-      if (outcome === 'CRITICAL_SUCCESS') {
-        dialogueNarrativeVi = `${heroName} đón nhận lễ vật, cảm kích muôn phần: "Món quà này thật đúng ý ta! Tấm chân tình của Lương huynh, đời này ta quyết không quên!"`;
-        dialogueNarrativeEn = `${heroNameEn} accepts the gift with deep gratitude: "This gift matches my heart precisely! Brother Liang's sincere friendship will never be forgotten!"`;
-      } else {
-        dialogueNarrativeVi = `${heroName} mỉm cười nhận lễ: "Đa tạ Lương huynh đã có lòng nhớ đến ta."`;
-        dialogueNarrativeEn = `${heroNameEn} smiles and receives the gift: "Many thanks, Brother Liang, for keeping me in your thoughts."`;
-      }
-    } else if (actionType === 'HEART_CONFESSION') {
-      if (outcome === 'CRITICAL_SUCCESS') {
-        dialogueNarrativeVi = `${heroName} xúc động nắm chặt tay Lương Diễn, dốc bầu tâm sự: "Gặp được tri âm thời loạn, cùng chung chí hướng cứu độ lê dân, quả là phúc lớn ba đời!"`;
-        dialogueNarrativeEn = `${heroNameEn} grasps Liang Yan's hands with profound emotion: "Finding a kindred spirit amidst chaotic times who shares the ambition to succor the people is truly a blessing of a lifetime!"`;
-      } else {
-        dialogueNarrativeVi = `${heroName} lắng nghe tâm sự, gật đầu tán thưởng chí khí trác tuyệt: "Chí hướng của Lương huynh rất đáng trân trọng."`;
-        dialogueNarrativeEn = `${heroNameEn} listens intently to the aspirations, nodding in respect: "Your ambitions, Brother Liang, are truly worthy of respect."`;
-      }
-    } else {
-      // General Converse / Tea
-      if (outcome === 'CRITICAL_SUCCESS') {
-        dialogueNarrativeVi = `${heroName} gật đầu liên hồi, ánh mắt rực sáng: "Chí Viễn kiến giải thâm sâu, nhìn thấu thời cuộc như lòng bàn tay! Được đàm đạo cùng đệ thật chẳng khác nào uống một chén trà giải hạn giữa mùa hè đỏ lửa!"`;
-        dialogueNarrativeEn = `${heroNameEn} nods repeatedly with glowing eyes: "Zhiyuan, your insights cut straight to the heart of current affairs! Conversing with you is like sipping spring tea that quenches a blazing summer drought!"`;
-      } else {
-        dialogueNarrativeVi = `${heroName} ôn tồn thưởng trà cùng Lương Diễn: "${customPrompt || 'Đàm đạo thế cuộc'}. Lời của huynh chí lý lắm, bách tính thời này quả thực cần những người có thực lực và tấm lòng như huynh."`;
-        dialogueNarrativeEn = `${heroNameEn} serenely sips tea with Liang Yan: "${customPrompt || 'Discussing the realm'}. Your words hold great truth; commoners in these troubled times truly need individuals of both strength and compassion."`;
-      }
-    }
+    const dialogueNarrativeVi = resolvedDialogue.dialogueVi;
+    const dialogueNarrativeEn = resolvedDialogue.dialogueEn;
+    const dialogueSource = resolvedDialogue.source;
+    const isDialogueCached = resolvedDialogue.isCached;
 
     // 5. Commit to SQLite (ACID Transaction)
     this.db.transaction(() => {
@@ -947,6 +905,8 @@ export class DailyInteractionEngine {
       },
       dialogueNarrativeVi,
       dialogueNarrativeEn,
+      dialogueSource,
+      isDialogueCached,
       deltas: {
         affinityChange: affinityDelta,
         respectChange: respectDelta,

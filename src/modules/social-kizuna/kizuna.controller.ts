@@ -177,4 +177,18 @@ export function registerKizunaRoutes(router: Router): void {
   };
 
   router.post('/api/kizuna/natural-chat', handleNaturalChat);
+
+  /**
+   * 4. GET /api/kizuna/dialogue-stats
+   * Telemetry for Dialogue Cache (Hits, Misses, Total Cached)
+   */
+  router.get('/api/kizuna/dialogue-stats', (req: any, res: any) => {
+    try {
+      const { ContextDialogueService } = require('./context-dialogue.service');
+      const stats = ContextDialogueService.getInstance().getStats();
+      sendJson(res, 200, { success: true, stats });
+    } catch (err: any) {
+      sendJson(res, 500, { success: false, error: err.message });
+    }
+  });
 }
