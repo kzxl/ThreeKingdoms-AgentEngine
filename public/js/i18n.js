@@ -81,7 +81,30 @@ const I18N_DICT = {
     legendCurrent: 'Vị trí hiện tại',
     legendBattle: 'Chiến trường giao tranh',
     legendSafe: 'Trọng trấn an định',
-    btnCloseMap: 'Đóng Dư Đồ'
+    btnCloseMap: 'Đóng Dư Đồ',
+    // Game Manager
+    gmTitle: 'Tổng Hành Dinh & Quản Lý Chiến Dịch',
+    gmSub: 'Tách biệt Master Blueprint (Bất biến) và Gameplay Session (Biến động)',
+    gmTabContinue: 'Chiến Cục Hiện Tại',
+    gmTabNew: 'Khởi Lập Điển Tích',
+    gmTabChronicles: 'Biên Niên Sử',
+    gmTabNpcLife: 'Vận Mệnh Quần Hùng',
+    gmTabFactions: 'Chính Trị & Quân Doanh',
+    gmTabProfessions: 'Bách Nghệ & Khai Khoáng',
+    gmTabEcology: 'Thiên Tai & Vận Tải',
+    // Deck Labels & Empty States
+    deckEmptyInv: 'Kho hàng trống',
+    deckEmptyNpc: 'Chưa có gia nhân trực thuộc',
+    deckEmptyLedger: 'Chưa có giao dịch sổ cái',
+    deckEmptyLogs: 'Chưa có dữ liệu mô phỏng từ Agent',
+    deckPostBal: 'Số dư sau TXN:',
+    deckPersonality: 'Tính cách:',
+    deckCraAttr: 'Khéo:',
+    deckMorale: 'Sĩ khí:',
+    deckLoyalty: 'Trung thành:',
+    // Dossier Modal
+    dossierTitle: 'HỒ SƠ CHIẾN LƯỢC HÀO KIỆT',
+    dossierClose: 'Đóng Hồ Sơ'
   },
   en: {
     appTitle: 'THREE KINGDOMS • LIANG CHRONICLES',
@@ -161,7 +184,30 @@ const I18N_DICT = {
     legendCurrent: 'Current Location',
     legendBattle: 'Active Battlefield',
     legendSafe: 'Secured Stronghold',
-    btnCloseMap: 'Close Map'
+    btnCloseMap: 'Close Map',
+    // Game Manager
+    gmTitle: 'Grand Headquarters & Campaign Management',
+    gmSub: 'Decoupled Master Blueprint (Immutable) and Gameplay Session (Dynamic)',
+    gmTabContinue: 'Current Campaign',
+    gmTabNew: 'New Legend',
+    gmTabChronicles: 'Chronicles',
+    gmTabNpcLife: 'NPC Fate & Life',
+    gmTabFactions: 'Politics & Camps',
+    gmTabProfessions: 'Professions & Crafting',
+    gmTabEcology: 'Crises & Logistics',
+    // Deck Labels & Empty States
+    deckEmptyInv: 'Empty warehouse',
+    deckEmptyNpc: 'No assigned retainers',
+    deckEmptyLedger: 'No ledger transactions recorded',
+    deckEmptyLogs: 'No agent simulation logs recorded',
+    deckPostBal: 'Post-TXN Balance:',
+    deckPersonality: 'Personality:',
+    deckCraAttr: 'CRA:',
+    deckMorale: 'Morale:',
+    deckLoyalty: 'Loyalty:',
+    // Dossier Modal
+    dossierTitle: 'STRATEGIC NPC DOSSIER',
+    dossierClose: 'Close Dossier'
   }
 };
 
@@ -278,6 +324,38 @@ function applyLanguage() {
   if (currentScene && currentScene.options && typeof renderChoices === 'function') {
     renderChoices(currentScene.options);
   }
+
+  // Game Manager Modal Headers & Tabs
+  const gmTitle = document.querySelector('#game-manager-modal .modal-title');
+  if (gmTitle) gmTitle.innerText = dict.gmTitle;
+  const gmSub = document.querySelector('#game-manager-modal .gm-header-sub');
+  if (gmSub) gmSub.innerText = dict.gmSub;
+
+  const tabContinue = document.getElementById('gm-tab-continue');
+  if (tabContinue) tabContinue.innerText = dict.gmTabContinue;
+  const tabNew = document.getElementById('gm-tab-new');
+  if (tabNew) tabNew.innerText = dict.gmTabNew;
+  const tabChronicles = document.getElementById('gm-tab-chronicles');
+  if (tabChronicles) tabChronicles.innerText = dict.gmTabChronicles;
+  const tabNpcLife = document.getElementById('gm-tab-npc-life');
+  if (tabNpcLife) tabNpcLife.innerText = dict.gmTabNpcLife;
+  const tabFactions = document.getElementById('gm-tab-factions');
+  if (tabFactions) tabFactions.innerText = dict.gmTabFactions;
+  const tabProfessions = document.getElementById('gm-tab-professions');
+  if (tabProfessions) tabProfessions.innerText = dict.gmTabProfessions;
+  const tabEcology = document.getElementById('gm-tab-ecology');
+  if (tabEcology) tabEcology.innerText = dict.gmTabEcology;
+
+  // Re-render open NPC Dossier if visible
+  if (typeof renderCurrentNpcDossier === 'function') {
+    renderCurrentNpcDossier();
+  }
+
+  // Refresh active decks with new dictionary labels
+  if (typeof loadDeckInventory === 'function') loadDeckInventory();
+  if (typeof loadDeckNpcs === 'function') loadDeckNpcs();
+  if (typeof loadDeckLedger === 'function') loadDeckLedger();
+  if (typeof loadDeckAgentLogs === 'function') loadDeckAgentLogs();
 }
 
 function toggleLanguage() {

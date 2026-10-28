@@ -75,6 +75,7 @@ export function registerKizunaRoutes(router: Router): void {
           affinity: sentiment.affinity,
           respect: sentiment.respect,
           relationshipTitleVi: sentiment.titleVi,
+          relationshipTitleEn: sentiment.titleEn,
           fogTier,
           avatarChar: c.nameVi.charAt(0)
         };
@@ -128,15 +129,43 @@ export function registerKizunaRoutes(router: Router): void {
 
       let actionType: EverydayActionType = 'TEA_CONVERSE';
 
-      if (pLower.includes('rượu') || pLower.includes('uống') || pLower.includes('say') || pLower.includes('chén') || pLower.includes('nhậu') || pLower.includes('ẩm')) {
+      if (
+        pLower.includes('rượu') || pLower.includes('uống') || pLower.includes('say') ||
+        pLower.includes('chén') || pLower.includes('nhậu') || pLower.includes('ẩm') ||
+        pLower.includes('wine') || pLower.includes('drink') || pLower.includes('ale') ||
+        pLower.includes('banquet') || pLower.includes('cheers') || pLower.includes('feast') ||
+        pLower.includes('toast') || pLower.includes('tavern')
+      ) {
         actionType = 'BANQUET_DRINK';
-      } else if (pLower.includes('so tài') || pLower.includes('tỉ thí') || pLower.includes('đấu') || pLower.includes('mâu') || pLower.includes('kiếm') || pLower.includes('võ')) {
+      } else if (
+        pLower.includes('so tài') || pLower.includes('tỉ thí') || pLower.includes('đấu') ||
+        pLower.includes('mâu') || pLower.includes('kiếm') || pLower.includes('võ') ||
+        pLower.includes('spar') || pLower.includes('duel') || pLower.includes('fight') ||
+        pLower.includes('clash') || pLower.includes('martial') || pLower.includes('combat') ||
+        pLower.includes('debate') || pLower.includes('challenge')
+      ) {
         actionType = 'SPAR_DEBATE';
-      } else if (pLower.includes('thỉnh giáo') || pLower.includes('chỉ giáo') || pLower.includes('dạy') || pLower.includes('học') || pLower.includes('bái sư')) {
+      } else if (
+        pLower.includes('thỉnh giáo') || pLower.includes('chỉ giáo') || pLower.includes('dạy') ||
+        pLower.includes('học') || pLower.includes('bái sư') || pLower.includes('mưu') ||
+        pLower.includes('mentor') || pLower.includes('teach') || pLower.includes('advice') ||
+        pLower.includes('learn') || pLower.includes('guide') || pLower.includes('strategy') ||
+        pLower.includes('tactics') || pLower.includes('counsel') || pLower.includes('instruct')
+      ) {
         actionType = 'LEARN_MENTOR';
-      } else if (pLower.includes('tặng') || pLower.includes('biếu') || pLower.includes('gửi ít') || pLower.includes('thưởng')) {
+      } else if (
+        pLower.includes('tặng') || pLower.includes('biếu') || pLower.includes('gửi ít') ||
+        pLower.includes('thưởng') || pLower.includes('quà') ||
+        pLower.includes('gift') || pLower.includes('present') || pLower.includes('reward') ||
+        pLower.includes('treasure') || pLower.includes('offer') || pLower.includes('tribute')
+      ) {
         actionType = 'GIFT_TREASURE';
-      } else if (pLower.includes('tâm sự') || pLower.includes('chí hướng') || pLower.includes('hoài bão') || pLower.includes('ước nguyện')) {
+      } else if (
+        pLower.includes('tâm sự') || pLower.includes('chí hướng') || pLower.includes('hoài bão') ||
+        pLower.includes('ước nguyện') || pLower.includes('bí mật') ||
+        pLower.includes('confide') || pLower.includes('ambition') || pLower.includes('dream') ||
+        pLower.includes('aspiration') || pLower.includes('secret') || pLower.includes('heart')
+      ) {
         actionType = 'HEART_CONFESSION';
       }
 

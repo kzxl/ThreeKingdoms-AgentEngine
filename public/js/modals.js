@@ -55,8 +55,9 @@ function setProcessingLock(busy, targetElement = null, statusText = '') {
 }
 
 function openQuickTrade(mode, itemCode, defaultQty, defaultPrice) {
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
   if (isProcessingAction) {
-    showToast('Đang thực thi điều lệnh, vui lòng chờ!', true);
+    showToast(isEn ? 'Action in progress, please wait!' : 'Đang thực thi điều lệnh, vui lòng chờ!', true);
     return;
   }
 
@@ -76,8 +77,16 @@ function openQuickTrade(mode, itemCode, defaultQty, defaultPrice) {
   if (priceEl) priceEl.value = defaultPrice;
 
   const isSell = mode === 'SELL';
-  if (titleEl) titleEl.innerText = isSell ? `Bán Hàng: ${itemCode}` : `Mua Thêm: ${itemCode}`;
-  if (submitBtn) submitBtn.innerText = isSell ? `Xác Nhận Xuất Bán` : `Xác Nhận Mua Hàng`;
+  if (titleEl) {
+    titleEl.innerText = isSell 
+      ? (isEn ? `Sell Commodity: ${itemCode}` : `Bán Hàng: ${itemCode}`)
+      : (isEn ? `Purchase Supply: ${itemCode}` : `Mua Thêm: ${itemCode}`);
+  }
+  if (submitBtn) {
+    submitBtn.innerText = isSell 
+      ? (isEn ? 'Confirm Sale' : 'Xác Nhận Xuất Bán')
+      : (isEn ? 'Confirm Purchase' : 'Xác Nhận Mua Hàng');
+  }
 
   calcTradeTotal();
   modal.classList.remove('hidden');
@@ -89,11 +98,12 @@ function closeTradeModal() {
 }
 
 function calcTradeTotal() {
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
   const qty = parseFloat(document.getElementById('modal-qty')?.value) || 0;
   const price = parseFloat(document.getElementById('modal-price')?.value) || 0;
   const total = Math.round(qty * price);
   const totalEl = document.getElementById('modal-total-amt');
-  if (totalEl) totalEl.innerText = `${total.toLocaleString()} Tiền`;
+  if (totalEl) totalEl.innerText = isEn ? `${total.toLocaleString()} Qian` : `${total.toLocaleString()} Tiền`;
 }
 
 async function submitModalTrade() {
@@ -442,7 +452,7 @@ async function submitStartNewGame() {
   if (!window.confirm(msg)) return;
 
   try {
-    showToast('Đang khởi tạo Màn Chơi Mới từ Master Database...');
+    showToast(currentLang === 'en' ? 'Initializing New Campaign from Master Database...' : 'Đang khởi tạo Màn Chơi Mới từ Master Database...');
     const res = await apiStartNewGame({
       scenarioId,
       archetypeId,
@@ -456,25 +466,25 @@ async function submitStartNewGame() {
         localStorage.removeItem('sim_last_encounter_subloc');
       }
       closeGameManagerModal();
-      showToast('Khởi tạo Tân Du Hý thành công! Đang tải lại dữ liệu...');
+      showToast(currentLang === 'en' ? 'New Campaign initialized successfully! Reloading session state...' : 'Khởi tạo Tân Du Hý thành công! Đang tải lại dữ liệu...');
       await loadAllData();
     }
   } catch (err) {
-    showToast(`Không thể tạo game mới: ${err.message}`, true);
+    showToast(currentLang === 'en' ? `Failed to start new game: ${err.message}` : `Không thể tạo game mới: ${err.message}`, true);
   }
 }
 
 async function submitSaveSlot(slotName = 'slot_manual') {
   try {
-    showToast(`Đang lưu bản ghi vào slot "${slotName}"...`);
+    showToast(currentLang === 'en' ? `Saving session state to slot "${slotName}"...` : `Đang lưu bản ghi vào slot "${slotName}"...`);
     const res = await apiSaveSlot(slotName);
     if (res.success) {
-      showToast(`Đã lưu slot "${slotName}" thành công!`);
+      showToast(currentLang === 'en' ? `Slot "${slotName}" saved successfully!` : `Đã lưu slot "${slotName}" thành công!`);
     } else {
       throw new Error(res.error);
     }
   } catch (err) {
-    showToast(`Lưu slot thất bại: ${err.message}`, true);
+    showToast(currentLang === 'en' ? `Failed to save slot: ${err.message}` : `Lưu slot thất bại: ${err.message}`, true);
   }
 }
 
@@ -485,17 +495,17 @@ async function submitLoadSlot(slotName = 'slot_manual') {
   if (!window.confirm(msg)) return;
 
   try {
-    showToast(`Đang tải slot "${slotName}"...`);
+    showToast(currentLang === 'en' ? `Restoring session from slot "${slotName}"...` : `Đang tải slot "${slotName}"...`);
     const res = await apiLoadSlot(slotName);
     if (res.success) {
       closeGameManagerModal();
-      showToast(`Đã phục hồi màn chơi thành công!`);
+      showToast(currentLang === 'en' ? 'Campaign restored successfully! Reloading state...' : 'Đã phục hồi màn chơi thành công!');
       await loadAllData();
     } else {
       throw new Error(res.error);
     }
   } catch (err) {
-    showToast(`Không thể tải slot: ${err.message}`, true);
+    showToast(currentLang === 'en' ? `Failed to load slot: ${err.message}` : `Không thể tải slot: ${err.message}`, true);
   }
 }
 

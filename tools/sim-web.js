@@ -2219,21 +2219,21 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
                                 userPrompt.includes('rời') || 
                                 userPrompt.includes('sang') || 
                                 userPrompt.includes('về') || 
-                                userPrompt.includes('travel') || 
+                                userPrompt.includes('travel') || userPrompt.includes('go to') || userPrompt.includes('march') || 
                                 userPrompt.includes('move')) && 
                                !userPrompt.includes('thư') && 
                                !userPrompt.includes('mua') && 
-                               !userPrompt.includes('bán') && 
+                               !userPrompt.includes('bán') && !userPrompt.includes('buy') && !userPrompt.includes('sell') && 
                                !userPrompt.includes('sản xuất') &&
                                !userPrompt.includes('thưởng');
 
         // 1. PHYSICAL TRAVEL / RELOCATION ACTIONS
-        if (isTravelIntent && (userPrompt.includes('đông môn') || userPrompt.includes('chợ'))) {
+        if (isTravelIntent && (userPrompt.includes('đông môn') || userPrompt.includes('chợ') || userPrompt.includes('east gate') || userPrompt.includes('market'))) {
           subLocation = 'Chợ Đông Môn';
           actionToRun = { type: 'MOVE_LOCATION', new_location: 'Chợ Đông Môn', game_date: '184-05-02' };
           replyNarrative = 'Lương Diễn thu xếp hành lý, rời bước rảo sang Chợ Đông Môn Huyện Trác. Nơi đây tiếng rao hàng của thương nhân Ký Châu và binh sĩ nghĩa quân vang vọng nhộn nhịp!';
           dispatchType = 'TRAVEL';
-        } else if (isTravelIntent && (userPrompt.includes('xưởng') || userPrompt.includes('chức tác'))) {
+        } else if (isTravelIntent && (userPrompt.includes('xưởng') || userPrompt.includes('chức tác') || userPrompt.includes('workshop'))) {
           subLocation = 'Xưởng Lương Thị';
           actionToRun = { type: 'MOVE_LOCATION', new_location: 'Xưởng Lương Thị', game_date: '184-05-02' };
           replyNarrative = 'Lương Diễn trở về Lương Thị Chức Tác Phường. Tiếng đan tre, lách cách dệt chiếu và mùi thuộc da của các gia nhân thợ dệt tràn ngập không khí!';
@@ -2308,7 +2308,7 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
           actionToRun = { type: 'MOVE_LOCATION', new_location: 'Thành Đô Ích Châu Phủ', game_date: '184-05-02' };
           replyNarrative = 'Vượt qua hiểm quan Kiếm Các sừng sững, Lương Diễn tiến vào Thành Đô — Thiên Phủ Chi Quốc. Đất đai trù phú ngút ngàn, sắc thục cẩm rực rỡ lộng lẫy!';
           dispatchType = 'TRAVEL';
-        } else if (isTravelIntent && (userPrompt.includes('vườn đào') || userPrompt.includes('trương phi'))) {
+        } else if (isTravelIntent && (userPrompt.includes('vườn đào') || userPrompt.includes('trương phi') || userPrompt.includes('orchard') || userPrompt.includes('peach garden'))) {
           subLocation = 'Vườn Đào';
           actionToRun = { type: 'MOVE_LOCATION', new_location: 'Vườn Đào', game_date: '184-05-02' };
           replyNarrative = 'Lương Diễn quay về Trang viên Vườn Đào. Trương Phi vẫn đang ngồi sảng khoái dưới gốc đào uống rượu chờ đợi!';
@@ -2316,7 +2316,7 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
         }
 
         // 2. ECONOMIC & LOGISTICAL ACTIONS (With Locality & Courier Rules)
-        else if (userPrompt.includes('mua') && (userPrompt.includes('da') || userPrompt.includes('leather'))) {
+        else if ((userPrompt.includes('mua') || userPrompt.includes('buy') || userPrompt.includes('purchase')) && (userPrompt.includes('da') || userPrompt.includes('leather'))) {
           targetLoc = 'Vườn Đào';
           actionToRun = {
             type: 'TRADE_BUY',
@@ -2333,7 +2333,7 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
             replyNarrative = `Lương Diễn đang tại ${subLocation}, liền phi thư gửi sang Trang Viên Vườn Đào nhờ Trương Phi gom hộ 8 tấm da thuộc hảo hạng lò mổ. Trương Phi nhận thư cười to, lập tức cho thuộc hạ áp tải da chuyển thẳng về xưởng!`;
             dispatchType = 'COURIER';
           }
-        } else if (userPrompt.includes('mua') && (userPrompt.includes('lương') || userPrompt.includes('gạo') || userPrompt.includes('grain'))) {
+        } else if ((userPrompt.includes('mua') || userPrompt.includes('buy') || userPrompt.includes('purchase')) && (userPrompt.includes('lương') || userPrompt.includes('gạo') || userPrompt.includes('grain'))) {
           targetLoc = 'Chợ Đông Môn';
           actionToRun = {
             type: 'TRADE_BUY',
@@ -2350,7 +2350,7 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
             replyNarrative = `Lương Diễn đang tại ${subLocation}, liền sai gia đinh mang lệnh bài và ngân phiếu phi ngựa ra Chợ Đông Môn thu mua 5 Thạch tiểu mạch dự trữ áp tải về kho!`;
             dispatchType = 'COURIER';
           }
-        } else if (userPrompt.includes('bán') && (userPrompt.includes('chiếu') || userPrompt.includes('mat'))) {
+        } else if ((userPrompt.includes('bán') || userPrompt.includes('sell')) && (userPrompt.includes('chiếu') || userPrompt.includes('mat'))) {
           targetLoc = 'Chợ Đông Môn';
           actionToRun = {
             type: 'TRADE_SELL',
@@ -2378,7 +2378,7 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
           };
           replyNarrative = 'Quan Vân Trường vuốt chòm râu dài, nâng chén trà nóng đàm đạo kinh sử cùng Lương Chí Viễn. Hai bên tương đắc, hảo cảm tăng cao!';
           dispatchType = 'LOCAL';
-        } else if (userPrompt.includes('bán') && (userPrompt.includes('muối') || userPrompt.includes('salt'))) {
+        } else if ((userPrompt.includes('bán') || userPrompt.includes('sell')) && (userPrompt.includes('muối') || userPrompt.includes('salt'))) {
           targetLoc = 'Chợ Đông Môn';
           actionToRun = {
             type: 'TRADE_SELL',
@@ -2395,7 +2395,7 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
             replyNarrative = `Lương Diễn đang tại ${subLocation}, liền viết khoán ước giao thương, phái gia nhân cưỡi ngựa áp tải 10 Đấu muối biển ra Chợ Đông Môn giao cho Thương nhân Ký Châu. Thương đoàn kiểm tra muối rồi gửi đủ 850 tiền mang về!`;
             dispatchType = 'COURIER';
           }
-        } else if (userPrompt.includes('sản xuất') || userPrompt.includes('khiên')) {
+        } else if (userPrompt.includes('sản xuất') || userPrompt.includes('khiên') || userPrompt.includes('produce') || userPrompt.includes('craft') || userPrompt.includes('shield')) {
           targetLoc = 'Xưởng Lương Thị';
           actionToRun = {
             type: 'PRODUCTION_BATCH',
@@ -2478,35 +2478,65 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
 
           if (globalThis.__DAILY_INTERACTION_ENGINE__) {
             const pLower = (payload.prompt || '').toLowerCase();
+            const isClientEn = payload.lang === 'en';
             let actionType = 'TEA_CONVERSE';
-            if (pLower.includes('rượu') || pLower.includes('uống') || pLower.includes('say') || pLower.includes('chén') || pLower.includes('nhậu') || pLower.includes('ẩm')) {
+            if (
+              pLower.includes('rượu') || pLower.includes('uống') || pLower.includes('say') ||
+              pLower.includes('chén') || pLower.includes('nhậu') || pLower.includes('ẩm') ||
+              pLower.includes('wine') || pLower.includes('drink') || pLower.includes('ale') ||
+              pLower.includes('banquet') || pLower.includes('cheers') || pLower.includes('toast')
+            ) {
               actionType = 'BANQUET_DRINK';
-            } else if (pLower.includes('so tài') || pLower.includes('tỉ thí') || pLower.includes('đấu') || pLower.includes('mâu') || pLower.includes('kiếm') || pLower.includes('võ') || pLower.includes('đao')) {
+            } else if (
+              pLower.includes('so tài') || pLower.includes('tỉ thí') || pLower.includes('đấu') ||
+              pLower.includes('mâu') || pLower.includes('kiếm') || pLower.includes('võ') ||
+              pLower.includes('spar') || pLower.includes('duel') || pLower.includes('fight') ||
+              pLower.includes('clash') || pLower.includes('martial')
+            ) {
               actionType = 'SPAR_DEBATE';
-            } else if (pLower.includes('thỉnh giáo') || pLower.includes('chỉ giáo') || pLower.includes('dạy') || pLower.includes('học') || pLower.includes('bái sư')) {
+            } else if (
+              pLower.includes('thỉnh giáo') || pLower.includes('chỉ giáo') || pLower.includes('dạy') ||
+              pLower.includes('học') || pLower.includes('bái sư') || pLower.includes('mentor') ||
+              pLower.includes('teach') || pLower.includes('advice') || pLower.includes('learn') ||
+              pLower.includes('guide') || pLower.includes('strategy')
+            ) {
               actionType = 'LEARN_MENTOR';
-            } else if (pLower.includes('tặng') || pLower.includes('biếu') || pLower.includes('gửi ít') || pLower.includes('thưởng')) {
+            } else if (
+              pLower.includes('tặng') || pLower.includes('biếu') || pLower.includes('gửi ít') ||
+              pLower.includes('thưởng') || pLower.includes('quà') || pLower.includes('gift') ||
+              pLower.includes('present') || pLower.includes('reward') || pLower.includes('offer')
+            ) {
               actionType = 'GIFT_TREASURE';
-            } else if (pLower.includes('tâm sự') || pLower.includes('chí hướng') || pLower.includes('hoài bão') || pLower.includes('ước nguyện')) {
+            } else if (
+              pLower.includes('tâm sự') || pLower.includes('chí hướng') || pLower.includes('hoài bão') ||
+              pLower.includes('ước nguyện') || pLower.includes('confide') || pLower.includes('ambition') ||
+              pLower.includes('dream') || pLower.includes('secret')
+            ) {
               actionType = 'HEART_CONFESSION';
             }
 
             const dailyRes = globalThis.__DAILY_INTERACTION_ENGINE__.executeDailyInteraction(currentNpcId, actionType, payload.prompt);
-            replyNarrative = dailyRes.dialogueNarrativeVi;
+            replyNarrative = isClientEn ? (dailyRes.dialogueNarrativeEn || dailyRes.dialogueNarrativeVi) : dailyRes.dialogueNarrativeVi;
             dispatchType = 'LOCAL';
             diceCheck = {
               roll: dailyRes.diceRoll.total,
-              badge: `[D20: ${dailyRes.diceRoll.total}] ${dailyRes.outcomeTitleVi}`,
+              badge: isClientEn
+                ? `[D20: ${dailyRes.diceRoll.total}] ${dailyRes.outcomeTitleEn || dailyRes.outcomeTitleVi}`
+                : `[D20: ${dailyRes.diceRoll.total}] ${dailyRes.outcomeTitleVi}`,
               dc: 15,
               passed: dailyRes.outcome === 'SUCCESS' || dailyRes.outcome === 'CRITICAL_SUCCESS'
             };
-            tacticalReasoning = `Đổ xúc xắc giao tế D20: [${dailyRes.diceRoll.total}/20] -> Đạt trạng thái ${dailyRes.outcomeTitleVi}. Tác động Hảo cảm ${dailyRes.deltas.affinityChange > 0 ? '+' : ''}${dailyRes.deltas.affinityChange}, giải mã sương mù thông tin.`;
+            tacticalReasoning = isClientEn
+              ? `D20 Social Check: [${dailyRes.diceRoll.total}/20] -> ${dailyRes.outcomeTitleEn || dailyRes.outcomeTitleVi}. Affinity delta: ${dailyRes.deltas.affinityChange > 0 ? '+' : ''}${dailyRes.deltas.affinityChange}, decrypting fog of info.`
+              : `Đổ xúc xắc giao tế D20: [${dailyRes.diceRoll.total}/20] -> Đạt trạng thái ${dailyRes.outcomeTitleVi}. Tác động Hảo cảm ${dailyRes.deltas.affinityChange > 0 ? '+' : ''}${dailyRes.deltas.affinityChange}, giải mã sương mù thông tin.`;
             delta = {
-              cash: dailyRes.deltas.cashCost > 0 ? `-${dailyRes.deltas.cashCost} Qian` : 'Bảo toàn',
-              inventory: 'Bảo toàn',
-              relations: `Hảo cảm ${dailyRes.deltas.affinityChange > 0 ? '+' : ''}${dailyRes.deltas.affinityChange} • ${dailyRes.outcomeTitleVi}`,
-              dispatch: '📍 Giao tế đời thường',
-              audit: 'Khớp Nợ Chi Phí / Có Tiền Mặt'
+              cash: dailyRes.deltas.cashCost > 0 ? `-${dailyRes.deltas.cashCost} Qian` : (isClientEn ? 'Preserved' : 'Bảo toàn'),
+              inventory: isClientEn ? 'Preserved' : 'Bảo toàn',
+              relations: isClientEn 
+                ? `Affinity ${dailyRes.deltas.affinityChange > 0 ? '+' : ''}${dailyRes.deltas.affinityChange} • ${dailyRes.outcomeTitleEn || dailyRes.outcomeTitleVi}`
+                : `Hảo cảm ${dailyRes.deltas.affinityChange > 0 ? '+' : ''}${dailyRes.deltas.affinityChange} • ${dailyRes.outcomeTitleVi}`,
+              dispatch: isClientEn ? '📍 Everyday Social' : '📍 Giao tế đời thường',
+              audit: isClientEn ? 'Dr EXP-OPERATING / Cr CASH-ON-HAND' : 'Khớp Nợ Chi Phí / Có Tiền Mặt'
             };
           } else {
             let heroName = 'Trương Phi (Dực Đức)';

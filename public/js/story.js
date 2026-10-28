@@ -20,12 +20,14 @@ function formatStoryText(text) {
 
 function renderDiceBadgeHtml(check) {
   if (!check || !check.type) return '';
-  const isSuccess = check.status === 'THÀNH CÔNG';
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+  const isSuccess = check.status === 'THÀNH CÔNG' || check.status === 'SUCCESS' || check.passed;
   const statusClass = isSuccess ? 'success' : 'failed';
+  const statusLabel = isSuccess ? (isEn ? 'SUCCESS' : 'THÀNH CÔNG') : (isEn ? 'FAILED' : 'THẤT BẠI');
   return `
     <div class="story-dice-badge">
       <span>🎲 <strong>${check.type}</strong>: ${check.formula || ''}</span>
-      <span class="${statusClass}">TỔNG ${check.score ?? ''} [${check.status || 'THÀNH CÔNG'}]</span>
+      <span class="${statusClass}">${isEn ? 'TOTAL' : 'TỔNG'} ${check.score ?? check.roll ?? ''} [${check.status || statusLabel}]</span>
     </div>
   `;
 }
@@ -64,15 +66,15 @@ function renderReasoningHtml(reasoning) {
 function resolveNpcIdFromName(name) {
   if (!name) return 'NPC-0002';
   const n = name.toLowerCase();
-  if (n.includes('phi') || n.includes('dực đức')) return 'NPC-0002';
-  if (n.includes('vũ') || n.includes('vân trường')) return 'NPC-0003';
-  if (n.includes('bị') || n.includes('huyền đức')) return 'NPC-0001';
-  if (n.includes('thực') || n.includes('tử cán')) return 'NPC-0012';
-  if (n.includes('bảo') || n.includes('trần bảo')) return 'NPC-0007';
-  if (n.includes('toản') || n.includes('bá khuê')) return 'NPC-0011';
-  if (n.includes('vân') || n.includes('tử long')) return 'NPC-0024';
-  if (n.includes('lượng') || n.includes('khổng minh')) return 'NPC-0025';
-  if (n.includes('thống') || n.includes('sĩ nguyên')) return 'NPC-0026';
+  if (n.includes('phi') || n.includes('dực đức') || n.includes('zhang fei') || n.includes('yide')) return 'NPC-0002';
+  if (n.includes('vũ') || n.includes('vân trường') || n.includes('guan yu') || n.includes('yunchang')) return 'NPC-0003';
+  if (n.includes('bị') || n.includes('huyền đức') || n.includes('liu bei') || n.includes('xuande')) return 'NPC-0001';
+  if (n.includes('thực') || n.includes('tử cán') || n.includes('lu zhi') || n.includes('zigan')) return 'NPC-0012';
+  if (n.includes('bảo') || n.includes('trần bảo') || n.includes('chen bao')) return 'NPC-0007';
+  if (n.includes('toản') || n.includes('bá khuê') || n.includes('gongsun zan')) return 'NPC-0011';
+  if (n.includes('vân') || n.includes('tử long') || n.includes('zhao yun') || n.includes('zilong')) return 'NPC-0024';
+  if (n.includes('lượng') || n.includes('khổng minh') || n.includes('zhuge') || n.includes('kongming')) return 'NPC-0025';
+  if (n.includes('thống') || n.includes('sĩ nguyên') || n.includes('pang tong')) return 'NPC-0026';
   return 'NPC-0002';
 }
 
@@ -84,6 +86,8 @@ function handleSpeakerClick(speaker) {
 }
 
 function renderTurnHtml(turn) {
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+  const inspectTitle = isEn ? 'Inspect Dossier & Fog of Information' : 'Xem Hồ Sơ & Sương Mù';
   const diceHtml = renderDiceBadgeHtml(turn.diceBadge);
   const deltaHtml = renderDeltaBarHtml(turn.deltas);
   const reasoningHtml = renderReasoningHtml(turn.reasoning);
@@ -92,11 +96,11 @@ function renderTurnHtml(turn) {
 
   return `
     <div class="story-turn ${turn.type || 'npc'}" id="turn-${turn.id}">
-      <div class="story-turn-avatar" onclick="handleSpeakerClick('${speakerEsc}')" style="cursor: pointer;" title="Xem Hồ Sơ & Sương Mù">${turn.avatar || (turn.type === 'player' ? '梁' : '漢')}</div>
+      <div class="story-turn-avatar" onclick="handleSpeakerClick('${speakerEsc}')" style="cursor: pointer;" title="${inspectTitle}">${turn.avatar || (turn.type === 'player' ? '梁' : '漢')}</div>
       <div class="story-turn-content">
         <div class="story-turn-header">
           <div>
-            <span class="story-speaker-name" onclick="handleSpeakerClick('${speakerEsc}')" style="cursor: pointer;" title="Xem Hồ Sơ & Sương Mù">${turn.speaker || 'Nhân Vật'}</span>
+            <span class="story-speaker-name" onclick="handleSpeakerClick('${speakerEsc}')" style="cursor: pointer;" title="${inspectTitle}">${turn.speaker || (isEn ? 'Figure' : 'Nhân Vật')}</span>
             ${turn.title ? `<span class="story-speaker-title">• ${turn.title}</span>` : ''}
           </div>
           <span class="story-time">${turn.time || '184-05-02'}</span>
