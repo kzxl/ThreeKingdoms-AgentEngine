@@ -230,27 +230,98 @@ function renderStoryChronicle() {
   chronicle.scrollTop = chronicle.scrollHeight;
 }
 
-function quickFillPrompt(text) {
-  const input = document.getElementById('omni-input');
-  if (!input) return;
-  input.value = text;
-  input.focus();
-  showToast(currentLang === 'en' ? `Loaded command: "${text}"` : `Đã nạp chỉ thị: "${text}"`);
+const LOCATION_NPC_MAP = {
+  'Vườn Đào': { id: 'NPC-0002', nameVi: 'Trương Phi', nameEn: 'Zhang Fei', titleVi: 'Dực Đức • Trác Huyện', titleEn: 'Yide • Champion' },
+  'Chợ Đông Môn': { id: 'NPC-0003', nameVi: 'Quan Vũ', nameEn: 'Guan Yu', titleVi: 'Vân Trường • Nghĩa Sĩ', titleEn: 'Yunchang • Heroic Knight' },
+  'Xưởng Lương Thị': { id: 'NPC-0007', nameVi: 'Trần Bảo', nameEn: 'Chen Bao', titleVi: 'Thợ Cả Lương Gia', titleEn: 'Master Craftsman' },
+  'Bắc Bình Soái Phủ': { id: 'NPC-0011', nameVi: 'Công Tôn Toản', nameEn: 'Gongsun Zan', titleVi: 'Bạch Mã Tướng Quân', titleEn: 'White Horse General' },
+  'Huyện Nha': { id: 'NPC-0001', nameVi: 'Lưu Bị', nameEn: 'Liu Bei', titleVi: 'Huyền Đức • Tôn Thất', titleEn: 'Xuande • Han Scion' },
+  'Quân Doanh': { id: 'NPC-0003', nameVi: 'Quan Vũ', nameEn: 'Guan Yu', titleVi: 'Vân Trường • Đô Đốc', titleEn: 'Yunchang • General' }
+};
+
+function getLocalNpcForLocation(location) {
+  if (LOCATION_NPC_MAP[location]) {
+    return LOCATION_NPC_MAP[location].id;
+  }
+  if (window.currentScene && window.currentScene.npc && window.currentScene.npc.id) {
+    return window.currentScene.npc.id;
+  }
+  return 'NPC-0002';
+}
+
+function updateLocalNpcButtonLabel(location = activeSubLocation) {
+  const btn = document.getElementById('txt-btn-local-npc');
+  if (!btn) return;
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+  const npcInfo = LOCATION_NPC_MAP[location] || (window.currentScene?.npc ? {
+    nameVi: window.currentScene.npc.name,
+    nameEn: window.currentScene.npc.name,
+  } : { nameVi: 'Trương Phi', nameEn: 'Zhang Fei' });
+
+  const name = isEn ? npcInfo.nameEn : npcInfo.nameVi;
+  btn.innerText = isEn ? `Converse: ${name} (Dossier & Actions)` : `Giao Tiếp: ${name} (Hồ Sơ & Hành Động)`;
+}
+
+function openCurrentLocationNpcDossier() {
+  const npcId = getLocalNpcForLocation(activeSubLocation);
+  if (typeof openNpcDossierModal === 'function') {
+    openNpcDossierModal(npcId);
+  }
+}
+
+async function dispatchQuickAction(promptText) {
+  if (typeof isProcessingAction !== 'undefined' && isProcessingAction) {
+    showToast(currentLang === 'en' ? 'System is calculating, please wait...' : 'Hệ thống đang tính toán lệnh trước, vui lòng chờ!', true);
+    return;
+  }
+  if (!promptText) return;
+
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+  const playerName = (window.currentScene && window.currentScene.player && window.currentScene.player.name) || 'Lương Diễn';
+
+  appendStoryTurn({
+    type: 'player',
+    speaker: playerName,
+    title: isEn ? 'Tactical Action' : 'Mệnh Lệnh Chiến Lược',
+    avatar: '梁',
+    text: promptText
+  });
+
+  if (typeof setProcessingLock === 'function') {
+    setProcessingLock(true, null, promptText);
+  }
+  showToast(isEn ? 'Executing tactical action...' : 'Đang thi hành mệnh lệnh chiến lược...');
+
+  try {
+    const result = await apiDispatchPrompt({
+      prompt: promptText,
+      mode: 'instant',
+      subLocation: activeSubLocation
+    });
+    if (!result.success) throw new Error(result.error);
+    if (result.updatedScene && typeof applySceneUpdates === 'function') {
+      applySceneUpdates(result.updatedScene);
+    }
+  } catch (err) {
+    showToast(err.message, true);
+  } finally {
+    if (typeof setProcessingLock === 'function') {
+      setProcessingLock(false);
+    }
+  }
 }
 
 function renderDynamicQuickChips(location = activeSubLocation) {
   const container = document.getElementById('quick-prompt-chips');
   const targetEl = document.getElementById('locality-target');
-  const omniInput = document.getElementById('omni-input');
   const locData = QUICK_CHIPS_DATA[location] || QUICK_CHIPS_DATA['Vườn Đào'];
 
   if (targetEl) {
     targetEl.innerText = currentLang === 'en' ? locData.presenceEn : locData.presenceVi;
   }
 
-  if (omniInput && !omniInput.value) {
-    omniInput.placeholder = currentLang === 'en' ? locData.placeholderEn : locData.placeholderVi;
-  }
+  // Update dynamic hero interaction button
+  updateLocalNpcButtonLabel(location);
 
   if (!container) return;
 
@@ -262,7 +333,7 @@ function renderDynamicQuickChips(location = activeSubLocation) {
     const promptText = currentLang === 'en' ? chip.promptEn : chip.promptVi;
     const promptEsc = promptText.replace(/'/g, "\\'");
     return `
-      <button class="quick-chip ${chip.type}" onclick="quickFillPrompt('${promptEsc}')">
+      <button class="quick-chip ${chip.type}" onclick="dispatchQuickAction('${promptEsc}')">
         ${chip.icon} ${label}
       </button>
     `;
@@ -432,7 +503,11 @@ window.renderReasoningHtml = renderReasoningHtml;
 window.renderTurnHtml = renderTurnHtml;
 window.appendStoryTurn = appendStoryTurn;
 window.renderStoryChronicle = renderStoryChronicle;
-window.quickFillPrompt = quickFillPrompt;
+window.dispatchQuickAction = dispatchQuickAction;
+window.openCurrentLocationNpcDossier = openCurrentLocationNpcDossier;
+window.updateLocalNpcButtonLabel = updateLocalNpcButtonLabel;
+window.getLocalNpcForLocation = getLocalNpcForLocation;
+window.quickFillPrompt = dispatchQuickAction; // Backward compatibility fallback
 window.renderDynamicQuickChips = renderDynamicQuickChips;
 window.renderChoices = renderChoices;
 window.renderRelations = renderRelations;

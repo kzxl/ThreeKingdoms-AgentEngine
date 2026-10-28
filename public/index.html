@@ -114,8 +114,14 @@
             <span class="dock-locality-tag" id="locality-tag">HIỆN DIỆN:</span>
             <span class="dock-locality-target" id="locality-target">Trang Viên Vườn Đào (Trực diện: Trương Phi)</span>
           </div>
-          <div class="dock-locality-courier-hint" id="locality-courier-hint">
-            <em>(Muốn điều phối nơi khác: Phái sứ giả / Phi thư tín)</em>
+          <div class="dock-locality-right">
+            <button class="btn-local-npc-dossier" id="btn-local-npc-dossier" onclick="openCurrentLocationNpcDossier()" title="Mở Hồ Sơ & Tương Tác Hào Kiệt / Open Hero Dossier & Interactions">
+              <span class="npc-btn-icon">✦</span>
+              <span id="txt-btn-local-npc">Giao Tiếp Hào Kiệt: Trương Phi</span>
+            </button>
+            <div class="dock-locality-courier-hint" id="locality-courier-hint">
+              <em>(Phái sứ giả / Phi thư tín)</em>
+            </div>
           </div>
         </div>
 
@@ -137,23 +143,6 @@
               Đang tổng hợp các phương án hành động...
             </div>
           </div>
-        </div>
-
-        <!-- Omni Command Input Bar (Freeform Player Agency) -->
-        <div class="omni-command-bar">
-          <input 
-            type="text" 
-            id="omni-input" 
-            class="omni-input" 
-            placeholder="Lương Diễn hành động (hoặc đối thoại)... [Nhấn Enter để gửi]"
-            onkeydown="if(event.key==='Enter') dispatchOmniCommand('ai');"
-          />
-          <button class="btn-omni-ai" id="btn-omni-ai" onclick="dispatchOmniCommand('ai')">
-            <span id="txt-omni-ai">Gửi AI Core</span>
-          </button>
-          <button class="btn-omni-instant" id="btn-omni-instant" onclick="dispatchOmniCommand('instant')">
-            <span id="txt-omni-instant">Tức Thì</span>
-          </button>
         </div>
       </div>
     </section>
@@ -430,36 +419,85 @@
 
         <!-- 2. View: New Game Factory Creation -->
         <div class="gm-tab-content hidden" id="gm-view-new">
-          <div class="gm-new-section">
-            <h4 class="gm-sec-title">1. Chọn Niên Đại & Bối Cảnh (Master Scenarios):</h4>
-            <div class="gm-scenario-grid" id="gm-scenario-selector">
-              <!-- Rendered dynamically via JS -->
+          <div class="gm-creation-container">
+            <!-- Left Column: Scenario & Archetype Selection -->
+            <div class="gm-creation-selection">
+              <!-- Section 1: Master Scenarios -->
+              <div class="gm-new-section">
+                <div class="gm-sec-head">
+                  <h4 class="gm-sec-title" id="gm-sec-scenario-title">1. Chọn Niên Đại & Bối Cảnh Lịch Sử (Master Scenarios):</h4>
+                  <span class="gm-sec-hint" id="gm-sec-scenario-hint">4 Niên Biểu Tam Quốc</span>
+                </div>
+                <div class="gm-scenario-grid" id="gm-scenario-selector">
+                  <!-- Rendered dynamically via JS -->
+                </div>
+              </div>
+
+              <!-- Section 2: Player Archetypes -->
+              <div class="gm-new-section">
+                <div class="gm-sec-head">
+                  <h4 class="gm-sec-title" id="gm-sec-archetype-title">2. Chọn Thân Phận Khởi Đầu (Player Archetypes):</h4>
+                  <span class="gm-sec-hint" id="gm-sec-archetype-hint">Định hình năng lực & thế lực ban đầu</span>
+                </div>
+                <div class="gm-archetype-grid" id="gm-archetype-selector">
+                  <!-- Rendered dynamically via JS -->
+                </div>
+              </div>
             </div>
-          </div>
 
-          <div class="gm-new-section">
-            <h4 class="gm-sec-title">2. Chọn Thân Phận Khởi Đầu (Player Archetypes):</h4>
-            <div class="gm-archetype-grid" id="gm-archetype-selector">
-              <!-- Rendered dynamically via JS -->
+            <!-- Right Column: Live Persona & Capability Dossier Preview -->
+            <div class="gm-creation-preview">
+              <div class="gm-preview-card" id="gm-archetype-preview">
+                <div class="gm-preview-header">
+                  <div class="gm-preview-avatar" id="gm-preview-avatar">梁</div>
+                  <div class="gm-preview-title-block">
+                    <div class="gm-preview-archetype-name" id="gm-preview-archetype-name">Sĩ Tộc Thương Khách</div>
+                    <div class="gm-preview-meta" id="gm-preview-meta">21 Tuổi • Căn Cứ: Huyện Trác</div>
+                  </div>
+                </div>
+
+                <!-- Customization Names -->
+                <div class="gm-preview-custom-row">
+                  <div class="form-group gm-custom-field">
+                    <label id="gm-label-player-name">Tên Nhân Vật:</label>
+                    <input type="text" id="gm-custom-player-name" class="modal-input" placeholder="Lương Diễn" />
+                  </div>
+                  <div class="form-group gm-custom-field">
+                    <label id="gm-label-player-style">Biểu Tự:</label>
+                    <input type="text" id="gm-custom-player-style" class="modal-input" placeholder="Chí Viễn" />
+                  </div>
+                </div>
+
+                <!-- 8-Axis Attributes Radar/Grid -->
+                <div class="gm-preview-section-title" id="gm-title-preview-attrs">Bản Đồ Năng Lực 8 Trục (RPG Attributes):</div>
+                <div class="gm-attrs-grid" id="gm-preview-attrs-grid">
+                  <!-- Populated dynamically via JS -->
+                </div>
+
+                <!-- Starting Assets & Business -->
+                <div class="gm-preview-section-title" id="gm-title-preview-assets">Tài Sản & Đặc Quyền Khởi Điểm:</div>
+                <div class="gm-assets-summary" id="gm-preview-assets-summary">
+                  <!-- Populated dynamically via JS -->
+                </div>
+
+                <!-- Innate Talents -->
+                <div class="gm-preview-section-title" id="gm-title-preview-talents">Thiên Phú Bẩm Sinh:</div>
+                <div class="gm-talents-pills" id="gm-preview-talents-pills">
+                  <!-- Populated dynamically via JS -->
+                </div>
+
+                <!-- Alert Notice & Action Buttons -->
+                <div class="gm-alert-box" id="gm-newgame-alert">
+                  <strong>Bảo đảm toàn vẹn:</strong> Khởi tạo màn chơi mới sẽ tái lập sổ sách theo chuẩn mực kế toán kép SQLite (Dr = Cr).
+                </div>
+
+                <div class="gm-actions-row">
+                  <button class="tactical-btn tactical-btn--primary gm-btn-launch" id="gm-btn-start-game" onclick="submitStartNewGame()">
+                    Khởi Lập Điển Tích Mới
+                  </button>
+                </div>
+              </div>
             </div>
-          </div>
-
-          <div class="gm-new-section">
-            <h4 class="gm-sec-title">3. Tùy Biến Danh Xưng:</h4>
-            <div class="form-group">
-              <label>Tên Nhân Vật:</label>
-              <input type="text" id="gm-custom-player-name" class="modal-input" placeholder="Lương Diễn (để trống lấy mặc định theo thân phận)" />
-            </div>
-          </div>
-
-          <div class="gm-alert-box">
-            <strong>Lưu ý:</strong> Bắt đầu màn chơi mới sẽ khởi tạo lại toàn bộ số dư, kho hàng, và lượt chơi từ Master Blueprint gốc.
-          </div>
-
-          <div class="gm-actions-row" style="margin-top: 12px;">
-            <button class="tactical-btn tactical-btn--primary" onclick="submitStartNewGame()" style="width: 100%; padding: 10px;">
-              Khởi Tạo Chiến Dịch Mới
-            </button>
           </div>
         </div>
 

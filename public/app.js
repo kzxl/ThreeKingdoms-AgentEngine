@@ -479,33 +479,30 @@ function appendAgentResultTurn(result) {
   });
 }
 
-// 2.6 Omni Command Bar Dispatcher (Anti-Piling Guarded)
-async function dispatchOmniCommand(mode = 'ai') {
+// 2.6 Command Dispatcher (Anti-Piling Guarded)
+async function dispatchOmniCommand(mode = 'ai', explicitPrompt = null) {
   if (isProcessingAction) {
     showToast('⚠️ Hệ thống đang tính toán lệnh trước, vui lòng không spam lệnh!', true);
     return;
   }
 
   const inputEl = document.getElementById('omni-input');
-  if (!inputEl) return;
-
-  const promptText = inputEl.value.trim();
+  const promptText = explicitPrompt || (inputEl ? inputEl.value.trim() : '');
   if (!promptText) {
-    showToast('Vui lòng nhập mệnh lệnh hoặc đối thoại!', true);
-    inputEl.focus();
     return;
   }
 
   // Append Player Action Turn into Story Chronicle
+  const playerName = (window.currentScene && window.currentScene.player && window.currentScene.player.name) || 'Lương Diễn';
   appendStoryTurn({
     type: 'player',
-    speaker: 'Lương Diễn',
+    speaker: playerName,
     title: mode === 'instant' ? 'Mệnh Lệnh Tức Thì' : 'Mệnh Lệnh & Đối Thoại',
     avatar: '梁',
     text: promptText
   });
 
-  inputEl.value = '';
+  if (inputEl) inputEl.value = '';
   setProcessingLock(true, null, promptText);
   showToast(mode === 'instant' ? 'Đang thực thi lệnh tức thì...' : 'Đang gửi cho AI Agent Core...');
 

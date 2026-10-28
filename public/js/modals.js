@@ -341,10 +341,142 @@ function filterRotkEvents() {
   renderRotkEvents(filtered);
 }
 
+let cachedGameScenarios = [];
+let cachedGameArchetypes = [];
+let selectedScenarioId = 'SCN-184-ZHOU';
+let selectedArchetypeId = 'ARCH-SCHOLAR-ARTISAN';
+
+function updateArchetypePreview(archetypeId) {
+  selectedArchetypeId = archetypeId;
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+  const arch = (cachedGameArchetypes || []).find(a => a.archetype_id === archetypeId) || (cachedGameArchetypes || [])[0];
+  if (!arch) return;
+
+  // Avatar initial letter
+  const avatarEl = document.getElementById('gm-preview-avatar');
+  if (avatarEl) {
+    const charInitial = arch.default_player_name ? arch.default_player_name.trim().charAt(0) : '梁';
+    avatarEl.innerText = charInitial;
+  }
+
+  // Archetype Name & Meta
+  const nameEl = document.getElementById('gm-preview-archetype-name');
+  if (nameEl) {
+    nameEl.innerText = isEn ? (arch.name_en || arch.name_vi) : arch.name_vi;
+  }
+
+  const metaEl = document.getElementById('gm-preview-meta');
+  if (metaEl) {
+    const ageStr = `${arch.starting_age} ${isEn ? 'Years Old' : 'Tuổi'}`;
+    const baseStr = `${isEn ? 'Base' : 'Căn Cứ'}: ${arch.starting_location || (isEn ? 'Zhuo County' : 'Huyện Trác')}`;
+    const cashStr = `${(arch.initial_liquid_cash || 0).toLocaleString()} ${isEn ? 'Qian' : 'Tiền'}`;
+    metaEl.innerText = `${ageStr} • ${baseStr} • ${cashStr}`;
+  }
+
+  // Default Inputs
+  const inputName = document.getElementById('gm-custom-player-name');
+  if (inputName) {
+    inputName.value = arch.default_player_name || '';
+  }
+  const inputStyle = document.getElementById('gm-custom-player-style');
+  if (inputStyle) {
+    inputStyle.value = arch.default_style_name || '';
+  }
+
+  // 8-Axis RPG Attributes Grid
+  const attrsContainer = document.getElementById('gm-preview-attrs-grid');
+  if (attrsContainer) {
+    const attrs = [
+      { key: 'INT', nameVi: 'Trí Lực', nameEn: 'Intellect', val: arch.int_attr, color: 'cyan' },
+      { key: 'WAR', nameVi: 'Võ Lực', nameEn: 'Martial', val: arch.war_attr, color: 'red' },
+      { key: 'COM', nameVi: 'Thương Nghiệp', nameEn: 'Commerce', val: arch.com_attr, color: 'gold' },
+      { key: 'LDR', nameVi: 'Thống Soái', nameEn: 'Leadership', val: arch.ldr_attr, color: 'purple' },
+      { key: 'POL', nameVi: 'Chính Trị', nameEn: 'Politics', val: arch.pol_attr, color: 'blue' },
+      { key: 'DIP', nameVi: 'Ngoại Giao', nameEn: 'Diplomacy', val: arch.dip_attr, color: 'amber' },
+      { key: 'LOG', nameVi: 'Hậu Cần', nameEn: 'Logistics', val: arch.log_attr, color: 'teal' },
+      { key: 'CRA', nameVi: 'Khéo Léo', nameEn: 'Craft', val: arch.cra_attr, color: 'emerald' },
+    ];
+
+    attrsContainer.innerHTML = attrs.map(a => `
+      <div class="gm-attr-pill">
+        <div class="gm-attr-info">
+          <span class="gm-attr-name">${isEn ? a.nameEn : a.nameVi} (${a.key})</span>
+          <span class="gm-attr-val font-mono ${a.color}-text">${a.val}</span>
+        </div>
+        <div class="gm-attr-bar">
+          <div class="gm-attr-bar-fill ${a.color}" style="width: ${Math.min(100, Math.max(10, a.val))}%;"></div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // Starting Assets & Enterprise Summary
+  const assetsContainer = document.getElementById('gm-preview-assets-summary');
+  if (assetsContainer) {
+    const cashStr = `${(arch.initial_liquid_cash || 0).toLocaleString()} ${isEn ? 'Qian' : 'Tiền'}`;
+    const perksStr = isEn ? (arch.initial_perks_en || arch.initial_perks || 'Standard Workshop License') : (arch.initial_perks || 'Quyền quản lý xưởng');
+    assetsContainer.innerHTML = `
+      <div class="gm-asset-row">
+        <span class="gm-asset-label">${isEn ? 'Liquid Cash:' : 'Vốn Lưu Động:'}</span>
+        <span class="gm-asset-val gold-text font-mono font-bold">${cashStr}</span>
+      </div>
+      <div class="gm-asset-row">
+        <span class="gm-asset-label">${isEn ? 'Starting Base:' : 'Căn Cứ Khởi Đầu:'}</span>
+        <span class="gm-asset-val">${isEn ? 'Zhuo County Craft Workshop & Granary' : 'Xưởng Chức Tác Lương Gia & Kho Hàng Trác Huyện'}</span>
+      </div>
+      <div class="gm-asset-row">
+        <span class="gm-asset-label">${isEn ? 'Initial Perk:' : 'Đặc Quyền Khởi Đầu:'}</span>
+        <span class="gm-asset-val">${perksStr}</span>
+      </div>
+    `;
+  }
+
+  // Innate Talents Pills
+  const talentsContainer = document.getElementById('gm-preview-talents-pills');
+  if (talentsContainer) {
+    let talents = [];
+    try {
+      talents = JSON.parse(arch.innate_talents || '[]');
+    } catch {
+      talents = [arch.innate_talents];
+    }
+    if (!Array.isArray(talents) || talents.length === 0) {
+      talents = ['TLT-CALC: Quick Reckoner'];
+    }
+
+    talentsContainer.innerHTML = talents.map(t => {
+      const cleanText = String(t).replace(/[\[\]"]/g, '');
+      return `<span class="gm-talent-badge">${cleanText}</span>`;
+    }).join('');
+  }
+}
+
+function selectGameScenario(id, el) {
+  selectedScenarioId = id;
+  document.querySelectorAll('.gm-scenario-card').forEach(c => c.classList.remove('selected'));
+  if (el) el.classList.add('selected');
+  const radio = el ? el.querySelector('input') : document.querySelector(`input[name="gm_scenario"][value="${id}"]`);
+  if (radio) radio.checked = true;
+}
+
+function selectGameArchetype(id, el) {
+  selectedArchetypeId = id;
+  document.querySelectorAll('.gm-archetype-card').forEach(c => c.classList.remove('selected'));
+  if (el) el.classList.add('selected');
+  const radio = el ? el.querySelector('input') : document.querySelector(`input[name="gm_archetype"][value="${id}"]`);
+  if (radio) radio.checked = true;
+  updateArchetypePreview(id);
+}
+
 function renderGameManagerModalContent(data) {
   const summary = data.summary || {};
   const scenarios = data.scenarios || [];
   const archetypes = data.archetypes || [];
+
+  cachedGameScenarios = scenarios;
+  cachedGameArchetypes = archetypes;
+
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
 
   // 1. Continue Tab Render
   const statusContainer = document.getElementById('gm-continue-status');
@@ -355,34 +487,34 @@ function renderGameManagerModalContent(data) {
           <div class="gm-card-header">
             <div>
               <div class="gm-card-title">${summary.campaignName || 'Chiến Dịch Đại Hán'}</div>
-              <div class="gm-card-subtitle">Mã: ${summary.campaignId} • Ngày ${summary.currentDate}</div>
+              <div class="gm-card-subtitle">${isEn ? 'Code' : 'Mã'}: ${summary.campaignId} • ${isEn ? 'Date' : 'Ngày'} ${summary.currentDate}</div>
             </div>
-            <span class="badge-audit">Lượt ${summary.activeTurn || 1}</span>
+            <span class="badge-audit">${isEn ? 'Turn' : 'Lượt'} ${summary.activeTurn || 1}</span>
           </div>
           <div class="gm-stat-grid">
             <div class="gm-stat-item">
-              <span class="label">Chủ Công:</span>
+              <span class="label">${isEn ? 'Commander:' : 'Chủ Công:'}</span>
               <span class="val">${summary.playerName} (${summary.playerStyle || 'Tự'})</span>
             </div>
             <div class="gm-stat-item">
-              <span class="label">Vị Trí Hiện Tại:</span>
+              <span class="label">${isEn ? 'Current Location:' : 'Vị Trí Hiện Tại:'}</span>
               <span class="val">${summary.location || 'Huyện Trác'}</span>
             </div>
             <div class="gm-stat-item">
-              <span class="label">Tiền Mặt:</span>
-              <span class="val font-mono">${(summary.liquidCash || 0).toLocaleString()} Tiền</span>
+              <span class="label">${isEn ? 'Liquid Cash:' : 'Tiền Mặt:'}</span>
+              <span class="val font-mono">${(summary.liquidCash || 0).toLocaleString()} ${isEn ? 'Qian' : 'Tiền'}</span>
             </div>
             <div class="gm-stat-item">
-              <span class="label">Lương Thảo:</span>
-              <span class="val font-mono">${Number(summary.strategicGrain || 0).toFixed(1)} Thạch</span>
+              <span class="label">${isEn ? 'Grain Stock:' : 'Lương Thảo:'}</span>
+              <span class="val font-mono">${Number(summary.strategicGrain || 0).toFixed(1)} ${isEn ? 'Piculs' : 'Thạch'}</span>
             </div>
           </div>
           <div class="gm-actions-row">
-            <button class="btn-primary" onclick="closeGameManagerModal(); showToast('Tiếp tục chiến dịch!')">
-              Tiếp Tục Màn Chơi Này
+            <button class="btn-primary" onclick="closeGameManagerModal(); showToast('${isEn ? 'Resuming campaign!' : 'Tiếp tục chiến dịch!'}')">
+              ${isEn ? 'Resume Active Campaign' : 'Tiếp Tục Màn Chơi Này'}
             </button>
             <button class="btn-outline" onclick="submitSaveSlot('slot_manual')">
-              Lưu Bản Sao Dự Phòng
+              ${isEn ? 'Export Backup Save' : 'Lưu Bản Sao Dự Phòng'}
             </button>
           </div>
         </div>
@@ -390,7 +522,7 @@ function renderGameManagerModalContent(data) {
     } else {
       statusContainer.innerHTML = `
         <div style="padding: 24px; text-align: center; color: var(--text-muted);">
-          Chưa có phiên chơi nào đang lưu trữ. Hãy bấm tab "Tạo Màn Chơi Mới" để bắt đầu!
+          ${isEn ? 'No active playthrough found. Click "New Legend" tab to start your journey!' : 'Chưa có phiên chơi nào đang lưu trữ. Hãy bấm tab "Khởi Lập Điển Tích" để bắt đầu!'}
         </div>
       `;
     }
@@ -399,55 +531,70 @@ function renderGameManagerModalContent(data) {
   // 2. New Game Tab Render (Scenarios & Archetypes)
   const scnContainer = document.getElementById('gm-scenario-selector');
   if (scnContainer) {
-    scnContainer.innerHTML = scenarios.map((s, i) => `
-      <label class="gm-scenario-card ${i === 0 ? 'selected' : ''}" onclick="selectGameScenario('${s.scenario_id}', this)">
-        <input type="radio" name="gm_scenario" value="${s.scenario_id}" ${i === 0 ? 'checked' : ''} style="display:none">
-        <div class="title">${s.name_vi}</div>
-        <div class="epoch">${s.historical_epoch}</div>
-        <div class="desc">${s.description_vi}</div>
-      </label>
-    `).join('');
+    scnContainer.innerHTML = scenarios.map((s, i) => {
+      const isSelected = (s.scenario_id === selectedScenarioId || (!selectedScenarioId && i === 0));
+      if (isSelected) selectedScenarioId = s.scenario_id;
+      const year = s.start_date ? s.start_date.split('-')[0] : '184';
+      const yearBadge = isEn ? `${year} AD` : `${year} SCN`;
+      const title = isEn ? (s.name_en || s.name_vi) : s.name_vi;
+      const desc = isEn ? (s.description_en || s.description_vi) : s.description_vi;
+      return `
+        <label class="gm-scenario-card ${isSelected ? 'selected' : ''}" onclick="selectGameScenario('${s.scenario_id}', this)">
+          <input type="radio" name="gm_scenario" value="${s.scenario_id}" ${isSelected ? 'checked' : ''} style="display:none">
+          <div class="gm-scenario-header">
+            <span class="gm-scenario-year">${yearBadge}</span>
+            <span class="gm-scenario-epoch">${s.historical_epoch}</span>
+          </div>
+          <div class="gm-scenario-title">${title}</div>
+          <div class="gm-scenario-desc">${desc}</div>
+        </label>
+      `;
+    }).join('');
   }
 
   const archContainer = document.getElementById('gm-archetype-selector');
   if (archContainer) {
-    archContainer.innerHTML = archetypes.map((a, i) => `
-      <label class="gm-archetype-card ${i === 0 ? 'selected' : ''}" onclick="selectGameArchetype('${a.archetype_id}', this)">
-        <input type="radio" name="gm_archetype" value="${a.archetype_id}" ${i === 0 ? 'checked' : ''} style="display:none">
-        <div class="name">${a.name_vi}</div>
-        <div class="attrs">INT ${a.int_attr} • WAR ${a.war_attr} • COM ${a.com_attr} • CRA ${a.cra_attr}</div>
-        <div class="desc">${a.bio_vi}</div>
-      </label>
-    `).join('');
+    archContainer.innerHTML = archetypes.map((a, i) => {
+      const isSelected = (a.archetype_id === selectedArchetypeId || (!selectedArchetypeId && i === 0));
+      if (isSelected) selectedArchetypeId = a.archetype_id;
+      const title = isEn ? (a.name_en || a.name_vi) : a.name_vi;
+      const desc = isEn ? (a.bio_en || a.bio_vi) : a.bio_vi;
+      const cashStr = `${(a.initial_liquid_cash || 0).toLocaleString()} ${isEn ? 'Qian' : 'Tiền'}`;
+      return `
+        <label class="gm-archetype-card ${isSelected ? 'selected' : ''}" onclick="selectGameArchetype('${a.archetype_id}', this)">
+          <input type="radio" name="gm_archetype" value="${a.archetype_id}" ${isSelected ? 'checked' : ''} style="display:none">
+          <div class="gm-archetype-header">
+            <div class="gm-archetype-name">${title}</div>
+            <span class="gm-archetype-cash">${cashStr}</span>
+          </div>
+          <div class="gm-archetype-attrs">
+            INT ${a.int_attr} • WAR ${a.war_attr} • COM ${a.com_attr} • LDR ${a.ldr_attr} • POL ${a.pol_attr}
+          </div>
+          <div class="gm-archetype-desc">${desc}</div>
+        </label>
+      `;
+    }).join('');
   }
-}
 
-function selectGameScenario(id, el) {
-  document.querySelectorAll('.gm-scenario-card').forEach(c => c.classList.remove('selected'));
-  el.classList.add('selected');
-  const radio = el.querySelector('input');
-  if (radio) radio.checked = true;
-}
-
-function selectGameArchetype(id, el) {
-  document.querySelectorAll('.gm-archetype-card').forEach(c => c.classList.remove('selected'));
-  el.classList.add('selected');
-  const radio = el.querySelector('input');
-  if (radio) radio.checked = true;
+  // Populate preview panel with currently selected archetype
+  const activeArchId = selectedArchetypeId || (archetypes[0] ? archetypes[0].archetype_id : 'ARCH-SCHOLAR-ARTISAN');
+  updateArchetypePreview(activeArchId);
 }
 
 async function submitStartNewGame() {
   const scnEl = document.querySelector('input[name="gm_scenario"]:checked');
   const archEl = document.querySelector('input[name="gm_archetype"]:checked');
   const nameEl = document.getElementById('gm-custom-player-name');
+  const styleEl = document.getElementById('gm-custom-player-style');
 
-  const scenarioId = scnEl ? scnEl.value : 'SCN-184-ZHOU';
-  const archetypeId = archEl ? archEl.value : 'ARCH-SCHOLAR-ARTISAN';
+  const scenarioId = scnEl ? scnEl.value : (selectedScenarioId || 'SCN-184-ZHOU');
+  const archetypeId = archEl ? archEl.value : (selectedArchetypeId || 'ARCH-SCHOLAR-ARTISAN');
   const customPlayerName = nameEl && nameEl.value.trim() ? nameEl.value.trim() : null;
+  const customStyleName = styleEl && styleEl.value.trim() ? styleEl.value.trim() : null;
 
   const msg = currentLang === 'en'
-    ? 'Are you sure you want to start a New Game? This will reset active session tables using the Master Blueprint templates.'
-    : 'Bạn có chắc chắn muốn Khởi Tạo Màn Chơi Mới? Dữ liệu lượt chơi hiện tại sẽ được làm mới từ Master Blueprint gốc.';
+    ? 'Are you sure you want to start a New Historical Campaign? Session state will be re-initialized from Master Blueprint with 100% ledger balance.'
+    : 'Bạn có chắc chắn muốn Khởi Tạo Điển Tích Mới? Dữ liệu lượt chơi sẽ được thiết lập lại từ Master Blueprint và cân đối kế toán kép 100%.';
 
   if (!window.confirm(msg)) return;
 
@@ -456,7 +603,8 @@ async function submitStartNewGame() {
     const res = await apiStartNewGame({
       scenarioId,
       archetypeId,
-      customPlayerName
+      customPlayerName,
+      customStyleName
     });
 
     if (res.success) {
@@ -466,7 +614,7 @@ async function submitStartNewGame() {
         localStorage.removeItem('sim_last_encounter_subloc');
       }
       closeGameManagerModal();
-      showToast(currentLang === 'en' ? 'New Campaign initialized successfully! Reloading session state...' : 'Khởi tạo Tân Du Hý thành công! Đang tải lại dữ liệu...');
+      showToast(currentLang === 'en' ? 'New Campaign initialized successfully! Reloading session state...' : 'Khởi lập Điển Tích mới thành công! Đang tải lại dữ liệu...');
       await loadAllData();
     }
   } catch (err) {
@@ -1564,6 +1712,7 @@ window.closeGameManagerModal = closeGameManagerModal;
 window.switchGameManagerTab = switchGameManagerTab;
 window.selectGameScenario = selectGameScenario;
 window.selectGameArchetype = selectGameArchetype;
+window.updateArchetypePreview = updateArchetypePreview;
 window.submitStartNewGame = submitStartNewGame;
 window.submitSaveSlot = submitSaveSlot;
 window.submitLoadSlot = submitLoadSlot;

@@ -104,7 +104,21 @@ const I18N_DICT = {
     deckLoyalty: 'Trung thành:',
     // Dossier Modal
     dossierTitle: 'HỒ SƠ CHIẾN LƯỢC HÀO KIỆT',
-    dossierClose: 'Đóng Hồ Sơ'
+    dossierClose: 'Đóng Hồ Sơ',
+    // Local NPC Quick Action & Character Creation
+    btnLocalNpcPrefix: 'Giao Tiếp Hào Kiệt:',
+    btnLocalNpcDefault: 'Giao Tiếp Hào Kiệt (Hồ Sơ & Hành Động)',
+    gmSecScenarioTitle: '1. Chọn Niên Đại & Bối Cảnh Lịch Sử (Master Scenarios):',
+    gmSecScenarioHint: '4 Niên Biểu Tam Quốc',
+    gmSecArchetypeTitle: '2. Chọn Thân Phận Khởi Đầu (Player Archetypes):',
+    gmSecArchetypeHint: 'Định hình năng lực & thế lực ban đầu',
+    gmPreviewAttrsTitle: 'Bản Đồ Năng Lực 8 Trục (RPG Attributes):',
+    gmPreviewAssetsTitle: 'Tài Sản & Đặc Quyền Khởi Điểm:',
+    gmPreviewTalentsTitle: 'Thiên Phú Bẩm Sinh:',
+    gmLabelPlayerName: 'Tên Nhân Vật:',
+    gmLabelPlayerStyle: 'Biểu Tự:',
+    gmAlertNote: 'Bảo đảm toàn vẹn: Khởi tạo màn chơi mới sẽ tái lập sổ sách theo chuẩn mực kế toán kép SQLite (Dr = Cr).',
+    gmBtnStartGame: 'Khởi Lập Điển Tích Mới'
   },
   en: {
     appTitle: 'THREE KINGDOMS • LIANG CHRONICLES',
@@ -207,7 +221,21 @@ const I18N_DICT = {
     deckLoyalty: 'Loyalty:',
     // Dossier Modal
     dossierTitle: 'STRATEGIC NPC DOSSIER',
-    dossierClose: 'Close Dossier'
+    dossierClose: 'Close Dossier',
+    // Local NPC Quick Action & Character Creation
+    btnLocalNpcPrefix: 'Converse with Hero:',
+    btnLocalNpcDefault: 'Converse with Hero (Dossier & Actions)',
+    gmSecScenarioTitle: '1. Select Historical Era & Scenario (Master Scenarios):',
+    gmSecScenarioHint: '4 Three Kingdoms Epochs',
+    gmSecArchetypeTitle: '2. Select Starting Archetype (Player Archetypes):',
+    gmSecArchetypeHint: 'Defines abilities & initial realm presence',
+    gmPreviewAttrsTitle: '8-Axis Capability Matrix (RPG Attributes):',
+    gmPreviewAssetsTitle: 'Starting Assets & Perks:',
+    gmPreviewTalentsTitle: 'Innate Talents:',
+    gmLabelPlayerName: 'Character Name:',
+    gmLabelPlayerStyle: 'Style Name:',
+    gmAlertNote: 'Integrity Guaranteed: Starting a new game safely resets session tables while strictly preserving 100% SQLite double-entry ledger balance.',
+    gmBtnStartGame: 'Launch Historical Campaign'
   }
 };
 
@@ -345,6 +373,41 @@ function applyLanguage() {
   if (tabProfessions) tabProfessions.innerText = dict.gmTabProfessions;
   const tabEcology = document.getElementById('gm-tab-ecology');
   if (tabEcology) tabEcology.innerText = dict.gmTabEcology;
+
+  // New Game Creation Section Labels
+  const gmSecScn = document.getElementById('gm-sec-scenario-title');
+  if (gmSecScn) gmSecScn.innerText = dict.gmSecScenarioTitle;
+  const gmSecScnHint = document.getElementById('gm-sec-scenario-hint');
+  if (gmSecScnHint) gmSecScnHint.innerText = dict.gmSecScenarioHint;
+
+  const gmSecArch = document.getElementById('gm-sec-archetype-title');
+  if (gmSecArch) gmSecArch.innerText = dict.gmSecArchetypeTitle;
+  const gmSecArchHint = document.getElementById('gm-sec-archetype-hint');
+  if (gmSecArchHint) gmSecArchHint.innerText = dict.gmSecArchetypeHint;
+
+  const gmTitleAttrs = document.getElementById('gm-title-preview-attrs');
+  if (gmTitleAttrs) gmTitleAttrs.innerText = dict.gmPreviewAttrsTitle;
+  const gmTitleAssets = document.getElementById('gm-title-preview-assets');
+  if (gmTitleAssets) gmTitleAssets.innerText = dict.gmPreviewAssetsTitle;
+  const gmTitleTalents = document.getElementById('gm-title-preview-talents');
+  if (gmTitleTalents) gmTitleTalents.innerText = dict.gmPreviewTalentsTitle;
+
+  const gmLabelName = document.getElementById('gm-label-player-name');
+  if (gmLabelName) gmLabelName.innerText = dict.gmLabelPlayerName;
+  const gmLabelStyle = document.getElementById('gm-label-player-style');
+  if (gmLabelStyle) gmLabelStyle.innerText = dict.gmLabelPlayerStyle;
+
+  const gmAlert = document.getElementById('gm-newgame-alert');
+  if (gmAlert) gmAlert.innerHTML = `<strong>${currentLang === 'en' ? 'Integrity Guaranteed:' : 'Bảo đảm toàn vẹn:'}</strong> ${dict.gmAlertNote}`;
+
+  const gmBtnLaunch = document.getElementById('gm-btn-start-game');
+  if (gmBtnLaunch) gmBtnLaunch.innerText = dict.gmBtnStartGame;
+
+  // Local Hero Button in Locality Banner
+  const btnLocalNpc = document.getElementById('txt-btn-local-npc');
+  if (btnLocalNpc && typeof updateLocalNpcButtonLabel === 'function') {
+    updateLocalNpcButtonLabel();
+  }
 
   // Re-render open NPC Dossier if visible
   if (typeof renderCurrentNpcDossier === 'function') {
