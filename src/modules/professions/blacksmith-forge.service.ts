@@ -899,10 +899,10 @@ export class BlacksmithForgeService {
     );
 
     const slotMetadata: Record<EquipmentSlotType, { icon: string; vi: string; en: string }> = {
-      WEAPON: { icon: '⚔️', vi: 'Binh Khí', en: 'Weapon' },
-      ARMOR: { icon: '🛡️', vi: 'Khôi Giáp', en: 'Armor' },
-      STEED: { icon: '🐎', vi: 'Chiến Mã', en: 'Steed' },
-      TREASURE: { icon: '📜', vi: 'Bảo Vật & Binh Thư', en: 'Treasure' }
+      WEAPON: { icon: '', vi: 'Binh Khí', en: 'Weapon' },
+      ARMOR: { icon: '', vi: 'Khôi Giáp', en: 'Armor' },
+      STEED: { icon: '', vi: 'Chiến Mã', en: 'Steed' },
+      TREASURE: { icon: '', vi: 'Bảo Vật & Binh Thư', en: 'Treasure' }
     };
 
     const slots: Record<EquipmentSlotType, EquippedItem | null> = {
@@ -926,7 +926,7 @@ export class BlacksmithForgeService {
 
     for (const row of equippedRows) {
       const slotType = (row.slot_type as EquipmentSlotType) || 'TREASURE';
-      const meta = slotMetadata[slotType] || { icon: '💎', vi: 'Bảo Vật', en: 'Treasure' };
+      const meta = slotMetadata[slotType] || { icon: '', vi: 'Bảo Vật', en: 'Treasure' };
 
       let stats: Record<string, number> = {};
       try {

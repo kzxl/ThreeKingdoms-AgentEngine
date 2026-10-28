@@ -4,10 +4,10 @@
  *
  * Implements:
  * 1. 4 Equipment Slots Grid:
- *    - ⚔️ Binh Khí (Weapon)
- *    - 🛡️ Khôi Giáp (Armor)
- *    - 🐎 Chiến Mã (Steed)
- *    - 📜 Bảo Vật & Binh Thư (Treasure)
+ *    - Binh Khí (Weapon)
+ *    - Khôi Giáp (Armor)
+ *    - Chiến Mã (Steed)
+ *    - Bảo Vật & Binh Thư (Treasure)
  * 2. Effective Attributes Calculator with Golden Exceed-100 Highlights:
  *    - Dynamic display: e.g. "103 (98 + 5)" or "63 (58 + 5)".
  *    - Golden pulse border and glowing badges when exceeding 100 points.
@@ -609,14 +609,14 @@
         <!-- TABS BAR -->
         <div class="eqp-tabs-bar">
           <button class="eqp-tab-btn ${activeTab === 'gear' ? 'active' : ''}" onclick="EquipmentUI.switchEqpTab('gear')">
-            <span>⚔️</span> ${isEn ? 'Equipped Gear & Attributes' : 'Quân Trang & Chỉ Số Thực Hiệu'}
+            ${isEn ? 'Gear & Attributes' : 'Quân trang & Thuộc tính'}
           </button>
           ${isPlayer ? `
             <button class="eqp-tab-btn ${activeTab === 'forge_bespoke' ? 'active' : ''}" onclick="EquipmentUI.switchEqpTab('forge_bespoke')">
-              <span>🔥</span> ${isEn ? 'Bespoke God Weapon Forge' : 'Đoán Tạo Thần Binh Tùy Biến'}
+              ${isEn ? 'Bespoke Forging' : 'Đoán tạo thần binh'}
             </button>
             <button class="eqp-tab-btn ${activeTab === 'forge_standard' ? 'active' : ''}" onclick="EquipmentUI.switchEqpTab('forge_standard')">
-              <span>🔨</span> ${isEn ? 'Standard Armament Forging' : 'Rèn Đúc Quân Khí Tiêu Chuẩn'}
+              ${isEn ? 'Standard Armaments' : 'Rèn đúc tiêu chuẩn'}
             </button>
           ` : ''}
         </div>
@@ -657,11 +657,11 @@
     const possessedCount = items.length;
 
     const filterCategories = [
-      { key: 'ALL', icon: '📦', vi: 'Tất Cả', en: 'All Items' },
-      { key: 'WEAPON', icon: '⚔️', vi: 'Binh Khí', en: 'Weapons' },
-      { key: 'ARMOR', icon: '🛡️', vi: 'Khôi Giáp', en: 'Armor' },
-      { key: 'STEED', icon: '🐎', vi: 'Chiến Mã', en: 'Steeds' },
-      { key: 'TREASURE', icon: '📜', vi: 'Bảo Vật', en: 'Treasures' }
+      { key: 'ALL', vi: 'Tất cả', en: 'All Items' },
+      { key: 'WEAPON', vi: 'Binh khí', en: 'Weapons' },
+      { key: 'ARMOR', vi: 'Khôi giáp', en: 'Armor' },
+      { key: 'STEED', vi: 'Chiến mã', en: 'Steeds' },
+      { key: 'TREASURE', vi: 'Bảo vật', en: 'Treasures' }
     ];
 
     return `
@@ -669,10 +669,10 @@
       <div class="eqp-stat-summary-box">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
           <span style="font-size:12px; font-weight:700; color:#fbbf24; text-transform:uppercase; letter-spacing:0.5px;">
-            ${isEn ? 'Effective Combat Attributes (Base + Possessed Items Buffs):' : 'Bảng Năng Lực Chiến Lược Thực Hiệu (Gốc + Phụ Gia Bảo Vật Sở Hữu):'}
+            ${isEn ? 'Effective Combat Attributes (Base + Possessed Items Buffs):' : 'Bảng năng lực chiến lược thực hiệu (Gốc + Phụ gia bảo vật sở hữu):'}
           </span>
           <span style="font-size:11px; color:#34d399;">
-            ${isEn ? '★ Golden highlight indicates attribute > 100' : '★ Viền vàng óng hiển thị chỉ số vượt ngưỡng 100'}
+            ${isEn ? 'Gold highlight indicates attribute > 100' : 'Viền vàng hiển thị chỉ số vượt ngưỡng 100'}
           </span>
         </div>
 
@@ -689,28 +689,29 @@
       <div style="margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
         <div>
           <span style="font-size:13px; font-weight:700; color:#fde68a;">
-            ${isEn ? '⚔️ Possessed Treasures & Armaments (ROTK Style):' : '⚔️ Bảo Vật & Quân Trang Đang Sở Hữu (Chuẩn ROTK — Không Giới Hạn Ô):'}
+            ${isEn ? 'Possessed Treasures & Armaments (ROTK Stacking):' : 'Danh mục bảo vật & binh khí sở hữu (Chuẩn ROTK — Không giới hạn):'}
           </span>
           <span style="font-size:11px; color:#94a3b8; margin-left:8px;">
-            ${isEn ? `(${possessedCount} items owned — all stat buffs stack)` : `(Đang sở hữu ${possessedCount} món — mọi bảo vật mang theo đều cộng dồn chỉ số)`}
+            ${isEn ? `(${possessedCount} items owned — all stat buffs stack)` : `(Đang mang ${possessedCount} món — tự động cộng dồn toàn bộ chỉ số)`}
           </span>
         </div>
         <span style="font-size:11px; color:#38bdf8;">
-          ${isEn ? '🛡️ Items in personal possession grant continuous attribute bonuses' : '🛡️ Mọi vật phẩm mang trên mình đều cộng dồn chỉ số'}
+          ${isEn ? 'Items in possession grant continuous attribute bonuses' : 'Vật phẩm sở hữu cộng dồn trực tiếp vào thuộc tính'}
         </span>
       </div>
 
       <div class="eqp-collection-grid">
         ${items.length === 0 ? `
           <div class="eqp-empty-collection">
-            <div style="font-size:24px; margin-bottom:6px;">🎒</div>
-            <div>${isEn ? 'No treasures or weapons currently possessed. Take items from warehouse below or forge new god weapons!' : 'Nhân vật hiện chưa mang theo bảo vật hay khí giới nào. Hãy nhận từ kho bên dưới hoặc rèn thần binh!'}</div>
+            <div style="font-size:12px; color:#64748b; font-style:italic;">
+              ${isEn ? 'No treasures or armaments currently possessed. Take items from warehouse below or forge new gear.' : 'Nhân vật hiện chưa mang theo bảo vật hay khí giới nào. Hãy nhận từ kho bên dưới hoặc rèn đúc thêm.'}
+            </div>
           </div>
         ` : items.map(item => `
           <div class="eqp-slot-card has-item">
             <div class="eqp-slot-header">
               <span class="eqp-slot-title">
-                <span>${item.slotIcon || (item.slotType === 'WEAPON' ? '⚔️' : item.slotType === 'ARMOR' ? '🛡️' : item.slotType === 'STEED' ? '🐎' : '📜')}</span> ${item.slotLabelVi || item.slotType}
+                <span class="eqp-slot-tag">[${item.slotLabelVi || item.slotType}]</span>
               </span>
               ${getQualityBadge(item.quality)}
             </div>
@@ -724,7 +725,7 @@
 
             <div style="margin-top:10px; display:flex; gap:6px;">
               <button class="eqp-btn eqp-btn--danger" style="flex:1; justify-content:center; font-size:11px;" onclick="EquipmentUI.unequipItem('${item.itemCode}', ${item.id})">
-                ${isEn ? 'Store to Warehouse' : 'Cất Vào Kho'}
+                ${isEn ? 'Store to Warehouse' : 'Cất vào kho'}
               </button>
             </div>
           </div>
@@ -771,7 +772,7 @@
       <div class="eqp-stat-cell ${isExceed ? 'exceed-100' : ''}" title="${isExceed ? 'Tuyệt thế cảnh giới: Chỉ số vượt ngưỡng 100!' : ''}">
         <span class="eqp-stat-cell-label">${label}</span>
         <span class="eqp-stat-cell-value">
-          ${isExceed ? `🔥 ${formulaText}` : formulaText}
+          ${formulaText}
         </span>
       </div>
     `;
@@ -874,7 +875,7 @@
         <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px; border-bottom:1px solid rgba(217,119,6,0.25); padding-bottom:10px;">
           <div>
             <h4 style="margin:0 0 4px 0; font-size:15px; color:#fbbf24;">
-              🔥 ${isEn ? 'BESPOKE GOD WEAPON FORGING ENGINE' : 'ĐOÁN TẠO THẦN BINH TÙY BIẾN'}
+              ${isEn ? 'Bespoke God Weapon Forging' : 'Đoán tạo thần binh tùy biến'}
             </h4>
             <p style="margin:0; font-size:12px; color:#94a3b8;">
               ${isEn
@@ -897,23 +898,23 @@
             ${isEn ? 'Bespoke Forging Material & Stamina Requirements:' : 'Yêu Cầu Tiêu Hao Thể Lực & Nguyên Liệu Đoán Tạo:'}
           </span>
           <div>
-            <span class="eqp-mat-pill">⚡ ${isEn ? 'Fatigue Cost: +25 Thể Lực' : 'Tiêu hao: 25 Thể Lực'}</span>
-            <span class="eqp-mat-pill">🔩 3x Sắt Thỏi (RAW-IRON-INGOT)</span>
-            <span class="eqp-mat-pill">🔥 3x Than Lò Nung (RAW-CHARCOAL-BAG)</span>
-            <span class="eqp-mat-pill">🌲 2x Gỗ Sồi Quân Nhu (RAW-TIMBER-OAK)</span>
-            <span class="eqp-mat-pill">🛡️ 2x Da Thuộc / Da Heo (COM-LEATH)</span>
+            <span class="eqp-mat-pill">${isEn ? 'Fatigue Cost: 25' : 'Tiêu hao: 25 Thể lực'}</span>
+            <span class="eqp-mat-pill">3 Sắt thỏi (RAW-IRON-INGOT)</span>
+            <span class="eqp-mat-pill">3 Than lò nung (RAW-CHARCOAL-BAG)</span>
+            <span class="eqp-mat-pill">2 Gỗ sồi quân nhu (RAW-TIMBER-OAK)</span>
+            <span class="eqp-mat-pill">2 Da thuộc (COM-LEATH)</span>
           </div>
         </div>
 
         <!-- WEAPON CUSTOMIZATION FORM -->
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
           <div class="eqp-form-group">
-            <label class="eqp-form-label">${isEn ? 'Custom Weapon Name (Đoán Tạo Danh Hiệu):' : 'Tên Thần Binh Tùy Biến (Tự Đặt):'}</label>
+            <label class="eqp-form-label">${isEn ? 'Custom Weapon Name:' : 'Tên binh khí tùy biến:'}</label>
             <input type="text" id="bespoke-weapon-name" class="eqp-form-input" placeholder="Ví dụ: Xích Viêm Đao, Phá Quân Thương, Trảm Nguyệt..." value="Xích Viêm Đao" />
           </div>
 
           <div class="eqp-form-group">
-            <label class="eqp-form-label">${isEn ? 'Weapon Type Archetype:' : 'Chủng Loại Binh Khí Khung Hình:'}</label>
+            <label class="eqp-form-label">${isEn ? 'Weapon Type Archetype:' : 'Chủng loại binh khí:'}</label>
             <select id="bespoke-weapon-type" class="eqp-form-select">
               <option value="BLADE">Đại Đao / Trực Đao (Chiến Đao Trảm Kích)</option>
               <option value="SPEAR">Trường Thương / Xà Mâu (Đâm Xuyên Thấu Giáp)</option>
@@ -924,16 +925,16 @@
         </div>
 
         <div class="eqp-form-group">
-          <label class="eqp-form-label">${isEn ? 'Target Dispatch Destination:' : 'Mục Đích Đầu Ra Của Thần Binh:'}</label>
+          <label class="eqp-form-label">${isEn ? 'Target Dispatch Destination:' : 'Mục đích đầu ra:'}</label>
           <select id="bespoke-destination" class="eqp-form-select" onchange="EquipmentUI.toggleGiftSelector(this.value)">
-            <option value="WAREHOUSE">📦 Nhập Kho Quân Nhu (Lưu trữ trong Warehouse Inventory)</option>
-            <option value="EQUIP_IMMEDIATELY">⚔️ Trang Bị Tức Thì (Lắp ngay vào bảo vật sở hữu của bản thân)</option>
-            <option value="GIFT_TO_NPC">🎁 Ban Tặng Hào Kiệt (Tặng ngay cho Võ Tướng để tăng đại lượng Hảo Cảm)</option>
+            <option value="WAREHOUSE">${isEn ? 'Transfer to Warehouse' : 'Nhập kho quân nhu'}</option>
+            <option value="EQUIP_IMMEDIATELY">${isEn ? 'Carry in Personal Possession' : 'Mang theo trên người'}</option>
+            <option value="GIFT_TO_NPC">${isEn ? 'Gift to Officer' : 'Ban tặng võ tướng'}</option>
           </select>
         </div>
 
         <div id="bespoke-gift-npc-group" class="eqp-form-group hidden">
-          <label class="eqp-form-label">${isEn ? 'Select Gift Recipient NPC:' : 'Chọn Danh Tướng Ban Tặng:'}</label>
+          <label class="eqp-form-label">${isEn ? 'Select Gift Recipient NPC:' : 'Chọn danh tướng ban tặng:'}</label>
           <select id="bespoke-gift-npc" class="eqp-form-select">
             <option value="NPC-0003">Quan Vũ (Quan Vân Trường) — Trác Quận</option>
             <option value="NPC-0002">Trương Phi (Trương Dực Đức) — Trác Quận</option>
@@ -947,10 +948,10 @@
         <div style="background:#090d16; border:1px solid rgba(217,119,6,0.3); border-radius:6px; padding:12px 16px; margin-bottom:16px;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
             <span style="font-size:12px; font-weight:700; color:#fbbf24;">
-              🎯 ${isEn ? 'Bespoke Quality Probability & Stat Roll Matrix:' : 'Bảng Tỷ Lệ Giác Ngộ Phẩm Cấp & Roll Chỉ Số (Hạn Chế Thần Binh):'}
+              ${isEn ? 'Bespoke Quality Probability & Stat Roll Matrix:' : 'Bảng tỷ lệ phẩm cấp & dải chỉ số:'}
             </span>
             <span style="font-size:11px; color:#94a3b8; font-family:'JetBrains Mono',monospace;">
-              ${isEn ? 'Smithing Mastery S:' : 'Điểm Tay Nghề S:'} <strong style="color:#60a5fa;">${S.toFixed(1)}</strong>
+              ${isEn ? 'Smithing Mastery S:' : 'Điểm tay nghề S:'} <strong style="color:#60a5fa;">${S.toFixed(1)}</strong>
               ${fPenalty > 0 ? `<span style="color:#ef4444; margin-left:4px;">(-${fPenalty.toFixed(1)} do mệt)</span>` : ''}
             </span>
           </div>
@@ -979,14 +980,14 @@
           </div>
 
           <div style="font-size:10px; color:#64748b; margin-top:8px; line-height:1.4;">
-            💡 <em>${isEn ? 'Anti-Inflation Equation: P_Legendary capped at <= 8.5%. Individual stats strictly clamped to [+1, +5].' : 'Phương trình toán học: W_Legendary = 0.5 + 6.0*(S/50)^2.2. Trần xuất hiện Thần Binh <= 8.5%. Chỉ số kẹp cứng [+1, +5].'}</em>
+            <em>${isEn ? 'Anti-Inflation Equation: P_Legendary capped at <= 8.5%. Individual stats strictly clamped to [+1, +5].' : 'Phương trình toán học: W_Legendary = 0.5 + 6.0*(S/50)^2.2. Trần xuất hiện Thần Binh <= 8.5%. Chỉ số kẹp cứng [+1, +5].'}</em>
           </div>
         </div>
 
         <!-- EXECUTE FORGE BUTTON -->
         <div style="display:flex; justify-content:flex-end;">
           <button class="eqp-btn" style="padding:10px 24px; font-size:14px;" ${canForge ? '' : 'disabled'} onclick="EquipmentUI.executeBespokeForge()">
-            🔥 ${isEn ? 'Stoke Furnace & Forge God Weapon' : 'Nổi Lửa Lò Rèn • Đoán Tạo Thần Binh'}
+            ${isEn ? 'Forge Weapon' : 'Tiến hành đoán tạo'}
           </button>
         </div>
       </div>
@@ -1041,7 +1042,7 @@
     return `
       <div class="eqp-forge-card">
         <h4 style="margin:0 0 4px 0; font-size:15px; color:#fbbf24;">
-          🔨 ${isEn ? 'STANDARD MILITARY ARMAMENT PRODUCTION' : 'RÈN ĐÚC KHÍ GIỚI QUÂN NHU TIÊU CHUẨN'}
+          ${isEn ? 'Standard Military Armament Production' : 'Rèn đúc khí giới quân nhu tiêu chuẩn'}
         </h4>
         <p style="margin:0 0 16px 0; font-size:12px; color:#94a3b8;">
           ${isEn
@@ -1064,13 +1065,13 @@
                   <strong>Vật liệu:</strong> ${arm.bomVi}
                 </div>
                 <div style="font-size:10px; color:#fde68a;">
-                  <strong>Thể lực:</strong> -${arm.fatigue} Thể Lực
+                  <strong>Thể lực:</strong> -${arm.fatigue} Thể lực
                 </div>
               </div>
 
               <div style="margin-top:10px; display:flex; gap:6px;">
                 <button class="eqp-btn" style="flex:1; justify-content:center; font-size:11px;" onclick="EquipmentUI.executeStandardForge('${arm.code}', 1)">
-                  🔨 Rèn 1 Cái
+                  ${isEn ? 'Forge 1' : 'Rèn 1 cái'}
                 </button>
                 <button class="eqp-btn eqp-btn--outline" style="font-size:11px;" onclick="EquipmentUI.executeStandardForge('${arm.code}', 5)">
                   x5
@@ -1312,7 +1313,7 @@
       btn.className = 'btn-logs';
       btn.style.borderColor = 'rgba(217, 119, 6, 0.6)';
       btn.style.color = '#fbbf24';
-      btn.innerHTML = '⚔️ Quân Trang';
+      btn.innerHTML = 'Quân trang';
       btn.title = 'Mở Quân Trang Binh Khí & Lò Rèn Thần Binh';
       btn.onclick = () => openEquipmentModal('PLY-0001', 'gear');
       headerRight.insertBefore(btn, headerRight.firstChild);
@@ -1321,7 +1322,7 @@
       const floatBtn = document.createElement('button');
       floatBtn.id = 'btn-open-equipment-floating';
       floatBtn.className = 'eqp-floating-trigger';
-      floatBtn.innerHTML = '⚔️ Quân Trang';
+      floatBtn.innerHTML = 'Quân trang';
       floatBtn.title = 'Mở Trang Bị & Lò Rèn Thần Binh';
       floatBtn.onclick = () => openEquipmentModal('PLY-0001', 'gear');
       document.body.appendChild(floatBtn);

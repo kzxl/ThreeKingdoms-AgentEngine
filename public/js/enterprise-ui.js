@@ -291,7 +291,7 @@
             baseWorkforce: 4,
             projectedMonthlyRevenueMin: 900,
             projectedMonthlyRevenueMax: 1800,
-            icon: '🔨'
+            icon: ''
           },
           {
             typeId: 'TAVERN',
@@ -307,7 +307,7 @@
             baseWorkforce: 3,
             projectedMonthlyRevenueMin: 700,
             projectedMonthlyRevenueMax: 1400,
-            icon: '🍶'
+            icon: ''
           },
           {
             typeId: 'APOTHECARY',
@@ -323,7 +323,7 @@
             baseWorkforce: 3,
             projectedMonthlyRevenueMin: 800,
             projectedMonthlyRevenueMax: 1600,
-            icon: '🌿'
+            icon: ''
           },
           {
             typeId: 'WORKSHOP',
@@ -339,7 +339,7 @@
             baseWorkforce: 4,
             projectedMonthlyRevenueMin: 600,
             projectedMonthlyRevenueMax: 1200,
-            icon: '🧺'
+            icon: ''
           }
         ],
         laborShifts: [
@@ -355,7 +355,7 @@
             expGain: 40,
             narrativeVi: 'Kéo bễ lò lửa đỏ rực, cùng đại sư quai búa rèn phôi sắt tôi nước lạnh. Tăng cường thể lực và tay nghề luyện cương.',
             narrativeEn: 'Stoked furnace fires and struck glowing billets alongside master smiths.',
-            icon: '⚒️'
+            icon: ''
           },
           {
             shiftId: 'SHIFT_CHEF_TAVERN',
@@ -369,7 +369,7 @@
             expGain: 30,
             narrativeVi: 'Bổ củi nổi lửa, nấu cỗ nhắm và phục vụ rượu hoa đào cho khách thương. Thu thập tin tức tình báo các chư hầu.',
             narrativeEn: 'Prepared banquets and served fragrant wines while eavesdropping on regional gossip.',
-            icon: '🍲'
+            icon: ''
           },
           {
             shiftId: 'SHIFT_HERBALIST',
@@ -383,7 +383,7 @@
             expGain: 35,
             narrativeVi: 'Dùng cối đá nghiền nát thảo dược, sao chế cao dán kim sang và phân loại dược liệu cứu chữa bách tính.',
             narrativeEn: 'Ground wild roots and brewed soothing trauma balms for townspeople.',
-            icon: '🌱'
+            icon: ''
           },
           {
             shiftId: 'SHIFT_WEAVER',
@@ -397,7 +397,7 @@
             expGain: 25,
             narrativeVi: 'Vót nan tre bện sọt vận lương cho Bắc Quân. Rèn luyện sự tỉ mỉ và nhanh nhạy của đôi bàn tay.',
             narrativeEn: 'Wove heavy-duty supply baskets for northern imperial expeditions.',
-            icon: '🎋'
+            icon: ''
           }
         ]
       };
@@ -498,10 +498,10 @@
         <!-- TABS BAR -->
         <div class="ent-tabs-bar">
           <button class="ent-tab-btn ${activeTab === 'work' ? 'active' : ''}" onclick="EnterpriseUI.switchEnterpriseTab('work')">
-            <span>🛠️</span> ${isEn ? 'Work Shifts (Earn Wages)' : 'Đi Làm Thuê Kiếm Sống (Nhận Tiền Công)'}
+            ${isEn ? 'Work Shifts' : 'Đi làm thuê'}
           </button>
           <button class="ent-tab-btn ${activeTab === 'own' ? 'active' : ''}" onclick="EnterpriseUI.switchEnterpriseTab('own')">
-            <span>🏛️</span> ${isEn ? 'Manage Enterprises (Open Business)' : 'Làm Chủ Sản Nghiệp (Khai Trương Cửa Hàng)'}
+            ${isEn ? 'Manage Enterprises' : 'Quản lý sản nghiệp'}
           </button>
         </div>
 
@@ -552,10 +552,9 @@
             <div class="ent-shift-card">
               <div>
                 <div class="ent-shift-header">
-                  <span class="ent-shift-icon">${shift.icon}</span>
                   <div class="ent-shift-title-block">
                     <div class="ent-shift-title">${isEn ? shift.titleEn : shift.titleVi}</div>
-                    <div class="ent-shift-workplace">📍 ${isEn ? shift.workplaceEn : shift.workplaceVi}</div>
+                    <div class="ent-shift-workplace">${isEn ? shift.workplaceEn : shift.workplaceVi}</div>
                   </div>
                 </div>
 
@@ -565,13 +564,13 @@
 
                 <div class="ent-metrics-row">
                   <span class="ent-metric-pill ent-metric-pill--wage">
-                    💰 +${shift.wage} Tiền đồng
+                    +${shift.wage} Tiền
                   </span>
                   <span class="ent-metric-pill ent-metric-pill--fatigue">
-                    ⚡ -${shift.fatigueCost} Thể Lực
+                    -${shift.fatigueCost} Thể lực
                   </span>
                   <span class="ent-metric-pill ent-metric-pill--exp">
-                    ⭐ +${shift.expGain} EXP Nghề
+                    +${shift.expGain} EXP
                   </span>
                 </div>
               </div>
@@ -579,8 +578,8 @@
               <div style="margin-top:12px;">
                 <button class="ent-btn" style="width:100%;" ${wouldExceed || isWorking ? 'disabled' : ''} onclick="EnterpriseUI.takeWorkShift('${shift.shiftId}')">
                   ${wouldExceed
-                    ? (isEn ? 'Exhausted (Rest Needed)' : 'Khí Lực Kiệt Quệ (Cần Nghỉ)')
-                    : (isEn ? '⚡ Take Shift Immediately' : '⚡ Nhận Việc Làm Ngay')}
+                    ? (isEn ? 'Exhausted (Rest Needed)' : 'Khí lực kiệt quệ')
+                    : (isEn ? 'Take Shift' : 'Nhận việc')}
                 </button>
               </div>
             </div>
@@ -604,7 +603,7 @@
       <!-- CURRENTLY OWNED BUSINESSES -->
       <div style="margin-bottom:20px;">
         <h4 style="margin:0 0 10px 0; font-size:14px; color:#fbbf24;">
-          🏛️ ${isEn ? 'Currently Managed Enterprises:' : 'Sản Nghiệp Đang Sở Hữu & Khai Thác:'}
+          ${isEn ? 'Currently Managed Enterprises:' : 'Sản nghiệp đang sở hữu:'}
         </h4>
 
         ${owned.length === 0 ? `
@@ -624,10 +623,10 @@
             </div>
 
             <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:8px; font-size:11px; color:#94a3b8; font-family:'JetBrains Mono',monospace;">
-              <div>👥 Nhân công: <strong style="color:#fff;">${biz.current_workforce || 4} người</strong></div>
-              <div>🏠 Thuê mặt bằng: <strong style="color:#fff;">${biz.monthly_rent || 200} Tiền/tháng</strong></div>
-              <div>🔒 Quỹ dự phòng: <strong style="color:#34d399;">${(biz.safe_cash || 0).toLocaleString()} Tiền</strong></div>
-              <div>⚙️ Công suất: <strong style="color:#fff;">${biz.monthly_capacity_hours || 800} giờ/tháng</strong></div>
+              <div>Nhân công: <strong style="color:#fff;">${biz.current_workforce || 4} người</strong></div>
+              <div>Thuê mặt bằng: <strong style="color:#fff;">${biz.monthly_rent || 200} Tiền/tháng</strong></div>
+              <div>Quỹ dự phòng: <strong style="color:#34d399;">${(biz.safe_cash || 0).toLocaleString()} Tiền</strong></div>
+              <div>Công suất: <strong style="color:#fff;">${biz.monthly_capacity_hours || 800} giờ/tháng</strong></div>
             </div>
           </div>
         `).join('')}
@@ -636,7 +635,7 @@
       <!-- OPEN NEW ENTERPRISE CATALOG -->
       <div>
         <h4 style="margin:0 0 4px 0; font-size:14px; color:#fbbf24;">
-          🏗️ ${isEn ? 'Open New Commercial & Artisan Enterprises:' : 'Mở Rộng Quy Mô • Khai Trương Sản Nghiệp Mới:'}
+          ${isEn ? 'Establish New Commercial & Artisan Enterprises:' : 'Khai trương sản nghiệp mới:'}
         </h4>
         <p style="margin:0 0 12px 0; font-size:11px; color:#94a3b8;">
           ${isEn
@@ -652,12 +651,9 @@
             return `
               <div style="background:#1e293b; border:1px solid rgba(148,163,184,0.15); border-radius:6px; padding:14px; display:flex; flex-direction:column; justify-content:space-between;">
                 <div>
-                  <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
-                    <span style="font-size:22px;">${bType.icon}</span>
-                    <div>
-                      <strong style="color:#fff; font-size:13px;">${isEn ? bType.titleEn : bType.titleVi}</strong>
-                      <div style="font-size:10px; color:#fbbf24;">Dự kiến: ${bType.projectedMonthlyRevenueMin}-${bType.projectedMonthlyRevenueMax} Tiền/tháng</div>
-                    </div>
+                  <div style="margin-bottom:6px;">
+                    <strong style="color:#fff; font-size:13px;">${isEn ? bType.titleEn : bType.titleVi}</strong>
+                    <div style="font-size:10px; color:#fbbf24;">Dự kiến: ${bType.projectedMonthlyRevenueMin}-${bType.projectedMonthlyRevenueMax} Tiền/tháng</div>
                   </div>
 
                   <p style="font-size:11px; color:#94a3b8; margin:0 0 10px 0; line-height:1.4;">
@@ -666,7 +662,7 @@
 
                   <div style="font-size:11px; background:#090d16; border-radius:4px; padding:8px 10px; margin-bottom:12px; border:1px solid rgba(148,163,184,0.1);">
                     <div style="color:${hasEnoughCash ? '#34d399' : '#ef4444'}; margin-bottom:3px;">
-                      <strong>Vốn ban đầu:</strong> ${bType.startupCash.toLocaleString()} Tiền (${hasEnoughCash ? '✓ Đủ' : '✗ Thiếu'})
+                      <strong>Vốn ban đầu:</strong> ${bType.startupCash.toLocaleString()} Tiền (${hasEnoughCash ? 'Đủ' : 'Thiếu'})
                     </div>
                     <div style="color:#94a3b8;">
                       <strong>Vật liệu:</strong> ${matList}
@@ -679,7 +675,7 @@
 
                 <div>
                   <button class="ent-btn" style="width:100%;" ${hasEnoughCash ? '' : 'disabled'} onclick="EnterpriseUI.openBusinessDialog('${bType.typeId}', '${bType.titleVi.replace(/'/g, "\\'")}')">
-                    🏛️ Khai Trương Sản Nghiệp
+                    ${isEn ? 'Open Enterprise' : 'Khai trương sản nghiệp'}
                   </button>
                 </div>
               </div>
@@ -806,7 +802,7 @@
       btn.className = 'btn-logs';
       btn.style.borderColor = 'rgba(16, 185, 129, 0.6)';
       btn.style.color = '#34d399';
-      btn.innerHTML = '🏛️ Sản Nghiệp';
+      btn.innerHTML = 'Sản nghiệp';
       btn.title = 'Mở Quản Lý Sản Nghiệp & Thị Trường Làm Thuê';
       btn.onclick = () => openEnterpriseModal('work');
       headerRight.insertBefore(btn, headerRight.firstChild);
@@ -815,7 +811,7 @@
       const floatBtn = document.createElement('button');
       floatBtn.id = 'btn-open-enterprise-floating';
       floatBtn.className = 'ent-floating-trigger';
-      floatBtn.innerHTML = '🏛️ Sản Nghiệp';
+      floatBtn.innerHTML = 'Sản nghiệp';
       floatBtn.title = 'Mở Quản Lý Sản Nghiệp & Làm Thuê';
       floatBtn.onclick = () => openEnterpriseModal('work');
       document.body.appendChild(floatBtn);

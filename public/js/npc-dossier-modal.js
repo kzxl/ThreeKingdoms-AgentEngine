@@ -85,7 +85,6 @@
           <button class="btn-modal-close" onclick="closeNpcDossierModal()">&times;</button>
         </div>
         <div class="modal-body" style="padding: 32px; text-align: center; color: var(--text-muted);">
-          <div style="font-size: 24px; margin-bottom: 8px;">📜</div>
           ${loadingBody}
         </div>
       </div>
@@ -286,7 +285,7 @@
     } else {
       proximityBadgeHtml = `
         <span class="tactical-badge tactical-badge--danger" style="border-color: #ef4444; color: #f87171; font-size: 10px;">
-          🔴 ${isEn ? 'Distant Province' : 'Viễn Phương Biệt Trấn'}
+          ${isEn ? 'Distant Province' : 'Viễn Phương Biệt Trấn'}
         </span>
       `;
     }
@@ -331,7 +330,7 @@
           <!-- Military & Combat Group -->
           <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-subtle); padding: 8px 12px; border-radius: var(--radius-xs);">
             <div style="font-size: 10px; font-weight: bold; color: #f87171; margin-bottom: 6px; text-transform: uppercase;">
-              ⚔️ ${isEn ? 'Command & Combat Virtues' : 'Quân Lược & Võ Nghệ'}
+              ${isEn ? 'Command & Combat Virtues' : 'Quân Lược & Võ Nghệ'}
             </div>
             ${renderStatRow('ldr', 'Thống Soái', 'Command', '#c084fc')}
             ${renderStatRow('war', 'Võ Lực', 'Warfare', '#f87171')}
@@ -340,7 +339,7 @@
           <!-- Governance & Intellect Group -->
           <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-subtle); padding: 8px 12px; border-radius: var(--radius-xs);">
             <div style="font-size: 10px; font-weight: bold; color: #60a5fa; margin-bottom: 6px; text-transform: uppercase;">
-              📜 ${isEn ? 'Strategy & Statecraft Virtues' : 'Trí Mưu & Văn Trị'}
+              ${isEn ? 'Strategy & Statecraft Virtues' : 'Trí Mưu & Văn Trị'}
             </div>
             ${renderStatRow('int', 'Trí Lực', 'Strategy', '#60a5fa')}
             ${renderStatRow('pol', 'Chính Trị', 'Politics', '#93c5fd')}
@@ -356,17 +355,17 @@
     const hobbiesHtml = (dossier.hobbies || []).map(h => {
       const labelText = isEn ? (h.labelEn || h.labelVi) : h.labelVi;
       if (h.isRevealed) {
-        return `<span class="dossier-pill-badge dossier-pill-badge--gold">✨ ${labelText}</span>`;
+        return `<span class="dossier-pill-badge dossier-pill-badge--gold">${labelText}</span>`;
       }
-      return `<span class="dossier-pill-badge" style="color: var(--text-muted); border-style: dashed;">🔒 ??? (${isEn ? 'Fog' : 'Sương mù'})</span>`;
+      return `<span class="dossier-pill-badge" style="color: var(--text-muted); border-style: dashed;">??? (${isEn ? 'Fog' : 'Sương mù'})</span>`;
     }).join(' ');
 
     const dislikesHtml = (dossier.dislikes || []).map(d => {
       const labelText = isEn ? (d.labelEn || d.labelVi) : d.labelVi;
       if (d.isRevealed) {
-        return `<span class="dossier-pill-badge dossier-pill-badge--danger">🚫 ${labelText}</span>`;
+        return `<span class="dossier-pill-badge dossier-pill-badge--danger">${labelText}</span>`;
       }
-      return `<span class="dossier-pill-badge" style="color: var(--text-muted); border-style: dashed;">🔒 ??? (${isEn ? 'Taboo unknown' : 'Chưa rõ cấm kỵ'})</span>`;
+      return `<span class="dossier-pill-badge" style="color: var(--text-muted); border-style: dashed;">??? (${isEn ? 'Taboo unknown' : 'Chưa rõ cấm kỵ'})</span>`;
     }).join(' ');
 
     const ambitionStatus = isEn
@@ -410,7 +409,7 @@
         <div style="background: var(--surface-panel); border: 1px solid var(--border-neutral); padding: 12px; border-radius: var(--radius-xs);">
           <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
             <span style="font-size: 11px; font-weight: bold; color: var(--brand-primary);">
-              👑 ${isEn ? '[AMBITION & HIDDEN ASPIRATION]:' : '[CHÍ HƯỚNG & DÃ TÂM THẦM KÍN]:'}
+              ${isEn ? '[AMBITION & ASPIRATION]:' : '[CHÍ HƯỚNG & DÃ TÂM]:'}
             </span>
             <span style="font-size: 10px; color: var(--text-muted); font-family: monospace;">${ambitionStatus}</span>
           </div>
@@ -420,7 +419,7 @@
 
           <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
             <span style="font-size: 11px; font-weight: bold; color: #e879f9;">
-              🗝️ ${isEn ? '[PRIVATE SECRETS]:' : '[BÍ MẬT ĐỜI TƯ]:'}
+              ${isEn ? '[PRIVATE SECRETS]:' : '[BÍ MẬT ĐỜI TƯ]:'}
             </span>
             <span style="font-size: 10px; color: var(--text-muted); font-family: monospace;">${secretsStatus}</span>
           </div>
@@ -440,7 +439,7 @@
       <div style="display: flex; flex-direction: column; gap: 12px; padding: 4px 0;">
         <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-neutral); padding: 12px; border-radius: var(--radius-xs);">
           <div style="font-size: 11px; font-weight: bold; color: var(--brand-primary); margin-bottom: 6px;">
-            📖 ${isEn ? 'HISTORICAL BIOGRAPHY & RECORD OF THE THREE KINGDOMS' : 'TAM QUỐC CHÍ LIỆT TRUYỆN & TIỂU SỬ'}
+            ${isEn ? 'HISTORICAL BIOGRAPHY & CHRONICLE' : 'TAM QUỐC CHÍ LIỆT TRUYỆN & TIỂU SỬ'}
           </div>
           <div style="font-size: 11.5px; line-height: 1.6; color: #cbd5e1; font-style: italic; white-space: pre-line;">
             "${bioText}"
@@ -559,7 +558,7 @@
                 ${styleName ? (isEn ? 'Style: ' + styleName + ' • ' : 'Tự: ' + styleName + ' • ') : ''}${position}
               </div>
               <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                <span style="font-size: 11px; color: #93c5fd;">📍 ${location}</span>
+                <span style="font-size: 11px; color: #93c5fd;">${location}</span>
                 ${proximityBadgeHtml}
               </div>
             </div>
@@ -568,7 +567,7 @@
             <div style="display: flex; flex-direction: column; justify-content: center; gap: 6px;">
               <div>
                 <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 2px;">
-                  <span style="color: var(--text-muted);">💚 ${isEn ? 'Affinity:' : 'Thiện cảm:'}</span>
+                  <span style="color: var(--text-muted);">${isEn ? 'Affinity:' : 'Thiện cảm:'}</span>
                   <span style="font-variant-numeric: tabular-nums; font-weight: bold; color: #34d399;">${affinityPct}/100</span>
                 </div>
                 <div class="tactical-progress-track" style="height: 5px;">
@@ -578,7 +577,7 @@
 
               <div>
                 <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 2px;">
-                  <span style="color: var(--text-muted);">👑 ${isEn ? 'Respect:' : 'Kính trọng:'}</span>
+                  <span style="color: var(--text-muted);">${isEn ? 'Respect:' : 'Kính trọng:'}</span>
                   <span style="font-variant-numeric: tabular-nums; font-weight: bold; color: #fbbf24;">${respectPct}/100</span>
                 </div>
                 <div class="tactical-progress-track" style="height: 5px;">
@@ -596,13 +595,13 @@
           <!-- 2. ROTK 3-Tab Bar -->
           <div class="dossier-tab-bar">
             <button class="dossier-tab-btn ${activeDossierTab === 'stats' ? 'active' : ''}" onclick="switchDossierTab('stats')">
-              ⚔️ ${isEn ? 'Octagonal Stats' : 'Bát Vị Quân Lược'}
+              ${isEn ? 'Octagonal Stats' : 'Bát Vị Quân Lược'}
             </button>
             <button class="dossier-tab-btn ${activeDossierTab === 'kizuna' ? 'active' : ''}" onclick="switchDossierTab('kizuna')">
-              🤝 ${isEn ? 'Persona & Kizuna' : 'Tâm Tính & Hảo Cảm'}
+              ${isEn ? 'Persona & Kizuna' : 'Tâm Tính & Hảo Cảm'}
             </button>
             <button class="dossier-tab-btn ${activeDossierTab === 'biography' ? 'active' : ''}" onclick="switchDossierTab('biography')">
-              📖 ${isEn ? 'Chronicle & Biography' : 'Liệt Truyện & Tiểu Sử'}
+              ${isEn ? 'Chronicle & Biography' : 'Liệt Truyện & Tiểu Sử'}
             </button>
           </div>
 
