@@ -33,14 +33,14 @@ const I18N_DICT = {
     ageUnit: 'Tuổi',
     hpLabel: '❤️ Sinh Lực',
     moraleLabel: '⚡ Sĩ Khí',
-    attrInt: 'Trí',
-    attrCom: 'Thương',
-    attrDip: 'Ngoại',
-    attrLdr: 'Soái',
-    attrLog: 'Hậu',
-    attrPol: 'Chính',
-    attrCra: 'Khéo',
-    attrWar: 'Võ',
+    attrInt: 'Trí Lực',
+    attrCom: 'Thương Nghiệp',
+    attrDip: 'Ngoại Giao',
+    attrLdr: 'Thống Soái',
+    attrLog: 'Hậu Cần',
+    attrPol: 'Chính Trị',
+    attrCra: 'Khéo Léo',
+    attrWar: 'Võ Lực',
     // Relations & Sentiment Network
     relationsTitle: 'Mạng Lưới Quan Hệ Hào Kiệt (RELATIONS.md)',
     relationsBadge: 'Tín Nhiệm / Hảo Cảm',
@@ -54,7 +54,7 @@ const I18N_DICT = {
     // Table
     thSku: 'Mã SKU',
     thDesc: 'Mô tả',
-    thQty: 'SL',
+    thQty: 'Số Lượng',
     thPrice: 'Đơn giá',
     thAction: 'Thao tác',
     btnSell: 'Bán',
@@ -103,7 +103,7 @@ const I18N_DICT = {
     deckEmptyLogs: 'Chưa có dữ liệu mô phỏng từ Agent',
     deckPostBal: 'Số dư sau TXN:',
     deckPersonality: 'Tính cách:',
-    deckCraAttr: 'Khéo:',
+    deckCraAttr: 'Khéo Léo:',
     deckMorale: 'Sĩ khí:',
     deckLoyalty: 'Trung thành:',
     // Dossier Modal
@@ -154,14 +154,14 @@ const I18N_DICT = {
     ageUnit: 'Y/O',
     hpLabel: '❤️ Health',
     moraleLabel: '⚡ Morale',
-    attrInt: 'INT',
-    attrCom: 'COM',
-    attrDip: 'DIP',
-    attrLdr: 'LDR',
-    attrLog: 'LOG',
-    attrPol: 'POL',
-    attrCra: 'CRA',
-    attrWar: 'WAR',
+    attrInt: 'Intellect',
+    attrCom: 'Commerce',
+    attrDip: 'Diplomacy',
+    attrLdr: 'Command',
+    attrLog: 'Logistics',
+    attrPol: 'Politics',
+    attrCra: 'Craft',
+    attrWar: 'Warfare',
     // Relations & Sentiment Network
     relationsTitle: 'Key NPC Relationships (RELATIONS.md)',
     relationsBadge: 'Sentiment Rating',
@@ -175,7 +175,7 @@ const I18N_DICT = {
     // Table
     thSku: 'SKU Code',
     thDesc: 'Description',
-    thQty: 'Qty',
+    thQty: 'Quantity',
     thPrice: 'Unit Price',
     thAction: 'Actions',
     btnSell: 'Sell',
@@ -224,7 +224,7 @@ const I18N_DICT = {
     deckEmptyLogs: 'No agent simulation logs recorded',
     deckPostBal: 'Post-TXN Balance:',
     deckPersonality: 'Personality:',
-    deckCraAttr: 'CRA:',
+    deckCraAttr: 'Craft:',
     deckMorale: 'Morale:',
     deckLoyalty: 'Loyalty:',
     // Dossier Modal
@@ -297,6 +297,26 @@ function applyLanguage() {
 
   const ageEl = document.getElementById('protagonist-age');
   if (ageEl && currentStatus?.player) ageEl.innerText = `${currentStatus.player.age || 21} ${dict.ageUnit}`;
+
+  const attrNameInt = document.getElementById('attr-name-int');
+  if (attrNameInt) attrNameInt.innerText = dict.attrInt;
+  const attrNameCom = document.getElementById('attr-name-com');
+  if (attrNameCom) attrNameCom.innerText = dict.attrCom;
+  const attrNameDip = document.getElementById('attr-name-dip');
+  if (attrNameDip) attrNameDip.innerText = dict.attrDip;
+  const attrNameLdr = document.getElementById('attr-name-ldr');
+  if (attrNameLdr) attrNameLdr.innerText = dict.attrLdr;
+  const attrNameLog = document.getElementById('attr-name-log');
+  if (attrNameLog) attrNameLog.innerText = dict.attrLog;
+  const attrNamePol = document.getElementById('attr-name-pol');
+  if (attrNamePol) attrNamePol.innerText = dict.attrPol;
+  const attrNameCra = document.getElementById('attr-name-cra');
+  if (attrNameCra) attrNameCra.innerText = dict.attrCra;
+  const attrNameWar = document.getElementById('attr-name-war');
+  if (attrNameWar) attrNameWar.innerText = dict.attrWar;
+
+  const thQty = document.getElementById('th-qty');
+  if (thQty) thQty.innerText = dict.thQty;
 
   // Relations & Sentiment Network Card
   const relTitle = document.getElementById('relations-card-title');

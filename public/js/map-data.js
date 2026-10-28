@@ -650,6 +650,23 @@ function getCurrentRegionNode(subLoc = activeSubLocation) {
   return WORLD_MAP_NODES['zhuo_xian'];
 }
 
+function getShortNodeName(node, isEn = (typeof currentLang !== 'undefined' && currentLang === 'en')) {
+  if (!node) return '';
+  if (isEn) {
+    return (node.nameEn || '')
+      .replace(/\s*\(.*?\)/g, '')
+      .replace(/\s*&.*/g, '')
+      .replace(/Imperial Capital\s*/gi, '')
+      .trim();
+  }
+  return (node.nameVi || '')
+    .replace(/\s*\(.*?\)/g, '')
+    .replace(/\s*&.*/g, '')
+    .replace(/Kinh Đô\s*/g, '')
+    .replace(/Tây Đô\s*/g, '')
+    .trim();
+}
+
 function renderLocalPoiNav(loc = activeSubLocation) {
   const regionBadge = document.getElementById('loc-region-badge');
   const breadcrumbText = document.getElementById('loc-breadcrumb-text');
@@ -659,10 +676,10 @@ function renderLocalPoiNav(loc = activeSubLocation) {
   const currentRegion = getCurrentRegionNode(loc);
   const isEn = (currentLang === 'en');
 
-  // 1. Region Badge
+  // 1. Region Badge (Full name without single-word abbreviation)
   regionBadge.innerText = isEn 
-    ? `${currentRegion.provinceEn} • ${currentRegion.nameEn.split(' ')[0]}`
-    : `${currentRegion.provinceVi} • ${currentRegion.nameVi.split(' ')[0]}`;
+    ? `${currentRegion.provinceEn} • ${getShortNodeName(currentRegion, true)}`
+    : `${currentRegion.provinceVi} • ${getShortNodeName(currentRegion, false)}`;
 
   // 2. Breadcrumb Text
   const currentPoiMeta = getPoiMeta(loc);
@@ -731,6 +748,7 @@ async function travelLocalPoi(targetLoc) {
 window.QUICK_CHIPS_DATA = QUICK_CHIPS_DATA;
 window.WORLD_MAP_NODES = WORLD_MAP_NODES;
 window.getPoiMeta = getPoiMeta;
+window.getShortNodeName = getShortNodeName;
 window.getLocalPoiDistance = getLocalPoiDistance;
 window.getCurrentRegionNode = getCurrentRegionNode;
 window.renderLocalPoiNav = renderLocalPoiNav;

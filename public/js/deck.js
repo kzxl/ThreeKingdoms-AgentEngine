@@ -78,7 +78,7 @@ async function loadDeckNpcs() {
           </div>
 
           <div class="deck-npc-stats">
-            <div class="deck-npc-stat-item">${dict.deckCraAttr || 'Khéo:'} <span>${npc.cra_attr || 50}</span></div>
+            <div class="deck-npc-stat-item">${dict.deckCraAttr || 'Khéo Léo:'} <span>${npc.cra_attr || 50}</span></div>
             <div class="deck-npc-stat-item">${dict.deckMorale || 'Sĩ khí:'} <span class="green-text">${npc.morale || 100}%</span></div>
             <div class="deck-npc-stat-item">${dict.deckLoyalty || 'Trung thành:'} <span class="gold-text">${npc.loyalty || 80}%</span></div>
           </div>

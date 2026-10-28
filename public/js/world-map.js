@@ -209,7 +209,7 @@ function renderWorldMapSvg() {
       theme = { fill: '#064e3b', stroke: '#10b981', icon: '📍' };
     }
 
-    const displayName = isEn ? node.nameEn.split(' ')[0] : node.nameVi.split(' ')[0];
+    const displayName = typeof getShortNodeName === 'function' ? getShortNodeName(node, isEn) : (isEn ? node.nameEn : node.nameVi);
     const displayProvince = isEn ? node.provinceEn : node.provinceVi;
 
     return `

@@ -136,14 +136,14 @@
 
     // Stat definitions in clockwise order starting from top
     const axes = [
-      { key: 'ldr', label: isEn ? 'LDR' : 'Soái', labelVi: 'Soái', labelEn: 'LDR', angle: -Math.PI / 2, color: '#c084fc' },
-      { key: 'war', label: isEn ? 'WAR' : 'Võ', labelVi: 'Võ', labelEn: 'WAR', angle: -Math.PI / 4, color: '#ef4444' },
-      { key: 'cra', label: isEn ? 'CRA' : 'Khéo', labelVi: 'Khéo', labelEn: 'CRA', angle: 0, color: '#34d399' },
-      { key: 'log', label: isEn ? 'LOG' : 'Hậu', labelVi: 'Hậu', labelEn: 'LOG', angle: Math.PI / 4, color: '#2dd4bf' },
-      { key: 'com', label: isEn ? 'COM' : 'Thương', labelVi: 'Thương', labelEn: 'COM', angle: Math.PI / 2, color: '#fbbf24' },
-      { key: 'dip', label: isEn ? 'DIP' : 'Ngoại', labelVi: 'Ngoại', labelEn: 'DIP', angle: 3 * Math.PI / 4, color: '#f59e0b' },
-      { key: 'pol', label: isEn ? 'POL' : 'Chính', labelVi: 'Chính', labelEn: 'POL', angle: Math.PI, color: '#60a5fa' },
-      { key: 'int', label: isEn ? 'INT' : 'Trí', labelVi: 'Trí', labelEn: 'INT', angle: -3 * Math.PI / 4, color: '#3b82f6' }
+      { key: 'ldr', label: isEn ? 'Command' : 'Thống Soái', angle: -Math.PI / 2, color: '#c084fc' },
+      { key: 'war', label: isEn ? 'Warfare' : 'Võ Lực', angle: -Math.PI / 4, color: '#ef4444' },
+      { key: 'cra', label: isEn ? 'Craft' : 'Khéo Léo', angle: 0, color: '#34d399' },
+      { key: 'log', label: isEn ? 'Logistics' : 'Hậu Cần', angle: Math.PI / 4, color: '#2dd4bf' },
+      { key: 'com', label: isEn ? 'Commerce' : 'Thương Nghiệp', angle: Math.PI / 2, color: '#fbbf24' },
+      { key: 'dip', label: isEn ? 'Diplomacy' : 'Ngoại Giao', angle: 3 * Math.PI / 4, color: '#f59e0b' },
+      { key: 'pol', label: isEn ? 'Politics' : 'Chính Trị', angle: Math.PI, color: '#60a5fa' },
+      { key: 'int', label: isEn ? 'Strategy' : 'Trí Lực', angle: -3 * Math.PI / 4, color: '#3b82f6' }
     ];
 
     // Background concentric polygon rings (25%, 50%, 75%, 100%)
@@ -333,20 +333,20 @@
             <div style="font-size: 10px; font-weight: bold; color: #f87171; margin-bottom: 6px; text-transform: uppercase;">
               ⚔️ ${isEn ? 'Command & Combat Virtues' : 'Quân Lược & Võ Nghệ'}
             </div>
-            ${renderStatRow('ldr', 'Soái (LDR)', 'Command (LDR)', '#c084fc')}
-            ${renderStatRow('war', 'Võ (WAR)', 'Warfare (WAR)', '#f87171')}
-            ${renderStatRow('cra', 'Khéo (CRA)', 'Craft (CRA)', '#34d399')}
+            ${renderStatRow('ldr', 'Thống Soái', 'Command', '#c084fc')}
+            ${renderStatRow('war', 'Võ Lực', 'Warfare', '#f87171')}
+            ${renderStatRow('cra', 'Khéo Léo', 'Craft', '#34d399')}
           </div>
           <!-- Governance & Intellect Group -->
           <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-subtle); padding: 8px 12px; border-radius: var(--radius-xs);">
             <div style="font-size: 10px; font-weight: bold; color: #60a5fa; margin-bottom: 6px; text-transform: uppercase;">
               📜 ${isEn ? 'Strategy & Statecraft Virtues' : 'Trí Mưu & Văn Trị'}
             </div>
-            ${renderStatRow('int', 'Trí (INT)', 'Strategy (INT)', '#60a5fa')}
-            ${renderStatRow('pol', 'Chính (POL)', 'Politics (POL)', '#93c5fd')}
-            ${renderStatRow('dip', 'Ngoại (DIP)', 'Diplomacy (DIP)', '#f59e0b')}
-            ${renderStatRow('com', 'Thương (COM)', 'Commerce (COM)', '#fbbf24')}
-            ${renderStatRow('log', 'Hậu (LOG)', 'Logistics (LOG)', '#2dd4bf')}
+            ${renderStatRow('int', 'Trí Lực', 'Strategy', '#60a5fa')}
+            ${renderStatRow('pol', 'Chính Trị', 'Politics', '#93c5fd')}
+            ${renderStatRow('dip', 'Ngoại Giao', 'Diplomacy', '#f59e0b')}
+            ${renderStatRow('com', 'Thương Nghiệp', 'Commerce', '#fbbf24')}
+            ${renderStatRow('log', 'Hậu Cần', 'Logistics', '#2dd4bf')}
           </div>
         </div>
       </div>

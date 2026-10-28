@@ -2230,29 +2230,49 @@ button:disabled,
 
 .protagonist-attrs-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 4px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 4px 6px;
+}
+
+@media (min-width: 1440px) {
+  .protagonist-attrs-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 
 .attr-pill {
   background-color: var(--bg-input);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-xs);
-  padding: 2px 4px;
+  padding: 3px 6px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 10px;
+  font-size: 10.5px;
+  min-width: 0;
+  transition: all 0.15s ease;
+}
+
+.attr-pill:hover {
+  border-color: var(--border-gold-subtle);
+  background-color: var(--bg-surface-elevated);
 }
 
 .attr-name {
   color: var(--text-muted);
-  font-size: 9px;
+  font-size: 10px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .attr-num {
   font-family: var(--font-mono);
   font-weight: 700;
+  font-size: 11px;
+  margin-left: 4px;
+  flex-shrink: 0;
 }
 
 /* ==========================================================================
