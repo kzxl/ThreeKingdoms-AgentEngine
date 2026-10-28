@@ -142,10 +142,10 @@
               <span class="hub-seal-sub roadmap-seal">路</span>
               <span id="txt-btn-career-roadmap">Phẩm Lộ</span>
             </button>
-            <!-- Master Trigger: Grand Command Hub (Quân Cơ Xứ) -->
-            <button class="btn-grand-hub" id="btn-open-grand-hub" onclick="if(window.GrandCommandHubUI){GrandCommandHubUI.open('career');}" title="Đại Bản Doanh / Quân Cơ Xứ (6 Đại Phân Hệ Chiến Lược)">
-              <span class="hub-seal">軍機</span>
-              <span class="hub-label" id="txt-btn-grand-hub">Quân Cơ Xứ</span>
+            <!-- Master Trigger: Personal Journal (Sổ Tay Cá Nhân / Chí Hướng [J]) -->
+            <button class="btn-grand-hub btn-personal-journal" id="btn-open-grand-hub" onclick="if(window.PersonalJournalUI){PersonalJournalUI.open('career');}else if(window.GrandCommandHubUI){GrandCommandHubUI.open('career');}" title="Sổ Tay Cá Nhân & Chí Hướng Cuộc Đời (Phím J)">
+              <span class="hub-seal">志</span>
+              <span class="hub-label" id="txt-btn-grand-hub">Sổ Tay [J]</span>
             </button>
             <!-- Courier / Remote Orders Toggle Button -->
             <button class="btn-courier-toggle" id="btn-courier-toggle" onclick="toggleCourierDrawer()" title="Phái sứ giả / Phi thư tín viễn trình">
@@ -877,61 +877,46 @@
     </div>
   </div>
 
-  <!-- UNIFIED GRAND COMMAND HUB MODAL (QUÂN CƠ XỨ / ĐẠI BẢN DOANH) -->
+  <!-- UNIFIED PERSONAL JOURNAL MODAL (SỔ TAY CÁ NHÂN & CHÍ HƯỚNG [J]) -->
   <div id="grand-command-hub-modal" class="modal-overlay hidden" role="dialog" aria-modal="true">
     <div class="grand-hub-dialog">
       <!-- Hub Header -->
       <div class="grand-hub-header">
         <div class="grand-hub-title-group">
-          <span class="grand-hub-master-seal">軍機</span>
+          <span class="grand-hub-master-seal">志</span>
           <div>
-            <h2 class="grand-hub-title" id="grand-hub-title">QUÂN CƠ XỨ • ĐẠI BẢN DOANH</h2>
-            <div class="grand-hub-subtitle">Tam Quốc Hùng Đồ • Tổng Hành Dinh 6 Đại Phân Hệ Chiến Lược</div>
+            <h2 class="grand-hub-title" id="grand-hub-title">SỔ TAY CÁ NHÂN • CHÍ HƯỚNG CUỘC ĐỜI [J]</h2>
+            <div class="grand-hub-subtitle">Lương Diễn • Nội Tại Tu Thân, Quân Trang, Gia Tộc & Nhật Ký Hành Trình</div>
           </div>
         </div>
         <div class="grand-hub-actions-bar">
-          <button id="grand-hub-filter-btn" class="grand-hub-filter-btn" onclick="GrandCommandHubUI.toggleDomainFilter()" title="Lọc các phân hệ đã mở khóa theo giai đoạn nhân vật">
-            <span class="filter-icon">⚡</span> <span id="grand-hub-filter-label">Tất Cả Phân Hệ (7)</span>
-          </button>
-          <button class="grand-hub-close-btn" onclick="GrandCommandHubUI.close()" title="Đóng cửa sổ">&times;</button>
+          <button class="grand-hub-close-btn" onclick="if(window.PersonalJournalUI){PersonalJournalUI.close();}else if(window.GrandCommandHubUI){GrandCommandHubUI.close();}" title="Đóng sổ tay">&times;</button>
         </div>
       </div>
 
-      <!-- Hub 7-Tab Navigation Bar -->
-      <nav class="grand-hub-tabs-bar" aria-label="Grand Command Hub Tabs">
-        <button class="grand-hub-tab-btn active" data-tab="career" onclick="GrandCommandHubUI.switchTab('career')">
-          <span class="hub-tab-seal">路</span>
-          <span class="hub-tab-text">Phẩm Lộ</span>
+      <!-- 4-Tab Navigation Bar: Career, Gear, Family, Chronicle -->
+      <nav class="grand-hub-tabs-bar" aria-label="Personal Journal Tabs">
+        <button class="grand-hub-tab-btn active" data-tab="career" onclick="if(window.PersonalJournalUI){PersonalJournalUI.switchTab('career');}else if(window.GrandCommandHubUI){GrandCommandHubUI.switchTab('career');}">
+          <span class="hub-tab-seal">志</span>
+          <span class="hub-tab-text">Chí Hướng</span>
         </button>
-        <button class="grand-hub-tab-btn" data-tab="gear" onclick="GrandCommandHubUI.switchTab('gear')">
+        <button class="grand-hub-tab-btn" data-tab="gear" onclick="if(window.PersonalJournalUI){PersonalJournalUI.switchTab('gear');}else if(window.GrandCommandHubUI){GrandCommandHubUI.switchTab('gear');}">
           <span class="hub-tab-seal">武</span>
           <span class="hub-tab-text">Quân Trang</span>
         </button>
-        <button class="grand-hub-tab-btn" data-tab="enterprise" onclick="GrandCommandHubUI.switchTab('enterprise')">
-          <span class="hub-tab-seal">業</span>
-          <span class="hub-tab-text">Sản Nghiệp</span>
-        </button>
-        <button class="grand-hub-tab-btn" data-tab="caravan" onclick="GrandCommandHubUI.switchTab('caravan')">
-          <span class="hub-tab-seal">商</span>
-          <span class="hub-tab-text">Thương Đoàn</span>
-        </button>
-        <button class="grand-hub-tab-btn" data-tab="family" onclick="GrandCommandHubUI.switchTab('family')">
+        <button class="grand-hub-tab-btn" data-tab="family" onclick="if(window.PersonalJournalUI){PersonalJournalUI.switchTab('family');}else if(window.GrandCommandHubUI){GrandCommandHubUI.switchTab('family');}">
           <span class="hub-tab-seal">家</span>
-          <span class="hub-tab-text">Gia Thất</span>
+          <span class="hub-tab-text">Gia Tộc</span>
         </button>
-        <button class="grand-hub-tab-btn" data-tab="duel" onclick="GrandCommandHubUI.switchTab('duel')">
-          <span class="hub-tab-seal">演</span>
-          <span class="hub-tab-text">Diễn Võ</span>
-        </button>
-        <button class="grand-hub-tab-btn" data-tab="tavern" onclick="GrandCommandHubUI.switchTab('tavern')">
-          <span class="hub-tab-seal">義</span>
-          <span class="hub-tab-text">Tụ Nghĩa</span>
+        <button class="grand-hub-tab-btn" data-tab="chronicle" onclick="if(window.PersonalJournalUI){PersonalJournalUI.switchTab('chronicle');}else if(window.GrandCommandHubUI){GrandCommandHubUI.switchTab('chronicle');}">
+          <span class="hub-tab-seal">曆</span>
+          <span class="hub-tab-text">Nhật Ký</span>
         </button>
       </nav>
 
       <!-- Hub Content Container -->
       <div id="grand-hub-tab-content" class="grand-hub-tab-content">
-        <!-- Dynamically rendered by GrandCommandHubUI -->
+        <!-- Dynamically rendered by PersonalJournalUI -->
       </div>
     </div>
   </div>
@@ -956,6 +941,7 @@
   <script src="/js/travel-transit.js"></script>
   <script src="/js/turn-advance.js"></script>
   <script src="/js/grand-command-hub-ui.js"></script>
+  <script src="/js/personal-journal-ui.js"></script>
   <script src="/js/title-screen-ui.js"></script>
   <script src="/js/story.js"></script>
   <script src="/js/deck.js"></script>

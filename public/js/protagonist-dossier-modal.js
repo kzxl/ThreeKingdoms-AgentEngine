@@ -500,7 +500,7 @@
                   ${isEn ? 'Collect accumulated production profits and manage facility workforce.' : 'Thu hồi thặng dư lợi nhuận kinh doanh và phân công thợ cả.'}
                 </div>
               </div>
-              <button class="tactical-btn tactical-btn--sm" onclick="closeProtagonistDossierModal(); if(window.GrandCommandHubUI){GrandCommandHubUI.open('enterprise');}">
+              <button class="tactical-btn tactical-btn--sm" onclick="closeProtagonistDossierModal(); if(window.EnterpriseUI){EnterpriseUI.openEnterpriseModal('owner');}else if(window.PersonalJournalUI){PersonalJournalUI.open('chronicle');}">
                 ${isEn ? 'Manage Enterprises' : 'Quản Lý Sản Nghiệp'} →
               </button>
             </div>
