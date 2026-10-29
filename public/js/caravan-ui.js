@@ -589,6 +589,8 @@
         }
         await loadCaravanData();
         renderCurrentTab();
+      } else if (typeof showToast === 'function') {
+        showToast(data.error || 'Không thể cho thời gian trôi qua lúc này.', true);
       }
     } catch (e) {
       console.error('Tick progress failed:', e);
