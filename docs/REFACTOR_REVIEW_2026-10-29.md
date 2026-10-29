@@ -165,9 +165,9 @@ Remaining god services: `context-action.engine.ts` 1,970, `blacksmith-forge.serv
    0.2–0.67 progress per tick.
 5. **The "Wait 1 Day" button costs a real day.** Repeated clicks advance the calendar and charge
    0.02 Thạch/day; it used to move caravans for free. This is a fix, but the player should be told.
-6. **Skipped days at month close do not emit day ticks or charge grain upkeep.** Caravans and tasks
-   advance correctly, but before shipping "Rest one month" we must decide whether to run 29 daily
-   ticks.
+6. ~~**Skipped days at month close do not emit day ticks or charge grain upkeep.**~~ Fixed in
+   1.6.7: skipped days are `31 - day`, charge grain upkeep, emit day ticks (except the new
+   month's first day) and advance tasks/caravans by the same count.
 
 ## 5. Game design assessment
 
@@ -206,9 +206,12 @@ Still open, measured:
 
 **P0 — do now (half a day)**
 
-1. Re-record the perf baseline after confirming the two old drifts (`npm run perf:record`).
-2. Surface the "world simulation failed" error in the month-close modal (currently a generic toast).
-3. Note in the monthly report whether a business settled through the workshop or passive income.
+1. ~~Re-record the perf baseline after confirming the two old drifts (`npm run perf:record`).~~
+   Done in 1.6.7.
+2. ~~Surface the "world simulation failed" error in the month-close modal (currently a generic
+   toast).~~ Done in 1.6.7 (error panel + retry).
+3. ~~Note in the monthly report whether a business settled through the workshop or passive
+   income.~~ Done in 1.6.7 (`settlementMethod`).
 
 **P1 — 2–5 days**
 
@@ -222,7 +225,8 @@ Still open, measured:
 
 7. Split the 4 god services (P6) and extract the 47 gateway handlers (P7).
 8. Migrate the 21 legacy scripts to TS (P5), with automated browser tests for modals/POIs.
-9. Typography and inline-style burn-down.
+9. Typography and inline-style burn-down. **Typography done in 1.6.7** (all ≤10.5px raised to
+   11px, ratchet at 0); 790 inline styles remain.
 10. **Design the losing state** (death/bankruptcy/betrayal) — the only item that needs a product
     decision before touching balance.
 

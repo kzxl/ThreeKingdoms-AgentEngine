@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.6.7] - 2026-10-30
+
+Month-close correctness, UI readability floor and CI.
+
+### Changed
+- Month close counts skipped days as `31 - current day` (the jump from day D to the next
+  month's day 1) instead of `30 - day`, which was one day short.
+- Skipped days now consume grain upkeep and emit `WORLD_DAY_TICK` for every elapsed day except
+  the new month's first day (the month tick covers that one). Tasks and caravans advance by the
+  same count.
+- A failing world module renders a dedicated month-close error panel with the module error and a
+  retry button; the toast is no longer the only signal.
+- The monthly report labels each business settlement as `WORKSHOP` or `PASSIVE` and shows skipped
+  days / grain upkeep.
+- `advanceTurn` refuses a clock outside the 180–300 era; migration `011-repair-campaign-clock`
+  snaps an implausible clock back to the latest `turn_log` date.
+- Typography: all 170 declarations at or below 10.5px are now 11px; the UI ratchet tracks
+  `tinyFontSizes = 0` so the regression cannot return.
+- CI: `.github/workflows/verify.yml` bootstraps the ignored session DB, runs `verify`, `audit`
+  and the client build.
+- Perf baseline re-recorded (11 endpoints, 12 iterations).
+
+### Verification
+`npm run verify` green: 25/25 suites, 28/28 contracts, 8/8 write smokes; `npm run audit` 1,358
+invariants, 0 discrepancies.
+
+---
+
 ## [1.6.6] - 2026-10-30
 
 Single market-price source.
