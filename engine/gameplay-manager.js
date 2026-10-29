@@ -103,7 +103,9 @@ class GameplayManager {
     const playerName = customPlayerName || arch.default_player_name;
     const styleName = customStyleName || arch.default_style_name;
     const startDate = scenario.start_date || '184-02-01';
-    const campaignId = `CMP-${Date.now().toString(36).toUpperCase()}`;
+    // Deterministic per (scenario, archetype) because a new game replaces the
+    // whole campaign; the campaign id no longer depends on the wall clock.
+    const campaignId = `CMP-${startDate.replace(/-/g, '')}-${String(archetypeId).toUpperCase().replace(/[^A-Z0-9]+/g, '-')}`;
     const isCommoner = (arch.archetype_id === 'ARCH-COMMONER-YOUTH');
     const startFixedCapital = isCommoner ? 0 : 18000;
     const startGrain = isCommoner ? 1.0 : 5.0;
