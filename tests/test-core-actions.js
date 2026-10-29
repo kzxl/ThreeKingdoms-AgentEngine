@@ -10,6 +10,7 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 const { SimulationCore } = require('../engine/sim-core');
+const { closeConnections } = require('../engine/db-adapter');
 
 const ROOT_DIR = path.resolve(__dirname, '..');
 const TEST_DIR = path.join(ROOT_DIR, 'tests', 'sandbox');
@@ -254,6 +255,8 @@ function main() {
     console.log(' 🟢 ALL CORE ACTION TESTS PASSED (6/6)');
     console.log('====================================================\n');
   } finally {
+    // Cached SQLite connections must be released before the sandbox is deleted (Windows file locks).
+    closeConnections();
     if (fs.existsSync(TEST_DIR)) {
       fs.rmSync(TEST_DIR, { recursive: true, force: true });
     }

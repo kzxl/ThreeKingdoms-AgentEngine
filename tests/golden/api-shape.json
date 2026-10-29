@@ -1,0 +1,1379 @@
+{
+  "generatedAt": "2026-10-29T05:48:29.429Z",
+  "endpoints": {
+    "/api/status": {
+      "status": 200,
+      "shape": {
+        "equipment": {
+          "bonuses": {
+            "com": "number",
+            "cra": "number",
+            "dip": "number",
+            "int": "number",
+            "ldr": "number",
+            "log": "number",
+            "pol": "number",
+            "war": "number"
+          },
+          "effectiveStats": {
+            "com": "number",
+            "cra": "number",
+            "dip": "number",
+            "int": "number",
+            "ldr": "number",
+            "log": "number",
+            "pol": "number",
+            "war": "number"
+          },
+          "isOver100": {
+            "com": "boolean",
+            "cra": "boolean",
+            "dip": "boolean",
+            "int": "boolean",
+            "ldr": "boolean",
+            "log": "boolean",
+            "pol": "boolean",
+            "war": "boolean"
+          },
+          "items": {
+            "type": "array",
+            "items": "empty"
+          }
+        },
+        "financials": {
+          "bizCount": "number",
+          "fixedCapital": "number",
+          "inventoryValue": "number",
+          "itemCount": "number",
+          "liquidCash": "number",
+          "netWorth": "number",
+          "npcCount": "number",
+          "safeCash": "number",
+          "totalCash": "number"
+        },
+        "meta": {
+          "active_turn": "number",
+          "campaign_id": "string",
+          "campaign_name": "string",
+          "created_at": "string",
+          "current_date": "string",
+          "rules_version": "string",
+          "start_date": "string",
+          "updated_at": "string"
+        },
+        "player": {
+          "age": "number",
+          "com_attr": "number",
+          "com_exp": "number",
+          "cra_attr": "number",
+          "cra_exp": "number",
+          "current_location": "string",
+          "dip_attr": "number",
+          "dip_exp": "number",
+          "fatigue": "number",
+          "fixed_capital": "number",
+          "health": "number",
+          "int_attr": "number",
+          "int_exp": "number",
+          "ldr_attr": "number",
+          "ldr_exp": "number",
+          "liquid_cash": "number",
+          "log_attr": "number",
+          "log_exp": "number",
+          "morale": "number",
+          "name": "string",
+          "permanent_base": "string",
+          "player_id": "string",
+          "pol_attr": "number",
+          "pol_exp": "number",
+          "safe_cash": "number",
+          "special_licenses": "string",
+          "strategic_grain": "number",
+          "style_name": "string",
+          "war_attr": "number",
+          "war_exp": "number"
+        },
+        "skills": {
+          "type": "array",
+          "items": {
+            "current_exp": "number",
+            "max_exp": "number",
+            "notes": "string",
+            "skill_code": "string",
+            "skill_name": "string",
+            "tier": "number"
+          }
+        },
+        "success": "boolean"
+      }
+    },
+    "/api/instances": {
+      "status": 200,
+      "shape": {
+        "archetypes": {
+          "type": "array",
+          "items": {
+            "attributes": {
+              "com": "number",
+              "cra": "number",
+              "dip": "number",
+              "int": "number",
+              "ldr": "number",
+              "log": "number",
+              "pol": "number",
+              "war": "number"
+            },
+            "bioVi": "string",
+            "defaultName": "string",
+            "defaultStyleName": "string",
+            "id": "string",
+            "initialCash": "number",
+            "initialSafeCash": "number",
+            "nameEn": "string",
+            "nameVi": "string",
+            "seal": "string",
+            "startingAge": "number",
+            "startingAssetsVi": {
+              "type": "array",
+              "items": "string"
+            },
+            "startingLocation": "string"
+          }
+        },
+        "currentInstanceId": "string",
+        "instances": {
+          "type": "array",
+          "items": {
+            "age": "number",
+            "archetypeId": "string",
+            "archetypeNameVi": "string",
+            "createdAt": "string",
+            "filename": "string",
+            "filepath": "string",
+            "gameDate": "string",
+            "id": "string",
+            "isCurrent": "boolean",
+            "isDefault": "boolean",
+            "liquidCash": "number",
+            "location": "string",
+            "name": "string",
+            "netWorth": "number",
+            "safeCash": "number",
+            "styleName": "string",
+            "turnNumber": "number",
+            "updatedAt": "string"
+          }
+        },
+        "success": "boolean"
+      }
+    },
+    "/api/game/summary": {
+      "status": 200,
+      "shape": {
+        "archetypes": {
+          "type": "array",
+          "items": {
+            "archetype_id": "string",
+            "bio_en": "string",
+            "bio_vi": "string",
+            "com_attr": "number",
+            "cra_attr": "number",
+            "default_player_name": "string",
+            "default_style_name": "string",
+            "dip_attr": "number",
+            "initial_liquid_cash": "number",
+            "initial_perks": "string",
+            "innate_talents": "string",
+            "int_attr": "number",
+            "ldr_attr": "number",
+            "log_attr": "number",
+            "name_en": "string",
+            "name_vi": "string",
+            "pol_attr": "number",
+            "starting_age": "number",
+            "starting_assets": "string",
+            "starting_location": "string",
+            "war_attr": "number"
+          }
+        },
+        "scenarios": {
+          "type": "array",
+          "items": {
+            "default_active_turn": "number",
+            "description_en": "string",
+            "description_vi": "string",
+            "historical_epoch": "string",
+            "initial_factions_count": "number",
+            "is_active": "number",
+            "name_en": "string",
+            "name_vi": "string",
+            "scenario_id": "string",
+            "start_date": "string"
+          }
+        },
+        "success": "boolean",
+        "summary": {
+          "activeTurn": "number",
+          "campaignId": "string",
+          "campaignName": "string",
+          "canContinue": "boolean",
+          "chatTurnsLogged": "number",
+          "currentDate": "string",
+          "liquidCash": "number",
+          "location": "string",
+          "playerName": "string",
+          "playerStyle": "string",
+          "strategicGrain": "number",
+          "totalTurnsLogged": "number"
+        }
+      }
+    },
+    "/api/inventory": {
+      "status": 200,
+      "shape": {
+        "items": {
+          "type": "array",
+          "items": {
+            "category": "string",
+            "description": "string",
+            "item_code": "string",
+            "location": "string",
+            "quantity": "number",
+            "unit_cost_basis": "number"
+          }
+        },
+        "movements": {
+          "type": "array",
+          "items": {
+            "balance_after": "number",
+            "game_date": "string",
+            "item_code": "string",
+            "mov_id": "string",
+            "movement_type": "string",
+            "quantity": "number",
+            "ref_txn": "string",
+            "unit_cost": "number"
+          }
+        },
+        "success": "boolean"
+      }
+    },
+    "/api/ledger": {
+      "status": 200,
+      "shape": {
+        "cashflow": {
+          "type": "array",
+          "items": {
+            "balance": "number",
+            "category": "string",
+            "counterparty": "string",
+            "game_date": "string",
+            "inflow": "number",
+            "memo": "string",
+            "outflow": "number",
+            "status": "string",
+            "txn_id": "string"
+          }
+        },
+        "journal": {
+          "type": "array",
+          "items": {
+            "account_code": "string",
+            "campaign_id": "string",
+            "created_at": "string",
+            "credit": "number",
+            "debit": "number",
+            "entry_id": "number",
+            "game_date": "string",
+            "memo": "string",
+            "txn_id": "string"
+          }
+        },
+        "success": "boolean",
+        "summary": {
+          "balance": "number",
+          "totalInflow": "number",
+          "totalOutflow": "number"
+        }
+      }
+    },
+    "/api/npcs": {
+      "status": 200,
+      "shape": {
+        "businesses": {
+          "type": "array",
+          "items": {
+            "accumulated_profit": "number",
+            "auto_procure": "number",
+            "business_id": "string",
+            "business_type": "string",
+            "current_workforce": "number",
+            "daily_revenue": "number",
+            "delegation_level": "number",
+            "efficiency_multiplier": "number",
+            "location_id": "string",
+            "manager_npc_id": "string",
+            "monthly_capacity_hours": "number",
+            "monthly_rent": "number",
+            "name": "string",
+            "owner_character_id": "string",
+            "safe_cash": "number",
+            "status": "string"
+          }
+        },
+        "npcs": {
+          "type": "array",
+          "items": {
+            "assigned_business_id": "null",
+            "assigned_role": "string",
+            "com_attr": "number",
+            "com_exp": "number",
+            "cra_attr": "number",
+            "cra_exp": "number",
+            "craft_exp": "number",
+            "dip_attr": "number",
+            "dip_exp": "number",
+            "fatigue": "number",
+            "int_attr": "number",
+            "int_exp": "number",
+            "ldr_attr": "number",
+            "ldr_exp": "number",
+            "log_attr": "number",
+            "log_exp": "number",
+            "loyalty": "number",
+            "management_exp": "number",
+            "monthly_wage": "number",
+            "morale": "number",
+            "motivation": "string",
+            "name": "string",
+            "npc_id": "string",
+            "personality": "string",
+            "pol_attr": "number",
+            "pol_exp": "number",
+            "skills": {
+              "type": "array",
+              "items": "empty"
+            },
+            "talents": {
+              "type": "array",
+              "items": "empty"
+            },
+            "updated_at": "string",
+            "war_attr": "number",
+            "war_exp": "number"
+          }
+        },
+        "success": "boolean"
+      }
+    },
+    "/api/factions": {
+      "status": 200,
+      "shape": {
+        "factions": {
+          "type": "array",
+          "items": {
+            "capitalSettlementId": "string",
+            "colorHex": "string",
+            "factionId": "string",
+            "granaryGrain": "number",
+            "ideology": "string",
+            "isActive": "boolean",
+            "leaderId": "string",
+            "militaryPower": "number",
+            "nameEn": "string",
+            "nameVi": "string",
+            "officerCount": "number",
+            "prestige": "number",
+            "settlementCount": "number",
+            "treasuryCash": "number"
+          }
+        },
+        "success": "boolean"
+      }
+    },
+    "/api/factions/officers": {
+      "status": 200,
+      "shape": {
+        "officers": {
+          "type": "array",
+          "items": {
+            "ambition": "number",
+            "appointedSettlementId": "mixed",
+            "appointedSettlementName": "mixed",
+            "betrayalRisk": "number",
+            "courtRank": "string",
+            "factionId": "string",
+            "factionNameVi": "string",
+            "loyalty": "number",
+            "officerId": "string",
+            "officerName": "string",
+            "personalPrestige": "number",
+            "personalTroops": "number"
+          }
+        },
+        "success": "boolean"
+      }
+    },
+    "/api/factions/settlements": {
+      "status": 200,
+      "shape": {
+        "settlements": {
+          "type": "array",
+          "items": {
+            "agriculture": "number",
+            "commerce": "number",
+            "defense": "number",
+            "factionColor": "string",
+            "factionNameVi": "string",
+            "garrisonTroops": "number",
+            "governorId": "mixed",
+            "governorName": "string",
+            "nameEn": "string",
+            "nameVi": "string",
+            "provinceVi": "string",
+            "publicOrder": "number",
+            "rulerFactionId": "string",
+            "settlementId": "string"
+          }
+        },
+        "success": "boolean"
+      }
+    },
+    "/api/market": {
+      "status": 200,
+      "shape": {
+        "count": "number",
+        "market": {
+          "type": "array",
+          "items": {
+            "baselinePeacePrice": "number",
+            "category": "string",
+            "currentMarketPrice": "number",
+            "dynamicPrice": "number",
+            "itemCode": "string",
+            "localStock": "number",
+            "nameEn": "string",
+            "nameVi": "string",
+            "unitEn": "string",
+            "unitVi": "string",
+            "volatilityIndex": "mixed",
+            "weightKg": "number"
+          }
+        },
+        "success": "boolean"
+      }
+    },
+    "/api/economy/regional-prices": {
+      "status": 200,
+      "shape": {
+        "catalog": {
+          "type": "array",
+          "items": {
+            "basePrice": "number",
+            "category": "string",
+            "crisisActive": "boolean",
+            "currentPrice": "number",
+            "itemCode": "string",
+            "nameVi": "string",
+            "supplyState": "string"
+          }
+        },
+        "count": "number",
+        "settlementId": "string",
+        "success": "boolean"
+      }
+    },
+    "/api/economy/arbitrage": {
+      "status": 200,
+      "shape": {
+        "count": "number",
+        "fromSettlementId": "string",
+        "opportunities": {
+          "type": "array",
+          "items": {
+            "bestDestination": "string",
+            "bestDestinationNameVi": "string",
+            "buyPrice": "number",
+            "distanceLi": "number",
+            "itemCode": "string",
+            "itemNameVi": "string",
+            "marginPercent": "number",
+            "sellPrice": "number",
+            "unitMargin": "number"
+          }
+        },
+        "settlements": {
+          "type": "array",
+          "items": {
+            "nameVi": "string",
+            "provinceVi": "string",
+            "settlementId": "string"
+          }
+        },
+        "success": "boolean"
+      }
+    },
+    "/api/military": {
+      "status": 200,
+      "shape": {
+        "activeExpeditions": {
+          "type": "array",
+          "items": "empty"
+        },
+        "activeExpeditionsCount": "number",
+        "commander": {
+          "currentLocation": "string",
+          "fatigue": "number",
+          "health": "number",
+          "ldrAttr": "number",
+          "morale": "number",
+          "name": "string",
+          "playerId": "string",
+          "strategicGrain": "number",
+          "warAttr": "number"
+        },
+        "factions": {
+          "type": "array",
+          "items": {
+            "factionId": "string",
+            "granaryGrain": "number",
+            "militaryPower": "number",
+            "nameEn": "string",
+            "nameVi": "string",
+            "settlementCount": "number",
+            "totalGarrisonTroops": "number",
+            "treasuryCash": "number"
+          }
+        },
+        "success": "boolean"
+      }
+    },
+    "/api/garrisons": {
+      "status": 200,
+      "shape": {
+        "count": "number",
+        "garrisons": {
+          "type": "array",
+          "items": {
+            "defense": "number",
+            "garrisonTroops": "number",
+            "governorId": "string",
+            "granaryGrain": "number",
+            "nameEn": "string",
+            "nameVi": "string",
+            "provinceVi": "string",
+            "publicOrder": "number",
+            "rulerFactionId": "string",
+            "rulerFactionName": "string",
+            "settlementId": "string",
+            "treasuryCash": "number"
+          }
+        },
+        "success": "boolean"
+      }
+    },
+    "/api/military/routes": {
+      "status": 200,
+      "shape": {
+        "count": "number",
+        "routes": {
+          "type": "array",
+          "items": {
+            "ambushRiskLevel": "string",
+            "descriptionEn": "string",
+            "descriptionVi": "string",
+            "distanceLi": "number",
+            "grainProvisionCost": "number",
+            "routeId": "string",
+            "sourceLocationId": "string",
+            "standardMarchDays": "number",
+            "targetLocationId": "string",
+            "terrainType": "string"
+          }
+        },
+        "success": "boolean"
+      }
+    },
+    "/api/equipment": {
+      "status": 200,
+      "shape": {
+        "compatibleWarehouseItems": {
+          "ARMOR": {
+            "type": "array",
+            "items": {
+              "category": "string",
+              "description": "string",
+              "itemCode": "string",
+              "quantity": "number",
+              "slotType": "string",
+              "suggestedStats": {
+                "ldr": "number",
+                "war": "number"
+              },
+              "unitCostBasis": "number"
+            }
+          },
+          "STEED": {
+            "type": "array",
+            "items": {
+              "category": "string",
+              "description": "string",
+              "itemCode": "string",
+              "quantity": "number",
+              "slotType": "string",
+              "suggestedStats": {
+                "ldr": "number",
+                "war": "number"
+              },
+              "unitCostBasis": "number"
+            }
+          },
+          "TREASURE": {
+            "type": "array",
+            "items": "empty"
+          },
+          "WEAPON": {
+            "type": "array",
+            "items": {
+              "category": "string",
+              "description": "string",
+              "itemCode": "string",
+              "quantity": "number",
+              "slotType": "string",
+              "suggestedStats": {
+                "war": "number"
+              },
+              "unitCostBasis": "number"
+            }
+          }
+        },
+        "overview": {
+          "baseAttributes": {
+            "com": "number",
+            "cra": "number",
+            "dip": "number",
+            "int": "number",
+            "ldr": "number",
+            "pol": "number",
+            "war": "number"
+          },
+          "characterId": "string",
+          "characterName": "string",
+          "effectiveAttributes": {
+            "com": "number",
+            "cra": "number",
+            "dip": "number",
+            "int": "number",
+            "ldr": "number",
+            "pol": "number",
+            "war": "number"
+          },
+          "equipmentBuffs": {
+            "com": "number",
+            "cra": "number",
+            "dip": "number",
+            "int": "number",
+            "ldr": "number",
+            "pol": "number",
+            "war": "number"
+          },
+          "equippedItems": {
+            "type": "array",
+            "items": "empty"
+          },
+          "exceedsLimit": {
+            "com": "boolean",
+            "cra": "boolean",
+            "dip": "boolean",
+            "int": "boolean",
+            "ldr": "boolean",
+            "pol": "boolean",
+            "war": "boolean"
+          },
+          "isPlayer": "boolean",
+          "items": {
+            "type": "array",
+            "items": "empty"
+          },
+          "possessedCount": "number",
+          "slots": {
+            "ARMOR": "null",
+            "STEED": "null",
+            "TREASURE": "null",
+            "WEAPON": "null"
+          },
+          "styleName": "string"
+        },
+        "success": "boolean"
+      }
+    },
+    "/api/professions/nodes": {
+      "status": 200,
+      "shape": {
+        "count": "number",
+        "nodes": {
+          "type": "array",
+          "items": {
+            "descriptionVi": "string",
+            "fatigueCost": "number",
+            "nameEn": "string",
+            "nameVi": "string",
+            "nodeId": "string",
+            "requiredSkillCode": "null",
+            "resourceType": "string",
+            "settlementId": "string",
+            "yieldItemCode": "string",
+            "yieldItemNameVi": "string",
+            "yieldQuantityMax": "number",
+            "yieldQuantityMin": "number"
+          }
+        },
+        "success": "boolean"
+      }
+    },
+    "/api/professions/character": {
+      "status": 200,
+      "shape": {
+        "characterId": "string",
+        "craftProwess": "number",
+        "fatigue": "number",
+        "health": "number",
+        "innovations": {
+          "type": "array",
+          "items": {
+            "characterId": "string",
+            "gameDate": "string",
+            "innovationId": "string",
+            "narrativeVi": "string",
+            "professionCode": "string",
+            "statBoosts": {
+              "int": "number",
+              "war": "number"
+            },
+            "titleVi": "string",
+            "turnNumber": "number",
+            "unlockedRecipes": {
+              "type": "array",
+              "items": "string"
+            }
+          }
+        },
+        "professions": {
+          "type": "array",
+          "items": {
+            "category": "string",
+            "characterId": "string",
+            "currentExp": "number",
+            "isPrimary": "boolean",
+            "maxExp": "number",
+            "professionCode": "string",
+            "professionNameEn": "string",
+            "professionNameVi": "string",
+            "tier": "number",
+            "unlockedAt": "string"
+          }
+        },
+        "success": "boolean"
+      }
+    },
+    "/api/enterprise/status": {
+      "status": 200,
+      "shape": {
+        "status": {
+          "activeEnterprises": {
+            "type": "array",
+            "items": {
+              "accumulated_profit": "number",
+              "auto_procure": "number",
+              "business_id": "string",
+              "business_type": "string",
+              "current_workforce": "number",
+              "daily_revenue": "number",
+              "daily_revenue_avg": "number",
+              "delegation_level": "number",
+              "efficiency_multiplier": "number",
+              "location": "string",
+              "location_id": "string",
+              "manager_npc_id": "string",
+              "monthly_capacity_hours": "number",
+              "monthly_rent": "number",
+              "name": "string",
+              "safe_cash": "number",
+              "status": "string",
+              "workforce_count": "number"
+            }
+          },
+          "characterId": "string",
+          "laborShifts": {
+            "type": "array",
+            "items": {
+              "attributeExp": "number",
+              "attributeTarget": "string",
+              "expGain": "number",
+              "fatigueCost": "number",
+              "icon": "string",
+              "jobType": "string",
+              "narrativeEn": "string",
+              "narrativeVi": "string",
+              "professionCode": "string",
+              "professionNameVi": "string",
+              "shiftId": "string",
+              "titleEn": "string",
+              "titleVi": "string",
+              "wage": "number",
+              "workplaceEn": "string",
+              "workplaceVi": "string"
+            }
+          },
+          "openableTypes": {
+            "type": "array",
+            "items": {
+              "baseDailyRevenue": "number",
+              "baseWorkforce": "number",
+              "canAffordCash": "boolean",
+              "canAffordTurnkey": "boolean",
+              "descriptionVi": "string",
+              "effectiveTurnkeyCost": "number",
+              "hasAllMaterials": "boolean",
+              "icon": "string",
+              "monthlyRent": "number",
+              "projectedDailyRevenueMax": "number",
+              "projectedDailyRevenueMin": "number",
+              "projectedMonthlyRevenueMax": "number",
+              "projectedMonthlyRevenueMin": "number",
+              "requiredMaterials": {
+                "type": "array",
+                "items": {
+                  "available": "number",
+                  "hasEnough": "boolean",
+                  "itemCode": "string",
+                  "itemNameVi": "string",
+                  "missing": "number",
+                  "quantity": "number"
+                }
+              },
+              "startupCash": "number",
+              "titleEn": "string",
+              "titleVi": "string",
+              "turnkeyExtraCash": "number",
+              "typeId": "string"
+            }
+          },
+          "ownedBusinesses": {
+            "type": "array",
+            "items": {
+              "accumulated_profit": "number",
+              "auto_procure": "number",
+              "business_id": "string",
+              "business_type": "string",
+              "current_workforce": "number",
+              "daily_revenue": "number",
+              "daily_revenue_avg": "number",
+              "delegation_level": "number",
+              "efficiency_multiplier": "number",
+              "location": "string",
+              "location_id": "string",
+              "manager_npc_id": "string",
+              "monthly_capacity_hours": "number",
+              "monthly_rent": "number",
+              "name": "string",
+              "safe_cash": "number",
+              "status": "string",
+              "workforce_count": "number"
+            }
+          },
+          "playerCash": "number",
+          "playerFatigue": "number",
+          "playerSafeCash": "number",
+          "totalAccumulatedProfit": "number",
+          "totalDailyRevenue": "number",
+          "totalWorkforce": "number"
+        },
+        "success": "boolean"
+      }
+    },
+    "/api/ecology/crises": {
+      "status": 200,
+      "shape": {
+        "count": "number",
+        "crises": {
+          "type": "array",
+          "items": "empty"
+        },
+        "success": "boolean"
+      }
+    },
+    "/api/logistics/caravans": {
+      "status": 200,
+      "shape": {
+        "caravanCount": "number",
+        "caravans": {
+          "type": "array",
+          "items": {
+            "caravanId": "string",
+            "caravanName": "string",
+            "cargoItemCode": "string",
+            "cargoItemName": "string",
+            "cargoQuantity": "number",
+            "cargoValueQian": "number",
+            "createdTurn": "number",
+            "fromSettlementId": "string",
+            "fromSettlementName": "string",
+            "guardTroops": "number",
+            "ownerFactionId": "string",
+            "ownerFactionName": "string",
+            "routeProgress": "number",
+            "status": "string",
+            "toSettlementId": "string",
+            "toSettlementName": "string"
+          }
+        },
+        "strongholdCount": "number",
+        "strongholds": {
+          "type": "array",
+          "items": {
+            "banditChiefName": "string",
+            "banditPower": "number",
+            "bountyReward": "number",
+            "locationNear": "string",
+            "nameVi": "string",
+            "plunderedWealth": "number",
+            "status": "string",
+            "strongholdId": "string"
+          }
+        },
+        "success": "boolean"
+      }
+    },
+    "/api/logistics/strongholds": {
+      "status": 200,
+      "shape": {
+        "count": "number",
+        "strongholds": {
+          "type": "array",
+          "items": {
+            "banditChiefName": "string",
+            "banditPower": "number",
+            "bountyReward": "number",
+            "locationNear": "string",
+            "nameVi": "string",
+            "plunderedWealth": "number",
+            "status": "string",
+            "strongholdId": "string"
+          }
+        },
+        "success": "boolean"
+      }
+    },
+    "/api/lineage/overview": {
+      "status": 200,
+      "shape": {
+        "overview": {
+          "ancestors": {
+            "type": "array",
+            "items": "empty"
+          },
+          "children": {
+            "type": "array",
+            "items": {
+              "age": "number",
+              "childId": "string",
+              "gender": "string",
+              "growthFocus": "string",
+              "innateTalents": {
+                "type": "array",
+                "items": "empty"
+              },
+              "isHeir": "boolean",
+              "mentorNpcId": "null",
+              "mentorshipTurnsCompleted": "number",
+              "nameEn": "string",
+              "nameVi": "string",
+              "stats": {
+                "com": "number",
+                "cra": "number",
+                "dip": "number",
+                "int": "number",
+                "ldr": "number",
+                "log": "number",
+                "pol": "number",
+                "war": "number"
+              },
+              "status": "string",
+              "styleName": "string"
+            }
+          },
+          "family": {
+            "currentGeneration": "number",
+            "familyId": "string",
+            "familyMottoEn": "string",
+            "familyMottoVi": "string",
+            "familyNameEn": "string",
+            "familyNameVi": "string",
+            "familyPrestige": "number",
+            "foundingYear": "number",
+            "residenceLocation": "string"
+          },
+          "genealogyTree": {
+            "type": "array",
+            "items": "empty"
+          },
+          "protagonist": {
+            "age": "number",
+            "fatigue": "number",
+            "health": "number",
+            "morale": "number",
+            "name": "string",
+            "playerId": "string",
+            "styleName": "string",
+            "totalCash": "number"
+          },
+          "spouses": {
+            "type": "array",
+            "items": "empty"
+          }
+        },
+        "success": "boolean"
+      }
+    },
+    "/api/progression/status": {
+      "status": 200,
+      "shape": {
+        "businessesCount": "number",
+        "criteriaForNextStageEn": "string",
+        "criteriaForNextStageVi": "string",
+        "currentLocation": "string",
+        "currentStage": "number",
+        "duelWins": "number",
+        "fixedCapital": "number",
+        "liquidCash": "number",
+        "maxAttribute": "number",
+        "netWorth": "number",
+        "playerId": "string",
+        "stageKey": "string",
+        "stageTitleEn": "string",
+        "stageTitleVi": "string",
+        "success": "boolean",
+        "unlockedCapabilities": {
+          "allowHomeDesk": "boolean",
+          "allowLocalWork": "boolean",
+          "allowRemoteCourier": "boolean",
+          "allowWarRoom": "boolean"
+        }
+      }
+    },
+    "/api/location/current": {
+      "status": 200,
+      "shape": {
+        "currentLocation": "string",
+        "playerId": "string",
+        "success": "boolean"
+      }
+    },
+    "/api/strategy/modules": {
+      "status": 200,
+      "shape": {
+        "modularEngineActive": "boolean",
+        "modules": {
+          "type": "array",
+          "items": {
+            "id": "string",
+            "name": "string",
+            "version": "string"
+          }
+        },
+        "success": "boolean"
+      },
+      "valueOk": true
+    },
+    "/api/master/catalog": {
+      "status": 200,
+      "shape": {
+        "catalog": {
+          "characters": {
+            "type": "array",
+            "items": {
+              "baseline_age": "number",
+              "baseline_location": "string",
+              "baseline_position_en": "string",
+              "baseline_position_vi": "string",
+              "baseline_sentiment_player": "number",
+              "bio_en": "string",
+              "bio_vi": "string",
+              "birth_year": "null",
+              "com_attr": "number",
+              "core_associates": "string",
+              "cra_attr": "number",
+              "dip_attr": "number",
+              "int_attr": "number",
+              "ldr_attr": "number",
+              "log_attr": "number",
+              "motivation": "string",
+              "name_en": "string",
+              "name_han": "string",
+              "name_vi": "string",
+              "npc_id": "string",
+              "personality": "string",
+              "pol_attr": "number",
+              "style_name_en": "null",
+              "style_name_vi": "string",
+              "talents": "string",
+              "war_attr": "number"
+            }
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "choices_json": "null",
+              "event_id": "string",
+              "gameplay_effects": "string",
+              "gameplay_trigger_type": "string",
+              "historical_outcome_en": "string",
+              "historical_outcome_vi": "string",
+              "historical_year": "number",
+              "involved_factions": "string",
+              "location_id": "string",
+              "name_en": "string",
+              "name_vi": "string",
+              "prerequisites": "string",
+              "primary_character_id": "string",
+              "season": "string",
+              "secondary_character_id": "mixed",
+              "summary_en": "string",
+              "summary_vi": "string"
+            }
+          },
+          "factions": {
+            "type": "array",
+            "items": {
+              "capital_location_id": "string",
+              "doctrine_en": "null",
+              "doctrine_vi": "null",
+              "estimated_treasury_qian": "number",
+              "faction_id": "string",
+              "leader_name_en": "string",
+              "leader_name_vi": "string",
+              "military_strength_desc": "string",
+              "name_en": "string",
+              "name_vi": "string",
+              "overview_en": "null",
+              "overview_vi": "null",
+              "strategic_stance_en": "string",
+              "strategic_stance_vi": "string"
+            }
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "baseline_peace_price": "number",
+              "category": "string",
+              "current_market_price": "number",
+              "description_en": "null",
+              "description_vi": "null",
+              "is_contraband": "number",
+              "item_code": "string",
+              "name_en": "string",
+              "name_vi": "string",
+              "production_source_vi": "null",
+              "stat_modifiers": "null",
+              "unit_en": "string",
+              "unit_vi": "string",
+              "volatility_index": "string",
+              "weight_kg": "number"
+            }
+          },
+          "locations": {
+            "type": "array",
+            "items": {
+              "controlling_faction_id": "string",
+              "coord_x": "number",
+              "coord_y": "number",
+              "default_sub_loc": "string",
+              "distance_from_zhuo": "number",
+              "grain_cost": "number",
+              "key_figures_en": "string",
+              "key_figures_vi": "string",
+              "location_id": "string",
+              "location_type": "string",
+              "march_days": "number",
+              "name_en": "string",
+              "name_han": "string",
+              "name_vi": "string",
+              "province_en": "string",
+              "province_vi": "string",
+              "status_en": "string",
+              "status_vi": "string",
+              "strategic_intel_en": "string",
+              "strategic_intel_vi": "string",
+              "sub_locations": "string",
+              "threat_level_en": "string",
+              "threat_level_vi": "string"
+            }
+          },
+          "recipes": {
+            "type": "array",
+            "items": {
+              "base_defect_rate": "number",
+              "bom_inputs": "string",
+              "category": "string",
+              "description_vi": "null",
+              "product_item_code": "string",
+              "product_name_en": "string",
+              "product_name_vi": "string",
+              "recipe_code": "string",
+              "required_skill_code": "string",
+              "required_skill_tier": "number",
+              "standard_labor_hours": "number"
+            }
+          },
+          "routes": {
+            "type": "array",
+            "items": {
+              "ambush_risk_level": "string",
+              "description_en": "null",
+              "description_vi": "string",
+              "distance_li": "number",
+              "grain_provision_cost": "number",
+              "route_id": "string",
+              "source_location_id": "string",
+              "standard_march_days": "number",
+              "target_location_id": "string",
+              "terrain_type": "string"
+            }
+          },
+          "skills": {
+            "type": "array",
+            "items": {
+              "domain": "string",
+              "primary_attr": "string",
+              "secondary_attr": "string",
+              "skill_code": "string",
+              "skill_name_en": "string",
+              "skill_name_vi": "string",
+              "tier_1_effect_vi": "string",
+              "tier_2_effect_vi": "string",
+              "tier_3_effect_vi": "string",
+              "tier_4_effect_vi": "string",
+              "tier_5_effect_vi": "string"
+            }
+          },
+          "talents": {
+            "type": "array",
+            "items": {
+              "category": "string",
+              "effect_en": "string",
+              "effect_vi": "string",
+              "exclusive_to_npc_id": "mixed",
+              "name_en": "string",
+              "name_vi": "string",
+              "rarity": "string",
+              "talent_code": "string"
+            }
+          }
+        },
+        "success": "boolean"
+      }
+    },
+    "/api/audit": {
+      "status": 200,
+      "shape": {
+        "discrepanciesCount": "number",
+        "errors": {
+          "type": "array",
+          "items": "empty"
+        },
+        "sections": {
+          "campaignClock": {
+            "checksCount": "number",
+            "currentDate": "string",
+            "errors": {
+              "type": "array",
+              "items": "empty"
+            },
+            "lastTurnDate": "string",
+            "passed": "boolean"
+          },
+          "cashflow": {
+            "checksCount": "number",
+            "errors": {
+              "type": "array",
+              "items": "empty"
+            },
+            "finalBalance": "number",
+            "passed": "boolean",
+            "txnCount": "number"
+          },
+          "factions": {
+            "checksCount": "number",
+            "diploCount": "number",
+            "errors": {
+              "type": "array",
+              "items": "empty"
+            },
+            "factionCount": "number",
+            "installed": "boolean",
+            "noteCount": "number",
+            "passed": "boolean",
+            "progCount": "number",
+            "settlementCount": "number"
+          },
+          "inventory": {
+            "checksCount": "number",
+            "errors": {
+              "type": "array",
+              "items": "empty"
+            },
+            "itemCount": "number",
+            "movementCount": "number",
+            "passed": "boolean",
+            "totalValue": "number"
+          },
+          "journal": {
+            "checksCount": "number",
+            "entriesCount": "number",
+            "errors": {
+              "type": "array",
+              "items": "empty"
+            },
+            "installed": "boolean",
+            "passed": "boolean"
+          },
+          "lifeSim": {
+            "checksCount": "number",
+            "errors": {
+              "type": "array",
+              "items": "empty"
+            },
+            "installed": "boolean",
+            "maidenCount": "number",
+            "passed": "boolean",
+            "rateCount": "number",
+            "spouseCount": "number"
+          },
+          "npcEnterprise": {
+            "bizCount": "number",
+            "checksCount": "number",
+            "errors": {
+              "type": "array",
+              "items": "empty"
+            },
+            "installed": "boolean",
+            "npcCount": "number",
+            "passed": "boolean"
+          },
+          "projection": {
+            "checksCount": "number",
+            "errors": {
+              "type": "array",
+              "items": "empty"
+            },
+            "passed": "boolean"
+          }
+        },
+        "success": "boolean",
+        "totalInvariantsVerified": "number"
+      },
+      "valueOk": true
+    }
+  }
+}

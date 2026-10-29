@@ -12,6 +12,7 @@ const { execSync } = require('child_process');
 const { SeededRandom } = require('../engine/random');
 const { resolveSkillCheck } = require('../engine/rules');
 const { SimulationCore } = require('../engine/sim-core');
+const { closeConnections } = require('../engine/db-adapter');
 
 const ROOT_DIR = path.resolve(__dirname, '..');
 const TEST_DIR = path.join(ROOT_DIR, 'tests', 'sandbox');
@@ -130,14 +131,14 @@ function testActionStreamReplayAcrossDatabases() {
   const coreA = new SimulationCore(DB_A);
   for (const act of actionSequence) {
     const resA = coreA.executeAction(act);
-    assert.strictEqual(resA.success, true, 'Action on DB_A must succeed');
+    assert.strictEqual(resA.success, true, `Action ${act.idempotency_key} on DB_A must succeed: ${resA.code || ''} ${resA.error || ''}`);
   }
 
   // Execute sequence on DB_B
   const coreB = new SimulationCore(DB_B);
   for (const act of actionSequence) {
     const resB = coreB.executeAction(act);
-    assert.strictEqual(resB.success, true, 'Action on DB_B must succeed');
+    assert.strictEqual(resB.success, true, `Action ${act.idempotency_key} on DB_B must succeed: ${resB.code || ''} ${resB.error || ''}`);
   }
 
   // Compare final states
@@ -171,6 +172,8 @@ function main() {
     console.log(' 🟢 ALL REPRODUCIBILITY TESTS PASSED (3/3)');
     console.log('====================================================\n');
   } finally {
+    // Cached SQLite connections must be released before the sandbox is deleted (Windows file locks).
+    closeConnections();
     if (fs.existsSync(TEST_DIR)) {
       fs.rmSync(TEST_DIR, { recursive: true, force: true });
     }

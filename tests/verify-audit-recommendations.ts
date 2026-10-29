@@ -32,7 +32,7 @@ async function verifyAll(): Promise<void> {
   console.log('====================================================\n');
 
   const rootDir = path.resolve(__dirname, '..');
-  const dbPath = path.join(rootDir, 'saves', 'session.db');
+  const dbPath = process.env.SIM_DB_PATH || path.join(rootDir, 'saves', 'session.db');
   const db = DatabaseService.getInstance(dbPath);
   const eventBus = EventBus.getInstance();
 

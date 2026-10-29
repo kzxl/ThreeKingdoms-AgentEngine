@@ -8,6 +8,7 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 const { WorkshopEngine } = require('../engine/workshop-engine');
+const { closeConnections } = require('../engine/db-adapter');
 const { auditSqliteCashflow, auditSqliteInventory, auditDoubleEntryJournal, auditNpcAndBusinesses } = require('../tools/sim-audit');
 
 const TEST_DIR = path.resolve(__dirname);
@@ -16,16 +17,27 @@ const LIVE_DB = path.join(ROOT_DIR, 'saves', 'session.db');
 const SANDBOX_DIR = path.join(TEST_DIR, 'sandbox');
 const SANDBOX_DB = path.join(SANDBOX_DIR, 'npc_test.db');
 
+/**
+ * Removes a database and every WAL sidecar. Leftover .db-wal/.db-shm files from a
+ * previous run corrupt a freshly copied main file, so cleanup must remove all three.
+ */
+function removeDatabaseFiles(dbPath) {
+  closeConnections(dbPath);
+  for (const suffix of ['', '-wal', '-shm']) {
+    if (fs.existsSync(`${dbPath}${suffix}`)) fs.unlinkSync(`${dbPath}${suffix}`);
+  }
+}
+
 function setupSandbox() {
   if (!fs.existsSync(SANDBOX_DIR)) fs.mkdirSync(SANDBOX_DIR, { recursive: true });
-  if (fs.existsSync(SANDBOX_DB)) fs.unlinkSync(SANDBOX_DB);
+  removeDatabaseFiles(SANDBOX_DB);
   fs.copyFileSync(LIVE_DB, SANDBOX_DB);
   // Ensure sandbox workshop has operating capital for test cycle (5000 to sustain multi-month operations) and clean workforce
   execSync(`sqlite3 "${SANDBOX_DB}" "UPDATE npc_state SET assigned_business_id = NULL, assigned_role = 'UNASSIGNED' WHERE npc_id LIKE 'NPC-02%'; UPDATE businesses SET safe_cash = 5000, current_workforce = 4, efficiency_multiplier = 0.85 WHERE business_id = 'BIZ-0001';"`);
 }
 
 function cleanupSandbox() {
-  if (fs.existsSync(SANDBOX_DB)) fs.unlinkSync(SANDBOX_DB);
+  removeDatabaseFiles(SANDBOX_DB);
   if (fs.existsSync(SANDBOX_DIR)) {
     try { fs.rmdirSync(SANDBOX_DIR); } catch (e) {}
   }
@@ -159,6 +171,8 @@ function runTests() {
     console.log('[TEST 6] Testing deterministic replay with identical seed...');
     const dbA = path.join(SANDBOX_DIR, 'db_a.db');
     const dbB = path.join(SANDBOX_DIR, 'db_b.db');
+    removeDatabaseFiles(dbA);
+    removeDatabaseFiles(dbB);
     fs.copyFileSync(LIVE_DB, dbA);
     fs.copyFileSync(LIVE_DB, dbB);
     execSync(`sqlite3 "${dbA}" "UPDATE npc_state SET assigned_business_id = NULL, assigned_role = 'UNASSIGNED' WHERE npc_id LIKE 'NPC-02%'; UPDATE businesses SET safe_cash = 3000, current_workforce = 4, efficiency_multiplier = 0.85 WHERE business_id = 'BIZ-0001';"`);
@@ -180,8 +194,8 @@ function runTests() {
     console.log('  ✅ PASSED: Independent replay across separate databases yielded identical outputs and financials.');
     passed++;
 
-    if (fs.existsSync(dbA)) fs.unlinkSync(dbA);
-    if (fs.existsSync(dbB)) fs.unlinkSync(dbB);
+    removeDatabaseFiles(dbA);
+    removeDatabaseFiles(dbB);
 
   } finally {
     delete process.env.SIM_DB_PATH;
