@@ -207,6 +207,22 @@ export class Router {
    * Dispatches an incoming HTTP request against registered routes.
    * Returns true if a route was matched and handled, false otherwise.
    */
+  /**
+   * True when any registered route would handle this request. Used by the
+   * gateway to detect modular routes before delegating, without consuming the
+   * request body.
+   */
+  public matches(req: http.IncomingMessage): boolean {
+    const method = (req.method || 'GET').toUpperCase();
+    const host = req.headers.host || 'localhost';
+    const pathname = new URL(req.url || '/', `http://${host}`).pathname;
+    return this.routes.some(route => {
+      if (route.method !== '*' && route.method !== method) return false;
+      route.regex.lastIndex = 0;
+      return route.regex.test(pathname);
+    });
+  }
+
   public async handle(req: http.IncomingMessage, res: http.ServerResponse): Promise<boolean> {
     const method = (req.method || 'GET').toUpperCase();
     const host = req.headers.host || 'localhost';

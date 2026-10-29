@@ -118,7 +118,9 @@ function resolveRequestDbPath(req) {
       return instSvc.resolveDbPath(instanceId);
     }
   }
-  return currentActiveDbPath || DB_PATH;
+  // No header/query means the startup campaign; do not keep the previous
+  // request's instance sticky (it caused cross-request leaks).
+  return DB_PATH;
 }
 
 const gameplayManager = new GameplayManager(DB_PATH);
@@ -270,6 +272,19 @@ const server = http.createServer(async (req, res) => {
   // Delegate to Modular Controller Router if present
   if (globalThis.__GRAND_STRATEGY_ROUTER__) {
     try {
+      // The modular modules are initialized against the startup DB. Serving a
+      // modular route for another instance would silently write the wrong
+      // database, so fail loud instead.
+      if (currentActiveDbPath !== DB_PATH && globalThis.__GRAND_STRATEGY_ROUTER__.matches(req)) {
+        sendJson(res, 409, {
+          success: false,
+          code: 'INSTANCE_NOT_ACTIVE',
+          error: `Phiên [${path.basename(currentActiveDbPath)}] chưa được kích hoạt trên server. Khởi động lại với SIM_DB_PATH=${currentActiveDbPath} để chơi phiên này.`,
+          activeDatabase: DB_PATH,
+          selectedDatabase: currentActiveDbPath
+        });
+        return;
+      }
       const handled = await globalThis.__GRAND_STRATEGY_ROUTER__.handle(req, res);
       if (handled) return;
     } catch (err) {
@@ -363,11 +378,15 @@ const server = http.createServer(async (req, res) => {
           DatabaseService.getInstance(currentActiveDbPath);
         } catch (e) {}
         const instance = instSvc.getInstance(instId);
+        const restartRequired = dbPath !== DB_PATH;
         sendJson(res, 200, {
           success: true,
           instanceId: instId,
           instance,
-          messageVi: `Đã kích hoạt phiên chơi [${instance?.name || instId}]!`
+          restartRequired,
+          messageVi: restartRequired
+            ? `Đã chọn phiên [${instance?.name || instId}]. Server đang chạy phiên khởi động; khởi động lại với SIM_DB_PATH=${dbPath} để dùng các tính năng mô-đun.`
+            : `Đã kích hoạt phiên chơi [${instance?.name || instId}]!`
         });
       } catch (err) {
         sendJson(res, 400, { success: false, error: err.message });

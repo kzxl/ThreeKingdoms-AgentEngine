@@ -726,6 +726,17 @@ export function registerEconomyRoutes(router: Router): void {
         sendJson(res, 409, { success: false, error: time.error || 'Không thể cho thời gian trôi qua.' });
         return;
       }
+      if (!time.advancedDays) {
+        // Day 30: the month must be closed explicitly; do not report a day
+        // that never passed.
+        sendJson(res, 409, {
+          success: false,
+          code: 'MONTH_END',
+          error: 'Đã hết ngày 30. Hãy bấm Qua Tháng trước khi tiếp tục.',
+          clock: time
+        });
+        return;
+      }
       const caravans = time.caravans || {
         tickedCaravansCount: 0,
         arrivedCaravansCount: 0,
