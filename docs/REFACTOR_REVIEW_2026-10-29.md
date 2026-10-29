@@ -18,7 +18,7 @@ legacy JS).
 |---|---|---|
 | Correctness / ownership | 9/10 | One writer for the date, caravans, business month, world turn, balance, modal ids, hub |
 | Data integrity | 9/10 | Ledger matches `liquid + safe`; chronicle 15 rows / 14 texts; 1,358 invariants green |
-| Architecture / maintainability | 7/10 | God services and gateway still large; legacy client not migrated; 18 direct cashflow inserts |
+| Architecture / maintainability | 7.5/10 | God services and gateway still large; legacy client not migrated; cashflow writers unified |
 | Tests & observability | 9/10 | 24 suites, 28 contracts, 8 write smokes, 10 arch rules + UI + API + route ratchets |
 | Game design | 4/10 | Cannot lose; world frozen unless the player clicks; NPC economy not conserved |
 | UI/UX | 6.5/10 | Dev telemetry, dual clocks and duplicate chronicle gone; typography and right panel still heavy |
@@ -27,7 +27,7 @@ legacy JS).
 
 **Gates**
 
-- `npm run verify`: 24/24 suites (4 legacy + 19 `verify-*.ts`), 28/28 contracts, 8/8 write smokes.
+- `npm run verify`: 24/24 suites (4 legacy + 20 `verify-*.ts`), 28/28 contracts, 8/8 write smokes.
 - `npm run audit`: **1,358 invariants, 0 discrepancies**; `GET /api/audit` reports the same.
 - `tsc --noEmit`: 0 errors.
 
@@ -95,7 +95,7 @@ Remaining god services: `context-action.engine.ts` 1,970, `blacksmith-forge.serv
 | 5 | Three business formulas | ✅ | Shared `BIZ_CYCLE_<biz>_<YYYYMM>` key; the workshop no longer writes `player_state.safe_cash` |
 | 6 | World sim outside a transaction | ✅ (different mechanism) | `world_turn_ledger` is written after each module transaction; a module failure blocks the month close, retry is safe |
 | 7 | Double stamina deduction | ✅ | `KIZUNA_INTERACT`, `WORK_SHIFT`, `PRODUCTION_BATCH` are 0 fatigue in the policy |
-| 8 | Many ledger balance definitions | ⚠️ Partial (mechanism in place) | `postCashflowEntry` + `getPlayerCapital`; 5 writers migrated, **18 direct INSERTs left** frozen by `cashflow-direct-insert`; two account-code vocabularies remain |
+| 8 | Many ledger balance definitions | ✅ (writers) | Every cashflow write goes through `postCashflowEntry`/`postCashflowEntryRaw`; `cashflow-direct-insert` is 0. `ACCOUNT_CODES` + `canonicalAccountCode()` map the two historical account vocabularies; history is not rewritten |
 | 9 | Hub/Journal global collision | ✅ | The 4-tab journal owns the modal; the 7-tab hub file was deleted |
 | 10 | Map has 4 data sources | ❌ Open | `map-data.js`, `spatial-registry.ts`, `map-live.service.ts` and the DB still coexist |
 | 11 | Client mirrors the cost table | ✅ | `getActionDayCost` prefers the `policy` from `/api/time/clock`; the local table is an offline fallback |
@@ -131,11 +131,11 @@ Remaining god services: `context-action.engine.ts` 1,970, `blacksmith-forge.serv
 
 **Structural debt, by impact:**
 
-1. **18 direct cashflow INSERTs** in 8 files (promissory, economy, instances, dynasty, courtship,
-   military, duel, enterprise). The ratchet prevents growth; migrate them to `postCashflowEntry`
-   and lower the budget. Two account-code vocabularies (`6001_*` vs `EXP-*`) remain.
-2. **God services:** 4 files of 1,290–1,970 lines plus a 3,344-line gateway. P6/P7 of the blueprint
+1. **God services:** 4 files of 1,290–1,970 lines plus a 3,344-line gateway. P6/P7 of the blueprint
    remain.
+2. **Account-code history:** new postings use `ACCOUNT_CODES`, but historical journal rows still
+   contain both vocabularies; `canonicalAccountCode()` is the reporting bridge, and a data
+   migration would be needed to rewrite history.
 3. **Legacy client:** 21 scripts, ~16.6k lines, one `legacy-bridge.ts`; no automated browser test,
    so legacy edits still need a manual check.
 4. **Map with 4 data sources** (finding 10): `map-data.js`, `spatial-registry.ts`,
@@ -262,4 +262,13 @@ A second pass over the data flows (not covered by the first gate) found and fixe
   success response that advanced nothing.
 - **Data migration.** Migration `008-normalize-grain-unit` rewrites archived `master_items` grain
   units from `Dan` to `Thạch`/`piculs` (1 row on the live DB).
+- **One cashflow writer.** All 18 remaining direct `INSERT INTO cashflow_ledger` sites migrated to
+  `postCashflowEntry` (or `postCashflowEntryRaw` for the instance bootstrap); the
+  `cashflow-direct-insert` ratchet is now **0**. `src/shared/account-codes.ts` provides
+  `ACCOUNT_CODES` and `canonicalAccountCode()` for new postings and report-side aliasing.
+- **Fresh-clone bootstrap.** The instance bootstrap seeds the two core retainers when `npc_state`
+  is empty and adapts to optional columns, so it also works on a `sim-db init` schema. README now
+  documents `ingest-markdown-master.js` + `sim-db init`.
+- **Small fixes.** `startNewGame` uses a deterministic campaign id; the caravan wait button surfaces
+  the day-30 409; suite breakdown corrected to 4 legacy + 20 modern.
 

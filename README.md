@@ -28,7 +28,7 @@ An autonomous, deterministic grand strategy simulation engine and character-driv
 ## Core Architectural Philosophy
 
 - **Zero Ephemeral Hallucination**: No wealth, weapon, army, relationship, or historical event exists unless it is substantiated in the database/ledger and verified via deterministic formulas.
-- **Auditable Double-Entry Bookkeeping**: Money and inventory are strictly conserved. Every copper coin (`Qian`) and bundle of grain (`Dan`) is tracked via unique transaction IDs (`TXN-`) and stock movements (`MOV-`) with exact $Debit == Credit$ parity.
+- **Auditable Double-Entry Bookkeeping**: Money and inventory are strictly conserved. Every `quan` of money and picul (`Thạch`) of grain is tracked via unique transaction IDs (`TXN-`) and stock movements (`MOV-`) with exact $Debit == Credit$ parity.
 - **Neuro-Symbolic Dual-Core (Hybrid Architecture)**:
   - **Deterministic Hard Core (TypeScript + SQLite)**: Executes kinetics, military BFS supply paths, thermodynamic price elasticity, utility AI response curves, and double-entry reconciliation in under 15ms per cycle.
   - **Agentic Soft Core (Antigravity LLM + MCP)**: Powers deep character dialogue, unscripted diplomatic intrigue, emergent player stratagems, and episodic memory reflection.
@@ -246,17 +246,34 @@ cd ThreeKingdoms-AgentEngine
 npm install
 ```
 
+### Session database bootstrap (fresh checkout)
+
+`saves/session.db` and `saves/master.db` are intentionally git-ignored. On a fresh checkout:
+
+```bash
+# Master schema + lore into saves/session.db and saves/master.db (needs the sqlite3 CLI)
+node tools/ingest-markdown-master.js
+
+# Session schema, seed, and migrations 001–008
+node tools/sim-db.js init
+
+npm start
+```
+
+`ingest-markdown-master.js` rewrites the `master_*` tables in `saves/session.db`; do not run it
+against a live save without a backup. `sim-db init` applies migrations automatically.
+
 ### NPM Command Reference
 
 | Command | Action | Description |
 | :--- | :--- | :--- |
-| `npm run verify` | **Full Gate** | Runs typecheck → architecture guard → client syntax → UI ratchet → anti-slop lint → client API contract → route-shadow report → 19 verification suites → API contract check → write-path smoke. |
+| `npm run verify` | **Full Gate** | Runs typecheck → architecture guard → client syntax → UI ratchet → anti-slop lint → client API contract → route-shadow report → 24 verification suites → API contract check → write-path smoke. |
 | `npm run lint:api` | Architecture | Fails when the TS client calls an `/api/*` path that neither the Router nor the gateway serves (known gaps are reasoned in `tools/client-api-allowlist.json`). |
 | `npm run lint:slop` | Architecture | Enforces AS-05 (no emoji), AS-06 (no gradients), neutral elevation, two font families; ratchets the font-size scale. |
 | `npm run lint:ui` | Architecture | Ratchets legacy UI debt (button classes, class usages, inline styles, native confirms); new surfaces should use `src/client/core/ui` (`window.UI`). |
 | `npm run lint:client` | Architecture | Parses every classic client script (`public/app.js`, `public/js/*.js`); one parse error disables a whole UI file. |
 | `npm run routes:shadow` | Architecture | Fails if any legacy `sim-web.js` handler is already served by the modular Router (dead code). |
-| `npm test` | Verification | Runs all 19 suites (4 legacy self-sandboxed + 15 TypeScript `verify-*.ts`) against isolated DB copies. |
+| `npm test` | Verification | Runs all 24 suites (4 legacy self-sandboxed + 20 TypeScript `verify-*.ts`) against isolated DB copies. |
 | `npm run smoke:write` | Verification | Boots the app on a sandbox DB and exercises 8 write paths (trade, loans, equip/unequip, idempotency, input rejection, post-write audit). |
 | `npm run lint` | Architecture | Ratcheting guard over `tools/arch-baseline.json`: SQLite-CLI spawns, SQL interpolation, unseeded RNG, silent catches, the `current_date` keyword trap, legacy UI growth. |
 | `npm run golden:verify` | API Contract | Boots the real composition root and diffs 28 read-only endpoints against `tests/golden/api-shape.json`. |
@@ -311,9 +328,9 @@ $$\text{Max Capacity} = \frac{\text{Craftsmen} \times \text{Hours/Day} \times \t
 $$\text{Defect Rate (\%)} = \max\left(2\%,\; \text{Base Defect} - (\text{Lead Artisan CRA} \times 0.15\%) + \text{Fatigue Penalty}\right)$$
 
 ### 3. Logistical Provisioning & Consumption
-- 1 Soldier consumes **0.1 Dan of grain/month** (~3 kg/day).
-- 1,000 Soldiers require **100 Dan of grain/month**.
-- 1 War Horse consumes **0.3 Dan of grain and fodder/month**.
+- 1 Soldier consumes **0.1 piculs of grain/month** (~3 kg/day).
+- 1,000 Soldiers require **100 piculs of grain/month**.
+- 1 War Horse consumes **0.3 piculs of grain and fodder/month**.
 - Severed supply lines induce a **15-point daily morale collapse** with exponential troop desertion within 7–10 days.
 
 ---

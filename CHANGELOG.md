@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.6.4] - 2026-10-29
+
+Extensibility pass: one cashflow writer, a canonical account-code map, and fresh-schema
+bootstrap coverage.
+
+### Changed
+- **All cashflow postings go through one writer.** The 18 remaining direct
+  `INSERT INTO cashflow_ledger` sites (promissory notes, economy buy/sell/loans, enterprise labour
+  and dividends, dynasty succession, dowry, arena prize, stronghold loot, instance bootstrap) now
+  use `postCashflowEntry` / `postCashflowEntryRaw`. The `cashflow-direct-insert` ratchet is **0**.
+- **`src/shared/account-codes.ts`** provides `ACCOUNT_CODES`, `ACCOUNT_ALIASES` and
+  `canonicalAccountCode()`; the canonical writer, instance bootstrap and economy journal calls use
+  the constants. Historical journal rows are not rewritten.
+- **Instance bootstrap** seeds NPC-0007/NPC-0008 when `npc_state` is empty and adapts to optional
+  columns (`owner_character_id`, exp columns), so a `sim-db init` database is bootstrappable.
+  `verify-instance-bootstrap` covers that path.
+- **`startNewGame`** derives a deterministic campaign id from scenario + archetype instead of
+  `Date.now()`.
+- **Caravan wait button** shows the day-30 `MONTH_END` error instead of silently doing nothing.
+- README documents the fresh-checkout bootstrap (`ingest-markdown-master.js` + `sim-db init`) and
+  the Quan/Thạch units; suite counts are now 4 legacy + 20 modern.
+
+### Verification
+`npm run verify` green: **24/24** suites, 28/28 contracts, 8/8 write smokes; `npm run audit`
+1,358 invariants, 0 discrepancies; arch guard 10 rules, `cashflow-direct-insert 0`.
+
+---
+
 ## [1.6.3] - 2026-10-29
 
 Post-review hardening of the data flows the first gate could not see.

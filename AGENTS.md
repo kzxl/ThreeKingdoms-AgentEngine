@@ -21,6 +21,10 @@ this file (language, communication style, engineering workflow, safety, Semantic
   reintroduce `N Tiền`, `N Qian` or `Dan` unit labels; `npm run lint:slop` enforces zero.
 - Feature-owned tables stay in their feature: `engine/action-policy.js`, `CANONICAL_LABOR_SHIFTS`,
   `GUARD_TIER_CONFIGS`, `SETTLEMENT_PROFILES`. Do not move domain data into the global file.
+- Every cashflow write goes through `src/shared/ledger.ts` (`postCashflowEntry` for
+  `DatabaseService`, `postCashflowEntryRaw` for raw better-sqlite3). Direct
+  `INSERT INTO cashflow_ledger` is a hard 0; new journal codes come from
+  `src/shared/account-codes.ts`.
 
 ## Verification and commits
 
