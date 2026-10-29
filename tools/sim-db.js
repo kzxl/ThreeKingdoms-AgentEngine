@@ -15,6 +15,7 @@ const GAME_DIR = path.join(ROOT_DIR, 'game');
 const SAVES_DIR = path.join(ROOT_DIR, 'saves');
 const SCHEMA_PATH = path.join(__dirname, 'schema.sql');
 const DEFAULT_DB_PATH = path.join(SAVES_DIR, 'session.db');
+const { applyMigrations } = require('./migrations/run');
 
 let betterSqlite = null;
 try {
@@ -103,7 +104,7 @@ function initDb(dbPath, campaignId = 'CMP-184-ZHOU-01', charName = 'Liang Yan') 
   ensureSavesDir();
   console.log(`[SIM-DB] Initializing session database at: ${dbPath}`);
   const schemaSql = fs.readFileSync(SCHEMA_PATH, 'utf8');
-  runSqlExec(dbPath, schemaSql);
+  runSql(dbPath, schemaSql);
 
   const initDataSql = `
   INSERT OR IGNORE INTO campaign_meta (campaign_id, campaign_name, start_date, "current_date", active_turn)
@@ -119,7 +120,20 @@ function initDb(dbPath, campaignId = 'CMP-184-ZHOU-01', charName = 'Liang Yan') 
     15000, 0, 0.0, 19600
   );
   `;
-  runSqlExec(dbPath, initDataSql);
+  runSql(dbPath, initDataSql);
+
+  // A schema-initialized database must not be behind the versioned migrations
+  // (e.g. caravan ownership, chronicle dedupe, random seed).
+  const pooled = nativeDbPool.get(dbPath);
+  if (pooled) {
+    try { pooled.close(); } catch (e) {}
+    nativeDbPool.delete(dbPath);
+  }
+  const applied = applyMigrations(dbPath, { log: message => console.log(message) });
+  if (applied.length > 0) {
+    console.log(`[SIM-DB] Applied ${applied.length} migration(s).`);
+  }
+
   console.log(`✅ Database initialized successfully.`);
 }
 

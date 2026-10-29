@@ -50,6 +50,48 @@ function appliedIds(db) {
   return new Set(db.prepare('SELECT migration_id FROM schema_migrations').all().map(r => r.migration_id));
 }
 
+function applyPending(db, migrations, pending, { dryRun = false, log = console.log } = {}) {
+  const appliedNow = [];
+  for (const migration of pending) {
+    if (dryRun) {
+      log(`  [dry-run] would apply ${migration.id} — ${migration.description}`);
+      continue;
+    }
+    const apply = db.transaction(() => {
+      migration.up(db);
+      db.prepare('INSERT INTO schema_migrations (migration_id, description) VALUES (?, ?)').run(
+        migration.id,
+        migration.description
+      );
+    });
+    apply();
+    appliedNow.push(migration.id);
+    log(`  ✅ applied ${migration.id} — ${migration.description}`);
+  }
+  return appliedNow;
+}
+
+/**
+ * Applies every pending migration to a database path. Used by the CLI and by
+ * `tools/sim-db.js init` so a freshly initialized database is never behind.
+ */
+function applyMigrations(dbPath = DB_PATH, { log = console.log } = {}) {
+  if (!fs.existsSync(dbPath)) {
+    throw new Error(`Database not found: ${dbPath}`);
+  }
+  const db = new Database(dbPath);
+  try {
+    db.pragma('foreign_keys = ON');
+    ensureLedger(db);
+    const migrations = loadMigrations();
+    const applied = appliedIds(db);
+    const pending = migrations.filter(m => !applied.has(m.id));
+    return applyPending(db, migrations, pending, { log });
+  } finally {
+    db.close();
+  }
+}
+
 function main() {
   const args = process.argv.slice(2);
   const dryRun = args.includes('--dry-run');
@@ -79,30 +121,23 @@ function main() {
     return;
   }
 
-  for (const migration of pending) {
-    if (dryRun) {
-      console.log(`  [dry-run] would apply ${migration.id} — ${migration.description}`);
-      continue;
-    }
-    const apply = db.transaction(() => {
-      migration.up(db);
-      db.prepare('INSERT INTO schema_migrations (migration_id, description) VALUES (?, ?)').run(
-        migration.id,
-        migration.description
-      );
-    });
-    try {
-      apply();
-      console.log(`  ✅ applied ${migration.id} — ${migration.description}`);
-    } catch (err) {
-      console.error(`  ❌ failed ${migration.id}: ${err.message}`);
-      db.close();
-      process.exit(1);
-    }
+  try {
+    applyPending(db, migrations, pending, { dryRun });
+  } catch (err) {
+    console.error(`  ❌ migration failed: ${err.message}`);
+    db.close();
+    process.exit(1);
   }
 
   db.close();
   console.log('[migrate] Done.');
 }
 
-main();
+if (require.main === module) {
+  main();
+}
+
+module.exports = {
+  applyMigrations,
+  loadMigrations
+};

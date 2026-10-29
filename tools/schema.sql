@@ -415,6 +415,7 @@ CREATE TABLE IF NOT EXISTS trade_caravans (
     route_progress REAL NOT NULL DEFAULT 0.0,
     status TEXT NOT NULL DEFAULT 'EN_ROUTE', -- 'EN_ROUTE', 'ARRIVED', 'AMBUSHED_FIGHTING', 'PLUNDERED', 'SUCCESS_TRADED'
     created_turn INTEGER NOT NULL,
+    dispatched_by_player INTEGER NOT NULL DEFAULT 0,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(owner_faction_id) REFERENCES session_factions(faction_id)
 );
@@ -531,6 +532,7 @@ CREATE TABLE IF NOT EXISTS active_tasks (
     status TEXT NOT NULL DEFAULT 'IN_PROGRESS',
     payload_json TEXT,
     result_json TEXT,
+    last_tick_date TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     completed_at TIMESTAMP
 );
@@ -570,3 +572,43 @@ CREATE INDEX IF NOT EXISTS idx_encounter_lookup ON location_encounter_rates(sett
 
 
 
+
+-- 36. Story Chronicle (created by the gateway on legacy databases; declared
+-- here so a schema-initialized database has the table and its dedupe guard).
+CREATE TABLE IF NOT EXISTS chat_chronicle (
+    id TEXT PRIMARY KEY,
+    turn_number INTEGER DEFAULT 1,
+    game_date TEXT DEFAULT '184-05-02',
+    type TEXT NOT NULL,
+    speaker TEXT,
+    title TEXT,
+    avatar TEXT,
+    text TEXT NOT NULL,
+    dice_badge TEXT,
+    deltas TEXT,
+    reasoning TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TRIGGER IF NOT EXISTS trg_chat_chronicle_dedupe
+BEFORE INSERT ON chat_chronicle
+FOR EACH ROW
+WHEN EXISTS (
+  SELECT 1 FROM chat_chronicle existing
+  WHERE existing.game_date = NEW.game_date
+    AND existing.turn_number = NEW.turn_number
+    AND IFNULL(existing.speaker, '') = IFNULL(NEW.speaker, '')
+    AND existing.text = NEW.text
+)
+BEGIN
+  SELECT RAISE(IGNORE);
+END;
+
+-- 37. World Turn Ledger (module completion markers for the monthly world sim)
+CREATE TABLE IF NOT EXISTS world_turn_ledger (
+    campaign_id TEXT NOT NULL,
+    turn_number INTEGER NOT NULL,
+    module_id TEXT NOT NULL,
+    completed_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (campaign_id, turn_number, module_id)
+);
