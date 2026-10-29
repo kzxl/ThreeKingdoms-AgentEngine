@@ -161,7 +161,7 @@
     const subtitle = document.querySelector('.grand-hub-subtitle');
     const isEn = isEnglish();
 
-    if (masterSeal) masterSeal.textContent = '志';
+    if (masterSeal) masterSeal.innerHTML = uiIcon('book');
     if (title) title.textContent = isEn ? 'PERSONAL JOURNAL • AMBITION & INTROSPECTION [J]' : 'SỔ TAY CÁ NHÂN • CHÍ HƯỚNG CUỘC ĐỜI [J]';
     if (subtitle) {
       subtitle.textContent = isEn
@@ -242,7 +242,7 @@
         titleEn: 'Penniless Commoner',
         criteriaVi: 'Hai bàn tay trắng, làm thuê công nhật mưu sinh, tích lũy từng đồng bạc lẻ và bồi đắp 8 trục thuộc tính',
         criteriaEn: 'Empty pockets, daily wage toil, accumulating copper wages and 8-axis attributes',
-        seal: '布',
+        seal: '布', icon: 'sprout',
         badgeClass: 'stage-pauper',
         descVi: 'Chưa có sản nghiệp riêng, dựa vào sức lao động nuôi thân. Mọi việc đều phải tự mình đi bộ tới từng góc chợ, lò rèn.',
         descEn: 'Starting with bare hands, taking daily shifts to earn bread before embarking on greater destinies.'
@@ -251,9 +251,9 @@
         num: 2,
         titleVi: 'Tiểu Khang Lập Nghiệp',
         titleEn: 'Budding Factor',
-        criteriaVi: 'Tích lũy >1,500 Tiền, mở xưởng thủ công hoặc sắm xe la, định hình 1 trong 5 đại phẩm lộ',
-        criteriaEn: 'Net worth >1,500 Qian, own workshop or cart, choosing 1 of 5 career branches',
-        seal: '業',
+        criteriaVi: 'Tích lũy >1,500 Quan, mở xưởng thủ công hoặc sắm xe la, định hình 1 trong 5 đại phẩm lộ',
+        criteriaEn: 'Net worth >1,500 quan, own workshop or cart, choosing 1 of 5 career branches',
+        seal: '業', icon: 'house',
         badgeClass: 'stage-artisan',
         descVi: 'Đã thoát cảnh cơ hàn, có thể tự mở xưởng chế tác hoặc trang bị xe ngựa. Có bàn làm việc quản lý tại gia.',
         descEn: 'Risen above poverty, capable of launching craft workshops or cart operations with home desk.'
@@ -262,9 +262,9 @@
         num: 3,
         titleVi: 'Hào Kiệt Danh Khởi',
         titleEn: 'Renowned Master',
-        criteriaVi: 'Tài sản >12,000 Tiền, chế tạo Thần Binh, phái thương đoàn liên châu hoặc uy danh trận mạc',
-        criteriaEn: 'Net worth >12,000 Qian, bespoke God weapons, interstate caravans, or martial renown',
-        seal: '豪',
+        criteriaVi: 'Tài sản >12,000 Quan, chế tạo Thần Binh, phái thương đoàn liên châu hoặc uy danh trận mạc',
+        criteriaEn: 'Net worth >12,000 quan, bespoke God weapons, interstate caravans, or martial renown',
+        seal: '豪', icon: 'castle',
         badgeClass: 'stage-merchant',
         descVi: 'Sở hữu bảo khí đúc riêng, chiêu mộ môn hạ, bồ câu đưa thư điều phối thương đoàn viễn trình.',
         descEn: 'Wielding bespoke god weapons, commanding retainers, and directing caravans via courier.'
@@ -273,9 +273,9 @@
         num: 4,
         titleVi: 'Phong Vân Hùng Chủ',
         titleEn: 'Dynastic Patriarch',
-        criteriaVi: 'Tài sản >50,000 Tiền, tông tộc truyền thừa, phân phong tướng lĩnh, khai mở Quân Cơ Xứ',
-        criteriaEn: 'Net worth >50,000 Qian, dynastic lineage, governance appointments, Grand Command War Room',
-        seal: '覇',
+        criteriaVi: 'Tài sản >50,000 Quan, tông tộc truyền thừa, phân phong tướng lĩnh, khai mở Quân Cơ Xứ',
+        criteriaEn: 'Net worth >50,000 quan, dynastic lineage, governance appointments, Grand Command War Room',
+        seal: '覇', icon: 'crown',
         badgeClass: 'stage-hegemon',
         descVi: 'Cơ nghiệp vững như bàn thạch, gia tộc truyền đời, chính thức mở Quân Cơ Xứ với sa bàn chiến lược vĩ mô.',
         descEn: 'Rock-solid dynasty, multigen succession, full strategic war room commanding armies.'
@@ -291,7 +291,7 @@
         nameVi: 'Bách Nghệ / Thợ Cả',
         nameEn: 'Master Artisan',
         seal: '工',
-        icon: '🔨',
+        icon: 'hammer',
         statLabel: `CRA: ${state.cra}/60`,
         prog: Math.min(100, Math.round((state.cra / 60) * 100)),
         met: state.cra >= 60,
@@ -305,7 +305,7 @@
         nameVi: 'Hành Thương / Cự Phú',
         nameEn: 'Merchant Magnate',
         seal: '商',
-        icon: '💰',
+        icon: 'coin',
         statLabel: `COM: ${state.com}/60 • Bạc: ${formatNumber(state.liquidCash)}/1,500`,
         prog: Math.min(100, Math.round(((state.com / 60) * 0.5 + (Math.min(state.liquidCash, 1500) / 1500) * 0.5) * 100)),
         met: state.com >= 60 && state.liquidCash >= 1500,
@@ -319,7 +319,7 @@
         nameVi: 'Võ Hiệp / Quân Lữ',
         nameEn: 'Martial Champion',
         seal: '武',
-        icon: '⚔️',
+        icon: 'sword',
         statLabel: `WAR: ${state.war}/60 • LDR: ${state.ldr}/55`,
         prog: Math.min(100, Math.round(((state.war / 60) * 0.6 + (state.ldr / 55) * 0.4) * 100)),
         met: state.war >= 60 && state.ldr >= 55,
@@ -333,7 +333,7 @@
         nameVi: 'Sĩ Đồ / Quân Sư',
         nameEn: 'Scholar Strategist',
         seal: '士',
-        icon: '📜',
+        icon: 'scroll',
         statLabel: `INT: ${state.intVal}/70 • POL: ${state.pol}/60`,
         prog: Math.min(100, Math.round(((state.intVal / 70) * 0.5 + (state.pol / 60) * 0.5) * 100)),
         met: state.intVal >= 70 && state.pol >= 60,
@@ -347,7 +347,7 @@
         nameVi: 'Tông Tộc / Thế Gia',
         nameEn: 'Dynastic Clan',
         seal: '家',
-        icon: '🏯',
+        icon: 'users',
         statLabel: state.isMarried ? 'Đã Lập Gia Thất' : 'Bố Y Độc Thân',
         prog: state.isMarried ? 100 : Math.min(90, Math.round((netWorth / 6000) * 90)),
         met: state.isMarried,
@@ -365,7 +365,7 @@
           <div style="display: flex; justify-content: space-between; align-items: flex-start;">
             <div>
               <div style="display: flex; align-items: center; gap: 8px;">
-                <span class="hub-seal" style="font-size: 13px;">${curStage.seal}</span>
+                <span class="hub-seal" style="font-size: 13px;">${uiIcon(curStage.icon)}</span>
                 <span style="font-size: 16px; font-weight: 700; color: #fde68a;">
                   ${isEn ? `STAGE ${curStage.num}: ${curStage.titleEn.toUpperCase()}` : `GIAI ĐOẠN ${curStage.num}: ${curStage.titleVi.toUpperCase()}`}
                 </span>
@@ -383,7 +383,7 @@
             <div style="text-align: right; min-width: 140px;">
               <div style="font-size: 11px; color: var(--text-muted);">${isEn ? 'Net Worth' : 'Tài Sản Ròng'}</div>
               <div style="font-size: 18px; font-weight: 700; color: #fde68a; font-family: 'JetBrains Mono', monospace;">
-                ${formatNumber(netWorth)} <span style="font-size: 11px; font-weight: 400; color: #94a3b8;">Tiền</span>
+                ${formatNumber(netWorth)} <span style="font-size: 11px; font-weight: 400; color: #94a3b8;">Quan</span>
               </div>
             </div>
           </div>
@@ -392,7 +392,7 @@
         <!-- Spatial Grounding Rules Notice -->
         <div class="tactical-card" style="border-left: 3px solid #10b981; background: rgba(16, 185, 129, 0.05); margin-bottom: 16px; padding: 10px 14px;">
           <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="font-size: 14px;">📍</span>
+            <span style="font-size: 14px;">${uiIcon('map')}</span>
             <strong style="color: #34d399; font-size: 12px;">
               ${isEn ? 'SPATIAL GROUNDING PRINCIPLE (RPG CORE):' : 'QUY TẮC HIỆN DIỆN KHÔNG GIAN (RPG CỐT LÕI):'}
             </strong>
@@ -413,7 +413,7 @@
             <div class="tactical-card" style="padding: 12px 14px; border: 1px solid rgba(255, 255, 255, 0.08);">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                 <div style="display: flex; align-items: center; gap: 8px;">
-                  <span class="hub-seal-sub" style="font-size: 11px;">${b.seal}</span>
+                  <span class="hub-seal-sub" style="font-size: 11px;">${uiIcon(b.icon)}</span>
                   <strong style="font-size: 13px; color: #f1f5f9;">${isEn ? b.nameEn : b.nameVi}</strong>
                   ${b.met
                     ? `<span class="tactical-badge tactical-badge--legendary" style="font-size: 10px;">${isEn ? 'Attained' : 'Đắc Đạo'}</span>`
@@ -463,7 +463,7 @@
       <div class="grand-hub-view-container">
         <div class="grand-hub-section-header">
           <div>
-            <h3 class="grand-hub-view-title"><span class="hub-seal-accent">武</span> ${isEn ? 'Personal Armaments & Effective Attributes' : 'Quân Trang Cá Nhân & Bát Hướng Thuộc Tính'}</h3>
+            <h3 class="grand-hub-view-title"><span class="hub-seal-accent">${uiIcon('sword')}</span> ${isEn ? 'Personal Armaments & Effective Attributes' : 'Quân Trang Cá Nhân & Bát Hướng Thuộc Tính'}</h3>
             <p class="grand-hub-view-desc">${isEn ? 'Inspect equipped armaments, equip/unequip gear, and observe 8-axis effective stats.' : 'Xem xét trang bị hộ thân, mặc hoặc tháo vũ khí bảo vật, kiểm tra thuộc tính thực chiến.'}</p>
           </div>
           <div style="font-size: 11px; color: #94a3b8; font-family: 'JetBrains Mono', monospace;">
@@ -475,7 +475,7 @@
         <div class="tactical-card" style="border-left: 3px solid #f59e0b; background: rgba(245, 158, 11, 0.05); margin-bottom: 14px; padding: 10px 14px;">
           <div style="display: flex; align-items: center; justify-content: space-between;">
             <div style="font-size: 11px; color: #fde68a;">
-              <strong>🔨 ${isEn ? 'Smithy Rule:' : 'Quy Tắc Thiết Điếm:'}</strong>
+              <strong>${uiIcon('hammer')} ${isEn ? 'Smithy Rule:' : 'Quy Tắc Thiết Điếm:'}</strong>
               ${isEn
                 ? 'To forge bespoke weapons or commission master smiths, travel to Town Smithy [LOC-0003]. Gear can be equipped or put away here.'
                 : 'Muốn đúc rèn thần binh hoặc tôi luyện đao kiếm, hãy cất bước tới Thiết Điếm [LOC-0003] tìm Thợ Cả. Tại sổ tay này, ngài chỉ có thể trang bị hoặc tháo đồ đang mang.'}
@@ -487,7 +487,7 @@
         <div class="grand-hub-grid-4">
           ${['WEAPON', 'ARMOR', 'STEED', 'TREASURE'].map(slot => {
             const item = overview.slots[slot];
-            const slotSeal = slot === 'WEAPON' ? '兵' : slot === 'ARMOR' ? '甲' : slot === 'STEED' ? '馬' : '策';
+            const slotIcon = slot === 'WEAPON' ? 'sword' : slot === 'ARMOR' ? 'shield' : slot === 'STEED' ? 'paw' : 'coin';
             const slotLabel = slot === 'WEAPON' ? (isEn ? 'Weapon' : 'Binh Khí')
                             : slot === 'ARMOR' ? (isEn ? 'Armor' : 'Khôi Giáp')
                             : slot === 'STEED' ? (isEn ? 'Steed' : 'Chiến Mã')
@@ -495,7 +495,7 @@
             return `
               <div class="tactical-card hub-slot-card ${item ? 'has-item' : 'empty-slot'}">
                 <div class="hub-slot-header">
-                  <span class="hub-seal-badge">${slotSeal}</span>
+                  <span class="hub-seal-badge">${uiIcon(slotIcon)}</span>
                   <span class="hub-slot-label">${slotLabel}</span>
                 </div>
                 <div class="hub-slot-body">
@@ -506,7 +506,7 @@
                     </div>
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
                       <span class="tactical-badge tactical-badge--${String(item.category || '').toLowerCase()}">${item.category || 'GEAR'}</span>
-                      <button class="tactical-btn tactical-btn--xs" style="padding: 2px 8px; font-size: 10px;" onclick="PersonalJournalUI.executeUnequip('${slot}')">
+                      <button class="ui-btn ui-btn--xs" style="padding: 2px 8px; font-size: 10px;" onclick="PersonalJournalUI.executeUnequip('${slot}')">
                         ${isEn ? 'Unequip' : 'Tháo Ra'}
                       </button>
                     </div>
@@ -561,7 +561,7 @@
                     </span>
                     <span style="font-size: 10px; color: var(--text-muted); margin-left: 8px;">[${it.slotType}]</span>
                   </div>
-                  <button class="tactical-btn tactical-btn--xs tactical-btn--primary" style="padding: 2px 8px; font-size: 10px;" onclick="PersonalJournalUI.executeEquip('${it.itemCode}', '${it.slotType}')">
+                  <button class="ui-btn ui-btn--xs ui-btn--primary" style="padding: 2px 8px; font-size: 10px;" onclick="PersonalJournalUI.executeEquip('${it.itemCode}', '${it.slotType}')">
                     ${isEn ? 'Equip' : 'Trang Bị'}
                   </button>
                 </div>
@@ -633,7 +633,7 @@
       <div class="grand-hub-view-container">
         <div class="grand-hub-section-header">
           <div>
-            <h3 class="grand-hub-view-title"><span class="hub-seal-accent">家</span> ${isEn ? 'Dynastic Lineage & Genealogy Record' : 'Gia Thất • Phả Hệ Tông Tộc & Hậu Duệ'}</h3>
+            <h3 class="grand-hub-view-title"><span class="hub-seal-accent">${uiIcon('users')}</span> ${isEn ? 'Dynastic Lineage & Genealogy Record' : 'Gia Thất • Phả Hệ Tông Tộc & Hậu Duệ'}</h3>
             <p class="grand-hub-view-desc">${isEn ? 'Inspect family records, spouse status, heir development, and genealogical tree.' : 'Tra cứu sổ bộ gia phả, tình trạng thê thất, thế tử và bia ký tiền nhân.'}</p>
           </div>
           <div style="font-size: 11px; font-family: 'JetBrains Mono', monospace; color: #fbbf24;">
@@ -646,7 +646,7 @@
         <!-- Grounding Rule Notice -->
         <div class="tactical-card" style="border-left: 3px solid #38bdf8; background: rgba(56, 189, 248, 0.05); margin-bottom: 14px; padding: 10px 14px;">
           <div style="font-size: 11px; color: #bae6fd;">
-            <strong>🏛️ ${isEn ? 'Residence Grounding Rule:' : 'Quy Chế Tư Trạch:'}</strong>
+            <strong>${uiIcon('house')} ${isEn ? 'Residence Grounding Rule:' : 'Quy Chế Tư Trạch:'}</strong>
             ${isEn
               ? 'Courtship, spending time with spouses, and instructing heirs must occur in person at your Residence [LOC-0001]. This journal serves as an ancestral record.'
               : 'Việc cầu hôn giai nhân, trò chuyện tâm tình với phu nhân và dạy bảo con cái chỉ diễn ra khi ngài trở về Tư Trạch [LOC-0001]. Sổ tay này là thư tịch ghi chép gia phả lưu truyền.'}
@@ -656,19 +656,19 @@
         <!-- Sub-View Navigation Tabs -->
         <div class="grand-hub-subnav">
           <button class="grand-hub-subnav-btn ${activeLineageSubTab === 'courtship' ? 'active' : ''}" onclick="PersonalJournalUI.switchLineageSubTab('courtship')">
-            <span class="hub-subnav-seal">姻</span> ${isEn ? 'Spouses & Courtship' : 'Thê Thiếp & Giai Nhân'}
+            <span class="hub-subnav-seal">${uiIcon('users')}</span> ${isEn ? 'Spouses & Courtship' : 'Thê Thiếp & Giai Nhân'}
           </button>
           <button class="grand-hub-subnav-btn ${activeLineageSubTab === 'heirs' ? 'active' : ''} ${!isMarried ? 'subnav-btn-locked' : ''}"
             ${isMarried ? `onclick="PersonalJournalUI.switchLineageSubTab('heirs')"` : `disabled title="${isEn ? 'Locked: Requires married spouse' : 'Khóa: Cần cưới thê thiếp'}"`}>
-            <span class="hub-subnav-seal">${isMarried ? '嗣' : '🔒'}</span> ${isEn ? 'Heirs & Mentorship' : 'Hậu Duệ & Dạy Dỗ'}
+            <span class="hub-subnav-seal">${isMarried ? uiIcon('users') : uiIcon('lock')}</span> ${isEn ? 'Heirs & Mentorship' : 'Hậu Duệ & Dạy Dỗ'}
           </button>
           <button class="grand-hub-subnav-btn ${activeLineageSubTab === 'tree' ? 'active' : ''} ${!isMarried ? 'subnav-btn-locked' : ''}"
             ${isMarried ? `onclick="PersonalJournalUI.switchLineageSubTab('tree')"` : `disabled title="${isEn ? 'Locked: Requires established family' : 'Khóa: Cần lập gia tộc'}"`}>
-            <span class="hub-subnav-seal">${isMarried ? '譜' : '🔒'}</span> ${isEn ? 'Genealogy Tree' : 'Gia Phả Dòng Họ'}
+            <span class="hub-subnav-seal">${isMarried ? uiIcon('tree') : uiIcon('lock')}</span> ${isEn ? 'Genealogy Tree' : 'Gia Phả Dòng Họ'}
           </button>
           <button class="grand-hub-subnav-btn ${activeLineageSubTab === 'succession' ? 'active' : ''} ${!isMarried ? 'subnav-btn-locked' : ''}"
             ${isMarried ? `onclick="PersonalJournalUI.switchLineageSubTab('succession')"` : `disabled title="${isEn ? 'Locked: Requires heir' : 'Khóa: Cần có thế tử'}"`}>
-            <span class="hub-subnav-seal">${isMarried ? '繼' : '🔒'}</span> ${isEn ? 'Ancestral Memorial' : 'Tông Miếu & Kế Thừa'}
+            <span class="hub-subnav-seal">${isMarried ? uiIcon('crown') : uiIcon('lock')}</span> ${isEn ? 'Ancestral Memorial' : 'Tông Miếu & Kế Thừa'}
           </button>
         </div>
 
@@ -813,11 +813,11 @@
       <div class="grand-hub-view-container">
         <div class="grand-hub-section-header">
           <div>
-            <h3 class="grand-hub-view-title"><span class="hub-seal-accent">曆</span> ${isEn ? 'Chronicle, Financial Balance & Vitality' : 'Nhật Ký Hành Trình, Sổ Cái Ngân Sách & Thể Trạng'}</h3>
+            <h3 class="grand-hub-view-title"><span class="hub-seal-accent">${uiIcon('calendar')}</span> ${isEn ? 'Chronicle, Financial Balance & Vitality' : 'Nhật Ký Hành Trình, Sổ Cái Ngân Sách & Thể Trạng'}</h3>
             <p class="grand-hub-view-desc">${isEn ? 'Review assets, recent cash movements, physical stamina recovery, and active undertakings.' : 'Xem xét tài sản, biến động thu chi gần nhất, nhịp độ hồi phục thể lực và việc cần làm.'}</p>
           </div>
           <div style="font-size: 11px; font-family: 'JetBrains Mono', monospace; color: #38bdf8;">
-            📍 ${regionName} / ${locName}
+            ${uiIcon('map')} ${regionName} / ${locName}
           </div>
         </div>
 
@@ -826,13 +826,13 @@
           <div class="tactical-card" style="padding: 10px 14px;">
             <div style="font-size: 11px; color: var(--text-muted);">${isEn ? 'Liquid Cash' : 'Tiền Mặt Trong Túi'}</div>
             <div style="font-size: 16px; font-weight: 700; color: #fde68a; font-family: 'JetBrains Mono', monospace; margin-top: 4px;">
-              ${formatNumber(liquidCash)} <span style="font-size: 10px; font-weight: 400; color: #94a3b8;">Tiền</span>
+              ${formatNumber(liquidCash)} <span style="font-size: 10px; font-weight: 400; color: #94a3b8;">Quan</span>
             </div>
           </div>
           <div class="tactical-card" style="padding: 10px 14px;">
             <div style="font-size: 11px; color: var(--text-muted);">${isEn ? 'Safe Cash' : 'Bạc Trữ Trong Rương'}</div>
             <div style="font-size: 16px; font-weight: 700; color: #38bdf8; font-family: 'JetBrains Mono', monospace; margin-top: 4px;">
-              ${formatNumber(safeCash)} <span style="font-size: 10px; font-weight: 400; color: #94a3b8;">Tiền</span>
+              ${formatNumber(safeCash)} <span style="font-size: 10px; font-weight: 400; color: #94a3b8;">Quan</span>
             </div>
           </div>
           <div class="tactical-card" style="padding: 10px 14px;">
@@ -844,7 +844,7 @@
           <div class="tactical-card" style="padding: 10px 14px; border-left: 3px solid #b45309;">
             <div style="font-size: 11px; color: var(--text-muted);">${isEn ? 'Total Net Worth' : 'Tổng Tài Sản Ròng'}</div>
             <div style="font-size: 16px; font-weight: 700; color: #fbbf24; font-family: 'JetBrains Mono', monospace; margin-top: 4px;">
-              ${formatNumber(netWorth)} <span style="font-size: 10px; font-weight: 400; color: #94a3b8;">Tiền</span>
+              ${formatNumber(netWorth)} <span style="font-size: 10px; font-weight: 400; color: #94a3b8;">Quan</span>
             </div>
           </div>
         </div>

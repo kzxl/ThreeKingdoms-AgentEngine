@@ -60,7 +60,7 @@ async function loadDeckNpcs() {
       const name = isEn ? (npc.name_en || npc.name) : npc.name;
       const role = isEn ? (npc.assigned_role_en || npc.assigned_role || 'Member') : (npc.assigned_role || 'Thành viên');
       const inspectTitle = isEn ? 'Inspect Dossier & Fog of Information' : 'Xem Hồ Sơ & Sương Mù';
-      const wageUnit = isEn ? 'Qian/mo' : 'Qian/th';
+      const wageUnit = isEn ? 'quan/mo' : 'quan/tháng';
 
       return `
         <div class="deck-npc-item">
@@ -86,7 +86,7 @@ async function loadDeckNpcs() {
           <div class="deck-npc-footer">
             <span style="color: var(--text-muted); font-size: 10px;">${dict.deckPersonality || 'Tính cách:'} <strong>${npc.personality || 'Chăm chỉ'}</strong></span>
             <button class="btn btn-sm btn-gold" onclick="rewardNpc('${npc.npc_id}', 100)">
-              ${dict.btnReward || 'Thưởng 100 Tiền'}
+              ${dict.btnReward || 'Thưởng 100 Quan'}
             </button>
           </div>
         </div>
@@ -119,13 +119,13 @@ async function loadDeckLedger() {
         <div class="deck-txn-item">
           <div class="deck-txn-top">
             <span class="deck-txn-id">${txn.txn_id}</span>
-            <span class="deck-txn-amt ${amtColor}">${amtStr} Qian</span>
+            <span class="deck-txn-amt ${amtColor}">${amtStr} quan</span>
           </div>
           <div class="deck-txn-desc">
             <strong>${txn.category}</strong>: ${txn.memo || txn.counterparty}
           </div>
           <div class="deck-txn-bal">
-            ${dict.deckPostBal || 'Số dư sau TXN:'} <strong>${txn.balance.toLocaleString()} Qian</strong>
+            ${dict.deckPostBal || 'Số dư sau TXN:'} <strong>${txn.balance.toLocaleString()} quan</strong>
           </div>
         </div>
       `;

@@ -140,7 +140,7 @@ const QUICK_CHIPS_DATA = {
     chips: [
       { type: 'local', icon: '工', labelVi: 'Đóng 5 Khiên Trúc', labelEn: 'Craft 5 Shields', promptVi: 'Chỉ đạo thợ cả Trần Bảo khởi động đóng 5 khiên trúc', promptEn: 'Direct Chen Bao to craft 5 bamboo shields' },
       { type: 'local', icon: '商', labelVi: 'Dệt 10 Chiếu Trúc', labelEn: 'Weave 10 Mats', promptVi: 'Khởi ca dệt 10 tấm Chiếu Trúc Lương Gia', promptEn: 'Start batch weaving 10 bamboo mats' },
-      { type: 'local', icon: '賞', labelVi: 'Thưởng 100 Tiền', labelEn: 'Reward 100 Qian', promptVi: 'Khen thưởng 100 tiền cho thợ cả Trần Bảo động viên thợ', promptEn: 'Reward 100 Qian to master craftsman Chen Bao' },
+      { type: 'local', icon: '賞', labelVi: 'Thưởng 100 Quan', labelEn: 'Reward 100 quan', promptVi: 'Khen thưởng 100 quan cho thợ cả Trần Bảo động viên thợ', promptEn: 'Reward 100 quan to master craftsman Chen Bao' },
       { divider: true },
       { type: 'courier', icon: '信', labelVi: 'Xe hàng ra Chợ', labelEn: 'Wagon to Market', promptVi: 'Phái gia nhân áp tải xe hàng chiếu trúc ra Chợ Đông Môn', promptEn: 'Dispatch retainer wagon with mats to East Gate Market' },
       { type: 'courier', icon: '信', labelVi: 'Báo Bắc Quân', labelEn: 'Report to Army', promptVi: 'Phi thư báo cho Bắc Quân Đại Doanh về tiến độ khiên giáp', promptEn: 'Send courier to Northern Army on shield readiness' },
@@ -249,7 +249,7 @@ const QUICK_CHIPS_DATA = {
     placeholderVi: 'Lương Diễn yết kiến triều đình Lạc Dương... (hoặc gõ: "Dâng biểu quân công...")',
     placeholderEn: 'Liang Yan at Imperial Court... (or type: "Submit memorial...")',
     chips: [
-      { type: 'local', icon: '勳', labelVi: 'Nhận Sắc Phong Triều Đình', labelEn: 'Claim Imperial Bounty', promptVi: 'Nhận sắc phong Quân Nhu Tán Quan & Thưởng 2,500 Tiền từ Triều Đình', promptEn: 'Claim imperial commission and 2,500 Qian bounty' },
+      { type: 'local', icon: '勳', labelVi: 'Nhận Sắc Phong Triều Đình', labelEn: 'Claim Imperial Bounty', promptVi: 'Nhận sắc phong Quân Nhu Tán Quan & Thưởng 2,500 Quan từ Triều Đình', promptEn: 'Claim imperial commission and 2,500 quan bounty' },
       { type: 'local', icon: '政', labelVi: 'Mở Phân Hiệu Kinh Đô', labelEn: 'Found Capital Branch', promptVi: 'Đăng ký môn bài chi nhánh Lương Gia Thương Hội tại Kinh Sư', promptEn: 'Register Liang Merchant Guild branch in the Capital' },
       { type: 'local', icon: '茶', labelVi: 'Gặp Binh Bộ Thượng Thư', labelEn: 'Court Networking', promptVi: 'Biếu lễ vật tiếp xúc Binh Bộ Thượng Thư nắm bắt thời cuộc', promptEn: 'Audience with Minister of War to discuss contracts' },
       { divider: true },
@@ -389,15 +389,20 @@ const WORLD_MAP_NODES = {
       defense: 70,
       rulerFaction: 'FAC-LIANG-CLAN',
       rulerNameVi: 'Lương Gia Tộc & Lưu Bị',
+      rulerNameEn: 'Liang Clan & Liu Bei',
       colorHex: '#10b981',
-      governorVi: 'Lưu Bị • Huyền Đức'
+      governorVi: 'Lưu Bị • Huyền Đức',
+      governorEn: 'Liu Bei • Xuande'
     },
     economy: {
       grainReserves: 1200,
       treasury: 15000,
       primaryCommodityVi: 'Chiếu Trúc & Binh Khí',
+      primaryCommodityEn: 'Bamboo Mats & Weapons',
       exportGoodVi: 'Chiếu Trúc Lương Gia',
-      importNeedVi: 'Thép Thỏi & Da Bò'
+      exportGoodEn: 'Liang Bamboo Mats',
+      importNeedVi: 'Thép Thỏi & Da Bò',
+      importNeedEn: 'Steel Ingots & Oxhide'
     },
     hireableNpcs: [
       'Vương Lão Thất (Chưởng Quỹ Tiệm Buôn)',
@@ -444,15 +449,20 @@ const WORLD_MAP_NODES = {
       defense: 85,
       rulerFaction: 'FAC-GONGSUN-ZAN',
       rulerNameVi: 'Công Tôn Toản (Bạch Mã)',
+      rulerNameEn: 'Gongsun Zan (White Horse)',
       colorHex: '#38bdf8',
-      governorVi: 'Công Tôn Toản • Bá Khuê'
+      governorVi: 'Công Tôn Toản • Bá Khuê',
+      governorEn: 'Gongsun Zan • Baigui'
     },
     economy: {
       grainReserves: 3500,
       treasury: 22000,
       primaryCommodityVi: 'Chiến Mã U Châu',
+      primaryCommodityEn: 'Youzhou Warhorses',
       exportGoodVi: 'Tuấn Mã U Châu',
-      importNeedVi: 'Quân Lương & Khiên Trúc'
+      exportGoodEn: 'Youzhou Steeds',
+      importNeedVi: 'Quân Lương & Khiên Trúc',
+      importNeedEn: 'Army Grain & Bamboo Shields'
     },
     hireableNpcs: [
       'Lão Mã Thương (Buôn Ngựa Bắc Bình)',
@@ -487,15 +497,20 @@ const WORLD_MAP_NODES = {
       defense: 90,
       rulerFaction: 'FAC-YUAN-SHAO',
       rulerNameVi: 'Viên Thiệu (Ký Châu)',
+      rulerNameEn: 'Yuan Shao (Jizhou)',
       colorHex: '#818cf8',
-      governorVi: 'Viên Thiệu • Bản Sơ'
+      governorVi: 'Viên Thiệu • Bản Sơ',
+      governorEn: 'Yuan Shao • Benshu'
     },
     economy: {
       grainReserves: 8000,
       treasury: 45000,
       primaryCommodityVi: 'Lương Thảo & Gấm Vóc',
+      primaryCommodityEn: 'Grain & Brocade',
       exportGoodVi: 'Lương Ký Châu',
-      importNeedVi: 'Chiến Mã & Thiết Bị'
+      exportGoodEn: 'Jizhou Grain',
+      importNeedVi: 'Chiến Mã & Thiết Bị',
+      importNeedEn: 'Warhorses & Equipment'
     },
     hireableNpcs: [
       'Chân Phúc Đức (Thương Nhân Lương Thảo)',
@@ -531,15 +546,20 @@ const WORLD_MAP_NODES = {
       defense: 65,
       rulerFaction: 'FAC-YELLOW-TURBAN',
       rulerNameVi: 'Khăn Vàng (Trương Giác)',
+      rulerNameEn: 'Yellow Turbans (Zhang Jiao)',
       colorHex: '#ef4444',
-      governorVi: 'Trương Giác • Đại Hiền Lương Sư'
+      governorVi: 'Trương Giác • Đại Hiền Lương Sư',
+      governorEn: 'Zhang Jiao • Great Worthiness Master'
     },
     economy: {
       grainReserves: 4000,
       treasury: 18000,
       primaryCommodityVi: 'Phù Lục & Dân Binh',
+      primaryCommodityEn: 'Talismans & Militia',
       exportGoodVi: 'Bùa Thái Bình',
-      importNeedVi: 'Quân Lương Cứu Tế'
+      exportGoodEn: 'Taiping Talismans',
+      importNeedVi: 'Quân Lương Cứu Tế',
+      importNeedEn: 'Relief Grain'
     },
     hireableNpcs: [
       'Đạo Nhân Cứu Tế (Phương Sĩ)',
@@ -574,15 +594,20 @@ const WORLD_MAP_NODES = {
       defense: 72,
       rulerFaction: 'FAC-HAN',
       rulerNameVi: 'Đại Hán Triều Đình',
+      rulerNameEn: 'Han Imperial Court',
       colorHex: '#06b6d4',
-      governorVi: 'Vương Triệt (Huyện Thừa)'
+      governorVi: 'Vương Triệt (Huyện Thừa)',
+      governorEn: 'Wang Jie (County Magistrate)'
     },
     economy: {
       grainReserves: 2000,
       treasury: 12000,
       primaryCommodityVi: 'Hải Sản & Ngũ Cốc Bột Hải',
+      primaryCommodityEn: 'Seafood & Bohai Grain',
       exportGoodVi: 'Cá Khô Vịnh Bột Hải',
-      importNeedVi: 'Khiên Giáp & Dược Liệu'
+      exportGoodEn: 'Bohai Dried Fish',
+      importNeedVi: 'Khiên Giáp & Dược Liệu',
+      importNeedEn: 'Shields, Armor & Medicine'
     },
     hireableNpcs: [
       'Trần Ngư Hộ (Chủ Thuyền Đánh Cá)',
@@ -617,15 +642,20 @@ const WORLD_MAP_NODES = {
       defense: 98,
       rulerFaction: 'FAC-HAN',
       rulerNameVi: 'Đại Hán Kinh Sư (Hà Tiến)',
+      rulerNameEn: 'Han Imperial Capital (He Jin)',
       colorHex: '#f59e0b',
-      governorVi: 'Hà Tiến • Đại Tướng Quân'
+      governorVi: 'Hà Tiến • Đại Tướng Quân',
+      governorEn: 'He Jin • Grand General'
     },
     economy: {
       grainReserves: 12000,
       treasury: 80000,
       primaryCommodityVi: 'Tiền Đồng & Lụa Cung Đình',
+      primaryCommodityEn: 'Bronze Cash & Court Silk',
       exportGoodVi: 'Lụa Kinh Sư & Rượu Ngự',
-      importNeedVi: 'Lương Thảo & Thiết Quặng'
+      exportGoodEn: 'Capital Silk & Imperial Wine',
+      importNeedVi: 'Lương Thảo & Thiết Quặng',
+      importNeedEn: 'Grain & Iron Ore'
     },
     hireableNpcs: [
       'Tôn Diệu (Đại Chưởng Quỹ Tiền Trang)',
@@ -661,15 +691,20 @@ const WORLD_MAP_NODES = {
       defense: 95,
       rulerFaction: 'FAC-DONG-ZHUO',
       rulerNameVi: 'Đổng Trác (Tây Lương Quân)',
+      rulerNameEn: 'Dong Zhuo (Xiliang Army)',
       colorHex: '#a855f7',
-      governorVi: 'Đổng Trác • Trọng Dĩnh'
+      governorVi: 'Đổng Trác • Trọng Dĩnh',
+      governorEn: 'Dong Zhuo • Zhongying'
     },
     economy: {
       grainReserves: 9000,
       treasury: 60000,
       primaryCommodityVi: 'Ngựa Chiến & Bảo Vật Tây Vực',
+      primaryCommodityEn: 'Warhorses & Western Treasures',
       exportGoodVi: 'Tuấn Mã & Cẩm Thạch',
-      importNeedVi: 'Lương Thảo Quan Trung'
+      exportGoodEn: 'Steeds & Marble',
+      importNeedVi: 'Lương Thảo Quan Trung',
+      importNeedEn: 'Guanzhong Grain'
     },
     hireableNpcs: [
       'Lý Cổ Ngoạn (Thương Gia Tây Vực)',
@@ -704,15 +739,20 @@ const WORLD_MAP_NODES = {
       defense: 88,
       rulerFaction: 'FAC-CAO-CAO',
       rulerNameVi: 'Tào Tháo (Mạnh Đức)',
+      rulerNameEn: 'Cao Cao (Mengde)',
       colorHex: '#3b82f6',
-      governorVi: 'Tào Tháo • Mạnh Đức'
+      governorVi: 'Tào Tháo • Mạnh Đức',
+      governorEn: 'Cao Cao • Mengde'
     },
     economy: {
       grainReserves: 6500,
       treasury: 38000,
       primaryCommodityVi: 'Đồn Điền Lương & Binh Khí',
+      primaryCommodityEn: 'Garrison Grain & Weapons',
       exportGoodVi: 'Lúa Đồn Điền Dự Châu',
-      importNeedVi: 'Chiến Mã & Thiết Quặng'
+      exportGoodEn: 'Yuzhou Garrison Rice',
+      importNeedVi: 'Chiến Mã & Thiết Quặng',
+      importNeedEn: 'Warhorses & Iron Ore'
     },
     hireableNpcs: [
       'Tuân Thị Điền Quan (Đồn Điền Sứ)',
@@ -747,15 +787,20 @@ const WORLD_MAP_NODES = {
       defense: 80,
       rulerFaction: 'FAC-TAO-QIAN',
       rulerNameVi: 'Đào Khiêm (Từ Châu)',
+      rulerNameEn: 'Tao Qian (Xuzhou)',
       colorHex: '#14b8a6',
-      governorVi: 'Đào Khiêm • Cung Tổ'
+      governorVi: 'Đào Khiêm • Cung Tổ',
+      governorEn: 'Tao Qian • Gongzu'
     },
     economy: {
       grainReserves: 4200,
       treasury: 28000,
       primaryCommodityVi: 'Muối Biển & Hải Sản',
+      primaryCommodityEn: 'Sea Salt & Seafood',
       exportGoodVi: 'Muối Biển Tinh Luyện Từ Châu',
-      importNeedVi: 'Binh Khí & Ngựa Chiến'
+      exportGoodEn: 'Refined Xuzhou Sea Salt',
+      importNeedVi: 'Binh Khí & Ngựa Chiến',
+      importNeedEn: 'Weapons & Warhorses'
     },
     hireableNpcs: [
       'Hải Muối Tử (Đại Hộ Muối Biển)',
@@ -790,15 +835,20 @@ const WORLD_MAP_NODES = {
       defense: 90,
       rulerFaction: 'FAC-LIU-BIAO',
       rulerNameVi: 'Lưu Biểu (Kinh Châu)',
+      rulerNameEn: 'Liu Biao (Jingzhou)',
       colorHex: '#0284c7',
-      governorVi: 'Lưu Biểu • Cảnh Thăng'
+      governorVi: 'Lưu Biểu • Cảnh Thăng',
+      governorEn: 'Liu Biao • Jingsheng'
     },
     economy: {
       grainReserves: 7500,
       treasury: 40000,
       primaryCommodityVi: 'Gỗ Thiết Mộc & Thảo Dược',
+      primaryCommodityEn: 'Ironwood & Herbs',
       exportGoodVi: 'Gỗ Đóng Thuyền Thiết Mộc',
-      importNeedVi: 'Muối Biển & Ngựa Bắc'
+      exportGoodEn: 'Ironwood Ship Timber',
+      importNeedVi: 'Muối Biển & Ngựa Bắc',
+      importNeedEn: 'Sea Salt & Northern Horses'
     },
     hireableNpcs: [
       'Bạch Dược Cư Sĩ (Dược Liệu Kinh Tương)',
@@ -833,15 +883,20 @@ const WORLD_MAP_NODES = {
       defense: 82,
       rulerFaction: 'FAC-LIU-BIAO',
       rulerNameVi: 'Kinh Châu Thủy Quân',
+      rulerNameEn: 'Jingzhou Navy',
       colorHex: '#06b6d4',
-      governorVi: 'Sái Mạo • Đức Khuê'
+      governorVi: 'Sái Mạo • Đức Khuê',
+      governorEn: 'Cai Mao • Dekui'
     },
     economy: {
       grainReserves: 5000,
       treasury: 32000,
       primaryCommodityVi: 'Chiến Thuyền & Cá Khô',
+      primaryCommodityEn: 'Warships & Dried Fish',
       exportGoodVi: 'Thuyền Mông Xung & Cá Khô',
-      importNeedVi: 'Dầu Hỏa & Cung Tên'
+      exportGoodEn: 'Assault Boats & Dried Fish',
+      importNeedVi: 'Dầu Hỏa & Cung Tên',
+      importNeedEn: 'Fire Oil & Arrows'
     },
     hireableNpcs: [
       'Trường Giang Tiêu Sư (Hộ Vận)',
@@ -876,15 +931,20 @@ const WORLD_MAP_NODES = {
       defense: 80,
       rulerFaction: 'FAC-SUN-JIAN',
       rulerNameVi: 'Tôn Kiên / Giang Đông Quân',
+      rulerNameEn: 'Sun Jian / Jiangdong Army',
       colorHex: '#f97316',
-      governorVi: 'Chu Du • Công Cẩn'
+      governorVi: 'Chu Du • Công Cẩn',
+      governorEn: 'Zhou Yu • Gongjin'
     },
     economy: {
       grainReserves: 4800,
       treasury: 26000,
       primaryCommodityVi: 'Dầu Hỏa & Thủy Binh',
+      primaryCommodityEn: 'Fire Oil & Marines',
       exportGoodVi: 'Hỏa Cụ & Dầu Hỏa Chiến',
-      importNeedVi: 'Lương Thảo & Gỗ Cứng'
+      exportGoodEn: 'Incendiaries & War Oil',
+      importNeedVi: 'Lương Thảo & Gỗ Cứng',
+      importNeedEn: 'Grain & Hardwood'
     },
     hireableNpcs: [
       'Lục Thủy Thủ (Hoa Tiêu Thủy Đạo)',
@@ -919,15 +979,20 @@ const WORLD_MAP_NODES = {
       defense: 84,
       rulerFaction: 'FAC-SUN-JIAN',
       rulerNameVi: 'Tôn Kiên / Tôn Quyền (Đông Ngô)',
+      rulerNameEn: 'Sun Jian / Sun Quan (Eastern Wu)',
       colorHex: '#22c55e',
-      governorVi: 'Tôn Kiên • Văn Đài'
+      governorVi: 'Tôn Kiên • Văn Đài',
+      governorEn: 'Sun Jian • Wentai'
     },
     economy: {
       grainReserves: 6000,
       treasury: 42000,
       primaryCommodityVi: 'Trà Giang Nam & Gốm Sứ',
+      primaryCommodityEn: 'Jiangnan Tea & Porcelain',
       exportGoodVi: 'Trà Thơm Giang Đông & Gốm Men',
-      importNeedVi: 'Chiến Mã & Thiết Quặng'
+      exportGoodEn: 'Jiangdong Scented Tea & Glazed Ware',
+      importNeedVi: 'Chiến Mã & Thiết Quặng',
+      importNeedEn: 'Warhorses & Iron Ore'
     },
     hireableNpcs: [
       'Cố Gia Định (Đại Quản Gia Lương Phủ)',
@@ -962,15 +1027,20 @@ const WORLD_MAP_NODES = {
       defense: 88,
       rulerFaction: 'FAC-ZHANG-LU',
       rulerNameVi: 'Trương Lỗ (Thiên Sư Đạo)',
+      rulerNameEn: 'Zhang Lu (Way of the Celestial Masters)',
       colorHex: '#a8a29e',
-      governorVi: 'Trương Lỗ • Công Kỳ'
+      governorVi: 'Trương Lỗ • Công Kỳ',
+      governorEn: 'Zhang Lu • Gongqi'
     },
     economy: {
       grainReserves: 4000,
       treasury: 20000,
       primaryCommodityVi: 'Dược Liệu Tần Lĩnh & Nghĩa Mễ',
+      primaryCommodityEn: 'Qinling Herbs & Righteous Rice',
       exportGoodVi: 'Sâm Quy Tần Lĩnh & Nghĩa Mễ',
-      importNeedVi: 'Muối & Binh Khí Sắt'
+      exportGoodEn: 'Qinling Ginseng & Righteous Rice',
+      importNeedVi: 'Muối & Binh Khí Sắt',
+      importNeedEn: 'Salt & Iron Weapons'
     },
     hireableNpcs: [
       'Khương Hiểm (Tiêu Đầu Sạn Đạo)',
@@ -1005,15 +1075,20 @@ const WORLD_MAP_NODES = {
       defense: 86,
       rulerFaction: 'FAC-HAN',
       rulerNameVi: 'Lưu Yên (Ích Châu Mục)',
+      rulerNameEn: 'Liu Yan (Governor of Yizhou)',
       colorHex: '#10b981',
-      governorVi: 'Lưu Yên • Quân Lang'
+      governorVi: 'Lưu Yên • Quân Lang',
+      governorEn: 'Liu Yan • Junlang'
     },
     economy: {
       grainReserves: 10000,
       treasury: 50000,
       primaryCommodityVi: 'Thục Cẩm & Quặng Sắt Tây Thục',
+      primaryCommodityEn: 'Shu Brocade & Western Shu Iron',
       exportGoodVi: 'Thục Cẩm Tuyệt Phẩm',
-      importNeedVi: 'Chiến Mã & Muối Biển'
+      exportGoodEn: 'Finest Shu Brocade',
+      importNeedVi: 'Chiến Mã & Muối Biển',
+      importNeedEn: 'Warhorses & Sea Salt'
     },
     hireableNpcs: [
       'Trịnh Uyển Nhi (Đại Sư Dệt Thục Cẩm)',
@@ -1048,15 +1123,20 @@ const WORLD_MAP_NODES = {
       defense: 76,
       rulerFaction: 'FAC-DONG-ZHUO',
       rulerNameVi: 'Trương Tú (Nam Dương)',
+      rulerNameEn: 'Zhang Xiu (Nanyang)',
       colorHex: '#e11d48',
-      governorVi: 'Trương Tú • Nam Dương Thương Chủ'
+      governorVi: 'Trương Tú • Nam Dương Thương Chủ',
+      governorEn: 'Zhang Xiu • Nanyang Merchant Lord'
     },
     economy: {
       grainReserves: 3800,
       treasury: 25000,
       primaryCommodityVi: 'Binh Khí & Thảo Dược Nam Dương',
+      primaryCommodityEn: 'Weapons & Nanyang Herbs',
       exportGoodVi: 'Đao Kiếm & Dược Thảo Nam Dương',
-      importNeedVi: 'Lương Thảo & Muối Biển'
+      exportGoodEn: 'Nanyang Blades & Medicinal Herbs',
+      importNeedVi: 'Lương Thảo & Muối Biển',
+      importNeedEn: 'Grain & Sea Salt'
     },
     hireableNpcs: [
       'Dục Thủy Tiêu Sư (Vận Chuyển)',
@@ -1091,15 +1171,20 @@ const WORLD_MAP_NODES = {
       defense: 78,
       rulerFaction: 'FAC-YUAN-SHU',
       rulerNameVi: 'Viên Thuật (Hoài Nam)',
+      rulerNameEn: 'Yuan Shu (Huainan)',
       colorHex: '#f59e0b',
-      governorVi: 'Viên Thuật • Công Lộ'
+      governorVi: 'Viên Thuật • Công Lộ',
+      governorEn: 'Yuan Shu • Gonglu'
     },
     economy: {
       grainReserves: 4500,
       treasury: 30000,
       primaryCommodityVi: 'Lúa Gạo Sông Hoài & Thủy Sản',
+      primaryCommodityEn: 'Huai River Rice & Aquatic Goods',
       exportGoodVi: 'Lúa Gạo & Cá Tươi Sông Hoài',
-      importNeedVi: 'Chiến Mã & Thiết Giáp'
+      exportGoodEn: 'Huai River Rice & Fresh Fish',
+      importNeedVi: 'Chiến Mã & Thiết Giáp',
+      importNeedEn: 'Warhorses & Iron Armor'
     },
     hireableNpcs: [
       'Hoài Thủy Vận Tiêu (Thủy Lộ)',
@@ -1134,15 +1219,20 @@ const WORLD_MAP_NODES = {
       defense: 84,
       rulerFaction: 'FAC-HAN',
       rulerNameVi: 'Trương Dương (Tịnh Châu)',
+      rulerNameEn: 'Zhang Yang (Bingzhou)',
       colorHex: '#64748b',
-      governorVi: 'Trương Dương • Trĩ Thúc'
+      governorVi: 'Trương Dương • Trĩ Thúc',
+      governorEn: 'Zhang Yang • Zhishu'
     },
     economy: {
       grainReserves: 2800,
       treasury: 18000,
       primaryCommodityVi: 'Quặng Sắt Thái Hành & Than Đá',
+      primaryCommodityEn: 'Taihang Iron Ore & Coal',
       exportGoodVi: 'Quặng Sắt Thái Hành Thượng Hạng',
-      importNeedVi: 'Lương Thảo & Vải Vóc'
+      exportGoodEn: 'Prime Taihang Iron Ore',
+      importNeedVi: 'Lương Thảo & Vải Vóc',
+      importNeedEn: 'Grain & Textiles'
     },
     hireableNpcs: [
       'Thiết Đầu Khai (Giám Công Mỏ Quặng)',
@@ -1177,15 +1267,20 @@ const WORLD_MAP_NODES = {
       defense: 75,
       rulerFaction: 'FAC-DONG-ZHUO',
       rulerNameVi: 'Mã Đằng & Hàn Toại (Tây Lương)',
+      rulerNameEn: 'Ma Teng & Han Sui (Xiliang)',
       colorHex: '#d97706',
-      governorVi: 'Mã Đằng • Thọ Thành'
+      governorVi: 'Mã Đằng • Thọ Thành',
+      governorEn: 'Ma Teng • Shoucheng'
     },
     economy: {
       grainReserves: 3200,
       treasury: 24000,
       primaryCommodityVi: 'Chiến Mã Tây Lương & Da Thuộc',
+      primaryCommodityEn: 'Xiliang Warhorses & Leather',
       exportGoodVi: 'Chiến Mã Đại Uyển & Da Thú',
-      importNeedVi: 'Lương Thảo & Tơ Lụa'
+      exportGoodEn: 'Dayuan Warhorses & Hides',
+      importNeedVi: 'Lương Thảo & Tơ Lụa',
+      importNeedEn: 'Grain & Silk'
     },
     hireableNpcs: [
       'Mã Lương Mã (Thương Nhân Ngựa Chiến)',
@@ -1220,15 +1315,20 @@ const WORLD_MAP_NODES = {
       defense: 68,
       rulerFaction: 'FAC-SHI-XIE',
       rulerNameVi: 'Sĩ Nhiếp (Giao Châu)',
+      rulerNameEn: 'Shi Xie (Jiaozhou)',
       colorHex: '#059669',
-      governorVi: 'Sĩ Nhiếp • Uy Ngạn'
+      governorVi: 'Sĩ Nhiếp • Uy Ngạn',
+      governorEn: 'Shi Xie • Weiyan'
     },
     economy: {
       grainReserves: 3000,
       treasury: 19000,
       primaryCommodityVi: 'Trân Châu & Trầm Hương Lĩnh Nam',
+      primaryCommodityEn: 'Lingnan Pearls & Agarwood',
       exportGoodVi: 'Dạ Minh Châu & Trầm Hương',
-      importNeedVi: 'Binh Khí Sắt & Ngũ Cốc'
+      exportGoodEn: 'Luminous Pearls & Agarwood',
+      importNeedVi: 'Binh Khí Sắt & Ngũ Cốc',
+      importNeedEn: 'Iron Weapons & Grain'
     },
     hireableNpcs: [
       'Lâm Trầm Hương (Đại Thương Trầm Hương)',
@@ -1250,41 +1350,41 @@ WORLD_MAP_NODES['wu_wei'] = WORLD_MAP_NODES['xi_liang'];
  * Adhering to ROTK terrain profiles: HIGHWAY, WATERWAY, MOUNTAIN_PASS, PLANK_ROAD
  */
 const WORLD_MAP_ROUTES = [
-  { from: 'zhuo_xian', to: 'ji_cheng', terrainType: 'HIGHWAY', distanceLi: 120, marchDays: 0.5, grainCost: 0.8, ambushRisk: 'LOW', descVi: 'Quan đạo U Châu bằng phẳng, nối liền Trác Huyện và Kế Thành Bắc Bình.' },
-  { from: 'zhuo_xian', to: 'guang_zong', terrainType: 'HIGHWAY', distanceLi: 280, marchDays: 1.0, grainCost: 1.5, ambushRisk: 'HIGH', descVi: 'Đường tiến quân nam hạ tiếp cận đại doanh bao vây quân Khăn Vàng.' },
-  { from: 'zhuo_xian', to: 'ping_yuan', terrainType: 'HIGHWAY', distanceLi: 360, marchDays: 1.5, grainCost: 2.0, ambushRisk: 'MODERATE', descVi: 'Quan đạo duyên hải nối Trác Huyện thẳng tới trọng trấn Bình Nguyên.' },
-  { from: 'ji_cheng', to: 'ping_yuan', terrainType: 'HIGHWAY', distanceLi: 340, marchDays: 1.4, grainCost: 1.8, ambushRisk: 'LOW', descVi: 'Tuyến tuần tra biên phòng U - Thanh Châu của thiết kỵ Bạch Mã.' },
-  { from: 'guang_zong', to: 'ye_cheng', terrainType: 'HIGHWAY', distanceLi: 150, marchDays: 0.8, grainCost: 1.0, ambushRisk: 'MODERATE', descVi: 'Đường tiếp vận nối tiền tuyến Cự Lộc với đại đô hội Nghiệp Thành.' },
-  { from: 'guang_zong', to: 'ping_yuan', terrainType: 'HIGHWAY', distanceLi: 180, marchDays: 1.0, grainCost: 1.2, ambushRisk: 'MODERATE', descVi: 'Hành lang đông tiến từ Cự Lộc sang bình nguyên duyên hải.' },
-  { from: 'ye_cheng', to: 'luo_yang', terrainType: 'HIGHWAY', distanceLi: 420, marchDays: 1.8, grainCost: 2.2, ambushRisk: 'LOW', descVi: 'Trục giao thương huyết mạch vượt sông Hoàng Hà tiến vào Kinh Sư Lạc Dương.' },
-  { from: 'ye_cheng', to: 'shang_dang', terrainType: 'MOUNTAIN_PASS', distanceLi: 240, marchDays: 1.5, grainCost: 1.8, ambushRisk: 'MODERATE', descVi: 'Thái Hành sơn đạo quanh co hiểm trở dẫn lên trọng trấn Thượng Đảng.' },
-  { from: 'ye_cheng', to: 'xu_chang', terrainType: 'HIGHWAY', distanceLi: 380, marchDays: 1.6, grainCost: 2.0, ambushRisk: 'LOW', descVi: 'Quan đạo Trung Nguyên nối liền hai trung tâm chính trị Hà Bắc và Dự Châu.' },
-  { from: 'ping_yuan', to: 'xia_pi', terrainType: 'HIGHWAY', distanceLi: 400, marchDays: 1.8, grainCost: 2.4, ambushRisk: 'MODERATE', descVi: 'Thương lộ duyên hải phồn hoa kết nối Thanh Châu và kho muối biển Hạ Phì.' },
-  { from: 'luo_yang', to: 'chang_an', terrainType: 'HIGHWAY', distanceLi: 380, marchDays: 1.8, grainCost: 2.2, ambushRisk: 'LOW', descVi: 'Đại đạo Đông Tây qua Đồng Quan và Hàm Cốc Quan nối liền hai đại kinh đô.' },
-  { from: 'luo_yang', to: 'xu_chang', terrainType: 'HIGHWAY', distanceLi: 220, marchDays: 1.0, grainCost: 1.4, ambushRisk: 'LOW', descVi: 'Cửa ngõ Hổ Lao Quan tiến về vùng đồng bằng đồn điền trù phú Dĩnh Xuyên.' },
-  { from: 'chang_an', to: 'xi_liang', terrainType: 'HIGHWAY', distanceLi: 520, marchDays: 4.2, grainCost: 2.6, ambushRisk: 'MODERATE', descVi: 'Hành lang Hà Tây mở ra Con Đường Tơ Lụa cổ xưa và đại mạc Tây Lương.' },
-  { from: 'chang_an', to: 'han_zhong', terrainType: 'PLANK_ROAD', distanceLi: 360, marchDays: 3.5, grainCost: 2.5, ambushRisk: 'HIGH', descVi: 'Sạn đạo Tí Ngọ và Thảng Lạc cheo leo vách núi hiểm trở vượt dãy Tần Lĩnh.' },
-  { from: 'han_zhong', to: 'cheng_du', terrainType: 'PLANK_ROAD', distanceLi: 420, marchDays: 4.0, grainCost: 2.8, ambushRisk: 'HIGH', descVi: 'Thục Đạo nan xuyên qua đệ nhất hùng quan Kiếm Các vào bồn địa Thành Đô.' },
-  { from: 'xu_chang', to: 'wan_cheng', terrainType: 'HIGHWAY', distanceLi: 280, marchDays: 1.4, grainCost: 1.6, ambushRisk: 'MODERATE', descVi: 'Quan đạo huyết mạch nối Dự Châu xuống bồn địa chiến lược Nam Dương.' },
-  { from: 'xu_chang', to: 'xia_pi', terrainType: 'HIGHWAY', distanceLi: 350, marchDays: 1.6, grainCost: 2.0, ambushRisk: 'LOW', descVi: 'Tuyến giao thương trù phú giữa đất đồn điền và đại thương nhân Từ Châu.' },
-  { from: 'xu_chang', to: 'shou_chun', terrainType: 'HIGHWAY', distanceLi: 320, marchDays: 1.5, grainCost: 1.8, ambushRisk: 'LOW', descVi: 'Trục đường mậu dịch sông Hoài tiến vào căn cứ phồn vinh Thọ Xuân.' },
-  { from: 'wan_cheng', to: 'xiang_yang', terrainType: 'WATERWAY', distanceLi: 220, marchDays: 1.2, grainCost: 1.4, ambushRisk: 'LOW', descVi: 'Thủy lộ Hán Thủy xuôi nam nối cửa ngõ Nam Dương với Châu Phủ Tương Dương.' },
-  { from: 'shou_chun', to: 'jian_ye', terrainType: 'WATERWAY', distanceLi: 260, marchDays: 1.4, grainCost: 1.6, ambushRisk: 'LOW', descVi: 'Thủy lộ Trường Giang hạ lưu tiến thẳng vào đô thành Giang Đông Kiến Nghiệp.' },
-  { from: 'xiang_yang', to: 'jiang_ling', terrainType: 'WATERWAY', distanceLi: 260, marchDays: 1.3, grainCost: 1.5, ambushRisk: 'LOW', descVi: 'Trục giao thông Kinh Châu nối Tương Dương và Giang Lăng qua Trường Bản.' },
-  { from: 'jiang_ling', to: 'chi_bi', terrainType: 'WATERWAY', distanceLi: 280, marchDays: 1.5, grainCost: 1.8, ambushRisk: 'HIGH', descVi: 'Thủy lộ Trường Giang xuôi dòng qua vùng đá dựng đứng Xích Bích oai hùng.' },
-  { from: 'chi_bi', to: 'jian_ye', terrainType: 'WATERWAY', distanceLi: 450, marchDays: 2.2, grainCost: 2.5, ambushRisk: 'LOW', descVi: 'Đại thủy lộ Trường Giang xuôi về trung tâm phồn hoa đô hội Đông Ngô.' },
-  { from: 'xiang_yang', to: 'jiao_zhi', terrainType: 'MOUNTAIN_PASS', distanceLi: 980, marchDays: 6.0, grainCost: 5.0, ambushRisk: 'EXTREME', descVi: 'Nam chinh lộ nghìn dặm vượt đèo dốc sơn lâm tiến vào bờ biển Giao Chỉ.' }
+  { from: 'zhuo_xian', to: 'ji_cheng', terrainType: 'HIGHWAY', distanceLi: 120, marchDays: 0.5, grainCost: 0.8, ambushRisk: 'LOW', descVi: 'Quan đạo U Châu bằng phẳng, nối liền Trác Huyện và Kế Thành Bắc Bình.', descEn: 'The Youzhou highway links Zhuo County with Jicheng in Beiping.' },
+  { from: 'zhuo_xian', to: 'guang_zong', terrainType: 'HIGHWAY', distanceLi: 280, marchDays: 1.0, grainCost: 1.5, ambushRisk: 'HIGH', descVi: 'Đường tiến quân nam hạ tiếp cận đại doanh bao vây quân Khăn Vàng.', descEn: 'Southern march corridor toward the Yellow Turban siege camp.' },
+  { from: 'zhuo_xian', to: 'ping_yuan', terrainType: 'HIGHWAY', distanceLi: 360, marchDays: 1.5, grainCost: 2.0, ambushRisk: 'MODERATE', descVi: 'Quan đạo duyên hải nối Trác Huyện thẳng tới trọng trấn Bình Nguyên.', descEn: 'Coastal highway from Zhuo County to the Pingyuan stronghold.' },
+  { from: 'ji_cheng', to: 'ping_yuan', terrainType: 'HIGHWAY', distanceLi: 340, marchDays: 1.4, grainCost: 1.8, ambushRisk: 'LOW', descVi: 'Tuyến tuần tra biên phòng U - Thanh Châu của thiết kỵ Bạch Mã.', descEn: 'White Horse cavalry border patrol between You and Qing provinces.' },
+  { from: 'guang_zong', to: 'ye_cheng', terrainType: 'HIGHWAY', distanceLi: 150, marchDays: 0.8, grainCost: 1.0, ambushRisk: 'MODERATE', descVi: 'Đường tiếp vận nối tiền tuyến Cự Lộc với đại đô hội Nghiệp Thành.', descEn: 'Supply road from the Julu front to the great city of Ye.' },
+  { from: 'guang_zong', to: 'ping_yuan', terrainType: 'HIGHWAY', distanceLi: 180, marchDays: 1.0, grainCost: 1.2, ambushRisk: 'MODERATE', descVi: 'Hành lang đông tiến từ Cự Lộc sang bình nguyên duyên hải.', descEn: 'Eastern corridor from Julu into the coastal plain.' },
+  { from: 'ye_cheng', to: 'luo_yang', terrainType: 'HIGHWAY', distanceLi: 420, marchDays: 1.8, grainCost: 2.2, ambushRisk: 'LOW', descVi: 'Trục giao thương huyết mạch vượt sông Hoàng Hà tiến vào Kinh Sư Lạc Dương.', descEn: 'Main trade artery crossing the Yellow River into the imperial capital.' },
+  { from: 'ye_cheng', to: 'shang_dang', terrainType: 'MOUNTAIN_PASS', distanceLi: 240, marchDays: 1.5, grainCost: 1.8, ambushRisk: 'MODERATE', descVi: 'Thái Hành sơn đạo quanh co hiểm trở dẫn lên trọng trấn Thượng Đảng.', descEn: 'Winding Taihang mountain road up to Shangdang.' },
+  { from: 'ye_cheng', to: 'xu_chang', terrainType: 'HIGHWAY', distanceLi: 380, marchDays: 1.6, grainCost: 2.0, ambushRisk: 'LOW', descVi: 'Quan đạo Trung Nguyên nối liền hai trung tâm chính trị Hà Bắc và Dự Châu.', descEn: 'Central Plains highway linking Hebei and Yuzhou.' },
+  { from: 'ping_yuan', to: 'xia_pi', terrainType: 'HIGHWAY', distanceLi: 400, marchDays: 1.8, grainCost: 2.4, ambushRisk: 'MODERATE', descVi: 'Thương lộ duyên hải phồn hoa kết nối Thanh Châu và kho muối biển Hạ Phì.', descEn: 'Rich coastal trade road to the Xiapi salt depots.' },
+  { from: 'luo_yang', to: 'chang_an', terrainType: 'HIGHWAY', distanceLi: 380, marchDays: 1.8, grainCost: 2.2, ambushRisk: 'LOW', descVi: 'Đại đạo Đông Tây qua Đồng Quan và Hàm Cốc Quan nối liền hai đại kinh đô.', descEn: 'Imperial east-west road through Dongguan and Hangu Pass.' },
+  { from: 'luo_yang', to: 'xu_chang', terrainType: 'HIGHWAY', distanceLi: 220, marchDays: 1.0, grainCost: 1.4, ambushRisk: 'LOW', descVi: 'Cửa ngõ Hổ Lao Quan tiến về vùng đồng bằng đồn điền trù phú Dĩnh Xuyên.', descEn: 'Hulao Pass gateway into the Yingchuan farmlands.' },
+  { from: 'chang_an', to: 'xi_liang', terrainType: 'HIGHWAY', distanceLi: 520, marchDays: 4.2, grainCost: 2.6, ambushRisk: 'MODERATE', descVi: 'Hành lang Hà Tây mở ra Con Đường Tơ Lụa cổ xưa và đại mạc Tây Lương.', descEn: 'Hexi corridor opening onto the Silk Road and the western deserts.' },
+  { from: 'chang_an', to: 'han_zhong', terrainType: 'PLANK_ROAD', distanceLi: 360, marchDays: 3.5, grainCost: 2.5, ambushRisk: 'HIGH', descVi: 'Sạn đạo Tí Ngọ và Thảng Lạc cheo leo vách núi hiểm trở vượt dãy Tần Lĩnh.', descEn: 'Cliffside plank roads over the Qinling range.' },
+  { from: 'han_zhong', to: 'cheng_du', terrainType: 'PLANK_ROAD', distanceLi: 420, marchDays: 4.0, grainCost: 2.8, ambushRisk: 'HIGH', descVi: 'Thục Đạo nan xuyên qua đệ nhất hùng quan Kiếm Các vào bồn địa Thành Đô.', descEn: 'Treacherous Shu plank road through Jian Ge into the Chengdu basin.' },
+  { from: 'xu_chang', to: 'wan_cheng', terrainType: 'HIGHWAY', distanceLi: 280, marchDays: 1.4, grainCost: 1.6, ambushRisk: 'MODERATE', descVi: 'Quan đạo huyết mạch nối Dự Châu xuống bồn địa chiến lược Nam Dương.', descEn: 'Key highway from Yuzhou down into the Nanyang basin.' },
+  { from: 'xu_chang', to: 'xia_pi', terrainType: 'HIGHWAY', distanceLi: 350, marchDays: 1.6, grainCost: 2.0, ambushRisk: 'LOW', descVi: 'Tuyến giao thương trù phú giữa đất đồn điền và đại thương nhân Từ Châu.', descEn: 'Trade route between the farmlands and the great merchants of Xuzhou.' },
+  { from: 'xu_chang', to: 'shou_chun', terrainType: 'HIGHWAY', distanceLi: 320, marchDays: 1.5, grainCost: 1.8, ambushRisk: 'LOW', descVi: 'Trục đường mậu dịch sông Hoài tiến vào căn cứ phồn vinh Thọ Xuân.', descEn: 'Huai River trade axis into prosperous Shouchun.' },
+  { from: 'wan_cheng', to: 'xiang_yang', terrainType: 'WATERWAY', distanceLi: 220, marchDays: 1.2, grainCost: 1.4, ambushRisk: 'LOW', descVi: 'Thủy lộ Hán Thủy xuôi nam nối cửa ngõ Nam Dương với Châu Phủ Tương Dương.', descEn: 'Han River waterway south from Nanyang to Xiangyang.' },
+  { from: 'shou_chun', to: 'jian_ye', terrainType: 'WATERWAY', distanceLi: 260, marchDays: 1.4, grainCost: 1.6, ambushRisk: 'LOW', descVi: 'Thủy lộ Trường Giang hạ lưu tiến thẳng vào đô thành Giang Đông Kiến Nghiệp.', descEn: 'Lower Yangtze waterway to the Wu capital of Jianye.' },
+  { from: 'xiang_yang', to: 'jiang_ling', terrainType: 'WATERWAY', distanceLi: 260, marchDays: 1.3, grainCost: 1.5, ambushRisk: 'LOW', descVi: 'Trục giao thông Kinh Châu nối Tương Dương và Giang Lăng qua Trường Bản.', descEn: 'Jingzhou trunk route via Changban between Xiangyang and Jiangling.' },
+  { from: 'jiang_ling', to: 'chi_bi', terrainType: 'WATERWAY', distanceLi: 280, marchDays: 1.5, grainCost: 1.8, ambushRisk: 'HIGH', descVi: 'Thủy lộ Trường Giang xuôi dòng qua vùng đá dựng đứng Xích Bích oai hùng.', descEn: 'Yangtze waterway past the cliffs of Red Cliff.' },
+  { from: 'chi_bi', to: 'jian_ye', terrainType: 'WATERWAY', distanceLi: 450, marchDays: 2.2, grainCost: 2.5, ambushRisk: 'LOW', descVi: 'Đại thủy lộ Trường Giang xuôi về trung tâm phồn hoa đô hội Đông Ngô.', descEn: 'Great Yangtze waterway down to the prosperous Wu heartland.' },
+  { from: 'xiang_yang', to: 'jiao_zhi', terrainType: 'MOUNTAIN_PASS', distanceLi: 980, marchDays: 6.0, grainCost: 5.0, ambushRisk: 'EXTREME', descVi: 'Nam chinh lộ nghìn dặm vượt đèo dốc sơn lâm tiến vào bờ biển Giao Chỉ.', descEn: 'Thousand-li southern march through mountain passes to the Jiaozhi coast.' }
 ];
 
 function getPoiMeta(locName) {
   const dict = {
     // Zhuo County Physical POIs
-    'Tư Trạch Vườn Đào': { vi: 'Tư Trạch Vườn Đào (Lương Phủ)', en: 'Peach Garden Manor (Residence)', icon: '🏛️', distFromZhuo: '0 dặm' },
-    'Thiết Điếm Trác Huyện': { vi: 'Thiết Điếm Lò Rèn Trác Huyện', en: 'Town Smithy & Forge', icon: '🔨', distFromZhuo: '1.2 dặm' },
-    'Tửu Quán Trác Huyện': { vi: 'Tửu Quán Trác Huyện', en: 'Town Tavern', icon: '🍺', distFromZhuo: '0.8 dặm' },
-    'Lôi Đài Giáo Trường': { vi: 'Lôi Đài Giáo Trường Bắc Môn', en: 'Northern Drill Grounds & Arena', icon: '⚔️', distFromZhuo: '1.5 dặm' },
-    'Mã Xa Dịch Trạm': { vi: 'Mã Xa Dịch Trạm & Thương Hội', en: 'Caravan Guild & Depot', icon: '📦', distFromZhuo: '1.0 dặm' },
-    'Chợ Đông Môn & Sạp Trà': { vi: 'Chợ Đông Môn & Sạp Trà', en: 'East Gate Market & Tea Stall', icon: '🍵', distFromZhuo: '1 dặm' },
+    'Tư Trạch Vườn Đào': { vi: 'Tư Trạch Vườn Đào (Lương Phủ)', en: 'Peach Garden Manor (Residence)', icon: '府', distFromZhuo: '0 dặm' },
+    'Thiết Điếm Trác Huyện': { vi: 'Thiết Điếm Lò Rèn Trác Huyện', en: 'Town Smithy & Forge', icon: '鍛', distFromZhuo: '1.2 dặm' },
+    'Tửu Quán Trác Huyện': { vi: 'Tửu Quán Trác Huyện', en: 'Town Tavern', icon: '酒', distFromZhuo: '0.8 dặm' },
+    'Lôi Đài Giáo Trường': { vi: 'Lôi Đài Giáo Trường Bắc Môn', en: 'Northern Drill Grounds & Arena', icon: '武', distFromZhuo: '1.5 dặm' },
+    'Mã Xa Dịch Trạm': { vi: 'Mã Xa Dịch Trạm & Thương Hội', en: 'Caravan Guild & Depot', icon: '貨', distFromZhuo: '1.0 dặm' },
+    'Chợ Đông Môn & Sạp Trà': { vi: 'Chợ Đông Môn & Sạp Trà', en: 'East Gate Market & Tea Stall', icon: '茶', distFromZhuo: '1 dặm' },
     'Vườn Đào': { vi: 'Trang Viên Vườn Đào Hạ Trạch', en: 'Peach Garden Manor', icon: '花', distFromZhuo: '0 dặm' },
     'Chợ Đông Môn': { vi: 'Chợ Đông Môn & Sạp Trà', en: 'East Gate Market & Tea Stall', icon: '市', distFromZhuo: '1 dặm' },
     'Xưởng Lương Thị': { vi: 'Lương Thị Chức Tác Phường', en: 'Liang Textile Workshop', icon: '坊', distFromZhuo: '2 dặm' },
@@ -1350,8 +1450,105 @@ function getCurrentRegionNode(subLoc = activeSubLocation) {
   return WORLD_MAP_NODES['zhuo_xian'];
 }
 
+// Canonical, bilingual settlement labels and seals. This is the single source
+// of truth for map labels, intel headers, route cards and tooltips; the long
+// historical names stay in nameVi/nameEn for narrative and travel dialogs.
+const SETTLEMENT_LABELS = {
+  zhuo_xian: { vi: 'Trác Huyện', en: 'Zhuo County', seal: '涿' },
+  ji_cheng: { vi: 'Kế Thành', en: 'Jicheng', seal: '薊' },
+  ye_cheng: { vi: 'Nghiệp Thành', en: 'Ye City', seal: '鄴' },
+  guang_zong: { vi: 'Quảng Tông', en: 'Guangzong', seal: '廣' },
+  ping_yuan: { vi: 'Bình Nguyên', en: 'Pingyuan', seal: '平' },
+  luo_yang: { vi: 'Lạc Dương', en: 'Luoyang', seal: '洛' },
+  chang_an: { vi: 'Trường An', en: "Chang'an", seal: '長' },
+  xu_chang: { vi: 'Hứa Xương', en: 'Xuchang', seal: '許' },
+  xia_pi: { vi: 'Hạ Phì', en: 'Xiapi', seal: '邳' },
+  xiang_yang: { vi: 'Tương Dương', en: 'Xiangyang', seal: '襄' },
+  jiang_ling: { vi: 'Giang Lăng', en: 'Jiangling', seal: '陵' },
+  chi_bi: { vi: 'Xích Bích', en: 'Chibi', seal: '壁' },
+  jian_ye: { vi: 'Kiến Nghiệp', en: 'Jianye', seal: '建' },
+  han_zhong: { vi: 'Hán Trung', en: 'Hanzhong', seal: '漢' },
+  cheng_du: { vi: 'Thành Đô', en: 'Chengdu', seal: '成' },
+  wan_cheng: { vi: 'Uyển Thành', en: 'Wancheng', seal: '宛' },
+  shou_chun: { vi: 'Thọ Xuân', en: 'Shouchun', seal: '壽' },
+  shang_dang: { vi: 'Thượng Đảng', en: 'Shangdang', seal: '黨' },
+  xi_liang: { vi: 'Vũ Uy', en: 'Wuwei', seal: '威' },
+  wu_wei: { vi: 'Vũ Uy', en: 'Wuwei', seal: '威' },
+  jiao_zhi: { vi: 'Giao Chỉ', en: 'Jiaozhi', seal: '交' }
+};
+
+function getSettlementEntry(nodeOrId) {
+  const key = typeof nodeOrId === 'string' ? nodeOrId : (nodeOrId && nodeOrId.id);
+  return key ? SETTLEMENT_LABELS[key] : null;
+}
+
+function getSettlementLabel(nodeOrId, isEn = (typeof currentLang !== 'undefined' && currentLang === 'en')) {
+  const entry = getSettlementEntry(nodeOrId);
+  return entry ? (isEn ? entry.en : entry.vi) : '';
+}
+
+function getSettlementSeal(nodeOrId) {
+  const entry = getSettlementEntry(nodeOrId);
+  return entry ? entry.seal : '';
+}
+
+// English role labels for the hireable-specialist rows in the map intel panel.
+// Proper names stay in their existing form; only the occupation is localized.
+const MAP_ROLE_EN = {
+  'Buôn Ngựa Bắc Bình': 'Beiping Horse Trader',
+  'Chưởng Quỹ Tiệm Buôn': 'Shop Steward',
+  'Chủ Thuyền Đánh Cá': 'Fishing Boat Owner',
+  'Cầm Lái': 'Helmsman',
+  'Dược Liệu Kinh Tương': 'Jingxiang Herbalist',
+  'Dược Sư Danh Y': 'Renowned Physician',
+  'Giác Ngộ': 'Awakened Adept',
+  'Giám Công Mỏ Quặng': 'Mine Overseer',
+  'Hoa Tiêu Sa Mạc': 'Desert Guide',
+  'Hoa Tiêu Thủy Đạo': 'River Guide',
+  'Hổ Báo Kỵ': 'Tiger-Leopard Cavalry',
+  'Hộ Tống': 'Escort',
+  'Hộ Vận': 'Supply Escort',
+  'Hộ Vệ Tinh Nhuệ': 'Elite Guard',
+  'Luyện Binh': 'Drill Instructor',
+  'Lãnh Công Điền Trang': 'Manor Steward',
+  'Lão Xa Phu Dẫn Tuyến': 'Veteran Carriage Guide',
+  'Phương Sĩ': 'Alchemist',
+  'Thuyền Buôn': 'Merchant Ship',
+  'Thuốc Cứu Thương': 'Field Medic',
+  'Thương Gia Tây Vực': 'Western Regions Trader',
+  'Thương Nhân Lương Thảo': 'Grain Merchant',
+  'Thương Nhân Ngựa Chiến': 'Warhorse Merchant',
+  'Thợ Rèn Bách Luyện': 'Master Smith',
+  'Thợ Săn Đường Núi': 'Mountain Hunter',
+  'Thủy Cước': 'Dockworker',
+  'Thủy Lộ': 'Waterway Broker',
+  'Tiêu Sư': 'Escort Master',
+  'Tiêu Đầu Hộ Vệ': 'Escort Captain',
+  'Tiêu Đầu Sạn Đạo': 'Plank Road Escort',
+  'Trưởng Xưởng Dệt': 'Weaving Foreman',
+  'Trị Thương': 'Trade Agent',
+  'Tổng Tiêu Đầu Kinh Sư': 'Capital Escort Chief',
+  'Võ Biền': 'Martial Drillmaster',
+  'Vận Chuyển': 'Transporter',
+  'Đóng Thuyền': 'Shipwright',
+  'Đúc Binh Khí': 'Weapons Caster',
+  'Đại Chưởng Quỹ Tiền Trang': 'Chief Bank Steward',
+  'Đại Hộ Muối Biển': 'Salt Magnate',
+  'Đại Quản Gia Lương Phủ': 'Liang Manor Chief Steward',
+  'Đại Sư Dệt Thục Cẩm': 'Master Shu Brocade Weaver',
+  'Đại Sư Lò Đúc': 'Master Foundry Smith',
+  'Đại Thương Trầm Hương': 'Agarwood Magnate',
+  'Đồn Điền Sứ': 'Colonization Commissioner'
+};
+
+function getRoleLabel(role) {
+  return MAP_ROLE_EN[role] || role;
+}
+
 function getShortNodeName(node, isEn = (typeof currentLang !== 'undefined' && currentLang === 'en')) {
   if (!node) return '';
+  const canonical = getSettlementLabel(node, isEn);
+  if (canonical) return canonical;
   if (isEn) {
     return (node.nameEn || '')
       .replace(/\s*\(.*?\)/g, '')
@@ -1367,11 +1564,32 @@ function getShortNodeName(node, isEn = (typeof currentLang !== 'undefined' && cu
     .trim();
 }
 
+function getPoiIconName(name) {
+  const s = String(name || '').toLowerCase();
+  if (s.includes('chợ') || s.includes('sạp') || s.includes('thương thị')) return 'coin';
+  if (s.includes('thiết điếm') || s.includes('lò rèn') || s.includes('rèn') || s.includes('đúc')) return 'hammer';
+  if (s.includes('mã xa') || s.includes('dịch trạm') || s.includes('thương hội')) return 'cart';
+  if (s.includes('lôi đài') || s.includes('giáo trường') || s.includes('võ')) return 'sword';
+  if (s.includes('tửu') || s.includes('trà') || s.includes('quán') || s.includes('điếm')) return 'tea';
+  if (s.includes('xưởng') || s.includes('phường') || s.includes('dệt')) return 'gear';
+  if (s.includes('mỏ') || s.includes('quặng')) return 'pickaxe';
+  if (s.includes('bến') || s.includes('cảng') || s.includes('sông') || s.includes('hồ')) return 'fish';
+  if (s.includes('núi') || s.includes('sơn') || s.includes('đạo') || s.includes('quan')) return 'tree';
+  if (s.includes('doanh') || s.includes('trại') || s.includes('quân')) return 'soldier';
+  if (s.includes('vườn') || s.includes('rừng') || s.includes('thảo')) return 'sprout';
+  if (s.includes('trạch') || s.includes('phủ') || s.includes('nha môn') || s.includes('cung')) return 'house';
+  return 'route';
+}
+
 function renderLocalPoiNav(loc = activeSubLocation) {
   const regionBadge = document.getElementById('loc-region-badge');
   const breadcrumbText = document.getElementById('loc-breadcrumb-text');
-  const localPoiGroup = document.getElementById('local-poi-group');
-  if (!regionBadge || !breadcrumbText || !localPoiGroup) return;
+  const picker = document.getElementById('local-poi-picker');
+  const trigger = document.getElementById('local-poi-trigger');
+  const triggerLabel = document.getElementById('txt-local-poi-trigger');
+  const countEl = document.getElementById('local-poi-count');
+  const menu = document.getElementById('local-poi-menu');
+  if (!regionBadge || !breadcrumbText || !picker || !menu) return;
 
   const currentRegion = getCurrentRegionNode(loc);
   const isEn = (currentLang === 'en');
@@ -1385,27 +1603,95 @@ function renderLocalPoiNav(loc = activeSubLocation) {
   const currentPoiMeta = getPoiMeta(loc);
   breadcrumbText.innerText = isEn ? currentPoiMeta.en : currentPoiMeta.vi;
 
-  // 3. Dynamic Local Walking POIs
-  const localPois = (currentRegion.subLocations || []).filter(sl => sl !== loc);
+  // 3. Local walking destinations live behind one picker instead of an inline
+  //    chip row that wrapped onto a second line and crowded out the chronicle.
+  //    The map data lists a couple of aliases for the same place; keep one row each.
+  const seenDestinations = new Set();
+  const localPois = (currentRegion.subLocations || [])
+    .filter(sl => sl !== loc)
+    .filter(sl => {
+      const meta = getPoiMeta(sl);
+      const key = (isEn ? meta.en : meta.vi).toLowerCase();
+      if (seenDestinations.has(key)) return false;
+      seenDestinations.add(key);
+      return true;
+    });
+  closeLocalPoiMenu();
+
   if (localPois.length === 0) {
-    localPoiGroup.innerHTML = `<span style="font-size: 11px; color: var(--text-muted); font-style: italic;">${isEn ? '鎮 Local outpost area' : '鎮 Khu vực tiền tuyến'}</span>`;
-  } else {
-    localPoiGroup.innerHTML = localPois.map(targetLoc => {
-      const meta = getPoiMeta(targetLoc);
-      const name = isEn ? meta.en : meta.vi;
-      const dist = getLocalPoiDistance(loc, targetLoc);
-      const distLabel = isEn ? dist.replace('dặm', 'li') : dist;
-      return `
-        <button class="local-poi-btn" onclick="travelLocalPoi('${targetLoc}')" title="${isEn ? 'Walk to ' + name : 'Đi bộ tới ' + name}">
-          <span>行 ${meta.icon} ${name}</span>
-          <span style="font-size: 9.5px; opacity: 0.75; font-family: var(--font-mono);">(${distLabel})</span>
-        </button>
-      `;
-    }).join('');
+    picker.classList.add('hidden');
+    return;
   }
+  picker.classList.remove('hidden');
+
+  if (triggerLabel) triggerLabel.innerText = isEn ? 'Inner Town' : 'Nội Thành';
+  if (countEl) countEl.innerText = String(localPois.length);
+  if (trigger) {
+    trigger.title = isEn
+      ? `Walk to another place inside ${getShortNodeName(currentRegion, true)}`
+      : `Đi bộ tới địa điểm khác trong ${getShortNodeName(currentRegion, false)}`;
+  }
+
+  menu.innerHTML = localPois.map(targetLoc => {
+    const meta = getPoiMeta(targetLoc);
+    const name = isEn ? meta.en : meta.vi;
+    const dist = getLocalPoiDistance(loc, targetLoc);
+    const distLabel = isEn ? dist.replace('dặm', 'li') : dist;
+    return `
+      <button class="local-poi-item" type="button" role="menuitem" onclick="travelLocalPoi('${targetLoc}')" title="${isEn ? 'Walk to ' + name : 'Đi bộ tới ' + name}">
+        <span class="local-poi-item-seal" aria-hidden="true">${typeof uiIcon === 'function' ? uiIcon(getPoiIconName(targetLoc)) : meta.icon}</span>
+        <span class="local-poi-item-body">
+          <span class="local-poi-item-name">${name}</span>
+          <span class="local-poi-item-dist">${distLabel}</span>
+        </span>
+      </button>
+    `;
+  }).join('');
 }
 
+function closeLocalPoiMenu() {
+  const picker = document.getElementById('local-poi-picker');
+  const trigger = document.getElementById('local-poi-trigger');
+  const menu = document.getElementById('local-poi-menu');
+  if (!menu) return;
+  menu.classList.add('hidden');
+  if (picker) picker.classList.remove('is-open');
+  if (trigger) trigger.setAttribute('aria-expanded', 'false');
+}
+
+function toggleLocalPoiMenu(event) {
+  if (event) event.stopPropagation();
+  const menu = document.getElementById('local-poi-menu');
+  const trigger = document.getElementById('local-poi-trigger');
+  const picker = document.getElementById('local-poi-picker');
+  if (!menu || !trigger) return;
+
+  if (!menu.classList.contains('hidden')) {
+    closeLocalPoiMenu();
+    return;
+  }
+
+  menu.classList.remove('hidden');
+  if (picker) picker.classList.add('is-open');
+  trigger.setAttribute('aria-expanded', 'true');
+
+  const firstItem = menu.querySelector('.local-poi-item');
+  if (firstItem) firstItem.focus({ preventScroll: true });
+}
+
+document.addEventListener('click', (event) => {
+  if (!event.target.closest || !event.target.closest('#local-poi-picker')) {
+    closeLocalPoiMenu();
+  }
+});
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') closeLocalPoiMenu();
+});
+
+
 async function travelLocalPoi(targetLoc) {
+  closeLocalPoiMenu();
   if (isProcessingAction) {
     showToast(currentLang === 'en' ? '[警] Action in progress, please wait!' : '[警] Đang thực thi thao tác khác, vui lòng chờ!', true);
     return;
@@ -1449,8 +1735,15 @@ window.QUICK_CHIPS_DATA = QUICK_CHIPS_DATA;
 window.WORLD_MAP_NODES = WORLD_MAP_NODES;
 window.WORLD_MAP_ROUTES = WORLD_MAP_ROUTES;
 window.getPoiMeta = getPoiMeta;
+window.getPoiIconName = getPoiIconName;
 window.getShortNodeName = getShortNodeName;
+window.getSettlementLabel = getSettlementLabel;
+window.getSettlementSeal = getSettlementSeal;
+window.getRoleLabel = getRoleLabel;
+window.SETTLEMENT_LABELS = SETTLEMENT_LABELS;
 window.getLocalPoiDistance = getLocalPoiDistance;
 window.getCurrentRegionNode = getCurrentRegionNode;
 window.renderLocalPoiNav = renderLocalPoiNav;
 window.travelLocalPoi = travelLocalPoi;
+window.toggleLocalPoiMenu = toggleLocalPoiMenu;
+window.closeLocalPoiMenu = closeLocalPoiMenu;

@@ -74,8 +74,8 @@
 
     if (result.spoils && (result.spoils.lootCash > 0 || result.spoils.bountyReward > 0)) {
       lines.push(isEn ? 'WAR SPOILS & REWARDS:' : 'CHIEN LOI PHAM & QUAN CONG:');
-      lines.push(isEn ? `  Convoy Loot : +${result.spoils.lootCash.toLocaleString()} Qian` : `  Tien chien loi pham : +${result.spoils.lootCash.toLocaleString()} Tien`);
-      lines.push(isEn ? `  Court Bounty: +${result.spoils.bountyReward.toLocaleString()} Qian` : `  Tien thuong quan cong: +${result.spoils.bountyReward.toLocaleString()} Tien`);
+      lines.push(isEn ? `  Convoy Loot : +${result.spoils.lootCash.toLocaleString()} quan` : `  Tien chien loi pham : +${result.spoils.lootCash.toLocaleString()} Tien`);
+      lines.push(isEn ? `  Court Bounty: +${result.spoils.bountyReward.toLocaleString()} quan` : `  Tien thuong quan cong: +${result.spoils.bountyReward.toLocaleString()} Tien`);
       lines.push(isEn ? `  Captured Grain: +${result.spoils.capturedGrain} Piculs` : `  Quan luong thu hoi   : +${result.spoils.capturedGrain} Thach`);
       lines.push('----------------------------------------------------');
     }
@@ -247,7 +247,7 @@
               ${isEn ? 'Terrain' : 'Chien dia'}: ${terrainLabel} | ${isEn ? 'Rounds' : 'Hiep dau'}: ${result.totalRounds}/5 | ${isEn ? 'Date' : 'Ngay'}: ${new Date(result.timestamp).toLocaleDateString()}
             </div>
           </div>
-          <button class="modal-close-btn" onclick="closeTacticalBattleModal()" aria-label="Dong chien bao">${isEn ? '[CLOSE]' : '[DONG]'}</button>
+          <button class="ui-btn ui-btn--ghost ui-btn--icon" onclick="closeTacticalBattleModal()" aria-label="Dong chien bao">${isEn ? '[CLOSE]' : '[DONG]'}</button>
         </div>
 
         <div class="modal-body" style="overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px;">
@@ -308,7 +308,7 @@
         </div>
 
         <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 8px;">
-          <button class="tactical-btn tactical-btn--primary" onclick="closeTacticalBattleModal()">
+          <button class="ui-btn ui-btn--primary" onclick="closeTacticalBattleModal()">
             ${isEn ? 'Confirm & Rally Troops' : 'Xac Nhan Thu Quan'}
           </button>
         </div>

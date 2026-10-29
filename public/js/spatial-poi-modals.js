@@ -42,7 +42,11 @@
   // =========================================================================
 
   function ensureTavernModalDom() {
-    if (document.getElementById('spatial-tavern-modal')) return;
+    const existing = document.getElementById('spatial-tavern-modal');
+    // Only the legacy markup (with its own body id) is ours. A foreign shell
+    // may own the same id; replace it instead of leaving an empty dialog.
+    if (existing && existing.querySelector('#tavern-modal-body')) return;
+    if (existing) existing.remove();
 
     const modal = document.createElement('div');
     modal.id = 'spatial-tavern-modal';
@@ -51,27 +55,27 @@
       <div class="modal-dialog modal-lg spatial-poi-dialog">
         <div class="modal-header">
           <div class="modal-title-group">
-            <span class="modal-title-seal">🍺</span>
+            <span class="modal-title-seal">酒</span>
             <div>
               <h2 class="modal-title-text" id="tavern-modal-title">Tửu Quán Trác Huyện • Ẩm Tửu & Tụ Nghĩa Hào Kiệt</h2>
               <div class="modal-subtitle">Gặp gỡ anh hùng bốn phương, mở tiệc rượu kết giao và chiêu mộ môn khách</div>
             </div>
           </div>
-          <button class="btn-close-modal" onclick="SpatialPoiModals.closeTavernModal()" title="Đóng [Esc]">✕</button>
+          <button class="btn-close-modal" onclick="SpatialPoiModals.closeTavernModal()" title="Đóng [Esc]">×</button>
         </div>
 
         <div class="modal-tab-bar" id="tavern-tab-bar">
           <button class="modal-tab-btn active" data-tab="drink" onclick="SpatialPoiModals.switchTavernTab('drink')">
-            <span class="tab-seal">🍶</span> Ẩm Tửu Dưỡng Thần
+            <span class="tab-seal">酒</span> Ẩm Tửu Dưỡng Thần
           </button>
           <button class="modal-tab-btn" data-tab="banquet" onclick="SpatialPoiModals.switchTavernTab('banquet')">
-            <span class="tab-seal">🍲</span> Đại Yến Hào Kiệt
+            <span class="tab-seal">膳</span> Đại Yến Hào Kiệt
           </button>
           <button class="modal-tab-btn" data-tab="brotherhood" onclick="SpatialPoiModals.switchTavernTab('brotherhood')">
-            <span class="tab-seal">🤝</span> Kết Bái Huynh Đệ
+            <span class="tab-seal">盟</span> Kết Bái Huynh Đệ
           </button>
           <button class="modal-tab-btn" data-tab="recruit" onclick="SpatialPoiModals.switchTavernTab('recruit')">
-            <span class="tab-seal">🚩</span> Chiêu Mộ Môn Khách
+            <span class="tab-seal">旗</span> Chiêu Mộ Môn Khách
           </button>
         </div>
 
@@ -124,7 +128,7 @@
       const res = await fetch('/api/status');
       const data = await res.json();
       const cash = data?.financials?.liquidCash || data?.player?.liquid_cash || 0;
-      el.innerHTML = `Ngân khố: <strong style="color: #fbbf24;">${cash.toLocaleString()}</strong> Tiền`;
+      el.innerHTML = `Ngân khố: <strong style="color: #fbbf24;">${cash.toLocaleString()}</strong> Quan`;
     } catch {
       el.innerText = 'Ngân khố: --';
     }
@@ -148,7 +152,7 @@
           <div class="spatial-card-grid">
             <div class="spatial-action-card">
               <div class="card-badge">BÌNH DÂN</div>
-              <div class="card-header-icon">🍶</div>
+              <div class="card-header-icon">酒</div>
               <h4 class="card-title">Tiểu Ẩm Rượu Nếp Hương</h4>
               <p class="card-desc">Uống một bát rượu nếp nóng kèm đĩa đậu phộng rang giòn.</p>
               <div class="card-perks">
@@ -156,7 +160,7 @@
                 <span class="perk-tag cyan">-15 Mệt Mỏi</span>
                 <span class="perk-tag gold">+3 Sĩ Khí</span>
               </div>
-              <div class="card-cost">Chi phí: <strong>30</strong> Tiền</div>
+              <div class="card-cost">Chi phí: <strong>30</strong> Quan</div>
               <button class="btn-card-execute" onclick="SpatialPoiModals.executeDrinkWine('RƯỢU_NẾP', 30, 25, 15, 3)">
                 Nâng Bát Uống Cạn →
               </button>
@@ -164,7 +168,7 @@
 
             <div class="spatial-action-card highlight">
               <div class="card-badge gold">DANH TỬU</div>
-              <div class="card-header-icon">🏺</div>
+              <div class="card-header-icon">器</div>
               <h4 class="card-title">Đỗ Khang Mỹ Tửu Trác Huyện</h4>
               <p class="card-desc">Danh tửu ủ chum sành thượng hạng, hương nồng đượm, sảng khoái gân cốt.</p>
               <div class="card-perks">
@@ -172,7 +176,7 @@
                 <span class="perk-tag cyan">-35 Mệt Mỏi</span>
                 <span class="perk-tag gold">+10 Sĩ Khí</span>
               </div>
-              <div class="card-cost">Chi phí: <strong>80</strong> Tiền</div>
+              <div class="card-cost">Chi phí: <strong>80</strong> Quan</div>
               <button class="btn-card-execute gold" onclick="SpatialPoiModals.executeDrinkWine('ĐỖ_KHANG', 80, 55, 35, 10)">
                 Uống Vò Mỹ Tửu →
               </button>
@@ -196,17 +200,17 @@
             <div class="banquet-tier-select-grid">
               <div class="tier-card active" id="tier-card-TIET_KIEM" onclick="SpatialPoiModals.selectBanquetTier('TIET_KIEM')">
                 <div class="tier-name">Tiểu Yến Tri Kỷ</div>
-                <div class="tier-cost">Chi phí: ~95 Tiền</div>
+                <div class="tier-cost">Chi phí: ~95 Quan</div>
                 <div class="tier-perk">+15 Hảo cảm • 2 Tân khách</div>
               </div>
               <div class="tier-card" id="tier-card-HAO_HIEP" onclick="SpatialPoiModals.selectBanquetTier('HAO_HIEP')">
                 <div class="tier-name">Hào Hiệp Tụ Nghĩa Yến</div>
-                <div class="tier-cost">Chi phí: ~350 Tiền</div>
+                <div class="tier-cost">Chi phí: ~350 Quan</div>
                 <div class="tier-perk">+35 Hảo cảm • 4 Tân khách</div>
               </div>
               <div class="tier-card" id="tier-card-DAO_VIEN" onclick="SpatialPoiModals.selectBanquetTier('DAO_VIEN')">
                 <div class="tier-name">Đào Viên Anh Hùng Yến</div>
-                <div class="tier-cost">Chi phí: ~1,200 Tiền</div>
+                <div class="tier-cost">Chi phí: ~1,200 Quan</div>
                 <div class="tier-perk">+60 Hảo cảm • 6 Tân khách</div>
               </div>
             </div>
@@ -375,8 +379,7 @@
           sub_type: 'REST_RECOVERY',
           fatigue_delta: fatigueLoss || 25,
           morale_delta: moraleGain || 5,
-          memo: `Thưởng thức ${wineName} tại Tửu Quán Trác Huyện`,
-          game_date: '184-05-02'
+          memo: `Thưởng thức ${wineName} tại Tửu Quán Trác Huyện`
         })
       });
       const data = await res.json();
@@ -413,6 +416,11 @@
       const data = await res.json();
       if (!data.success) throw new Error(data.error || 'Không thể tổ chức yến tiệc');
 
+      if (typeof window.apiSpendActionTime === 'function') {
+        try { await window.apiSpendActionTime('KIZUNA_INTERACT', null, 'Tổ chức yến tiệc'); }
+        catch (timeErr) { showNotification(timeErr.message, true); }
+      }
+
       const r = data.result || {};
       showNotification(`Yến tiệc đã khai màn thành công! Hảo cảm tân khách tăng vọt.`);
       closeTavernModal();
@@ -434,6 +442,11 @@
       const data = await res.json();
       if (!data.success) throw new Error(data.error || 'Nghi lễ không thành');
 
+      if (typeof window.apiSpendActionTime === 'function') {
+        try { await window.apiSpendActionTime('KIZUNA_INTERACT', null, 'Kết nghĩa kim lan'); }
+        catch (timeErr) { showNotification(timeErr.message, true); }
+      }
+
       showNotification('Thiên địa chứng giám! Hai người đã chính thức kết nghĩa kim lan huynh đệ!');
       renderTavernTabContent('brotherhood');
       if (typeof loadStatus === 'function') await loadStatus();
@@ -453,6 +466,11 @@
       const data = await res.json();
       if (!data.success) throw new Error(data.error || 'Không thể chiêu mộ');
 
+      if (typeof window.apiSpendActionTime === 'function') {
+        try { await window.apiSpendActionTime('WORKFORCE_HIRE', null, 'Chiêu mộ hào kiệt'); }
+        catch (timeErr) { showNotification(timeErr.message, true); }
+      }
+
       showNotification('Hào kiệt đã cảm kích thuận lòng gia nhập Lương Gia!');
       closeTavernModal();
       if (typeof loadStatus === 'function') await loadStatus();
@@ -466,7 +484,9 @@
   // =========================================================================
 
   function ensureArenaModalDom() {
-    if (document.getElementById('spatial-arena-modal')) return;
+    const existing = document.getElementById('spatial-arena-modal');
+    if (existing && existing.querySelector('#arena-modal-body')) return;
+    if (existing) existing.remove();
 
     const modal = document.createElement('div');
     modal.id = 'spatial-arena-modal';
@@ -475,24 +495,24 @@
       <div class="modal-dialog modal-lg spatial-poi-dialog">
         <div class="modal-header">
           <div class="modal-title-group">
-            <span class="modal-title-seal">⚔️</span>
+            <span class="modal-title-seal">武</span>
             <div>
               <h2 class="modal-title-text" id="arena-modal-title">Lôi Đài Giáo Trường • Tỉ Võ Diễn Võ & Tranh Hùng</h2>
               <div class="modal-subtitle">Giao lưu võ lược cùng danh tướng, lôi đài tỉ thí 3 cấp độ và đấu võ 1v1</div>
             </div>
           </div>
-          <button class="btn-close-modal" onclick="SpatialPoiModals.closeArenaModal()" title="Đóng [Esc]">✕</button>
+          <button class="btn-close-modal" onclick="SpatialPoiModals.closeArenaModal()" title="Đóng [Esc]">×</button>
         </div>
 
         <div class="modal-tab-bar" id="arena-tab-bar">
           <button class="modal-tab-btn active" data-tab="spar" onclick="SpatialPoiModals.switchArenaTab('spar')">
-            <span class="tab-seal">🥋</span> Giao Lưu Võ Nghệ
+            <span class="tab-seal">藝</span> Giao Lưu Võ Nghệ
           </button>
           <button class="modal-tab-btn" data-tab="tournament" onclick="SpatialPoiModals.switchArenaTab('tournament')">
-            <span class="tab-seal">🏆</span> Lôi Đài Huyện Trác
+            <span class="tab-seal">勳</span> Lôi Đài Huyện Trác
           </button>
           <button class="modal-tab-btn" data-tab="clash" onclick="SpatialPoiModals.switchArenaTab('clash')">
-            <span class="tab-seal">⚔️</span> Đối Quyết 1v1
+            <span class="tab-seal">武</span> Đối Quyết 1v1
           </button>
         </div>
 
@@ -625,14 +645,14 @@
           <div class="spatial-card-grid">
             <div class="spatial-action-card">
               <div class="card-badge">CẤP 1 • ĐỊA PHƯƠNG</div>
-              <div class="card-header-icon">🥉</div>
+              <div class="card-header-icon">勳</div>
               <h4 class="card-title">Võ Sĩ Bản Địa Huyện Trác</h4>
               <p class="card-desc">Thủ đài võ quán, quyền cước thành thạo (DC 55 WAR).</p>
               <div class="card-perks">
-                <span class="perk-tag green">+300 Tiền Thưởng</span>
+                <span class="perk-tag green">+300 Quan Thưởng</span>
                 <span class="perk-tag gold">+30 WAR EXP</span>
               </div>
-              <div class="card-cost">Phí ghi danh: <strong>50</strong> Tiền</div>
+              <div class="card-cost">Phí ghi danh: <strong>50</strong> Quan</div>
               <button class="btn-card-execute" onclick="SpatialPoiModals.executeArenaChallenge(1)">
                 Lên Đài Khiêu Chiến →
               </button>
@@ -640,15 +660,15 @@
 
             <div class="spatial-action-card highlight">
               <div class="card-badge gold">CẤP 2 • KIÊU TƯỚNG</div>
-              <div class="card-header-icon">🥈</div>
+              <div class="card-header-icon">勳</div>
               <h4 class="card-title">Hoa Hùng (Tây Lương Kiêu Tướng)</h4>
               <p class="card-desc">Đại tướng Tây Lương chém trảm tướng quân như rơm rác (WAR 88).</p>
               <div class="card-perks">
-                <span class="perk-tag green">+1,000 Tiền Thưởng</span>
+                <span class="perk-tag green">+1,000 Quan Thưởng</span>
                 <span class="perk-tag gold">+60 WAR EXP</span>
                 <span class="perk-tag cyan">Chiến Bào Tướng Quân</span>
               </div>
-              <div class="card-cost">Phí ghi danh: <strong>200</strong> Tiền</div>
+              <div class="card-cost">Phí ghi danh: <strong>200</strong> Quan</div>
               <button class="btn-card-execute gold" onclick="SpatialPoiModals.executeArenaChallenge(2)">
                 Lên Đài Khiêu Chiến →
               </button>
@@ -656,15 +676,15 @@
 
             <div class="spatial-action-card red-border">
               <div class="card-badge red">CẤP 3 • CHIẾN THẦN</div>
-              <div class="card-header-icon">🥇</div>
+              <div class="card-header-icon">勳</div>
               <h4 class="card-title">Lữ Bố (Phụng Tiên • Vô Song)</h4>
               <p class="card-desc">Chiến thần thiên hạ, Phương Thiên Họa Kích vô địch cõi trần (WAR 100).</p>
               <div class="card-perks">
-                <span class="perk-tag green">+3,000 Tiền Thưởng</span>
+                <span class="perk-tag green">+3,000 Quan Thưởng</span>
                 <span class="perk-tag gold">+150 WAR EXP</span>
                 <span class="perk-tag purple">Danh Hiệu Đệ Nhất</span>
               </div>
-              <div class="card-cost">Phí ghi danh: <strong>500</strong> Tiền</div>
+              <div class="card-cost">Phí ghi danh: <strong>500</strong> Quan</div>
               <button class="btn-card-execute red" onclick="SpatialPoiModals.executeArenaChallenge(3)">
                 Tử Chiến Đỉnh Phong →
               </button>
@@ -676,7 +696,7 @@
       if (!currentActiveDuelId) {
         body.innerHTML = `
           <div class="spatial-empty-state">
-            <div class="empty-seal">⚔️</div>
+            <div class="empty-seal">武</div>
             <h3>Chưa Có Trận Đối Quyết Nào Đang Diễn Ra</h3>
             <p>Vui lòng chọn <strong>Giao Lưu Võ Nghệ</strong> hoặc <strong>Lên Đài Khiêu Chiến</strong> để bắt đầu hiệp đấu 1v1 đối kháng trực tiếp.</p>
             <button class="btn-action-primary" onclick="SpatialPoiModals.switchArenaTab('spar')">Tới Võ Đài Chọn Đối Thủ →</button>
@@ -767,28 +787,28 @@
         ${!isOver ? `
           <div class="clash-command-dock">
             <button class="btn-tactical-cmd attack" onclick="SpatialPoiModals.executeClashRound('ATTACK')">
-              <span class="cmd-icon">🗡️</span>
+              <span class="cmd-icon">劍</span>
               <div class="cmd-text">
                 <span class="cmd-title">TẤN CÔNG QUYẾT LIỆT</span>
                 <span class="cmd-desc">Dốc sức công kích bạt mạng</span>
               </div>
             </button>
             <button class="btn-tactical-cmd defend" onclick="SpatialPoiModals.executeClashRound('DEFEND')">
-              <span class="cmd-icon">🛡️</span>
+              <span class="cmd-icon">盾</span>
               <div class="cmd-text">
                 <span class="cmd-title">THỦ THẾ PHẢN ĐÒN</span>
                 <span class="cmd-desc">Chắn đỡ giảm hại, hồi phục khí thế</span>
               </div>
             </button>
             <button class="btn-tactical-cmd special" onclick="SpatialPoiModals.executeClashRound('SPECIAL_STRIKE')">
-              <span class="cmd-icon">💥</span>
+              <span class="cmd-icon">爆</span>
               <div class="cmd-text">
                 <span class="cmd-title">TUYỆT KỸ BẠT TỤY</span>
                 <span class="cmd-desc">Tung chiêu sát chiêu sát thương lớn</span>
               </div>
             </button>
             <button class="btn-tactical-cmd focus" onclick="SpatialPoiModals.executeClashRound('FOCUS_SPIRIT')">
-              <span class="cmd-icon">🧘</span>
+              <span class="cmd-icon">靜</span>
               <div class="cmd-text">
                 <span class="cmd-title">TỤ KHÍ NGƯNG THẦN</span>
                 <span class="cmd-desc">Điều hòa hơi thở, sẵn sàng phản kích</span>
@@ -819,6 +839,11 @@
       });
       const data = await res.json();
       if (!data.success) throw new Error(data.error || 'Tỉ thí thất bại');
+
+      if (typeof window.apiSpendActionTime === 'function') {
+        try { await window.apiSpendActionTime('PERSONAL_GROWTH', 'TRAIN_MARTIAL', 'Tỉ thí võ nghệ'); }
+        catch (timeErr) { showNotification(timeErr.message, true); }
+      }
 
       const r = data.result || {};
       showNotification(`Trận tỉ thí hoàn tất! ${r.summaryNarrativeVi || 'Hai bên thu hoạch lớn về võ lược.'}`);
@@ -868,6 +893,11 @@
       const data = await res.json();
       if (!data.success) throw new Error(data.error || 'Không thể thách đấu lôi đài');
 
+      if (typeof window.apiSpendActionTime === 'function') {
+        try { await window.apiSpendActionTime('PERSONAL_GROWTH', 'TRAIN_MARTIAL', 'Thách đấu lôi đài'); }
+        catch (timeErr) { showNotification(timeErr.message, true); }
+      }
+
       if (data.result && data.result.duelId) {
         currentActiveDuelId = data.result.duelId;
         switchArenaTab('clash');
@@ -915,7 +945,9 @@
   // =========================================================================
 
   function ensureResidenceModalDom() {
-    if (document.getElementById('spatial-residence-modal')) return;
+    const existing = document.getElementById('spatial-residence-modal');
+    if (existing && existing.querySelector('#residence-modal-body')) return;
+    if (existing) existing.remove();
 
     const modal = document.createElement('div');
     modal.id = 'spatial-residence-modal';
@@ -924,27 +956,27 @@
       <div class="modal-dialog modal-lg spatial-poi-dialog">
         <div class="modal-header">
           <div class="modal-title-group">
-            <span class="modal-title-seal">🏛️</span>
+            <span class="modal-title-seal">府</span>
             <div>
               <h2 class="modal-title-text" id="residence-modal-title">Tư Trạch Vườn Đào • Lương Phủ Gia Thất</h2>
               <div class="modal-subtitle">Nghỉ ngơi phòng trong, đàm đạo thê thất, nuôi dạy thế tử và quản lý cơ nghiệp</div>
             </div>
           </div>
-          <button class="btn-close-modal" onclick="SpatialPoiModals.closeResidenceModal()" title="Đóng [Esc]">✕</button>
+          <button class="btn-close-modal" onclick="SpatialPoiModals.closeResidenceModal()" title="Đóng [Esc]">×</button>
         </div>
 
         <div class="modal-tab-bar" id="residence-tab-bar">
           <button class="modal-tab-btn active" data-tab="rest" onclick="SpatialPoiModals.switchResidenceTab('rest')">
-            <span class="tab-seal">🛌</span> An Tĩnh Nghỉ Ngơi
+            <span class="tab-seal">息</span> An Tĩnh Nghỉ Ngơi
           </button>
           <button class="modal-tab-btn" data-tab="spouse" onclick="SpatialPoiModals.switchResidenceTab('spouse')">
-            <span class="tab-seal">👘</span> Phu Nhân & Hôn Phối
+            <span class="tab-seal">衣</span> Phu Nhân & Hôn Phối
           </button>
           <button class="modal-tab-btn" data-tab="heir" onclick="SpatialPoiModals.switchResidenceTab('heir')">
-            <span class="tab-seal">👶</span> Dạy Dỗ Thế Tử
+            <span class="tab-seal">子</span> Dạy Dỗ Thế Tử
           </button>
           <button class="modal-tab-btn" data-tab="desk" onclick="SpatialPoiModals.switchResidenceTab('desk')">
-            <span class="tab-seal">💼</span> Bàn Làm Việc Gia Tộc
+            <span class="tab-seal">商</span> Bàn Làm Việc Gia Tộc
           </button>
         </div>
 
@@ -1021,7 +1053,7 @@
           <div class="spatial-card-grid">
             <div class="spatial-action-card highlight">
               <div class="card-badge emerald">HỒI PHỤC TOÀN DIỆN</div>
-              <div class="card-header-icon">🛏️</div>
+              <div class="card-header-icon">息</div>
               <h4 class="card-title">An Giấc Phòng Trong Cùng Phu Nhân</h4>
               <p class="card-desc">Tĩnh dưỡng sâu trong trạch viện, có người nâng khăn sửa túi, bồi bổ canh thang sâm nhung.</p>
               <div class="card-perks">
@@ -1030,7 +1062,7 @@
                 <span class="perk-tag gold">+15 Sĩ Khí</span>
                 <span class="perk-tag purple">Cơ Duyên Sinh Nở</span>
               </div>
-              <div class="card-cost">Chi phí: <strong>0</strong> Tiền (Tư gia)</div>
+              <div class="card-cost">Chi phí: <strong>0</strong> Quan (Tư gia)</div>
               <button class="btn-card-execute gold" onclick="SpatialPoiModals.executeResidenceRest()">
                 Nghỉ Ngơi An Giấc Ngay →
               </button>
@@ -1073,13 +1105,13 @@
 
               <div class="spatial-action-grid-sm" style="margin-top: 14px;">
                 <button class="btn-action-outline" onclick="SpatialPoiModals.executeSpouseRoleChange('${s.marriage_id}', 'HOUSEKEEPER')">
-                  🏠 Phân Công: Quản Gia Trạch Viện
+                  宅 Phân Công: Quản Gia Trạch Viện
                 </button>
                 <button class="btn-action-outline" onclick="SpatialPoiModals.executeSpouseRoleChange('${s.marriage_id}', 'ENTERPRISE_MANAGER')">
-                  📦 Phân Công: Chưởng Quản Xưởng Nghề
+                  貨 Phân Công: Chưởng Quản Xưởng Nghề
                 </button>
                 <button class="btn-action-outline" onclick="SpatialPoiModals.executeSpouseRoleChange('${s.marriage_id}', 'TUTOR')">
-                  📚 Phân Công: Đôn Đốc Dạy Con
+                  書 Phân Công: Đôn Đốc Dạy Con
                 </button>
               </div>
             </div>
@@ -1109,7 +1141,7 @@
                     <p class="card-desc">${c.titleVi || 'Tiểu thư thế gia vọng tộc'}</p>
                     <div class="card-perks">
                       <span class="perk-tag green">Độ Thân: ${c.intimacy || 50}%</span>
-                      <span class="perk-tag purple">Sính Lễ: ${c.dowryCashRequired || 1000} Tiền</span>
+                      <span class="perk-tag purple">Sính Lễ: ${c.dowryCashRequired || 1000} Quan</span>
                     </div>
                     <button class="btn-card-execute gold" onclick="SpatialPoiModals.executeProposeMarriage('${c.npcId}', ${c.dowryCashRequired || 1000})">
                       Sai Mối Cầu Hôn →
@@ -1196,7 +1228,7 @@
 
             <div class="spatial-action-card">
               <div class="card-badge gold">SỔ TAY</div>
-              <div class="card-header-icon">📜</div>
+              <div class="card-header-icon">卷</div>
               <h4 class="card-title">Sổ Tay Hành Trình & Chí Hướng [J]</h4>
               <p class="card-desc">Xem lại tháp tham vọng phẩm lộ, quân trang cá nhân và nhật ký hành trình.</p>
               <button class="btn-card-execute gold" onclick="SpatialPoiModals.closeResidenceModal(); if(window.PersonalJournalUI) window.PersonalJournalUI.open('career');">

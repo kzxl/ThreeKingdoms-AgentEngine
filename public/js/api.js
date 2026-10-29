@@ -477,6 +477,55 @@ async function apiAdvanceTurn(notes = '') {
   });
   const data = await res.json();
   if (!data.success) throw new Error(data.error || 'Failed to advance turn');
+  // The server wraps the report in { success, result }. Keep this accessor
+  // stable so callers can read nextTurn/nextDate/bizReports directly.
+  return data.result || data;
+}
+
+async function apiFetchClock() {
+  const res = await fetch(`${API_BASE}/api/time/clock`);
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Failed to fetch clock');
+  return data;
+}
+
+async function apiSpendActionTime(actionType, subType = null, reason = '', daysOverride = null) {
+  const res = await fetch(`${API_BASE}/api/time/spend`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ actionType, subType, reason, daysOverride })
+  });
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Action time rejected');
+  return data.time;
+}
+
+async function apiFetchTasks() {
+  const res = await fetch(`${API_BASE}/api/tasks`);
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Failed to fetch tasks');
+  return data;
+}
+
+async function apiStartTask(payload) {
+  const res = await fetch(`${API_BASE}/api/tasks/start`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Failed to start task');
+  return data;
+}
+
+async function apiCancelTask(taskId) {
+  const res = await fetch(`${API_BASE}/api/tasks/cancel`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ taskId })
+  });
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Failed to cancel task');
   return data;
 }
 
@@ -512,6 +561,11 @@ async function apiCompleteTravelMarch(payload) {
 window.apiPlanTravel = apiPlanTravel;
 window.apiStartTravel = apiStartTravel;
 window.apiAdvanceTurn = apiAdvanceTurn;
+window.apiFetchClock = apiFetchClock;
+window.apiSpendActionTime = apiSpendActionTime;
+window.apiFetchTasks = apiFetchTasks;
+window.apiStartTask = apiStartTask;
+window.apiCancelTask = apiCancelTask;
 window.apiFetchTravelEncounter = apiFetchTravelEncounter;
 window.apiResolveTravelEncounter = apiResolveTravelEncounter;
 window.apiCompleteTravelMarch = apiCompleteTravelMarch;

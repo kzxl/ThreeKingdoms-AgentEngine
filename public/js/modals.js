@@ -61,6 +61,14 @@ function openQuickTrade(mode, itemCode, defaultQty, defaultPrice) {
     return;
   }
 
+  // One trade surface: the TS QuickTradeModal owns the dialog and posts to
+  // /api/trade. The legacy markup below stays only as an offline fallback when
+  // the module bundle failed to load.
+  if (window.QuickTradeModal && typeof window.QuickTradeModal.open === 'function') {
+    window.QuickTradeModal.open(mode, itemCode, defaultQty, defaultPrice);
+    return;
+  }
+
   const modal = document.getElementById('trade-modal');
   if (!modal) return;
 
@@ -103,7 +111,7 @@ function calcTradeTotal() {
   const price = parseFloat(document.getElementById('modal-price')?.value) || 0;
   const total = Math.round(qty * price);
   const totalEl = document.getElementById('modal-total-amt');
-  if (totalEl) totalEl.innerText = isEn ? `${total.toLocaleString()} Qian` : `${total.toLocaleString()} Tiền`;
+  if (totalEl) totalEl.innerText = isEn ? `${total.toLocaleString()} quan` : `${total.toLocaleString()} Quan`;
 }
 
 async function submitModalTrade() {
@@ -127,7 +135,7 @@ async function submitModalTrade() {
     speaker: 'Lương Diễn',
     title: mode === 'SELL' ? 'Xuất Bán Hàng Hóa' : 'Thu Mua Vật Tư',
     avatar: '梁',
-    text: `${mode === 'SELL' ? 'Xuất bán' : 'Thu mua'} **${qty} ${itemCode}** với đối tác **${counterparty}** theo giá **${price} Tiền/đơn vị** (Tổng: ${(qty * price).toLocaleString()} Tiền).`
+    text: `${mode === 'SELL' ? 'Xuất bán' : 'Thu mua'} **${qty} ${itemCode}** với đối tác **${counterparty}** theo giá **${price} Quan/đơn vị** (Tổng: ${(qty * price).toLocaleString()} Quan).`
   });
 
   setProcessingLock(true, null, `${mode === 'SELL' ? 'Xuất bán' : 'Thu mua'} ${qty} ${itemCode}`);
@@ -138,7 +146,6 @@ async function submitModalTrade() {
     quantity: qty,
     unit_price: price,
     counterparty,
-    game_date: '184-05-02',
     idempotency_key: `MODAL_${mode}_${itemCode}_${Date.now()}`
   };
 
@@ -150,7 +157,7 @@ async function submitModalTrade() {
     }
 
     const totalAmt = qty * price;
-    const deltaCash = mode === 'SELL' ? `+${totalAmt} Qian` : `-${totalAmt} Qian`;
+    const deltaCash = mode === 'SELL' ? `+${totalAmt} quan` : `-${totalAmt} quan`;
     const deltaStock = mode === 'SELL' ? `-${qty} ${itemCode}` : `+${qty} ${itemCode}`;
 
     appendStoryTurn({
@@ -280,7 +287,7 @@ function renderRotkEvents(events) {
       if (eff.exp) effParts.push(`Chiến công +${eff.exp}`);
       if (eff.item_reward) effParts.push(`Bảo vật: ${eff.item_reward}`);
       if (eff.arrows_acquired) effParts.push(`Mũi tên: +${eff.arrows_acquired.toLocaleString()}`);
-      if (eff.treasury_boost) effParts.push(`Ngân khố +${eff.treasury_boost.toLocaleString()} Tiền`);
+      if (eff.treasury_boost) effParts.push(`Ngân khố +${eff.treasury_boost.toLocaleString()} Quan`);
       if (effParts.length > 0) effectsStr = effParts.join(' • ');
     } catch (e) {}
 
@@ -369,7 +376,7 @@ function updateArchetypePreview(archetypeId) {
   if (metaEl) {
     const ageStr = `${arch.starting_age} ${isEn ? 'Years Old' : 'Tuổi'}`;
     const baseStr = `${isEn ? 'Base' : 'Căn Cứ'}: ${arch.starting_location || (isEn ? 'Zhuo County' : 'Huyện Trác')}`;
-    const cashStr = `${(arch.initial_liquid_cash || 0).toLocaleString()} ${isEn ? 'Qian' : 'Tiền'}`;
+    const cashStr = `${(arch.initial_liquid_cash || 0).toLocaleString()} ${isEn ? 'quan' : 'Quan'}`;
     metaEl.innerText = `${ageStr} • ${baseStr} • ${cashStr}`;
   }
 
@@ -413,7 +420,7 @@ function updateArchetypePreview(archetypeId) {
   // Starting Assets & Enterprise Summary
   const assetsContainer = document.getElementById('gm-preview-assets-summary');
   if (assetsContainer) {
-    const cashStr = `${(arch.initial_liquid_cash || 0).toLocaleString()} ${isEn ? 'Qian' : 'Tiền'}`;
+    const cashStr = `${(arch.initial_liquid_cash || 0).toLocaleString()} ${isEn ? 'quan' : 'Quan'}`;
     const perksStr = isEn ? (arch.initial_perks_en || arch.initial_perks || 'Standard Workshop License') : (arch.initial_perks || 'Quyền quản lý xưởng');
     assetsContainer.innerHTML = `
       <div class="gm-asset-row">
@@ -502,7 +509,7 @@ function renderGameManagerModalContent(data) {
             </div>
             <div class="gm-stat-item">
               <span class="label">${isEn ? 'Liquid Cash:' : 'Tiền Mặt:'}</span>
-              <span class="val font-mono">${(summary.liquidCash || 0).toLocaleString()} ${isEn ? 'Qian' : 'Tiền'}</span>
+              <span class="val font-mono">${(summary.liquidCash || 0).toLocaleString()} ${isEn ? 'quan' : 'Quan'}</span>
             </div>
             <div class="gm-stat-item">
               <span class="label">${isEn ? 'Grain Stock:' : 'Lương Thảo:'}</span>
@@ -559,7 +566,7 @@ function renderGameManagerModalContent(data) {
       if (isSelected) selectedArchetypeId = a.archetype_id;
       const title = isEn ? (a.name_en || a.name_vi) : a.name_vi;
       const desc = isEn ? (a.bio_en || a.bio_vi) : a.bio_vi;
-      const cashStr = `${(a.initial_liquid_cash || 0).toLocaleString()} ${isEn ? 'Qian' : 'Tiền'}`;
+      const cashStr = `${(a.initial_liquid_cash || 0).toLocaleString()} ${isEn ? 'quan' : 'Quan'}`;
       return `
         <label class="gm-archetype-card ${isSelected ? 'selected' : ''}" onclick="selectGameArchetype('${a.archetype_id}', this)">
           <input type="radio" name="gm_archetype" value="${a.archetype_id}" ${isSelected ? 'checked' : ''} style="display:none">
@@ -728,7 +735,7 @@ function openEventParticipationModal(eventId = null) {
       choicesContainer.innerHTML = choices.map(c => {
         let costStr = '';
         if (c.required_cost && c.required_cost.cash) {
-          costStr += `Chi phí: <strong>${c.required_cost.cash.toLocaleString()} Tiền</strong> `;
+          costStr += `Chi phí: <strong>${c.required_cost.cash.toLocaleString()} Quan</strong> `;
         }
         if (c.required_stat) {
           const statKey = Object.keys(c.required_stat)[0];
@@ -778,7 +785,7 @@ async function submitEventChoice(eventId, choiceId) {
         <div style="font-weight:700;margin-bottom:4px;color:#34d399;">ĐÃ HOÀN TẤT THAM GIA BIẾN CỐ LỊCH SỬ</div>
         <div style="margin-bottom:6px;"><strong>Quyết Sách:</strong> ${result.choiceTitleVi} (${result.outcomeType === 'ALTERNATE' ? 'Dị Bản What-If' : 'Chính Sử'})</div>
         <div style="margin-bottom:6px;">${result.resolutionNarrative}</div>
-        <div style="font-size:11px;color:#94a3b8;">${result.netCashDelta !== 0 ? `Biến động ngân lượng: ${result.netCashDelta > 0 ? '+' : ''}${result.netCashDelta.toLocaleString()} Tiền (Đã hạch toán vào Sổ cái kép)` : 'Không thay đổi số dư tiền mặt.'}</div>
+        <div style="font-size:11px;color:#94a3b8;">${result.netCashDelta !== 0 ? `Biến động ngân lượng: ${result.netCashDelta > 0 ? '+' : ''}${result.netCashDelta.toLocaleString()} Quan (Đã hạch toán vào Sổ cái kép)` : 'Không thay đổi số dư tiền mặt.'}</div>
       `;
       resultBox.classList.remove('hidden');
     }
@@ -1128,10 +1135,10 @@ async function loadAndRenderFactions() {
               <!-- Action buttons -->
               ${off.courtRank !== 'RULER' ? `
                 <div style="display:flex; gap:6px; margin-top:4px; border-top:1px solid var(--border-subtle); padding-top:8px;">
-                  <button class="tactical-btn tactical-btn--sm" style="flex:1;" onclick="handleGrantReward('${off.officerId}', '${off.factionId}')">
-                    Thưởng 300 Tiền
+                  <button class="ui-btn ui-btn--sm" style="flex:1;" onclick="handleGrantReward('${off.officerId}', '${off.factionId}')">
+                    Thưởng 300 Quan
                   </button>
-                  <button class="tactical-btn tactical-btn--sm" style="flex:1;" onclick="handleInvestTitle('${off.officerId}', '${off.factionId}')">
+                  <button class="ui-btn ui-btn--sm" style="flex:1;" onclick="handleInvestTitle('${off.officerId}', '${off.factionId}')">
                     Phong Tước Vị
                   </button>
                 </div>
@@ -1169,7 +1176,7 @@ async function loadAndRenderFactions() {
                 <span class="tactical-stat-val tactical-stat-val--blue">${s.garrisonTroops?.toLocaleString()} Quân Sĩ</span>
               </div>
             </div>
-            <button class="tactical-btn tactical-btn--sm" style="width:100%; margin-top:2px;" onclick="handleAppointGovernor('${s.settlementId}', '${s.rulerFactionId}')">
+            <button class="ui-btn ui-btn--sm" style="width:100%; margin-top:2px;" onclick="handleAppointGovernor('${s.settlementId}', '${s.rulerFactionId}')">
               Bổ Nhiệm Thái Thú Mới
             </button>
           </div>
@@ -1220,7 +1227,7 @@ async function triggerSimulatePolitics() {
 
 async function handleGrantReward(officerId, factionId) {
   try {
-    showToast(`Đang xuất 300 tiền từ quân khố ban thưởng...`, false);
+    showToast(`Đang xuất 300 quan từ quân khố ban thưởng...`, false);
     const res = await apiGrantReward(officerId, factionId, 300);
     if (res.success) {
       showToast(res.result?.message || 'Ban thưởng thành công!', false);
@@ -1313,7 +1320,13 @@ async function loadAndRenderProfessions() {
     ]);
 
     const profs = profsRes.professions || [];
-    const nodes = nodesRes.nodes || [];
+    const currentRegion = (typeof getCurrentRegionNode === 'function')
+      ? getCurrentRegionNode(activeSubLocation)
+      : null;
+    const currentSettlementId = currentRegion ? currentRegion.id : null;
+    const nodes = (nodesRes.nodes || []).filter(
+      node => !currentSettlementId || node.settlementId === currentSettlementId
+    );
     const innovations = innoRes.innovations || [];
 
     // 1. Render Learned Professions
@@ -1374,7 +1387,10 @@ async function loadAndRenderProfessions() {
           MINERAL: 'Khai Khoáng Mỏ Đá',
           HERB: 'Dược Thảo Rừng Núi',
           TIMBER: 'Đốn Gỗ Sơn Lâm',
-          SALT_WELL: 'Chưng Cất Nấu Muối'
+          SALT_WELL: 'Chưng Cất Nấu Muối',
+          FARM: 'Canh Tác Ruộng Đồng',
+          FISH: 'Đánh Bắt Sông Hồ',
+          GAME: 'Săn Bắn Sơn Lâm'
         };
 
         nodesContainer.innerHTML = nodes.map(n => `
@@ -1403,7 +1419,7 @@ async function loadAndRenderProfessions() {
             </div>
 
             <div style="margin-top:4px;">
-              <button class="tactical-btn tactical-btn--success" style="width:100%;" onclick="handleGatherResource('${n.nodeId}')">
+              <button class="ui-btn ui-btn--success" style="width:100%;" onclick="handleGatherResource('${n.nodeId}')">
                 Tiến Vào Khai Thác
               </button>
             </div>
@@ -1538,7 +1554,7 @@ async function loadAndRenderEcology() {
               </div>
             </div>
             <div style="text-align:right; margin-top:4px;">
-              <button class="tactical-btn tactical-btn--success" onclick="handleDispatchRelief('${c.settlementId}')">
+              <button class="ui-btn ui-btn--success" onclick="handleDispatchRelief('${c.settlementId}')">
                 Mở Kho Phát Chẩn (5 Thạch)
               </button>
             </div>
@@ -1593,7 +1609,7 @@ async function loadAndRenderEcology() {
                 </div>
                 <div class="tactical-stat-item">
                   <span class="tactical-stat-label">Trị Giá Lô Hàng</span>
-                  <span class="tactical-stat-val tactical-stat-val--gold">${car.cargoValueQian?.toLocaleString()} Tiền</span>
+                  <span class="tactical-stat-val tactical-stat-val--gold">${car.cargoValueQian?.toLocaleString()} Quan</span>
                 </div>
               </div>
             </div>
@@ -1627,16 +1643,16 @@ async function loadAndRenderEcology() {
                 </div>
                 <div class="tactical-stat-item">
                   <span class="tactical-stat-label">Tài Vật Cướp Bóc</span>
-                  <span class="tactical-stat-val tactical-stat-val--gold">${s.plunderedWealth?.toLocaleString()} Tiền</span>
+                  <span class="tactical-stat-val tactical-stat-val--gold">${s.plunderedWealth?.toLocaleString()} Quan</span>
                 </div>
                 <div class="tactical-stat-item" style="grid-column: span 2;">
                   <span class="tactical-stat-label">Tiền Thưởng Quân Công Triều Đình</span>
-                  <span class="tactical-stat-val tactical-stat-val--green">+${s.bountyReward?.toLocaleString()} Tiền</span>
+                  <span class="tactical-stat-val tactical-stat-val--green">+${s.bountyReward?.toLocaleString()} Quan</span>
                 </div>
               </div>
               ${!isSubdued ? `
                 <div style="text-align:right; margin-top:4px;">
-                  <button class="tactical-btn tactical-btn--danger" onclick="handleAttackStronghold('${s.strongholdId}')">
+                  <button class="ui-btn ui-btn--danger" onclick="handleAttackStronghold('${s.strongholdId}')">
                     Công Kích Tiễu Phạt
                   </button>
                 </div>
@@ -1674,7 +1690,7 @@ async function handleAttackStronghold(strongholdId) {
     showToast('Đang thống lĩnh dũng sĩ Lương Thị tiến công sơn trại phỉ khấu...', false);
     const res = await apiAttackStronghold(strongholdId);
     if (res.success) {
-      alert(`ĐẠI THẮNG SƠN TRẠI!\n\n${res.message}\n\nThu hồi: ${res.lootCash} tiền\nTiền thưởng tiễu phỉ: ${res.bounty} tiền\nTổng thu: +${res.totalReward} tiền!`);
+      alert(`ĐẠI THẮNG SƠN TRẠI!\n\n${res.message}\n\nThu hồi: ${res.lootCash} quan\nTiền thưởng tiễu phỉ: ${res.bounty} quan\nTổng thu: +${res.totalReward} quan!`);
       await loadAndRenderEcology();
     } else {
       alert(`CÔNG TRẠI THẤT BẠI!\n\n${res.message}`);

@@ -496,22 +496,22 @@
       // Co-Present Actions (Direct face-to-face)
       actionButtonsHtml = `
         <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-          <button class="tactical-btn" onclick="executeDossierAction('${dossier.npcId}', 'TEA_CONVERSE')" title="Hồi phục +15 Thể Lực, +5 Sĩ Khí">
-            ${isEn ? 'Offer Tea (-5 Qian, +15 Stamina)' : 'Mời Trà Đàm Đạo (-5 Tiền, +15 Thể Lực)'}
+          <button class="ui-btn" onclick="executeDossierAction('${dossier.npcId}', 'TEA_CONVERSE')" title="Hồi phục +15 Thể Lực, +5 Sĩ Khí">
+            ${isEn ? 'Offer Tea (-5 quan, +15 Stamina)' : 'Mời Trà Đàm Đạo (-5 Quan, +15 Thể Lực)'}
           </button>
-          <button class="tactical-btn tactical-btn--primary" onclick="executeDossierAction('${dossier.npcId}', 'BANQUET_DRINK')" title="Hồi phục +35 Thể Lực, +12 Sĩ Khí">
-            ${isEn ? 'Host Wine Banquet (-30 Qian, +35 Stamina)' : 'Rót Rượu Ẩm Thực (-30 Tiền, +35 Thể Lực)'}
+          <button class="ui-btn ui-btn--primary" onclick="executeDossierAction('${dossier.npcId}', 'BANQUET_DRINK')" title="Hồi phục +35 Thể Lực, +12 Sĩ Khí">
+            ${isEn ? 'Host Wine Banquet (-30 quan, +35 Stamina)' : 'Rót Rượu Ẩm Thực (-30 Quan, +35 Thể Lực)'}
           </button>
-          <button class="tactical-btn" onclick="executeDossierAction('${dossier.npcId}', 'SPAR_DEBATE')" title="Tiêu hao 15 Thể Lực, luận bàn võ nghệ">
+          <button class="ui-btn" onclick="executeDossierAction('${dossier.npcId}', 'SPAR_DEBATE')" title="Tiêu hao 15 Thể Lực, luận bàn võ nghệ">
             ${isEn ? 'Spar & Debate (-15 Stamina)' : 'Luận Võ So Tài (-15 Thể Lực)'}
           </button>
-          <button class="tactical-btn" onclick="executeDossierAction('${dossier.npcId}', 'LEARN_MENTOR')">
-            ${isEn ? 'Seek Mentorship (-25 Qian)' : 'Thỉnh Giáo Kỹ Nghệ (-25 Tiền)'}
+          <button class="ui-btn" onclick="executeDossierAction('${dossier.npcId}', 'LEARN_MENTOR')">
+            ${isEn ? 'Seek Mentorship (-25 quan)' : 'Thỉnh Giáo Kỹ Nghệ (-25 Quan)'}
           </button>
-          <button class="tactical-btn" onclick="executeDossierAction('${dossier.npcId}', 'GIFT_TREASURE')">
-            ${isEn ? 'Present Gift (-50 Qian)' : 'Tặng Lễ Vật (-50 Tiền)'}
+          <button class="ui-btn" onclick="executeDossierAction('${dossier.npcId}', 'GIFT_TREASURE')">
+            ${isEn ? 'Present Gift (-50 quan)' : 'Tặng Lễ Vật (-50 Quan)'}
           </button>
-          <button class="tactical-btn" onclick="executeDossierAction('${dossier.npcId}', 'HEART_CONFESSION')">
+          <button class="ui-btn" onclick="executeDossierAction('${dossier.npcId}', 'HEART_CONFESSION')">
             ${isEn ? 'Confide Ambition' : 'Tâm Sự Hoài Bão'}
           </button>
         </div>
@@ -521,17 +521,17 @@
       const isSubordinate = (dossier.npcId === 'NPC-0007' || (dossier.positionVi && dossier.positionVi.includes('Lương')));
       actionButtonsHtml = `
         <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-          <button class="tactical-btn tactical-btn--primary" onclick="travelToNpcLocation('${targetTravelLoc}')" title="Cất bước đi bộ đến địa điểm của nhân vật">
+          <button class="ui-btn ui-btn--primary" onclick="travelToNpcLocation('${targetTravelLoc}')" title="Cất bước đi bộ đến địa điểm của nhân vật">
             ${isEn ? `Visit Location (Travel to ${targetTravelLoc})` : `Đến Tận Nơi Gặp Mặt (Cơ động đến ${targetTravelLoc})`}
           </button>
-          <button class="tactical-btn" onclick="executeDossierAction('${dossier.npcId}', 'SEND_COURIER_LETTER')" title="Phái gia nhân mang thư thăm hỏi">
-            ${isEn ? 'Dispatch Servant Letter (-3 Qian)' : 'Phái Gia Nhân Gửi Thư (-3 Tiền)'}
+          <button class="ui-btn" onclick="executeDossierAction('${dossier.npcId}', 'SEND_COURIER_LETTER')" title="Phái gia nhân mang thư thăm hỏi">
+            ${isEn ? 'Dispatch Servant Letter (-3 quan)' : 'Phái Gia Nhân Gửi Thư (-3 Quan)'}
           </button>
-          <button class="tactical-btn" onclick="executeDossierAction('${dossier.npcId}', 'DISPATCH_GIFT_CARAVAN')" title="Ủy thác gia nhân mang lễ vật tận nơi">
-            ${isEn ? 'Consign Gift Caravan (-55 Qian)' : 'Ủy Thác Chuyển Quà Tận Tay (-55 Tiền)'}
+          <button class="ui-btn" onclick="executeDossierAction('${dossier.npcId}', 'DISPATCH_GIFT_CARAVAN')" title="Ủy thác gia nhân mang lễ vật tận nơi">
+            ${isEn ? 'Consign Gift Caravan (-55 quan)' : 'Ủy Thác Chuyển Quà Tận Tay (-55 Quan)'}
           </button>
           ${isSubordinate ? `
-            <button class="tactical-btn" style="border-color: #a855f7; color: #c084fc;" onclick="executeDossierAction('${dossier.npcId}', 'SUMMON_SUBORDINATE')" title="Triệu kiến thợ cả / gia nhân Lương Gia đến diện kiến">
+            <button class="ui-btn" style="border-color: #a855f7; color: #c084fc;" onclick="executeDossierAction('${dossier.npcId}', 'SUMMON_SUBORDINATE')" title="Triệu kiến thợ cả / gia nhân Lương Gia đến diện kiến">
               ${isEn ? 'Summon Subordinate' : 'Triệu Kiến Về Diện Kiến'}
             </button>
           ` : ''}
@@ -541,11 +541,11 @@
       // Inter-Settlement Remote Actions
       actionButtonsHtml = `
         <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-          <button class="tactical-btn tactical-btn--primary" onclick="executeDossierAction('${dossier.npcId}', 'CARRIER_PIGEON_LETTER')" title="Thư bồ câu vượt vạn dặm">
-            ${isEn ? 'Carrier Pigeon Letter (-15 Qian)' : 'Phi Thư Bồ Câu (-15 Tiền)'}
+          <button class="ui-btn ui-btn--primary" onclick="executeDossierAction('${dossier.npcId}', 'CARRIER_PIGEON_LETTER')" title="Thư bồ câu vượt vạn dặm">
+            ${isEn ? 'Carrier Pigeon Letter (-15 quan)' : 'Phi Thư Bồ Câu (-15 Quan)'}
           </button>
-          <button class="tactical-btn" onclick="executeDossierAction('${dossier.npcId}', 'DISPATCH_GIFT_CARAVAN')" title="Phái đoàn tùy tùng mang lễ vật đi xa">
-            ${isEn ? 'Dispatch Tribute Caravan (-55 Qian)' : 'Ủy Thác Chuyển Quà Biếu (-55 Tiền)'}
+          <button class="ui-btn" onclick="executeDossierAction('${dossier.npcId}', 'DISPATCH_GIFT_CARAVAN')" title="Phái đoàn tùy tùng mang lễ vật đi xa">
+            ${isEn ? 'Dispatch Tribute Caravan (-55 quan)' : 'Ủy Thác Chuyển Quà Biếu (-55 Quan)'}
           </button>
         </div>
       `;
@@ -655,8 +655,8 @@
 
           <!-- Footer Modal Controls -->
           <div style="display: flex; justify-content: flex-end; margin-top: 6px; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.05);">
-            <button class="tactical-btn" onclick="closeNpcDossierModal()" style="padding: 6px 16px; font-weight: 600;">
-              ${isEn ? '✕ Close Dossier' : '✕ Đóng Hồ Sơ'}
+            <button class="ui-btn" onclick="closeNpcDossierModal()" style="padding: 6px 16px; font-weight: 600;">
+              ${isEn ? '× Close Dossier' : '× Đóng Hồ Sơ'}
             </button>
           </div>
         </div>
@@ -707,7 +707,7 @@
       const affinityLabel = isEn ? 'Affinity:' : 'Hảo cảm:';
       const respectLabel = isEn ? 'Respect:' : 'Kính trọng:';
       const costStr = r.deltas.cashCost > 0
-        ? `<span style="color: #f87171;">${isEn ? 'Cost:' : 'Chi phí:'} -${r.deltas.cashCost} ${isEn ? 'Qian' : 'Tiền'}</span>`
+        ? `<span style="color: #f87171;">${isEn ? 'Cost:' : 'Chi phí:'} -${r.deltas.cashCost} ${isEn ? 'quan' : 'Quan'}</span>`
         : '';
       const staminaStr = r.deltas.staminaChange
         ? (r.deltas.staminaChange > 0 

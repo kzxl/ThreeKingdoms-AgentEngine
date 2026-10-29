@@ -198,23 +198,40 @@ async function loadStatus() {
     const f = data.financials;
 
     // Header Telemetry Chips
+    if (typeof refreshActiveTaskStrip === 'function') refreshActiveTaskStrip();
     const dateChip = document.getElementById('top-date-chip');
-    if (dateChip) dateChip.innerText = `${m.current_date || '184-05-02'} (Lượt ${m.active_turn ?? 6})`;
+    if (dateChip) {
+      const currentDate = m.current_date || '184-05-02';
+      dateChip.innerText = typeof formatGameDateChip === 'function'
+        ? formatGameDateChip(currentDate)
+        : currentDate;
+      dateChip.title = currentLang === 'en'
+        ? 'Every action costs one day. Close the month at day 30 before continuing.'
+        : 'Mỗi thao tác tốn 1 ngày. Hết ngày 30 phải bấm Qua Tháng.';
+    }
 
     const locSub = document.getElementById('top-loc-sub');
     if (locSub) locSub.innerText = p.current_location || 'Quảng Tông';
 
     const valCash = document.getElementById('top-val-cash');
-    if (valCash) valCash.innerText = `${(f.liquidCash || 0).toLocaleString()} Tiền`;
+    if (valCash) valCash.innerText = typeof formatMoney === 'function'
+      ? formatMoney(f.liquidCash || 0)
+      : `${(f.liquidCash || 0).toLocaleString()} Quan`;
 
     const valGrain = document.getElementById('top-val-grain');
-    if (valGrain) valGrain.innerText = `${Number(p.strategic_grain || 0).toFixed(2)} Thạch`;
+    if (valGrain) valGrain.innerText = typeof formatGrain === 'function'
+      ? formatGrain(p.strategic_grain || 0)
+      : `${Number(p.strategic_grain || 0).toFixed(2)} Thạch`;
 
     const valInv = document.getElementById('top-val-inv');
-    if (valInv) valInv.innerText = `${(f.inventoryValue || 0).toLocaleString()} Tiền`;
+    if (valInv) valInv.innerText = typeof formatMoney === 'function'
+      ? formatMoney(f.inventoryValue || 0)
+      : `${(f.inventoryValue || 0).toLocaleString()} Quan`;
 
     const valNetworth = document.getElementById('top-val-networth');
-    if (valNetworth) valNetworth.innerText = `${(f.netWorth || 0).toLocaleString()} Tiền`;
+    if (valNetworth) valNetworth.innerText = typeof formatMoney === 'function'
+      ? formatMoney(f.netWorth || 0)
+      : `${(f.netWorth || 0).toLocaleString()} Quan`;
 
     // Protagonist Card Fields
     if (p) {
@@ -241,13 +258,13 @@ async function loadStatus() {
 
       let stageNum = 1;
       let stageTitle = isEn ? 'Commoner • Self-Made Beginning' : 'Bố Y Thường Dân • Khởi Đầu Tay Trắng';
-      let stageBadge = isEn ? '🌾 Stage 1: Penniless Commoner' : '🌾 Bố Y Khởi Thủy';
+      let stageBadge = isEn ? `${uiIcon('sprout')} Stage 1: Penniless Commoner` : `${uiIcon('sprout')} Bố Y Khởi Thủy`;
       let stageClass = 'stage-pauper';
 
       if (netWorthVal >= 50000) {
         stageNum = 4;
         stageTitle = isEn ? 'Clan Patriarch • Regional Power' : 'Lương Thị Tông Chủ • Hùng Bá Một Phương';
-        stageBadge = isEn ? '👑 Stage 4: Dynastic Patriarch' : '👑 Phong Vân Hùng Chủ';
+        stageBadge = isEn ? `${uiIcon('crown')} Stage 4: Dynastic Patriarch` : `${uiIcon('crown')} Phong Vân Hùng Chủ`;
         stageClass = 'stage-hegemon';
       } else if (netWorthVal >= 12000 || comVal >= 75 || warVal >= 75) {
         stageNum = 3;
@@ -261,7 +278,7 @@ async function loadStatus() {
           stageTitle = isEn ? 'Renowned Master • Regional Figure' : 'Hào Kiệt Danh Khởi • Trác Huyện';
           stageClass = 'stage-merchant';
         }
-        stageBadge = isEn ? '🏛️ Stage 3: Renowned Master' : '🏛️ Hào Kiệt Danh Khởi';
+        stageBadge = isEn ? `${uiIcon('castle')} Stage 3: Renowned Master` : `${uiIcon('castle')} Hào Kiệt Danh Khởi`;
       } else if (netWorthVal >= 1500 || craVal >= 60 || warVal >= 60 || comVal >= 60) {
         stageNum = 2;
         if (craVal >= 60) {
@@ -271,7 +288,7 @@ async function loadStatus() {
           stageTitle = isEn ? 'Budding Factor • Zhuo County' : 'Tiểu Khang Doanh Gia • Trác Huyện';
           stageClass = 'stage-artisan';
         }
-        stageBadge = isEn ? '🏠 Stage 2: Budding Factor' : '🏠 Tiểu Khang Lập Nghiệp';
+        stageBadge = isEn ? `${uiIcon('house')} Stage 2: Budding Factor` : `${uiIcon('house')} Tiểu Khang Lập Nghiệp`;
       }
 
       const titleEl = document.getElementById('protagonist-title');
@@ -279,7 +296,7 @@ async function loadStatus() {
 
       const badgeEl = document.getElementById('protagonist-career-badge');
       if (badgeEl) {
-        badgeEl.innerText = stageBadge;
+        badgeEl.innerHTML = stageBadge;
         badgeEl.className = `career-stage-badge ${stageClass}`;
       }
 
@@ -386,7 +403,6 @@ async function loadStatus() {
       }
 
       // 8-Axis Attributes & ROTK Equipment Stat Progression System
-      const isEn = typeof currentLang !== 'undefined' && currentLang === 'en';
       const eqpData = data.equipment || {};
       const eqpBonuses = eqpData.bonuses || {};
 
@@ -451,6 +467,55 @@ async function loadStatus() {
     return null;
   }
 }
+
+// 1.1b Multi-day task strip
+async function refreshActiveTaskStrip() {
+  const strip = document.getElementById('active-task-strip');
+  if (!strip || typeof apiFetchTasks !== 'function') return;
+  try {
+    const data = await apiFetchTasks();
+    const tasks = (data.tasks || []).filter(task => task.status === 'IN_PROGRESS');
+    if (tasks.length === 0) {
+      strip.classList.add('hidden');
+      strip.innerHTML = '';
+      return;
+    }
+    strip.classList.remove('hidden');
+    strip.innerHTML = tasks.map(task => {
+      const elapsed = Number(task.elapsed_days || 0);
+      const duration = Number(task.duration_days || 1);
+      const title = (typeof currentLang !== 'undefined' && currentLang === 'en')
+        ? (task.title_en || task.title_vi)
+        : task.title_vi;
+      return `
+        <div class="active-task-item">
+          <div class="active-task-main">
+            <span class="active-task-title">${uiIcon('hourglass')} ${title}</span>
+            <span class="active-task-meta">${elapsed}/${duration} ngày</span>
+          </div>
+          <progress class="active-task-progress" value="${elapsed}" max="${duration}"></progress>
+          <button class="active-task-cancel" type="button" onclick="cancelActiveTask('${task.task_id}')">Hủy</button>
+        </div>
+      `;
+    }).join('');
+  } catch (err) {
+    strip.classList.add('hidden');
+  }
+}
+
+async function cancelActiveTask(taskId) {
+  if (typeof apiCancelTask !== 'function') return;
+  try {
+    await apiCancelTask(taskId);
+    if (typeof showToast === 'function') showToast('Đã hủy công việc dài ngày.', false);
+    await refreshActiveTaskStrip();
+  } catch (err) {
+    if (typeof showToast === 'function') showToast(err.message, true);
+  }
+}
+
+window.refreshActiveTaskStrip = refreshActiveTaskStrip;
+window.cancelActiveTask = cancelActiveTask;
 
 // 1.2 Check Audit Invariants Status
 async function checkAuditStatus() {
@@ -597,6 +662,15 @@ async function executeChoiceDirect(optId) {
           audit: 'Ghi nhận quan hệ'
         }
       });
+
+      // Social actions consume one campaign day.
+      try {
+        if (typeof apiSpendActionTime === 'function') {
+          await apiSpendActionTime('KIZUNA_INTERACT', null, `Giao lưu ${npcName}`);
+        }
+      } catch (timeErr) {
+        showToast(timeErr.message, true);
+      }
 
       // Refresh scene and deck
       await loadScene(activeSubLocation);
@@ -756,7 +830,7 @@ async function executeChoiceDirect(optId) {
         speaker = opt.action.counterparty || 'Bắc Quân Quân Lệnh Cục';
         title = 'Nhận Thưởng Quân Công';
         avatar = '勳';
-        turnText = `Bộ chỉ huy đã giải ngân ban thưởng quân công **${opt.title}**. Số dư lưu động tăng thêm +${opt.action.amount} Tiền.`;
+        turnText = `Bộ chỉ huy đã giải ngân ban thưởng quân công **${opt.title}**. Số dư lưu động tăng thêm +${opt.action.amount} Quan.`;
       } else if (opt.action.type === 'PERSONAL_GROWTH') {
         turnType = 'action';
         speaker = 'Lương Diễn';
@@ -1021,18 +1095,17 @@ async function rewardNpc(npcId, amount = 100) {
     speaker: 'Lương Diễn',
     title: 'Khen Thưởng Gia Nhân',
     avatar: '梁',
-    text: `Ban thưởng **${amount} Tiền** cho ${npcInfo.name} để khích lệ sĩ khí trung thành!`
+    text: `Ban thưởng **${amount} Quan** cho ${npcInfo.name} để khích lệ sĩ khí trung thành!`
   });
 
-  setProcessingLock(true, null, `Thưởng ${amount} Tiền cho ${npcInfo.name}`);
-  showToast(`Ban thưởng ${amount} Tiền cho ${npcInfo.name}...`);
+  setProcessingLock(true, null, `Thưởng ${amount} Quan cho ${npcInfo.name}`);
+  showToast(`Ban thưởng ${amount} Quan cho ${npcInfo.name}...`);
 
   try {
     const res = await dispatchDirectAction({
       type: 'REWARD_NPC',
       npc_id: npcId,
       amount,
-      game_date: '184-05-02',
       idempotency_key: `RWD_${npcId}_${Date.now()}`
     });
 
@@ -1047,11 +1120,11 @@ async function rewardNpc(npcId, amount = 100) {
       title: npcInfo.title,
       avatar: npcInfo.avatar,
       text: npcInfo.quote,
-      deltas: { cash: `-${amount} Qian`, npc: 'Sĩ khí 100% • Trung thành +2', audit: '70/70 Khớp' },
-      reasoning: `Khen thưởng ${amount} Tiền động viên ${npcInfo.name}. Sĩ khí tối đa.`
+      deltas: { cash: `-${amount} quan`, npc: 'Sĩ khí 100% • Trung thành +2', audit: '70/70 Khớp' },
+      reasoning: `Khen thưởng ${amount} Quan động viên ${npcInfo.name}. Sĩ khí tối đa.`
     });
 
-    renderAgentSimulationFeedback(`Khen thưởng ${amount} Tiền động viên ${npcInfo.name}. Sĩ khí tối đa.`, { cash: `-${amount} Qian`, npc: 'Sĩ khí 100% • Trung thành +2', audit: '70/70 Khớp' });
+    renderAgentSimulationFeedback(`Khen thưởng ${amount} Quan động viên ${npcInfo.name}. Sĩ khí tối đa.`, { cash: `-${amount} quan`, npc: 'Sĩ khí 100% • Trung thành +2', audit: '70/70 Khớp' });
     await Promise.all([loadStatus(), loadDeckNpcs(), loadDeckLedger()]);
   } finally {
     setProcessingLock(false, null);

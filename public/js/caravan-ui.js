@@ -54,18 +54,18 @@
               Phân tích chênh lệch cung cầu 15 châu quận, điều phái thương đoàn và bảo tiêu áp tải quân lương hàng hóa
             </div>
           </div>
-          <button class="modal-close-btn" onclick="CaravanUI.close()">&times;</button>
+          <button class="ui-btn ui-btn--ghost ui-btn--icon" onclick="CaravanUI.close()">&times;</button>
         </div>
 
         <!-- Navigation Tabs -->
         <div style="display: flex; gap: 8px; padding: 10px 20px; background: rgba(15, 23, 42, 0.6); border-bottom: 1px solid rgba(255,255,255,0.06);">
-          <button class="tactical-btn ${activeTab === 'arbitrage' ? 'tactical-btn--primary' : ''}" id="caravan-tab-arbitrage" onclick="CaravanUI.switchTab('arbitrage')">
+          <button class="ui-btn ${activeTab === 'arbitrage' ? 'ui-btn--primary' : ''}" id="caravan-tab-arbitrage" onclick="CaravanUI.switchTab('arbitrage')">
             <span>[商] Thị Trường & Chênh Lệch Giá</span>
           </button>
-          <button class="tactical-btn ${activeTab === 'dispatch' ? 'tactical-btn--primary' : ''}" id="caravan-tab-dispatch" onclick="CaravanUI.switchTab('dispatch')">
+          <button class="ui-btn ${activeTab === 'dispatch' ? 'ui-btn--primary' : ''}" id="caravan-tab-dispatch" onclick="CaravanUI.switchTab('dispatch')">
             <span>[隊] Thiết Lập Thương Đoàn</span>
           </button>
-          <button class="tactical-btn ${activeTab === 'tracking' ? 'tactical-btn--primary' : ''}" id="caravan-tab-tracking" onclick="CaravanUI.switchTab('tracking')">
+          <button class="ui-btn ${activeTab === 'tracking' ? 'ui-btn--primary' : ''}" id="caravan-tab-tracking" onclick="CaravanUI.switchTab('tracking')">
             <span>[行] Thương Đội Vận Tuyến (<span id="caravan-active-count">0</span>)</span>
           </button>
         </div>
@@ -94,9 +94,9 @@
       const btn = document.getElementById(`caravan-tab-${t}`);
       if (btn) {
         if (t === tabName) {
-          btn.classList.add('tactical-btn--primary');
+          btn.classList.add('ui-btn--primary');
         } else {
-          btn.classList.remove('tactical-btn--primary');
+          btn.classList.remove('ui-btn--primary');
         }
       }
     });
@@ -221,11 +221,11 @@
                 <div class="tactical-stat-grid" style="grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; background: rgba(15,23,42,0.4); padding: 8px; border-radius: 4px;">
                   <div>
                     <div style="font-size: 9.5px; color: var(--text-muted);">Giá Mua Khởi Điểm:</div>
-                    <div style="font-size: 12px; font-weight: 700; color: #94a3b8;">${opp.buyPrice} Qian</div>
+                    <div style="font-size: 12px; font-weight: 700; color: #94a3b8;">${opp.buyPrice} quan</div>
                   </div>
                   <div>
                     <div style="font-size: 9.5px; color: var(--text-muted);">Giá Bán Đích Đến:</div>
-                    <div style="font-size: 12px; font-weight: 700; color: #4ade80;">${opp.sellPrice} Qian</div>
+                    <div style="font-size: 12px; font-weight: 700; color: #4ade80;">${opp.sellPrice} quan</div>
                   </div>
                 </div>
 
@@ -235,7 +235,7 @@
                 </div>
               </div>
 
-              <button class="tactical-btn tactical-btn--primary tactical-btn--sm" onclick="CaravanUI.prefillDispatch('${opp.itemCode}', '${selectedFromSettlement}', '${opp.bestDestination}')" style="width: 100%; margin-top: 6px;">
+              <button class="ui-btn ui-btn--primary ui-btn--sm" onclick="CaravanUI.prefillDispatch('${opp.itemCode}', '${selectedFromSettlement}', '${opp.bestDestination}')" style="width: 100%; margin-top: 6px;">
                 Thiết Lập Tuyến Này →
               </button>
             </div>
@@ -304,7 +304,7 @@
             <select class="form-input" id="dispatch-item" onchange="CaravanUI.onCargoChange(this.value)" style="width: 100%; padding: 6px 10px; font-size: 12px; background: #0f172a; border-color: rgba(255,255,255,0.15); color: #f1f5f9; margin-bottom: 8px;">
               ${cachedWarehouseInventory.map(item => `
                 <option value="${item.item_code}" ${item.item_code === selectedItemCode ? 'selected' : ''}>
-                  ${item.description || item.item_code} (Hiện có: ${item.quantity} | Giá gốc: ${item.unit_cost_basis || 0} Qian)
+                  ${item.description || item.item_code} (Hiện có: ${item.quantity} | Giá gốc: ${item.unit_cost_basis || 0} quan)
                 </option>
               `).join('')}
             </select>
@@ -330,7 +330,7 @@
             ${Object.values(GUARD_TIERS).map(g => `
               <div class="tactical-card ${selectedGuardTier === g.code ? 'tactical-card--accent' : ''}" onclick="CaravanUI.selectGuardTier('${g.code}')" style="cursor: pointer; padding: 10px; text-align: center; border-radius: 4px; background: ${selectedGuardTier === g.code ? 'rgba(245,158,11,0.12)' : 'rgba(15,23,42,0.4)'}; border: 1px solid ${selectedGuardTier === g.code ? '#fbbf24' : 'rgba(255,255,255,0.06)'};">
                 <div style="font-size: 11.5px; font-weight: 700; color: #f1f5f9;">${g.nameVi}</div>
-                <div style="font-size: 11px; color: #fbbf24; font-weight: 600; margin: 2px 0;">${g.cost} Qian</div>
+                <div style="font-size: 11px; color: #fbbf24; font-weight: 600; margin: 2px 0;">${g.cost} quan</div>
                 <div style="font-size: 9.5px; color: var(--text-muted);">${g.troops} Quân sĩ</div>
               </div>
             `).join('')}
@@ -343,21 +343,21 @@
           <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; text-align: center;">
             <div>
               <div style="font-size: 9.5px; color: var(--text-muted);">Phí Bảo Tiêu:</div>
-              <div style="font-size: 12px; font-weight: 700; color: #f87171;" id="proj-guard-cost">250 Qian</div>
+              <div style="font-size: 12px; font-weight: 700; color: #f87171;" id="proj-guard-cost">250 quan</div>
             </div>
             <div>
               <div style="font-size: 9.5px; color: var(--text-muted);">Doanh Thu Dự Kiến:</div>
-              <div style="font-size: 12px; font-weight: 700; color: #4ade80;" id="proj-gross-rev">0 Qian</div>
+              <div style="font-size: 12px; font-weight: 700; color: #4ade80;" id="proj-gross-rev">0 quan</div>
             </div>
             <div>
               <div style="font-size: 9.5px; color: var(--text-muted);">Lãi Ròng Ước Tính:</div>
-              <div style="font-size: 13px; font-weight: 800; color: #fbbf24;" id="proj-net-profit">0 Qian</div>
+              <div style="font-size: 13px; font-weight: 800; color: #fbbf24;" id="proj-net-profit">0 quan</div>
             </div>
           </div>
         </div>
 
         <!-- Submit Button -->
-        <button class="tactical-btn tactical-btn--primary" id="btn-submit-caravan" onclick="CaravanUI.submitDispatch()" style="width: 100%; padding: 10px; font-size: 13px; font-weight: 700;">
+        <button class="ui-btn ui-btn--primary" id="btn-submit-caravan" onclick="CaravanUI.submitDispatch()" style="width: 100%; padding: 10px; font-size: 13px; font-weight: 700;">
           Ký Lệnh Xuất Phát Thương Đội
         </button>
       </div>
@@ -382,16 +382,19 @@
     container.innerHTML = `
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; background: rgba(30, 41, 59, 0.5); padding: 8px 14px; border-radius: 6px;">
         <span style="font-size: 11.5px; color: var(--text-muted);">Tiến độ lưu thông trên các quan đạo liên tỉnh:</span>
-        <button class="tactical-btn tactical-btn--sm" onclick="CaravanUI.tickProgress()" title="Cho thời gian trôi qua 1 chặng trên quan đạo">
-          Tiếp Bước Tuyến Đường →
+        <button class="ui-btn ui-btn--sm" onclick="CaravanUI.tickProgress()" title="Chờ 1 ngày (tốn 1 ngày hành trình) để thương đoàn tiến bước">
+          Chờ 1 Ngày Trên Dịch Đạo →
         </button>
       </div>
 
       <div style="display: grid; gap: 12px;">
         ${cachedPlayerCaravans.map(car => {
           const isArrived = car.status === 'ARRIVED';
-          const isCompleted = car.status === 'COMPLETED';
-          const progressPercent = Math.min(100, Math.round((car.route_progress || 0) * 100));
+          const isCompleted = car.status === 'COMPLETED' || car.status === 'SUCCESS_TRADED';
+          const isPlayerOwned = Number(car.dispatched_by_player ?? car.dispatchedByPlayer) === 1;
+          const canClaim = isArrived && isPlayerOwned;
+          const caravanId = car.caravan_id || car.caravanId;
+          const progressPercent = Math.min(100, Math.round((car.route_progress || car.routeProgress || 0) * 100));
 
           return `
             <div class="tactical-card" style="background: rgba(30, 41, 59, 0.7); border: 1px solid ${isArrived ? '#4ade80' : 'rgba(255,255,255,0.08)'}; padding: 14px; border-radius: 6px;">
@@ -424,13 +427,15 @@
 
               <div style="display: flex; justify-content: space-between; align-items: center;">
                 <div style="font-size: 11px; color: var(--text-muted);">
-                  Trị giá dự toán: <strong style="color: #4ade80;">${car.cargo_value_qian || 0} Qian</strong>
+                  Trị giá dự toán: <strong style="color: #4ade80;">${car.cargo_value_qian || 0} quan</strong>
                 </div>
 
-                ${isArrived ? `
-                  <button class="tactical-btn tactical-btn--success tactical-btn--sm" onclick="CaravanUI.claimCaravan('${car.caravan_id}')">
-                    Quyết Toán & Thu Tiền →
+                ${canClaim ? `
+                  <button class="ui-btn ui-btn--success ui-btn--sm" onclick="CaravanUI.claimCaravan('${caravanId}')">
+                    Quyết Toán & Nhận Quan →
                   </button>
+                ` : isArrived && !isPlayerOwned ? `
+                  <span style="font-size: 10px; color: var(--text-muted); font-style: italic;">Phe phái đã tự quyết toán</span>
                 ` : isCompleted ? `
                   <span style="font-size: 10px; color: var(--text-muted); font-style: italic;">Đã hoàn thành</span>
                 ` : `
@@ -499,7 +504,7 @@
     const grossEl = document.getElementById('proj-gross-rev');
     const netEl = document.getElementById('proj-net-profit');
 
-    if (guardEl) guardEl.innerText = `${guard.cost} Qian`;
+    if (guardEl) guardEl.innerText = `${guard.cost} quan`;
 
     try {
       const res = await fetch(`/api/economy/regional-prices?settlement=${encodeURIComponent(selectedToSettlement)}&itemCode=${encodeURIComponent(selectedItemCode)}`);
@@ -511,9 +516,9 @@
         const costBasis = (item ? item.unit_cost_basis || 0 : 0) * qty;
         const net = gross - guard.cost - costBasis;
 
-        if (grossEl) grossEl.innerText = `${gross} Qian`;
+        if (grossEl) grossEl.innerText = `${gross} quan`;
         if (netEl) {
-          netEl.innerText = `${net >= 0 ? '+' : ''}${net} Qian`;
+          netEl.innerText = `${net >= 0 ? '+' : ''}${net} quan`;
           netEl.style.color = net >= 0 ? '#4ade80' : '#f87171';
         }
       }
@@ -548,6 +553,13 @@
         return;
       }
 
+      if (typeof window.apiSpendActionTime === 'function') {
+        try {
+          await window.apiSpendActionTime('ENTERPRISE_MANAGE', null, 'Lập thương đoàn');
+        } catch (timeErr) {
+          if (typeof showToast === 'function') showToast(timeErr.message, true);
+        }
+      }
       if (typeof showToast === 'function') {
         showToast(`Thương đoàn "${data.caravanName || 'Tiêu Xa'}" đã lên đường tới ${selectedToSettlement}!`);
       }
@@ -572,7 +584,8 @@
       const data = await res.json();
       if (data.success) {
         if (typeof showToast === 'function') {
-          showToast('Thời gian trôi qua, các thương đoàn đã tiến bước trên dịch đạo!');
+          const dateLabel = data.time && data.time.nextDate ? ` (${data.time.nextDate})` : '';
+          showToast(`Một ngày trôi qua${dateLabel}: các thương đoàn đã tiến bước trên dịch đạo!`);
         }
         await loadCaravanData();
         renderCurrentTab();
@@ -597,7 +610,7 @@
       }
 
       if (typeof showToast === 'function') {
-        showToast(`Quyết toán thành công: Thu về ${data.grossRevenue} Qian (Lãi: +${data.netProfit} Qian, +${data.expGained || 25} EXP Thương Nghiệp)!`);
+        showToast(`Quyết toán thành công: Thu về ${data.grossRevenue} quan (Lãi: +${data.netProfit} quan, +${data.expGained || 25} EXP Thương Nghiệp)!`);
       }
 
       await loadCaravanData();

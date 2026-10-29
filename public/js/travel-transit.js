@@ -18,6 +18,40 @@ let currentTransitState = {
   isRolling: false
 };
 
+function getTravelTransitContent() {
+  let content = document.getElementById('travel-transit-content');
+  if (content) return content;
+
+  const body = document.getElementById('travel-transit-modal-body');
+  if (!body) return null;
+
+  content = document.createElement('div');
+  content.id = 'travel-transit-content';
+  content.className = 'travel-transit-content';
+  body.classList.add('travel-transit-shell-body');
+  body.appendChild(content);
+  return content;
+}
+
+function openTravelTransitModalShell() {
+  if (window.TravelTransitUI && typeof window.TravelTransitUI.openLegacy === 'function') {
+    window.TravelTransitUI.openLegacy();
+    return true;
+  }
+  const modal = document.getElementById('travel-transit-modal');
+  if (!modal) return false;
+  modal.classList.remove('hidden');
+  return true;
+}
+
+function closeTravelTransitModalShell() {
+  if (window.TravelTransitUI && typeof window.TravelTransitUI.closeLegacy === 'function') {
+    window.TravelTransitUI.closeLegacy();
+  }
+  const modal = document.getElementById('travel-transit-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
 async function openTravelTransit(targetNodeId) {
   const targetNode = WORLD_MAP_NODES[targetNodeId];
   if (!targetNode) {
@@ -34,11 +68,11 @@ async function openTravelTransit(targetNodeId) {
   // Close World Map Modal
   closeWorldMap();
 
-  const modal = document.getElementById('travel-transit-modal');
-  if (!modal) {
-    console.error('travel-transit-modal element missing!');
+  if (!openTravelTransitModalShell()) {
+    showToast(currentLang === 'en' ? 'Travel dialog is unavailable.' : 'Không mở được hộp thoại hành trình.', true);
     return;
   }
+  getTravelTransitContent();
 
   currentTransitState = {
     originNode,
@@ -52,7 +86,6 @@ async function openTravelTransit(targetNodeId) {
     isRolling: false
   };
 
-  modal.classList.remove('hidden');
   renderTravelTransitLoading();
 
   try {
@@ -81,13 +114,12 @@ async function openTravelTransit(targetNodeId) {
 }
 
 function closeTravelTransit() {
-  const modal = document.getElementById('travel-transit-modal');
-  if (modal) modal.classList.add('hidden');
+  closeTravelTransitModalShell();
 }
 
 function renderTravelTransitLoading() {
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
-  const container = document.getElementById('travel-transit-content');
+  const container = getTravelTransitContent();
   if (!container) return;
   container.innerHTML = `
     <div class="trv-stage-box text-center" style="padding: 40px 10px;">
@@ -101,11 +133,15 @@ function renderTravelTransitLoading() {
 function renderTravelTransitStage() {
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
   const { originNode, targetNode, plan, stage, hasEncounter, encounter, resolution, isRolling } = currentTransitState;
-  const container = document.getElementById('travel-transit-content');
+  const container = getTravelTransitContent();
   if (!container || !plan) return;
 
-  const originName = isEn ? originNode.nameEn : originNode.nameVi;
-  const targetName = isEn ? targetNode.nameEn : targetNode.nameVi;
+  const originName = typeof getShortNodeName === 'function'
+    ? getShortNodeName(originNode, isEn)
+    : (isEn ? originNode.nameEn : originNode.nameVi);
+  const targetName = typeof getShortNodeName === 'function'
+    ? getShortNodeName(targetNode, isEn)
+    : (isEn ? targetNode.nameEn : targetNode.nameVi);
 
   // Header Route Banner
   let progressPercent = 10;
@@ -167,7 +203,7 @@ function renderTravelTransitStage() {
           </p>
           ${!plan.hasEnoughGrain ? `
             <div class="trv-grain-warning" style="margin-top: 10px; color: #f87171; font-size: 11px; font-weight: 700;">
-              ⚠️ ${isEn ? `Insufficient strategic grain! You need ${plan.grainCost} piculs but have only ${plan.playerGrain} piculs.` : `Không đủ quân lương hành quân! Cần có ít nhất ${plan.grainCost} thạch lương nhưng hiện chỉ có ${plan.playerGrain} thạch.`}
+              警 ${isEn ? `Insufficient strategic grain! You need ${plan.grainCost} piculs but have only ${plan.playerGrain} piculs.` : `Không đủ quân lương hành quân! Cần có ít nhất ${plan.grainCost} thạch lương nhưng hiện chỉ có ${plan.playerGrain} thạch.`}
             </div>
           ` : ''}
         </div>
@@ -177,7 +213,7 @@ function renderTravelTransitStage() {
             ${isEn ? 'Cancel March' : 'Hủy Hành Quân'}
           </button>
           <button class="btn btn-primary font-bold trv-btn-start" onclick="startTravelExpedition()" ${!plan.hasEnoughGrain ? 'disabled' : ''}>
-            <span>🏇 ${isEn ? 'Begin Road Journey' : 'Khởi Hành Lên Đường'}</span>
+            <span>騎 ${isEn ? 'Begin Road Journey' : 'Khởi Hành Lên Đường'}</span>
           </button>
         </div>
       </div>
@@ -195,7 +231,7 @@ function renderTravelTransitStage() {
           <!-- Encounter Banner -->
           <div class="trv-encounter-card">
             <div class="trv-enc-header">
-              <span class="trv-enc-icon">${encounter.icon || '⚠️'}</span>
+              <span class="trv-enc-icon">${encounter.icon || '警'}</span>
               <div>
                 <div class="trv-enc-title">${encTitle}</div>
                 <div class="trv-enc-badge">${isEn ? 'Road Transit Incident' : 'Biến Cố Dọc Đường'} • ${plan.terrainType}</div>
@@ -226,9 +262,9 @@ function renderTravelTransitStage() {
             <!-- Resolution Display -->
             <div class="trv-resolution-card ${resolution.isSuccess ? 'success' : 'failure'}">
               <div class="trv-res-header">
-                <span class="trv-res-dice font-mono">🎲 D20: [${resolution.d20Roll}] ${resolution.mod >= 0 ? '+' : ''}${resolution.mod} = <strong>${resolution.totalScore}</strong> vs DC ${resolution.targetDC}</span>
+                <span class="trv-res-dice font-mono">骰 D20: [${resolution.d20Roll}] ${resolution.mod >= 0 ? '+' : ''}${resolution.mod} = <strong>${resolution.totalScore}</strong> vs DC ${resolution.targetDC}</span>
                 <span class="trv-res-verdict font-bold ${resolution.isSuccess ? 'success-text' : 'danger-text'}">
-                  ${resolution.isSuccess ? (isEn ? '★ SUCCESS' : '★ THÀNH CÔNG') : (isEn ? '✖ CHALLENGE' : '✖ TRẮC TRỞ')}
+                  ${resolution.isSuccess ? (isEn ? '◆ SUCCESS' : '◆ THÀNH CÔNG') : (isEn ? '× CHALLENGE' : '× TRẮC TRỞ')}
                 </span>
               </div>
               <div class="trv-res-narrative">
@@ -243,7 +279,7 @@ function renderTravelTransitStage() {
 
             <div class="trv-action-bar">
               <button class="btn btn-primary font-bold" onclick="advanceToTravelArrival()">
-                <span>${isEn ? 'Continue March to Destination' : 'Tiếp Tục Tiến Về Đích Đến'} ➔</span>
+                <span>${isEn ? 'Continue March to Destination' : 'Tiếp Tục Tiến Về Đích Đến'} →</span>
               </button>
             </div>
           `}
@@ -255,7 +291,7 @@ function renderTravelTransitStage() {
         <div class="trv-stage-box">
           <div class="trv-encounter-card" style="border-color: rgba(16, 185, 129, 0.4); background: rgba(16, 185, 129, 0.06);">
             <div class="trv-enc-header">
-              <span class="trv-enc-icon">🚩</span>
+              <span class="trv-enc-icon">旗</span>
               <div>
                 <div class="trv-enc-title" style="color: #34d399;">${isEn ? 'Clear Road • Disciplined March' : 'Quan Đạo An Định • Thuận Buồm Xuôi Gió'}</div>
                 <div class="trv-enc-badge font-mono">${isEn ? 'SAFE PASSAGE' : 'LỘ TRÌNH THÔNG SUỐT'} • ${plan.terrainType}</div>
@@ -272,7 +308,7 @@ function renderTravelTransitStage() {
 
           <div class="trv-action-bar">
             <button class="btn btn-primary font-bold" onclick="advanceToTravelArrival()">
-              <span>${isEn ? 'Advance to Destination' : 'Tiến Về Cổng Thành Đích'} ➔</span>
+              <span>${isEn ? 'Advance to Destination' : 'Tiến Về Cổng Thành Đích'} →</span>
             </button>
           </div>
         </div>
@@ -284,7 +320,7 @@ function renderTravelTransitStage() {
   else if (stage === 3) {
     bodyHtml = `
       <div class="trv-stage-box trv-arrival-box">
-        <div class="trv-arrival-icon">🚩</div>
+        <div class="trv-arrival-icon">旗</div>
         <h4 class="trv-arrival-title">${isEn ? 'Expedition Arrived at' : 'Đoàn Quân Đã Tới'} ${targetName}!</h4>
         <p class="trv-arrival-desc">
           ${isEn
@@ -328,7 +364,7 @@ function renderTravelTransitStage() {
           <div class="trv-progress-bar">
             <div class="trv-progress-fill" style="width: ${progressPercent}%;"></div>
           </div>
-          <span class="trv-marker-icon" style="left: ${progressPercent}%;">🏇</span>
+          <span class="trv-marker-icon" style="left: ${progressPercent}%;">騎</span>
         </div>
         <div class="trv-node destination">
           <span class="trv-node-dot active"></span>
@@ -419,8 +455,10 @@ async function finalizeMarchArrival() {
   try {
     setProcessingLock(true, isEn ? 'Establishing Command Base...' : 'Đang thiết lập bản doanh...');
 
-    // Complete march backend transaction using master_routes plan parameters
-    await apiCompleteTravelMarch({
+    // The server completes the march atomically: it charges route grain once
+    // and advances the campaign clock by the same whole days, so the client
+    // must not spend action time (or grain) a second time here.
+    const marchResult = await apiCompleteTravelMarch({
       targetSubLoc: targetNode.defaultSubLoc,
       grainCost: plan.grainCost,
       distanceLi: plan.distanceLi,
@@ -429,6 +467,10 @@ async function finalizeMarchArrival() {
       targetNameVi: targetNode.nameVi,
       targetNameEn: targetNode.nameEn
     });
+
+    if (marchResult?.time?.missingGrain) {
+      showToast(isEn ? 'Grain reserves ran dry on the march.' : 'Lương thảo cạn kiệt trên đường hành quân.', true);
+    }
 
     // Close Transit Modal
     closeTravelTransit();

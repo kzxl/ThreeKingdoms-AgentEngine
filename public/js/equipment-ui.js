@@ -571,7 +571,7 @@
       <div class="modal-card eqp-modal-card">
         <div class="modal-header">
           <h3 class="modal-title">${isEn ? 'Equipment & Blacksmith Forge' : 'Trang Bị Binh Khí & Lò Rèn Thần Binh'}</h3>
-          <button class="modal-close-btn" onclick="EquipmentUI.closeEquipmentModal()">&times;</button>
+          <button class="ui-btn ui-btn--ghost ui-btn--icon" onclick="EquipmentUI.closeEquipmentModal()">&times;</button>
         </div>
         <div class="modal-body" style="padding: 40px; text-align: center; color: #94a3b8;">
           <span class="pulse-dot"></span> ${isEn ? 'Retrieving equipment registry from SQLite...' : 'Đang đối soát kho vũ khí & chỉ số nhân vật từ SQLite...'}
@@ -604,7 +604,7 @@
               ${isEn ? 'Inspecting: ' : 'Đang giám định: '} <strong style="color:#fff;">${charName}</strong> ${ov.styleName ? `(${ov.styleName})` : ''} • ${isPlayer ? (isEn ? '[Protagonist]' : '[Nhân Vật Chính]') : (isEn ? '[Allied Officer]' : '[Võ Tướng Phối Thuộc]')}
             </span>
           </div>
-          <button class="modal-close-btn" onclick="EquipmentUI.closeEquipmentModal()">&times;</button>
+          <button class="ui-btn ui-btn--ghost ui-btn--icon" onclick="EquipmentUI.closeEquipmentModal()">&times;</button>
         </div>
 
         <!-- TABS BAR -->

@@ -28,6 +28,13 @@
   /**
    * Initializes the Title Screen module and handles first-load gate
    */
+  /**
+   * Product default: every load of the game address starts at instance
+   * selection, so the player explicitly chooses which playthrough to enter.
+   * Flip to false to restore "skip the gate for a returning session".
+   */
+  const ALWAYS_SHOW_INSTANCE_GATE = true;
+
   async function init() {
     const savedId = localStorage.getItem('current_instance_id') || 'default';
     activeInstanceId = savedId;
@@ -36,8 +43,8 @@
     const urlParams = new URLSearchParams(window.location.search);
     const forceTitle = urlParams.get('screen') === 'title' || urlParams.get('title') === 'true';
 
-    // If first visit or explicit request, open title screen
-    if (forceTitle || !localStorage.getItem('current_instance_id')) {
+    if (ALWAYS_SHOW_INSTANCE_GATE || forceTitle || !localStorage.getItem('current_instance_id')) {
+      // The gate is not dismissible on entry: an instance must be selected.
       await openTitleScreen(true);
     }
   }
@@ -112,7 +119,7 @@
               <div class="title-screen-subtitle">Three Kingdoms Tactical Simulation • Quản Lý Đa Phiên Chơi (Multi-Instance Engine)</div>
             </div>
           </div>
-          <button id="title-screen-close-btn" class="modal-close-btn" onclick="TitleScreenUI.close()" title="Đóng cửa sổ">&times;</button>
+          <button id="title-screen-close-btn" class="ui-btn ui-btn--ghost ui-btn--icon" onclick="TitleScreenUI.close()" title="Đóng cửa sổ">&times;</button>
         </div>
         <div class="modal-body title-screen-body" id="title-screen-body">
           <!-- Populated dynamically via renderTitleScreenContent() -->
@@ -148,7 +155,7 @@
         <!-- COLUMN 1: NEW CAMPAIGN FACTORY -->
         <div class="title-panel title-panel--new">
           <div class="title-panel-header">
-            <span class="title-panel-icon">⚔️</span>
+            <span class="title-panel-icon">武</span>
             <div>
               <h3 class="title-panel-title">${isEn ? '1. START NEW CAMPAIGN' : '1. KHỞI LẬP CƠ NGHIỆP MỚI'}</h3>
               <div class="title-panel-sub">${isEn ? 'Create a fresh isolated playthrough instance' : 'Khởi tạo một phiên chơi độc lập mới từ đầu'}</div>
@@ -166,7 +173,7 @@
                   <span class="title-arch-seal">${a.seal || '士'}</span>
                   <div class="title-arch-text">
                     <strong style="color: ${isSelected ? '#fbbf24' : '#f1f5f9'};">${a.nameVi}</strong>
-                    <div style="font-size: 10.5px; color: #94a3b8;">${a.startingAge} Tuổi • Vốn: ${formatNumber(a.initialCash)} Tiền ${isPauper ? '<span class="tactical-badge tactical-badge--success" style="font-size:9px; padding:1px 4px; margin-left:4px;">Khuyên Dùng</span>' : ''}</div>
+                    <div style="font-size: 10.5px; color: #94a3b8;">${a.startingAge} Tuổi • Vốn: ${formatNumber(a.initialCash)} Quan ${isPauper ? '<span class="tactical-badge tactical-badge--success" style="font-size:9px; padding:1px 4px; margin-left:4px;">Khuyên Dùng</span>' : ''}</div>
                   </div>
                 </div>
               `;
@@ -206,15 +213,15 @@
           </div>
 
           <!-- Start Action Button -->
-          <button class="tactical-btn tactical-btn--primary title-launch-btn" onclick="TitleScreenUI.createInstance()">
-            ${isEn ? '⚔️ Launch New Campaign & Enter World' : '⚔️ Khởi Lập Phiên Mới & Vào Bản Đồ'}
+          <button class="ui-btn ui-btn--primary ui-btn--lg title-launch-btn" onclick="TitleScreenUI.createInstance()">
+            ${isEn ? '武 Launch New Campaign & Enter World' : '武 Khởi Lập Phiên Mới & Vào Bản Đồ'}
           </button>
         </div>
 
         <!-- COLUMN 2: LOAD EXISTING INSTANCES -->
         <div class="title-panel title-panel--load">
           <div class="title-panel-header">
-            <span class="title-panel-icon">📜</span>
+            <span class="title-panel-icon">卷</span>
             <div>
               <h3 class="title-panel-title">${isEn ? '2. LOAD EXISTING INSTANCES' : '2. CHỌN LẠI CÁC PHIÊN ĐÃ LƯU'}</h3>
               <div class="title-panel-sub">${isEn ? `${cachedInstances.length} Saved Playthrough Slots Available` : `Hiện có ${cachedInstances.length} phiên chơi độc lập đã lưu`}</div>
@@ -250,20 +257,20 @@
                       <span>Địa bàn: <b>${inst.location}</b></span>
                     </div>
                     <div class="title-inst-metric">
-                      <span>Tiền mặt: <b style="color:#fbbf24;">${formatNumber(inst.liquidCash)} Qian</b></span>
+                      <span>Tiền mặt: <b style="color:#fbbf24;">${formatNumber(inst.liquidCash)} quan</b></span>
                       <span>Lưu lần cuối: <span style="color:#94a3b8;">${dateStr}</span></span>
                     </div>
                   </div>
 
                   <div class="title-inst-actions">
-                    <button class="tactical-btn tactical-btn--primary tactical-btn--sm" onclick="TitleScreenUI.selectInstance('${inst.id}')">
+                    <button class="ui-btn ui-btn--primary ui-btn--sm" onclick="TitleScreenUI.selectInstance('${inst.id}')">
                       ${isCur ? '▶ Tiếp Tục' : 'Tiến Vào'}
                     </button>
-                    <button class="tactical-btn tactical-btn--sm" onclick="TitleScreenUI.cloneInstance('${inst.id}')" title="Sao lưu hoặc phân nhánh phiên này">
+                    <button class="ui-btn ui-btn--secondary ui-btn--sm" onclick="TitleScreenUI.cloneInstance('${inst.id}')" title="Sao lưu hoặc phân nhánh phiên này">
                       Sao Lưu
                     </button>
                     ${!inst.isDefault ? `
-                      <button class="tactical-btn tactical-btn--sm tactical-btn--danger" onclick="TitleScreenUI.deleteInstance('${inst.id}')" title="Xóa phiên chơi này">
+                      <button class="ui-btn ui-btn--danger ui-btn--sm" onclick="TitleScreenUI.deleteInstance('${inst.id}')" title="Xóa phiên chơi này">
                         Xóa
                       </button>
                     ` : ''}
@@ -348,7 +355,16 @@
    * Deletes a non-default instance
    */
   async function deleteInstance(instanceId) {
-    if (!confirm(`Bạn có chắc chắn muốn xóa vĩnh viễn phiên chơi [${instanceId}] không? Hành động này không thể hoàn tác.`)) {
+    const message = `Bạn có chắc chắn muốn xóa vĩnh viễn phiên chơi [${instanceId}] không? Hành động này không thể hoàn tác.`;
+    const confirmed = window.UI && typeof window.UI.confirm === 'function'
+      ? await window.UI.confirm({
+          title: 'Xóa phiên chơi',
+          message,
+          confirmLabel: 'Xóa vĩnh viễn',
+          danger: true
+        })
+      : confirm(message);
+    if (!confirmed) {
       return;
     }
 

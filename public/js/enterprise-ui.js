@@ -379,7 +379,7 @@
       <div class="modal-card ent-modal-card">
         <div class="modal-header" style="background:#090d16; border-bottom:1px solid rgba(217, 119, 6, 0.4); padding: 12px 16px;">
           <h3 class="modal-title" style="color:#fbbf24; font-size:15px; margin:0;">${isEn ? 'Enterprise & Labor Market' : 'Sản Nghiệp & Thị Trường Lao Động'}</h3>
-          <button class="modal-close-btn" onclick="EnterpriseUI.closeEnterpriseModal()">&times;</button>
+          <button class="ui-btn ui-btn--ghost ui-btn--icon" onclick="EnterpriseUI.closeEnterpriseModal()">&times;</button>
         </div>
         <div class="modal-body" style="padding: 40px; text-align: center; color: #94a3b8;">
           <span class="pulse-dot"></span> ${isEn ? 'Loading enterprise registries from SQLite...' : 'Đang tải sổ sách sản nghiệp & ca làm từ SQLite...'}
@@ -417,22 +417,22 @@
             </h3>
             <span style="font-size:11px; color:#94a3b8;">
               ${isEn ? 'Campaign Region: Zhuo County & North Frontier' : 'Địa bàn: Trác Quận • U Châu'} • 
-              <strong style="color:#34d399; font-family:'JetBrains Mono',monospace;">${cash.toLocaleString()} Tiền</strong> • 
+              <strong style="color:#34d399; font-family:'JetBrains Mono',monospace;">${cash.toLocaleString()} Quan</strong> • 
               <strong style="color:${staminaColor}; font-family:'JetBrains Mono',monospace;" title="Thể Lực khả dụng: ${stamina.currentStamina}/${stamina.maxStamina} | Độ mệt mỏi: ${stamina.fatigue}/100">
                 ${stamina.currentStamina}/${stamina.maxStamina} Thể Lực (${stamina.fatigue}/100 Mệt)
               </strong>
             </span>
           </div>
-          <button class="modal-close-btn" onclick="EnterpriseUI.closeEnterpriseModal()">&times;</button>
+          <button class="ui-btn ui-btn--ghost ui-btn--icon" onclick="EnterpriseUI.closeEnterpriseModal()">&times;</button>
         </div>
 
         <!-- TABS BAR -->
         <div class="ent-tabs-bar">
           <button class="ent-tab-btn ${activeTab === 'work' ? 'active' : ''}" onclick="EnterpriseUI.switchEnterpriseTab('work')">
-            <span>🛠️</span> ${isEn ? 'Daily Labor Shifts' : 'Đi làm thuê kiếm sống'}
+            <span>工</span> ${isEn ? 'Daily Labor Shifts' : 'Đi làm thuê kiếm sống'}
           </button>
           <button class="ent-tab-btn ${activeTab === 'own' ? 'active' : ''}" onclick="EnterpriseUI.switchEnterpriseTab('own')">
-            <span>🏛️</span> ${isEn ? 'Manage Enterprises' : 'Làm chủ sản nghiệp'}
+            <span>府</span> ${isEn ? 'Manage Enterprises' : 'Làm chủ sản nghiệp'}
           </button>
         </div>
 
@@ -518,7 +518,7 @@
 
                 <div class="ent-metrics-row">
                   <span class="ent-metric-pill ent-metric-pill--wage">
-                    +${shift.wage} Tiền
+                    +${shift.wage} Quan
                   </span>
                   <span class="ent-metric-pill ent-metric-pill--fatigue" title="Tiêu hao ${reqStamina} Thể Lực, tăng ${reqFatigue} Mệt Mỏi">
                     -${reqStamina} Thể lực (+${reqFatigue} Mệt)
@@ -568,7 +568,7 @@
             ${isEn ? 'Currently Managed Enterprises:' : 'Sản nghiệp đang sở hữu & vận hành:'}
           </h4>
           <span style="font-size:11px; color:#94a3b8; font-family:'JetBrains Mono',monospace;">
-            ${isEn ? 'Total Daily Revenue:' : 'Tổng Thu Ngày:'} <b style="color:#34d399;">+${(st.totalDailyRevenue || 0).toLocaleString()} Tiền</b>
+            ${isEn ? 'Total Daily Revenue:' : 'Tổng Thu Ngày:'} <b style="color:#34d399;">+${(st.totalDailyRevenue || 0).toLocaleString()} Quan</b>
           </span>
         </div>
 
@@ -594,17 +594,17 @@
                     Ủy quyền: Bậc ${biz.delegation_level || 2}
                   </span>
                   <button class="ent-btn ent-btn--success" style="padding:4px 10px; font-size:11px;" ${profit <= 0 || isSubmitting ? 'disabled' : ''} onclick="EnterpriseUI.collectEnterpriseProfit('${biz.business_id}')">
-                    ${profit > 0 ? `Rút Lợi Nhuận (+${profit.toLocaleString()} Tiền)` : 'Không có thặng dư'}
+                    ${profit > 0 ? `Rút Lợi Nhuận (+${profit.toLocaleString()} Quan)` : 'Không có thặng dư'}
                   </button>
                 </div>
               </div>
 
               <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:8px; font-size:11px; color:#94a3b8; font-family:'JetBrains Mono',monospace; background:rgba(0,0,0,0.25); padding:8px 10px; border-radius:4px;">
                 <div>Nhân công: <strong style="color:#fff;">${biz.current_workforce || biz.workforce_count || 4} thợ</strong></div>
-                <div>Thu nhập ngày: <strong style="color:#34d399;">+${dailyRev.toLocaleString()} Tiền</strong></div>
-                <div>Mặt bằng: <strong style="color:#f59e0b;">${biz.monthly_rent || 200} Tiền/tháng</strong></div>
-                <div>Két sắt dự phòng: <strong style="color:#38bdf8;">${(biz.safe_cash || 0).toLocaleString()} Tiền</strong></div>
-                <div>Thặng dư tích lũy: <strong style="color:#4ade80;">+${profit.toLocaleString()} Tiền</strong></div>
+                <div>Thu nhập ngày: <strong style="color:#34d399;">+${dailyRev.toLocaleString()} Quan</strong></div>
+                <div>Mặt bằng: <strong style="color:#f59e0b;">${biz.monthly_rent || 200} Quan/tháng</strong></div>
+                <div>Két sắt dự phòng: <strong style="color:#38bdf8;">${(biz.safe_cash || 0).toLocaleString()} Quan</strong></div>
+                <div>Thặng dư tích lũy: <strong style="color:#4ade80;">+${profit.toLocaleString()} Quan</strong></div>
               </div>
             </div>
           `;
@@ -643,7 +643,7 @@
                     <div>
                       <strong style="color:#fff; font-size:13px;">${isEn ? bType.titleEn : bType.titleVi}</strong>
                       <div style="font-size:10.5px; color:#fbbf24; margin-top:2px;">
-                        Doanh thu ước tính: +${bType.projectedDailyRevenueMin || 100}-${bType.projectedDailyRevenueMax || 200} Tiền/ngày
+                        Doanh thu ước tính: +${bType.projectedDailyRevenueMin || 100}-${bType.projectedDailyRevenueMax || 200} Quan/ngày
                       </div>
                     </div>
                     <span style="font-size:12px; font-weight:700; color:#fbbf24; background:rgba(251,191,36,0.1); padding:2px 6px; border-radius:3px;">
@@ -657,14 +657,14 @@
 
                   <div style="font-size:11px; background:#090d16; border-radius:4px; padding:8px 10px; margin-bottom:12px; border:1px solid rgba(148,163,184,0.1);">
                     <div style="color:${hasCash ? '#34d399' : '#ef4444'}; margin-bottom:4px;">
-                      <strong>Vốn ban đầu:</strong> ${bType.startupCash.toLocaleString()} Tiền (${hasCash ? 'Đủ' : 'Thiếu'})
+                      <strong>Vốn ban đầu:</strong> ${bType.startupCash.toLocaleString()} Quan (${hasCash ? 'Đủ' : 'Thiếu'})
                     </div>
                     <div style="margin-bottom:4px;">
                       <div style="color:#94a3b8; font-size:10.5px; margin-bottom:2px;">Vật liệu xây dựng:</div>
                       <div>${matList}</div>
                     </div>
                     <div style="color:#94a3b8; font-size:10.5px; margin-top:4px;">
-                      Mặt bằng: ${bType.monthlyRent} Tiền/tháng • Tuyển dụng: ${bType.baseWorkforce} thợ
+                      Mặt bằng: ${bType.monthlyRent} Quan/tháng • Tuyển dụng: ${bType.baseWorkforce} thợ
                     </div>
                   </div>
                 </div>
@@ -717,11 +717,11 @@
 
           <div style="font-size:11px; color:#94a3b8; background:rgba(0,0,0,0.3); padding:8px 10px; border-radius:4px;">
             <div style="margin-bottom:4px;">
-              Vốn cố định: <strong style="color:#fff;">${bType.startupCash.toLocaleString()} Tiền</strong>
+              Vốn cố định: <strong style="color:#fff;">${bType.startupCash.toLocaleString()} Quan</strong>
             </div>
             ${!bType.hasAllMaterials ? `
               <div style="color:#f59e0b; margin-bottom:4px;">
-                Thiếu vật liệu kho: <strong style="color:#fbbf24;">+${turnkeyCost.toLocaleString()} Tiền</strong> (Ủy thác quan phủ thu mua trọn gói)
+                Thiếu vật liệu kho: <strong style="color:#fbbf24;">+${turnkeyCost.toLocaleString()} Quan</strong> (Ủy thác quan phủ thu mua trọn gói)
               </div>
             ` : `
               <div style="color:#34d399; margin-bottom:4px;">
@@ -729,7 +729,7 @@
               </div>
             `}
             <div style="border-top:1px solid rgba(255,255,255,0.1); padding-top:4px; font-weight:700; color:${canAfford ? '#34d399' : '#ef4444'};">
-              Tổng ngân quỹ cần: ${totalCost.toLocaleString()} Tiền (Ví có: ${playerCash.toLocaleString()})
+              Tổng ngân quỹ cần: ${totalCost.toLocaleString()} Quan (Ví có: ${playerCash.toLocaleString()})
             </div>
           </div>
         </div>
@@ -857,7 +857,7 @@
         const data = await res.json();
         if (data.success) {
           if (typeof showToast === 'function') {
-            showToast(data.message || `Đã rút +${data.collectedAmount} Tiền lợi nhuận!`, false);
+            showToast(data.message || `Đã rút +${data.collectedAmount} Quan lợi nhuận!`, false);
           }
           if (data.status) {
             cachedStatus = data.status;
@@ -904,6 +904,13 @@
         const data = await res.json();
         if (data.success) {
           playUiSound('coins');
+          try {
+            if (typeof window.apiSpendActionTime === 'function') {
+              await window.apiSpendActionTime('WORK_SHIFT', null, 'Ca làm việc');
+            }
+          } catch (timeErr) {
+            if (typeof showToast === 'function') showToast(timeErr.message, true);
+          }
           if (typeof showToast === 'function') {
             showToast(data.messageVi || data.message || 'Hoàn tất ca làm!', false);
           }

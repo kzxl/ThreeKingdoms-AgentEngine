@@ -25,7 +25,7 @@
   const POI_CONFIGS = {
     SMITHY: {
       key: 'SMITHY',
-      seal: '🔨',
+      icon: 'hammer',
       text: 'Lò Rèn',
       title: 'Thiết Điếm Trác Huyện • Kéo Bễ & Rèn Thần Binh Độc Bản (Bespoke Forge)',
       btnClass: 'spatial-smithy',
@@ -39,7 +39,7 @@
     },
     TAVERN: {
       key: 'TAVERN',
-      seal: '🍺',
+      icon: 'tea',
       text: 'Tửu Quán',
       title: 'Tửu Quán Trác Huyện • Ẩm Tửu, Mở Đại Yến Hào Kiệt & Kết Bái Huynh Đệ',
       btnClass: 'spatial-tavern',
@@ -53,7 +53,7 @@
     },
     ARENA: {
       key: 'ARENA',
-      seal: '⚔️',
+      icon: 'sword',
       text: 'Lôi Đài',
       title: 'Lôi Đài Giáo Trường • Tỉ Võ Cùng Trương Phi & Thách Đấu Lôi Đài 3 Cấp Độ',
       btnClass: 'spatial-arena',
@@ -67,7 +67,7 @@
     },
     CARAVAN: {
       key: 'CARAVAN',
-      seal: '📦',
+      icon: 'cart',
       text: 'Dịch Trạm',
       title: 'Mã Xa Dịch Trạm • Mua Xe Ngựa, Thuê Hộ Vệ & Xuất Phát Thương Đoàn Viễn Chinh',
       btnClass: 'spatial-caravan',
@@ -85,7 +85,7 @@
     },
     RESIDENCE: {
       key: 'RESIDENCE',
-      seal: '🏛️',
+      icon: 'house',
       text: 'Gia Thất',
       title: 'Tư Trạch Vườn Đào • Nghỉ Ngơi Phòng Trong, Đàm Đạo Phu Nhân & Dạy Dỗ Thế Tử',
       btnClass: 'spatial-residence',
@@ -99,7 +99,7 @@
     },
     WORKSHOP: {
       key: 'WORKSHOP',
-      seal: '工',
+      icon: 'gear',
       text: 'Xưởng Gia',
       title: 'Xưởng Lương Thị • Quản Lý Thợ Cả, Chế Tác & Nâng Cấp Sản Nghiệp',
       btnClass: 'spatial-workshop',
@@ -113,7 +113,7 @@
     },
     MARKET: {
       key: 'MARKET',
-      seal: '🍵',
+      icon: 'coin',
       text: 'Sạp Trà',
       title: 'Chợ Đông Môn & Sạp Trà • Thưởng Trà Đàm Đạo Cùng Quan Vũ & Giao Thương',
       btnClass: 'spatial-market',
@@ -166,7 +166,7 @@
     const sealEl = document.getElementById('spatial-action-seal');
     const txtEl = document.getElementById('txt-spatial-action');
 
-    if (sealEl) sealEl.innerText = config.seal;
+    if (sealEl) sealEl.innerHTML = (typeof uiIcon === 'function') ? uiIcon(config.icon) : config.icon;
     if (txtEl) txtEl.innerText = config.text;
 
     if (btn) {

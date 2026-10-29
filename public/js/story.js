@@ -28,7 +28,7 @@ function renderDeltaBarHtml(delta) {
   const pills = [];
   if (delta.cash) {
     const isPositive = String(delta.cash).startsWith('+');
-    pills.push(`<span class="agent-delta-pill ${isPositive ? 'cash-plus' : 'cash-minus'}">Tiền: ${delta.cash}</span>`);
+    pills.push(`<span class="agent-delta-pill ${isPositive ? 'cash-plus' : 'cash-minus'}">Quan: ${delta.cash}</span>`);
   }
   if (delta.inventory) {
     pills.push(`<span class="agent-delta-pill inv">Kho: ${delta.inventory}</span>`);
@@ -470,6 +470,12 @@ function renderChoices(options) {
     );
 
     const { badges, note } = parseImpactsFromDesc(descText, opt.pillar);
+    const dayCost = (opt.action && typeof getActionDayCost === 'function')
+      ? getActionDayCost(opt.action.type, opt.action.sub_type)
+      : 0;
+    if (dayCost > 0) {
+      badges.push({ type: 'time', text: `${dayCost} ${isEn ? 'day' : 'ngày'}` });
+    }
     const impactChipsHtml = badges.map(b => `<span class="impact-chip ${b.type}">${b.text}</span>`).join('');
     const pillarSealMap = {
       'KIZUNA_SOCIAL': '交',
@@ -627,7 +633,7 @@ function renderAgentSimulationFeedback(reasoning, delta) {
     const pills = [];
     if (delta.cash) {
       const isPositive = String(delta.cash).startsWith('+');
-      pills.push(`<span class="agent-delta-pill ${isPositive ? 'cash-plus' : 'cash-minus'}">Tiền: ${delta.cash}</span>`);
+      pills.push(`<span class="agent-delta-pill ${isPositive ? 'cash-plus' : 'cash-minus'}">Quan: ${delta.cash}</span>`);
     }
     if (delta.inventory) {
       pills.push(`<span class="agent-delta-pill inv">Kho: ${delta.inventory}</span>`);

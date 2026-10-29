@@ -150,7 +150,7 @@
       <div class="modal-box modal-box--large" style="max-width: 880px; max-height: 92vh; display: flex; flex-direction: column;">
         <div class="modal-header" style="background: rgba(15, 23, 42, 0.95); border-bottom: 1px solid rgba(245, 158, 11, 0.3);">
           <div style="display: flex; align-items: center; gap: 10px;">
-            <span class="tactical-badge tactical-badge--gold">★ ${isEn ? 'PROTAGONIST DOSSIER' : 'HỒ SƠ ĐẠI BẢN DOANH'}</span>
+            <span class="tactical-badge tactical-badge--gold">◆ ${isEn ? 'PROTAGONIST DOSSIER' : 'HỒ SƠ ĐẠI BẢN DOANH'}</span>
             <div class="modal-title" style="letter-spacing: 0.05em; font-size: 14px; font-weight: 700; color: #fbbf24;">
               ${isEn ? 'Commander Profile & 8-Axis Strategic Aptitude' : 'Tổng Hành Dinh • Bát Vị Quân Lược & Hành Trình Cuộc Đời'}
             </div>
@@ -250,7 +250,7 @@
                 </span>
               </div>
               <div style="font-size: 11px; color: var(--text-muted); margin-top: 3px;">
-                📍 ${isEn ? 'Current Base:' : 'Bản Doanh:'} <strong style="color: #cbd5e1;">${p.permanent_base || 'LOC-0001 (Trác Huyện)'}</strong> •
+                所 ${isEn ? 'Current Base:' : 'Bản Doanh:'} <strong style="color: #cbd5e1;">${p.permanent_base || 'LOC-0001 (Trác Huyện)'}</strong> •
                 ${isEn ? 'Location:' : 'Vị Trí:'} <strong style="color: #38bdf8;">${p.current_location || 'LOC-0001 (Vườn Đào)'}</strong>
               </div>
             </div>
@@ -262,7 +262,7 @@
         <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 12px 20px; background: rgba(0,0,0,0.3); border-bottom: 1px solid rgba(255,255,255,0.06);">
           <div style="background: rgba(15, 23, 42, 0.6); padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(34, 197, 94, 0.2);">
             <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px;">
-              <span style="color: #86efac;">🩸 ${isEn ? 'Health' : 'Sinh Lực'}</span>
+              <span style="color: #86efac;">血 ${isEn ? 'Health' : 'Sinh Lực'}</span>
               <strong style="color: #22c55e;">${p.health || 100}/100</strong>
             </div>
             <div class="tactical-progress-track" style="height: 5px;">
@@ -272,7 +272,7 @@
 
           <div style="background: rgba(15, 23, 42, 0.6); padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(56, 189, 248, 0.2);">
             <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px;">
-              <span style="color: #7dd3fc;">⚡ ${isEn ? 'Stamina' : 'Thể Lực'}</span>
+              <span style="color: #7dd3fc;">雷 ${isEn ? 'Stamina' : 'Thể Lực'}</span>
               <strong style="color: #38bdf8;">${staminaProfile.currentStamina}/${staminaProfile.maxStamina}</strong>
             </div>
             <div class="tactical-progress-track" style="height: 5px;">
@@ -282,7 +282,7 @@
 
           <div style="background: rgba(15, 23, 42, 0.6); padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(245, 158, 11, 0.2);">
             <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px;">
-              <span style="color: #fde047;">🔥 ${isEn ? 'Morale' : 'Sĩ Khí'}</span>
+              <span style="color: #fde047;">火 ${isEn ? 'Morale' : 'Sĩ Khí'}</span>
               <strong style="color: #fbbf24;">${p.morale || 100}%</strong>
             </div>
             <div class="tactical-progress-track" style="height: 5px;">
@@ -292,7 +292,7 @@
 
           <div style="background: rgba(15, 23, 42, 0.6); padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(168, 85, 247, 0.2);">
             <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px;">
-              <span style="color: #d8b4fe;">💤 ${isEn ? 'Fatigue' : 'Mệt Mỏi'}</span>
+              <span style="color: #d8b4fe;">息 ${isEn ? 'Fatigue' : 'Mệt Mỏi'}</span>
               <strong style="color: ${staminaProfile.fatigue > 70 ? '#ef4444' : '#c084fc'};">${staminaProfile.fatigue}/100</strong>
             </div>
             <div class="tactical-progress-track" style="height: 5px;">
@@ -328,8 +328,8 @@
             ${isEn ? 'ACID Verified: Single transactional truth maintained in SQLite.' : 'Dữ liệu chuẩn hóa 100% theo sổ cái SQLite ACID.'}
           </div>
           <div style="display: flex; gap: 10px;">
-            <button class="tactical-btn tactical-btn--sm" onclick="closeProtagonistDossierModal(); if(window.GrandCommandHubUI){GrandCommandHubUI.open('career');}">
-              🏛️ ${isEn ? 'Enter Command Hub' : 'Vào Đại Bản Doanh'} →
+            <button class="ui-btn ui-btn--sm" onclick="closeProtagonistDossierModal(); if(window.GrandCommandHubUI){GrandCommandHubUI.open('career');}">
+              府 ${isEn ? 'Enter Command Hub' : 'Vào Đại Bản Doanh'} →
             </button>
             <button class="btn btn-outline" onclick="closeProtagonistDossierModal()">${isEn ? 'Close' : 'Đóng'}</button>
           </div>
@@ -420,8 +420,8 @@
                 ${isEn ? 'Equipment dynamically boosts effective attributes and enables legendary combat perks.' : 'Binh khí gia tăng trực tiếp thuộc tính chiến đấu và mở khóa tuyệt kỹ trong lôi đài 1v1.'}
               </div>
             </div>
-            <button class="tactical-btn tactical-btn--primary tactical-btn--sm" onclick="closeProtagonistDossierModal(); if(window.GrandCommandHubUI){GrandCommandHubUI.open('gear');}">
-              🔨 ${isEn ? 'Bespoke Forge & Armory' : 'Đoán Tạo & Cải Tạo Lò Rèn'} →
+            <button class="ui-btn ui-btn--primary ui-btn--sm" onclick="closeProtagonistDossierModal(); if(window.GrandCommandHubUI){GrandCommandHubUI.open('gear');}">
+              鍛 ${isEn ? 'Bespoke Forge & Armory' : 'Đoán Tạo & Cải Tạo Lò Rèn'} →
             </button>
           </div>
 
@@ -475,13 +475,13 @@
           <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px;">
             <div class="tactical-card" style="padding: 12px; border-left: 3px solid #22c55e;">
               <div style="font-size: 11px; color: var(--text-muted);">${isEn ? 'Mobile Liquid Cash' : 'Tiền Mặt Lưu Động'}</div>
-              <div style="font-size: 18px; font-weight: 800; color: #4ade80; margin: 4px 0;">${formatNumber(liquidCash)} Qian</div>
+              <div style="font-size: 18px; font-weight: 800; color: #4ade80; margin: 4px 0;">${formatNumber(liquidCash)} quan</div>
               <div style="font-size: 10px; color: var(--text-muted);">${isEn ? 'Used for daily trade, wage, dowry' : 'Dùng giao dịch, ẩm thực, sính lễ'}</div>
             </div>
 
             <div class="tactical-card" style="padding: 12px; border-left: 3px solid #38bdf8;">
               <div style="font-size: 11px; color: var(--text-muted);">${isEn ? 'Enterprise Safe Cash' : 'Tiền Két Sản Nghiệp'}</div>
-              <div style="font-size: 18px; font-weight: 800; color: #38bdf8; margin: 4px 0;">${formatNumber(safeCash)} Qian</div>
+              <div style="font-size: 18px; font-weight: 800; color: #38bdf8; margin: 4px 0;">${formatNumber(safeCash)} quan</div>
               <div style="font-size: 10px; color: var(--text-muted);">${isEn ? 'Safe cash reserve for workshops' : 'Vốn vận hành xưởng an toàn'}</div>
             </div>
 
@@ -500,12 +500,12 @@
                   ${isEn ? 'Collect accumulated production profits and manage facility workforce.' : 'Thu hồi thặng dư lợi nhuận kinh doanh và phân công thợ cả.'}
                 </div>
               </div>
-              <button class="tactical-btn tactical-btn--sm" onclick="closeProtagonistDossierModal(); if(window.EnterpriseUI){EnterpriseUI.openEnterpriseModal('owner');}else if(window.PersonalJournalUI){PersonalJournalUI.open('chronicle');}">
+              <button class="ui-btn ui-btn--sm" onclick="closeProtagonistDossierModal(); if(window.EnterpriseUI){EnterpriseUI.openEnterpriseModal('owner');}else if(window.PersonalJournalUI){PersonalJournalUI.open('chronicle');}">
                 ${isEn ? 'Manage Enterprises' : 'Quản Lý Sản Nghiệp'} →
               </button>
             </div>
             <div style="font-size: 11.5px; color: #94a3b8; background: rgba(0,0,0,0.3); padding: 10px 14px; border-radius: 6px;">
-              💼 <b>Lương Gia Bách Nghệ Xưởng & Trác Thành Khách Điếm</b> • Hoạt động tự chủ, đều đặn tạo dòng tiền thặng dư vào két an toàn mỗi chu kỳ chuyển tháng.
+              商 <b>Lương Gia Bách Nghệ Xưởng & Trác Thành Khách Điếm</b> • Hoạt động tự chủ, đều đặn tạo dòng tiền thặng dư vào két an toàn mỗi chu kỳ chuyển tháng.
             </div>
           </div>
         </div>
@@ -539,14 +539,14 @@
           <!-- Spouses & Heirs Quick Preview -->
           <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
             <div class="tactical-card" style="padding: 12px;">
-              <strong style="font-size: 12px; color: #ec4899;">🌸 Chính Thê & Thê Thiếp</strong>
+              <strong style="font-size: 12px; color: #ec4899;">花 Chính Thê & Thê Thiếp</strong>
               <div style="margin-top: 8px; font-size: 11px; color: var(--text-muted);">
                 ${spouses.length > 0 ? spouses.map(s => `• <b>${s.spouse_name_vi}</b> (${s.household_role || 'Chủ Nội Gia'})`).join('<br>') : 'Chưa lập gia thất (Bố Y Độc Thân). Hãy tương ngộ giai nhân tại các châu huyện để dạm ngõ sính lễ.'}
               </div>
             </div>
 
             <div class="tactical-card" style="padding: 12px;">
-              <strong style="font-size: 12px; color: #38bdf8;">👶 Thế Tử & Con Cái</strong>
+              <strong style="font-size: 12px; color: #38bdf8;">子 Thế Tử & Con Cái</strong>
               <div style="margin-top: 8px; font-size: 11px; color: var(--text-muted);">
                 ${children.length > 0 ? children.map(c => `• <b>${c.child_name_vi}</b> (${c.age} tuổi) ${c.is_heir ? '<span style="color:#fbbf24;">[ĐÍCH TÔN]</span>' : ''}`).join('<br>') : 'Chưa có hậu duệ kế nghiệp. Thành thân và đồng phòng dưỡng tức để sinh hạ thế tử.'}
               </div>

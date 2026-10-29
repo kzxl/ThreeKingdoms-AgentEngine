@@ -5,7 +5,7 @@
 const I18N_DICT = {
   vi: {
     appTitle: 'TAM QUỐC CHÍ • LƯƠNG THỊ PHONG VÂN LỤC',
-    mainMenu: 'Menu Chính',
+    mainMenu: 'Hành Dinh',
     dateChip: 'Ngày 2 Tháng 5 Năm 184 SCN (Lượt 6)',
     cashLabel: 'Tiền Mặt:',
     grainLabel: 'Lương Thảo:',
@@ -13,7 +13,7 @@ const I18N_DICT = {
     netWorthLabel: 'Tài Sản Ròng:',
     bridgeLive: 'AI Bridge: LIVE',
     auditPassed: '100% Khớp',
-    logsBtn: 'Logs',
+    logsBtn: 'Nhật Ký',
     langToggle: 'VI',
     // Action Console & Tactical Decisions
     choiceHeader: 'QUYẾT SÁCH BỐI CẢNH',
@@ -22,10 +22,10 @@ const I18N_DICT = {
     btnExecuteAi: 'AI',
     btnInspectDossier: 'Hồ Sơ',
     btnCaravan: 'Thương Đoàn',
-    btnCourierToggle: 'Phi Thư / Sứ Giả',
+    btnCourierToggle: 'Phi Thư',
     btnQuickLabor: 'Làm Thuê',
     btnCareerRoadmap: 'Phẩm Lộ',
-    btnGrandHub: 'Quân Cơ Xứ',
+    btnGrandHub: 'Quân Cơ',
     courierDrawerTitle: 'Phi Thư & Sứ Giả Viễn Trình',
     courierDrawerDesc: 'Truyền đạt mật lệnh, điều phối nhân lực hoặc luân chuyển quân nhu tới các cứ điểm khác mà không cần rời vị trí hiện tại.',
     btnSelect: 'Thi Hành',
@@ -63,12 +63,12 @@ const I18N_DICT = {
     thAction: 'Thao tác',
     btnSell: 'Bán',
     btnBuy: 'Mua',
-    btnReward: 'Thưởng 100 Tiền',
+    btnReward: 'Thưởng 100 Quan',
     // Modal
     modalTradeTitle: 'Giao Dịch Vật Phẩm',
     modalSkuLabel: 'Mã Mặt Hàng (SKU Code)',
     modalQtyLabel: 'Số Lượng Giao Dịch',
-    modalPriceLabel: 'Đơn Giá (Qian / Đơn vị)',
+    modalPriceLabel: 'Đơn Giá (Quan/đơn vị)',
     modalPartnerLabel: 'Đối Tác Giao Dịch (Counterparty)',
     modalTotalLabel: 'Tổng Giá Trị Giao Dịch:',
     btnCancel: 'Hủy Bỏ',
@@ -128,10 +128,10 @@ const I18N_DICT = {
     gmAlertNote: 'Bảo đảm toàn vẹn: Khởi tạo màn chơi mới sẽ tái lập sổ sách theo chuẩn mực kế toán kép SQLite (Dr = Cr).',
     gmBtnStartGame: 'Khởi Lập Điển Tích Mới',
     // Turn Advance & World Travel
-    btnAdvanceTurn: 'Tiến Lượt / Kết Thúc Lượt',
+    btnAdvanceTurn: 'Tiến Lượt',
     btnAdvanceTurnTitle: 'Tiến Lượt / Kết Thúc Lượt & Mô Phỏng Thế Giới',
-    btnTurnDock: 'Qua Lượt Mới',
-    btnTurnDockTitle: 'Tiến Lượt / Kết Thúc Lượt & Mô Phỏng Thế Giới',
+    btnTurnDock: 'Qua Tháng',
+    btnTurnDockTitle: 'Qua Tháng / Kết Thúc Tháng & Mô Phỏng Thế Giới',
     travelModalTitle: 'Lộ Trình Viễn Chinh • Dặm Trường Phong Vân',
     travelModalSub: 'Hành quân liên châu, khảo sát địa hình và ứng biến trước hiểm họa dọc đường'
   },
@@ -154,10 +154,10 @@ const I18N_DICT = {
     btnExecuteAi: 'AI',
     btnInspectDossier: 'Dossier',
     btnCaravan: 'Caravans',
-    btnCourierToggle: 'Courier / Envoy',
+    btnCourierToggle: 'Courier',
     btnQuickLabor: 'Wage Work',
     btnCareerRoadmap: 'Career Path',
-    btnGrandHub: 'Grand Hub',
+    btnGrandHub: 'Hub',
     courierDrawerTitle: 'Remote Courier & Dispatch',
     courierDrawerDesc: 'Dispatch confidential missives, order logistics, or mobilize retainers without leaving current base.',
     btnSelect: 'Execute',
@@ -195,12 +195,12 @@ const I18N_DICT = {
     thAction: 'Actions',
     btnSell: 'Sell',
     btnBuy: 'Buy',
-    btnReward: 'Reward 100 Qian',
+    btnReward: 'Reward 100 quan',
     // Modal
     modalTradeTitle: 'Trade Commodities',
     modalSkuLabel: 'Item Code (SKU)',
     modalQtyLabel: 'Trade Quantity',
-    modalPriceLabel: 'Unit Price (Qian / Unit)',
+    modalPriceLabel: 'Unit Price (quan/unit)',
     modalPartnerLabel: 'Counterparty',
     modalTotalLabel: 'Total Transaction Value:',
     btnCancel: 'Cancel',
@@ -260,10 +260,10 @@ const I18N_DICT = {
     gmAlertNote: 'Integrity Guaranteed: Starting a new game safely resets session tables while strictly preserving 100% SQLite double-entry ledger balance.',
     gmBtnStartGame: 'Launch Historical Campaign',
     // Turn Advance & World Travel
-    btnAdvanceTurn: 'Next Turn / End Turn',
+    btnAdvanceTurn: 'Next Turn',
     btnAdvanceTurnTitle: 'Advance Turn / End Turn & Living World Simulation',
-    btnTurnDock: 'Advance Turn',
-    btnTurnDockTitle: 'Advance Turn / End Turn & Living World Simulation',
+    btnTurnDock: 'Next Month',
+    btnTurnDockTitle: 'Advance Month / End Month & Living World Simulation',
     travelModalTitle: 'Expedition March & Transit Station',
     travelModalSub: 'Regional highway transit, tactical patrols, and road encounter resolution'
   }
@@ -374,16 +374,16 @@ function applyLanguage() {
   if (btnCareerRoadmap) btnCareerRoadmap.innerText = dict.btnCareerRoadmap || 'Phẩm Lộ';
 
   const btnGrandHub = document.getElementById('txt-btn-grand-hub');
-  if (btnGrandHub) btnGrandHub.innerText = dict.btnGrandHub || 'Quân Cơ Xứ';
+  if (btnGrandHub) btnGrandHub.innerText = dict.btnGrandHub || 'Quân Cơ';
 
   // Turn Progression Buttons (Header & Dock)
   const txtAdvTurn = document.getElementById('txt-btn-advance-turn');
-  if (txtAdvTurn) txtAdvTurn.innerText = dict.btnAdvanceTurn || (currentLang === 'en' ? 'Next Turn / End Turn' : 'Tiến Lượt / Kết Thúc Lượt');
+  if (txtAdvTurn) txtAdvTurn.innerText = dict.btnAdvanceTurn || (currentLang === 'en' ? 'Next Turn' : 'Tiến Lượt');
   const btnAdvTurn = document.getElementById('btn-advance-turn');
   if (btnAdvTurn) btnAdvTurn.title = dict.btnAdvanceTurnTitle || (currentLang === 'en' ? 'Advance Turn / End Turn & Living World Simulation' : 'Tiến Lượt / Kết Thúc Lượt & Mô Phỏng Thế Giới');
 
   const txtTurnDock = document.getElementById('txt-btn-turn-dock');
-  if (txtTurnDock) txtTurnDock.innerText = dict.btnTurnDock || (currentLang === 'en' ? 'Advance Turn' : 'Qua Lượt Mới');
+  if (txtTurnDock) txtTurnDock.innerText = dict.btnTurnDock || (currentLang === 'en' ? 'Advance Turn' : 'Qua Lượt');
   const btnTurnDock = document.getElementById('btn-turn-dock');
   if (btnTurnDock) btnTurnDock.title = dict.btnTurnDockTitle || (currentLang === 'en' ? 'Advance Turn / End Turn & Living World Simulation' : 'Tiến Lượt / Kết Thúc Lượt & Mô Phỏng Thế Giới');
 
@@ -399,10 +399,11 @@ function applyLanguage() {
   const btnClearChat = document.getElementById('txt-btn-clear-chat');
   if (btnClearChat) btnClearChat.innerText = dict.btnClearChat;
 
-  const mapTitle = document.getElementById('world-map-title');
+  // The map dialog is now mounted by the standardized ModalShell.
+  const mapTitle = document.getElementById('world-map-modal-title') || document.getElementById('world-map-title');
   if (mapTitle) mapTitle.innerText = dict.worldMapTitle;
 
-  const mapSub = document.getElementById('world-map-sub');
+  const mapSub = document.getElementById('world-map-modal-subtitle') || document.getElementById('world-map-sub');
   if (mapSub) mapSub.innerText = dict.worldMapSub;
 
   const mapLegend = document.getElementById('world-map-legend');
@@ -514,7 +515,25 @@ function toggleLanguage() {
   }
 }
 
+/**
+ * Single header date format shared by every surface that shows the campaign
+ * clock. The raw `184-05-02` string must never be printed next to the
+ * human-readable form (that produced two clocks on one screen).
+ */
+function formatGameDateChip(dateStr) {
+  const match = /^(\d{3,4})-(\d{2})-(\d{2})$/.exec(String(dateStr || ''));
+  if (!match) return String(dateStr || '');
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  if (currentLang === 'en') {
+    return `Day ${day}, Month ${month}, Year ${year} CE • Day ${day}/30`;
+  }
+  return `Ngày ${day} Tháng ${month} Năm ${year} SCN • Ngày ${day}/30`;
+}
+
 // Global exports
 window.I18N_DICT = I18N_DICT;
 window.applyLanguage = applyLanguage;
 window.toggleLanguage = toggleLanguage;
+window.formatGameDateChip = formatGameDateChip;
