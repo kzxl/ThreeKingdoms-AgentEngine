@@ -208,8 +208,8 @@ Still open, measured:
 
 **P1 — 2–5 days**
 
-4. Move the remaining 18 cashflow INSERTs to `postCashflowEntry` and lower the
-   `cashflow-direct-insert` budget; merge the two account-code vocabularies.
+4. ~~Move the remaining 18 cashflow INSERTs to `postCashflowEntry`~~ — done in 1.6.4
+   (`cashflow-direct-insert` budget 0); chart-of-accounts history rewritten in 1.6.5.
 5. One map source: DB `master_locations`/`master_routes` → the client keeps aliases only.
 6. Collapse the four market-price sources into `master_items` + `market-elasticity`.
 

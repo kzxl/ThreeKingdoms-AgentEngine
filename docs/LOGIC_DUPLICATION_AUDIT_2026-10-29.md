@@ -4,6 +4,12 @@ Ngày 29/10/2026. Phạm vi: `engine/`, `src/`, `public/js`, `public/index.html`
 Phương pháp: đọc code + đối chiếu call graph + mở thử UI trên trình duyệt. Các kết luận dưới đây là
 hiện trạng tại thời điểm rà soát, không phải giả thuyết từ tên file.
 
+> **Status (2026-10-30):** this document is a frozen snapshot of the 2026-10-29 audit. All P0
+> findings and the P1 ownership items (ledger writers, chart of accounts, units, trade UI,
+> instance bootstrap) are fixed; see `docs/REFACTOR_REVIEW_2026-10-29.md` §2 for the current
+> per-finding status. Open items are the map data sources, the market-price sources and the
+> god services listed there.
+
 ## 0. Kết luận điều hành
 
 Game vẫn chạy được happy path và `npm run verify` xanh, nhưng đang có **5 lỗi P0/P1 có thể làm sai dữ liệu

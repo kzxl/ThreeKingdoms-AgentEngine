@@ -155,7 +155,7 @@ Giao Châu (Jiaozhou)   : Giao Chỉ (Jiaozhi)
 ### Loop 1: Specialist Workforce Recruitment & Enterprise Assignment
 - Discover and hire 20 auxiliary specialists (`NPC-0201` to `NPC-0220`) from local inns and guilds across the 20 citadels (Shopkeepers, Master Blacksmiths, Caravan Escort Chiefs, Master Weavers, Mining Overseers).
 - Assign hired specialists to player enterprises (`businesses`), increasing operational workforce count and boosting enterprise efficiency multiplier by **+15% to +25%**.
-- Double-entry accounting atomically journals signing bonus outflows (`EXP-OPERATING` / `CASH-ON-HAND`) without audit drift.
+- Double-entry accounting atomically journals signing bonus outflows (`6001_OPERATING_EXPENSE` / `1001_CASH_MOBILE`) without audit drift.
 
 ### Loop 2: 20-Settlement Regional Arbitrage & Caravan Logistics
 - Exploit inter-regional price disparities calculated dynamically from supply/demand elasticities (e.g., shipping Xuzhou Sea Salt to inland Yecheng, or Liangzhou Warhorses to southern Jianye).
