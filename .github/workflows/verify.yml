@@ -1,0 +1,30 @@
+name: verify
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  simulation-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Install sqlite3 CLI (legacy suites shell out to it)
+        run: sudo apt-get update && sudo apt-get install -y sqlite3
+      - run: npm ci
+      - name: Bootstrap the ignored session database
+        run: |
+          node tools/ingest-markdown-master.js
+          node tools/sim-db.js init
+      - name: Typecheck, lint, architecture and route ratchets
+        run: npm run verify
+      - name: Simulation invariants
+        run: npm run audit
+      - name: Client bundle
+        run: npm run build:client
