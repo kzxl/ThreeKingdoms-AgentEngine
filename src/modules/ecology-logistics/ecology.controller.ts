@@ -8,19 +8,18 @@
 
 import { Router, sendJson, RouteContext } from '../../server/router';
 import { DatabaseService } from '../../core/database';
+import { nextId } from '../../shared/id-generator';
+import { getGameDate } from '../../shared/game-clock';
 import { ModuleRegistry } from '../../core/module-registry';
 import { EcologyLogisticsModule } from './ecology-logistics.module';
 import { EconomyModule } from '../economy/economy.module';
+import { GUARD_TIER_CONFIGS } from './caravan-logistics.service';
 
 function getEcologyModule(): EcologyLogisticsModule | undefined {
-  const gsm = (globalThis as any).__GRAND_STRATEGY_MODULES__;
-  if (gsm?.ecologyLogistics) return gsm.ecologyLogistics as EcologyLogisticsModule;
   return ModuleRegistry.getInstance().get<EcologyLogisticsModule>('module.ecology-logistics');
 }
 
 function getEconomyModule(): EconomyModule | undefined {
-  const gsm = (globalThis as any).__GRAND_STRATEGY_MODULES__;
-  if (gsm?.economy) return gsm.economy as EconomyModule;
   return ModuleRegistry.getInstance().get<EconomyModule>('module.economy');
 }
 
@@ -31,7 +30,7 @@ function getDb(): DatabaseService {
 function getCampaignMeta(db: DatabaseService): { activeTurn: number; currentDate: string } {
   try {
     const row = db.queryOne<{ active_turn: number; current_date: string }>(
-      'SELECT active_turn, current_date FROM campaign_meta LIMIT 1;'
+      'SELECT active_turn, "current_date" FROM campaign_meta LIMIT 1;'
     );
     if (row) return { activeTurn: row.active_turn, currentDate: row.current_date };
   } catch {
@@ -165,7 +164,7 @@ export function registerEcologyRoutes(router: Router): void {
       }
 
       const cargoValue = Math.round(qty * item.baseline_peace_price);
-      const generatedCaravanId = `CARAVAN-${Date.now().toString().slice(-6)}`;
+      const generatedCaravanId = nextId(db, 'caravan', 'CARAVAN', getGameDate(db));
       const name = caravanName || `Trù Vận Đội (${fromSettlementId} -> ${toSettlementId})`;
       const meta = getCampaignMeta(db);
 
@@ -203,7 +202,7 @@ export function registerEcologyRoutes(router: Router): void {
         cargoValueQian: cargoValue,
         estimatedDeliveredValue: estimatedDecay.deliveredCash,
         estimatedLossRate: `${Math.round((estimatedDecay.lostInTransit / cargoValue) * 100)}%`,
-        message: `Đã xuất phát ${name} vận tải ${qty} ${item.name_vi} (Tổng giá trị ${cargoValue} Qian).`
+        message: `Đã xuất phát ${name} vận tải ${qty} ${item.name_vi} (Tổng giá trị ${cargoValue} quan).`
       });
     } catch (err: any) {
       sendJson(res, 400, { success: false, error: err.message });
@@ -212,6 +211,18 @@ export function registerEcologyRoutes(router: Router): void {
 
   router.get('/api/ecology/transport', handleGetTransport);
   router.get('/api/logistics/caravans', handleGetTransport);
+
+  // Guard tiers are the real dispatch cost/capacity contract for the map UI.
+  router.get('/api/caravans/guard-tiers', (_req: any, res: any, _ctx: RouteContext) => {
+    const tiers = Object.values(GUARD_TIER_CONFIGS).map(tier => ({
+      tier: tier.tier,
+      nameVi: tier.nameVi,
+      troops: tier.troops,
+      costQian: tier.costQian
+    }));
+    sendJson(res, 200, { success: true, count: tiers.length, tiers });
+  });
+
   router.post('/api/ecology/transport', handlePostTransport);
 
   // -------------------------------------------------------------

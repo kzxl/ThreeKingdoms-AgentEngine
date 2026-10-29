@@ -25,6 +25,9 @@ export interface SemanticInterventionRequest {
   resolved: boolean;
 }
 
+/** Requests live in memory; a counter keeps ids unique without wall-clock time. */
+let interventionSequence = 0;
+
 export class AgentBridgeModule implements IFeatureModule {
   public readonly id = 'module.agent-bridge';
   public readonly name = 'Agent Semantic Bridge & Continuous Learning Core';
@@ -182,7 +185,7 @@ export class AgentBridgeModule implements IFeatureModule {
     involvedCharacters: CharacterId[]
   ): SemanticInterventionRequest {
     const req: SemanticInterventionRequest = {
-      id: `INT-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      id: `INT-${++interventionSequence}`,
       type,
       contextSummary,
       involvedCharacters,

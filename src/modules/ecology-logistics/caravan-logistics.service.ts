@@ -9,18 +9,29 @@
  * Adheres strictly to AgentOption Universe Architecture v4.0.
  */
 
-import path from 'path';
-import { execSync } from 'child_process';
 import { DatabaseService } from '../../core/database';
+import { nextId } from '../../shared/id-generator';
+import { getGameDate } from '../../shared/game-clock';
+import { syncProgressProjection } from '../../shared/projection-sync';
 import {
   RegionalMarketService,
   calculateDistanceLi,
   SETTLEMENT_PROFILES
 } from '../economy/regional-market.service';
 import { ProgressionExpService } from '../progression/attribute-progression.service';
+import { postCashflowEntry } from '../../shared/ledger';
 import { CaravanStatus } from '../../core/types';
 
 export type GuardTier = 'MILITIA' | 'VETERAN' | 'ELITE_RETINUE';
+
+/** Fraction owning the player's own caravans (see dispatchCaravan). */
+export const PLAYER_CARAVAN_OWNER = 'FAC-LIANG-CLAN';
+
+/**
+ * A caravan covers roughly one map li-step per day; the route length in days is
+ * derived from distance so caravan transit matches the military march pace.
+ */
+export const CARAVAN_DAILY_LI = 120;
 
 export interface GuardTierConfig {
   tier: GuardTier;
@@ -202,7 +213,7 @@ export class CaravanLogisticsService {
       }
       if (player.liquid_cash < guardConfig.costQian) {
         throw new Error(
-          `Ngân lượng không đủ thuê hộ vệ ${guardConfig.nameVi} (Hiện có: ${player.liquid_cash} Qian, Chi phí: ${guardConfig.costQian} Qian).`
+          `Ngân lượng không đủ thuê hộ vệ ${guardConfig.nameVi} (Hiện có: ${player.liquid_cash} quan, Chi phí: ${guardConfig.costQian} quan).`
         );
       }
 
@@ -213,8 +224,8 @@ export class CaravanLogisticsService {
         [newStockQty, cargoItemCode]
       );
 
-      const txnId = `TXN-LOG-${Date.now().toString().slice(-6)}`;
-      const movId = `MOV-CRV-${Date.now().toString().slice(-6)}`;
+      const txnId = nextId(this.db, 'cashflow', 'TXN-LOG', getGameDate(this.db));
+      const movId = nextId(this.db, 'stock-movements', 'MOV-CRV', getGameDate(this.db));
 
       // 4. Log stock movement
       this.db.execute(
@@ -232,18 +243,15 @@ export class CaravanLogisticsService {
       );
 
       // 6. Log cashflow ledger (tracks total player capital including safe_cash)
-      this.db.execute(
-        `INSERT INTO cashflow_ledger (txn_id, game_date, counterparty, category, inflow, outflow, balance, memo, status)
-         VALUES (?, ?, ?, 'Logistics/GuardFee', 0, ?, ?, ?, 'Confirmed');`,
-        [
-          txnId,
-          effectiveDate,
-          `Bảo Tiêu Doanh ${fromProfile.nameVi}`,
-          guardConfig.costQian,
-          totalLedgerBalance,
-          `Thuê ${guardConfig.nameVi} áp tải thương đoàn sang ${toProfile.nameVi}`
-        ]
-      );
+      postCashflowEntry(this.db, {
+        txnId,
+        gameDate: effectiveDate,
+        counterparty: `Bảo Tiêu Doanh ${fromProfile.nameVi}`,
+        category: 'Logistics/GuardFee',
+        outflow: guardConfig.costQian,
+        balance: totalLedgerBalance,
+        memo: `Thuê ${guardConfig.nameVi} áp tải thương đoàn sang ${toProfile.nameVi}`
+      });
 
       // 7. Double-entry accounting journal
       this.db.execute(
@@ -263,16 +271,16 @@ export class CaravanLogisticsService {
       const cargoValueQian = Math.round(cargoQuantity * (stock.unit_cost_basis || item.baseline_peace_price));
 
       // 9. Generate Caravan record
-      const caravanId = `CRV-${Date.now().toString().slice(-6)}`;
+      const caravanId = nextId(this.db, 'caravan', 'CRV', getGameDate(this.db));
       const caravanName = `Lương Thị Thương Đội (${fromProfile.nameVi} → ${toProfile.nameVi})`;
-      const ownerFactionId = 'FAC-LIANG-CLAN';
+      const ownerFactionId = PLAYER_CARAVAN_OWNER;
 
       this.db.execute(
         `INSERT INTO trade_caravans (
           caravan_id, caravan_name, owner_faction_id, from_settlement_id, to_settlement_id,
           cargo_item_code, cargo_quantity, cargo_value_qian, guard_troops, route_progress,
-          status, created_turn
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0.0, 'EN_ROUTE', ?);`,
+          status, created_turn, dispatched_by_player
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0.0, 'EN_ROUTE', ?, 1);`,
         [
           caravanId,
           caravanName,
@@ -312,21 +320,28 @@ export class CaravanLogisticsService {
     });
 
     // Keep PROGRESS.md synchronized
-    try {
-      const rootDir = process.cwd();
-      execSync(`node "${path.join(rootDir, 'tools', 'sim-db.js')}" export-progress`, {
-        stdio: 'ignore'
-      });
-    } catch {}
+    syncProgressProjection(this.db);
 
     return result;
   }
 
   /**
-   * Advances active trade caravans along their routes.
-   * Checks for proximity to active bandit strongholds and simulates skirmishes.
+   * Advances every EN_ROUTE caravan by `days` campaign days.
+   *
+   * This is the single caravan progression implementation: the day clock
+   * (`advanceCampaignDays`) and month closure both call it, so a caravan can
+   * never progress through two different rule sets.
+   *
+   * Player-dispatched caravans stop at ARRIVED and wait for the player to
+   * claim them. Faction-owned caravans settle automatically to the owner's
+   * treasury exactly once on arrival.
    */
-  public tickCaravans(): TickCaravansResult {
+  public advanceByDays(days = 1): TickCaravansResult {
+    const dayCount = Math.max(0, Math.floor(Number(days) || 0));
+    if (dayCount === 0) {
+      return { tickedCaravansCount: 0, arrivedCaravansCount: 0, encounters: [], updatedCaravans: [] };
+    }
+
     const activeCaravans = this.db.query<any>(
       `SELECT * FROM trade_caravans WHERE status = 'EN_ROUTE';`
     );
@@ -347,14 +362,17 @@ export class CaravanLogisticsService {
 
     for (const caravan of activeCaravans) {
       const distanceLi = calculateDistanceLi(caravan.from_settlement_id, caravan.to_settlement_id);
-      // Speed scales inversely with distance, minimum 0.20 per tick
-      const speed = Math.max(0.20, Math.round((80 / distanceLi) * 100) / 100);
-      let newProgress = Math.min(1.0, Math.round((caravan.route_progress + speed) * 100) / 100);
+      // Route length in days is derived from distance, so caravan pace matches
+      // the military march pace instead of a fixed per-tick bump.
+      const travelDays = Math.max(1, Math.ceil(distanceLi / CARAVAN_DAILY_LI));
+      const dailyProgress = 1 / travelDays;
+      const previousProgress = Number(caravan.route_progress) || 0;
+      let newProgress = Math.min(1.0, Math.round((previousProgress + dailyProgress * dayCount) * 100) / 100);
       let currentStatus: CaravanStatus = 'EN_ROUTE';
 
       // Check bandit stronghold encounter
       // Triggered once mid-transit as caravan crosses through contested territory (around halfway mark)
-      const crossedMidpoint = caravan.route_progress < 0.5 && newProgress >= 0.5;
+      const crossedMidpoint = previousProgress < 0.5 && newProgress >= 0.5;
       if (crossedMidpoint) {
         const dangerousStronghold = strongholds.find((sh) => {
           return (
@@ -414,7 +432,7 @@ export class CaravanLogisticsService {
               isVictory: false,
               cargoPlundered: plunderQty,
               valueLost,
-              narrativeVi: `Thương đoàn ${caravan.caravan_name} bị đạo tặc ${dangerousStronghold.name_vi} phục kích chớp nhoáng! Lực lượng hộ vệ (${guards} quân) quá mỏng, bị cướp đoạt 20% hàng hóa (-${plunderQty} hàng, -${valueLost} Qian)!`
+              narrativeVi: `Thương đoàn ${caravan.caravan_name} bị đạo tặc ${dangerousStronghold.name_vi} phục kích chớp nhoáng! Lực lượng hộ vệ (${guards} quân) quá mỏng, bị cướp đoạt 20% hàng hóa (-${plunderQty} hàng, -${valueLost} quan)!`
             });
 
             // Re-read updated cargo
@@ -426,7 +444,14 @@ export class CaravanLogisticsService {
 
       if (newProgress >= 1.0) {
         newProgress = 1.0;
-        currentStatus = 'ARRIVED';
+        if (Number(caravan.dispatched_by_player) === 1) {
+          // Player cargo: stop here and let claimCaravan() liquidate it.
+          currentStatus = 'ARRIVED';
+        } else {
+          // Faction cargo: settle once, at arrival, between the two treasuries.
+          currentStatus = 'SUCCESS_TRADED';
+          this.settleFactionCaravanOnArrival(caravan);
+        }
         arrivedCount++;
       }
 
@@ -454,6 +479,39 @@ export class CaravanLogisticsService {
   }
 
   /**
+   * Backwards-compatible single-day tick. Kept for the admin endpoint and
+   * existing tests; progression itself lives in advanceByDays().
+   */
+  public tickCaravans(): TickCaravansResult {
+    return this.advanceByDays(1);
+  }
+
+  /**
+   * Faction caravan settlement: the destination treasury pays the owner
+   * treasury. Called only when an EN_ROUTE caravan reaches ARRIVED, so each
+   * caravan is paid exactly once.
+   */
+  private settleFactionCaravanOnArrival(caravan: any): void {
+    const payout = Math.round(Number(caravan.cargo_value_qian) * 1.35);
+    const destSettlement = this.db.queryOne<{ ruler_faction_id: string }>(
+      `SELECT ruler_faction_id FROM session_settlements WHERE settlement_id = ?;`,
+      [caravan.to_settlement_id]
+    );
+    const buyerFactionId = destSettlement?.ruler_faction_id || 'FAC-HAN';
+
+    this.db.transaction(() => {
+      this.db.execute(
+        `UPDATE session_factions SET treasury_cash = MAX(0, treasury_cash - ?) WHERE faction_id = ?;`,
+        [payout, buyerFactionId]
+      );
+      this.db.execute(
+        `UPDATE session_factions SET treasury_cash = treasury_cash + ? WHERE faction_id = ?;`,
+        [payout, caravan.owner_faction_id]
+      );
+    });
+  }
+
+  /**
    * Liquidates arrived caravan cargo at the destination regional market price,
    * credits player liquid cash, posts double-entry accounting journals, and awards EXP.
    */
@@ -471,7 +529,19 @@ export class CaravanLogisticsService {
       throw new Error(`Thương đoàn "${caravan.caravan_name}" đã thanh lý quyết toán từ trước.`);
     }
 
-    if (caravan.status !== 'ARRIVED' && caravan.status !== 'SUCCESS_TRADED') {
+    if (caravan.status === 'SUCCESS_TRADED') {
+      throw new Error(
+        `Thương đoàn "${caravan.caravan_name}" đã được quyết toán tự động cho chủ sở hữu phe phái, không thể nhận lại lần hai.`
+      );
+    }
+
+    if (Number(caravan.dispatched_by_player) !== 1) {
+      throw new Error(
+        `Thương đoàn "${caravan.caravan_name}" thuộc phe phái khác; chỉ thương đoàn do người chơi phái đi mới được quyết toán.`
+      );
+    }
+
+    if (caravan.status !== 'ARRIVED') {
       throw new Error(
         `Thương đoàn "${caravan.caravan_name}" đang trên đường đi (Tiến độ: ${Math.round(caravan.route_progress * 100)}%), chưa đến nơi để quyết toán xuất bán.`
       );
@@ -496,7 +566,7 @@ export class CaravanLogisticsService {
 
     const meta = this.getCampaignMeta();
     const effectiveDate = meta.currentDate;
-    const txnId = `TXN-REV-${Date.now().toString().slice(-6)}`;
+    const txnId = nextId(this.db, 'cashflow', 'TXN-REV', effectiveDate);
 
     // 2. Perform ACID settlement claim
     const finalResult = this.db.transaction(() => {
@@ -518,18 +588,15 @@ export class CaravanLogisticsService {
       );
 
       // Log cashflow ledger (tracks total player capital including safe_cash)
-      this.db.execute(
-        `INSERT INTO cashflow_ledger (txn_id, game_date, counterparty, category, inflow, outflow, balance, memo, status)
-         VALUES (?, ?, ?, 'Trade/CaravanRevenue', ?, 0, ?, ?, 'Confirmed');`,
-        [
-          txnId,
-          effectiveDate,
-          `Thương Điếm ${destNameVi}`,
-          grossRevenue,
-          totalLedgerBalance,
-          `Thanh lý thương đoàn ${caravan.caravan_name} tại ${destNameVi} (${caravan.cargo_quantity} ${itemNameVi})`
-        ]
-      );
+      postCashflowEntry(this.db, {
+        txnId,
+        gameDate: effectiveDate,
+        counterparty: `Thương Điếm ${destNameVi}`,
+        category: 'Trade/CaravanRevenue',
+        inflow: grossRevenue,
+        balance: totalLedgerBalance,
+        memo: `Thanh lý thương đoàn ${caravan.caravan_name} tại ${destNameVi} (${caravan.cargo_quantity} ${itemNameVi})`
+      });
 
       // Double-entry accounting journal
       this.db.execute(
@@ -567,12 +634,7 @@ export class CaravanLogisticsService {
     });
 
     // 3. Keep PROGRESS.md synchronized
-    try {
-      const rootDir = process.cwd();
-      execSync(`node "${path.join(rootDir, 'tools', 'sim-db.js')}" export-progress`, {
-        stdio: 'ignore'
-      });
-    } catch {}
+    syncProgressProjection(this.db);
 
     return {
       success: true,
@@ -591,12 +653,17 @@ export class CaravanLogisticsService {
       ldrExpAwarded: finalResult.ldrExp,
       expGained: finalResult.comExp,
       newLiquidCash: finalResult.newLiquidCash,
-      message: `Quyết toán ${caravan.caravan_name} thành công! Xuất bán ${caravan.cargo_quantity} ${itemNameVi} tại ${destNameVi} với giá ${destUnitPrice} Qian/đơn vị. Thu về ${grossRevenue} Qian (Lãi ròng: +${netProfit} Qian, +${finalResult.comExp} COM EXP, +${finalResult.ldrExp} LDR EXP).`
+      message: `Quyết toán ${caravan.caravan_name} thành công! Xuất bán ${caravan.cargo_quantity} ${itemNameVi} tại ${destNameVi} với giá ${destUnitPrice} quan/đơn vị. Thu về ${grossRevenue} quan (Lãi ròng: +${netProfit} quan, +${finalResult.comExp} COM EXP, +${finalResult.ldrExp} LDR EXP).`
     };
   }
 
   /**
    * Retrieves all caravans owned by the player faction.
+   *
+   * Both camelCase and snake_case aliases are returned: the modular services
+   * read camelCase, while the legacy caravan UI (`public/js/caravan-ui.js`)
+   * reads the raw column names. Returning only camelCase left every row field
+   * `undefined` in that panel.
    */
   public getPlayerCaravans(playerId = 'PLY-0001'): any[] {
     const sql = `
@@ -615,8 +682,20 @@ export class CaravanLogisticsService {
         c.guard_troops as guardTroops,
         c.route_progress as routeProgress,
         c.status,
+        c.dispatched_by_player as dispatchedByPlayer,
         c.created_turn as createdTurn,
-        c.updated_at as updatedAt
+        c.updated_at as updatedAt,
+        c.caravan_id,
+        c.caravan_name,
+        c.owner_faction_id,
+        c.from_settlement_id,
+        c.to_settlement_id,
+        c.cargo_item_code,
+        c.cargo_quantity,
+        c.cargo_value_qian,
+        c.guard_troops,
+        c.route_progress,
+        c.dispatched_by_player
       FROM trade_caravans c
       LEFT JOIN session_settlements sf_from ON c.from_settlement_id = sf_from.settlement_id
       LEFT JOIN session_settlements sf_to ON c.to_settlement_id = sf_to.settlement_id

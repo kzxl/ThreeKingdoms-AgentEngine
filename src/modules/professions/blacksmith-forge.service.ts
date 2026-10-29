@@ -24,6 +24,10 @@
 import { DatabaseService } from '../../core/database';
 import { Router, sendJson, RouteContext } from '../../server/router';
 import { EnterpriseLaborService } from './enterprise-labor.service';
+import { recordStockMovement, consumeInventoryItem, restoreInventoryItem } from '../../shared/inventory-movement';
+import { syncProgressProjection } from '../../shared/projection-sync';
+import { RngService } from '../../core/rng';
+import { nextSequentialId } from '../../shared/id-generator';
 
 export type EquipmentSlotType = 'WEAPON' | 'ARMOR' | 'STEED' | 'TREASURE';
 export const VALID_EQUIPMENT_SLOTS: readonly EquipmentSlotType[] = ['WEAPON', 'ARMOR', 'STEED', 'TREASURE'];
@@ -172,6 +176,22 @@ export class BlacksmithForgeService {
   private constructor(customDbPath?: string) {
     this.db = DatabaseService.getInstance(customDbPath);
     this.ensureTables();
+  }
+
+  /** Current in-game date. Quoted because `current_date` is a SQLite keyword. */
+  private getGameDate(): string {
+    const row = this.db.queryOne<{ d: string }>('SELECT "current_date" AS d FROM campaign_meta LIMIT 1;');
+    return row?.d || '184-05-02';
+  }
+
+  /** Deterministic stream for forging quality, defect and naming rolls. */
+  private rng() {
+    return RngService.forDomain(this.db, 'forging');
+  }
+
+  /** Inventory value changed, so the read projection must be refreshed. */
+  private syncProjection(): void {
+    syncProgressProjection(this.db);
   }
 
   public static getInstance(customDbPath?: string): BlacksmithForgeService {
@@ -357,7 +377,7 @@ export class BlacksmithForgeService {
   private getCampaignMeta(): { activeTurn: number; currentDate: string } {
     try {
       const row = this.db.queryOne<{ active_turn: number; current_date: string }>(
-        'SELECT active_turn, current_date FROM campaign_meta LIMIT 1;'
+        'SELECT active_turn, "current_date" FROM campaign_meta LIMIT 1;'
       );
       if (row) return { activeTurn: row.active_turn, currentDate: row.current_date };
     } catch {
@@ -470,7 +490,7 @@ export class BlacksmithForgeService {
             this.db.execute(
               `INSERT INTO stock_movements (mov_id, game_date, item_code, movement_type, quantity, unit_cost, balance_after, ref_txn)
                VALUES (?, ?, ?, 'PRODUCTION_CONSUME', ?, 40, (SELECT quantity FROM inventory_items WHERE item_code = ?), 'BESPOKE_FORGE');`,
-              [`MOV-FORGE-${Date.now()}-${code}`, meta.currentDate, code, deduct, code]
+              [nextSequentialId(this.db, 'stock_movements', 'MOV-FORGE', meta.currentDate), meta.currentDate, code, deduct, code]
             );
 
             consumedItems.push({
@@ -492,7 +512,7 @@ export class BlacksmithForgeService {
       const craftsmanTier = prof?.tier || 1;
 
       const odds = BlacksmithForgeService.calculateForgeOdds(currentCra, currentFatigue, craftsmanTier);
-      const roll100 = Math.random() * 100;
+      const roll100 = this.rng().nextFloat() * 100;
 
       let quality: EquipmentQuality = 'NORMAL';
       let qualityLabelVi = 'Phổ Thông Hảo Binh';
@@ -507,27 +527,27 @@ export class BlacksmithForgeService {
         // Tuyệt Thế Thần Binh (Legendary) - Divine Rarity!
         quality = 'LEGENDARY';
         qualityLabelVi = 'Tuyệt Thế Thần Binh';
-        rawWarMod = Math.random() < 0.60 ? 5 : 4;
-        rawLdrMod = Math.random() < 0.40 ? 3 : 2;
+        rawWarMod = this.rng().nextFloat() < 0.60 ? 5 : 4;
+        rawLdrMod = this.rng().nextFloat() < 0.40 ? 3 : 2;
       } else if (roll100 < pLegendary + pMasterwork) {
         // Bách Luyện Tinh Cương (Masterwork)
         quality = 'MASTERWORK';
         qualityLabelVi = 'Bách Luyện Tinh Cương';
-        rawWarMod = Math.random() < 0.45 ? 4 : 3;
-        const ldrRoll = Math.random();
+        rawWarMod = this.rng().nextFloat() < 0.45 ? 4 : 3;
+        const ldrRoll = this.rng().nextFloat();
         rawLdrMod = ldrRoll < 0.10 ? 3 : ldrRoll < 0.50 ? 2 : 1;
       } else if (roll100 < pLegendary + pMasterwork + pFine) {
         // Tinh Luyện Thượng Phẩm (Fine)
         quality = 'FINE';
         qualityLabelVi = 'Tinh Luyện Thượng Phẩm';
-        rawWarMod = Math.random() < 0.35 ? 3 : 2;
-        rawLdrMod = Math.random() < 0.20 ? 2 : 1;
+        rawWarMod = this.rng().nextFloat() < 0.35 ? 3 : 2;
+        rawLdrMod = this.rng().nextFloat() < 0.20 ? 2 : 1;
       } else {
         // Phổ Thông Hảo Binh (Normal)
         quality = 'NORMAL';
         qualityLabelVi = 'Phổ Thông Hảo Binh';
-        rawWarMod = Math.random() < 0.20 ? 2 : 1;
-        rawLdrMod = Math.random() < 0.15 ? 1 : 0;
+        rawWarMod = this.rng().nextFloat() < 0.20 ? 2 : 1;
+        rawLdrMod = this.rng().nextFloat() < 0.15 ? 1 : 0;
       }
 
       // STRICT CLAMPING INVARIANT: All stat modifiers strictly clamped between +1 and +5 points!
@@ -550,10 +570,10 @@ export class BlacksmithForgeService {
           'Hắc Thiết Cuồng Long Mâu',
           'Xích Hỏa Phương Thiên Kích'
         ];
-        finalName = weaponPool[Math.floor(Math.random() * weaponPool.length)];
+        finalName = weaponPool[Math.floor(this.rng().nextFloat() * weaponPool.length)];
       }
 
-      const bespokeItemCode = `WPN-BESPOKE-${Date.now().toString(36).toUpperCase()}`;
+      const bespokeItemCode = nextSequentialId(this.db, 'inventory_items', 'WPN-BESPOKE', meta.currentDate);
 
       // 5. Deduct Fatigue & Award Profession EXP
       const fatigueConsumed = 25;
@@ -630,7 +650,7 @@ export class BlacksmithForgeService {
         this.db.execute(
           `INSERT INTO stock_movements (mov_id, game_date, item_code, movement_type, quantity, unit_cost, balance_after, ref_txn)
            VALUES (?, ?, ?, 'PRODUCTION_OUTPUT', 1, 1200, 1, 'BESPOKE_FORGE');`,
-          [`MOV-FORGE-OUT-${Date.now()}`, meta.currentDate, bespokeItemCode]
+          [nextSequentialId(this.db, 'stock_movements', 'MOV-FORGE-OUT', meta.currentDate), meta.currentDate, bespokeItemCode]
         );
       }
 
@@ -778,7 +798,7 @@ export class BlacksmithForgeService {
         this.db.execute(
           `INSERT INTO stock_movements (mov_id, game_date, item_code, movement_type, quantity, unit_cost, balance_after, ref_txn)
            VALUES (?, ?, ?, 'PRODUCTION_CONSUME', ?, 30, (SELECT quantity FROM inventory_items WHERE item_code = ?), ?);`,
-          [`MOV-STD-FORGE-${Date.now()}-${item.itemCode}`, meta.currentDate, item.itemCode, requiredTotal, item.itemCode, params.armamentCode]
+          [nextSequentialId(this.db, 'stock_movements', 'MOV-STD-FORGE', meta.currentDate), meta.currentDate, item.itemCode, requiredTotal, item.itemCode, params.armamentCode]
         );
         consumedMaterials.push({
           itemCode: item.itemCode,
@@ -798,7 +818,7 @@ export class BlacksmithForgeService {
       this.db.execute(
         `INSERT INTO stock_movements (mov_id, game_date, item_code, movement_type, quantity, unit_cost, balance_after, ref_txn)
          VALUES (?, ?, ?, 'PRODUCTION_OUTPUT', ?, 350, (SELECT quantity FROM inventory_items WHERE item_code = ?), ?);`,
-        [`MOV-STD-OUT-${Date.now()}`, meta.currentDate, params.armamentCode, quantity, params.armamentCode, params.armamentCode]
+        [nextSequentialId(this.db, 'stock_movements', 'MOV-STD-OUT', meta.currentDate), meta.currentDate, params.armamentCode, quantity, params.armamentCode, params.armamentCode]
       );
 
       // Deduct stamina and award EXP
@@ -1029,25 +1049,22 @@ export class BlacksmithForgeService {
     slotType: EquipmentSlotType,
     itemCode: string,
     customName?: string,
-    statModifiers?: Record<string, number>
+    statModifiers?: Record<string, number>,
+    options: { requireStock?: boolean } = {}
   ): { success: boolean; messageVi: string; overview: CharacterEquipmentOverview } {
-    return this.db.transaction(() => {
-      // 1. Check stock in inventory
+    const result = this.db.transaction(() => {
+      // 1. Check stock in inventory. Simulation fixtures may attach gear that
+      //    was never stocked; real player equips always require stock.
       const stock = this.db.queryOne<any>(
-        'SELECT quantity, description FROM inventory_items WHERE item_code = ?;',
+        'SELECT quantity, description, unit_cost_basis FROM inventory_items WHERE item_code = ?;',
         [itemCode]
       );
-      if (!stock || stock.quantity < 1) {
+      const requireStock = options.requireStock !== false;
+      if (requireStock && (!stock || stock.quantity < 1)) {
         throw new Error(`Vật phẩm [${itemCode}] không còn trong kho đồ!`);
       }
 
-      // 2. Deduct 1 from warehouse inventory
-      this.db.execute(
-        'UPDATE inventory_items SET quantity = quantity - 1 WHERE item_code = ?;',
-        [itemCode]
-      );
-
-      // 3. Resolve default stat modifiers if not provided
+      // 2. Resolve default stat modifiers if not provided
       let finalStats = statModifiers;
       if (!finalStats) {
         finalStats = this.getDefaultStatModifiersForItem(itemCode, slotType);
@@ -1059,14 +1076,31 @@ export class BlacksmithForgeService {
         clampedStats[k] = BlacksmithForgeService.clampStatModifier(v);
       }
 
-      const finalName = customName || stock.description || itemCode;
+      let finalName = customName || stock?.description;
+      if (!finalName) {
+        const master = this.db.queryOne<{ name_vi: string; name_en: string }>(
+          'SELECT name_vi, name_en FROM master_items WHERE item_code = ?;',
+          [itemCode]
+        );
+        finalName = master?.name_vi || master?.name_en || itemCode;
+      }
 
-      // 4. Insert into character_equipment (No 4-slot limit, characters can possess multiple items!)
-      this.db.execute(
+      // 3. Insert into character_equipment (No 4-slot limit, characters can possess multiple items!)
+      const inserted = this.db.execute(
         `INSERT INTO character_equipment (character_id, slot_type, item_code, custom_name, stat_modifiers, equipped_at)
          VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP);`,
         [characterId, slotType, itemCode, finalName, JSON.stringify(clampedStats)]
       );
+
+      // 4. Conservation: the warehouse decrement and its movement are one operation.
+      consumeInventoryItem(this.db, {
+        itemCode,
+        reason: 'EQUIP',
+        gameDate: this.getGameDate(),
+        refTxn: `EQP-${inserted.lastInsertRowid}`,
+        unitCost: Number(stock?.unit_cost_basis || 0),
+        requireStock
+      });
 
       const buffText = Object.entries(clampedStats).map(([k, v]) => `+${v} ${k.toUpperCase()}`).join(', ');
       const overview = this.getCharacterEquipment(characterId);
@@ -1076,6 +1110,9 @@ export class BlacksmithForgeService {
         overview
       };
     });
+
+    this.syncProjection();
+    return result;
   }
 
   /**
@@ -1086,7 +1123,7 @@ export class BlacksmithForgeService {
     slotTypeOrItemCode: string,
     equipmentId?: number
   ): { success: boolean; messageVi: string; overview: CharacterEquipmentOverview } {
-    return this.db.transaction(() => {
+    const result = this.db.transaction(() => {
       let existing: any = null;
 
       if (equipmentId) {
@@ -1120,13 +1157,18 @@ export class BlacksmithForgeService {
         [existing.id]
       );
 
-      // Return item to inventory
-      this.db.execute(
-        `INSERT INTO inventory_items (item_code, category, description, quantity, unit_cost_basis, location)
-         VALUES (?, 'MILITARY_EQUIPMENT', ?, 1, 400, 'Zhuo Workshop')
-         ON CONFLICT(item_code) DO UPDATE SET quantity = quantity + 1;`,
-        [existing.item_code, existing.custom_name || existing.item_code]
-      );
+      // Return item to inventory; the movement is recorded by the same helper
+      // that mutates the warehouse so the two can never drift.
+      restoreInventoryItem(this.db, {
+        itemCode: existing.item_code,
+        quantity: 1,
+        reason: 'UNEQUIP',
+        gameDate: this.getGameDate(),
+        refTxn: `UNEQ-${existing.id}`,
+        location: 'Zhuo Workshop',
+        description: existing.custom_name || existing.item_code,
+        unitCost: 400
+      });
 
       const overview = this.getCharacterEquipment(characterId);
       return {
@@ -1135,6 +1177,9 @@ export class BlacksmithForgeService {
         overview
       };
     });
+
+    this.syncProjection();
+    return result;
   }
 
   /**
@@ -1438,14 +1483,4 @@ export function registerBlacksmithForgeRoutes(router: Router): void {
       sendJson(res, 400, { success: false, error: err.message });
     }
   });
-}
-
-// Auto-register routes to global Grand Strategy router if present in memory
-if (typeof (globalThis as any).__GRAND_STRATEGY_ROUTER__ !== 'undefined') {
-  try {
-    registerBlacksmithForgeRoutes((globalThis as any).__GRAND_STRATEGY_ROUTER__);
-    console.log('[BlacksmithForgeService] [ROUTER] Auto-attached routes to Grand Strategy Router.');
-  } catch (err) {
-    console.warn('[BlacksmithForgeService] Notice on auto-registering router:', err);
-  }
 }

@@ -7,6 +7,7 @@
  */
 
 import { DatabaseService } from '../../core/database';
+import { isTurnModuleDone, markTurnModuleDone } from '../../shared/turn-ledger';
 import {
   IFeatureModule,
   ModuleContext,
@@ -311,14 +312,14 @@ export class FactionPoliticsModule implements IFeatureModule {
    * Simulates a political cycle: checks tensions, triggers coups/secessions, updates faction treasuries
    */
   public simulatePoliticalCycle(turnNumber: number, gameDate: string): FactionPoliticalEvent[] {
-    if (this.lastSimulatedTurn === turnNumber) {
+    if (isTurnModuleDone(this.db, turnNumber, this.id)) {
       return this.getPoliticalEvents(10);
     }
-    this.lastSimulatedTurn = turnNumber;
 
-    this.recalculateAllOfficerRisks();
+    const events = this.db.transaction(() => {
+      this.recalculateAllOfficerRisks();
 
-    const events: FactionPoliticalEvent[] = [];
+      const events: FactionPoliticalEvent[] = [];
 
     // Find high-risk officers (> 0.65)
     const disgruntledOfficers = this.db.query<any>(`
@@ -478,6 +479,12 @@ export class FactionPoliticsModule implements IFeatureModule {
     // Multilateral Diplomatic Geopolitical Evolution
     const diploEvents = this.simulateDiplomaticRelations(turnNumber, gameDate);
     events.push(...diploEvents);
+
+      return events;
+    });
+
+    markTurnModuleDone(this.db, turnNumber, this.id);
+    this.lastSimulatedTurn = turnNumber;
 
     return events;
   }
@@ -752,7 +759,7 @@ export class FactionPoliticsModule implements IFeatureModule {
   public grantReward(officerId: string, factionId: string, amount: number, turnNumber = 1, gameDate = '184-02-15'): any {
     const faction = this.db.queryOne<any>(`SELECT * FROM session_factions WHERE faction_id = ?;`, [factionId]);
     if (!faction || faction.treasury_cash < amount) {
-      throw new Error(`Quân khố của thế lực không đủ ${amount} tiền.`);
+      throw new Error(`Quân khố của thế lực không đủ ${amount} quan.`);
     }
 
     const officer = this.db.queryOne<any>(`
@@ -794,7 +801,7 @@ export class FactionPoliticsModule implements IFeatureModule {
       officerId,
       amount,
       loyaltyBoost,
-      message: `Đã xuất ${amount} tiền ban thưởng cho ${officer.officer_name} (+${loyaltyBoost} Trung thành).`
+      message: `Đã xuất ${amount} quan ban thưởng cho ${officer.officer_name} (+${loyaltyBoost} Trung thành).`
     };
   }
 }

@@ -11,6 +11,8 @@
  */
 
 import { DatabaseService } from '../../core/database';
+import { RngService } from '../../core/rng';
+import { nextSequentialId } from '../../shared/id-generator';
 import {
   HouseholdRole,
   RestWithSpouseResult,
@@ -26,10 +28,15 @@ export class ReproductionGeneticsService {
     this.db = db || DatabaseService.getInstance();
   }
 
+  /** Deterministic stream for name generation, mutation and gender rolls. */
+  private rng() {
+    return RngService.forDomain(this.db, 'lineage-genetics');
+  }
+
   private getCampaignMeta(): { activeTurn: number; currentDate: string; campaignId: string } {
     try {
       const row = this.db.queryOne<any>(
-        'SELECT active_turn, current_date, campaign_id FROM campaign_meta LIMIT 1;'
+        'SELECT active_turn, "current_date", campaign_id FROM campaign_meta LIMIT 1;'
       );
       if (row) {
         return {
@@ -96,7 +103,7 @@ export class ReproductionGeneticsService {
     const maleGiven = ['Hưng', 'Bào', 'Thống', 'Bình', 'Hạo', 'Minh', 'Kế', 'Tùng', 'Đạt', 'Vũ', 'Ninh', 'Sách'];
     const femaleGiven = ['Uyển', 'Nguyệt', 'Hương', 'Lan', 'Dung', 'Châu', 'Trâm', 'Khanh', 'Sương', 'Diễm', 'Thư'];
     const givenList = gender === 'MALE' ? maleGiven : femaleGiven;
-    const given = givenList[Math.floor(Math.random() * givenList.length)];
+    const given = givenList[Math.floor(this.rng().nextFloat() * givenList.length)];
     const fullName = `${surname} ${given}`;
     const styleName = gender === 'MALE' ? 'Tử Viễn' : 'Uyển Khanh';
     return { nameVi: fullName, nameEn: fullName, styleName };
@@ -172,7 +179,7 @@ export class ReproductionGeneticsService {
 
       if (pregnancyStage === 0 && Number(player.health || 100) >= 70) {
         // 45% base conception chance
-        const roll = Math.random();
+        const roll = this.rng().nextFloat();
         if (roll < 0.45) {
           conceived = true;
           pregnancyStage = 1;
@@ -287,7 +294,7 @@ export class ReproductionGeneticsService {
       const parentMean = Math.floor((fStat + mStat) / 2);
 
       // Random mutation delta strictly clamped between -3 and +5
-      const mutationDelta = Math.floor(Math.random() * 9) - 3; // -3 to +5
+      const mutationDelta = Math.floor(this.rng().nextFloat() * 9) - 3; // -3 to +5
 
       let traitBonus = 0;
       if (traitConfig && traitConfig.bonusStat === key) {
@@ -396,7 +403,7 @@ export class ReproductionGeneticsService {
       const { inheritedStats, innateTalents } = this.calculateGenetics(fatherStats, motherStats, params.motherId);
 
       // 4. Gender & Authentic Han Naming
-      const gender = params.gender || (Math.random() < 0.5 ? 'MALE' : 'FEMALE');
+      const gender = params.gender || (this.rng().nextFloat() < 0.5 ? 'MALE' : 'FEMALE');
 
       let nameVi = (params.customName || '').trim();
       let nameEn = nameVi;
@@ -420,7 +427,7 @@ export class ReproductionGeneticsService {
       }
 
       // 5. Insert Child Record
-      const childId = `CHD-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
+      const childId = nextSequentialId(this.db, 'family_children', 'CHD', this.getCampaignMeta().currentDate);
 
       this.db.execute(
         `INSERT INTO family_children (

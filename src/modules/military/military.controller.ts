@@ -8,20 +8,19 @@
 
 import { Router, sendJson, RouteContext } from '../../server/router';
 import { DatabaseService } from '../../core/database';
+import { RngService } from '../../core/rng';
+import { nextId } from '../../shared/id-generator';
+import { getGameDate } from '../../shared/game-clock';
 import { ModuleRegistry } from '../../core/module-registry';
 import { MilitaryModule } from './military.module';
 import { EcologyLogisticsModule } from '../ecology-logistics/ecology-logistics.module';
 import { recordFinancialTransaction } from '../../shared/financial-transaction';
 
 function getMilitaryModule(): MilitaryModule | undefined {
-  const gsm = (globalThis as any).__GRAND_STRATEGY_MODULES__;
-  if (gsm?.military) return gsm.military as MilitaryModule;
   return ModuleRegistry.getInstance().get<MilitaryModule>('module.military');
 }
 
 function getEcologyModule(): EcologyLogisticsModule | undefined {
-  const gsm = (globalThis as any).__GRAND_STRATEGY_MODULES__;
-  if (gsm?.ecologyLogistics) return gsm.ecologyLogistics as EcologyLogisticsModule;
   return ModuleRegistry.getInstance().get<EcologyLogisticsModule>('module.ecology-logistics');
 }
 
@@ -49,7 +48,7 @@ function ensureMilitaryTables(db: DatabaseService): void {
 function getCampaignMeta(db: DatabaseService): { activeTurn: number; currentDate: string } {
   try {
     const row = db.queryOne<{ active_turn: number; current_date: string }>(
-      'SELECT active_turn, current_date FROM campaign_meta LIMIT 1;'
+      'SELECT active_turn, "current_date" FROM campaign_meta LIMIT 1;'
     );
     if (row) return { activeTurn: row.active_turn, currentDate: row.current_date };
   } catch {
@@ -215,6 +214,27 @@ export function registerMilitaryRoutes(router: Router): void {
   router.get('/api/military/routes', handleGetRoutes);
   router.get('/api/routes', handleGetRoutes);
 
+  // Canonical LOC ids used by master_routes → names/coords for the map bridge.
+  router.get('/api/locations', async (_req: any, res: any, _ctx: RouteContext) => {
+    try {
+      const rows = db.query<any>(`
+        SELECT
+          location_id as locationId,
+          name_vi as nameVi,
+          name_en as nameEn,
+          coord_x as coordX,
+          coord_y as coordY,
+          location_type as locationType,
+          sub_locations as subLocationsJson
+        FROM master_locations
+        ORDER BY location_id ASC;
+      `);
+      sendJson(res, 200, { success: true, count: rows.length, locations: rows });
+    } catch (err: any) {
+      sendJson(res, 500, { success: false, error: err.message });
+    }
+  });
+
   // -------------------------------------------------------------
   // 3. POST /api/garrisons & /api/garrisons/reinforce
   // -------------------------------------------------------------
@@ -243,7 +263,7 @@ export function registerMilitaryRoutes(router: Router): void {
 
         const player = db.queryOne<any>('SELECT liquid_cash FROM player_state WHERE player_id = "PLY-0001"');
         if (delta > 0 && player.liquid_cash < totalCost) {
-          throw new Error(`Insufficient funds: requires ${totalCost} Qian, available ${player.liquid_cash} Qian.`);
+          throw new Error(`Insufficient funds: requires ${totalCost} quan, available ${player.liquid_cash} quan.`);
         }
 
         const newTroops = Math.max(0, settlement.garrison_troops + delta);
@@ -330,10 +350,10 @@ export function registerMilitaryRoutes(router: Router): void {
         if (!player) throw new Error(`Commander ${commanderId} not found.`);
 
         if (player.strategic_grain < grainRequirement) {
-          throw new Error(`Insufficient strategic grain: requires ${grainRequirement} Dan, available ${player.strategic_grain} Dan.`);
+          throw new Error(`Insufficient strategic grain: requires ${grainRequirement} piculs, available ${player.strategic_grain} piculs.`);
         }
 
-        const expId = `EXP-${Date.now()}`;
+        const expId = nextId(db, 'expedition', 'EXP', getGameDate(db));
         db.execute('UPDATE player_state SET strategic_grain = strategic_grain - ?, fatigue = MIN(100, fatigue + 15) WHERE player_id = ?', [
           grainRequirement,
           commanderId
@@ -412,8 +432,8 @@ export function registerMilitaryRoutes(router: Router): void {
         const commanderWar = commander?.war_attr || 60;
         const commanderLdr = commander?.ldr_attr || 60;
 
-        const attackerRoll = Math.floor(Math.random() * 20) + 1;
-        const defenderRoll = Math.floor(Math.random() * 20) + 1;
+        const attackerRoll = RngService.forDomain(db, 'military').d20();
+        const defenderRoll = RngService.forDomain(db, 'military').d20();
 
         const attackerPower = attackerTroops * (commanderWar / 50) + attackerRoll * 10;
         const defenderPower = target.garrison_troops * (target.defense / 50) + defenderRoll * 10;
@@ -443,7 +463,7 @@ export function registerMilitaryRoutes(router: Router): void {
             recordFinancialTransaction(db, {
               category: 'WAR_LOOT',
               counterparty: target.name_vi,
-              memo: `Công phá đại thắng ${target.name_vi}, thu giữ ${lootQian} tiền chiến phí`,
+              memo: `Công phá đại thắng ${target.name_vi}, thu giữ ${lootQian} quan chiến phí`,
               inflow: lootQian,
               debitAccount: 'CASH-ON-HAND',
               creditAccount: 'REV-SALES'
@@ -476,7 +496,7 @@ export function registerMilitaryRoutes(router: Router): void {
           newDefense,
           lootQian,
           reportVi: isVictory
-            ? `Công phá đại thắng ${target.name_vi}! Tiêu diệt ${defenderCasualties} quân phòng thủ, tước đoạt ${lootQian} tiền chiến phí.`
+            ? `Công phá đại thắng ${target.name_vi}! Tiêu diệt ${defenderCasualties} quân phòng thủ, tước đoạt ${lootQian} quan chiến phí.`
             : `Công thành thất bại tại ${target.name_vi}! Tường cao lũy dày phòng ngự kiên cố, quân ta chịu tổn thất ${attackerCasualties} binh mã phải lui quân.`
         };
       });

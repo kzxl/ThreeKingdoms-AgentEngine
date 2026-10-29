@@ -7,6 +7,7 @@
 
 import { IFeatureModule, ModuleContext, ArmyState, SettlementId } from '../../core/types';
 import { DatabaseService } from '../../core/database';
+import { getPlayerCapital } from '../../shared/ledger';
 import {
   TacticalBattleEngine,
   BattleResult,
@@ -200,7 +201,7 @@ export class MilitaryModule implements IFeatureModule {
           [strongholdId]
         );
         player = this.db.queryOne<any>(
-          `SELECT name, war_attr, ldr_attr, int_attr, health, fatigue, liquid_cash, current_location FROM player_state WHERE player_id = ?;`,
+          `SELECT name, war_attr, ldr_attr, int_attr, health, fatigue, liquid_cash, safe_cash, current_location FROM player_state WHERE player_id = ?;`,
           [characterId]
         );
         const prog = this.db.queryOne<any>(
@@ -314,12 +315,12 @@ export class MilitaryModule implements IFeatureModule {
       try {
         if (isVictory) {
           this.db.transaction(() => {
-            // 1. Fetch latest balance for ledger sequence continuity
-            const prevCashflow = this.db!.queryOne<{ balance: number }>(
-              `SELECT balance FROM cashflow_ledger ORDER BY game_date DESC, rowid DESC LIMIT 1;`
-            );
-            const currentCash = prevCashflow ? Number(prevCashflow.balance) : Number(player.liquid_cash || 0);
-            const newBalance = currentCash + totalReward;
+            // 1. Player liquid cash grows by the reward; ledger balance is
+            //    total player capital (liquid + personal vault), never the
+            //    previous ledger row (that double-counted safe_cash).
+            const capitalBefore = getPlayerCapital(this.db!, characterId);
+            const newLiquidCash = capitalBefore.liquid + totalReward;
+            const newBalance = newLiquidCash + capitalBefore.safe;
             const txnId = `TXN-LOOT-${gameDate.replace(/-/g, '')}-${strongholdId}-${turnNumber}`;
 
             // 2. Insert cashflow ledger entry
@@ -334,7 +335,7 @@ export class MilitaryModule implements IFeatureModule {
                 totalReward,
                 0,
                 newBalance,
-                `Đại thắng sơn trại ${stronghold.name_vi}: Thu hồi ${lootCash} tiền của thương đoàn, thưởng quân công ${bounty} tiền`
+                `Đại thắng sơn trại ${stronghold.name_vi}: Thu hồi ${lootCash} quan của thương đoàn, thưởng quân công ${bounty} quan`
               ]
             );
 
@@ -350,14 +351,14 @@ export class MilitaryModule implements IFeatureModule {
               [txnId, gameDate, totalReward]
             );
 
-            // 4. Update player state (liquid cash must match cashflow ledger balance)
+            // 4. Update player state (liquid cash grows by the reward)
             this.db!.execute(
               `UPDATE player_state
                SET liquid_cash = ?,
                    fatigue = MIN(100, fatigue + 25),
                    morale = MIN(100, morale + 10)
                WHERE player_id = ?;`,
-              [newBalance, characterId]
+              [newLiquidCash, characterId]
             );
 
             // 5. Update stronghold status

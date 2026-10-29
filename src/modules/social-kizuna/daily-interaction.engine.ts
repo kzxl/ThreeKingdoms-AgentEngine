@@ -13,8 +13,10 @@
 
 import { DatabaseService } from '../../core/database';
 import { ContextDialogueService } from './context-dialogue.service';
-import path from 'path';
-import { execSync } from 'child_process';
+import { syncProgressProjection } from '../../shared/projection-sync';
+import { RngService } from '../../core/rng';
+import { nextId } from '../../shared/id-generator';
+import { postCashflowEntry } from '../../shared/ledger';
 
 export type FogTier = 1 | 2 | 3 | 4 | 5;
 
@@ -694,7 +696,7 @@ export class DailyInteractionEngine {
     const fog = this.getOrCreateFogState(npcId);
 
     // 1. Calculate D20 Social Roll
-    const d20 = Math.floor(Math.random() * 20) + 1; // 1 to 20
+    const d20 = RngService.forDomain(this.db, 'social-interaction').d20();
 
     // Attribute modifier
     let statBonus = 0;
@@ -772,11 +774,11 @@ export class DailyInteractionEngine {
     let moraleDelta = 0;
 
     if (actionType === 'BANQUET_DRINK') {
-      cashCost = 30; // 30 Qian for fine wine and meats
+      cashCost = 30; // 30 quan for fine wine and meats
       fatigueDelta = -35; // Phục hồi 35 thể lực
       moraleDelta = 12;
     } else if (actionType === 'TEA_CONVERSE') {
-      cashCost = 5;  // 5 Qian tea table fee
+      cashCost = 5;  // 5 quan tea table fee
       fatigueDelta = -15; // Phục hồi 15 thể lực
       moraleDelta = 5;
     } else if (actionType === 'LEARN_MENTOR') {
@@ -836,6 +838,11 @@ export class DailyInteractionEngine {
     const isDialogueCached = resolvedDialogue.isCached;
 
     // 5. Commit to SQLite (ACID Transaction)
+    const campaignMeta = this.db.queryOne<{ campaign_id: string; d: string }>(
+      'SELECT campaign_id, "current_date" AS d FROM campaign_meta LIMIT 1;'
+    );
+    const gameDate = campaignMeta?.d || '184-05-02';
+    const campaignId = campaignMeta?.campaign_id || 'CMP-184-ZHOU-01';
     this.db.transaction(() => {
       // 5.1 Deduct cash if any and balance with ledger & journal
       if (cashCost > 0) {
@@ -847,28 +854,31 @@ export class DailyInteractionEngine {
           const newLiquid = currentLiquid - cashCost;
           const newTotalBalance = currentTotal - cashCost;
           this.db.execute(`UPDATE player_state SET liquid_cash = ?;`, [newLiquid]);
-          const txnId = `TXN-SOC-${Date.now().toString(36).toUpperCase()}`;
+          const txnId = nextId(this.db, 'cashflow', 'TXN-SOC', gameDate);
           const memo = `Chi phí giao tế & ẩm thực cùng ${heroName}`;
 
-          this.db.execute(`
-            INSERT INTO cashflow_ledger (
-              txn_id, game_date, counterparty, category,
-              inflow, outflow, balance, memo, status
-            ) VALUES (?, '184-05-02', ?, 'ENTERTAINMENT_LIVING', 0, ?, ?, ?, 'Confirmed');
-          `, [txnId, heroName, cashCost, newTotalBalance, memo]);
+          postCashflowEntry(this.db, {
+            txnId,
+            gameDate,
+            counterparty: heroName,
+            category: 'ENTERTAINMENT_LIVING',
+            outflow: cashCost,
+            balance: newTotalBalance,
+            memo
+          });
 
           // Double-Entry Parity
           this.db.execute(`
             INSERT INTO account_journal (
               txn_id, campaign_id, game_date, account_code, debit, credit, memo
-            ) VALUES (?, 'CMP-184-ZHOU-01', '184-05-02', 'EXP-OPERATING', ?, 0, ?);
-          `, [txnId, cashCost, memo]);
+            ) VALUES (?, ?, ?, 'EXP-OPERATING', ?, 0, ?);
+          `, [txnId, campaignId, gameDate, cashCost, memo]);
 
           this.db.execute(`
             INSERT INTO account_journal (
               txn_id, campaign_id, game_date, account_code, debit, credit, memo
-            ) VALUES (?, 'CMP-184-ZHOU-01', '184-05-02', 'CASH-ON-HAND', 0, ?, 'Xuất tiền mặt chi tiêu giao tế');
-          `, [txnId, cashCost]);
+            ) VALUES (?, ?, ?, 'CASH-ON-HAND', 0, ?, 'Xuất tiền mặt chi tiêu giao tế');
+          `, [txnId, campaignId, gameDate, cashCost]);
         }
       }
 
@@ -876,9 +886,10 @@ export class DailyInteractionEngine {
       this.db.execute(`
         INSERT INTO npc_relationship_deltas (
           npc_id, game_date, sentiment_delta, sentiment_total, relationship_type, notes
-        ) VALUES (?, '184-05-02', ?, ?, ?, ?);
+        ) VALUES (?, ?, ?, ?, ?, ?);
       `, [
         npcId,
+        gameDate,
         affinityDelta,
         Math.max(0, Math.min(100, fog.affinity + affinityDelta)),
         fog.relationshipTitleVi,
@@ -915,10 +926,7 @@ export class DailyInteractionEngine {
     });
 
     if (cashCost > 0) {
-      try {
-        const simDbPath = path.resolve(__dirname, '../../../tools/sim-db.js');
-        execSync(`node "${simDbPath}" export-progress`, { stdio: 'ignore' });
-      } catch (e) {}
+      syncProgressProjection(this.db);
     }
 
     const updatedDossier = this.getNpcDossier(npcId);

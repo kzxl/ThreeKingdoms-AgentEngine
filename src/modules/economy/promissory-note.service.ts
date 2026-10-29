@@ -7,6 +7,7 @@
  */
 
 import { DatabaseService } from '../../core/database';
+import { nextSequenceValue } from '../../shared/id-generator';
 
 export interface PromissoryNote {
   noteId: string;
@@ -63,7 +64,7 @@ export class PromissoryNoteService {
       throw new Error('Số tiền vay gốc phải lớn hơn 0.');
     }
 
-    const suffix = Math.random().toString(36).substring(2, 6);
+    const suffix = String(nextSequenceValue(this.db, 'promissory-note')).padStart(4, '0');
     const noteId = params.noteId || `NOTE-${gameDate.replace(/-/g, '')}-${borrowerId}-${lenderId}-${turnNumber}-${suffix}`;
     const dueTurn = turnNumber + durationTurns;
 
@@ -172,7 +173,7 @@ export class PromissoryNoteService {
       if (note.borrower_id === 'PLY-0001') {
         const player = this.db.queryOne<any>(`SELECT liquid_cash, safe_cash FROM player_state WHERE player_id = 'PLY-0001';`);
         if (!player || player.liquid_cash < totalDue) {
-          throw new Error(`Người chơi không đủ tiền trả nợ (Cần: ${totalDue} Tiền, Hiện có: ${player?.liquid_cash || 0} Tiền).`);
+          throw new Error(`Người chơi không đủ tiền trả nợ (Cần: ${totalDue} Quan, Hiện có: ${player?.liquid_cash || 0} Quan).`);
         }
         const newLiquidCash = player.liquid_cash - totalDue;
         const totalCash = Number(player.liquid_cash || 0) + Number(player.safe_cash || 0);
@@ -247,7 +248,7 @@ export class PromissoryNoteService {
       totalPaid: totalDue,
       principal: note.principal_amount,
       interest: note.accrued_interest,
-      message: `Đã thanh toán tất toán khế ước ${noteId} thành công (Gốc: ${note.principal_amount}, Lãi: ${note.accrued_interest} Tiền).`
+      message: `Đã thanh toán tất toán khế ước ${noteId} thành công (Gốc: ${note.principal_amount}, Lãi: ${note.accrued_interest} Quan).`
     };
   }
 

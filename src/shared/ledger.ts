@@ -1,0 +1,82 @@
+/**
+ * ThreeKingdoms-AgentEngine: Player Ledger Balance
+ * (src/shared/ledger.ts)
+ *
+ * The cashflow ledger's `balance` column has exactly one meaning:
+ *
+ *     player_state.liquid_cash + player_state.safe_cash
+ *
+ * Business working capital (`businesses.safe_cash`) is NOT player cash: it only
+ * becomes a player inflow when withdrawn as a dividend. Writers must derive the
+ * balance from this function instead of the previous row (which silently
+ * double-counts the vault) or from liquid cash alone (which drops it).
+ */
+
+import { DatabaseService } from '../core/database';
+
+export interface PlayerCapital {
+  liquid: number;
+  safe: number;
+  /** Total player capital, the canonical ledger `balance`. */
+  total: number;
+}
+
+export function getPlayerCapital(db: DatabaseService, playerId = 'PLY-0001'): PlayerCapital {
+  const row = db.queryOne<{ liquid_cash: number; safe_cash: number }>(
+    'SELECT liquid_cash, safe_cash FROM player_state WHERE player_id = ?;',
+    [playerId]
+  );
+  const liquid = Number(row?.liquid_cash || 0);
+  const safe = Number(row?.safe_cash || 0);
+  return { liquid, safe, total: liquid + safe };
+}
+
+export interface CashflowEntryInput {
+  txnId: string;
+  gameDate: string;
+  counterparty: string;
+  category: string;
+  inflow?: number;
+  outflow?: number;
+  memo: string;
+  status?: string;
+  /**
+   * Closing balance for this transaction. Pass it when the player cash update
+   * already ran; omit to compute
+   * `current capital + inflow - outflow` (call before the cash update).
+   */
+  balance?: number;
+}
+
+/**
+ * Single writer for the player cashflow ledger.
+ *
+ * The `balance` column means player capital (liquid + personal vault) after the
+ * transaction. Centralising the INSERT keeps every caller on one definition;
+ * the arch guard freezes the remaining direct INSERTs until they migrate.
+ */
+export function postCashflowEntry(db: DatabaseService, input: CashflowEntryInput): number {
+  const inflow = Math.max(0, Math.round(Number(input.inflow || 0)));
+  const outflow = Math.max(0, Math.round(Number(input.outflow || 0)));
+  const balance = input.balance !== undefined
+    ? Math.round(Number(input.balance))
+    : Math.round(getPlayerCapital(db).total + inflow - outflow);
+
+  db.execute(
+    `INSERT INTO cashflow_ledger (txn_id, game_date, counterparty, category, inflow, outflow, balance, memo, status)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+    [
+      input.txnId,
+      input.gameDate,
+      input.counterparty,
+      input.category,
+      inflow,
+      outflow,
+      balance,
+      input.memo,
+      input.status || 'Confirmed'
+    ]
+  );
+
+  return balance;
+}

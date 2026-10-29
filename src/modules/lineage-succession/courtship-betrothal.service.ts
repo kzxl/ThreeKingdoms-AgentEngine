@@ -10,6 +10,9 @@
  */
 
 import { DatabaseService } from '../../core/database';
+import { RngService } from '../../core/rng';
+import { nextId } from '../../shared/id-generator';
+import { getGameDate } from '../../shared/game-clock';
 import { DailyInteractionEngine } from '../social-kizuna/daily-interaction.engine';
 import {
   CourtshipCandidateDTO,
@@ -29,7 +32,7 @@ export class CourtshipBetrothalService {
   private getCampaignMeta(): { activeTurn: number; currentDate: string; campaignId: string } {
     try {
       const row = this.db.queryOne<any>(
-        'SELECT active_turn, current_date, campaign_id FROM campaign_meta LIMIT 1;'
+        'SELECT active_turn, "current_date", campaign_id FROM campaign_meta LIMIT 1;'
       );
       if (row) {
         return {
@@ -687,7 +690,7 @@ export class CourtshipBetrothalService {
 
     const baseProb = Number(rateRow.base_probability);
     const finalProb = Math.min(0.95, Math.max(0.01, baseProb * modProsperity * modCharm));
-    const roll = Math.random();
+    const roll = RngService.forDomain(this.db, 'courtship').nextFloat();
 
     if (roll > finalProb) {
       return {
@@ -869,7 +872,7 @@ export class CourtshipBetrothalService {
       const safeCash = Number(player.safe_cash || 0);
       if (liquidCash < dowryCash) {
         throw new Error(
-          `Ngân khố không đủ tiền mặt chi trả sính lễ! Cần ${dowryCash.toLocaleString()} Tiền, hiện có ${liquidCash.toLocaleString()} Tiền.`
+          `Ngân khố không đủ tiền mặt chi trả sính lễ! Cần ${dowryCash.toLocaleString()} Quan, hiện có ${liquidCash.toLocaleString()} Quan.`
         );
       }
 
@@ -893,7 +896,7 @@ export class CourtshipBetrothalService {
           [newQty, item.itemCode]
         );
 
-        const movId = `MOV-DOWRY-${Date.now()}-${item.itemCode}`;
+        const movId = nextId(this.db, 'stock-movements', 'MOV-DOWRY', getGameDate(this.db));
         this.db.execute(
           `INSERT INTO stock_movements (mov_id, game_date, item_code, movement_type, quantity, unit_cost, balance_after, ref_txn)
            VALUES (?, ?, ?, 'OUTBOUND_DOWRY_GIFT', ?, ?, ?, ?);`,
@@ -920,7 +923,7 @@ export class CourtshipBetrothalService {
         [newLiquid, playerId]
       );
 
-      const txnId = `TXN-MARR-${Date.now()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
+      const txnId = nextId(this.db, 'cashflow', 'TXN-MARR', getGameDate(this.db));
 
       // Insert into cashflow_ledger
       this.db.execute(
@@ -958,7 +961,7 @@ export class CourtshipBetrothalService {
       }
 
       // 10. Register Marriage
-      const marriageId = `MARR-${Date.now().toString(36).toUpperCase()}`;
+      const marriageId = nextId(this.db, 'marriage', 'MARR', getGameDate(this.db));
       this.db.execute(
         `INSERT INTO family_spouses (
           marriage_id, husband_id, wife_id, wife_name_vi, wife_name_en,
@@ -1012,7 +1015,7 @@ export class CourtshipBetrothalService {
         ]
       );
 
-      const narrativeVi = `Cử hành hôn lễ đại hỷ cùng ${character.name_vi}! Trống gõ rợp trời, tiệc rượu ba ngày ba đêm. Sính lễ ${dowryCash.toLocaleString()} Tiền đã giao nạp. Danh vọng gia tộc tăng thêm 25 điểm!`;
+      const narrativeVi = `Cử hành hôn lễ đại hỷ cùng ${character.name_vi}! Trống gõ rợp trời, tiệc rượu ba ngày ba đêm. Sính lễ ${dowryCash.toLocaleString()} Quan đã giao nạp. Danh vọng gia tộc tăng thêm 25 điểm!`;
 
       return {
         success: true,

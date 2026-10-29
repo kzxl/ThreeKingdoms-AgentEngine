@@ -11,6 +11,8 @@
  */
 
 import { DatabaseService } from '../../core/database';
+import { nextId } from '../../shared/id-generator';
+import { getGameDate } from '../../shared/game-clock';
 import {
   SuccessionParams,
   SuccessionExecutionParams,
@@ -27,7 +29,7 @@ export class DynastySuccessionService {
   private getCampaignMeta(): { activeTurn: number; currentDate: string; campaignId: string } {
     try {
       const row = this.db.queryOne<any>(
-        'SELECT active_turn, current_date, campaign_id FROM campaign_meta LIMIT 1;'
+        'SELECT active_turn, "current_date", campaign_id FROM campaign_meta LIMIT 1;'
       );
       if (row) {
         return {
@@ -92,7 +94,7 @@ export class DynastySuccessionService {
       const currentGen = Number(lineage.current_generation);
 
       // 4. Archive Predecessor into family_ancestors_archive
-      const ancestorId = `ANC-GEN${currentGen}-${Date.now().toString(36).toUpperCase()}`;
+      const ancestorId = nextId(this.db, 'ancestor', `ANC-GEN${currentGen}`, getGameDate(this.db));
       const posthumousTitle =
         currentGen === 1 ? 'Lương Thị Khởi Nghiệp Thái Tổ' : `Lương Thị Thế Tông Hoàng Khảo`;
 
@@ -116,8 +118,8 @@ export class DynastySuccessionService {
           posthumousTitle,
           JSON.stringify([
             'Sáng lập Lương thị cơ nghiệp',
-            `Tích lũy ${totalCash.toLocaleString()} Tiền ngân khố`,
-            `Gia sản định giá ${finalNetWorth.toLocaleString()} Tiền`
+            `Tích lũy ${totalCash.toLocaleString()} Quan ngân khố`,
+            `Gia sản định giá ${finalNetWorth.toLocaleString()} Quan`
           ])
         ]
       );
@@ -157,7 +159,7 @@ export class DynastySuccessionService {
       );
 
       // 6. Succession Ledger Continuity (Maintains 140/140 audit invariants!)
-      const txnId = `TXN-SUCC-${Date.now()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
+      const txnId = nextId(this.db, 'cashflow', 'TXN-SUCC', getGameDate(this.db));
 
       this.db.execute(
         `INSERT INTO cashflow_ledger (txn_id, game_date, counterparty, category, inflow, outflow, balance, memo, status)
@@ -205,7 +207,7 @@ export class DynastySuccessionService {
       );
       const gearCount = Number(gear[0]?.count || 0);
 
-      const narrativeVi = `Đại lễ truyền thừa gia nghiệp hoàn tất! ${predecessor.name} cáo lão thoái ẩn, thụ phong [${posthumousTitle}]. Thế tử ${heir.name_vi} tiếp nhận gia chủ đời thứ ${currentGen + 1}! Toàn bộ ngân khố ${totalCash.toLocaleString()} Tiền, ${enterpriseCount} sản nghiệp và thần binh được bảo tồn vẹn nguyên!`;
+      const narrativeVi = `Đại lễ truyền thừa gia nghiệp hoàn tất! ${predecessor.name} cáo lão thoái ẩn, thụ phong [${posthumousTitle}]. Thế tử ${heir.name_vi} tiếp nhận gia chủ đời thứ ${currentGen + 1}! Toàn bộ ngân khố ${totalCash.toLocaleString()} Quan, ${enterpriseCount} sản nghiệp và thần binh được bảo tồn vẹn nguyên!`;
 
       return {
         success: true,

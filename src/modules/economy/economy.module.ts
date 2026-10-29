@@ -22,18 +22,10 @@ export class EconomyModule implements IFeatureModule {
   public readonly name = 'Regional Economics & Market Elasticity';
   public readonly version = '1.0.0';
 
-  private ctx!: ModuleContext;
-
-  public init(ctx: ModuleContext): void {
-    this.ctx = ctx;
-
-    // Listen to monthly tax tick
-    this.ctx.eventBus.subscribe('WORLD_MONTH_TICK', async (event: { month: number; year: number }) => {
-      // Seasonal Autumn Harvest (Month 8 or 9)
-      if (event.month === 8 || event.month === 9) {
-        this.ctx.eventBus.publish('AUTUMN_HARVEST_CYCLE', event);
-      }
-    });
+  public init(_ctx: ModuleContext): void {
+    // Market prices react to crises on read; there is no monthly cascade to
+    // run here. The former WORLD_MONTH_TICK -> AUTUMN_HARVEST_CYCLE publish had
+    // no subscriber and only made the wiring look alive.
   }
 
   /**

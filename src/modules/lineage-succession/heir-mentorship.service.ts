@@ -11,6 +11,8 @@
  */
 
 import { DatabaseService } from '../../core/database';
+import { nextId } from '../../shared/id-generator';
+import { getGameDate } from '../../shared/game-clock';
 import {
   ChildGrowthFocus,
   ChildDevelopmentStage,
@@ -29,7 +31,7 @@ export class HeirMentorshipService {
   private getCampaignMeta(): { activeTurn: number; currentDate: string; campaignId: string } {
     try {
       const row = this.db.queryOne<any>(
-        'SELECT active_turn, current_date, campaign_id FROM campaign_meta LIMIT 1;'
+        'SELECT active_turn, "current_date", campaign_id FROM campaign_meta LIMIT 1;'
       );
       if (row) {
         return {
@@ -327,7 +329,7 @@ export class HeirMentorshipService {
       );
 
       // Record Mentorship Log
-      const logId = `LOG-MENTOR-${Date.now().toString(36).toUpperCase()}`;
+      const logId = nextId(this.db, 'mentorship-log', 'LOG-MENTOR', getGameDate(this.db));
       this.db.execute(
         `INSERT INTO family_mentorship_logs (
           log_id, child_id, mentor_npc_id, mentor_name_vi, turn_number, game_date, subject, narrative_vi, stat_gains_json

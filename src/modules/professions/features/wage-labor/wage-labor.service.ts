@@ -20,6 +20,9 @@ import {
   WorkShiftExecutionDTO
 } from './wage-labor.dto';
 import { calculatePlayerStamina as canonicalCalculatePlayerStamina } from '../../../../shared/character-stats';
+import { nextId } from '../../../../shared/id-generator';
+import { getGameDate } from '../../../../shared/game-clock';
+import { postCashflowEntry } from '../../../../shared/ledger';
 
 /**
  * Re-exports canonical stamina profile calculation from shared character-stats domain.
@@ -142,7 +145,7 @@ export class WageLaborService {
     }
 
     const meta = this.db.queryOne<any>(
-      `SELECT current_date, active_turn FROM campaign_meta LIMIT 1;`
+      `SELECT "current_date", active_turn FROM campaign_meta LIMIT 1;`
     ) || { current_date: '184-05-02', active_turn: 6 };
     const currentDate = meta.current_date;
 
@@ -172,19 +175,16 @@ export class WageLaborService {
       );
 
       // 3. Double-entry Cashflow Ledger
-      const txnId = `TXN-WAGE-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
-      this.db.execute(
-        `INSERT INTO cashflow_ledger (txn_id, game_date, counterparty, category, inflow, outflow, balance, memo, status)
-         VALUES (?, ?, ?, 'LABOR_WAGE', ?, 0, ?, ?, 'Confirmed');`,
-        [
-          txnId,
-          currentDate,
-          shift.workplaceVi,
-          shift.wage,
-          totalBalance,
-          `Tiền công lao động: ${shift.titleVi}`
-        ]
-      );
+      const txnId = nextId(this.db, 'cashflow', 'TXN-WAGE', getGameDate(this.db));
+      postCashflowEntry(this.db, {
+        txnId,
+        gameDate: currentDate,
+        counterparty: shift.workplaceVi,
+        category: 'LABOR_WAGE',
+        inflow: shift.wage,
+        balance: totalBalance,
+        memo: `Tiền công lao động: ${shift.titleVi}`
+      });
 
       // 4. Profession EXP upsert
       const existingProf = this.db.queryOne<any>(
@@ -227,8 +227,8 @@ export class WageLaborService {
       }
 
       // 5. Chronicle Log
-      const chronicleId = `chron_wage_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-      const narrative = `Lương Diễn hoàn tất ca làm việc [${shift.titleVi}] tại ${shift.workplaceVi}. Nhận được ${shift.wage} Tiền đồng tiền công trao tay, tiêu hao ${shift.staminaCost} Thể Lực (+${shift.fatigueCost} Mệt Mỏi), tích lũy +${shift.expGain} EXP ${shift.professionNameVi}.`;
+      const chronicleId = nextId(this.db, 'chronicle', 'chron_wage', getGameDate(this.db));
+      const narrative = `Lương Diễn hoàn tất ca làm việc [${shift.titleVi}] tại ${shift.workplaceVi}. Nhận được ${shift.wage} Quan tiền công trao tay, tiêu hao ${shift.staminaCost} Thể Lực (+${shift.fatigueCost} Mệt Mỏi), tích lũy +${shift.expGain} EXP ${shift.professionNameVi}.`;
 
       this.db.execute(
         `INSERT INTO chat_chronicle (id, turn_number, game_date, type, speaker, title, avatar, text, deltas, reasoning)
@@ -240,7 +240,7 @@ export class WageLaborService {
           shift.titleVi,
           narrative,
           JSON.stringify({
-            cash: `+${shift.wage} Qian`,
+            cash: `+${shift.wage} quan`,
             stamina: `-${shift.staminaCost}`,
             fatigue: `+${shift.fatigueCost}`,
             exp: `+${shift.expGain} ${shift.professionCode}`
@@ -276,7 +276,7 @@ export class WageLaborService {
         professionExpGained: shift.expGain,
         attributeTarget: shift.attributeTarget,
         attributeExpGained: shift.attributeExp,
-        messageVi: `Hoàn tất ca làm [${shift.titleVi}]! Nhận +${shift.wage} Tiền, tiêu hao ${shift.staminaCost} Thể Lực (+${shift.fatigueCost} Mệt Mỏi).`
+        messageVi: `Hoàn tất ca làm [${shift.titleVi}]! Nhận +${shift.wage} Quan, tiêu hao ${shift.staminaCost} Thể Lực (+${shift.fatigueCost} Mệt Mỏi).`
       };
     });
   }

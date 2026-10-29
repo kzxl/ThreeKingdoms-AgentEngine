@@ -106,7 +106,7 @@ function initDb(dbPath, campaignId = 'CMP-184-ZHOU-01', charName = 'Liang Yan') 
   runSqlExec(dbPath, schemaSql);
 
   const initDataSql = `
-  INSERT OR IGNORE INTO campaign_meta (campaign_id, campaign_name, start_date, current_date, active_turn)
+  INSERT OR IGNORE INTO campaign_meta (campaign_id, campaign_name, start_date, "current_date", active_turn)
   VALUES ('${campaignId}', 'Yellow Turban Rebellion 184 AD', '184-02-01', '184-02-01', 0);
 
   INSERT OR IGNORE INTO player_state (
@@ -172,11 +172,11 @@ function exportProgress(dbPath, outputPath) {
 | **Active Turn** | **Turn ${m.active_turn || 0} (${activeTurnObj.turn_title || 'Active Turn'})** |
 | **Current Location** | ${p.current_location || 'LOC-0001'} |
 | **Permanent Base** | ${p.permanent_base || 'LOC-0001'} |
-| **Liquid Capital** | **${(status.liquidCash + status.safeCash).toLocaleString()} Qian** (${status.liquidCash.toLocaleString()} Qian mobile + ${status.safeCash.toLocaleString()} Qian safe) |
-| **Strategic Grain** | **${Number(p.strategic_grain || 0).toFixed(2)} Dan** |
-| **Inventory Valuation** | **${status.invVal.toLocaleString()} Qian** (${status.itemCount} items) |
-| **Fixed Capital** | **${status.fixedCap.toLocaleString()} Qian** |
-| **Total Net Worth** | **${status.netWorth.toLocaleString()} Qian** |
+| **Liquid Capital** | **${(status.liquidCash + status.safeCash).toLocaleString()} quan** (${status.liquidCash.toLocaleString()} quan mobile + ${status.safeCash.toLocaleString()} quan safe) |
+| **Strategic Grain** | **${Number(p.strategic_grain || 0).toFixed(2)} piculs** |
+| **Inventory Valuation** | **${status.invVal.toLocaleString()} quan** (${status.itemCount} items) |
+| **Fixed Capital** | **${status.fixedCap.toLocaleString()} quan** |
+| **Total Net Worth** | **${status.netWorth.toLocaleString()} quan** |
 | **Audit Status** | **100% Reconciled (Verified via SQLite ACID)** |
 
 ---
@@ -265,8 +265,8 @@ function importFromLegacy(dbPath) {
     '184-04-24',
     'Northern March & Salt Trade at Guangzong',
     'Guangzong Siege Camp (LOC-0003)',
-    'Purchased 70 Dou sea salt at Qingzhou (52 Qian). Arbitrage sold 40 Dou in Pingyuan (85 Qian) and 25 Dou at Guangzong (80 Qian). Gifted 5 Dou to Lu Zhi. Cash reached 17,700 Qian, Net Worth 58,878 Qian.',
-    '**The Extortion Crisis of Eunuch Zuo Feng**: Zuo Feng demands 1,000 Gold bribe from Lu Zhi. Lu Zhi furiously refuses. Liang Yan has 14,700 Qian mobile cash and Tier 3 Stratagem. Options: (A) Privately bribe Zuo Feng with 3,000 Qian to save Lu Zhi; (B) Uphold Confucian righteousness and let history take its course; (C) Ambush or blackmail Zuo Feng.'
+    'Purchased 70 Dou sea salt at Qingzhou (52 quan). Arbitrage sold 40 Dou in Pingyuan (85 quan) and 25 Dou at Guangzong (80 quan). Gifted 5 Dou to Lu Zhi. Cash reached 17,700 quan, Net Worth 58,878 quan.',
+    '**The Extortion Crisis of Eunuch Zuo Feng**: Zuo Feng demands 1,000 Gold bribe from Lu Zhi. Lu Zhi furiously refuses. Liang Yan has 14,700 quan mobile cash and Tier 3 Stratagem. Options: (A) Privately bribe Zuo Feng with 3,000 quan to save Lu Zhi; (B) Uphold Confucian righteousness and let history take its course; (C) Ambush or blackmail Zuo Feng.'
   );
   `;
   runSqlExec(dbPath, updatePlayerSql);
@@ -296,10 +296,10 @@ function main() {
       console.log(` Campaign   : ${s.meta.campaign_id} (Turn ${s.meta.active_turn})`);
       console.log(` Game Date  : ${s.meta.current_date}`);
       console.log(` Protagonist: ${s.player.name} @ ${s.player.current_location}`);
-      console.log(` Cash       : ${s.liquidCash.toLocaleString()} Qian (Mobile) + ${s.safeCash.toLocaleString()} Qian (Safe) = ${(s.liquidCash + s.safeCash).toLocaleString()} Qian`);
-      console.log(` Inventory  : ${s.invVal.toLocaleString()} Qian (${s.itemCount} items)`);
-      console.log(` Fixed Cap  : ${s.fixedCap.toLocaleString()} Qian`);
-      console.log(` NET WORTH  : ${s.netWorth.toLocaleString()} Qian`);
+      console.log(` Cash       : ${s.liquidCash.toLocaleString()} quan (Mobile) + ${s.safeCash.toLocaleString()} quan (Safe) = ${(s.liquidCash + s.safeCash).toLocaleString()} quan`);
+      console.log(` Inventory  : ${s.invVal.toLocaleString()} quan (${s.itemCount} items)`);
+      console.log(` Fixed Cap  : ${s.fixedCap.toLocaleString()} quan`);
+      console.log(` NET WORTH  : ${s.netWorth.toLocaleString()} quan`);
       console.log('====================================================');
       break;
 
@@ -329,7 +329,7 @@ function main() {
         console.log(`[${n.npc_id}] ${n.name} | Role: ${n.assigned_role} @ ${n.assigned_business_id || 'UNASSIGNED'}`);
         console.log(`     Personality: ${n.personality} | Motivation: ${n.motivation} | Talents: ${n.talents}`);
         console.log(`     Attributes : CRA:${n.cra_attr} LOG:${n.log_attr} INT:${n.int_attr} POL:${n.pol_attr} LDR:${n.ldr_attr}`);
-        console.log(`     Status     : Morale:${n.morale}% Loyalty:${n.loyalty}% Fatigue:${n.fatigue}% Wage:${n.monthly_wage} Qian`);
+        console.log(`     Status     : Morale:${n.morale}% Loyalty:${n.loyalty}% Fatigue:${n.fatigue}% Wage:${n.monthly_wage} quan`);
         console.log(`     Skills     : ${nSkills}`);
         console.log('----------------------------------------------------');
       }
@@ -349,13 +349,13 @@ function main() {
       console.log('====================================================');
       console.log(` Location    : ${biz.location_id}`);
       console.log(` Manager     : ${biz.manager_npc_id}`);
-      console.log(` Safe Cash   : ${biz.safe_cash.toLocaleString()} Qian`);
+      console.log(` Safe Cash   : ${biz.safe_cash.toLocaleString()} quan`);
       console.log(` Delegation  : Level ${biz.delegation_level} (Autonomous SOP)`);
       console.log(` Capacity    : ${biz.monthly_capacity_hours} hrs/mo (Efficiency: ${Math.round(biz.efficiency_multiplier * 100)}%)`);
-      console.log(` Overhead    : Rent ${biz.monthly_rent} Qian/mo | Workforce: ${workforce.length} persons`);
+      console.log(` Overhead    : Rent ${biz.monthly_rent} quan/mo | Workforce: ${workforce.length} persons`);
       console.log(' Workforce   :');
       for (const w of workforce) {
-        console.log(`   - [${w.npc_id}] ${w.name}: ${w.assigned_role} (Wage: ${w.monthly_wage} Qian)`);
+        console.log(`   - [${w.npc_id}] ${w.name}: ${w.assigned_role} (Wage: ${w.monthly_wage} quan)`);
       }
       console.log('====================================================');
       break;

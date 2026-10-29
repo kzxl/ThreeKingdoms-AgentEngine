@@ -17,6 +17,7 @@
 import { DatabaseService } from '../../core/database';
 import { AttributeType, VALID_ATTRIBUTES } from '../progression/attribute-progression.service';
 import { clampStatModifier as canonicalClampStatModifier } from '../../shared/character-stats';
+import { BlacksmithForgeService } from '../professions/blacksmith-forge.service';
 
 export type EquipmentSlot = 'WEAPON' | 'ARMOR' | 'STEED' | 'TREASURE';
 
@@ -241,22 +242,13 @@ export class EquipmentSystemService {
 
     const clampedModifiers = clampStatModifiers(rawModifiers);
 
-    // Filter to only non-zero modifiers for clean JSON storage
-    const storageModifiers: Record<string, number> = {};
-    for (const [attr, val] of Object.entries(clampedModifiers)) {
-      if (val > 0) {
-        storageModifiers[attr] = val;
-      }
-    }
-
     const finalName = customName || masterItem.name_vi || masterItem.name_en || itemCode;
 
-    // 3. Insert into character_equipment (unlimited possessions per character)
-    this.db.execute(
-      `INSERT INTO character_equipment (character_id, slot_type, item_code, custom_name, stat_modifiers, equipped_at)
-       VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
-      [characterId, slot, itemCode, finalName, JSON.stringify(storageModifiers)]
-    );
+    // The forge owns the equip mutation (stock consumption, movement record,
+    // projection sync). Fixtures may attach gear that was never stocked, hence
+    // requireStock: false; real player equips still go through the forge modal.
+    const forge = BlacksmithForgeService.getInstance(this.db.path);
+    forge.equipItem(characterId, slot, itemCode, finalName, clampedModifiers, { requireStock: false });
 
     return {
       success: true,
@@ -310,10 +302,9 @@ export class EquipmentSystemService {
       };
     }
 
-    this.db.execute(
-      `DELETE FROM character_equipment WHERE id = ?`,
-      [existing.id]
-    );
+    // The forge owns unequip (delete + warehouse restore + movement record).
+    const forge = BlacksmithForgeService.getInstance(this.db.path);
+    forge.unequipItem(characterId, existing.item_code, existing.id);
 
     return {
       success: true,

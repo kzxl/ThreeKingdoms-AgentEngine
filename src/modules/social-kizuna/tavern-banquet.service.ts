@@ -14,6 +14,10 @@
  */
 
 import { DatabaseService } from '../../core/database';
+import { RngService } from '../../core/rng';
+import { nextId } from '../../shared/id-generator';
+import { getGameDate } from '../../shared/game-clock';
+import { postCashflowEntry } from '../../shared/ledger';
 import { DailyInteractionEngine, FogTier } from './daily-interaction.engine';
 
 export type BanquetTier =
@@ -294,7 +298,7 @@ export class TavernBanquetService {
       auto_procure: 1
     };
 
-    const banquetId = `BNQ-${Date.now()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+    const banquetId = nextId(this.db, 'banquet', 'BNQ', getGameDate(this.db));
 
     // Execute within atomic database transaction
     return this.db.transaction(() => {
@@ -363,7 +367,7 @@ export class TavernBanquetService {
 
           if (currentLiquid < procureCost) {
             throw new Error(
-              `Kho hàng không đủ [${req.nameVi}] (cần ${req.quantity}, hiện có ${currentQty}) và ngân quỹ không đủ để tự động mua bổ sung (${procureCost} Qian)!`
+              `Kho hàng không đủ [${req.nameVi}] (cần ${req.quantity}, hiện có ${currentQty}) và ngân quỹ không đủ để tự động mua bổ sung (${procureCost} quan)!`
             );
           }
 
@@ -376,14 +380,17 @@ export class TavernBanquetService {
             [newLiquid, playerId]
           );
 
-          const procureTxnId = `TXN-BNQ-BUY-${Date.now()}-${Math.random().toString(36).substring(2, 5).toUpperCase()}`;
+          const procureTxnId = nextId(this.db, 'cashflow', 'TXN-BNQ-BUY', getGameDate(this.db));
 
-          this.db.execute(
-            `INSERT INTO cashflow_ledger (
-              txn_id, game_date, counterparty, category, inflow, outflow, balance, memo, status
-            ) VALUES (?, ?, 'Chợ Trác Huyện', 'ENTERTAINMENT_LIVING', 0, ?, ?, ?, 'Confirmed');`,
-            [procureTxnId, gameDate, procureCost, totalCashAfter, `Mua khẩn cấp ${missingQty} ${req.nameVi} phục vụ yến tiệc`]
-          );
+          postCashflowEntry(this.db, {
+            txnId: procureTxnId,
+            gameDate,
+            counterparty: 'Chợ Trác Huyện',
+            category: 'ENTERTAINMENT_LIVING',
+            outflow: procureCost,
+            balance: totalCashAfter,
+            memo: `Mua khẩn cấp ${missingQty} ${req.nameVi} phục vụ yến tiệc`
+          });
 
           this.db.execute(
             `INSERT INTO account_journal (
@@ -417,7 +424,7 @@ export class TavernBanquetService {
           }
 
           // Record procurement stock movement
-          const procureMovId = `MOV-BUY-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`;
+          const procureMovId = nextId(this.db, 'stock-movements', 'MOV-BUY', getGameDate(this.db));
           this.db.execute(
             `INSERT INTO stock_movements (
               mov_id, game_date, item_code, movement_type, quantity, unit_cost, balance_after, ref_txn
@@ -437,7 +444,7 @@ export class TavernBanquetService {
         );
 
         // Record stock movement (ensuring balance_after matches inventory_items)
-        const movId = `MOV-BNQ-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+        const movId = nextId(this.db, 'stock-movements', 'MOV-BNQ', getGameDate(this.db));
         this.db.execute(
           `INSERT INTO stock_movements (
             mov_id, game_date, item_code, movement_type, quantity, unit_cost, balance_after, ref_txn
@@ -482,10 +489,10 @@ export class TavernBanquetService {
 
         // Calculate gains scaled by tier config
         const affSpread = config.affinityBonusMax - config.affinityBonusMin;
-        const affGained = config.affinityBonusMin + Math.floor(Math.random() * (affSpread + 1));
+        const affGained = config.affinityBonusMin + RngService.forDomain(this.db, 'banquet').nextInt(0, affSpread);
 
         const respSpread = config.respectBonusMax - config.respectBonusMin;
-        const respGained = config.respectBonusMin + Math.floor(Math.random() * (respSpread + 1));
+        const respGained = config.respectBonusMin + RngService.forDomain(this.db, 'banquet').nextInt(0, respSpread);
 
         totalAffinityGain += affGained;
         totalRespectGain += respGained;

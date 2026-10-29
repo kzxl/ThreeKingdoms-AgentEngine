@@ -25,6 +25,8 @@ import { DatabaseService } from '../../core/database';
 import { EquipmentSystemService } from '../equipment/equipment-system.service';
 import { clampStatModifier } from '../../shared/character-stats';
 import { ProgressionExpService } from '../progression/attribute-progression.service';
+import { RngService } from '../../core/rng';
+import { nextSequentialId } from '../../shared/id-generator';
 
 // ---------------------------------------------------------------------------
 // 1. Data Contracts & Types
@@ -271,6 +273,11 @@ export class SingleCombatDuelService {
     return '184-05-02';
   }
 
+  /** Deterministic stream for duel decisions, rolls and arena rewards. */
+  private rng() {
+    return RngService.forDomain(this.db, 'duel');
+  }
+
   /**
    * Builds an authentic combatant profile integrating EquipmentSystemService.
    * Strictly clamps gear bonuses [+1..+5] and calculates golden cap (>100).
@@ -434,7 +441,7 @@ export class SingleCombatDuelService {
     const player = this.buildDuelistProfile(playerId, options.playerOverrides);
     const opponent = this.buildDuelistProfile(opponentId, options.opponentOverrides);
 
-    const duelId = `DUEL-${Date.now().toString().slice(-6)}-${Math.floor(Math.random() * 1000)}`;
+    const duelId = nextSequentialId(this.db, 'session_duels', 'DUEL', this.getGameDate());
 
     const duelState: ActiveDuelState = {
       duelId,
@@ -492,13 +499,13 @@ export class SingleCombatDuelService {
     // Archetype 1: Zhang Fei / Berserker Vanguard (Aggressive & Ferocious)
     if (id === 'NPC-0002' || name.includes('Trương Phi') || name.includes('Zhang Fei')) {
       if (spirit >= 30) {
-        const roll = Math.random();
+        const roll = this.rng().nextFloat();
         if (roll < 0.45) return 'SPECIAL_STRIKE';
         if (roll < 0.85) return 'ATTACK';
         if (roll < 0.95) return 'FOCUS_SPIRIT';
         return 'DEFEND';
       } else {
-        const roll = Math.random();
+        const roll = this.rng().nextFloat();
         if (roll < 0.55) return 'ATTACK';
         if (roll < 0.85) return 'FOCUS_SPIRIT';
         return 'DEFEND';
@@ -508,12 +515,12 @@ export class SingleCombatDuelService {
     // Archetype 2: Guan Yu / Martial Saint (Balanced & Masterful)
     if (id === 'NPC-0003' || name.includes('Quan Vũ') || name.includes('Guan Yu')) {
       if (spirit >= 30) {
-        const roll = Math.random();
+        const roll = this.rng().nextFloat();
         if (roll < 0.38) return 'SPECIAL_STRIKE';
         if (roll < 0.72) return 'DEFEND';
         return 'ATTACK';
       } else {
-        const roll = Math.random();
+        const roll = this.rng().nextFloat();
         if (roll < 0.40) return 'DEFEND';
         if (roll < 0.75) return 'ATTACK';
         return 'FOCUS_SPIRIT';
@@ -523,12 +530,12 @@ export class SingleCombatDuelService {
     // Archetype 3: Lu Bu / Peerless Warlord (Overwhelming Might)
     if (id === 'NPC-0057' || name.includes('Lữ Bố') || name.includes('Lu Bu')) {
       if (spirit >= 30) {
-        const roll = Math.random();
+        const roll = this.rng().nextFloat();
         if (roll < 0.50) return 'SPECIAL_STRIKE';
         if (roll < 0.85) return 'ATTACK';
         return 'DEFEND';
       } else {
-        const roll = Math.random();
+        const roll = this.rng().nextFloat();
         if (roll < 0.60) return 'ATTACK';
         if (roll < 0.85) return 'FOCUS_SPIRIT';
         return 'DEFEND';
@@ -538,26 +545,26 @@ export class SingleCombatDuelService {
     // Archetype 4: Bandit Chieftain (Wild & Reckless)
     if (id.startsWith('BANDIT-') || name.includes('Phỉ') || name.includes('Bandit')) {
       if (spirit >= 30) {
-        return Math.random() < 0.45 ? 'SPECIAL_STRIKE' : 'ATTACK';
+        return this.rng().nextFloat() < 0.45 ? 'SPECIAL_STRIKE' : 'ATTACK';
       }
-      return Math.random() < 0.65 ? 'ATTACK' : 'FOCUS_SPIRIT';
+      return this.rng().nextFloat() < 0.65 ? 'ATTACK' : 'FOCUS_SPIRIT';
     }
 
     // Archetype 5: Dynamic Intelligent AI for other officers / arena challengers
     // If player is spiritCharged, anticipate heavy strike by guarding!
     if (player.spiritCharged) {
-      if (Math.random() < 0.60) return 'DEFEND';
+      if (this.rng().nextFloat() < 0.60) return 'DEFEND';
     }
 
-    if (spirit >= 30 && Math.random() < 0.45) {
+    if (spirit >= 30 && this.rng().nextFloat() < 0.45) {
       return 'SPECIAL_STRIKE';
     }
 
-    if (spirit < 20 && Math.random() < 0.40) {
+    if (spirit < 20 && this.rng().nextFloat() < 0.40) {
       return 'FOCUS_SPIRIT';
     }
 
-    return Math.random() < 0.60 ? 'ATTACK' : 'DEFEND';
+    return this.rng().nextFloat() < 0.60 ? 'ATTACK' : 'DEFEND';
   }
 
   /**
@@ -589,8 +596,8 @@ export class SingleCombatDuelService {
       this.chooseOpponentAction(opponent, player, duel.context, roundNum);
 
     // Roll combat variation dice (D10 & D20)
-    const rollD10 = () => Math.floor(Math.random() * 10) + 1;
-    const rollD20 = () => Math.floor(Math.random() * 20) + 1;
+    const rollD10 = () => Math.floor(this.rng().nextFloat() * 10) + 1;
+    const rollD20 = () => Math.floor(this.rng().nextFloat() * 20) + 1;
 
     // --- Base Raw Damage Calculations ---
     // Standard Attack: (Effective WAR * 0.45 + D10) * (0.85 + Morale / 200) * SpiritBuff
@@ -1050,11 +1057,11 @@ export class SingleCombatDuelService {
       rewards.fatigueDelta = 20;
 
       summaryNarrativeVi = isVictory
-        ? `Vang danh Diễn Võ Đài! ${pName} đả bại ${oName}, đoạt giải quán quân lôi đài, thu về ${prize} tiền thưởng kim cùng ${rewards.warExpGained} WAR EXP!`
+        ? `Vang danh Diễn Võ Đài! ${pName} đả bại ${oName}, đoạt giải quán quân lôi đài, thu về ${prize} quan thưởng kim cùng ${rewards.warExpGained} WAR EXP!`
         : `Đáng tiếc! ${pName} không thể vượt qua cửa ải của ${oName} tại Diễn Võ Đài, đành hẹn ngày tái đấu (+${rewards.warExpGained} WAR EXP).`;
 
       summaryNarrativeEn = isVictory
-        ? `Martial Arena Victory! ${pName} triumphed over ${oName}, claiming ${prize} Qian prize money and ${rewards.warExpGained} WAR EXP!`
+        ? `Martial Arena Victory! ${pName} triumphed over ${oName}, claiming ${prize} quan prize money and ${rewards.warExpGained} WAR EXP!`
         : `Arena Defeat! ${pName} fell short against ${oName} (+${rewards.warExpGained} WAR EXP).`;
 
       if (isVictory && prize > 0 && duel.metadata?.commitDb === true) {
@@ -1178,8 +1185,8 @@ export class SingleCombatDuelService {
         const newLiquid = currentLiquid + prizeCash;
         const newTotalBal = newLiquid + currentSafe;
 
-        const txnId = `TXN-ARENA-${Date.now().toString().slice(-6)}-${Math.floor(Math.random() * 1000)}`;
         const date = this.getGameDate();
+        const txnId = nextSequentialId(this.db, 'cashflow_ledger', 'TXN', date);
 
         // 1. Update player_state.liquid_cash
         this.db.execute(

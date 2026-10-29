@@ -57,8 +57,8 @@ function parseProgressHeader() {
   const turnMatch = content.match(/\*\*Active Turn\*\*\s*\|\s*\*\*([^*]+)\*\*/i);
   const locationMatch = content.match(/\*\*Current Location\*\*\s*\|\s*([^\r\n|]+)/i) ||
                         content.match(/\*\*Location\*\*\s*\|\s*([^\r\n|]+)/i);
-  const cashMatch = content.match(/\*\*Liquid Capital\*\*\s*\|\s*\*\*([0-9,]+)\s*Qian\*\*/i);
-  const netWorthMatch = content.match(/\*\*Total Net Worth\*\*\s*\|\s*\*\*([0-9,]+)\s*Qian\*\*/i);
+  const cashMatch = content.match(/\*\*Liquid Capital\*\*\s*\|\s*\*\*([0-9,]+)\s*(?:Qian|quan)\*\*/i);
+  const netWorthMatch = content.match(/\*\*Total Net Worth\*\*\s*\|\s*\*\*([0-9,]+)\s*(?:Qian|quan)\*\*/i);
 
   return {
     gameDate: dateMatch ? dateMatch[1].trim() : 'Year 184 AD',
@@ -88,8 +88,8 @@ function createSnapshot(snapshotId, metadata, note) {
 ## Verified Register State
 - **Protagonist**: Liang Yan (\`player\`), Age 21
 - **Current Location**: ${metadata.location}
-- **Liquid Capital**: **${metadata.liquidCash} Qian**
-- **Total Net Worth**: **${metadata.netWorth} Qian**
+- **Liquid Capital**: **${metadata.liquidCash} quan**
+- **Total Net Worth**: **${metadata.netWorth} quan**
 - **Audit Verification**: Passed via \`tools/sim-audit.js\` (0 discrepancy)
 
 ---
@@ -119,8 +119,8 @@ function createSnapshot(snapshotId, metadata, note) {
 ## State Summary
 - **Protagonist**: Liang Yan (\`player\`), Age 21
 - **Current Location**: ${metadata.location}
-- **Liquid Capital**: **${metadata.liquidCash} Qian**
-- **Total Net Worth**: **${metadata.netWorth} Qian**
+- **Liquid Capital**: **${metadata.liquidCash} quan**
+- **Total Net Worth**: **${metadata.netWorth} quan**
 - **Primary Business**: Liang Clan Workshop (\`BIZ-0001\`)
 
 ---

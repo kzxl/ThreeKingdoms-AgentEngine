@@ -8,10 +8,9 @@
  * Adheres strictly to AgentOption Universe Architecture v4.0.
  */
 
-import fs from 'fs';
-import path from 'path';
-import { execSync } from 'child_process';
 import { DatabaseService } from '../core/database';
+import { syncProgressProjection } from './projection-sync';
+import { nextId } from './id-generator';
 
 export interface FinancialTxInput {
   category: string;
@@ -54,20 +53,24 @@ export function recordFinancialTransaction(
   const oldLiquidCash = Number(player.liquid_cash || 0);
   const safeCash = Number(player.safe_cash || 0);
   if (outflow > oldLiquidCash) {
-    throw new Error(`Insufficient funds: requires ${outflow} Qian, available ${oldLiquidCash} Qian.`);
+    throw new Error(`Insufficient funds: requires ${outflow} quan, available ${oldLiquidCash} quan.`);
   }
 
   const newLiquidCash = oldLiquidCash + inflow - outflow;
   const newLedgerBalance = newLiquidCash + safeCash;
 
   let gameDate = input.gameDate;
+  // Read the campaign identity once: the date must be quoted (`current_date` is a
+  // SQLite keyword) and the campaign id must not be hardcoded per playthrough.
+  const meta = db.queryOne<{ campaign_id: string; current_date: string }>(
+    'SELECT campaign_id, "current_date" AS current_date FROM campaign_meta LIMIT 1;'
+  );
   if (!gameDate) {
-    const meta = db.queryOne<{ current_date: string }>('SELECT campaign_meta.current_date as current_date FROM campaign_meta LIMIT 1;');
     gameDate = meta?.current_date || '184-06-01';
   }
 
-  const txnId = `TXN-${Date.now().toString(36).toUpperCase()}-${Math.floor(Math.random() * 1000)}`;
-  const campaignId = 'CMP-184-ZHOU-01';
+  const txnId = nextId(db, 'cashflow', 'TXN', gameDate);
+  const campaignId = meta?.campaign_id || 'CMP-184-ZHOU-01';
 
   // 2. Insert into cashflow_ledger
   db.execute(
@@ -124,15 +127,8 @@ export function recordFinancialTransaction(
   // 4. Update player_state liquid_cash
   db.execute('UPDATE player_state SET liquid_cash = ? WHERE player_id = \'PLY-0001\';', [newLiquidCash]);
 
-  // 5. Update game/PROGRESS.md to maintain audit synchronization
-  try {
-    const rootDir = process.cwd();
-    execSync(`node "${path.join(rootDir, 'tools', 'sim-db.js')}" export-progress`, {
-      stdio: 'ignore'
-    });
-  } catch (err) {
-    console.warn('[FinancialTx] Non-fatal: PROGRESS.md sync warning:', err);
-  }
+  // 5. Refresh the game/PROGRESS.md projection in-process.
+  syncProgressProjection(db);
 
   return {
     txnId,

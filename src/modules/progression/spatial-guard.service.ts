@@ -168,8 +168,8 @@ export class SpatialGuardService {
     let stageKey: StageKey = 'PAUPER';
     let stageTitleVi = 'Bố Y Tay Trắng';
     let stageTitleEn = 'Penniless Commoner';
-    let nextCriteriaVi = 'Tích lũy tài sản ròng > 2,000 Tiền hoặc sở hữu 1 cơ sở sản nghiệp để thăng cấp Tiểu Chủ Trang Viên.';
-    let nextCriteriaEn = 'Accumulate net worth > 2,000 Qian or own 1 enterprise to become an Estate Master.';
+    let nextCriteriaVi = 'Tích lũy tài sản ròng > 2,000 Quan hoặc sở hữu 1 cơ sở sản nghiệp để thăng cấp Tiểu Chủ Trang Viên.';
+    let nextCriteriaEn = 'Accumulate net worth > 2,000 quan or own 1 enterprise to become an Estate Master.';
 
     if (netWorth >= 50000 || Number(player.ldr_attr || 50) >= 85) {
       currentStage = 4;
@@ -183,15 +183,15 @@ export class SpatialGuardService {
       stageKey = 'MAGNATE_COMMANDER';
       stageTitleVi = 'Đại Thương Gia / Hào Kiệt';
       stageTitleEn = 'Magnate Commander';
-      nextCriteriaVi = 'Tích lũy tài sản ròng > 50,000 Tiền hoặc Thống Soái LDR >= 85 để khai mở Quân Cơ Xứ Chư Hầu.';
-      nextCriteriaEn = 'Accumulate net worth > 50,000 Qian or Leadership LDR >= 85 to unlock Grand Command War Room.';
+      nextCriteriaVi = 'Tích lũy tài sản ròng > 50,000 Quan hoặc Thống Soái LDR >= 85 để khai mở Quân Cơ Xứ Chư Hầu.';
+      nextCriteriaEn = 'Accumulate net worth > 50,000 quan or Leadership LDR >= 85 to unlock Grand Command War Room.';
     } else if (netWorth >= 2000 || businessesCount >= 1 || age >= 20) {
       currentStage = 2;
       stageKey = 'ESTATE_MASTER';
       stageTitleVi = 'Tiểu Chủ Trang Viên';
       stageTitleEn = 'Estate Master';
-      nextCriteriaVi = 'Tích lũy tài sản ròng > 10,000 Tiền, 1 thuộc tính >= 75 hoặc thắng 3 trận Đơn Đả để mở Phi Thư Viễn Trình & Thương Đoàn Viễn Chinh.';
-      nextCriteriaEn = 'Accumulate net worth > 10,000 Qian, 1 stat >= 75, or 3 duel wins to unlock Remote Courier & Interstate Caravans.';
+      nextCriteriaVi = 'Tích lũy tài sản ròng > 10,000 Quan, 1 thuộc tính >= 75 hoặc thắng 3 trận Đơn Đả để mở Phi Thư Viễn Trình & Thương Đoàn Viễn Chinh.';
+      nextCriteriaEn = 'Accumulate net worth > 10,000 quan, 1 stat >= 75, or 3 duel wins to unlock Remote Courier & Interstate Caravans.';
     }
 
     const unlockedCapabilities: UnlockedCapabilities = {

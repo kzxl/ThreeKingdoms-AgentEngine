@@ -10,20 +10,26 @@ const http = require('http');
 const url = require('url');
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
 
+const { runSqlJson: querySqlJson, execSql } = require('../engine/db-adapter');
 const { SimulationCore } = require('../engine/sim-core');
 const { WorkshopEngine } = require('../engine/workshop-engine');
 const { GameplayManager } = require('../engine/gameplay-manager');
 const { EventManager } = require('../engine/event-manager');
 const { TravelManager } = require('../engine/travel-manager');
+const { getClock, canSpendActionTime, applyActionTime } = require('../engine/time-manager');
+const { ACTION_TIME_POLICY } = require('../engine/action-policy');
+const { listTasks, startTask, cancelTask } = require('../engine/task-manager');
 const { calculatePlayerStamina } = require('../engine/rules');
 const {
   auditSqliteCashflow,
   auditSqliteInventory,
   auditDoubleEntryJournal,
   auditProjectionSync,
-  auditNpcAndBusinesses
+  auditNpcAndBusinesses,
+  auditSqliteFactionsAndSettlements,
+  auditCivilianMaidensAndLifeSim,
+  auditCampaignClock
 } = require('./sim-audit');
 
 let wageLaborService = null;
@@ -127,7 +133,7 @@ const agentActivityStream = [
     prompt: 'Khởi tạo phiên mô phỏng chiến dịch',
     narrative: 'Lương Diễn hoàn tất giao dịch quân nhu cho Bắc Quân Lư Thực và trở về Huyện Trác củng cố hậu cần.',
     reasoning: 'Thiết lập cân bằng sổ cái kép 70/70 Invariants và duy trì kết nối AI Bridge trực tiếp.',
-    delta: { cash: '+0 Qian', inventory: '12 SKUs ổn định', relations: 'Trương Phi +25, Quan Vũ +10', audit: '70/70 Khớp 100%' }
+    delta: { cash: '+0 quan', inventory: '12 SKUs ổn định', relations: 'Trương Phi +25, Quan Vũ +10', audit: '70/70 Khớp 100%' }
   }
 ];
 
@@ -144,65 +150,42 @@ function logAgentSimulationEvent(event) {
   if (agentActivityStream.length > 50) agentActivityStream.pop();
 }
 
+/**
+ * Read helper bound to the active playthrough instance.
+ * Delegates to the in-process adapter; never spawns the sqlite3 CLI.
+ */
 function runSqlJson(sql, targetDbPath = null) {
-  const dbFile = targetDbPath || currentActiveDbPath || DB_PATH;
-  if (!fs.existsSync(dbFile)) return [];
-  const tempFile = path.join(SAVES_DIR, `web_tmp_${Date.now()}_${Math.random().toString(36).substr(2, 4)}.sql`);
-  fs.writeFileSync(tempFile, sql, 'utf8');
-  try {
-    const stdout = execSync(`sqlite3 -json "${dbFile}" < "${tempFile}"`, {
-      encoding: 'utf8',
-      stdio: ['pipe', 'pipe', 'pipe']
-    });
-    return stdout && stdout.trim() ? JSON.parse(stdout) : [];
-  } catch (err) {
-    if (err.stdout && err.stdout.trim().startsWith('[')) {
-      try { return JSON.parse(err.stdout); } catch (e) {}
-    }
-    return [];
-  } finally {
-    if (fs.existsSync(tempFile)) {
-      try { fs.unlinkSync(tempFile); } catch (e) {}
-    }
-  }
+  return querySqlJson(targetDbPath || currentActiveDbPath || DB_PATH, sql);
 }
 
+/**
+ * Multi-statement write helper bound to the active playthrough instance.
+ * Throws on failure so callers surface a real error instead of a silent false.
+ */
 function runSqlRaw(sql, targetDbPath = null) {
-  const dbFile = targetDbPath || currentActiveDbPath || DB_PATH;
-  if (!fs.existsSync(dbFile)) return false;
-  const tempFile = path.join(SAVES_DIR, `web_raw_${Date.now()}_${Math.random().toString(36).substr(2, 4)}.sql`);
-  fs.writeFileSync(tempFile, sql, 'utf8');
-  try {
-    execSync(`sqlite3 "${dbFile}" < "${tempFile}"`, {
-      encoding: 'utf8',
-      stdio: ['pipe', 'pipe', 'pipe']
-    });
-    return true;
-  } catch (err) {
-    console.error('runSqlRaw error:', err.message);
-    return false;
-  } finally {
-    if (fs.existsSync(tempFile)) {
-      try { fs.unlinkSync(tempFile); } catch (e) {}
-    }
-  }
+  return execSql(targetDbPath || currentActiveDbPath || DB_PATH, sql);
 }
 
-// Ensure chat_chronicle table exists on boot
-runSqlRaw(`CREATE TABLE IF NOT EXISTS chat_chronicle (
-  id TEXT PRIMARY KEY,
-  turn_number INTEGER DEFAULT 1,
-  game_date TEXT DEFAULT '184-05-02',
-  type TEXT NOT NULL,
-  speaker TEXT,
-  title TEXT,
-  avatar TEXT,
-  text TEXT NOT NULL,
-  dice_badge TEXT,
-  deltas TEXT,
-  reasoning TEXT,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);`);
+// Ensure chat_chronicle table exists on boot. A missing playthrough database is
+// allowed here so the server can still serve the UI shell; real queries fail loudly.
+try {
+  runSqlRaw(`CREATE TABLE IF NOT EXISTS chat_chronicle (
+    id TEXT PRIMARY KEY,
+    turn_number INTEGER DEFAULT 1,
+    game_date TEXT DEFAULT '184-05-02',
+    type TEXT NOT NULL,
+    speaker TEXT,
+    title TEXT,
+    avatar TEXT,
+    text TEXT NOT NULL,
+    dice_badge TEXT,
+    deltas TEXT,
+    reasoning TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  );`);
+} catch (err) {
+  console.warn('[sim-web] Bootstrap schema not applied:', err.message);
+}
 
 // Passive Stamina Regeneration Tracker
 let lastPassiveStaminaCheck = Date.now();
@@ -569,17 +552,6 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // 3. GET /api/ledger - Cashflow Ledger & Double-Entry Journal
-  if (req.method === 'GET' && pathname === '/api/ledger') {
-    try {
-      const cashflow = runSqlJson(`SELECT * FROM cashflow_ledger ORDER BY game_date DESC, txn_id DESC LIMIT 50;`);
-      const journal = runSqlJson(`SELECT * FROM account_journal ORDER BY entry_id DESC LIMIT 60;`);
-      sendJson(res, 200, { success: true, cashflow, journal });
-    } catch (err) {
-      sendJson(res, 500, { success: false, error: err.message });
-    }
-    return;
-  }
 
   // 4. GET /api/npcs - Retainers, NPCs & Businesses
   if (req.method === 'GET' && pathname === '/api/npcs') {
@@ -649,7 +621,7 @@ const server = http.createServer(async (req, res) => {
     try {
       const gsm = globalThis.__GRAND_STRATEGY_MODULES__;
       if (gsm && gsm.npcLifecycle) {
-        const meta = runSqlJson(`SELECT active_turn, current_date FROM campaign_meta LIMIT 1;`)[0] || { active_turn: 6, current_date: '184-05-01' };
+        const meta = runSqlJson(`SELECT active_turn, "current_date" FROM campaign_meta LIMIT 1;`)[0] || { active_turn: 6, current_date: '184-05-01' };
         const logs = gsm.npcLifecycle.simulateAllActiveNpcs(meta.active_turn, meta.current_date);
         sendJson(res, 200, { success: true, generatedLogsCount: logs.length, logs });
       } else {
@@ -701,122 +673,9 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // 4g. GET /api/factions - Grand Strategy Factions & Territory Overview
-  if (req.method === 'GET' && pathname === '/api/factions') {
-    try {
-      const gsm = globalThis.__GRAND_STRATEGY_MODULES__;
-      const factions = gsm && gsm.factionPolitics ? gsm.factionPolitics.getFactionOverview() : runSqlJson(`
-        SELECT 
-          f.faction_id as factionId,
-          f.name_vi as nameVi,
-          f.name_en as nameEn,
-          f.leader_id as leaderId,
-          f.capital_settlement_id as capitalSettlementId,
-          f.treasury_cash as treasuryCash,
-          f.granary_grain as granaryGrain,
-          f.military_power as militaryPower,
-          f.prestige,
-          f.ideology,
-          f.color_hex as colorHex,
-          COUNT(DISTINCT s.settlement_id) as settlementCount,
-          COUNT(DISTINCT o.officer_id) as officerCount
-        FROM session_factions f
-        LEFT JOIN session_settlements s ON f.faction_id = s.ruler_faction_id
-        LEFT JOIN faction_officers o ON f.faction_id = o.faction_id
-        GROUP BY f.faction_id
-        ORDER BY f.prestige DESC;
-      `);
-      sendJson(res, 200, { success: true, factions });
-    } catch (err) {
-      sendJson(res, 500, { success: false, error: err.message });
-    }
-    return;
-  }
 
-  // 4h. GET /api/factions/officers - Faction Officers, Loyalty & Ambition Tension
-  if (req.method === 'GET' && pathname === '/api/factions/officers') {
-    try {
-      const gsm = globalThis.__GRAND_STRATEGY_MODULES__;
-      const factionId = parsedUrl.query.factionId;
-      const officers = gsm && gsm.factionPolitics ? gsm.factionPolitics.getOfficers(factionId) : runSqlJson(`
-        SELECT 
-          fo.officer_id as officerId,
-          fo.faction_id as factionId,
-          sf.name_vi as factionNameVi,
-          fo.court_rank as courtRank,
-          fo.loyalty,
-          fo.ambition,
-          fo.appointed_settlement_id as appointedSettlementId,
-          ss.name_vi as appointedSettlementName,
-          fo.betrayal_risk as betrayalRisk,
-          CASE 
-            WHEN fo.officer_id = 'PLY-0001' THEN 'Lương Diễn (Người Chơi)'
-            ELSE COALESCE(mc.name_vi, ns.name, fo.officer_id)
-          END as officerName,
-          coalesce(np.prestige, 50) as personalPrestige,
-          coalesce(np.personal_troops, 0) as personalTroops
-        FROM faction_officers fo
-        JOIN session_factions sf ON fo.faction_id = sf.faction_id
-        LEFT JOIN session_settlements ss ON fo.appointed_settlement_id = ss.settlement_id
-        LEFT JOIN npc_state ns ON fo.officer_id = ns.npc_id
-        LEFT JOIN master_characters mc ON fo.officer_id = mc.npc_id
-        LEFT JOIN npc_personal_progression np ON fo.officer_id = np.npc_id
-        ${factionId ? `WHERE fo.faction_id = '${factionId.replace(/'/g, "''")}'` : ''}
-        ORDER BY fo.betrayal_risk DESC;
-      `);
-      sendJson(res, 200, { success: true, officers });
-    } catch (err) {
-      sendJson(res, 500, { success: false, error: err.message });
-    }
-    return;
-  }
 
-  // 4i. GET /api/factions/settlements - 18 Regional Citadels & Governance
-  if (req.method === 'GET' && pathname === '/api/factions/settlements') {
-    try {
-      const gsm = globalThis.__GRAND_STRATEGY_MODULES__;
-      const settlements = gsm && gsm.factionPolitics ? gsm.factionPolitics.getSettlements() : runSqlJson(`
-        SELECT 
-          s.settlement_id as settlementId,
-          s.name_vi as nameVi,
-          s.name_en as nameEn,
-          s.province_vi as provinceVi,
-          s.ruler_faction_id as rulerFactionId,
-          f.name_vi as factionNameVi,
-          f.color_hex as factionColor,
-          s.governor_id as governorId,
-          coalesce(ns.name, 'Chưa bổ nhiệm') as governorName,
-          s.public_order as publicOrder,
-          s.garrison_troops as garrisonTroops,
-          s.agriculture,
-          s.commerce,
-          s.defense
-        FROM session_settlements s
-        JOIN session_factions f ON s.ruler_faction_id = f.faction_id
-        LEFT JOIN npc_state ns ON s.governor_id = ns.npc_id
-        ORDER BY s.province_vi, s.name_vi;
-      `);
-      sendJson(res, 200, { success: true, settlements });
-    } catch (err) {
-      sendJson(res, 500, { success: false, error: err.message });
-    }
-    return;
-  }
 
-  // 4j. GET /api/factions/events - Political Intrigues & Historical Crises
-  if (req.method === 'GET' && pathname === '/api/factions/events') {
-    try {
-      const gsm = globalThis.__GRAND_STRATEGY_MODULES__;
-      const limit = parseInt(parsedUrl.query.limit || '15', 10);
-      const events = gsm && gsm.factionPolitics ? gsm.factionPolitics.getPoliticalEvents(limit) : runSqlJson(`
-        SELECT * FROM faction_political_events ORDER BY created_at DESC LIMIT ${limit};
-      `);
-      sendJson(res, 200, { success: true, events });
-    } catch (err) {
-      sendJson(res, 500, { success: false, error: err.message });
-    }
-    return;
-  }
 
   // 4k. POST /api/factions/appoint-governor - Appoint Governor
   if (req.method === 'POST' && pathname === '/api/factions/appoint-governor') {
@@ -832,7 +691,7 @@ const server = http.createServer(async (req, res) => {
         }
         const gsm = globalThis.__GRAND_STRATEGY_MODULES__;
         if (gsm && gsm.factionPolitics) {
-          const meta = runSqlJson(`SELECT active_turn, current_date FROM campaign_meta LIMIT 1;`)[0] || { active_turn: 6, current_date: '184-05-01' };
+          const meta = runSqlJson(`SELECT active_turn, "current_date" FROM campaign_meta LIMIT 1;`)[0] || { active_turn: 6, current_date: '184-05-01' };
           const result = gsm.factionPolitics.appointGovernor(settlementId, officerId, factionId, meta.active_turn, meta.current_date);
           sendJson(res, 200, { success: true, result });
         } else {
@@ -859,7 +718,7 @@ const server = http.createServer(async (req, res) => {
         }
         const gsm = globalThis.__GRAND_STRATEGY_MODULES__;
         if (gsm && gsm.factionPolitics) {
-          const meta = runSqlJson(`SELECT active_turn, current_date FROM campaign_meta LIMIT 1;`)[0] || { active_turn: 6, current_date: '184-05-01' };
+          const meta = runSqlJson(`SELECT active_turn, "current_date" FROM campaign_meta LIMIT 1;`)[0] || { active_turn: 6, current_date: '184-05-01' };
           const result = gsm.factionPolitics.investTitle(officerId, factionId, newRank, meta.active_turn, meta.current_date);
           sendJson(res, 200, { success: true, result });
         } else {
@@ -887,7 +746,7 @@ const server = http.createServer(async (req, res) => {
         }
         const gsm = globalThis.__GRAND_STRATEGY_MODULES__;
         if (gsm && gsm.factionPolitics) {
-          const meta = runSqlJson(`SELECT active_turn, current_date FROM campaign_meta LIMIT 1;`)[0] || { active_turn: 6, current_date: '184-05-01' };
+          const meta = runSqlJson(`SELECT active_turn, "current_date" FROM campaign_meta LIMIT 1;`)[0] || { active_turn: 6, current_date: '184-05-01' };
           const result = gsm.factionPolitics.grantReward(officerId, factionId, rewardAmount, meta.active_turn, meta.current_date);
           sendJson(res, 200, { success: true, result });
         } else {
@@ -905,7 +764,7 @@ const server = http.createServer(async (req, res) => {
     try {
       const gsm = globalThis.__GRAND_STRATEGY_MODULES__;
       if (gsm && gsm.factionPolitics) {
-        const meta = runSqlJson(`SELECT active_turn, current_date FROM campaign_meta LIMIT 1;`)[0] || { active_turn: 6, current_date: '184-05-01' };
+        const meta = runSqlJson(`SELECT active_turn, "current_date" FROM campaign_meta LIMIT 1;`)[0] || { active_turn: 6, current_date: '184-05-01' };
         const events = gsm.factionPolitics.simulatePoliticalCycle(meta.active_turn, meta.current_date);
         sendJson(res, 200, { success: true, count: events.length, events });
       } else {
@@ -917,1130 +776,26 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // 4o. GET /api/professions/nodes - Regional Gathering Nodes (Khai Mỏ, Hái Thuốc)
-  if (req.method === 'GET' && pathname === '/api/professions/nodes') {
-    try {
-      const gsm = globalThis.__GRAND_STRATEGY_MODULES__;
-      const settlementId = parsedUrl.query.settlementId;
-      const nodes = gsm && gsm.professions ? gsm.professions.getGatheringNodes(settlementId) : runSqlJson(`
-        SELECT * FROM gathering_nodes ${settlementId ? `WHERE settlement_id = '${settlementId.replace(/'/g, "''")}'` : ''} ORDER BY settlement_id;
-      `);
-      sendJson(res, 200, { success: true, nodes });
-    } catch (err) {
-      sendJson(res, 500, { success: false, error: err.message });
-    }
-    return;
-  }
 
-  // 4p. GET /api/professions/character - Character Disciplines & Tiers
-  if (req.method === 'GET' && pathname === '/api/professions/character') {
-    try {
-      const gsm = globalThis.__GRAND_STRATEGY_MODULES__;
-      const characterId = parsedUrl.query.characterId || 'PLY-0001';
-      const professions = gsm && gsm.professions ? gsm.professions.getCharacterProfessions(characterId) : runSqlJson(`
-        SELECT * FROM character_professions WHERE character_id = '${characterId.replace(/'/g, "''")}' ORDER BY is_primary DESC, tier DESC;
-      `);
-      sendJson(res, 200, { success: true, characterId, professions });
-    } catch (err) {
-      sendJson(res, 500, { success: false, error: err.message });
-    }
-    return;
-  }
 
-  // 4q. GET /api/professions/innovations - Emergent Innovations (Sáng Tạo Nghề Mới)
-  if (req.method === 'GET' && pathname === '/api/professions/innovations') {
-    try {
-      const gsm = globalThis.__GRAND_STRATEGY_MODULES__;
-      const characterId = parsedUrl.query.characterId;
-      const innovations = gsm && gsm.professions ? gsm.professions.getInnovations(characterId) : runSqlJson(`
-        SELECT * FROM emergent_innovations ${characterId ? `WHERE character_id = '${characterId.replace(/'/g, "''")}'` : ''} ORDER BY created_at DESC;
-      `);
-      sendJson(res, 200, { success: true, innovations });
-    } catch (err) {
-      sendJson(res, 500, { success: false, error: err.message });
-    }
-    return;
-  }
 
-  // 4r. POST /api/professions/gather - Action: Gather Resource at Node
-  if (req.method === 'POST' && pathname === '/api/professions/gather') {
-    let body = '';
-    req.on('data', chunk => { body += chunk; });
-    req.on('end', () => {
-      try {
-        const payload = JSON.parse(body || '{}');
-        const characterId = payload.characterId || 'PLY-0001';
-        const nodeId = payload.nodeId;
-        if (!nodeId) {
-          sendJson(res, 400, { success: false, error: 'nodeId is required' });
-          return;
-        }
-        const gsm = globalThis.__GRAND_STRATEGY_MODULES__;
-        if (gsm && gsm.professions) {
-          const meta = runSqlJson(`SELECT active_turn, current_date FROM campaign_meta LIMIT 1;`)[0] || { active_turn: 6, current_date: '184-05-01' };
-          const result = gsm.professions.gatherResource(characterId, nodeId, meta.active_turn, meta.current_date);
-          sendJson(res, 200, { success: true, result });
-        } else {
-          sendJson(res, 500, { success: false, error: 'Professions module not initialized' });
-        }
-      } catch (err) {
-        sendJson(res, 500, { success: false, error: err.message });
-      }
-    });
-    return;
-  }
 
-  // 4s. POST /api/professions/synthesize - Action: Trigger Emergent Innovation Breakthrough
-  if (req.method === 'POST' && pathname === '/api/professions/synthesize') {
-    let body = '';
-    req.on('data', chunk => { body += chunk; });
-    req.on('end', () => {
-      try {
-        const payload = JSON.parse(body || '{}');
-        const characterId = payload.characterId || 'PLY-0001';
-        const gsm = globalThis.__GRAND_STRATEGY_MODULES__;
-        if (gsm && gsm.professions) {
-          const meta = runSqlJson(`SELECT active_turn, current_date FROM campaign_meta LIMIT 1;`)[0] || { active_turn: 6, current_date: '184-05-01' };
-          const innovation = gsm.professions.checkAndTriggerBreakthrough(characterId, meta.active_turn, meta.current_date);
-          sendJson(res, 200, { success: true, innovation });
-        } else {
-          sendJson(res, 500, { success: false, error: 'Professions module not initialized' });
-        }
-      } catch (err) {
-        sendJson(res, 500, { success: false, error: err.message });
-      }
-    });
-    return;
-  }
 
-  // 4s1. GET /api/equipment - Inspect Character Equipment & Warehouse Compatibility
-  if (req.method === 'GET' && pathname === '/api/equipment') {
-    try {
-      const characterId = parsedUrl.query.characterId || 'PLY-0001';
-      const isPlayer = characterId.startsWith('PLY');
-      let charName = 'Lương Diễn';
-      let styleName = 'Chí Viễn';
-      let baseAttrs = { war: 58, ldr: 70, int: 80, pol: 68, dip: 74, com: 78, log: 70, cra: 62 };
 
-      if (isPlayer) {
-        const p = runSqlJson(`SELECT * FROM player_state WHERE player_id = '${characterId.replace(/'/g, "''")}' LIMIT 1;`)[0];
-        if (p) {
-          charName = p.name === 'Liang Yan' ? 'Lương Diễn' : (p.name || 'Lương Diễn');
-          styleName = p.style_name || 'Chí Viễn';
-          baseAttrs = {
-            war: Number(p.war_attr || 58),
-            ldr: Number(p.ldr_attr || 70),
-            int: Number(p.int_attr || 80),
-            pol: Number(p.pol_attr || 68),
-            dip: Number(p.dip_attr || 74),
-            com: Number(p.com_attr || 78),
-            log: Number(p.log_attr || 70),
-            cra: Number(p.cra_attr || 62)
-          };
-        }
-      } else {
-        const npc = runSqlJson(`SELECT * FROM npc_state WHERE npc_id = '${characterId.replace(/'/g, "''")}' LIMIT 1;`)[0];
-        if (npc) {
-          charName = npc.name;
-          styleName = '';
-          baseAttrs = {
-            war: Number(npc.war_attr || 50),
-            ldr: Number(npc.ldr_attr || 50),
-            int: Number(npc.int_attr || 50),
-            pol: Number(npc.pol_attr || 50),
-            dip: Number(npc.dip_attr || 50),
-            com: Number(npc.com_attr || 50),
-            log: Number(npc.log_attr || 50),
-            cra: Number(npc.cra_attr || 50)
-          };
-        }
-      }
 
-      const rows = runSqlJson(`
-        SELECT ce.*, mi.name_vi, mi.name_en, mi.category
-        FROM character_equipment ce
-        LEFT JOIN master_items mi ON ce.item_code = mi.item_code
-        WHERE ce.character_id = '${characterId.replace(/'/g, "''")}';
-      `);
 
-      const slots = { WEAPON: null, ARMOR: null, STEED: null, TREASURE: null };
-      const equipmentBuffs = { war: 0, ldr: 0, int: 0, pol: 0, dip: 0, com: 0, log: 0, cra: 0 };
-      const items = [];
 
-      for (const r of rows) {
-        let mods = {};
-        try { mods = typeof r.stat_modifiers === 'string' ? JSON.parse(r.stat_modifiers) : r.stat_modifiers; } catch (e) {}
-        const clampedMods = {};
-        for (const [k, v] of Object.entries(mods)) {
-          const normK = k.toLowerCase().replace(/_attr$|_exp$/, '').trim();
-          const clamped = Math.min(5, Math.max(1, Math.round(Number(v) || 0)));
-          clampedMods[normK] = clamped;
-          if (equipmentBuffs.hasOwnProperty(normK)) {
-            equipmentBuffs[normK] += clamped;
-          }
-        }
-        const maxBuff = Math.max(...Object.values(clampedMods), 1);
-        const quality = maxBuff >= 5 ? 'LEGENDARY' : maxBuff >= 4 ? 'MASTERWORK' : maxBuff >= 3 ? 'FINE' : 'NORMAL';
-        const itemObj = {
-          id: r.id,
-          characterId: r.character_id,
-          slotType: r.slot_type,
-          itemCode: r.item_code,
-          customName: r.custom_name || r.name_vi,
-          nameVi: r.name_vi || r.custom_name || r.item_code,
-          nameEn: r.name_en || r.item_code,
-          quality,
-          statModifiers: clampedMods,
-          slotIcon: r.slot_type === 'WEAPON' ? '兵' : r.slot_type === 'ARMOR' ? '甲' : r.slot_type === 'STEED' ? '馬' : '策',
-          slotLabelVi: r.slot_type === 'WEAPON' ? 'Binh Khí' : r.slot_type === 'ARMOR' ? 'Khôi Giáp' : r.slot_type === 'STEED' ? 'Chiến Mã' : 'Bảo Vật'
-        };
 
-        items.push(itemObj);
-        if (!slots[r.slot_type]) {
-          slots[r.slot_type] = itemObj;
-        }
-      }
 
-      const effectiveAttributes = {};
-      const exceedsLimit = {};
-      for (const [k, baseVal] of Object.entries(baseAttrs)) {
-        const total = baseVal + (equipmentBuffs[k] || 0);
-        effectiveAttributes[k] = total;
-        exceedsLimit[k] = total > 100;
-      }
 
-      const compatible = runSqlJson(`
-        SELECT ii.item_code, ii.quantity, ii.unit_cost_basis, mi.name_vi, mi.name_en, mi.category, mi.stat_modifiers
-        FROM inventory_items ii
-        JOIN master_items mi ON ii.item_code = mi.item_code
-        WHERE ii.quantity > 0 AND (
-          mi.category IN ('WEAPON', 'ARMOR', 'STEED', 'TREASURE', 'EQUIPMENT') OR
-          ii.item_code LIKE 'COM-SWORD%' OR
-          ii.item_code LIKE 'COM-SPEAR%' OR
-          ii.item_code LIKE 'PROD-SHIELD%' OR
-          ii.item_code LIKE 'EQP-%' OR
-          ii.item_code LIKE 'GOD-%'
-        );
-      `);
 
-      sendJson(res, 200, {
-        success: true,
-        overview: {
-          characterId,
-          characterName: charName,
-          styleName,
-          isPlayer,
-          baseAttributes: baseAttrs,
-          equipmentBuffs,
-          effectiveAttributes,
-          exceedsLimit,
-          slots,
-          items,
-          equippedItems: items,
-          possessedCount: items.length
-        },
-        compatibleWarehouseItems: compatible
-      });
-    } catch (err) {
-      sendJson(res, 500, { success: false, error: err.message });
-    }
-    return;
-  }
 
-  // 4s2. POST /api/equipment/equip - Equip Item into Personal Possession
-  if (req.method === 'POST' && pathname === '/api/equipment/equip') {
-    let body = '';
-    req.on('data', chunk => { body += chunk; });
-    req.on('end', () => {
-      try {
-        const payload = JSON.parse(body || '{}');
-        const characterId = payload.characterId || 'PLY-0001';
-        const slotType = (payload.slotType || '').toUpperCase().trim();
-        const itemCode = payload.itemCode;
-        let customName = payload.customName || '';
-        let statMods = payload.statModifiers || {};
 
-        if (!slotType || !itemCode) {
-          sendJson(res, 400, { success: false, error: 'slotType and itemCode are required.' });
-          return;
-        }
 
-        // Clamp modifiers strictly between 1 and 5
-        const clampedMods = {};
-        for (const [k, v] of Object.entries(statMods)) {
-          const normK = k.toLowerCase().replace(/_attr$|_exp$/, '').trim();
-          clampedMods[normK] = Math.min(5, Math.max(1, Math.round(Number(v) || 1)));
-        }
 
-        // Fetch master item details if mods empty
-        if (Object.keys(clampedMods).length === 0) {
-          const mItem = runSqlJson(`SELECT * FROM master_items WHERE item_code = '${itemCode.replace(/'/g, "''")}' LIMIT 1;`)[0];
-          if (mItem) {
-            if (!customName) customName = mItem.name_vi;
-            if (mItem.stat_modifiers) {
-              try {
-                const parsed = JSON.parse(mItem.stat_modifiers);
-                for (const [k, v] of Object.entries(parsed)) {
-                  clampedMods[k.toLowerCase()] = Math.min(5, Math.max(1, Math.round(Number(v) || 1)));
-                }
-              } catch (e) {}
-            }
-          }
-        }
-        if (Object.keys(clampedMods).length === 0) {
-          clampedMods.war = 2; // Default fallback buff
-        }
 
-        const modsJson = JSON.stringify(clampedMods).replace(/'/g, "''");
-        const safeName = customName.replace(/'/g, "''");
 
-        // Deduct 1 from warehouse inventory and insert into personal possession
-        runSqlRaw(`
-          INSERT INTO character_equipment (character_id, slot_type, item_code, custom_name, stat_modifiers)
-          VALUES ('${characterId.replace(/'/g, "''")}', '${slotType}', '${itemCode.replace(/'/g, "''")}', '${safeName}', '${modsJson}');
-          UPDATE inventory_items SET quantity = MAX(0, quantity - 1) WHERE item_code = '${itemCode.replace(/'/g, "''")}';
-        `);
 
-        sendJson(res, 200, {
-          success: true,
-          characterId,
-          slotType,
-          itemCode,
-          itemName: customName,
-          statModifiers: clampedMods,
-          messageVi: `Đã mang theo [${customName}] vào bảo vật sở hữu (+${Object.entries(clampedMods).map(([k, v]) => `+${v} ${k.toUpperCase()}`).join(', ')})!`
-        });
-      } catch (err) {
-        sendJson(res, 500, { success: false, error: err.message });
-      }
-    });
-    return;
-  }
-
-  // 4s3. POST /api/equipment/unequip - Store Item to Warehouse
-  if (req.method === 'POST' && pathname === '/api/equipment/unequip') {
-    let body = '';
-    req.on('data', chunk => { body += chunk; });
-    req.on('end', () => {
-      try {
-        const payload = JSON.parse(body || '{}');
-        const characterId = payload.characterId || 'PLY-0001';
-        const slotType = (payload.slotType || '').toUpperCase().trim();
-        const itemCode = payload.itemCode;
-        const equipmentId = payload.equipmentId || payload.id;
-        let deletedItemCode = itemCode;
-
-        if (equipmentId) {
-          const row = runSqlJson(`SELECT item_code FROM character_equipment WHERE character_id = '${characterId.replace(/'/g, "''")}' AND id = ${parseInt(equipmentId, 10)} LIMIT 1;`)[0];
-          if (row) deletedItemCode = row.item_code;
-          runSqlRaw(`DELETE FROM character_equipment WHERE id = ${parseInt(equipmentId, 10)};`);
-        } else if (itemCode) {
-          runSqlRaw(`DELETE FROM character_equipment WHERE rowid = (SELECT rowid FROM character_equipment WHERE character_id = '${characterId.replace(/'/g, "''")}' AND item_code = '${itemCode.replace(/'/g, "''")}' LIMIT 1);`);
-        } else if (slotType) {
-          const row = runSqlJson(`SELECT item_code FROM character_equipment WHERE character_id = '${characterId.replace(/'/g, "''")}' AND slot_type = '${slotType.replace(/'/g, "''")}' LIMIT 1;`)[0];
-          if (row) deletedItemCode = row.item_code;
-          runSqlRaw(`DELETE FROM character_equipment WHERE rowid = (SELECT rowid FROM character_equipment WHERE character_id = '${characterId.replace(/'/g, "''")}' AND slot_type = '${slotType.replace(/'/g, "''")}' LIMIT 1);`);
-        } else {
-          sendJson(res, 400, { success: false, error: 'itemCode, equipmentId, or slotType is required.' });
-          return;
-        }
-
-        if (deletedItemCode) {
-          runSqlRaw(`
-            INSERT INTO inventory_items (item_code, category, description, quantity, unit_cost_basis, location)
-            VALUES ('${deletedItemCode.replace(/'/g, "''")}', 'EQUIPMENT', '${deletedItemCode.replace(/'/g, "''")}', 1, 35, 'Zhuo Workshop')
-            ON CONFLICT(item_code) DO UPDATE SET quantity = quantity + 1;
-          `);
-        }
-
-        sendJson(res, 200, {
-          success: true,
-          unequipped: true,
-          slotType: slotType || 'ITEM',
-          messageVi: `Đã cất vật phẩm [${deletedItemCode || 'Trang bị'}] vào kho hàng thành công.`
-        });
-      } catch (err) {
-        sendJson(res, 500, { success: false, error: err.message });
-      }
-    });
-    return;
-  }
-
-  // 4s4. POST /api/professions/forge/bespoke - Master Blacksmith Bespoke God Weapon Forging (Delegated to BespokeForgeService)
-  if (req.method === 'POST' && pathname === '/api/professions/forge/bespoke') {
-    let body = '';
-    req.on('data', chunk => { body += chunk; });
-    req.on('end', () => {
-      try {
-        const payload = JSON.parse(body || '{}');
-        const forgeSvc = getBespokeForgeService();
-        if (forgeSvc) {
-          const result = forgeSvc.forgeWeapon(payload);
-          sendJson(res, 200, result);
-          return;
-        }
-
-        const characterId = payload.characterId || 'PLY-0001';
-        const player = runSqlJson(`SELECT cra_attr, fatigue, cra_exp FROM player_state WHERE player_id = '${characterId.replace(/'/g, "''")}' LIMIT 1;`)[0] || {};
-        const craAttr = Number(player.cra_attr || 50);
-        const fatigue = Number(player.fatigue || 0);
-
-        if (craAttr < 60) {
-          sendJson(res, 400, {
-            success: false,
-            error: `Kỹ Nghệ (CRA) hiện tại là ${craAttr}, chưa đạt ngưỡng 60 của Đại Tượng Sư để rèn Thần Binh.`
-          });
-          return;
-        }
-
-        if (fatigue + 25 > 95) {
-          sendJson(res, 400, {
-            success: false,
-            error: `Thể lực kiệt quệ (${fatigue}/100)! Không đủ khí lực kéo bễ đúc thần binh.`
-          });
-          return;
-        }
-
-        runSqlRaw(`UPDATE inventory_items SET quantity = MAX(0, quantity - 5) WHERE item_code = 'RAW-IRON';`);
-        runSqlRaw(`UPDATE inventory_items SET quantity = MAX(0, quantity - 5) WHERE item_code = 'RAW-COAL';`);
-        runSqlRaw(`UPDATE inventory_items SET quantity = MAX(0, quantity - 2) WHERE item_code = 'RAW-TIMBER';`);
-        runSqlRaw(`UPDATE inventory_items SET quantity = MAX(0, quantity - 2) WHERE item_code = 'RAW-LEATHER';`);
-        runSqlRaw(`UPDATE player_state SET fatigue = MIN(100, fatigue + 25), cra_exp = cra_exp + 45 WHERE player_id = '${characterId.replace(/'/g, "''")}';`);
-
-        const fPenalty = Math.max(0, (fatigue - 40) / 3);
-        const S = Math.max(0, (craAttr - 60) - fPenalty);
-        const wLegendary = 0.5 + 6.0 * Math.pow(S / 50, 2.2);
-        const wMasterwork = 5.0 + 25.0 * Math.pow(S / 50, 1.4);
-        const wFine = 30.0 + 30.0 * Math.pow(S / 50, 0.9);
-        const wNormal = Math.max(15.0, 64.5 - 45.0 * (S / 50));
-        const totalW = wLegendary + wMasterwork + wFine + wNormal;
-
-        const pLegendary = (wLegendary / totalW) * 100;
-        const pMasterwork = (wMasterwork / totalW) * 100;
-        const pFine = (wFine / totalW) * 100;
-
-        const roll = Math.random() * 100;
-        let quality = 'NORMAL';
-        let qualityLabelVi = 'Phổ Thông Hảo Binh';
-        let warBuff = 1;
-        let ldrBuff = 0;
-
-        if (roll < pLegendary) {
-          quality = 'LEGENDARY';
-          qualityLabelVi = 'Tuyệt Thế Thần Binh';
-          warBuff = Math.random() < 0.60 ? 5 : 4;
-          ldrBuff = Math.random() < 0.40 ? 3 : 2;
-        } else if (roll < pLegendary + pMasterwork) {
-          quality = 'MASTERWORK';
-          qualityLabelVi = 'Bách Luyện Tinh Cương';
-          warBuff = Math.random() < 0.45 ? 4 : 3;
-          const rLdr = Math.random();
-          ldrBuff = rLdr < 0.10 ? 3 : rLdr < 0.50 ? 2 : 1;
-        } else if (roll < pLegendary + pMasterwork + pFine) {
-          quality = 'FINE';
-          qualityLabelVi = 'Tinh Luyện Thượng Phẩm';
-          warBuff = Math.random() < 0.35 ? 3 : 2;
-          ldrBuff = Math.random() < 0.20 ? 2 : 1;
-        } else {
-          quality = 'NORMAL';
-          qualityLabelVi = 'Phổ Thông Hảo Binh';
-          warBuff = Math.random() < 0.20 ? 2 : 1;
-          ldrBuff = Math.random() < 0.15 ? 1 : 0;
-        }
-
-        warBuff = Math.min(5, Math.max(1, Math.round(warBuff)));
-        ldrBuff = ldrBuff > 0 ? Math.min(5, Math.max(1, Math.round(ldrBuff))) : 0;
-
-        const weaponType = payload.weaponType || 'BLADE';
-        const customName = payload.customName || (quality === 'LEGENDARY' ? 'Thần Viêm Bảo Đao' : 'Bách Luyện Hảo Đao');
-        const itemCode = `GOD-${weaponType}-${Date.now().toString().slice(-6)}`;
-        const statModifiers = { war: warBuff };
-        if (ldrBuff > 0) statModifiers.ldr = ldrBuff;
-
-        runSqlRaw(`
-          INSERT INTO master_items (item_code, name_vi, name_en, category, stat_modifiers, baseline_peace_price, current_market_price)
-          VALUES ('${itemCode}', '${customName.replace(/'/g, "''")}', 'God Weapon', 'WEAPON', '${JSON.stringify(statModifiers)}', 2000, 3000);
-          INSERT INTO inventory_items (item_code, category, description, quantity, unit_cost_basis, location)
-          VALUES ('${itemCode}', 'WEAPON', '${customName.replace(/'/g, "''")}', 1, 1500, 'Zhuo Workshop')
-          ON CONFLICT(item_code) DO UPDATE SET quantity = quantity + 1;
-        `);
-
-        if (payload.targetDestination === 'EQUIP_IMMEDIATELY') {
-          runSqlRaw(`
-            INSERT INTO character_equipment (character_id, slot_type, item_code, custom_name, stat_modifiers, equipped_at)
-            VALUES ('${characterId.replace(/'/g, "''")}', 'WEAPON', '${itemCode}', '${customName.replace(/'/g, "''")}', '${JSON.stringify(statModifiers)}', CURRENT_TIMESTAMP);
-          `);
-        }
-
-        sendJson(res, 200, {
-          success: true,
-          itemCode,
-          customName,
-          nameVi: customName,
-          quality,
-          qualityLabelVi,
-          statModifiers,
-          fatigueConsumed: 25,
-          expGained: 45,
-          destination: payload.targetDestination || 'WAREHOUSE',
-          messageVi: `Luyện thành thần binh [${customName}] phẩm cấp [${qualityLabelVi}] (+${warBuff} Võ Lực, +${ldrBuff} Thống Soái)!`
-        });
-      } catch (err) {
-        sendJson(res, 400, { success: false, error: err.message });
-      }
-    });
-    return;
-  }
-
-  // 4s4b. GET /api/professions/forge/rates - Anti-Inflationary Forge Probability Analysis (Delegated to BespokeForgeService)
-  if (req.method === 'GET' && pathname === '/api/professions/forge/rates') {
-    const characterId = parsedUrl.query.characterId || 'PLY-0001';
-    const forgeSvc = getBespokeForgeService();
-    if (forgeSvc) {
-      try {
-        const ratesResult = forgeSvc.calculateRates(characterId);
-        const player = runSqlJson(`SELECT name, cra_attr, fatigue, cra_exp FROM player_state WHERE player_id = '${characterId.replace(/'/g, "''")}' LIMIT 1;`)[0] || {};
-        sendJson(res, 200, {
-          success: true,
-          player: {
-            name: player.name || 'Lương Diễn',
-            craAttr: ratesResult.craAttr,
-            fatigue: ratesResult.fatigue
-          },
-          rates: ratesResult
-        });
-        return;
-      } catch (err) {
-        sendJson(res, 500, { success: false, error: err.message });
-        return;
-      }
-    }
-
-    const player = runSqlJson(`SELECT name, cra_attr, fatigue, cra_exp FROM player_state WHERE player_id = '${characterId.replace(/'/g, "''")}' LIMIT 1;`)[0] || {};
-    const cra = Math.max(60, Number(player.cra_attr || 50));
-    const f = Math.max(0, Math.min(100, Number(player.fatigue || 0)));
-    const fPenalty = Math.max(0, (f - 40) / 3);
-    const S = Math.max(0, (cra - 60) - fPenalty);
-
-    const wLegendary = 0.5 + 6.0 * Math.pow(S / 50, 2.2);
-    const wMasterwork = 5.0 + 25.0 * Math.pow(S / 50, 1.4);
-    const wFine = 30.0 + 30.0 * Math.pow(S / 50, 0.9);
-    const wNormal = Math.max(15.0, 64.5 - 45.0 * (S / 50));
-    const totalW = wLegendary + wMasterwork + wFine + wNormal;
-
-    const pLegendary = Math.round((wLegendary / totalW) * 1000) / 10;
-    const pMasterwork = Math.round((wMasterwork / totalW) * 1000) / 10;
-    const pFine = Math.round((wFine / totalW) * 1000) / 10;
-    const pNormal = Math.max(0, Math.round((100 - pLegendary - pMasterwork - pFine) * 10) / 10);
-
-    sendJson(res, 200, {
-      success: true,
-      player: {
-        name: player.name || 'Lương Diễn',
-        craAttr: cra,
-        fatigue: f
-      },
-      rates: {
-        effectiveMasteryScore: Math.round(S * 10) / 10,
-        fatiguePenalty: Math.round(fPenalty * 10) / 10,
-        formulaDescription: 'S = (CRA - 60) - max(0, (Fatigue - 40)/3). P(k) = W_k / sum(W_j).',
-        tiers: [
-          {
-            tier: 'NORMAL',
-            tierLabelVi: 'Phổ Thông Hảo Binh',
-            probabilityPercent: pNormal,
-            warRange: '+1 ~ +2',
-            ldrRange: '+0 ~ +1',
-            warOdds: [{ value: 1, chancePercent: 80 }, { value: 2, chancePercent: 20 }],
-            ldrOdds: [{ value: 0, chancePercent: 85 }, { value: 1, chancePercent: 15 }]
-          },
-          {
-            tier: 'FINE',
-            tierLabelVi: 'Tinh Luyện Thượng Phẩm',
-            probabilityPercent: pFine,
-            warRange: '+2 ~ +3',
-            ldrRange: '+1 ~ +2',
-            warOdds: [{ value: 2, chancePercent: 65 }, { value: 3, chancePercent: 35 }],
-            ldrOdds: [{ value: 1, chancePercent: 80 }, { value: 2, chancePercent: 20 }]
-          },
-          {
-            tier: 'MASTERWORK',
-            tierLabelVi: 'Bách Luyện Tinh Cương',
-            probabilityPercent: pMasterwork,
-            warRange: '+3 ~ +4',
-            ldrRange: '+1 ~ +3',
-            warOdds: [{ value: 3, chancePercent: 55 }, { value: 4, chancePercent: 45 }],
-            ldrOdds: [{ value: 1, chancePercent: 50 }, { value: 2, chancePercent: 40 }, { value: 3, chancePercent: 10 }]
-          },
-          {
-            tier: 'LEGENDARY',
-            tierLabelVi: 'Tuyệt Thế Thần Binh',
-            probabilityPercent: pLegendary,
-            warRange: '+4 ~ +5',
-            ldrRange: '+2 ~ +3',
-            warOdds: [{ value: 4, chancePercent: 40 }, { value: 5, chancePercent: 60 }],
-            ldrOdds: [{ value: 2, chancePercent: 60 }, { value: 3, chancePercent: 40 }]
-          }
-        ]
-      }
-    });
-    return;
-  }
-
-  // 4s5. POST /api/professions/forge/standard - Standard Armament Production
-  if (req.method === 'POST' && pathname === '/api/professions/forge/standard') {
-    let body = '';
-    req.on('data', chunk => { body += chunk; });
-    req.on('end', () => {
-      try {
-        const payload = JSON.parse(body || '{}');
-        const characterId = payload.characterId || 'PLY-0001';
-        const armCode = payload.armamentCode || 'COM-SWORD';
-        const qty = Math.max(1, parseInt(payload.quantity || 1, 10));
-
-        const names = {
-          'COM-SWORD': 'Hán Kiếm Tiêu Chuẩn',
-          'COM-SPEAR': 'Thiết Thương Quân Dụng',
-          'PROD-SHIELD-BAM': 'Thuẫn Mây Gia Cố',
-          'EQP-ARMOR-LEATHER': 'Ngực Giáp Da Trâu'
-        };
-        const armName = names[armCode] || armCode;
-
-        runSqlRaw(`
-          INSERT INTO inventory_items (item_code, category, description, quantity, unit_cost_basis, location)
-          VALUES ('${armCode}', 'EQUIPMENT', '${armName}', ${qty}, 35, 'Zhuo Workshop')
-          ON CONFLICT(item_code) DO UPDATE SET quantity = quantity + ${qty};
-          UPDATE player_state SET fatigue = MIN(100, fatigue + ${10 * qty}), cra_exp = cra_exp + ${15 * qty} WHERE player_id = '${characterId.replace(/'/g, "''")}';
-        `);
-
-        sendJson(res, 200, {
-          success: true,
-          armamentCode: armCode,
-          nameVi: armName,
-          quantity: qty,
-          fatigueConsumed: 10 * qty,
-          messageVi: `Rèn thành công ${qty} ${armName} nhập vào kho vũ khí!`
-        });
-      } catch (err) {
-        sendJson(res, 500, { success: false, error: err.message });
-      }
-    });
-    return;
-  }
-
-  // 4s6. GET /api/enterprise/status - Active Businesses & Labor Options
-  if (req.method === 'GET' && pathname === '/api/enterprise/status') {
-    try {
-      const characterId = parsedUrl.query.characterId || 'PLY-0001';
-      const player = runSqlJson(`SELECT liquid_cash, safe_cash, fatigue, health, war_attr, cra_attr, com_attr, log_attr, int_attr FROM player_state WHERE player_id = '${characterId.replace(/'/g, "''")}' LIMIT 1;`)[0] || {};
-      const stamina = calculatePlayerStamina(player);
-      const rawBusinesses = runSqlJson(`
-        SELECT business_id, name, location_id, manager_npc_id, safe_cash, delegation_level, 
-               efficiency_multiplier, current_workforce, monthly_capacity_hours, monthly_rent,
-               auto_procure, status, business_type, owner_character_id, daily_revenue, accumulated_profit
-        FROM businesses
-        WHERE owner_character_id = '${characterId.replace(/'/g, "''")}' OR owner_character_id IS NULL OR owner_character_id = 'PLY-0001';
-      `);
-
-      const activeBusinesses = rawBusinesses.map(b => ({
-        business_id: b.business_id,
-        name: b.name,
-        location_id: b.location_id || 'LOC-0001',
-        location: b.location_id || 'LOC-0001',
-        manager_npc_id: b.manager_npc_id || 'NPC-0007',
-        safe_cash: Number(b.safe_cash || 0),
-        delegation_level: Number(b.delegation_level || 2),
-        efficiency_multiplier: Number(b.efficiency_multiplier || 0.85),
-        current_workforce: Number(b.current_workforce || 4),
-        workforce_count: Number(b.current_workforce || 4),
-        monthly_capacity_hours: Number(b.monthly_capacity_hours || 800),
-        monthly_rent: Number(b.monthly_rent || 200),
-        auto_procure: Number(b.auto_procure || 1),
-        status: b.status || 'ACTIVE',
-        business_type: b.business_type || 'WORKSHOP',
-        daily_revenue: Number(b.daily_revenue || 0),
-        daily_revenue_avg: Number(b.daily_revenue || 0),
-        accumulated_profit: Number(b.accumulated_profit || 0)
-      }));
-
-      const playerCash = Number(player.liquid_cash || 0);
-      const playerFatigue = Number(player.fatigue || 0);
-
-      const openableTypes = [
-        {
-          typeId: 'WORKSHOP',
-          titleVi: 'Trác Quận Thợ Thủ Công Phường',
-          titleEn: 'Zhuo County Artisan Workshop',
-          descriptionVi: 'Xưởng dệt lụa gai, đan chiếu trúc, làm đồ gia dụng mây tre đan cho các đoàn thương vận hành.',
-          startupCash: 3000,
-          turnkeyExtraCash: 350,
-          monthlyRent: 150,
-          baseWorkforce: 3,
-          baseDailyRevenue: 120,
-          projectedDailyRevenueMin: 90,
-          projectedDailyRevenueMax: 160,
-          projectedMonthlyRevenueMin: 2700,
-          projectedMonthlyRevenueMax: 4800,
-          icon: '工',
-          requiredMaterials: [
-            { itemCode: 'COM-BAMBOO', itemNameVi: 'Tre Trúc U Châu', quantity: 6 },
-            { itemCode: 'COM-TWINE', itemNameVi: 'Dây Đay Bền Chắc', quantity: 4 }
-          ],
-          hasAllMaterials: true,
-          canAffordCash: playerCash >= 3000,
-          canAffordTurnkey: playerCash >= 3350,
-          effectiveTurnkeyCost: 350
-        },
-        {
-          typeId: 'TAVERN',
-          titleVi: 'Tửu Điếm Đào Viên Hào Kiệt Quán',
-          titleEn: 'Peach Orchard Tavern & Inn',
-          descriptionVi: 'Quán rượu điểm tâm hội tụ nghĩa sĩ giang hồ, nơi thu thập tin tức tình báo và kinh doanh rượu hoa đào.',
-          startupCash: 4000,
-          turnkeyExtraCash: 480,
-          monthlyRent: 200,
-          baseWorkforce: 3,
-          baseDailyRevenue: 150,
-          projectedDailyRevenueMin: 110,
-          projectedDailyRevenueMax: 200,
-          projectedMonthlyRevenueMin: 3300,
-          projectedMonthlyRevenueMax: 6000,
-          icon: '酒',
-          requiredMaterials: [
-            { itemCode: 'COM-TIMBER', itemNameVi: 'Gỗ Tốt Đẽo Gọt', quantity: 4 },
-            { itemCode: 'COM-GRAIN', itemNameVi: 'Lương Thảo', quantity: 5 }
-          ],
-          hasAllMaterials: false,
-          canAffordCash: playerCash >= 4000,
-          canAffordTurnkey: playerCash >= 4480,
-          effectiveTurnkeyCost: 480
-        },
-        {
-          typeId: 'APOTHECARY',
-          titleVi: 'Hồi Xuân Dược Đường & Thảo Dược Quán',
-          titleEn: 'Spring Rejuvenation Apothecary & Clinic',
-          descriptionVi: 'Hiệu thuốc đông y bào chế cao dán kim sang, hoàn đan cứu thương và bán thảo dược sơn lâm quý hiếm.',
-          startupCash: 4500,
-          turnkeyExtraCash: 510,
-          monthlyRent: 220,
-          baseWorkforce: 3,
-          baseDailyRevenue: 170,
-          projectedDailyRevenueMin: 130,
-          projectedDailyRevenueMax: 220,
-          projectedMonthlyRevenueMin: 3900,
-          projectedMonthlyRevenueMax: 6600,
-          icon: '藥',
-          requiredMaterials: [
-            { itemCode: 'COM-TIMBER', itemNameVi: 'Gỗ Tốt Đẽo Gọt', quantity: 3 },
-            { itemCode: 'RAW-HERB-WILD', itemNameVi: 'Thảo Dược Rừng Tươi', quantity: 6 }
-          ],
-          hasAllMaterials: false,
-          canAffordCash: playerCash >= 4500,
-          canAffordTurnkey: playerCash >= 5010,
-          effectiveTurnkeyCost: 510
-        },
-        {
-          typeId: 'FORGE',
-          titleVi: 'Lò Rèn Bách Nghệ & Quân Khí Phường',
-          titleEn: 'Blacksmith Weaponry & Tool Forge',
-          descriptionVi: 'Lò đúc binh khí, khiên giáp, nông cụ và móng ngựa. Phục vụ quân nhu chiến trận và dân sinh.',
-          startupCash: 5000,
-          turnkeyExtraCash: 650,
-          monthlyRent: 260,
-          baseWorkforce: 4,
-          baseDailyRevenue: 220,
-          projectedDailyRevenueMin: 160,
-          projectedDailyRevenueMax: 280,
-          projectedMonthlyRevenueMin: 4800,
-          projectedMonthlyRevenueMax: 8400,
-          icon: '鍛',
-          requiredMaterials: [
-            { itemCode: 'COM-TIMBER', itemNameVi: 'Gỗ Tốt Đẽo Gọt', quantity: 4 },
-            { itemCode: 'RAW-IRON-ORE', itemNameVi: 'Quặng Sắt Thô Sơn Mạch', quantity: 5 }
-          ],
-          hasAllMaterials: false,
-          canAffordCash: playerCash >= 5000,
-          canAffordTurnkey: playerCash >= 5650,
-          effectiveTurnkeyCost: 650
-        }
-      ];
-
-      const laborShifts = [
-        {
-          shiftId: 'SHIFT_FORGE_HAND',
-          jobType: 'JOB_FORGE_HAND',
-          titleVi: 'Thợ Phụ Kéo Bễ & Đập Búa Lò Rèn',
-          titleEn: 'Blacksmith Forge Hand',
-          workplaceVi: 'Lò Rèn Bách Nghệ Trác Quận',
-          workplaceEn: 'Zhuo Artisan Blacksmith',
-          wage: 140,
-          fatigueCost: 20,
-          professionCode: 'PROF_CRAFTSMAN',
-          expGain: 40,
-          attributeTarget: 'cra',
-          attributeExp: 15,
-          icon: '鍛'
-        },
-        {
-          shiftId: 'SHIFT_CHEF_TAVERN',
-          jobType: 'JOB_TAVERN_COOK',
-          titleVi: 'Đầu Bếp & Điều Rượu Tại Tửu Điếm',
-          titleEn: 'Tavern Chef & Cellar Master',
-          workplaceVi: 'Tửu Điếm Đào Viên',
-          workplaceEn: 'Peach Orchard Tavern',
-          wage: 110,
-          fatigueCost: 15,
-          professionCode: 'PROF_MERCHANT',
-          expGain: 30,
-          attributeTarget: 'com',
-          attributeExp: 10,
-          icon: '庖'
-        },
-        {
-          shiftId: 'SHIFT_HERBALIST',
-          jobType: 'JOB_APOTHECARY_COMPOUNDER',
-          titleVi: 'Dược Đồng Bào Chế Thuốc Tại Hiệu Dược',
-          titleEn: 'Apothecary Herbalist & Salve Maker',
-          workplaceVi: 'Hồi Xuân Dược Đường',
-          workplaceEn: 'Spring Apothecary',
-          wage: 120,
-          fatigueCost: 15,
-          professionCode: 'PROF_HERBALIST',
-          expGain: 35,
-          attributeTarget: 'int',
-          attributeExp: 10,
-          icon: '藥'
-        },
-        {
-          shiftId: 'SHIFT_WEAVER',
-          jobType: 'JOB_WEAVER',
-          titleVi: 'Thợ Thủ Công Đan Phên Tre & Bện Sọt',
-          titleEn: 'Artisan Bamboo Basket Weaver',
-          workplaceVi: 'Xưởng Thủ Công Lương Gia',
-          workplaceEn: 'Liang Workshop',
-          wage: 95,
-          fatigueCost: 12,
-          professionCode: 'PROF_CRAFTSMAN',
-          expGain: 25,
-          attributeTarget: 'cra',
-          attributeExp: 10,
-          icon: '工'
-        },
-        {
-          shiftId: 'SHIFT_MINER',
-          jobType: 'JOB_MINER_CARRIER',
-          titleVi: 'Phu Mỏ Khai Khoáng & Bốc Vác Quặng Sắt',
-          titleEn: 'Iron Mine Carrier & Sledge Striker',
-          workplaceVi: 'Mỏ Sắt Tây Sơn Trác Quận',
-          workplaceEn: 'West Mountain Iron Mines',
-          wage: 130,
-          fatigueCost: 18,
-          professionCode: 'PROF_MINER',
-          expGain: 35,
-          attributeTarget: 'log',
-          attributeExp: 12,
-          icon: '礦'
-        },
-        {
-          shiftId: 'SHIFT_WAITER',
-          jobType: 'JOB_TAVERN_STAFF',
-          titleVi: 'Tiểu Nhị Tiếp Tân Tửu Điếm & Trà Quán',
-          titleEn: 'Tavern Runner & Guest Concierge',
-          workplaceVi: 'Trà Quán Bình Dân Trác Huyện',
-          workplaceEn: 'Zhuo County Tea House',
-          wage: 85,
-          fatigueCost: 10,
-          professionCode: 'PROF_MERCHANT',
-          expGain: 20,
-          attributeTarget: 'com',
-          attributeExp: 8,
-          icon: '酒'
-        }
-      ];
-
-      sendJson(res, 200, {
-        success: true,
-        status: {
-          characterId,
-          playerCash,
-          playerSafeCash: Number(player.safe_cash || 0),
-          playerFatigue: stamina.fatigue,
-          stamina,
-          ownedBusinesses: activeBusinesses,
-          activeEnterprises: activeBusinesses,
-          totalDailyRevenue: activeBusinesses.reduce((s, b) => s + (Number(b.daily_revenue) || 0), 0),
-          totalWorkforce: activeBusinesses.reduce((s, b) => s + (Number(b.current_workforce) || 0), 0),
-          totalAccumulatedProfit: activeBusinesses.reduce((s, b) => s + (Number(b.accumulated_profit) || 0), 0),
-          openableTypes,
-          laborShifts: laborShifts.map(s => ({
-            ...s,
-            staminaCost: s.staminaCost || s.fatigueCost,
-            canPerform: stamina.currentStamina >= (s.staminaCost || s.fatigueCost) && (stamina.fatigue + s.fatigueCost <= 100)
-          }))
-        }
-      });
-    } catch (err) {
-      sendJson(res, 500, { success: false, error: err.message });
-    }
-    return;
-  }
-
-  // 4s7. POST /api/enterprise/work - Take Wage Labor Shift (Delegated to WageLaborService)
-  if (req.method === 'POST' && pathname === '/api/enterprise/work') {
-    let body = '';
-    req.on('data', chunk => { body += chunk; });
-    req.on('end', () => {
-      try {
-        const payload = JSON.parse(body || '{}');
-        const characterId = payload.characterId || 'PLY-0001';
-        const shiftId = payload.shiftId || payload.jobType || 'SHIFT_FORGE_HAND';
-
-        const laborSvc = getWageLaborService();
-        if (laborSvc) {
-          try {
-            const result = laborSvc.executeShift(characterId, shiftId);
-            sendJson(res, 200, result);
-            return;
-          } catch (execErr) {
-            sendJson(res, 400, { success: false, error: execErr.message });
-            return;
-          }
-        }
-        sendJson(res, 500, { success: false, error: 'WageLaborService is unavailable.' });
-      } catch (err) {
-        sendJson(res, 500, { success: false, error: err.message });
-      }
-    });
-    return;
-  }
-
-  // 4s8. POST /api/enterprise/open - Open New Enterprise
-  if (req.method === 'POST' && pathname === '/api/enterprise/open') {
-    let body = '';
-    req.on('data', chunk => { body += chunk; });
-    req.on('end', () => {
-      try {
-        const payload = JSON.parse(body || '{}');
-        const characterId = payload.characterId || 'PLY-0001';
-        const bType = (payload.businessType || 'TAVERN').toUpperCase();
-        const configs = {
-          WORKSHOP: { name: 'Xưởng Dệt & Chế Tác', capital: 3000, rent: 150, rev: 120, staff: 3 },
-          TAVERN: { name: 'Tửu Quán & Khách Điếm', capital: 4000, rent: 200, rev: 150, staff: 3 },
-          APOTHECARY: { name: 'Dược Điếm & Y Quán', capital: 4500, rent: 220, rev: 170, staff: 3 },
-          BLACKSMITH: { name: 'Lò Rèn Bách Nghệ', capital: 5000, rent: 260, rev: 220, staff: 4 },
-          FORGE: { name: 'Lò Rèn Bách Nghệ & Quân Khí Phường', capital: 5000, rent: 260, rev: 220, staff: 4 }
-        };
-        const cfg = configs[bType] || configs.TAVERN;
-        const name = payload.customName || cfg.name;
-        const player = runSqlJson(`SELECT liquid_cash FROM player_state WHERE player_id = '${characterId.replace(/'/g, "''")}' LIMIT 1;`)[0] || {};
-        const cash = Number(player.liquid_cash || 0);
-
-        if (cash < cfg.capital) {
-          sendJson(res, 400, {
-            success: false,
-            error: `Ngân quỹ không đủ! Cần tối thiểu ${cfg.capital} Tiền vốn khởi nghiệp (hiện có ${cash} Tiền).`
-          });
-          return;
-        }
-
-        const newCash = cash - cfg.capital;
-        const bId = `BIZ-${Date.now().toString(36).toUpperCase()}-${Math.floor(Math.random() * 1000)}`;
-        const currentDate = runSqlJson(`SELECT current_date FROM campaign_meta LIMIT 1;`)[0]?.current_date || '184-05-02';
-        const normType = bType === 'FORGE' ? 'BLACKSMITH' : bType;
-
-        runSqlRaw(`
-          UPDATE player_state SET liquid_cash = ${newCash} WHERE player_id = '${characterId.replace(/'/g, "''")}';
-          INSERT INTO businesses (business_id, name, location_id, manager_npc_id, safe_cash, delegation_level, efficiency_multiplier, current_workforce, monthly_capacity_hours, monthly_rent, auto_procure, status, business_type, owner_character_id, daily_revenue, accumulated_profit)
-          VALUES ('${bId}', '${name.replace(/'/g, "''")}', 'LOC-0001', 'NPC-0007', 1500, 2, 0.9, ${cfg.staff}, 800, ${cfg.rent}, 1, 'ACTIVE', '${normType}', '${characterId.replace(/'/g, "''")}', ${cfg.rev}, 0);
-          INSERT INTO cashflow_ledger (txn_id, game_date, counterparty, category, inflow, outflow, balance, memo, status)
-          VALUES ('TXN-BIZ-${Date.now()}', '${currentDate}', 'Khai trương ${name.replace(/'/g, "''")}', 'CAPITAL_INVESTMENT', 0, ${cfg.capital}, ${newCash}, 'Đầu tư mở cơ sở kinh doanh ${name.replace(/'/g, "''")}', 'Confirmed');
-        `);
-
-        sendJson(res, 200, {
-          success: true,
-          businessId: bId,
-          type: normType,
-          name,
-          initialCapital: cfg.capital,
-          remainingPlayerCash: newCash,
-          messageVi: `Chúc mừng! Khai trương thành công cơ sở [${name}] với ${cfg.capital} Tiền vốn an toàn!`,
-          message: `Successfully opened ${name}!`
-        });
-      } catch (err) {
-        sendJson(res, 500, { success: false, error: err.message });
-      }
-    });
-    return;
-  }
-
-  // 4s9. POST /api/enterprise/collect - Collect Profits
-  if (req.method === 'POST' && pathname === '/api/enterprise/collect') {
-    let body = '';
-    req.on('data', chunk => { body += chunk; });
-    req.on('end', () => {
-      try {
-        const payload = JSON.parse(body || '{}');
-        const characterId = payload.characterId || 'PLY-0001';
-        const businessId = payload.businessId;
-
-        const biz = runSqlJson(`SELECT * FROM businesses WHERE business_id = '${(businessId || '').replace(/'/g, "''")}' LIMIT 1;`)[0];
-        if (!biz) {
-          sendJson(res, 404, { success: false, error: 'Không tìm thấy cơ sở kinh doanh này.' });
-          return;
-        }
-
-        const profit = Number(biz.accumulated_profit || 0);
-        if (profit <= 0) {
-          sendJson(res, 200, {
-            success: true,
-            businessId,
-            collectedAmount: 0,
-            remainingProfit: 0,
-            message: 'Cơ sở hiện chưa có thặng dư lợi nhuận tích lũy để rút.'
-          });
-          return;
-        }
-
-        const player = runSqlJson(`SELECT liquid_cash FROM player_state WHERE player_id = '${characterId.replace(/'/g, "''")}' LIMIT 1;`)[0] || {};
-        const newPlayerCash = Number(player.liquid_cash || 0) + profit;
-        const currentDate = runSqlJson(`SELECT current_date FROM campaign_meta LIMIT 1;`)[0]?.current_date || '184-05-02';
-
-        runSqlRaw(`
-          UPDATE businesses SET accumulated_profit = 0 WHERE business_id = '${(businessId || '').replace(/'/g, "''")}';
-          UPDATE player_state SET liquid_cash = ${newPlayerCash} WHERE player_id = '${characterId.replace(/'/g, "''")}';
-          INSERT INTO cashflow_ledger (txn_id, game_date, counterparty, category, inflow, outflow, balance, memo, status)
-          VALUES ('TXN-DIVIDEND-${Date.now()}', '${currentDate}', '${(biz.name || '').replace(/'/g, "''")}', 'ENTERPRISE_DIVIDEND', ${profit}, 0, ${newPlayerCash}, 'Rút lợi nhuận kinh doanh từ ${(biz.name || '').replace(/'/g, "''")}', 'Confirmed');
-        `);
-
-        sendJson(res, 200, {
-          success: true,
-          businessId,
-          collectedAmount: profit,
-          remainingProfit: 0,
-          ownerNewCash: newPlayerCash,
-          message: `Đã rút thành công ${profit} tiền lợi nhuận từ ${biz.name}. Số dư cá nhân hiện có: ${newPlayerCash}.`
-        });
-      } catch (err) {
-        sendJson(res, 500, { success: false, error: err.message });
-      }
-    });
-    return;
-  }
-
-  // 4t. GET /api/ecology/crises - Regional Ecological Disasters & Peasant Uprisings
-  if (req.method === 'GET' && pathname === '/api/ecology/crises') {
-    try {
-      const gsm = globalThis.__GRAND_STRATEGY_MODULES__;
-      const crises = gsm && gsm.ecologyLogistics ? gsm.ecologyLogistics.getCrises() : runSqlJson(`
-        SELECT * FROM regional_ecological_crises WHERE is_active = 1 ORDER BY severity_level DESC;
-      `);
-      sendJson(res, 200, { success: true, crises });
-    } catch (err) {
-      sendJson(res, 500, { success: false, error: err.message });
-    }
-    return;
-  }
-
-  // 4u. GET /api/logistics/caravans - Macro Trade Caravans on Regional Routes
-  if (req.method === 'GET' && pathname === '/api/logistics/caravans') {
-    try {
-      const gsm = globalThis.__GRAND_STRATEGY_MODULES__;
-      const caravans = gsm && gsm.ecologyLogistics ? gsm.ecologyLogistics.getCaravans() : runSqlJson(`
-        SELECT c.*, sf.name_vi as ownerFactionName FROM trade_caravans c
-        JOIN session_factions sf ON c.owner_faction_id = sf.faction_id ORDER BY c.route_progress DESC;
-      `);
-      sendJson(res, 200, { success: true, caravans });
-    } catch (err) {
-      sendJson(res, 500, { success: false, error: err.message });
-    }
-    return;
-  }
-
-  // 4v. GET /api/logistics/strongholds - Bandit Strongholds & Plundered Wealth
-  if (req.method === 'GET' && pathname === '/api/logistics/strongholds') {
-    try {
-      const gsm = globalThis.__GRAND_STRATEGY_MODULES__;
-      const strongholds = gsm && gsm.ecologyLogistics ? gsm.ecologyLogistics.getBanditStrongholds() : runSqlJson(`
-        SELECT * FROM bandit_strongholds ORDER BY status ASC, plundered_wealth DESC;
-      `);
-      sendJson(res, 200, { success: true, strongholds });
-    } catch (err) {
-      sendJson(res, 500, { success: false, error: err.message });
-    }
-    return;
-  }
-
-  // 4w. POST /api/ecology/relief - Action: Dispatch Grain Relief to Quell Crisis
-  if (req.method === 'POST' && pathname === '/api/ecology/relief') {
-    let body = '';
-    req.on('data', chunk => { body += chunk; });
-    req.on('end', () => {
-      try {
-        const payload = JSON.parse(body || '{}');
-        const settlementId = payload.settlementId;
-        const grainAmount = parseFloat(payload.grainAmount || '5.0');
-        if (!settlementId) {
-          sendJson(res, 400, { success: false, error: 'settlementId is required' });
-          return;
-        }
-        const gsm = globalThis.__GRAND_STRATEGY_MODULES__;
-        if (gsm && gsm.ecologyLogistics) {
-          const meta = runSqlJson(`SELECT active_turn, current_date FROM campaign_meta LIMIT 1;`)[0] || { active_turn: 6, current_date: '184-05-01' };
-          const result = gsm.ecologyLogistics.dispatchGrainRelief(settlementId, grainAmount, meta.active_turn, meta.current_date);
-          sendJson(res, 200, { success: true, result });
-        } else {
-          sendJson(res, 500, { success: false, error: 'EcologyLogistics module not initialized' });
-        }
-      } catch (err) {
-        sendJson(res, 500, { success: false, error: err.message });
-      }
-    });
-    return;
-  }
-
-  // 4x. POST /api/logistics/attack-stronghold - Action: Attack Bandit Lair & Claim Bounty
-  if (req.method === 'POST' && pathname === '/api/logistics/attack-stronghold') {
-    let body = '';
-    req.on('data', chunk => { body += chunk; });
-    req.on('end', () => {
-      try {
-        const payload = JSON.parse(body || '{}');
-        const strongholdId = payload.strongholdId;
-        if (!strongholdId) {
-          sendJson(res, 400, { success: false, error: 'strongholdId is required' });
-          return;
-        }
-        const gsm = globalThis.__GRAND_STRATEGY_MODULES__;
-        if (gsm && gsm.ecologyLogistics) {
-          const meta = runSqlJson(`SELECT active_turn, current_date FROM campaign_meta LIMIT 1;`)[0] || { active_turn: 6, current_date: '184-05-01' };
-          const result = gsm.ecologyLogistics.attackBanditStronghold('PLY-0001', strongholdId, meta.active_turn, meta.current_date);
-          sendJson(res, 200, { success: true, result });
-        } else {
-          sendJson(res, 500, { success: false, error: 'EcologyLogistics module not initialized' });
-        }
-      } catch (err) {
-        sendJson(res, 500, { success: false, error: err.message });
-      }
-    });
-    return;
-  }
-
-  // 4y. POST /api/ecology/simulate-turn - Action: Advance Ecology & Caravans Simulation
-  if (req.method === 'POST' && pathname === '/api/ecology/simulate-turn') {
-    try {
-      const gsm = globalThis.__GRAND_STRATEGY_MODULES__;
-      if (gsm && gsm.ecologyLogistics) {
-        const meta = runSqlJson(`SELECT active_turn, current_date FROM campaign_meta LIMIT 1;`)[0] || { active_turn: 6, current_date: '184-05-01' };
-        const result = gsm.ecologyLogistics.simulateEcologyAndLogisticsTurn(meta.active_turn, meta.current_date);
-        sendJson(res, 200, { success: true, result });
-      } else {
-        sendJson(res, 500, { success: false, error: 'EcologyLogistics module not initialized' });
-      }
-    } catch (err) {
-      sendJson(res, 500, { success: false, error: err.message });
-    }
-    return;
-  }
 
 
 
@@ -2053,14 +808,28 @@ const server = http.createServer(async (req, res) => {
       const journalResult = auditDoubleEntryJournal();
       const projResult = auditProjectionSync(cashResult, invResult);
       const npcBizResult = auditNpcAndBusinesses();
+      const factionResult = auditSqliteFactionsAndSettlements();
+      const maidenResult = auditCivilianMaidensAndLifeSim();
+      const clockResult = auditCampaignClock();
 
-      const totalChecks = cashResult.checksCount + invResult.checksCount + journalResult.checksCount + projResult.checksCount + npcBizResult.checksCount;
+      const totalChecks =
+        cashResult.checksCount +
+        invResult.checksCount +
+        journalResult.checksCount +
+        projResult.checksCount +
+        npcBizResult.checksCount +
+        factionResult.checksCount +
+        maidenResult.checksCount +
+        clockResult.checksCount;
       const allErrors = [
         ...cashResult.errors,
         ...invResult.errors,
         ...journalResult.errors,
         ...projResult.errors,
-        ...npcBizResult.errors
+        ...npcBizResult.errors,
+        ...factionResult.errors,
+        ...maidenResult.errors,
+        ...clockResult.errors
       ];
 
       sendJson(res, 200, {
@@ -2073,7 +842,10 @@ const server = http.createServer(async (req, res) => {
           inventory: invResult,
           journal: journalResult,
           projection: projResult,
-          npcEnterprise: npcBizResult
+          npcEnterprise: npcBizResult,
+          factions: factionResult,
+          lifeSim: maidenResult,
+          campaignClock: clockResult
         }
       });
     } catch (err) {
@@ -2218,6 +990,132 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // 5g-2a. Campaign clock and multi-day task board
+  if (req.method === 'GET' && pathname === '/api/time/clock') {
+    try {
+      const clock = getClock(DB_PATH);
+      const tasks = listTasks(DB_PATH);
+      const monthStart = `${String(clock.currentDate || '').slice(0, 7)}-01`;
+      const recentActions = querySqlJson(
+        currentActiveDbPath || DB_PATH,
+        `SELECT action_id, action_type, game_date, payload, status, created_at
+         FROM action_log
+         WHERE game_date >= ?
+         ORDER BY created_at DESC
+         LIMIT 12;`,
+        [monthStart]
+      ).map(row => {
+        let payload = {};
+        try { payload = JSON.parse(row.payload || '{}'); } catch (parseErr) { payload = {}; }
+        return {
+          actionId: row.action_id,
+          actionType: row.action_type,
+          gameDate: row.game_date,
+          status: row.status,
+          createdAt: row.created_at,
+          memo: payload.memo || payload.prompt || payload.item_code || payload.sub_type || ''
+        };
+      });
+      sendJson(res, 200, {
+        success: true,
+        clock,
+        tasks,
+        recentActions,
+        policy: ACTION_TIME_POLICY,
+        real: {
+          nowIso: new Date().toISOString(),
+          timezoneOffsetMinutes: new Date().getTimezoneOffset()
+        }
+      });
+    } catch (err) {
+      sendJson(res, 500, { success: false, error: err.message });
+    }
+    return;
+  }
+
+  if (req.method === 'POST' && pathname === '/api/time/spend') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        const check = canSpendActionTime(DB_PATH, payload.actionType, payload.subType, payload.daysOverride);
+        if (!check.allowed) {
+          sendJson(res, 409, { success: false, code: check.code, error: check.error, clock: check.clock });
+          return;
+        }
+        const time = applyActionTime(
+          DB_PATH,
+          payload.actionType,
+          payload.subType,
+          payload.reason || payload.actionType,
+          payload.daysOverride
+        );
+        sendJson(res, 200, { success: true, time });
+      } catch (err) {
+        sendJson(res, 400, { success: false, error: err.message });
+      }
+    });
+    return;
+  }
+
+  if (req.method === 'GET' && pathname === '/api/tasks') {
+    try {
+      sendJson(res, 200, { success: true, tasks: listTasks(DB_PATH), clock: getClock(DB_PATH) });
+    } catch (err) {
+      sendJson(res, 500, { success: false, error: err.message });
+    }
+    return;
+  }
+
+  if (req.method === 'POST' && pathname === '/api/tasks/start') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        const timeCheck = canSpendActionTime(DB_PATH, 'START_TASK', null);
+        if (!timeCheck.allowed) {
+          sendJson(res, 409, { success: false, code: timeCheck.code, error: timeCheck.error });
+          return;
+        }
+        const clock = getClock(DB_PATH);
+        const task = startTask(DB_PATH, {
+          taskType: payload.taskType || payload.task_type,
+          titleVi: payload.titleVi || payload.title,
+          titleEn: payload.titleEn || '',
+          durationDays: payload.durationDays || payload.duration_days || 1,
+          gameDate: clock.currentDate,
+          payload: payload.payload || {}
+        });
+        if (!task.success) {
+          sendJson(res, 400, task);
+          return;
+        }
+        const time = applyActionTime(DB_PATH, 'START_TASK', null, task.titleVi);
+        sendJson(res, 200, { success: true, task, time });
+      } catch (err) {
+        sendJson(res, 400, { success: false, error: err.message });
+      }
+    });
+    return;
+  }
+
+  if (req.method === 'POST' && pathname === '/api/tasks/cancel') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        const result = cancelTask(DB_PATH, payload.taskId || payload.task_id);
+        sendJson(res, result.success ? 200 : 400, result);
+      } catch (err) {
+        sendJson(res, 400, { success: false, error: err.message });
+      }
+    });
+    return;
+  }
+
   // 5g-3. POST /api/travel/plan - Query master_routes logistics & requirements
   if (req.method === 'POST' && pathname === '/api/travel/plan') {
     let body = '';
@@ -2333,47 +1231,7 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    // 5i-2. POST /api/strategy/supply-check
-    if (req.method === 'POST' && pathname === '/api/strategy/supply-check') {
-      let body = '';
-      req.on('data', chunk => { body += chunk; });
-      req.on('end', () => {
-        try {
-          const payload = JSON.parse(body || '{}');
-          const fromNode = payload.fromNode || 'LOC-0001';
-          const supplyHub = payload.supplyHub || 'LOC-0002';
-          const maxHops = payload.maxHops || 10;
-          const hasSupply = gsm.military.graph.hasUnbrokenSupplyPath(fromNode, supplyHub, maxHops);
-          sendJson(res, 200, { success: true, fromNode, supplyHub, hasSupply });
-        } catch (err) {
-          sendJson(res, 400, { success: false, error: err.message });
-        }
-      });
-      return;
-    }
 
-    // 5i-3. POST /api/strategy/price-check
-    if (req.method === 'POST' && pathname === '/api/strategy/price-check') {
-      let body = '';
-      req.on('data', chunk => { body += chunk; });
-      req.on('end', () => {
-        try {
-          const payload = JSON.parse(body || '{}');
-          const dynamicPrice = gsm.economy.calculateDynamicPrice({
-            commodity: payload.commodity || 'GRAIN',
-            basePrice: payload.basePrice || 50,
-            currentPrice: payload.currentPrice || 50,
-            stockUnits: payload.stockUnits || 100,
-            demandUnits: payload.demandUnits || 300,
-            priceElasticity: payload.priceElasticity || 1.5
-          });
-          sendJson(res, 200, { success: true, dynamicPrice });
-        } catch (err) {
-          sendJson(res, 400, { success: false, error: err.message });
-        }
-      });
-      return;
-    }
 
     // 5i-4. GET /api/strategy/memories
     if (req.method === 'GET' && pathname === '/api/strategy/memories') {
@@ -2695,8 +1553,8 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
       {
         id: 'OPT_1',
         icon: '工',
-        title: 'Tự tay kéo bễ lò nung phụ việc rèn đao (Lao động kiếm 50 Tiền công)',
-        desc: '+50 Tiền mặt • +15 CRA EXP • Tiêu hao 15 Thể lực • Kỹ nghệ thợ lò',
+        title: 'Tự tay kéo bễ lò nung phụ việc rèn đao (Lao động kiếm 50 Quan công)',
+        desc: '+50 Quan tiền mặt • +15 CRA EXP • Tiêu hao 15 Thể lực • Kỹ nghệ thợ lò',
         action: { type: 'WORK_SHIFT', shift_id: 'SHIFT_FORGE_HAND', counterparty: 'Thợ Cả Trần Bảo', game_date: meta.current_date || '184-05-02' }
       },
       {
@@ -2709,8 +1567,8 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
       {
         id: 'OPT_3',
         icon: '商',
-        title: 'Thu mua 10 Thỏi Sắt Tinh Luyện từ thợ cả (Chi 850 Tiền)',
-        desc: '+10 RAW-IRON-INGOT vào kho • Chi 850 Tiền mặt • Nguyên liệu rèn đao',
+        title: 'Thu mua 10 Thỏi Sắt Tinh Luyện từ thợ cả (Chi 850 Quan)',
+        desc: '+10 RAW-IRON-INGOT vào kho • Chi 850 Quan tiền mặt • Nguyên liệu rèn đao',
         action: { type: 'TRADE_BUY', item_code: 'RAW-IRON-INGOT', quantity: 10, unit_price: 85, counterparty: 'Thợ Cả Trần Bảo', game_date: meta.current_date || '184-05-02' }
       },
       {
@@ -2743,15 +1601,15 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
       {
         id: 'OPT_1',
         icon: '飲',
-        title: 'Gọi vò Trác Thành Trán Nương uống rượu giải sầu (Hồi 35 Thể Lực, Chi 45 Tiền)',
-        desc: '-45 Tiền • Hồi phục 35 Thể Lực • Sĩ khí +10 • Xua tan kiệt sức',
+        title: 'Gọi vò Trác Thành Trán Nương uống rượu giải sầu (Hồi 35 Thể Lực, Chi 45 Quan)',
+        desc: '-45 Quan • Hồi phục 35 Thể Lực • Sĩ khí +10 • Xua tan kiệt sức',
         action: { type: 'BANQUET_DRINK', item_code: 'COM-WINE-ZHUO', amount: 45, counterparty: 'Chưởng Quỹ Tửu Quán', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_2',
         icon: '宴',
-        title: 'Mở tiệc rượu Tiểu Yến thết đãi hào kiệt bốn phương (Chi 300 Tiền)',
-        desc: '-300 Tiền • Hảo cảm danh sĩ +15 • Tăng danh vọng vùng • Mời Trương Phi, Quan Vũ',
+        title: 'Mở tiệc rượu Tiểu Yến thết đãi hào kiệt bốn phương (Chi 300 Quan)',
+        desc: '-300 Quan • Hảo cảm danh sĩ +15 • Tăng danh vọng vùng • Mời Trương Phi, Quan Vũ',
         action: { type: 'HOST_BANQUET', tier: 'TIER_1_LOCAL', cost: 300, game_date: meta.current_date || '184-05-02' }
       },
       {
@@ -2799,7 +1657,7 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
         id: 'OPT_2',
         icon: '演',
         title: 'Đăng đài thách đấu giải vô địch Lôi Đài 3 cấp độ (Tranh đoạt tiền thưởng)',
-        desc: 'Mở giao diện Đơn Đả Đấu Trường • Khiêu chiến Hoa Hùng, Lữ Bố nhận 300 - 3000 Tiền',
+        desc: 'Mở giao diện Đơn Đả Đấu Trường • Khiêu chiến Hoa Hùng, Lữ Bố nhận 300 - 3000 Quan',
         action: { type: 'OPEN_ARENA_MODAL', counterparty: 'Lôi Đài Giáo Trường', game_date: meta.current_date || '184-05-02' }
       },
       {
@@ -2846,15 +1704,15 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
       {
         id: 'OPT_2',
         icon: '車',
-        title: 'Mua 1 cỗ Xe Ngựa Viễn Chinh gia cố (Chi 2500 Tiền, Tăng tải trọng)',
-        desc: '-2500 Tiền mặt • +1 Cỗ xe viễn chinh • Tăng 1000kg tải trọng hàng hóa',
+        title: 'Mua 1 cỗ Xe Ngựa Viễn Chinh gia cố (Chi 2500 Quan, Tăng tải trọng)',
+        desc: '-2500 Quan tiền mặt • +1 Cỗ xe viễn chinh • Tăng 1000kg tải trọng hàng hóa',
         action: { type: 'TRADE_BUY', item_code: 'EQP-CARAVAN-WAGON', quantity: 1, unit_price: 2500, counterparty: 'Mã Xa Dịch Trạm', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_3',
         icon: '衛',
-        title: 'Tuyển mộ 5 Tiêu Sư hộ vệ tinh nhuệ chống thổ phỉ (Chi 500 Tiền)',
-        desc: '-500 Tiền • +5 Tiêu Sư hộ tống thương đoàn • Giảm 50% tỷ lệ bị cướp bóc',
+        title: 'Tuyển mộ 5 Tiêu Sư hộ vệ tinh nhuệ chống thổ phỉ (Chi 500 Quan)',
+        desc: '-500 Quan • +5 Tiêu Sư hộ tống thương đoàn • Giảm 50% tỷ lệ bị cướp bóc',
         action: { type: 'HIRE_GUARDS', quantity: 5, unit_price: 100, counterparty: 'Tiêu Cục Trác Huyện', game_date: meta.current_date || '184-05-02' }
       },
       {
@@ -2930,12 +1788,12 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
       dc: 35,
       formula: `[WAR ${player.war_attr || 58} * 0.5 = 29] + [Kỹ năng Thương Pháp +10] + [D20: 9] = 48 >= DC 35`
     };
-    narrative = lastNarrative || 'Trương Phi đặt vò rượu Trác Thành Trán Nương xuống gốc đào, lau miệng cười vang: "Lương Chí Viễn dệt đường thương vừa rồi đệ lĩnh ngộ nhanh lắm! Lò mổ của lão Trương hôm nay vừa lột được 10 tấm da trâu hảo hạng (100 Tiền/tấm). Đệ có muốn mua về xưởng làm giáp lương quân dụng không? Hay muốn cùng Trương đấu thêm vài hiệp thương pháp nữa trước khi ra chợ gặp Lưu Huyền Đức và Quan Vân Trường?"';
+    narrative = lastNarrative || 'Trương Phi đặt vò rượu Trác Thành Trán Nương xuống gốc đào, lau miệng cười vang: "Lương Chí Viễn dệt đường thương vừa rồi đệ lĩnh ngộ nhanh lắm! Lò mổ của lão Trương hôm nay vừa lột được 10 tấm da trâu hảo hạng (100 Quan/tấm). Đệ có muốn mua về xưởng làm giáp lương quân dụng không? Hay muốn cùng Trương đấu thêm vài hiệp thương pháp nữa trước khi ra chợ gặp Lưu Huyền Đức và Quan Vân Trường?"';
     options = [
       {
         id: 'OPT_1',
         icon: '商',
-        title: 'Mua sỉ 8 tấm da thuộc của Trương Phi (Chi 800 Tiền)',
+        title: 'Mua sỉ 8 tấm da thuộc của Trương Phi (Chi 800 Quan)',
         desc: '+8 COM-LEATH vào kho • Hảo cảm Trương Phi +2 • COM Check DC 35',
         action: { type: 'TRADE_BUY', item_code: 'COM-LEATH', quantity: 8, unit_price: 100, counterparty: 'Trương Phi (Lò mổ Huyện Trác)', game_date: meta.current_date || '184-05-02' }
       },
@@ -2983,27 +1841,27 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
     const hasMatsToSell = matItem.quantity >= 10;
 
     if (hasSaltToSell) {
-      narrative = lastNarrative || `Quan Vân Trường vuốt ròm râu dài, tay cầm cuốn Xuân Thu đặt trên sạp trà chợ Đông: "Lương Chí Viễn, thương nhân Ký Châu vừa cập bến Đông Môn, kho của đệ hiện có ${saltItem.quantity} đấu muối biển. Muối đang được giá 85 Tiền/đấu, lại thêm nghĩa quân đang gom thêm lương thực (160 Tiền/thạch). Đệ định xuất bán kiếm lời hay gom thêm lương phòng bị?"`;
+      narrative = lastNarrative || `Quan Vân Trường vuốt ròm râu dài, tay cầm cuốn Xuân Thu đặt trên sạp trà chợ Đông: "Lương Chí Viễn, thương nhân Ký Châu vừa cập bến Đông Môn, kho của đệ hiện có ${saltItem.quantity} đấu muối biển. Muối đang được giá 85 Quan/đấu, lại thêm nghĩa quân đang gom thêm lương thực (160 Quan/thạch). Đệ định xuất bán kiếm lời hay gom thêm lương phòng bị?"`;
       options = [
         {
           id: 'OPT_1',
           icon: '商',
-          title: 'Xuất bán 10 Đấu Muối biển cho Thương đoàn Ký Châu (Thu 850 Tiền)',
-          desc: '-10 COM-SALT • +850 Tiền mặt lưu động • COM Check DC 35',
+          title: 'Xuất bán 10 Đấu Muối biển cho Thương đoàn Ký Châu (Thu 850 Quan)',
+          desc: '-10 COM-SALT • +850 Quan tiền mặt lưu động • COM Check DC 35',
           action: { type: 'TRADE_SELL', item_code: 'COM-SALT', quantity: 10, unit_price: 85, counterparty: 'Thương nhân Ký Châu', game_date: meta.current_date || '184-05-02' }
         },
         {
           id: 'OPT_2',
           icon: '農',
-          title: 'Thu mua 5 Thạch Lương tiểu mạch dự trữ (Chi 800 Tiền)',
-          desc: '+5 COM-GRAIN • Tiêu hao 800 Tiền • LOG Check DC 40',
+          title: 'Thu mua 5 Thạch Lương tiểu mạch dự trữ (Chi 800 Quan)',
+          desc: '+5 COM-GRAIN • Tiêu hao 800 Quan • LOG Check DC 40',
           action: { type: 'TRADE_BUY', item_code: 'COM-GRAIN', quantity: 5, unit_price: 160, counterparty: 'Lương thương Huyện Trác', game_date: meta.current_date || '184-05-02' }
         },
         {
           id: 'OPT_3',
           icon: '茶',
           title: 'Mời Quan Vũ uống trà, bàn luận đại cục thiên hạ và Binh pháp',
-          desc: 'Hảo cảm Quan Vũ +5 • Tăng EXP Kỹ năng Quân Sự • Chi 100 Tiền trà',
+          desc: 'Hảo cảm Quan Vũ +5 • Tăng EXP Kỹ năng Quân Sự • Chi 100 Quan trà',
           action: { type: 'REWARD_NPC', npc_id: 'NPC-0003', amount: 100, counterparty: 'Quan Vũ (Vân Trường)', game_date: meta.current_date || '184-05-02' }
         },
         {
@@ -3015,17 +1873,17 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
         }
       ];
     } else {
-      narrative = lastNarrative || `Quan Vân Trường vuốt ròm râu dài, tay cầm cuốn Xuân Thu đặt trên sạp trà chợ Đông: "Lương Chí Viễn, kho hiện tại của đệ không còn muối biển. Thương nhân Ký Châu vừa cập bến chở theo muối hạt trắng mịn (giá 65 Tiền/đấu), lại đang ráo riết thu mua ${hasMatsToSell ? `thành phẩm Chiếu Trúc Lương Gia (${matItem.quantity} tấm trong kho)` : 'thành phẩm đan lát xưởng Lương gia'} với giá 80 Tiền/tấm. Đệ định xuất bán thành phẩm xưởng dệt thu tiền mặt, hay gom thêm lương phòng bị?"`;
+      narrative = lastNarrative || `Quan Vân Trường vuốt ròm râu dài, tay cầm cuốn Xuân Thu đặt trên sạp trà chợ Đông: "Lương Chí Viễn, kho hiện tại của đệ không còn muối biển. Thương nhân Ký Châu vừa cập bến chở theo muối hạt trắng mịn (giá 65 Quan/đấu), lại đang ráo riết thu mua ${hasMatsToSell ? `thành phẩm Chiếu Trúc Lương Gia (${matItem.quantity} tấm trong kho)` : 'thành phẩm đan lát xưởng Lương gia'} với giá 80 Quan/tấm. Đệ định xuất bán thành phẩm xưởng dệt thu tiền mặt, hay gom thêm lương phòng bị?"`;
       options = [
         {
           id: 'OPT_1',
           icon: hasMatsToSell ? '工' : '商',
           title: hasMatsToSell 
-            ? 'Xuất bán 10 Tấm Chiếu Trúc Lương Gia cho Thương đoàn Ký Châu (Thu 800 Tiền)' 
-            : 'Thu mua 10 Đấu Muối biển Ký Châu giá sỉ dự trữ (Chi 650 Tiền)',
+            ? 'Xuất bán 10 Tấm Chiếu Trúc Lương Gia cho Thương đoàn Ký Châu (Thu 800 Quan)' 
+            : 'Thu mua 10 Đấu Muối biển Ký Châu giá sỉ dự trữ (Chi 650 Quan)',
           desc: hasMatsToSell 
-            ? `-10 PROD-MAT (Kho còn ${matItem.quantity}) • +800 Tiền mặt lưu động • COM Check DC 35` 
-            : '+10 COM-SALT • Chi 650 Tiền • Tích trữ muối biển làm vốn buôn đường dài',
+            ? `-10 PROD-MAT (Kho còn ${matItem.quantity}) • +800 Quan tiền mặt lưu động • COM Check DC 35` 
+            : '+10 COM-SALT • Chi 650 Quan • Tích trữ muối biển làm vốn buôn đường dài',
           action: hasMatsToSell 
             ? { type: 'TRADE_SELL', item_code: 'PROD-MAT', quantity: 10, unit_price: 80, counterparty: 'Thương nhân Ký Châu', game_date: meta.current_date || '184-05-02' }
             : { type: 'TRADE_BUY', item_code: 'COM-SALT', quantity: 10, unit_price: 65, counterparty: 'Thương nhân Ký Châu', game_date: meta.current_date || '184-05-02' }
@@ -3033,15 +1891,15 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
         {
           id: 'OPT_2',
           icon: '農',
-          title: 'Thu mua 5 Thạch Lương tiểu mạch dự trữ (Chi 800 Tiền)',
-          desc: '+5 COM-GRAIN • Tiêu hao 800 Tiền • LOG Check DC 40',
+          title: 'Thu mua 5 Thạch Lương tiểu mạch dự trữ (Chi 800 Quan)',
+          desc: '+5 COM-GRAIN • Tiêu hao 800 Quan • LOG Check DC 40',
           action: { type: 'TRADE_BUY', item_code: 'COM-GRAIN', quantity: 5, unit_price: 160, counterparty: 'Lương thương Huyện Trác', game_date: meta.current_date || '184-05-02' }
         },
         {
           id: 'OPT_3',
           icon: '茶',
           title: 'Mời Quan Vũ uống trà, bàn luận đại cục thiên hạ và Binh pháp',
-          desc: 'Hảo cảm Quan Vũ +5 • Tăng EXP Kỹ năng Quân Sự • Chi 100 Tiền trà',
+          desc: 'Hảo cảm Quan Vũ +5 • Tăng EXP Kỹ năng Quân Sự • Chi 100 Quan trà',
           action: { type: 'REWARD_NPC', npc_id: 'NPC-0003', amount: 100, counterparty: 'Quan Vũ (Vân Trường)', game_date: meta.current_date || '184-05-02' }
         },
         {
@@ -3089,8 +1947,8 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
       {
         id: 'OPT_3',
         icon: '賞',
-        title: 'Khen thưởng 100 Tiền cho Thợ Cả Trần Bảo động viên thợ xưởng',
-        desc: 'Sĩ khí thợ xưởng 100% • Trung thành +2 • Chi 100 Tiền két an toàn',
+        title: 'Khen thưởng 100 Quan cho Thợ Cả Trần Bảo động viên thợ xưởng',
+        desc: 'Sĩ khí thợ xưởng 100% • Trung thành +2 • Chi 100 Quan két an toàn',
         action: { type: 'REWARD_NPC', npc_id: 'NPC-0007', amount: 100, counterparty: 'Trần Bảo (Thợ Cả Lương Gia)', game_date: meta.current_date || '184-05-02' }
       },
       {
@@ -3123,15 +1981,15 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
       {
         id: 'OPT_1',
         icon: '功',
-        title: 'Nhận thưởng 2000 Tiền quân công phá giặc từ Tướng Quân Lư Thực',
-        desc: '+2,000 Tiền mặt ngân khố • Ghi nhận quân huân Bắc Quân',
+        title: 'Nhận thưởng 2000 Quan quân công phá giặc từ Tướng Quân Lư Thực',
+        desc: '+2,000 Quan tiền mặt ngân khố • Ghi nhận quân huân Bắc Quân',
         action: { type: 'RECORD_BOUNTY', counterparty: 'Bắc Quân Tướng Quân Lư Thực', amount: 2000, memo: 'Thưởng quân công vận trù khí giới phá thành Quảng Tông', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_2',
         icon: '農',
         title: 'Tiếp tế 5 Thạch Lương tiểu mạch cho Quân Nhu Cục Bắc Quân',
-        desc: '-5 COM-GRAIN • +900 Tiền thu mua quân nhu (@180 Tiền/thạch)',
+        desc: '-5 COM-GRAIN • +900 Quan thu mua quân nhu (@180 Quan/thạch)',
         action: { type: 'TRADE_SELL', item_code: 'COM-GRAIN', quantity: 5, unit_price: 180, counterparty: 'Quân nhu cục Bắc Quân', game_date: meta.current_date || '184-05-02' }
       },
       {
@@ -3171,14 +2029,14 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
       {
         id: 'OPT_1',
         icon: '甲',
-        title: 'Cung cấp 5 Khiên Trúc Lương Gia cho Dân Binh Xã Tắc (Thu 1,200 Tiền)',
+        title: 'Cung cấp 5 Khiên Trúc Lương Gia cho Dân Binh Xã Tắc (Thu 1,200 Quan)',
         desc: 'Hỗ trợ hương dũng Bình Nguyên phòng ngự • Tăng uy vọng địa phương',
         action: { type: 'TRADE_SELL', item_code: 'PROD-SHIELD-BAM', quantity: 5, unit_price: 240, counterparty: 'Quan phủ Huyện Bình Nguyên', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_2',
         icon: '農',
-        title: 'Thu mua lương thảo ngô khoai Thanh Châu tiếp tế (Chi 600 Tiền)',
+        title: 'Thu mua lương thảo ngô khoai Thanh Châu tiếp tế (Chi 600 Quan)',
         desc: '+4 COM-GRAIN • Bổ sung quân nhu viễn chinh',
         action: { type: 'TRADE_BUY', item_code: 'COM-GRAIN', quantity: 4, unit_price: 150, counterparty: 'Thương hội Thanh Châu', game_date: meta.current_date || '184-05-02' }
       },
@@ -3226,8 +2084,8 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
       {
         id: 'OPT_2',
         icon: '農',
-        title: 'Tiếp tế 8 Thạch Lương thực khẩn cấp cho đại doanh Dự Châu (Thu 1,440 Tiền)',
-        desc: '-8 COM-GRAIN • Thu 1,440 Tiền mặt ngân sách quân đội',
+        title: 'Tiếp tế 8 Thạch Lương thực khẩn cấp cho đại doanh Dự Châu (Thu 1,440 Quan)',
+        desc: '-8 COM-GRAIN • Thu 1,440 Quan tiền mặt ngân sách quân đội',
         action: { type: 'TRADE_SELL', item_code: 'COM-GRAIN', quantity: 8, unit_price: 180, counterparty: 'Quân nhu cục Dự Châu', game_date: meta.current_date || '184-05-02' }
       },
       {
@@ -3267,14 +2125,14 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
       {
         id: 'OPT_1',
         icon: '功',
-        title: 'Nhận sắc phong Quân Nhu Tán Quan & Thưởng 2,500 Tiền từ Triều Đình',
-        desc: '+2,500 Tiền mặt ngân khố triều đình • Tăng danh vọng sĩ phu Lạc Dương',
+        title: 'Nhận sắc phong Quân Nhu Tán Quan & Thưởng 2,500 Quan từ Triều Đình',
+        desc: '+2,500 Quan tiền mặt ngân khố triều đình • Tăng danh vọng sĩ phu Lạc Dương',
         action: { type: 'RECORD_BOUNTY', counterparty: 'Đại Tướng Quân Phủ Lạc Dương', amount: 2500, memo: 'Ban thưởng công huân vận trù quân lương bình Khăn Vàng', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_2',
         icon: '府',
-        title: 'Đăng ký môn bài chi nhánh Lương Gia Thương Hội tại Kinh Sư (Chi 1,000 Tiền)',
+        title: 'Đăng ký môn bài chi nhánh Lương Gia Thương Hội tại Kinh Sư (Chi 1,000 Quan)',
         desc: 'Mở phân hiệu giao thương độc quyền kinh đô • Tăng tiềm năng thương vụ',
         action: { type: 'REWARD_NPC', npc_id: 'NPC-0010', amount: 100, counterparty: 'Hà Tiến (Đại Tướng Quân)', game_date: meta.current_date || '184-05-02' }
       },
@@ -3315,14 +2173,14 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
       {
         id: 'OPT_1',
         icon: '甲',
-        title: 'Cung cấp 10 Khiên Trúc Lương Gia chi viện quân biên cương (Thu 2,400 Tiền)',
+        title: 'Cung cấp 10 Khiên Trúc Lương Gia chi viện quân biên cương (Thu 2,400 Quan)',
         desc: 'Cung cấp khí giới cho phòng tuyến Bắc Bình • Danh vọng U Châu +15',
         action: { type: 'TRADE_SELL', item_code: 'PROD-SHIELD-BAM', quantity: 10, unit_price: 240, counterparty: 'Bắc Bình Soái Phủ Công Tôn Toản', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_2',
         icon: '馬',
-        title: 'Thu mua 3 Tuấn Mã U Châu chất lượng cao (Chi 1,200 Tiền)',
+        title: 'Thu mua 3 Tuấn Mã U Châu chất lượng cao (Chi 1,200 Quan)',
         desc: '+3 COM-LEATH nguyên liệu da hảo hạng • Tăng tốc độ hành quân',
         action: { type: 'TRADE_BUY', item_code: 'COM-LEATH', quantity: 3, unit_price: 400, counterparty: 'Quân Mã Cục Bắc Bình', game_date: meta.current_date || '184-05-02' }
       },
@@ -3363,14 +2221,14 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
       {
         id: 'OPT_1',
         icon: '工',
-        title: 'Xuất bán 20 tấm Chiếu Trúc Lương Gia cho các đại tộc Nghiệp Thành (Thu 1,600 Tiền)',
+        title: 'Xuất bán 20 tấm Chiếu Trúc Lương Gia cho các đại tộc Nghiệp Thành (Thu 1,600 Quan)',
         desc: 'Mở rộng thị trường thủ công mỹ nghệ cao cấp tại Ký Châu',
         action: { type: 'TRADE_SELL', item_code: 'PROD-MAT', quantity: 20, unit_price: 80, counterparty: 'Thế tộc Nghiệp Thành', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_2',
         icon: '農',
-        title: 'Gom mua 15 thạch lương Ký Châu giá sỉ từ thương lái (Chi 2,100 Tiền)',
+        title: 'Gom mua 15 thạch lương Ký Châu giá sỉ từ thương lái (Chi 2,100 Quan)',
         desc: '+15 COM-GRAIN vào kho dự trữ • Tối ưu giá lương thảo',
         action: { type: 'TRADE_BUY', item_code: 'COM-GRAIN', quantity: 15, unit_price: 140, counterparty: 'Lương thương Ký Châu', game_date: meta.current_date || '184-05-02' }
       },
@@ -3411,15 +2269,15 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
       {
         id: 'OPT_1',
         icon: '甲',
-        title: 'Xuất bán 10 Khiên Trúc hỗ trợ dân binh Từ Châu phòng thủ (Thu 2,400 Tiền)',
-        desc: 'Cung cấp khiên giáp giữ thành Hạ Phì • Thu 2,400 Tiền ngân khố Từ Châu',
+        title: 'Xuất bán 10 Khiên Trúc hỗ trợ dân binh Từ Châu phòng thủ (Thu 2,400 Quan)',
+        desc: 'Cung cấp khiên giáp giữ thành Hạ Phì • Thu 2,400 Quan ngân khố Từ Châu',
         action: { type: 'TRADE_SELL', item_code: 'PROD-SHIELD-BAM', quantity: 10, unit_price: 240, counterparty: 'Từ Châu Thứ Sử Đào Khiêm', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_2',
         icon: '商',
-        title: 'Thu mua 15 đấu muối biển duyên hải Từ Châu giá rẻ (Chi 900 Tiền)',
-        desc: '+15 COM-SALT vào kho • Đơn giá ưu đãi 60 Tiền/đấu',
+        title: 'Thu mua 15 đấu muối biển duyên hải Từ Châu giá rẻ (Chi 900 Quan)',
+        desc: '+15 COM-SALT vào kho • Đơn giá ưu đãi 60 Quan/đấu',
         action: { type: 'TRADE_BUY', item_code: 'COM-SALT', quantity: 15, unit_price: 60, counterparty: 'Diêm trường Hạ Phì', game_date: meta.current_date || '184-05-02' }
       },
       {
@@ -3459,21 +2317,21 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
       {
         id: 'OPT_1',
         icon: '功',
-        title: 'Nhận ban thưởng 2,500 Tiền ngân khố Quan Trung tiếp trợ triều đình',
-        desc: '+2,500 Tiền mặt • Ghi nhận quân huân Tây Đô',
+        title: 'Nhận ban thưởng 2,500 Quan ngân khố Quan Trung tiếp trợ triều đình',
+        desc: '+2,500 Quan tiền mặt • Ghi nhận quân huân Tây Đô',
         action: { type: 'RECORD_BOUNTY', counterparty: 'Tư Đồ Phủ Trường An', amount: 2500, memo: 'Tiếp trợ ngân khố phòng ngự Tây Đô', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_2',
         icon: '農',
-        title: 'Xuất bán 10 thạch lương cho kho đồn trú Trường An (Thu 1,900 Tiền)',
+        title: 'Xuất bán 10 thạch lương cho kho đồn trú Trường An (Thu 1,900 Quan)',
         desc: '-10 COM-GRAIN • Giá lương đồn trú Tây Đô cực cao',
         action: { type: 'TRADE_SELL', item_code: 'COM-GRAIN', quantity: 10, unit_price: 190, counterparty: 'Quân nhu Trường An', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_3',
         icon: '商',
-        title: 'Mua 8 tấm da trâu hảo hạng Tây Lương (Chi 800 Tiền)',
+        title: 'Mua 8 tấm da trâu hảo hạng Tây Lương (Chi 800 Quan)',
         desc: '+8 COM-LEATH da thuộc dai bền chuẩn bị chế tác giáp',
         action: { type: 'TRADE_BUY', item_code: 'COM-LEATH', quantity: 8, unit_price: 100, counterparty: 'Thương nhân Quan Trung', game_date: meta.current_date || '184-05-02' }
       },
@@ -3507,14 +2365,14 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
       {
         id: 'OPT_1',
         icon: '商',
-        title: 'Xuất bán 10 đấu muối biển cho thương đoàn Kinh Tương (Thu 950 Tiền)',
+        title: 'Xuất bán 10 đấu muối biển cho thương đoàn Kinh Tương (Thu 950 Quan)',
         desc: '-10 COM-SALT • Kinh Châu khan hiếm muối biển, giá cao',
         action: { type: 'TRADE_SELL', item_code: 'COM-SALT', quantity: 10, unit_price: 95, counterparty: 'Thương đoàn Kinh Tương', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_2',
         icon: '農',
-        title: 'Thu mua 10 thạch lúa gạo thơm Kinh Châu (Chi 1,500 Tiền)',
+        title: 'Thu mua 10 thạch lúa gạo thơm Kinh Châu (Chi 1,500 Quan)',
         desc: '+10 COM-GRAIN lúa gạo miền sông nước dự trữ dồi dào',
         action: { type: 'TRADE_BUY', item_code: 'COM-GRAIN', quantity: 10, unit_price: 150, counterparty: 'Thực túc cục Tương Dương', game_date: meta.current_date || '184-05-02' }
       },
@@ -3555,14 +2413,14 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
       {
         id: 'OPT_1',
         icon: '甲',
-        title: 'Cung cấp 8 Khiên Trúc bọc da chống tên cho thủy binh (Thu 2,000 Tiền)',
+        title: 'Cung cấp 8 Khiên Trúc bọc da chống tên cho thủy binh (Thu 2,000 Quan)',
         desc: 'Trang bị khiên giáp bơi lội tốt cho đội thủy chiến',
         action: { type: 'TRADE_SELL', item_code: 'PROD-SHIELD-BAM', quantity: 8, unit_price: 250, counterparty: 'Thủy Sư Giang Lăng', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_2',
         icon: '商',
-        title: 'Thu mua 8 tấm da trâu bọc mạn thuyền (Chi 800 Tiền)',
+        title: 'Thu mua 8 tấm da trâu bọc mạn thuyền (Chi 800 Quan)',
         desc: '+8 COM-LEATH da thuộc tuyển chọn từ thương nhân Trường Giang',
         action: { type: 'TRADE_BUY', item_code: 'COM-LEATH', quantity: 8, unit_price: 100, counterparty: 'Thương cảng Giang Lăng', game_date: meta.current_date || '184-05-02' }
       },
@@ -3603,14 +2461,14 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
       {
         id: 'OPT_1',
         icon: '甲',
-        title: 'Chi viện 10 Khiên Trúc bọc da chống lửa cho hạm đội (Thu 2,500 Tiền)',
+        title: 'Chi viện 10 Khiên Trúc bọc da chống lửa cho hạm đội (Thu 2,500 Quan)',
         desc: 'Hỗ trợ đội mồi lửa áp sát • Hảo cảm Chu Du +10',
         action: { type: 'TRADE_SELL', item_code: 'PROD-SHIELD-BAM', quantity: 10, unit_price: 250, counterparty: 'Đông Ngô Đô Đốc Chu Du', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_2',
         icon: '農',
-        title: 'Tiếp tế 10 thạch quân lương cho thủy trại Sài Tang (Thu 1,800 Tiền)',
+        title: 'Tiếp tế 10 thạch quân lương cho thủy trại Sài Tang (Thu 1,800 Quan)',
         desc: '-10 COM-GRAIN • Chi viện quân lương cấp bách',
         action: { type: 'TRADE_SELL', item_code: 'COM-GRAIN', quantity: 10, unit_price: 180, counterparty: 'Quân nhu Sài Tang', game_date: meta.current_date || '184-05-02' }
       },
@@ -3651,14 +2509,14 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
       {
         id: 'OPT_1',
         icon: '工',
-        title: 'Xuất bán 20 Chiếu Trúc Lương Gia cho cung phủ Đông Ngô (Thu 1,800 Tiền)',
+        title: 'Xuất bán 20 Chiếu Trúc Lương Gia cho cung phủ Đông Ngô (Thu 1,800 Quan)',
         desc: 'Chiếu trúc U Châu mát mẻ mùa hạ rất được quý tộc Giang Đông chuộng',
         action: { type: 'TRADE_SELL', item_code: 'PROD-MAT', quantity: 20, unit_price: 90, counterparty: 'Vương phủ Kiến Nghiệp', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_2',
         icon: '茶',
-        title: 'Mua sỉ đặc sản gốm sứ và trà quý Giang Nam (Chi 1,000 Tiền)',
+        title: 'Mua sỉ đặc sản gốm sứ và trà quý Giang Nam (Chi 1,000 Quan)',
         desc: 'Thương phẩm đặc sắc giá trị cao • Tăng quan hệ thương mại',
         action: { type: 'REWARD_NPC', npc_id: 'NPC-0019', amount: 100, counterparty: 'Thương Điếm Giang Nam', game_date: meta.current_date || '184-05-02' }
       },
@@ -3699,22 +2557,22 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
       {
         id: 'OPT_1',
         icon: '農',
-        title: 'Quyên góp 5 thạch lương vào nghĩa xá tăng uy vọng (Thu 900 Tiền tạ lễ)',
+        title: 'Quyên góp 5 thạch lương vào nghĩa xá tăng uy vọng (Thu 900 Quan tạ lễ)',
         desc: 'Tạo phúc đức trong vùng • Tăng danh tiếng thiện nhân',
         action: { type: 'TRADE_SELL', item_code: 'COM-GRAIN', quantity: 5, unit_price: 180, counterparty: 'Nghĩa Xá Thiên Sư Đạo', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_2',
         icon: '商',
-        title: 'Thu mua 8 vị thảo dược quý Tần Lĩnh trị thương (Chi 800 Tiền)',
+        title: 'Thu mua 8 vị thảo dược quý Tần Lĩnh trị thương (Chi 800 Quan)',
         desc: '+8 COM-LEATH thuốc quý và da hươu núi chữa thương cho quân lính',
         action: { type: 'TRADE_BUY', item_code: 'COM-LEATH', quantity: 8, unit_price: 100, counterparty: 'Dược phòng Hán Trung', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_3',
         icon: '甲',
-        title: 'Cung cấp 5 Khiên Trúc bảo vệ dịch trạm đường núi Kiếm Các (Thu 1,250 Tiền)',
-        desc: 'Hỗ trợ tuần binh đường đèo • Thu 1,250 Tiền từ quan phủ Hán Trung',
+        title: 'Cung cấp 5 Khiên Trúc bảo vệ dịch trạm đường núi Kiếm Các (Thu 1,250 Quan)',
+        desc: 'Hỗ trợ tuần binh đường đèo • Thu 1,250 Quan từ quan phủ Hán Trung',
         action: { type: 'TRADE_SELL', item_code: 'PROD-SHIELD-BAM', quantity: 5, unit_price: 250, counterparty: 'Trấn Dân Phủ Hán Trung', game_date: meta.current_date || '184-05-02' }
       },
       {
@@ -3747,14 +2605,14 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
       {
         id: 'OPT_1',
         icon: '工',
-        title: 'Xuất bán 20 tấm Chiếu Trúc Lương Gia cho phủ Ích Châu (Thu 1,800 Tiền)',
+        title: 'Xuất bán 20 tấm Chiếu Trúc Lương Gia cho phủ Ích Châu (Thu 1,800 Quan)',
         desc: 'Được giới quý tộc Thục Hán tán thưởng nhiệt liệt',
         action: { type: 'TRADE_SELL', item_code: 'PROD-MAT', quantity: 20, unit_price: 90, counterparty: 'Ích Châu Châu Phủ', game_date: meta.current_date || '184-05-02' }
       },
       {
         id: 'OPT_2',
         icon: '農',
-        title: 'Thu mua 10 thạch lúa gạo Thiên Phủ dồi dào dự trữ (Chi 1,400 Tiền)',
+        title: 'Thu mua 10 thạch lúa gạo Thiên Phủ dồi dào dự trữ (Chi 1,400 Quan)',
         desc: '+10 COM-GRAIN lúa gạo trù phú bồn địa Tứ Xuyên',
         action: { type: 'TRADE_BUY', item_code: 'COM-GRAIN', quantity: 10, unit_price: 140, counterparty: 'Lương điền Thành Đô', game_date: meta.current_date || '184-05-02' }
       },
@@ -4013,10 +2871,10 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
             game_date: '184-05-02'
           };
           if (subLocation === 'Chợ Đông Môn') {
-            replyNarrative = 'Thương nhân Ký Châu kiểm tra 10 tấm Chiếu Trúc Lương Gia, gật gù khen nan tre óng mượt và thanh toán ngay 800 Tiền mặt!';
+            replyNarrative = 'Thương nhân Ký Châu kiểm tra 10 tấm Chiếu Trúc Lương Gia, gật gù khen nan tre óng mượt và thanh toán ngay 800 Quan tiền mặt!';
             dispatchType = 'LOCAL';
           } else {
-            replyNarrative = `Lương Diễn đang tại ${subLocation}, liền phái gia nhân áp tải xe hàng 10 tấm Chiếu Trúc ra Chợ Đông Môn giao cho Thương nhân Ký Châu, thu về 800 Tiền mặt!`;
+            replyNarrative = `Lương Diễn đang tại ${subLocation}, liền phái gia nhân áp tải xe hàng 10 tấm Chiếu Trúc ra Chợ Đông Môn giao cho Thương nhân Ký Châu, thu về 800 Quan tiền mặt!`;
             dispatchType = 'COURIER';
           }
         } else if (userPrompt.includes('quan vũ') || userPrompt.includes('uống trà') || (userPrompt.includes('đàm đạo') && subLocation === 'Chợ Đông Môn')) {
@@ -4044,7 +2902,7 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
             replyNarrative = 'Thương nhân Ký Châu trao ngay 850 đồng tiền thanh toán cho 10 Đấu muối biển. Tiền mặt lưu động tăng mạnh!';
             dispatchType = 'LOCAL';
           } else {
-            replyNarrative = `Lương Diễn đang tại ${subLocation}, liền viết khoán ước giao thương, phái gia nhân cưỡi ngựa áp tải 10 Đấu muối biển ra Chợ Đông Môn giao cho Thương nhân Ký Châu. Thương đoàn kiểm tra muối rồi gửi đủ 850 tiền mang về!`;
+            replyNarrative = `Lương Diễn đang tại ${subLocation}, liền viết khoán ước giao thương, phái gia nhân cưỡi ngựa áp tải 10 Đấu muối biển ra Chợ Đông Môn giao cho Thương nhân Ký Châu. Thương đoàn kiểm tra muối rồi gửi đủ 850 quan mang về!`;
             dispatchType = 'COURIER';
           }
         } else if (userPrompt.includes('sản xuất') || userPrompt.includes('khiên') || userPrompt.includes('produce') || userPrompt.includes('craft') || userPrompt.includes('shield')) {
@@ -4098,10 +2956,10 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
             game_date: '184-05-02'
           };
           if (subLocation === 'Xưởng Lương Thị') {
-            replyNarrative = 'Trần Bảo nhận 100 Tiền thưởng công tại xưởng, cảm kích khôn xiết, nguyện hết lòng dốc sức vì Lương gia!';
+            replyNarrative = 'Trần Bảo nhận 100 Quan thưởng công tại xưởng, cảm kích khôn xiết, nguyện hết lòng dốc sức vì Lương gia!';
             dispatchType = 'LOCAL';
           } else {
-            replyNarrative = `Lương Diễn từ ${subLocation} gửi gắm gia nhân mang phong bao 100 Tiền thưởng công về xưởng trao tận tay thợ cả Trần Bảo. Trần Bảo rưng rưng cảm tạ đức độ của đông gia!`;
+            replyNarrative = `Lương Diễn từ ${subLocation} gửi gắm gia nhân mang phong bao 100 Quan thưởng công về xưởng trao tận tay thợ cả Trần Bảo. Trần Bảo rưng rưng cảm tạ đức độ của đông gia!`;
             dispatchType = 'COURIER';
           }
         } else if (userPrompt.includes('quân công') || userPrompt.includes('bounty') || userPrompt.includes('lập công')) {
@@ -4114,10 +2972,10 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
             game_date: '184-05-02'
           };
           if (subLocation === 'Quảng Tông Quân Doanh') {
-            replyNarrative = 'Lư Thực trao bằng khen quân công cùng 2000 Tiền quân nhu thưởng cho sách lược tiếp tế xuất sắc!';
+            replyNarrative = 'Lư Thực trao bằng khen quân công cùng 2000 Quan quân nhu thưởng cho sách lược tiếp tế xuất sắc!';
             dispatchType = 'LOCAL';
           } else {
-            replyNarrative = `Sứ giả tiền tuyến Quảng Tông phi ngựa hỏa tốc mang công văn khen thưởng của Lư Thực cùng 2000 Tiền quân nhu trao tận tay Lương Diễn tại ${subLocation}!`;
+            replyNarrative = `Sứ giả tiền tuyến Quảng Tông phi ngựa hỏa tốc mang công văn khen thưởng của Lư Thực cùng 2000 Quan quân nhu trao tận tay Lương Diễn tại ${subLocation}!`;
             dispatchType = 'COURIER';
           }
         } else {
@@ -4188,7 +3046,7 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
               ? `Social Interaction: ${dailyRes.outcomeTitleEn || dailyRes.outcomeTitleVi}. Affinity delta: ${dailyRes.deltas.affinityChange > 0 ? '+' : ''}${dailyRes.deltas.affinityChange}.`
               : `Giao tế đời thường: ${dailyRes.outcomeTitleVi}. Biến động hảo cảm: ${dailyRes.deltas.affinityChange > 0 ? '+' : ''}${dailyRes.deltas.affinityChange}.`;
             delta = {
-              cash: dailyRes.deltas.cashCost > 0 ? `-${dailyRes.deltas.cashCost} Qian` : (isClientEn ? 'Preserved' : 'Bảo toàn'),
+              cash: dailyRes.deltas.cashCost > 0 ? `-${dailyRes.deltas.cashCost} quan` : (isClientEn ? 'Preserved' : 'Bảo toàn'),
               inventory: isClientEn ? 'Preserved' : 'Bảo toàn',
               relations: isClientEn 
                 ? `Affinity ${dailyRes.deltas.affinityChange > 0 ? '+' : ''}${dailyRes.deltas.affinityChange} • ${dailyRes.outcomeTitleEn || dailyRes.outcomeTitleVi}`
@@ -4218,7 +3076,7 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
             ? `Phái sứ giả/gia nhân từ ${subLocation} tới ${targetLoc} thu mua ${actionToRun.quantity} ${actionToRun.item_code}. Điều phối kho từ xa.`
             : `Thu mua trực tiếp ${actionToRun.quantity} ${actionToRun.item_code} từ ${actionToRun.counterparty} tại ${subLocation}. Tăng tích trữ nguyên liệu.`;
           delta = { 
-            cash: `-${actionToRun.quantity * actionToRun.unit_price} Qian`, 
+            cash: `-${actionToRun.quantity * actionToRun.unit_price} quan`, 
             inventory: `+${actionToRun.quantity} ${actionToRun.item_code}`, 
             dispatch: dispatchType === 'COURIER' ? `[PHI THƯ] Phi thư tới ${targetLoc}` : '[TRỰC DIỆN] Trực tiếp tại chỗ',
             audit: 'Khớp Nợ Tồn Kho / Có Tiền Mặt' 
@@ -4228,7 +3086,7 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
             ? `Phái gia nhân từ ${subLocation} ra ${targetLoc} xuất bán ${actionToRun.quantity} ${actionToRun.item_code}. Chuyển hóa thặng dư hàng hóa thành tiền mặt.`
             : `Xuất bán trực tiếp ${actionToRun.quantity} ${actionToRun.item_code} cho ${actionToRun.counterparty} tại ${subLocation}.`;
           delta = { 
-            cash: `+${actionToRun.quantity * actionToRun.unit_price} Qian`, 
+            cash: `+${actionToRun.quantity * actionToRun.unit_price} quan`, 
             inventory: `-${actionToRun.quantity} ${actionToRun.item_code}`, 
             dispatch: dispatchType === 'COURIER' ? `[PHI THƯ] Áp tải ra ${targetLoc}` : '[TRỰC DIỆN] Trực tiếp tại chỗ',
             audit: 'Khớp Nợ Tiền Mặt / Có Doanh Thu' 
@@ -4238,15 +3096,15 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
             ? `Phi thư lệnh bài từ ${subLocation} về ${targetLoc} chỉ đạo lô sản xuất ${actionToRun.recipe} SL ${actionToRun.batch_size}.`
             : `Trực tiếp giám sát thợ xưởng hoàn thành lô sản xuất ${actionToRun.recipe} SL ${actionToRun.batch_size} tại ${subLocation}.`;
           delta = { 
-            cash: '0 Qian (Tiêu hao nguyên liệu)', 
+            cash: '0 quan (Tiêu hao nguyên liệu)', 
             inventory: `+${actionToRun.batch_size} thành phẩm`, 
             dispatch: dispatchType === 'COURIER' ? `[PHI THƯ] Mật lệnh về ${targetLoc}` : '[TRỰC DIỆN] Trực tiếp tại xưởng',
             audit: 'Bảo toàn BOM định mức' 
           };
         } else if (actionToRun && actionToRun.type === 'REWARD_NPC') {
-          tacticalReasoning = `Khen thưởng ${actionToRun.amount} Tiền củng cố lòng trung thành và sĩ khí của danh tướng/thợ xưởng.`;
+          tacticalReasoning = `Khen thưởng ${actionToRun.amount} Quan củng cố lòng trung thành và sĩ khí của danh tướng/thợ xưởng.`;
           delta = { 
-            cash: `-${actionToRun.amount} Qian`, 
+            cash: `-${actionToRun.amount} quan`, 
             inventory: 'Bảo toàn', 
             npc: 'Sĩ khí 100% • Trung thành +2', 
             dispatch: dispatchType === 'COURIER' ? `[PHI THƯ] Gửi thưởng tới ${targetLoc}` : '[TRỰC DIỆN] Ban thưởng tại chỗ',
@@ -4254,11 +3112,11 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
           };
         } else if (actionToRun && actionToRun.type === 'MOVE_LOCATION') {
           tacticalReasoning = `Cơ động tới ${actionToRun.new_location} mở rộng mạng lưới giao thương và tiếp xúc các thế lực Tam Quốc.`;
-          delta = { cash: '0 Qian', inventory: 'Bảo toàn', location: actionToRun.new_location, dispatch: '[HÀNH TRÌNH] Di chuyển thực tế', audit: 'Cập nhật vị trí chiến dịch' };
+          delta = { cash: '0 quan', inventory: 'Bảo toàn', location: actionToRun.new_location, dispatch: '[HÀNH TRÌNH] Di chuyển thực tế', audit: 'Cập nhật vị trí chiến dịch' };
         } else if (actionToRun && actionToRun.type === 'RECORD_BOUNTY') {
           tacticalReasoning = `Ghi nhận quân thưởng quân công từ tiền tuyến phá giặc Khăn Vàng.`;
           delta = { 
-            cash: `+${actionToRun.amount} Qian`, 
+            cash: `+${actionToRun.amount} quan`, 
             inventory: 'Bảo toàn', 
             relations: 'Quân huân Bắc Quân +20', 
             dispatch: dispatchType === 'COURIER' ? '[PHI THƯ] Công văn tiền tuyến' : '[TRỰC DIỆN] Trực diện tại soái trướng',
@@ -4266,7 +3124,7 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
           };
         } else {
           tacticalReasoning = `Đàm đạo chiến lược và thăm dò tình hình thời cuộc cùng các hào kiệt tại ${subLocation}.`;
-          delta = { cash: '0 Qian', inventory: 'Bảo toàn', relations: 'Hảo cảm +5', dispatch: '[TRỰC DIỆN] Đối thoại trực diện', audit: 'Bảo toàn trạng thái' };
+          delta = { cash: '0 quan', inventory: 'Bảo toàn', relations: 'Hảo cảm +5', dispatch: '[TRỰC DIỆN] Đối thoại trực diện', audit: 'Bảo toàn trạng thái' };
         }
 
         logAgentSimulationEvent({
@@ -4417,6 +3275,17 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
   // -------------------------------------------------------------
   // STATIC FILE SERVING
   // -------------------------------------------------------------
+  // Unknown API paths must not fall through to index.html: a 200 HTML body
+  // breaks every client that expects JSON and hides routing mistakes.
+  if (pathname.startsWith('/api/')) {
+    sendJson(res, 404, {
+      success: false,
+      code: 'NOT_FOUND',
+      error: `API route not found: ${req.method} ${pathname}`
+    });
+    return;
+  }
+
   let safePath = pathname === '/' ? '/index.html' : pathname;
   const filePath = path.join(PUBLIC_DIR, safePath);
 

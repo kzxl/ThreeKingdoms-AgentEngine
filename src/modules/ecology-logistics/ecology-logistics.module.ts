@@ -6,9 +6,9 @@
  * Adheres to AgentOption Universe Modular Architecture v4.0.
  */
 
-import path from 'path';
-import { execSync } from 'child_process';
 import { DatabaseService } from '../../core/database';
+import { syncProgressProjection } from '../../shared/projection-sync';
+import { isTurnModuleDone, markTurnModuleDone } from '../../shared/turn-ledger';
 import {
   IFeatureModule,
   ModuleContext,
@@ -238,10 +238,7 @@ export class EcologyLogisticsModule implements IFeatureModule {
     });
 
     // Sync projection to progress.md
-    try {
-      const rootDir = path.resolve(__dirname, '../../..');
-      execSync(`node "${path.join(rootDir, 'tools', 'sim-db.js')}" export-progress`, { stdio: 'ignore' });
-    } catch (e) {}
+    syncProgressProjection(this.db);
 
     return {
       success: true,
@@ -303,10 +300,7 @@ export class EcologyLogisticsModule implements IFeatureModule {
       });
 
       // Sync projection
-      try {
-        const rootDir = path.resolve(__dirname, '../../..');
-        execSync(`node "${path.join(rootDir, 'tools', 'sim-db.js')}" export-progress`, { stdio: 'ignore' });
-      } catch (e) {}
+      syncProgressProjection(this.db);
 
       return {
         success: true,
@@ -315,7 +309,7 @@ export class EcologyLogisticsModule implements IFeatureModule {
         bounty,
         lootCash,
         totalReward,
-        message: `Đại thắng! Thống lĩnh quân sĩ phá tan ${stronghold.name_vi}, trảm tướng cướp ${stronghold.bandit_chief_name}, thu hồi ${lootCash} tiền của thương đoàn bị cướp và lĩnh thưởng ${bounty} tiền quân công triều đình!`
+        message: `Đại thắng! Thống lĩnh quân sĩ phá tan ${stronghold.name_vi}, trảm tướng cướp ${stronghold.bandit_chief_name}, thu hồi ${lootCash} quan của thương đoàn bị cướp và lĩnh thưởng ${bounty} quan quân công triều đình!`
       };
     } else {
       this.db.execute(
@@ -336,77 +330,19 @@ export class EcologyLogisticsModule implements IFeatureModule {
    * Simulates monthly/turn cycle for Ecology & Macro Logistics Caravans
    */
   public simulateEcologyAndLogisticsTurn(turnNumber: number, gameDate: string): any {
-    if (this.lastSimulatedTurn === turnNumber) {
+    if (isTurnModuleDone(this.db, turnNumber, this.id)) {
       return { turnNumber, gameDate, processedCaravans: 0, events: [] };
     }
-    this.lastSimulatedTurn = turnNumber;
 
+    const result = this.db.transaction(() => {
     const events: string[] = [];
 
-    // 1. Advance Caravans
-    const activeCaravans = this.db.query<any>(`SELECT * FROM trade_caravans WHERE status = 'EN_ROUTE';`);
-    for (const car of activeCaravans) {
-      const newProgress = Math.min(1.0, Math.round((car.route_progress + 0.35) * 100) / 100);
+    // Caravan transit and settlement are owned by CaravanLogisticsService and
+    // driven by the campaign clock (advanceByDays). This module must not move
+    // or pay caravans: doing so created a second state machine and paid some
+    // cargo twice.
 
-      // Ambush check at midway (0.4 to 0.7) with deterministic roll
-      const ambushRoll = getTurnDeterministicRoll(turnNumber, car.caravan_id, 11);
-      if (newProgress >= 0.4 && newProgress <= 0.7 && ambushRoll < 0.30) {
-        // Find nearest active bandit stronghold
-        const stronghold = this.db.queryOne<any>(`SELECT * FROM bandit_strongholds WHERE status = 'ACTIVE' LIMIT 1;`);
-        if (stronghold && stronghold.bandit_power > car.guard_troops * 2) {
-          // Caravan Plundered!
-          this.db.transaction(() => {
-            this.db.execute(
-              `UPDATE trade_caravans SET status = 'PLUNDERED', updated_at = CURRENT_TIMESTAMP WHERE caravan_id = ?;`,
-              [car.caravan_id]
-            );
-            this.db.execute(
-              `UPDATE bandit_strongholds SET plundered_wealth = plundered_wealth + ? WHERE stronghold_id = ?;`,
-              [car.cargo_value_qian, stronghold.stronghold_id]
-            );
-          });
-
-          events.push(`[CẢNH BÁO] ${car.caravan_name} đã bị ${stronghold.name_vi} mai phục cướp sạch hàng hóa trị giá ${car.cargo_value_qian} tiền!`);
-          continue;
-        }
-      }
-
-      if (newProgress >= 1.0) {
-        // Arrived and traded successfully! Conserve currency between factions
-        const totalPayout = Math.round(car.cargo_value_qian * 1.35);
-        const destSettlement = this.db.queryOne<any>(
-          `SELECT ruler_faction_id FROM session_settlements WHERE settlement_id = ?;`,
-          [car.to_settlement_id]
-        );
-        const buyerFactionId = destSettlement?.ruler_faction_id || 'FAC-HAN';
-
-        this.db.transaction(() => {
-          this.db.execute(
-            `UPDATE trade_caravans SET status = 'SUCCESS_TRADED', route_progress = 1.0, updated_at = CURRENT_TIMESTAMP WHERE caravan_id = ?;`,
-            [car.caravan_id]
-          );
-          // Deduct from buyer faction treasury
-          this.db.execute(
-            `UPDATE session_factions SET treasury_cash = MAX(0, treasury_cash - ?) WHERE faction_id = ?;`,
-            [totalPayout, buyerFactionId]
-          );
-          // Credit owner faction treasury
-          this.db.execute(
-            `UPDATE session_factions SET treasury_cash = treasury_cash + ? WHERE faction_id = ?;`,
-            [totalPayout, car.owner_faction_id]
-          );
-        });
-
-        events.push(`[CẬP BẾN] ${car.caravan_name} đã cập bến an toàn, xuất bán toàn bộ hàng hóa thu lãi +${Math.round(car.cargo_value_qian * 0.35)} tiền!`);
-      } else {
-        this.db.execute(
-          `UPDATE trade_caravans SET route_progress = ?, updated_at = CURRENT_TIMESTAMP WHERE caravan_id = ?;`,
-          [newProgress, car.caravan_id]
-        );
-      }
-    }
-
-    // 2. Tick Ecological Crises and causally adjust agriculture
+    // 1. Tick Ecological Crises and causally adjust agriculture
     const crises = this.db.query<any>(`SELECT * FROM regional_ecological_crises WHERE is_active = 1;`);
     for (const c of crises) {
       const remainingTurns = c.duration_turns_left - 1;
@@ -471,8 +407,15 @@ export class EcologyLogisticsModule implements IFeatureModule {
     return {
       turnNumber,
       gameDate,
-      processedCaravans: activeCaravans.length,
+      // Caravans are advanced by CaravanLogisticsService on the day clock.
+      processedCaravans: 0,
       events
     };
+    });
+
+    markTurnModuleDone(this.db, turnNumber, this.id);
+    this.lastSimulatedTurn = turnNumber;
+
+    return result;
   }
 }

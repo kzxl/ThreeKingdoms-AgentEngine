@@ -407,7 +407,7 @@ console.log(` ✅ ${talentsList.length} Master Innate Talents cataloged.`);
 console.log('\n[7/13] Ingesting 25+ Master Items & Legendary Artifacts...');
 const itemsList = [
   // Commercial & Raw Materials
-  { code: 'COM-GRAIN', nameVi: 'Lương Thảo (Tiểu Mạch / Kê)', nameEn: 'Grain (Millet / Wheat)', cat: 'FOOD_STUFF', unitVi: 'Thạch', unitEn: 'Dan', peace: 100, curr: 175, vol: 'High', src: 'Trác Quận / Ký Châu' },
+  { code: 'COM-GRAIN', nameVi: 'Lương Thảo (Tiểu Mạch / Kê)', nameEn: 'Grain (Millet / Wheat)', cat: 'FOOD_STUFF', unitVi: 'Thạch', unitEn: 'piculs', peace: 100, curr: 175, vol: 'High', src: 'Trác Quận / Ký Châu' },
   { code: 'COM-WINE-ZHUO', nameVi: 'Rượu Hoa Đào Trác Quận', nameEn: 'Zhuo County Peach Blossom Wine', cat: 'FINISHED_GOOD', unitVi: 'Vò', unitEn: 'Jar', peace: 35, curr: 45, vol: 'Medium', src: 'Quán Rượu Huyện Trác' },
   { code: 'COM-TEA-DRIED', nameVi: 'Trà Khô Giang Nam', nameEn: 'Dried Southern Tea', cat: 'FOOD_STUFF', unitVi: 'Cân', unitEn: 'Catty', peace: 15, curr: 25, vol: 'Low', src: 'Giang Nam Vận Lương' },
   { code: 'RAW-BAMBOO-POLE', nameVi: 'Tre Trúc Rừng Phương Bắc', nameEn: 'Northern Forest Bamboo Poles', cat: 'RAW_MATERIAL', unitVi: 'Bó', unitEn: 'Bundle', peace: 12, curr: 18, vol: 'Low', src: 'Rừng Trúc Trác Châu' },

@@ -13,6 +13,8 @@
  */
 
 import { DatabaseService } from '../../core/database';
+import { nextId } from '../../shared/id-generator';
+import { getGameDate } from '../../shared/game-clock';
 import path from 'path';
 import fs from 'fs';
 import Database from 'better-sqlite3';
@@ -196,7 +198,7 @@ export class ContextDialogueService {
     dialogueEn: string;
     source: string;
   }): void {
-    const id = `DLG-AUTO-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    const id = nextId(this.db, 'context-dialogue', 'DLG-AUTO', getGameDate(this.db));
     try {
       // 1. Write to active session.db
       this.db.execute(`

@@ -5,6 +5,9 @@
  */
 
 import { DatabaseService } from '../../core/database';
+import { nextId } from '../../shared/id-generator';
+import { getGameDate } from '../../shared/game-clock';
+import { isTurnModuleDone, markTurnModuleDone } from '../../shared/turn-ledger';
 import { IFeatureModule, ModuleContext, CharacterId, UtilityActionCandidate } from '../../core/types';
 import { ModuleRegistry } from '../../core/module-registry';
 import { UtilityAiModule, UtilityCurveEvaluator } from '../utility-ai/utility-ai.module';
@@ -262,8 +265,8 @@ export class NpcLifecycleModule implements IFeatureModule {
         }
 
         titleVi = `${npc.name} dẫn binh tiễu trừ sơn tặc phụ cận`;
-        narrativeVi = `${npc.name} tự dẫn bộ hạ đột kích sào huyệt sơn tặc, trảm tướng cướp, thu được ${bounty} Tiền chiến lợi phẩm và thu phục ${recruited} tráng đinh tình nguyện gia nhập.`;
-        statChanges['personal_cash'] = `+${bounty} Tiền`;
+        narrativeVi = `${npc.name} tự dẫn bộ hạ đột kích sào huyệt sơn tặc, trảm tướng cướp, thu được ${bounty} Quan chiến lợi phẩm và thu phục ${recruited} tráng đinh tình nguyện gia nhập.`;
+        statChanges['personal_cash'] = `+${bounty} Quan`;
         statChanges['personal_troops'] = `+${recruited} Dũng sĩ`;
         statChanges['prestige'] = '+15 Danh vọng';
         prog.personal_cash += bounty;
@@ -295,8 +298,8 @@ export class NpcLifecycleModule implements IFeatureModule {
         const rollCash = getTurnDeterministicRoll(turnNumber, npcId, 4);
         const earned = Math.floor(80 + rollCash * 120);
         titleVi = `${npc.name} tham gia giao thương tích lũy`;
-        narrativeVi = `Tận dụng ngày nghỉ tại thị trấn, ${npc.name} thực hiện giao lưu trao đổi hàng hóa vật phẩm, thu thêm ${earned} Tiền vào tài sản riêng.`;
-        statChanges['personal_cash'] = `+${earned} Tiền`;
+        narrativeVi = `Tận dụng ngày nghỉ tại thị trấn, ${npc.name} thực hiện giao lưu trao đổi hàng hóa vật phẩm, thu thêm ${earned} Quan vào tài sản riêng.`;
+        statChanges['personal_cash'] = `+${earned} Quan`;
         prog.personal_cash += earned;
         break;
       }
@@ -409,7 +412,7 @@ export class NpcLifecycleModule implements IFeatureModule {
       newTier = 'Cấp Bậc: Đại Tượng Sư Đối Tác';
       newMilestoneTitle = 'U Châu Thần Tượng Sư';
       titleVi = 'Trần Bảo đột phá thân phận: Thăng tọa Đại Tượng Sư U Châu';
-      narrativeVi = 'Tích lũy đủ 1,800 Tiền riêng và danh tiếng vang dội, Trần Bảo hoàn thiện phương pháp rèn bí truyền, chính thức được tôn vinh là Đại Tượng Sư bậc thầy của xưởng Lương Gia.';
+      narrativeVi = 'Tích lũy đủ 1,800 Quan riêng và danh tiếng vang dội, Trần Bảo hoàn thiện phương pháp rèn bí truyền, chính thức được tôn vinh là Đại Tượng Sư bậc thầy của xưởng Lương Gia.';
       wageUpdate = 1000;
     } else if (npcId === 'NPC-0003' && prog.personal_troops >= 80 && prog.prestige >= 190 && prog.milestone_title !== 'Biệt Đội Tư Mã') {
       shiftCategory = 'WARLORD_COMMISSION';
@@ -443,7 +446,7 @@ export class NpcLifecycleModule implements IFeatureModule {
 
     if (!shiftCategory) return null;
 
-    const shiftId = `SFT-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    const shiftId = nextId(this.db, 'career-shift', 'SFT', getGameDate(this.db));
     const consequences = { newRole, wageUpdate, newMilestoneTitle };
 
     this.db.transaction(() => {
@@ -547,21 +550,27 @@ export class NpcLifecycleModule implements IFeatureModule {
    * Advances autonomous progression for all registered active NPCs
    */
   public simulateAllActiveNpcs(turnNumber: number, gameDate: string): NpcJourneyLog[] {
-    if (this.lastSimulatedTurn === turnNumber) {
+    if (isTurnModuleDone(this.db, turnNumber, this.id)) {
       return this.getJourneyLogs(undefined, 10);
     }
-    this.lastSimulatedTurn = turnNumber;
 
-    const list = this.db.query<{ npc_id: string }>(`SELECT npc_id FROM npc_personal_progression;`);
     const logs: NpcJourneyLog[] = [];
+    // One transaction for the whole turn: if any NPC fails, no partial world
+    // state is committed and the turn can be retried.
+    this.db.transaction(() => {
+      const list = this.db.query<{ npc_id: string }>(`SELECT npc_id FROM npc_personal_progression;`);
 
-    for (const row of list) {
-      const log = this.simulateNpcTurn(row.npc_id, turnNumber, gameDate);
-      if (log) logs.push(log);
-    }
+      for (const row of list) {
+        const log = this.simulateNpcTurn(row.npc_id, turnNumber, gameDate);
+        if (log) logs.push(log);
+      }
 
-    // Also simulate peer relationships between NPCs
-    this.simulateCrossNpcInteractions(turnNumber, gameDate);
+      // Also simulate peer relationships between NPCs
+      this.simulateCrossNpcInteractions(turnNumber, gameDate);
+    });
+
+    markTurnModuleDone(this.db, turnNumber, this.id);
+    this.lastSimulatedTurn = turnNumber;
 
     return logs;
   }

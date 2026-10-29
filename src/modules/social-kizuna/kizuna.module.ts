@@ -6,6 +6,9 @@
 
 import { IFeatureModule, ModuleContext, KizunaRelation, CharacterId } from '../../core/types';
 
+/** Hooks live in memory for the process lifetime, so a counter is enough. */
+let hookSequence = 0;
+
 export class KizunaModule implements IFeatureModule {
   public readonly id = 'module.social-kizuna';
   public readonly name = 'Social Bond Network & Kizuna System';
@@ -63,7 +66,7 @@ export class KizunaModule implements IFeatureModule {
   ): void {
     const rel = this.getOrCreateRelation(holderId, targetId);
     rel.hooks.push({
-      hookId: `HOOK-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      hookId: `HOOK-${++hookSequence}`,
       type,
       description,
       expirationTurn: turnValidFor

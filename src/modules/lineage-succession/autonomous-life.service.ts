@@ -12,6 +12,9 @@
  */
 
 import { DatabaseService } from '../../core/database';
+import { RngService } from '../../core/rng';
+import { nextId } from '../../shared/id-generator';
+import { getGameDate } from '../../shared/game-clock';
 import { AutonomousMarriageResult, AutonomousChildbirthResult } from './lineage-types';
 import { CourtshipBetrothalService } from './courtship-betrothal.service';
 import { ReproductionGeneticsService } from './reproduction-genetics.service';
@@ -93,7 +96,7 @@ export class AutonomousLifeService {
           [npcId, maiden.maiden_id]
         );
 
-        const marriageId = `MARR-${npcId}-${Date.now().toString(36).toUpperCase()}`;
+        const marriageId = nextId(this.db, 'marriage', `MARR-${npcId}`, getGameDate(this.db));
         this.db.execute(
           `INSERT INTO family_spouses (
             marriage_id, husband_id, wife_id, wife_name_vi, wife_name_en,
@@ -114,7 +117,7 @@ export class AutonomousLifeService {
 
         marriedHusbands.add(npcId);
 
-        const narrativeVi = `${char.name_vi} thành gia lập thất cùng ${maiden.name_vi} (${maiden.father_profession_vi}). Sính lễ ${dowryCash.toLocaleString()} Tiền. Gia đạo hòa hợp.`;
+        const narrativeVi = `${char.name_vi} thành gia lập thất cùng ${maiden.name_vi} (${maiden.father_profession_vi}). Sính lễ ${dowryCash.toLocaleString()} Quan. Gia đạo hòa hợp.`;
         results.push({
           husbandId: npcId,
           husbandNameVi: char.name_vi,
@@ -160,7 +163,7 @@ export class AutonomousLifeService {
           }
 
           // 35% conception chance per turn for non-deployed couples
-          if (Math.random() < 0.35) {
+          if (RngService.forDomain(this.db, 'npc-life').chance(0.35)) {
             this.db.execute(
               'UPDATE family_spouses SET pregnancy_stage = 1, conception_turn = ? WHERE marriage_id = ?;',
               [turnNumber, couple.marriage_id]
@@ -213,10 +216,10 @@ export class AutonomousLifeService {
           };
 
           const { inheritedStats, innateTalents } = this.reproductionService.calculateGenetics(fatherStats, motherStats, wifeId);
-          const gender: 'MALE' | 'FEMALE' = Math.random() < 0.5 ? 'MALE' : 'FEMALE';
+          const gender: 'MALE' | 'FEMALE' = RngService.forDomain(this.db, 'npc-life').chance(0.5) ? 'MALE' : 'FEMALE';
           const naming = this.reproductionService.generateChildHanName(fatherChar.name_vi, gender);
 
-          const childId = `CHD-NPC-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
+          const childId = nextId(this.db, 'family-children', 'CHD-NPC', getGameDate(this.db));
 
           this.db.execute(
             `INSERT INTO family_children (

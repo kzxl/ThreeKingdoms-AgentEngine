@@ -10,6 +10,9 @@
  */
 
 import { DatabaseService } from '../../../../core/database';
+import { RngService } from '../../../../core/rng';
+import { nextId } from '../../../../shared/id-generator';
+import { getGameDate } from '../../../../shared/game-clock';
 import {
   BESPOKE_FORGE_RULES,
   BESPOKE_WEAPON_CATALOG,
@@ -36,6 +39,11 @@ export class BespokeForgeService {
       BespokeForgeService.instance = new BespokeForgeService(db);
     }
     return BespokeForgeService.instance;
+  }
+
+  /** Deterministic stream for quality and stat-modifier rolls. */
+  private rng() {
+    return RngService.forDomain(this.db, 'bespoke-forge');
   }
 
   /**
@@ -167,7 +175,7 @@ export class BespokeForgeService {
 
       // 3. Roll Quality & Modifiers clamped [+1..+5]
       const rates = this.calculateRates(characterId);
-      const roll = Math.random() * 100;
+      const roll = this.rng().nextFloat() * 100;
 
       let quality: EquipmentQuality = 'NORMAL';
       let statModifiers: Record<string, number> = {};
@@ -186,22 +194,22 @@ export class BespokeForgeService {
       // Clamping rule [+1..+5]
       if (quality === 'LEGENDARY') {
         qualityLabelVi = 'Tuyệt Thế Thần Binh';
-        statModifiers.war = Math.min(5, Math.floor(Math.random() * 2) + 4); // +4 or +5
-        statModifiers.ldr = Math.min(2, Math.floor(Math.random() * 2) + 1); // +1 or +2
+        statModifiers.war = Math.min(5, Math.floor(this.rng().nextFloat() * 2) + 4); // +4 or +5
+        statModifiers.ldr = Math.min(2, Math.floor(this.rng().nextFloat() * 2) + 1); // +1 or +2
       } else if (quality === 'MASTERWORK') {
         qualityLabelVi = 'Bách Luyện Tinh Cương';
-        statModifiers.war = Math.min(5, Math.floor(Math.random() * 2) + 3); // +3 or +4
+        statModifiers.war = Math.min(5, Math.floor(this.rng().nextFloat() * 2) + 3); // +3 or +4
         statModifiers.ldr = 1;
       } else if (quality === 'FINE') {
         qualityLabelVi = 'Tinh Luyện Thượng Phẩm';
-        statModifiers.war = Math.min(5, Math.floor(Math.random() * 2) + 2); // +2 or +3
+        statModifiers.war = Math.min(5, Math.floor(this.rng().nextFloat() * 2) + 2); // +2 or +3
       } else {
         qualityLabelVi = 'Phổ Thông Hảo Binh';
-        statModifiers.war = Math.min(5, Math.floor(Math.random() * 2) + 1); // +1 or +2
+        statModifiers.war = Math.min(5, Math.floor(this.rng().nextFloat() * 2) + 1); // +1 or +2
       }
 
       // 4. Register Equipment Item
-      const itemCode = `EQP-WEAPON-${weaponType}-${Date.now().toString().slice(-6)}`;
+      const itemCode = nextId(this.db, 'inventory', `EQP-WEAPON-${weaponType}`, getGameDate(this.db));
       const customName = params.customName && params.customName.trim()
         ? params.customName.trim()
         : `${meta.defaultPrefixVi} • ${qualityLabelVi.split(' ')[0]}`;
@@ -246,10 +254,10 @@ export class BespokeForgeService {
       );
 
       // 6. Log Chat Chronicle
-      const chronicleId = `chron_forge_${Date.now()}`;
+      const chronicleId = nextId(this.db, 'chronicle', 'chron_forge', getGameDate(this.db));
       const narrativeVi = `${player.name || 'Lương Diễn'} vận dụng hỏa hầu tinh thục tại lò rèn, rèn đúc thành công [${customName}] đạt phẩm cấp [${qualityLabelVi}]. Chỉ số thực chiến gia tăng: ${Object.entries(statModifiers).map(([k, v]) => `+${v} ${k.toUpperCase()}`).join(', ')}.`;
 
-      const metaRow = this.db.queryOne<any>(`SELECT active_turn, current_date FROM campaign_meta LIMIT 1;`) || {};
+      const metaRow = this.db.queryOne<any>(`SELECT active_turn, "current_date" FROM campaign_meta LIMIT 1;`) || {};
       this.db.execute(
         `INSERT INTO chat_chronicle (id, turn_number, game_date, type, speaker, title, avatar, text, deltas, reasoning)
          VALUES (?, ?, ?, 'player', 'Lương Diễn (Đoán Tạo)', ?, 'Diễn', ?, ?, 'Đoán tạo thần binh trang bị bảo vệ bản thân và chuẩn bị quân cơ khởi sự.');`,

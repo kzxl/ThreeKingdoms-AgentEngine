@@ -8,7 +8,6 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
 
 const ROOT_DIR = path.resolve(__dirname, '..');
 const GAME_DIR = path.join(ROOT_DIR, 'game');
@@ -18,27 +17,16 @@ const PROGRESS_PATH = path.join(GAME_DIR, 'PROGRESS.md');
 const CASHFLOW_MD_PATH = path.join(GAME_DIR, 'ledger', 'cashflow.md');
 const INVENTORY_MD_PATH = path.join(GAME_DIR, 'ledger', 'inventory.md');
 
+const { runSqlJson: runAdapterQuery } = require('../engine/db-adapter');
+
 function runSqlJson(sql) {
   if (!fs.existsSync(DB_PATH)) {
     throw new Error(`Session database not found at ${DB_PATH}. Primary truth is missing!`);
   }
-  const tempFile = path.join(SAVES_DIR, `audit_tmp_${Date.now()}_${Math.random().toString(36).substr(2, 4)}.sql`);
-  fs.writeFileSync(tempFile, sql, 'utf8');
   try {
-    const stdout = execSync(`sqlite3 -json "${DB_PATH}" < "${tempFile}"`, {
-      encoding: 'utf8',
-      stdio: ['pipe', 'pipe', 'pipe']
-    });
-    return stdout && stdout.trim() ? JSON.parse(stdout) : [];
+    return runAdapterQuery(DB_PATH, sql);
   } catch (err) {
-    if (err.stdout && err.stdout.trim().startsWith('[')) {
-      try { return JSON.parse(err.stdout); } catch (e) {}
-    }
-    throw new Error(`Database query failed: ${err.stderr || err.message}`);
-  } finally {
-    if (fs.existsSync(tempFile)) {
-      try { fs.unlinkSync(tempFile); } catch (e) {}
-    }
+    throw new Error(`Database query failed: ${err.message}`);
   }
 }
 
@@ -383,7 +371,7 @@ function auditProjectionSync(cashResult, invResult) {
 
   // Verify Liquid Capital
   checksCount++;
-  const cashMatch = content.match(/\*\*Liquid Capital\*\*\s*\|\s*\*\*([0-9,]+)\s*Qian\*\*/i);
+  const cashMatch = content.match(/\*\*Liquid Capital\*\*\s*\|\s*\*\*([0-9,]+)\s*(?:Qian|quan)\*\*/i);
   if (!cashMatch) {
     errors.push('PROGRESS.md missing Liquid Capital field in Executive Dashboard!');
   } else {
@@ -395,7 +383,7 @@ function auditProjectionSync(cashResult, invResult) {
 
   // Verify Inventory Valuation
   checksCount++;
-  const invMatch = content.match(/\*\*Inventory Valuation\*\*\s*\|\s*\*\*([0-9,]+)\s*Qian\*\*/i);
+  const invMatch = content.match(/\*\*Inventory Valuation\*\*\s*\|\s*\*\*([0-9,]+)\s*(?:Qian|quan)\*\*/i);
   if (!invMatch) {
     errors.push('PROGRESS.md missing Inventory Valuation field in Executive Dashboard!');
   } else {
@@ -408,7 +396,7 @@ function auditProjectionSync(cashResult, invResult) {
 
   // Verify Total Net Worth
   checksCount++;
-  const netWorthMatch = content.match(/\*\*Total Net Worth\*\*\s*\|\s*\*\*([0-9,]+)\s*Qian\*\*/i);
+  const netWorthMatch = content.match(/\*\*Total Net Worth\*\*\s*\|\s*\*\*([0-9,]+)\s*(?:Qian|quan)\*\*/i);
   if (!netWorthMatch) {
     errors.push('PROGRESS.md missing Total Net Worth field in Executive Dashboard!');
   } else {
@@ -518,6 +506,92 @@ function auditCivilianMaidensAndLifeSim() {
   };
 }
 
+/**
+ * Verifies that the campaign clock is a plausible game date and that it has not
+ * fallen behind the last completed turn. A wall-clock timestamp (e.g. 2026-10-29)
+ * or a date earlier than the newest turn breaks travel, aging and turn math.
+ */
+function auditCampaignClock() {
+  const errors = [];
+  let checksCount = 0;
+
+  const meta = runSqlJson('SELECT campaign_id, "current_date", active_turn FROM campaign_meta LIMIT 1;')[0];
+  if (!meta) {
+    return { passed: false, checksCount: 1, errors: ['campaign_meta record missing.'], currentDate: null, lastTurnDate: null };
+  }
+
+  const toOrdinal = dateStr => {
+    const [y, m, d] = String(dateStr || '').split('-').map(Number);
+    if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) return null;
+    return y * 360 + (m - 1) * 30 + (d - 1);
+  };
+
+  checksCount++;
+  const currentOrdinal = toOrdinal(meta.current_date);
+  let plausible = currentOrdinal !== null;
+  if (currentOrdinal === null) {
+    errors.push(`campaign_meta.current_date is not a game date: ${meta.current_date}`);
+  } else {
+    const year = Number(String(meta.current_date).split('-')[0]);
+    if (year < 180 || year > 300) {
+      plausible = false;
+      errors.push(`campaign_meta.current_date ${meta.current_date} is outside the historical era (180-300).`);
+    }
+    // Calendar days are whole days; a fractional day (184-05-2.5) breaks every
+    // downstream parse, ledger sort and month report.
+    checksCount++;
+    if (!/^\d{3}-\d{2}-\d{2}$/.test(String(meta.current_date))) {
+      plausible = false;
+      errors.push(`campaign_meta.current_date must match YYYY-MM-DD with whole days, got ${meta.current_date}.`);
+    } else {
+      const [, month, day] = String(meta.current_date).split('-').map(Number);
+      if (month < 1 || month > 12 || day < 1 || day > 30) {
+        plausible = false;
+        errors.push(`campaign_meta.current_date has an out-of-range month/day: ${meta.current_date}.`);
+      }
+    }
+  }
+
+  const lastTurn = runSqlJson('SELECT turn_number, game_date FROM turn_log ORDER BY turn_number DESC LIMIT 1;')[0];
+  if (lastTurn && plausible) {
+    checksCount++;
+    const lastOrdinal = toOrdinal(lastTurn.game_date);
+    if (currentOrdinal !== null && lastOrdinal !== null) {
+      if (currentOrdinal < lastOrdinal) {
+        errors.push(
+          `campaign clock ${meta.current_date} is earlier than the latest turn ${lastTurn.turn_number} (${lastTurn.game_date}).`
+        );
+      } else if (currentOrdinal - lastOrdinal > 45) {
+        errors.push(
+          `campaign clock ${meta.current_date} drifted more than 45 days past turn ${lastTurn.turn_number} (${lastTurn.game_date}).`
+        );
+      }
+    }
+
+    // `active_turn` is the month index; it must track the turn log.
+    checksCount++;
+    const activeTurn = Number(meta.active_turn || 0);
+    const lastTurnNumber = Number(lastTurn.turn_number || 0);
+    if (activeTurn < lastTurnNumber) {
+      errors.push(
+        `campaign_meta.active_turn ${activeTurn} is behind the latest turn_log (${lastTurnNumber}).`
+      );
+    } else if (activeTurn > lastTurnNumber + 1) {
+      errors.push(
+        `campaign_meta.active_turn ${activeTurn} is ahead of the latest turn_log (${lastTurnNumber}) by more than one month.`
+      );
+    }
+  }
+
+  return {
+    passed: errors.length === 0,
+    checksCount,
+    errors,
+    currentDate: meta.current_date,
+    lastTurnDate: lastTurn ? lastTurn.game_date : null
+  };
+}
+
 function runAudit() {
   console.log('====================================================');
   console.log(' ⚡ ThreeKingdoms-AgentEngine: Invariant & State Auditor');
@@ -533,7 +607,7 @@ function runAudit() {
     totalChecks += cashResult.checksCount;
     console.log(`\n[1] CASHFLOW LEDGER (SQLite Primary Truth):`);
     console.log(`    Transactions Verified : ${cashResult.txnCount}`);
-    console.log(`    Closing Cash Balance  : ${cashResult.finalBalance.toLocaleString()} Qian`);
+    console.log(`    Closing Cash Balance  : ${cashResult.finalBalance.toLocaleString()} quan`);
     if (!cashResult.passed) {
       allPassed = false;
       cashResult.errors.forEach(e => { console.error(`    ❌ ${e}`); allErrors.push(e); });
@@ -547,7 +621,7 @@ function runAudit() {
     console.log(`\n[2] PHYSICAL INVENTORY (SQLite Conservation):`);
     console.log(`    Tracked Items in Store: ${invResult.itemCount} SKUs`);
     console.log(`    Movement Records      : ${invResult.movementCount} entries`);
-    console.log(`    Total Inventory Value : ${invResult.totalValue.toLocaleString()} Qian`);
+    console.log(`    Total Inventory Value : ${invResult.totalValue.toLocaleString()} quan`);
     if (!invResult.passed) {
       allPassed = false;
       invResult.errors.forEach(e => { console.error(`    ❌ ${e}`); allErrors.push(e); });
@@ -635,6 +709,19 @@ function runAudit() {
       }
     }
 
+    // 8. Campaign Clock Consistency Audit
+    const clockResult = auditCampaignClock();
+    totalChecks += clockResult.checksCount;
+    console.log(`\n[${journalResult.installed ? 8 : 7}] CAMPAIGN CLOCK INTEGRITY:`);
+    console.log(`    Current Game Date     : ${clockResult.currentDate}`);
+    if (clockResult.lastTurnDate) console.log(`    Last Completed Turn   : ${clockResult.lastTurnDate}`);
+    if (!clockResult.passed) {
+      allPassed = false;
+      clockResult.errors.forEach(e => { console.error(`    ❌ ${e}`); allErrors.push(e); });
+    } else {
+      console.log(`    ✅ Passed: Game date is plausible and aligned with turn history.`);
+    }
+
     console.log('\n====================================================');
     if (allPassed) {
       console.log(` 🟢 AUDIT VERDICT: PASSED`);
@@ -667,5 +754,6 @@ module.exports = {
   auditNpcAndBusinesses,
   auditSqliteFactionsAndSettlements,
   auditCivilianMaidensAndLifeSim,
+  auditCampaignClock,
   runAudit
 };

@@ -11,6 +11,8 @@
  * Standards: AgentOption Universe Modular Architecture & Anti-AI-Slop standard.
  */
 
+import { RngService, SeededRandom, hashSeed } from '../../core/rng';
+
 export type TerrainType = 'PLAINS' | 'MOUNTAINS' | 'RIVER_MARSH' | 'HILLS' | 'FORTRESS';
 export type EchelonPosition = 'VANGUARD' | 'CENTER' | 'REARGUARD';
 export type BattleSide = 'ATTACKER' | 'DEFENDER';
@@ -221,6 +223,9 @@ function createEchelon(
 }
 
 export class TacticalBattleEngine {
+  /** Stream for the battle currently being simulated; reset per simulate() call. */
+  private static activeRng: SeededRandom = RngService.forSeed('tactical-battle');
+
   /**
    * Translates terrain to Vietnamese display name
    */
@@ -324,7 +329,10 @@ export class TacticalBattleEngine {
    * Main tactical battle simulation execution
    */
   public static simulate(input: BattleSimulationInput): BattleResult {
-    const battleId = input.battleId || `BAT-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    // Seed the battle: the same battleId/randomSeed replays identically.
+    const seedKey = input.battleId || `${input.attacker.commander.name}:${input.defender.commander.name}:${input.terrain}`;
+    TacticalBattleEngine.activeRng = RngService.forSeed(seedKey, input.randomSeed);
+    const battleId = input.battleId || `BAT-${hashSeed(seedKey)}`;
     const terrain = input.terrain;
     const terrainNameVi = TacticalBattleEngine.getTerrainNameVi(terrain);
     const terrainMods = TacticalBattleEngine.getTerrainMultipliers(terrain);
@@ -517,7 +525,7 @@ export class TacticalBattleEngine {
     // Build Narrative Summary
     let narrativeSummaryVi = '';
     if (winner === 'ATTACKER') {
-      narrativeSummaryVi = `Trận chiến tại ${terrainNameVi} khép lại sau ${rounds.length} hiệp kịch chiến. Quân ta dưới sự chỉ huy của ${attackerArmy.commander.name} đã đánh tan ${defenderArmy.name}, tiêu diệt ${defCasualties} địch binh. Thu hồi ${spoils.lootCash} tiền chiến lợi phẩm và lĩnh thưởng ${spoils.bountyReward} tiền quân công triều đình!`;
+      narrativeSummaryVi = `Trận chiến tại ${terrainNameVi} khép lại sau ${rounds.length} hiệp kịch chiến. Quân ta dưới sự chỉ huy của ${attackerArmy.commander.name} đã đánh tan ${defenderArmy.name}, tiêu diệt ${defCasualties} địch binh. Thu hồi ${spoils.lootCash} quan chiến lợi phẩm và lĩnh thưởng ${spoils.bountyReward} quan quân công triều đình!`;
     } else if (winner === 'DEFENDER') {
       narrativeSummaryVi = `Tại ${terrainNameVi}, quân ta vấp phải thế trận phòng thủ hiểm trở của ${defenderArmy.commander.name}. Trải qua ${rounds.length} hiệp giằng co, tuyến trận chịu tổn thất ${atkCasualties} dũng sĩ, toàn quân phải lui về tái lập doanh trại.`;
     } else {
@@ -573,7 +581,7 @@ export class TacticalBattleEngine {
     let defTacticDefBonus = 1.0;
 
     // Check Attacker Commander Tactic Trigger (Intelligence & War check)
-    const atkRoll = Math.random() * 100;
+    const atkRoll = TacticalBattleEngine.activeRng.nextFloat() * 100;
     if (atkRoll < attacker.commander.intelligence * 0.45) {
       if (terrain === 'PLAINS' && attacker.vanguard.troops.cavalry > 10) {
         attackerTacticTriggered = 'Kỵ Binh Đột Kích Bình Nguyên (Cavalry Surge)';
@@ -597,7 +605,7 @@ export class TacticalBattleEngine {
     }
 
     // Check Defender Commander Tactic Trigger
-    const defRoll = Math.random() * 100;
+    const defRoll = TacticalBattleEngine.activeRng.nextFloat() * 100;
     if (defRoll < defender.commander.intelligence * 0.4) {
       if (terrain === 'RIVER_MARSH') {
         defenderTacticTriggered = 'Thủy Thảo Mai Phục Kích (Marsh Ambush)';
@@ -780,7 +788,7 @@ export class TacticalBattleEngine {
       targetDefEchelon.currentTotalTroops *
         baseCasualtyRate *
         (atkRawAtk / Math.max(10, defRawDef)) *
-        (0.85 + Math.random() * 0.3)
+        (0.85 + TacticalBattleEngine.activeRng.nextFloat() * 0.3)
     );
     const defLosses = Math.min(targetDefEchelon.currentTotalTroops, Math.max(1, defLossCalc));
 
@@ -788,7 +796,7 @@ export class TacticalBattleEngine {
       atkEchelon.currentTotalTroops *
         baseCasualtyRate *
         (defRawAtk / Math.max(10, atkRawDef)) *
-        (0.85 + Math.random() * 0.3)
+        (0.85 + TacticalBattleEngine.activeRng.nextFloat() * 0.3)
     );
     const atkLosses = Math.min(atkEchelon.currentTotalTroops, Math.max(0, atkLossCalc));
 

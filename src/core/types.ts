@@ -62,8 +62,8 @@ export interface SettlementState {
   agriculture: number;    // Agricultural development rating
   commerce: number;       // Commercial prosperity rating
   defense: number;        // Fortification durability rating
-  granaryGrain: number;   // Food reserves in Dan
-  treasuryCash: number;   // Silver/Copper reserve in Qian
+  granaryGrain: number;   // Food reserves in Thạch (piculs)
+  treasuryCash: number;   // Silver/Copper reserve in quan
   garrisonTroops: number; // Defending militia/soldiers
 }
 

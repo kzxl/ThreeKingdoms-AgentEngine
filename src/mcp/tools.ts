@@ -4,9 +4,8 @@
  */
 
 import path from 'path';
-import fs from 'fs';
-import { execSync } from 'child_process';
 import { McpToolDefinition } from './types';
+import { DatabaseService } from '../core/database';
 import { ModuleRegistry } from '../core/module-registry';
 import { MilitaryModule } from '../modules/military/military.module';
 import { EconomyModule } from '../modules/economy/economy.module';
@@ -19,22 +18,7 @@ const ROOT_DIR = path.resolve(__dirname, '../..');
 const DB_PATH = process.env.SIM_DB_PATH || path.join(ROOT_DIR, 'saves', 'session.db');
 
 function runSqlJson(sql: string): any[] {
-  if (!fs.existsSync(DB_PATH)) return [];
-  const tempFile = path.join(ROOT_DIR, 'saves', `mcp_${Date.now()}_${Math.random().toString(36).substring(2, 6)}.sql`);
-  fs.writeFileSync(tempFile, sql, 'utf8');
-  try {
-    const stdout = execSync(`sqlite3 -json "${DB_PATH}" < "${tempFile}"`, {
-      encoding: 'utf8',
-      stdio: ['pipe', 'pipe', 'pipe']
-    });
-    return stdout && stdout.trim() ? JSON.parse(stdout) : [];
-  } catch (err) {
-    return [];
-  } finally {
-    if (fs.existsSync(tempFile)) {
-      try { fs.unlinkSync(tempFile); } catch (e) {}
-    }
-  }
+  return DatabaseService.getInstance(DB_PATH).query(sql);
 }
 
 // Ensure modules are registered

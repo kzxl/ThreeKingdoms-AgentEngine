@@ -80,17 +80,10 @@ export class UtilityAiModule implements IFeatureModule {
   public readonly name = 'Continuous Utility AI & LOD Scheduler';
   public readonly version = '1.0.0';
 
-  private ctx!: ModuleContext;
-
-  public init(ctx: ModuleContext): void {
-    this.ctx = ctx;
-    // Listen to world tick events
-    this.ctx.eventBus.subscribe('WORLD_DAY_TICK', async (event: { day: number; month: number; year: number }) => {
-      // Process LOD ticks deterministically
-      if (LodScheduler.shouldProcessLOD1(event.day)) {
-        this.ctx.eventBus.publish('LOD1_WEEKLY_TICK', event);
-      }
-    });
+  public init(_ctx: ModuleContext): void {
+    // LOD progression is driven by the monthly world turn (NPC lifecycle), not
+    // by a weekly event with no subscriber. LodScheduler remains available for
+    // a future explicit LOD pass.
   }
 
   /**

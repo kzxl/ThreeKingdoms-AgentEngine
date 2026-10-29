@@ -6,9 +6,11 @@
  * Adheres to AgentOption Universe Modular Architecture v4.0.
  */
 
-import path from 'path';
-import { execSync } from 'child_process';
 import { DatabaseService } from '../../core/database';
+import { syncProgressProjection } from '../../shared/projection-sync';
+import { RngService } from '../../core/rng';
+import { nextId } from '../../shared/id-generator';
+import { getGameDate } from '../../shared/game-clock';
 import {
   IFeatureModule,
   ModuleContext,
@@ -39,12 +41,62 @@ export class ProfessionsModule implements IFeatureModule {
     if (nodeCount === 0) {
       this.seedGatheringNodes();
     }
+    this.ensureResourceExpansionNodes();
 
     // 2. Seed Initial Professions for Player & Key NPCs if empty
     const profCount = this.db.queryOne<{ count: number }>(`SELECT count(*) as count FROM character_professions;`)?.count || 0;
     if (profCount === 0) {
       this.seedInitialProfessions();
     }
+  }
+
+  /**
+   * Adds the farming / fishing / hunting resource families introduced by the
+   * profession-resource expansion. Idempotent so existing saves receive them.
+   */
+  private ensureResourceExpansionNodes(): void {
+    this.db.execute(`
+      INSERT OR IGNORE INTO master_items
+        (item_code, name_vi, name_en, category, unit_vi, unit_en, baseline_peace_price,
+         current_market_price, volatility_index, weight_kg, is_contraband,
+         production_source_vi, description_vi, description_en, stat_modifiers)
+      VALUES
+        ('COM-FISH-FRESH', 'Cá Tươi Sông Hồ', 'Fresh River Fish', 'FOOD_STUFF', 'con', 'fish',
+         22, 22, 0.15, 1.0, 0, 'Đánh bắt sông hồ',
+         'Cá tươi đánh bắt từ sông hồ, nguồn thực phẩm giàu đạm cho dân chúng và quân đội.',
+         'Fresh fish from rivers and lakes.', '{}'),
+        ('COM-GAME-MEAT', 'Thịt Thú Rừng', 'Wild Game Meat', 'FOOD_STUFF', 'cân', 'jin',
+         38, 38, 0.20, 1.0, 0, 'Săn bắn sơn lâm',
+         'Thịt thú rừng săn bắt, món ăn quý cho hào kiệt và binh sĩ.',
+         'Wild game meat from mountain forests.', '{}'),
+        ('RAW-HIDE', 'Da Thú Săn Bắn', 'Raw Game Hide', 'RAW_MATERIAL', 'tấm', 'hide',
+         18, 18, 0.18, 1.0, 0, 'Săn bắn sơn lâm',
+         'Da thú chưa thuộc, nguyên liệu chế giáp nhẹ và bao da.',
+         'Raw game hide for light armour and leather goods.', '{}');
+    `);
+
+    this.db.execute(`
+      INSERT OR IGNORE INTO gathering_nodes
+        (node_id, settlement_id, name_vi, name_en, resource_type, yield_item_code,
+         yield_item_name_vi, yield_quantity_min, yield_quantity_max, fatigue_cost, description_vi)
+      VALUES
+        ('NODE-ZHUO-FARM', 'zhuo_xian', 'Ruộng Lúa Đông Môn', 'East Gate Rice Fields', 'FARM', 'COM-GRAIN', 'Lúa Gạo Đông Môn', 3, 6, 14, 'Ruộng lúa tưới tiêu ven cổng đông Trác Huyện, dân phu cày cấy theo mùa và nộp tô cho chủ điền.'),
+        ('NODE-PINGYUAN-FARM', 'ping_yuan', 'Đồng Ruộng Bình Nguyên', 'Pingyuan Farmland', 'FARM', 'COM-GRAIN', 'Lúa Gạo Bình Nguyên', 4, 8, 16, 'Cánh đồng phù sa ven sông, vựa lương của Thanh Châu và nơi nghĩa quân trưng thu quân lương.'),
+        ('NODE-XUCHANG-FARM', 'xu_chang', 'Đồn Điền Dĩnh Xuyên', 'Yingchuan Tuntian Fields', 'FARM', 'COM-GRAIN', 'Lúa Đồn Điền Dĩnh Xuyên', 5, 9, 16, 'Khu đồn điền Dĩnh Xuyên do quân phủ tổ chức, trồng lúa và đậu để nuôi binh sĩ.'),
+        ('NODE-CHENGDU-FARM', 'cheng_du', 'Ruộng Lúa Đô Giang Yển', 'Dujiangyan Rice Fields', 'FARM', 'COM-GRAIN', 'Lúa Gạo Thục Trung', 6, 10, 18, 'Đồng bằng Ba Thục được Đô Giang Yển tưới tiêu, năng suất cao nhất thiên hạ.'),
+        ('NODE-PINGYUAN-FISH', 'ping_yuan', 'Bãi Cá Vịnh Bột Hải', 'Bohai Fishing Grounds', 'FISH', 'COM-FISH-FRESH', 'Cá Tươi Bột Hải', 2, 5, 14, 'Bãi cá ven vịnh Bột Hải, ngư dân dùng lưới và thuyền nhỏ đánh bắt quanh năm.'),
+        ('NODE-XIAPI-FISH', 'xia_pi', 'Bến Cá Nghi Thủy', 'Yishui Fishing Bank', 'FISH', 'COM-FISH-FRESH', 'Cá Tươi Nghi Thủy', 3, 6, 16, 'Bến sông Nghi Thủy đông ngư hộ, cá tươi và tôm được bán ở chợ Từ Châu.'),
+        ('NODE-SHOUCHUN-FISH', 'shou_chun', 'Bãi Cá Sông Hoài', 'Huai River Fishing Grounds', 'FISH', 'COM-FISH-FRESH', 'Cá Tươi Sông Hoài', 3, 7, 16, 'Vùng nước sông Hoài trù phú, ngư dân và thương thuyền cùng khai thác.'),
+        ('NODE-WAN-FISH', 'wan_cheng', 'Dục Thủy Ngư Trường', 'Yushui Fishing Grounds', 'FISH', 'COM-FISH-FRESH', 'Cá Tươi Dục Thủy', 2, 5, 14, 'Khúc sông Dục Thủy chảy qua Nam Dương, nơi ngư hộ địa phương đặt lờ và lưới.'),
+        ('NODE-JIANGLING-FISH', 'jiang_ling', 'Trường Giang Ngư Bãi', 'Yangtze Fishing Bank', 'FISH', 'COM-FISH-FRESH', 'Cá Tươi Trường Giang', 3, 6, 15, 'Bãi cá trên dòng Trường Giang, nguồn thủy sản nuôi sống thủy quân và dân cảng.'),
+        ('NODE-JIANYE-FISH', 'jian_ye', 'Thái Hồ Ngư Trường', 'Taihu Fishing Grounds', 'FISH', 'COM-FISH-FRESH', 'Cá Tươi Thái Hồ', 4, 7, 15, 'Thái Hồ mênh mông, ngư dân Giang Đông đánh bắt cá và tôm nổi tiếng.'),
+        ('NODE-CHIBI-FISH', 'chi_bi', 'Ba Khâu Ngư Trại', 'Baqiu Fishing Camp', 'FISH', 'COM-FISH-FRESH', 'Cá Tươi Ba Khâu', 2, 5, 14, 'Bến cá dưới chân vách đá Xích Bích, nơi thủy quân và ngư dân cùng neo đậu.'),
+        ('NODE-JIAOZHI-FISH', 'jiao_zhi', 'Hải Cảng Phiên Ngung', 'Panyu Fishing Harbour', 'FISH', 'COM-FISH-FRESH', 'Hải Sản Lĩnh Nam', 2, 5, 14, 'Hải cảng Phiên Ngung, ngư dân Lĩnh Nam đánh bắt cá và hải sản ven bờ.'),
+        ('NODE-JICHENG-GAME', 'ji_cheng', 'Săn Trường Bạch Mã', 'White Horse Hunting Grounds', 'GAME', 'COM-GAME-MEAT', 'Thịt Thú Bắc Cương', 2, 4, 18, 'Rừng núi biên cương phương Bắc, nơi kỵ binh Bạch Mã luyện săn và thu da thú.'),
+        ('NODE-HANZHONG-GAME', 'han_zhong', 'Săn Trường Tần Lĩnh', 'Qinling Hunting Grounds', 'GAME', 'COM-GAME-MEAT', 'Thịt Thú Tần Lĩnh', 2, 5, 18, 'Sườn núi Tần Lĩnh hiểm trở, thú rừng và dược liệu quý cùng sinh sống.'),
+        ('NODE-SHANGDANG-MINE', 'shang_dang', 'Mỏ Sắt Thái Hành', 'Taihang Iron Mine', 'MINERAL', 'RAW-IRON-ORE', 'Quặng Sắt Thái Hành', 3, 6, 20, 'Mỏ sắt trong dãy Thái Hành, nguồn quặng cho binh khí Tịnh Châu.'),
+        ('NODE-JIAOZHI-HERB', 'jiao_zhi', 'Rừng Trầm Hương Lĩnh Nam', 'Lingnan Agarwood Forest', 'HERB', 'RAW-HERB-WILD', 'Dược Liệu Lĩnh Nam', 2, 5, 16, 'Rừng nhiệt đới Lĩnh Nam, nơi có trầm hương và nhiều loại thảo dược quý.');
+    `);
   }
 
   private seedGatheringNodes(): void {
@@ -134,10 +186,78 @@ export class ProfessionsModule implements IFeatureModule {
   /**
    * Action: Gather resources at a specific node (Khai Mỏ, Hái Thuốc, Đốn Củi...)
    */
+  private normalizeLocationName(name: string): string {
+    return name
+      .replace(/\s*\(.*?\)/g, '')
+      .replace(/\s*&.*/g, '')
+      .replace(/Kinh Đô\s*/g, '')
+      .replace(/Tây Đô\s*/g, '')
+      .trim()
+      .toLowerCase();
+  }
+
+  private resolvePlayerSettlementId(): string | null {
+    const player = this.db.queryOne<{ current_location: string }>(
+      `SELECT current_location FROM player_state WHERE player_id = 'PLY-0001';`
+    );
+    const location = player && player.current_location;
+    if (!location) return null;
+
+    const aliases: Record<string, string> = {
+      'Vườn Đào': 'zhuo_xian',
+      'Chợ Đông Môn': 'zhuo_xian',
+      'Chợ Đông Môn & Sạp Trà': 'zhuo_xian',
+      'Thiết Điếm Trác Huyện': 'zhuo_xian',
+      'Tửu Quán Trác Huyện': 'zhuo_xian',
+      'Lôi Đài Giáo Trường': 'zhuo_xian',
+      'Mã Xa Dịch Trạm': 'zhuo_xian',
+      'Xưởng Lương Thị': 'zhuo_xian'
+    };
+    if (aliases[location]) return aliases[location];
+
+    const masterRows = this.db.query<{ name_vi: string; sub_locations: string }>(
+      `SELECT name_vi, sub_locations FROM master_locations;`
+    );
+    const master = masterRows.find(row => {
+      if (row.name_vi === location) return true;
+      try {
+        const subLocations = JSON.parse(row.sub_locations || '[]');
+        return Array.isArray(subLocations) && subLocations.includes(location);
+      } catch {
+        return false;
+      }
+    });
+    if (!master) return null;
+
+    const targetName = this.normalizeLocationName(master.name_vi);
+    const settlements = this.db.query<{ settlement_id: string; name_vi: string }>(
+      `SELECT settlement_id, name_vi FROM session_settlements;`
+    );
+    const match = settlements.find(settlement => this.normalizeLocationName(settlement.name_vi) === targetName);
+    return match ? match.settlement_id : null;
+  }
+
   public gatherResource(characterId: string, nodeId: string, turnNumber = 6, gameDate = '184-05-01'): any {
     const node = this.db.queryOne<any>(`SELECT * FROM gathering_nodes WHERE node_id = ?;`, [nodeId]);
     if (!node) {
       throw new Error(`Điểm thu thập ${nodeId} không tồn tại trên sa bàn.`);
+    }
+
+    // Spatial grounding: a character can only work resources in the settlement
+    // they are currently standing in.
+    if (characterId === 'PLY-0001') {
+      const currentSettlement = this.resolvePlayerSettlementId();
+      if (currentSettlement && node.settlement_id !== currentSettlement) {
+        const currentName = this.db.queryOne<{ name_vi: string }>(
+          'SELECT name_vi FROM session_settlements WHERE settlement_id = ?;',
+          [currentSettlement]
+        )?.name_vi || currentSettlement;
+        const nodeName = this.db.queryOne<{ name_vi: string }>(
+          'SELECT name_vi FROM session_settlements WHERE settlement_id = ?;',
+          [node.settlement_id]
+        )?.name_vi || node.settlement_id;
+        throw new Error(`Bạn đang ở ${currentName}, không thể khai thác ${node.name_vi} tại ${nodeName}. Hãy đi tới đúng địa phương trước.`);
+      }
     }
 
     // Check player fatigue if player
@@ -154,7 +274,10 @@ export class ProfessionsModule implements IFeatureModule {
       MINERAL: 'PROF_MINER',
       HERB: 'PROF_HERBALIST',
       TIMBER: 'PROF_CARPENTER',
-      SALT_WELL: 'PROF_SALT_MAKER'
+      SALT_WELL: 'PROF_SALT_MAKER',
+      FARM: 'PROF_FARMER',
+      FISH: 'PROF_FISHER',
+      GAME: 'PROF_HUNTER'
     };
     const profCode = profCodeMap[node.resource_type] || 'PROF_MINER';
 
@@ -168,7 +291,7 @@ export class ProfessionsModule implements IFeatureModule {
     const tierBonus = 1.0 + (tier - 1) * 0.25;
 
     // Calculate yield (conservation-safe integer or float)
-    const baseYield = node.yield_quantity_min + Math.random() * (node.yield_quantity_max - node.yield_quantity_min);
+    const baseYield = node.yield_quantity_min + RngService.forDomain(this.db, 'gathering').nextFloat() * (node.yield_quantity_max - node.yield_quantity_min);
     const totalYield = Math.round(baseYield * tierBonus * 10) / 10;
 
     const expGain = 25;
@@ -192,14 +315,17 @@ export class ProfessionsModule implements IFeatureModule {
       PROF_MINER: { vi: 'Khai Khoáng & Luyện Quặng', en: 'Miner & Smelter' },
       PROF_HERBALIST: { vi: 'Thái Dược & Biện Thảo', en: 'Herbalist & Forager' },
       PROF_CARPENTER: { vi: 'Mộc Công Khí Cụ', en: 'Woodcraft Artisan' },
-      PROF_SALT_MAKER: { vi: 'Chử Hải Chế Diêm', en: 'Salt Boiler' }
+      PROF_SALT_MAKER: { vi: 'Chử Hải Chế Diêm', en: 'Salt Boiler' },
+      PROF_FARMER: { vi: 'Nông Phu Canh Tác', en: 'Farmer' },
+      PROF_FISHER: { vi: 'Ngư Hộ Đánh Bắt', en: 'Fisher' },
+      PROF_HUNTER: { vi: 'Sơn Tiêu Săn Bắn', en: 'Hunter' }
     };
     const names = profNameMap[profCode] || { vi: 'Bách Nghệ Khai Mở', en: 'Artisan' };
     if (!prof) {
       expMsg = `[NHẬP MÔN] Bắt đầu nhập môn nghề mới: ${names.vi}! (+${expGain} EXP)`;
     }
 
-    const movId = `MOV-GATH-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`;
+    const movId = nextId(this.db, 'stock-movements', 'MOV-GATH', getGameDate(this.db));
 
     this.db.transaction(() => {
       // 1. Physically deposit into inventory_items (Safe conservation)
@@ -243,10 +369,7 @@ export class ProfessionsModule implements IFeatureModule {
     const breakthrough = this.checkAndTriggerBreakthrough(characterId, turnNumber, gameDate);
 
     // 5. Synchronize projection to game/PROGRESS.md to maintain zero-drift audit invariant
-    try {
-      const rootDir = path.resolve(__dirname, '../../..');
-      execSync(`node "${path.join(rootDir, 'tools', 'sim-db.js')}" export-progress`, { stdio: 'ignore' });
-    } catch (e) {}
+    syncProgressProjection(this.db);
 
     return {
       success: true,
@@ -284,7 +407,7 @@ export class ProfessionsModule implements IFeatureModule {
       const herbTier = profMap.get('PROF_HERBALIST') || 0;
 
       if (minerTier >= 2 && herbTier >= 2) {
-        const innoId = `INNO-DAO-${Date.now()}`;
+        const innoId = nextId(this.db, 'innovation', 'INNO-DAO', getGameDate(this.db));
         const titleVi = `Đột Phá Bí Truyền: Sáng Tạo Nghề Phương Thuật Đan Dược Sư!`;
         const narrativeVi = `Nhờ am hiểu sâu sắc về khoáng thạch lưu huỳnh, chu sa và dược tính thảo mộc sơn lâm, bạn đã dung hòa hai đạo lý Khai Khoáng và Thái Dược, sáng tạo ra Đạo Dược Luyện Đan phái. Mở khóa bí kíp điều chế "Hồi Nguyên Hoàn" và hỏa công chiến trường!`;
         const recipes = ['REC-REVIVE-PILL'];
@@ -323,7 +446,7 @@ export class ProfessionsModule implements IFeatureModule {
       const craftTier = profMap.get('PROF_CRAFTSMAN') || 0;
 
       if (herbTier >= 2 && craftTier >= 2) {
-        const innoId = `INNO-SURG-${Date.now()}`;
+        const innoId = nextId(this.db, 'innovation', 'INNO-SURG', getGameDate(this.db));
         const titleVi = `Đột Phá Quân Y: Khai Sáng Nghề Chiến Địa Ngoại Khoa Sư!`;
         const narrativeVi = `Kết hợp sự khéo léo của tay nghề thêu dệt và dược lý cầm máu thảo dược, bạn sáng tạo nên phương pháp khâu vá vết đao thương chiến trận và cao dán trị độc. Binh sĩ dưới trướng giảm thiểu $75\\%$ nguy cơ tử vong do nhiễm trùng!`;
         const recipes = ['REC-TRAUMA-SALVE'];

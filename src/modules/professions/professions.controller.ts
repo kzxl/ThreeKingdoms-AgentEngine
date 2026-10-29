@@ -8,6 +8,8 @@
 
 import { Router, sendJson, RouteContext } from '../../server/router';
 import { DatabaseService } from '../../core/database';
+import { RngService } from '../../core/rng';
+import { nextId } from '../../shared/id-generator';
 import { ModuleRegistry } from '../../core/module-registry';
 import { ProfessionsModule } from './professions.module';
 
@@ -15,8 +17,6 @@ import { WageLaborController } from './features/wage-labor/wage-labor.controller
 import { registerBespokeForgeRoutes } from './features/bespoke-forge/bespoke-forge.controller';
 
 function getProfessionsModule(): ProfessionsModule | undefined {
-  const gsm = (globalThis as any).__GRAND_STRATEGY_MODULES__;
-  if (gsm?.professions) return gsm.professions as ProfessionsModule;
   return ModuleRegistry.getInstance().get<ProfessionsModule>('module.professions');
 }
 
@@ -27,7 +27,7 @@ function getDb(): DatabaseService {
 function getCampaignMeta(db: DatabaseService): { activeTurn: number; currentDate: string } {
   try {
     const row = db.queryOne<{ active_turn: number; current_date: string }>(
-      'SELECT active_turn, current_date FROM campaign_meta LIMIT 1;'
+      'SELECT active_turn, "current_date" FROM campaign_meta LIMIT 1;'
     );
     if (row) return { activeTurn: row.active_turn, currentDate: row.current_date };
   } catch {
@@ -211,13 +211,13 @@ export function registerProfessionsRoutes(router: Router): void {
           db.execute(
             `INSERT INTO stock_movements (mov_id, game_date, item_code, movement_type, quantity, unit_cost, balance_after, ref_txn)
              VALUES (?, ?, ?, 'PRODUCTION_CONSUME', ?, 10, (SELECT quantity FROM inventory_items WHERE item_code = ?), ?);`,
-            [`MOV-CRAFT-${Date.now()}`, meta.currentDate, input.item_code, reqQty, input.item_code, recipeCode]
+            [nextId(db, 'stock-movements', 'MOV-CRAFT', meta.currentDate), meta.currentDate, input.item_code, reqQty, input.item_code, recipeCode]
           );
         }
 
         // Defect calculation based on Craft attribute
         const defectChance = Math.max(0.02, recipe.base_defect_rate - ((player?.cra_attr || 50) / 1000));
-        const defects = Math.random() < defectChance ? 1 : 0;
+        const defects = RngService.forDomain(db, 'crafting').chance(defectChance) ? 1 : 0;
         const finalYield = Math.max(1, craftQty - defects);
 
         // Add crafted product to inventory
@@ -231,7 +231,7 @@ export function registerProfessionsRoutes(router: Router): void {
         db.execute(
           `INSERT INTO stock_movements (mov_id, game_date, item_code, movement_type, quantity, unit_cost, balance_after, ref_txn)
            VALUES (?, ?, ?, 'PRODUCTION_OUTPUT', ?, 35, (SELECT quantity FROM inventory_items WHERE item_code = ?), ?);`,
-          [`MOV-CRAFT-OUT-${Date.now()}`, meta.currentDate, recipe.product_item_code, finalYield, recipe.product_item_code, recipeCode]
+          [nextId(db, 'stock-movements', 'MOV-CRAFT-OUT', meta.currentDate), meta.currentDate, recipe.product_item_code, finalYield, recipe.product_item_code, recipeCode]
         );
 
         // Update fatigue

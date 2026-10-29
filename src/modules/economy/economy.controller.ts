@@ -14,8 +14,6 @@ import { RegionalMarketService, SETTLEMENT_PROFILES } from './regional-market.se
 import { CaravanLogisticsService } from '../ecology-logistics/caravan-logistics.service';
 
 function getEconomyModule(): EconomyModule | undefined {
-  const gsm = (globalThis as any).__GRAND_STRATEGY_MODULES__;
-  if (gsm?.economy) return gsm.economy as EconomyModule;
   return ModuleRegistry.getInstance().get<EconomyModule>('module.economy');
 }
 
@@ -39,16 +37,61 @@ function ensureLoansTable(db: DatabaseService): void {
   `);
 }
 
-function getCampaignMeta(db: DatabaseService): { activeTurn: number; currentDate: string } {
+function getCampaignMeta(db: DatabaseService): { campaignId: string; activeTurn: number; currentDate: string } {
   try {
-    const row = db.queryOne<{ active_turn: number; current_date: string }>(
-      'SELECT active_turn, current_date FROM campaign_meta LIMIT 1;'
+    const row = db.queryOne<{ campaign_id: string; active_turn: number; current_date: string }>(
+      'SELECT campaign_id, active_turn, "current_date" FROM campaign_meta LIMIT 1;'
     );
-    if (row) return { activeTurn: row.active_turn, currentDate: row.current_date };
+    if (row) {
+      return { campaignId: row.campaign_id, activeTurn: row.active_turn, currentDate: row.current_date };
+    }
   } catch {
     // default fallback
   }
-  return { activeTurn: 6, currentDate: '184-05-01' };
+  return { campaignId: 'CMP-184-ZHOU-01', activeTurn: 6, currentDate: '184-05-01' };
+}
+
+/** Deterministic identifier from the row count of an internal table. */
+function nextSequentialId(db: DatabaseService, table: string, prefix: string, gameDate: string): string {
+  const compact = String(gameDate || '184-05-01').replace(/-/g, '');
+  const row = db.queryOne<{ c: number }>(`SELECT COUNT(*) as c FROM ${table};`);
+  const seq = String(Number(row?.c || 0) + 1).padStart(6, '0');
+  return `${prefix}-${compact}-${seq}`;
+}
+
+/**
+ * Writes one balanced double-entry pair (Dr == Cr) using the canonical
+ * account_journal schema. Centralised so controllers cannot drift from the
+ * column names again.
+ */
+function insertJournalPair(
+  db: DatabaseService,
+  entry: {
+    txnId: string;
+    campaignId: string;
+    gameDate: string;
+    debitAccount: string;
+    creditAccount: string;
+    amount: number;
+    memo: string;
+  }
+): void {
+  db.execute(
+    `INSERT INTO account_journal (txn_id, campaign_id, game_date, account_code, debit, credit, memo)
+     VALUES (?, ?, ?, ?, ?, 0, ?);`,
+    [entry.txnId, entry.campaignId, entry.gameDate, entry.debitAccount, entry.amount, entry.memo]
+  );
+  db.execute(
+    `INSERT INTO account_journal (txn_id, campaign_id, game_date, account_code, debit, credit, memo)
+     VALUES (?, ?, ?, ?, 0, ?, ?);`,
+    [entry.txnId, entry.campaignId, entry.gameDate, entry.creditAccount, entry.amount, entry.memo]
+  );
+}
+
+/** Adds one calendar year to a game date, clamping the day to 30. */
+function oneYearLater(gameDate: string): string {
+  const [year, month, day] = String(gameDate).split('-').map(Number);
+  return `${year + 1}-${String(month || 1).padStart(2, '0')}-${String(Math.min(day || 1, 30)).padStart(2, '0')}`;
 }
 
 /**
@@ -167,8 +210,7 @@ export function registerEconomyRoutes(router: Router): void {
         itemCode,
         quantity,
         unitPrice,
-        counterparty = 'Thương Khách Huyện Trác',
-        gameDate
+        counterparty = 'Thương Khách Huyện Trác'
       } = ctx.body || {};
 
       const tradeAction = (action || '').toUpperCase();
@@ -204,23 +246,32 @@ export function registerEconomyRoutes(router: Router): void {
       const effectiveUnitPrice = typeof unitPrice === 'number' && unitPrice > 0 ? unitPrice : itemInfo.current_market_price;
       const totalAmount = Math.round(qty * effectiveUnitPrice);
       const meta = getCampaignMeta(db);
-      const effectiveDate = gameDate || meta.currentDate;
+      // The server clock is authoritative; a client-supplied date could back-date
+      // the ledger and desync it from campaign_meta.
+      const effectiveDate = meta.currentDate;
 
       const tradeResult = db.transaction(() => {
-        const player = db.queryOne<{ liquid_cash: number }>('SELECT liquid_cash FROM player_state WHERE player_id = ?', ['PLY-0001']);
+        const player = db.queryOne<{ liquid_cash: number; safe_cash: number }>(
+          'SELECT liquid_cash, safe_cash FROM player_state WHERE player_id = ?',
+          ['PLY-0001']
+        );
         if (!player) throw new Error('Player state PLY-0001 not found.');
 
-        const txnId = `TXN-${effectiveDate.replace(/-/g, '')}-${Date.now().toString().slice(-4)}`;
-        let newBalance = player.liquid_cash;
+        const txnId = nextSequentialId(db, 'cashflow_ledger', 'TXN', effectiveDate);
+        const safeCash = Number(player.safe_cash || 0);
+        // The immutable ledger tracks total liquid cash; player_state holds the spendable slice.
+        let newLiquid = Number(player.liquid_cash);
+        let newLedgerBalance = newLiquid + safeCash;
 
         if (tradeAction === 'BUY') {
           if (player.liquid_cash < totalAmount) {
-            throw new Error(`Insufficient funds: requires ${totalAmount} Qian, available ${player.liquid_cash} Qian.`);
+            throw new Error(`Insufficient funds: requires ${totalAmount} quan, available ${player.liquid_cash} quan.`);
           }
-          newBalance = player.liquid_cash - totalAmount;
+          newLiquid = player.liquid_cash - totalAmount;
+          newLedgerBalance = newLiquid + safeCash;
 
           // Deduct player cash
-          db.execute('UPDATE player_state SET liquid_cash = ? WHERE player_id = ?', [newBalance, 'PLY-0001']);
+          db.execute('UPDATE player_state SET liquid_cash = ? WHERE player_id = ?', [newLiquid, 'PLY-0001']);
 
           // Upsert inventory
           db.execute(
@@ -234,20 +285,24 @@ export function registerEconomyRoutes(router: Router): void {
           db.execute(
             `INSERT INTO cashflow_ledger (txn_id, game_date, counterparty, category, inflow, outflow, balance, memo, status)
              VALUES (?, ?, ?, 'Trade/Purchase', 0, ?, ?, ?, 'Confirmed');`,
-            [txnId, effectiveDate, counterparty, totalAmount, newBalance, `Mua ${qty} ${itemInfo.name_vi} đơn giá ${effectiveUnitPrice} Qian`]
+            [txnId, effectiveDate, counterparty, totalAmount, newLedgerBalance, `Mua ${qty} ${itemInfo.name_vi} đơn giá ${effectiveUnitPrice} quan`]
           );
 
-          db.execute(
-            `INSERT INTO account_journal (game_date, debit_account, credit_account, amount, description, ref_txn)
-             VALUES (?, '152_INVENTORY', '101_CASH', ?, ?, ?);`,
-            [effectiveDate, totalAmount, `Nhập kho ${qty} ${itemInfo.name_vi}`, txnId]
-          );
+          insertJournalPair(db, {
+            txnId,
+            campaignId: meta.campaignId,
+            gameDate: effectiveDate,
+            debitAccount: '1201_INVENTORY',
+            creditAccount: '1001_CASH_MOBILE',
+            amount: totalAmount,
+            memo: `Nhập kho ${qty} ${itemInfo.name_vi}`
+          });
 
           // Stock movement
           db.execute(
             `INSERT INTO stock_movements (mov_id, game_date, item_code, movement_type, quantity, unit_cost, balance_after, ref_txn)
              VALUES (?, ?, ?, 'PURCHASE_RECEIPT', ?, ?, (SELECT quantity FROM inventory_items WHERE item_code = ?), ?);`,
-            [`MOV-${Date.now()}`, effectiveDate, itemCode, qty, effectiveUnitPrice, itemCode, txnId]
+            [nextSequentialId(db, 'stock_movements', 'MOV', effectiveDate), effectiveDate, itemCode, qty, effectiveUnitPrice, itemCode, txnId]
           );
         } else {
           // Action SELL
@@ -256,10 +311,11 @@ export function registerEconomyRoutes(router: Router): void {
             throw new Error(`Insufficient inventory: have ${stock?.quantity || 0}, requested ${qty}.`);
           }
 
-          newBalance = player.liquid_cash + totalAmount;
+          newLiquid = player.liquid_cash + totalAmount;
+          newLedgerBalance = newLiquid + safeCash;
 
           // Add player cash
-          db.execute('UPDATE player_state SET liquid_cash = ? WHERE player_id = ?', [newBalance, 'PLY-0001']);
+          db.execute('UPDATE player_state SET liquid_cash = ? WHERE player_id = ?', [newLiquid, 'PLY-0001']);
 
           // Deduct inventory
           db.execute('UPDATE inventory_items SET quantity = quantity - ? WHERE item_code = ?', [qty, itemCode]);
@@ -268,20 +324,24 @@ export function registerEconomyRoutes(router: Router): void {
           db.execute(
             `INSERT INTO cashflow_ledger (txn_id, game_date, counterparty, category, inflow, outflow, balance, memo, status)
              VALUES (?, ?, ?, 'Trade/Sale', ?, 0, ?, ?, 'Confirmed');`,
-            [txnId, effectiveDate, counterparty, totalAmount, newBalance, `Bán ${qty} ${itemInfo.name_vi} đơn giá ${effectiveUnitPrice} Qian`]
+            [txnId, effectiveDate, counterparty, totalAmount, newLedgerBalance, `Bán ${qty} ${itemInfo.name_vi} đơn giá ${effectiveUnitPrice} quan`]
           );
 
-          db.execute(
-            `INSERT INTO account_journal (game_date, debit_account, credit_account, amount, description, ref_txn)
-             VALUES (?, '101_CASH', '511_REVENUE', ?, ?, ?);`,
-            [effectiveDate, totalAmount, `Xuất bán ${qty} ${itemInfo.name_vi}`, txnId]
-          );
+          insertJournalPair(db, {
+            txnId,
+            campaignId: meta.campaignId,
+            gameDate: effectiveDate,
+            debitAccount: '1001_CASH_MOBILE',
+            creditAccount: '4001_SALES_REVENUE',
+            amount: totalAmount,
+            memo: `Xuất bán ${qty} ${itemInfo.name_vi}`
+          });
 
           // Stock movement
           db.execute(
             `INSERT INTO stock_movements (mov_id, game_date, item_code, movement_type, quantity, unit_cost, balance_after, ref_txn)
              VALUES (?, ?, ?, 'SALE_DISPATCH', ?, ?, (SELECT quantity FROM inventory_items WHERE item_code = ?), ?);`,
-            [`MOV-${Date.now()}`, effectiveDate, itemCode, qty, effectiveUnitPrice, itemCode, txnId]
+            [nextSequentialId(db, 'stock_movements', 'MOV', effectiveDate), effectiveDate, itemCode, qty, effectiveUnitPrice, itemCode, txnId]
           );
         }
 
@@ -293,14 +353,14 @@ export function registerEconomyRoutes(router: Router): void {
           quantity: qty,
           unitPrice: effectiveUnitPrice,
           totalAmount,
-          newCashBalance: newBalance
+          newCashBalance: newLiquid
         };
       });
 
       sendJson(res, 200, {
         success: true,
         ...tradeResult,
-        message: `Thực hiện lệnh ${tradeAction} thành công: ${qty} ${tradeResult.itemName} tổng trị giá ${totalAmount} Qian.`
+        message: `Thực hiện lệnh ${tradeAction} thành công: ${qty} ${tradeResult.itemName} tổng trị giá ${totalAmount} quan.`
       });
     } catch (err: any) {
       sendJson(res, 400, { success: false, error: err.message });
@@ -402,11 +462,15 @@ export function registerEconomyRoutes(router: Router): void {
       const effectiveDate = meta.currentDate;
 
       const result = db.transaction(() => {
-        const player = db.queryOne<{ liquid_cash: number }>('SELECT liquid_cash FROM player_state WHERE player_id = ?', ['PLY-0001']);
+        const player = db.queryOne<{ liquid_cash: number; safe_cash: number }>(
+          'SELECT liquid_cash, safe_cash FROM player_state WHERE player_id = ?',
+          ['PLY-0001']
+        );
         if (!player) throw new Error('Player state not found.');
+        const safeCash = Number(player.safe_cash || 0);
 
         if (loanAction === 'BORROW') {
-          const generatedId = `LOAN-${Date.now()}`;
+          const generatedId = nextSequentialId(db, 'financial_loans', 'LOAN', effectiveDate);
           const interestRate = 0.05;
           const outstanding = Math.round(numAmount * (1 + interestRate));
           const newCash = player.liquid_cash + numAmount;
@@ -415,22 +479,26 @@ export function registerEconomyRoutes(router: Router): void {
 
           db.execute(
             `INSERT INTO financial_loans (loan_id, borrower_id, lender_name, principal, interest_rate, outstanding_balance, created_date, due_date, status)
-             VALUES (?, 'PLY-0001', ?, ?, ?, ?, ?, '184-12-30', 'ACTIVE');`,
-            [generatedId, lenderName, numAmount, interestRate, outstanding, effectiveDate]
+             VALUES (?, 'PLY-0001', ?, ?, ?, ?, ?, ?, 'ACTIVE');`,
+            [generatedId, lenderName, numAmount, interestRate, outstanding, effectiveDate, oneYearLater(effectiveDate)]
           );
 
-          const txnId = `TXN-LOAN-${Date.now().toString().slice(-4)}`;
+          const txnId = nextSequentialId(db, 'cashflow_ledger', 'TXN', effectiveDate);
           db.execute(
             `INSERT INTO cashflow_ledger (txn_id, game_date, counterparty, category, inflow, outflow, balance, memo, status)
              VALUES (?, ?, ?, 'Financing/Loan', ?, 0, ?, ?, 'Confirmed');`,
-            [txnId, effectiveDate, lenderName, numAmount, newCash, `Vay vốn kinh doanh từ ${lenderName}`]
+            [txnId, effectiveDate, lenderName, numAmount, newCash + safeCash, `Vay vốn kinh doanh từ ${lenderName}`]
           );
 
-          db.execute(
-            `INSERT INTO account_journal (game_date, debit_account, credit_account, amount, description, ref_txn)
-             VALUES (?, '101_CASH', '311_SHORT_TERM_LOANS', ?, ?, ?);`,
-            [effectiveDate, numAmount, `Vay vốn lưu động ${lenderName}`, txnId]
-          );
+          insertJournalPair(db, {
+            txnId,
+            campaignId: meta.campaignId,
+            gameDate: effectiveDate,
+            debitAccount: '1001_CASH_MOBILE',
+            creditAccount: '2001_ACCOUNTS_PAYABLE',
+            amount: numAmount,
+            memo: `Vay vốn lưu động ${lenderName}`
+          });
 
           return {
             loanId: generatedId,
@@ -438,16 +506,16 @@ export function registerEconomyRoutes(router: Router): void {
             principal: numAmount,
             outstandingBalance: outstanding,
             newLiquidCash: newCash,
-            message: `Vay thành công ${numAmount} Qian từ ${lenderName} (Lãi suất 5%, hoàn trả ${outstanding} Qian).`
+            message: `Vay thành công ${numAmount} quan từ ${lenderName} (Lãi suất 5%, hoàn trả ${outstanding} quan).`
           };
         } else if (loanAction === 'REPAY') {
           if (!loanId) throw new Error('loanId is required to repay a specific debt.');
-          const targetLoan = db.queryOne<any>('SELECT * FROM financial_loans WHERE loan_id = ? AND status = "ACTIVE"', [loanId]);
+          const targetLoan = db.queryOne<any>('SELECT * FROM financial_loans WHERE loan_id = ? AND status = ?', [loanId, 'ACTIVE']);
           if (!targetLoan) throw new Error(`Active loan ${loanId} not found.`);
 
           const payAmount = Math.min(numAmount, targetLoan.outstanding_balance);
           if (player.liquid_cash < payAmount) {
-            throw new Error(`Insufficient funds: require ${payAmount} Qian, available ${player.liquid_cash} Qian.`);
+            throw new Error(`Insufficient funds: require ${payAmount} quan, available ${player.liquid_cash} quan.`);
           }
 
           const newCash = player.liquid_cash - payAmount;
@@ -457,18 +525,22 @@ export function registerEconomyRoutes(router: Router): void {
           db.execute('UPDATE player_state SET liquid_cash = ? WHERE player_id = ?', [newCash, 'PLY-0001']);
           db.execute('UPDATE financial_loans SET outstanding_balance = ?, status = ? WHERE loan_id = ?', [remainingDebt, newStatus, loanId]);
 
-          const txnId = `TXN-REPAY-${Date.now().toString().slice(-4)}`;
+          const txnId = nextSequentialId(db, 'cashflow_ledger', 'TXN', effectiveDate);
           db.execute(
             `INSERT INTO cashflow_ledger (txn_id, game_date, counterparty, category, inflow, outflow, balance, memo, status)
              VALUES (?, ?, ?, 'Financing/Repayment', 0, ?, ?, ?, 'Confirmed');`,
-            [txnId, effectiveDate, targetLoan.lender_name, payAmount, newCash, `Trả nợ khoản vay ${loanId}`]
+            [txnId, effectiveDate, targetLoan.lender_name, payAmount, newCash + safeCash, `Trả nợ khoản vay ${loanId}`]
           );
 
-          db.execute(
-            `INSERT INTO account_journal (game_date, debit_account, credit_account, amount, description, ref_txn)
-             VALUES (?, '311_SHORT_TERM_LOANS', '101_CASH', ?, ?, ?);`,
-            [effectiveDate, payAmount, `Hoàn trả nợ vay ${loanId}`, txnId]
-          );
+          insertJournalPair(db, {
+            txnId,
+            campaignId: meta.campaignId,
+            gameDate: effectiveDate,
+            debitAccount: '2001_ACCOUNTS_PAYABLE',
+            creditAccount: '1001_CASH_MOBILE',
+            amount: payAmount,
+            memo: `Hoàn trả nợ vay ${loanId}`
+          });
 
           return {
             loanId,
@@ -477,7 +549,7 @@ export function registerEconomyRoutes(router: Router): void {
             remainingDebt,
             newStatus,
             newLiquidCash: newCash,
-            message: `Hoàn trả ${payAmount} Qian cho ${targetLoan.lender_name}. Nợ còn lại: ${remainingDebt} Qian.`
+            message: `Hoàn trả ${payAmount} quan cho ${targetLoan.lender_name}. Nợ còn lại: ${remainingDebt} quan.`
           };
         } else {
           throw new Error('Action must be BORROW or REPAY.');
@@ -638,13 +710,32 @@ export function registerEconomyRoutes(router: Router): void {
   // -------------------------------------------------------------
   // 10. POST /api/caravans/tick-progress & /api/economy/caravans/tick-progress
   // -------------------------------------------------------------
+  // A "let time pass" request spends one campaign day. The day clock is what
+  // advances caravans (CaravanLogisticsService.advanceByDays), so this endpoint
+  // can never move them for free.
   const handleTickCaravans = async (_req: any, res: any, _ctx: RouteContext) => {
     try {
-      const logisticsService = CaravanLogisticsService.getInstance();
-      const result = logisticsService.tickCaravans();
+      const { advanceCampaignDays } = require('../../../engine/time-manager');
+      const time = advanceCampaignDays(getDb().path, 1, {
+        reason: 'Thương đoàn lên đường',
+        clampToMonthEnd: true,
+        grainUpkeepPerDay: 0.02,
+        fatigueRecoveryPerDay: 1
+      });
+      if (!time.success) {
+        sendJson(res, 409, { success: false, error: time.error || 'Không thể cho thời gian trôi qua.' });
+        return;
+      }
+      const caravans = time.caravans || {
+        tickedCaravansCount: 0,
+        arrivedCaravansCount: 0,
+        encounters: [],
+        updatedCaravans: []
+      };
       sendJson(res, 200, {
         success: true,
-        ...result
+        ...caravans,
+        time
       });
     } catch (err: any) {
       sendJson(res, 500, { success: false, error: err.message });

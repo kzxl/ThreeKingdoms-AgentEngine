@@ -8,6 +8,8 @@
  */
 
 import { DatabaseService } from '../../core/database';
+import { RngService } from '../../core/rng';
+import { nextId } from '../../shared/id-generator';
 import {
   NODE_TO_LOC_MAP,
   resolveLocationId,
@@ -112,7 +114,9 @@ export class TravelTransitService {
     // 3. Fallback calculation if route not directly connected
     const distanceLi = route ? route.distance_li : (tgtLocation?.distance_from_zhuo || 300);
     const terrainType = route ? route.terrain_type : 'PLAINS';
-    const marchDays = route ? route.standard_march_days : (tgtLocation?.march_days || 2.0);
+    // Whole calendar days; the plan must show the same number of days charged.
+    const rawMarchDays = route ? route.standard_march_days : (tgtLocation?.march_days || 2.0);
+    const marchDays = Math.max(1, Math.round(Number(rawMarchDays) || 1));
     const grainCost = route ? route.grain_provision_cost : (tgtLocation?.grain_cost || 2.0);
     const riskLevel = route ? route.ambush_risk_level : (tgtLocation?.threat_level_vi || 'MODERATE');
     const routeDescVi = route?.description_vi || `Đại lộ quan đạo tiến về ${tgtLocation?.name_vi || toNodeId}.`;
@@ -163,7 +167,7 @@ export class TravelTransitService {
     else if (plan.riskLevel === 'MODERATE') encounterProb = 0.35;
     else if (plan.riskLevel === 'LOW') encounterProb = 0.20;
 
-    const roll = Math.random();
+    const roll = RngService.forDomain(this.db, 'travel').nextFloat();
     const hasEncounter = roll <= encounterProb;
 
     let encounter: TravelEncounter | null = null;
@@ -199,7 +203,7 @@ export class TravelTransitService {
         category: 'hazard',
         titleVi: 'Sạn Đạo Sạt Lở & Vách Đá Hiểm Trở',
         titleEn: 'Treacherous Plank Path & Rockslide',
-        icon: '⛰️',
+        icon: '山',
         threat: 'high',
         terrainType,
         narrativeVi: 'Lộ trình vắt ngang vách núi Tần Lĩnh hiểm trở. Một đợt đất đá từ đỉnh núi vừa sạt lở làm gãy nhịp cầu sạn đạo bắc qua vực sâu vạn trượng!',
@@ -265,7 +269,7 @@ export class TravelTransitService {
         category: 'combat',
         titleVi: 'Thủy Tặc Vọng Giang & Trạm Kiểm Soát Bến Sông',
         titleEn: 'River Guerrillas & Ferry Chokepoint',
-        icon: '⛵',
+        icon: '舟',
         threat: 'high',
         terrainType,
         narrativeVi: 'Khúc sông Hoàng Hà sóng cuộn trập trùng. Một toán lâu la thủy trại áp sát thuyền buôn bến đò, đòi nộp mãi lộ mới cho phép vượt sông!',
@@ -301,12 +305,12 @@ export class TravelTransitService {
             successDelta: { dipExp: 25, narrative: '+25 EXP Ngoại Giao, Kết giao hào kiệt đường sông' },
             failureNarrativeVi: 'Mất thì giờ giằng co đàm phán, phải tốn thêm chút tiền mãi lộ nhỏ.',
             failureNarrativeEn: 'Negotiations stall, costing a small transit fee of coppers.',
-            failureDelta: { lootQian: -50, narrative: '-50 Tiền mãi lộ' }
+            failureDelta: { lootQian: -50, narrative: '-50 Quan mãi lộ' }
           },
           {
             id: 'pass_toll',
-            textVi: 'Nộp 30 Tiền hoa tiêu để qua bến nhanh chóng',
-            textEn: 'Pay 30 Qian ferry fee to cross without friction',
+            textVi: 'Nộp 30 Quan hoa tiêu để qua bến nhanh chóng',
+            textEn: 'Pay 30 quan ferry fee to cross without friction',
             skillKey: 'none',
             attrNameVi: 'Không kiểm tra',
             targetDC: 0,
@@ -314,7 +318,7 @@ export class TravelTransitService {
             playerMod: 0,
             successNarrativeVi: 'Đoàn quân qua sông an toàn thuận buồm xuôi gió.',
             successNarrativeEn: 'The ferry glides smoothly across the river to the far bank.',
-            successDelta: { lootQian: -30, narrative: '-30 Tiền phí đò' },
+            successDelta: { lootQian: -30, narrative: '-30 Quan phí đò' },
             failureNarrativeVi: '',
             failureNarrativeEn: '',
             failureDelta: {}
@@ -331,7 +335,7 @@ export class TravelTransitService {
       category: 'combat',
       titleVi: 'Toán Thám Báo Khăn Vàng Phục Kích',
       titleEn: 'Yellow Turban Scout Ambush',
-      icon: '⚔️',
+      icon: '武',
       threat: 'moderate',
       terrainType,
       narrativeVi: 'Bên rặng liễu triền đê, tiếng tù và man rợ vang lên! Một toán thám mã Khăn Vàng tay giương cung thương chặn đường hành quân.',
@@ -346,9 +350,9 @@ export class TravelTransitService {
           targetDC: 12,
           playerAttrVal: warStat.val,
           playerMod: warStat.mod,
-          successNarrativeVi: 'Lương Diễn vũ bão xung phong chém gục tên đầu sỏ! Toán giặc tan tác bỏ lại 150 Tiền và chiến mã.',
-          successNarrativeEn: 'You cleave the squad leader with decisive fury! The scouts flee, leaving 150 Qian loot.',
-          successDelta: { warExp: 30, lootQian: 150, morale: 5, narrative: '+30 EXP Võ Lực, +150 Tiền chiến lợi phẩm, Sĩ khí cao' },
+          successNarrativeVi: 'Lương Diễn vũ bão xung phong chém gục tên đầu sỏ! Toán giặc tan tác bỏ lại 150 Quan và chiến mã.',
+          successNarrativeEn: 'You cleave the squad leader with decisive fury! The scouts flee, leaving 150 quan loot.',
+          successDelta: { warExp: 30, lootQian: 150, morale: 5, narrative: '+30 EXP Võ Lực, +150 Quan chiến lợi phẩm, Sĩ khí cao' },
           failureNarrativeVi: 'Địch chiếm gò cao bắn tên xối xả, đoàn phải vất vả phá vây làm hao tổn thể lực.',
           failureNarrativeEn: 'Hostile archers inflict exhaustion before your men break through.',
           failureDelta: { fatigue: 15, narrative: '+15 Mệt mỏi' }
@@ -411,7 +415,7 @@ export class TravelTransitService {
     const encounter = this.generateEncounterForTerrain(plan.terrainType, plan.fromNodeId, plan.toNodeId);
     const choice = encounter.choices.find(c => c.id === choiceId) || encounter.choices[0];
 
-    const d20Roll = roll !== undefined ? Number(roll) : Math.floor(Math.random() * 20) + 1;
+    const d20Roll = roll !== undefined ? Number(roll) : RngService.forDomain(this.db, 'travel').d20();
     const totalScore = d20Roll + choice.playerMod;
     const isSuccess = choice.targetDC === 0 || totalScore >= choice.targetDC;
 
@@ -478,10 +482,10 @@ export class TravelTransitService {
     `, [targetSubLoc, newGrain, newFatigue]);
 
     const meta = this.db.queryOne<{ active_turn: number; current_date: string }>(
-      `SELECT active_turn, current_date FROM campaign_meta LIMIT 1;`
+      `SELECT active_turn, "current_date" FROM campaign_meta LIMIT 1;`
     ) || { active_turn: 7, current_date: '184-06-01' };
 
-    const chronicleId = `march_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`;
+    const chronicleId = nextId(this.db, 'chronicle', 'march', meta.current_date);
     const marchNarrative = `Lương Diễn dẫn đầu đoàn quân viễn chinh vượt ${distanceLi} dặm quan đạo (${terrainType}), tiêu hao ${cost} thạch quân lương, cờ xí rợp trời tiến nhập **${targetNameVi}**! Đại bản doanh tiền phương đã an bài.`;
 
     this.db.execute(`

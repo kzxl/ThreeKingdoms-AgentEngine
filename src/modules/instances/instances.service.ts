@@ -11,6 +11,7 @@
 
 import fs from 'fs';
 import path from 'path';
+import { randomUUID } from 'node:crypto';
 import Database from 'better-sqlite3';
 import {
   INSTANCE_PATHS,
@@ -127,7 +128,7 @@ export class InstanceManagerService {
       throw new Error(`Template database not found at: ${templatePath}`);
     }
 
-    const instanceId = `inst_${Date.now()}`;
+    const instanceId = `inst_${randomUUID()}`;
     const newDbPath = path.join(INSTANCE_PATHS.INSTANCES_DIR, `${instanceId}.db`);
 
     // 1. Physical file clone
@@ -259,7 +260,7 @@ export class InstanceManagerService {
       throw new Error(`Source instance not found: ${dto.sourceId}`);
     }
 
-    const newInstanceId = `inst_${Date.now()}`;
+    const newInstanceId = `inst_${randomUUID()}`;
     const newDbPath = path.join(INSTANCE_PATHS.INSTANCES_DIR, `${newInstanceId}.db`);
 
     fs.copyFileSync(sourceDbPath, newDbPath);
@@ -271,7 +272,7 @@ export class InstanceManagerService {
           INSERT INTO chat_chronicle (id, turn_number, game_date, type, speaker, title, avatar, text, reasoning)
           VALUES (?, 1, '184-05-02', 'narrative', 'Hệ Thống', 'Sao Lưu Phân Nhánh', 'Lưu', ?, 'Người chơi sao lưu save');
         `).run(
-          `chron_fork_${Date.now()}`,
+          `chron_fork_${randomUUID()}`,
           `Nhánh chiến cục được sao lưu với ghi chú: [${dto.newLabel.trim()}].`
         );
       } finally {
@@ -332,7 +333,7 @@ export class InstanceManagerService {
       `).get() as any;
 
       const metaRow = db.prepare(`
-        SELECT active_turn, current_date
+        SELECT active_turn, "current_date"
         FROM campaign_meta
         LIMIT 1;
       `).get() as any;

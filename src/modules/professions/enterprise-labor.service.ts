@@ -11,6 +11,9 @@
 
 import { DatabaseService } from '../../core/database';
 import { seedMasterRecipes } from './recipes-seed';
+import { nextSequentialId } from '../../shared/id-generator';
+import { getPlayerCapital } from '../../shared/ledger';
+import { CANONICAL_LABOR_SHIFTS } from './features/wage-labor/wage-labor.constants';
 
 export type EnterpriseType = 'WORKSHOP' | 'TAVERN' | 'APOTHECARY' | 'BLACKSMITH';
 
@@ -433,11 +436,11 @@ export class EnterpriseLaborService {
 
     if (player.liquid_cash < initialCapital) {
       throw new Error(
-        `Khí huyết tài chính bất túc! Cần ít nhất ${initialCapital} tiền vốn, hiện chỉ có ${player.liquid_cash} tiền.`
+        `Khí huyết tài chính bất túc! Cần ít nhất ${initialCapital} quan vốn, hiện chỉ có ${player.liquid_cash} quan.`
       );
     }
 
-    const businessId = `BIZ-${normalizedType}-${Date.now().toString(36).toUpperCase()}-${Math.floor(Math.random() * 1000)}`;
+    const businessId = nextSequentialId(this.db, 'businesses', `BIZ-${normalizedType}`, this.getGameDate());
     const currentDate = this.getGameDate();
 
     return this.db.transaction(() => {
@@ -449,7 +452,7 @@ export class EnterpriseLaborService {
       ]);
 
       // 2. Record cashflow ledger entry
-      const txnId = `TXN-CAPITAL-${Date.now()}-${process.hrtime.bigint()}-${Math.floor(Math.random() * 10000)}`;
+      const txnId = nextSequentialId(this.db, 'cashflow_ledger', 'TXN-CAPITAL', currentDate);
       this.db.execute(
         `INSERT INTO cashflow_ledger (txn_id, game_date, counterparty, category, inflow, outflow, balance, memo)
          VALUES (?, ?, ?, 'CAPITAL_INVESTMENT', 0, ?, ?, ?);`,
@@ -612,13 +615,15 @@ export class EnterpriseLaborService {
       );
 
       const ownerNewCash = this.getPlayerCash(biz.ownerCharacterId);
+      const ownerCapital = getPlayerCapital(this.db, biz.ownerCharacterId);
 
-      // 3. Log cashflow ledger entry
-      const txnId = `TXN-DIVIDEND-${Date.now()}-${process.hrtime.bigint()}-${Math.floor(Math.random() * 10000)}`;
+      // 3. Log cashflow ledger entry. Balance is total player capital
+      //    (liquid + personal vault), not liquid cash alone.
+      const txnId = nextSequentialId(this.db, 'cashflow_ledger', 'TXN-DIVIDEND', currentDate);
       this.db.execute(
         `INSERT INTO cashflow_ledger (txn_id, game_date, counterparty, category, inflow, outflow, balance, memo)
          VALUES (?, ?, ?, 'ENTERPRISE_DIVIDEND', ?, 0, ?, ?);`,
-        [txnId, currentDate, biz.name, toWithdraw, ownerNewCash, `Rút lợi nhuận kinh doanh từ ${biz.name}`]
+        [txnId, currentDate, biz.name, toWithdraw, ownerCapital.total, `Rút lợi nhuận kinh doanh từ ${biz.name}`]
       );
 
       const updated = this.getEnterpriseDetails(businessId);
@@ -630,7 +635,7 @@ export class EnterpriseLaborService {
         remainingProfit: updated.accumulatedProfit,
         remainingSafeCash: updated.safeCash,
         ownerNewCash,
-        message: `Đã rút thành công ${toWithdraw} tiền lợi nhuận từ ${biz.name}. Số dư cá nhân hiện có: ${ownerNewCash}.`
+        message: `Đã rút thành công ${toWithdraw} quan lợi nhuận từ ${biz.name}. Số dư cá nhân hiện có: ${ownerNewCash}.`
       };
     });
   }
@@ -712,7 +717,7 @@ export class EnterpriseLaborService {
       }
 
       // 3. Log cashflow wage transaction
-      const txnId = `TXN-WAGE-${Date.now()}-${process.hrtime.bigint()}-${Math.floor(Math.random() * 10000)}`;
+      const txnId = nextSequentialId(this.db, 'cashflow_ledger', 'TXN-WAGE', currentDate);
       this.db.execute(
         `INSERT INTO cashflow_ledger (txn_id, game_date, counterparty, category, inflow, outflow, balance, memo)
          VALUES (?, ?, ?, 'LABOR_WAGE', ?, 0, ?, ?);`,
@@ -781,7 +786,7 @@ export class EnterpriseLaborService {
         attributeExpGained: job.attributeExp,
         newAttributeExp: newAttrExp,
         newAttributeVal: newAttrVal,
-        message: `Hoàn tất ca làm ${job.titleVi}: Nhận ${job.dailyWage} tiền công, tiêu hao ${job.fatigueCost} Thể Lực, +${job.professionExp} EXP nghề ${job.professionNameVi}, +${job.attributeExp} EXP thuộc tính!`
+        message: `Hoàn tất ca làm ${job.titleVi}: Nhận ${job.dailyWage} quan tiền công, tiêu hao ${job.fatigueCost} Thể Lực, +${job.professionExp} EXP nghề ${job.professionNameVi}, +${job.attributeExp} EXP thuộc tính!`
       };
     });
   }
@@ -963,117 +968,8 @@ export class EnterpriseLaborService {
       };
     });
 
-    // 4. Define Labor Shifts
-    const laborShifts = [
-      {
-        shiftId: 'SHIFT_FORGE_HAND',
-        jobType: 'JOB_FORGE_HAND',
-        titleVi: 'Thợ Phụ Kéo Bễ & Đập Búa Lò Rèn',
-        titleEn: 'Blacksmith Forge Hand',
-        workplaceVi: 'Lò Rèn Bách Nghệ Trác Quận',
-        workplaceEn: 'Zhuo Artisan Blacksmith',
-        wage: 140,
-        fatigueCost: 20,
-        professionCode: 'PROF_CRAFTSMAN',
-        professionNameVi: 'Rèn Đúc & Chế Tác',
-        expGain: 40,
-        attributeTarget: 'cra',
-        attributeExp: 15,
-        narrativeVi: 'Kéo bễ lò lửa đỏ rực, cùng đại sư quai búa rèn phôi sắt tôi nước lạnh. Tăng cường thể lực và tay nghề luyện cương.',
-        narrativeEn: 'Stoked furnace fires and struck glowing billets alongside master smiths.',
-        icon: '鍛'
-      },
-      {
-        shiftId: 'SHIFT_CHEF_TAVERN',
-        jobType: 'JOB_TAVERN_COOK',
-        titleVi: 'Đầu Bếp & Điều Rượu Tại Tửu Điếm',
-        titleEn: 'Tavern Chef & Cellar Master',
-        workplaceVi: 'Tửu Điếm Đào Viên',
-        workplaceEn: 'Peach Orchard Tavern',
-        wage: 110,
-        fatigueCost: 15,
-        professionCode: 'PROF_MERCHANT',
-        professionNameVi: 'Trù Nghệ & Khách Điếm',
-        expGain: 30,
-        attributeTarget: 'com',
-        attributeExp: 10,
-        narrativeVi: 'Bổ củi nổi lửa, nấu cỗ nhắm và phục vụ rượu hoa đào cho khách thương. Thu thập tin tức tình báo các chư hầu.',
-        narrativeEn: 'Prepared banquets and served fragrant wines while eavesdropping on regional gossip.',
-        icon: '庖'
-      },
-      {
-        shiftId: 'SHIFT_HERBALIST',
-        jobType: 'JOB_APOTHECARY_COMPOUNDER',
-        titleVi: 'Dược Đồng Bào Chế Thuốc Tại Hiệu Dược',
-        titleEn: 'Apothecary Herbalist & Salve Maker',
-        workplaceVi: 'Hồi Xuân Dược Đường',
-        workplaceEn: 'Spring Apothecary',
-        wage: 120,
-        fatigueCost: 15,
-        professionCode: 'PROF_HERBALIST',
-        professionNameVi: 'Y Điếm & Bào Chế Y Dược',
-        expGain: 35,
-        attributeTarget: 'int',
-        attributeExp: 10,
-        narrativeVi: 'Dùng cối đá nghiền nát thảo dược, sao chế cao dán kim sang và phân loại dược liệu cứu chữa bách tính.',
-        narrativeEn: 'Ground wild roots and brewed soothing trauma balms for townspeople.',
-        icon: '藥'
-      },
-      {
-        shiftId: 'SHIFT_WEAVER',
-        jobType: 'JOB_WEAVER',
-        titleVi: 'Thợ Thủ Công Đan Phên Tre & Bện Sọt',
-        titleEn: 'Artisan Bamboo Basket Weaver',
-        workplaceVi: 'Xưởng Thủ Công Lương Gia',
-        workplaceEn: 'Liang Workshop',
-        wage: 95,
-        fatigueCost: 12,
-        professionCode: 'PROF_CRAFTSMAN',
-        professionNameVi: 'Đan Lát & Chế Tác',
-        expGain: 25,
-        attributeTarget: 'cra',
-        attributeExp: 10,
-        narrativeVi: 'Vót nan tre bện sọt vận lương cho Bắc Quân. Rèn luyện sự tỉ mỉ và nhanh nhạy của đôi bàn tay.',
-        narrativeEn: 'Wove heavy-duty supply baskets for northern imperial expeditions.',
-        icon: '工'
-      },
-      {
-        shiftId: 'SHIFT_MINER',
-        jobType: 'JOB_MINER_CARRIER',
-        titleVi: 'Phu Mỏ Khai Khoáng & Bốc Vác Quặng Sắt',
-        titleEn: 'Iron Mine Carrier & Sledge Striker',
-        workplaceVi: 'Mỏ Sắt Tây Sơn Trác Quận',
-        workplaceEn: 'West Mountain Iron Mines',
-        wage: 130,
-        fatigueCost: 18,
-        professionCode: 'PROF_MINER',
-        professionNameVi: 'Khai Khoáng & Luyện Quặng',
-        expGain: 35,
-        attributeTarget: 'log',
-        attributeExp: 12,
-        narrativeVi: 'Gánh quặng sắt thô từ vách núi đá hiểm trở về bến sông tập kết. Rèn luyện gân cốt và sức bền dẻo dai.',
-        narrativeEn: 'Excavated hematite ore and hauled heavy loads down treacherous mountain paths.',
-        icon: '礦'
-      },
-      {
-        shiftId: 'SHIFT_WAITER',
-        jobType: 'JOB_TAVERN_STAFF',
-        titleVi: 'Tiểu Nhị Tiếp Tân Tửu Điếm & Trà Quán',
-        titleEn: 'Tavern Runner & Guest Concierge',
-        workplaceVi: 'Trà Quán Bình Dân Trác Huyện',
-        workplaceEn: 'Zhuo County Tea House',
-        wage: 85,
-        fatigueCost: 10,
-        professionCode: 'PROF_MERCHANT',
-        professionNameVi: 'Hành Thương & Giao Dịch',
-        expGain: 20,
-        attributeTarget: 'com',
-        attributeExp: 8,
-        narrativeVi: 'Bưng trà rót nước, dọn dẹp bàn tiệc, lắng nghe tin đồn binh biến các quận huyện.',
-        narrativeEn: 'Poured tea and greeted travelers from the Central Plains.',
-        icon: '酒'
-      }
-    ];
+    // 4. Labor Shifts — the canonical table shared with the wage-labor slice.
+    const laborShifts = CANONICAL_LABOR_SHIFTS;
 
     const totalDailyRevenue = businesses.reduce((s, b) => s + (b.daily_revenue || 0), 0);
     const totalWorkforce = businesses.reduce((s, b) => s + (b.current_workforce || 0), 0);
@@ -1154,7 +1050,7 @@ export class EnterpriseLaborService {
       );
 
       // Correct Cashflow Ledger insertion
-      const txnId = `TXN-WAGE-${Date.now()}-${process.hrtime.bigint()}-${Math.floor(Math.random() * 10000)}`;
+      const txnId = nextSequentialId(this.db, 'cashflow_ledger', 'TXN-WAGE', currentDate);
       this.db.execute(
         `INSERT INTO cashflow_ledger (txn_id, game_date, counterparty, category, inflow, outflow, balance, memo, status)
          VALUES (?, ?, ?, 'LABOR_WAGE', ?, 0, ?, ?, 'Confirmed');`,
@@ -1200,7 +1096,7 @@ export class EnterpriseLaborService {
         );
       }
 
-      const messageVi = `Hoàn thành ca làm [${shift.titleVi}]! Nhận +${shift.wage} Tiền đồng, tiêu hao ${shift.fatigueCost} Thể Lực (+${shift.expGain} EXP Nghề, +${shift.attributeExp} EXP ${attr.toUpperCase()}).`;
+      const messageVi = `Hoàn thành ca làm [${shift.titleVi}]! Nhận +${shift.wage} Quan, tiêu hao ${shift.fatigueCost} Thể Lực (+${shift.expGain} EXP Nghề, +${shift.attributeExp} EXP ${attr.toUpperCase()}).`;
 
       return {
         success: true,
@@ -1279,18 +1175,18 @@ export class EnterpriseLaborService {
     if (playerCash < totalCashNeeded) {
       if (totalTurnkeyDeduction > 0) {
         throw new Error(
-          `Ngân quỹ không đủ! Cần ${bType.startupCash.toLocaleString()} Tiền vốn + ${totalTurnkeyDeduction.toLocaleString()} Tiền bù vật liệu thiếu (Tổng: ${totalCashNeeded.toLocaleString()} Tiền, hiện có: ${playerCash.toLocaleString()} Tiền).`
+          `Ngân quỹ không đủ! Cần ${bType.startupCash.toLocaleString()} Quan vốn + ${totalTurnkeyDeduction.toLocaleString()} Quan bù vật liệu thiếu (Tổng: ${totalCashNeeded.toLocaleString()} Quan, hiện có: ${playerCash.toLocaleString()} Quan).`
         );
       } else {
         throw new Error(
-          `Ngân quỹ không đủ! Cần ${bType.startupCash.toLocaleString()} Tiền vốn khởi nghiệp (hiện có: ${playerCash.toLocaleString()} Tiền).`
+          `Ngân quỹ không đủ! Cần ${bType.startupCash.toLocaleString()} Quan vốn khởi nghiệp (hiện có: ${playerCash.toLocaleString()} Quan).`
         );
       }
     }
 
     const currentDate = this.getGameDate();
     const finalName = customName && customName.trim() ? customName.trim() : bType.titleVi;
-    const newBizId = `BIZ-${Date.now().toString(36).toUpperCase()}-${Math.floor(Math.random() * 1000)}`;
+    const newBizId = nextSequentialId(this.db, 'businesses', 'BIZ', currentDate);
     const remainingCash = playerCash - totalCashNeeded;
 
     return this.db.transaction(() => {
@@ -1309,7 +1205,7 @@ export class EnterpriseLaborService {
       );
 
       // 3. Record cashflow ledger entry with CORRECT columns
-      const txnId = `TXN-BIZ-${Date.now()}-${process.hrtime.bigint()}-${Math.floor(Math.random() * 10000)}`;
+      const txnId = nextSequentialId(this.db, 'cashflow_ledger', 'TXN-BIZ', currentDate);
       this.db.execute(
         `INSERT INTO cashflow_ledger (txn_id, game_date, counterparty, category, inflow, outflow, balance, memo, status)
          VALUES (?, ?, 'Quan Phủ Trác Quận', 'CAPITAL_INVESTMENT', 0, ?, ?, ?, 'Confirmed');`,

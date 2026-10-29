@@ -30,6 +30,8 @@ import { registerProgressionRoutes } from '../modules/progression/progression.co
 import { registerSpecialistWorkforceRoutes } from '../modules/professions/features/workforce/specialist-workforce.controller';
 import { DailyInteractionEngine } from '../modules/social-kizuna/daily-interaction.engine';
 import { ContextActionEngine } from '../modules/contextual-actions/context-action.engine';
+import { registerFactionReadRoutes } from '../modules/faction-politics/faction.controller';
+import { CaravanLogisticsService } from '../modules/ecology-logistics/caravan-logistics.service';
 
 // Resolve database path
 const ROOT_DIR = path.resolve(__dirname, '../..');
@@ -74,7 +76,9 @@ export async function bootstrapGrandStrategy() {
     npcLifecycle,
     factionPolitics,
     professions,
-    ecologyLogistics
+    ecologyLogistics,
+    // Clock hook: engine/time-manager advances caravans through this service.
+    caravanLogistics: CaravanLogisticsService.getInstance()
   };
 }
 
@@ -91,6 +95,7 @@ export function createGrandStrategyRouter(): Router {
   registerBanquetRoutes(router);
   registerProgressionRoutes(router);
   registerSpecialistWorkforceRoutes(router);
+  registerFactionReadRoutes(router);
   return router;
 }
 
