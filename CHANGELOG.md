@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.6.6] - 2026-10-30
+
+Single market-price source.
+
+### Changed
+- `master_items` is the only market price. `engine/market-price-book.js` and
+  `src/shared/market-price-book.ts` are the read paths; the `COMMODITY_PRICE_INDEX` table in
+  `engine/rules.js` is deleted.
+- `SimulationCore` trades and production valuation read `master_items`; a client-supplied
+  `unit_price` is ignored and an unpriced item returns `ITEM_NOT_FOUND` /
+  `MARKET_PRICE_MISSING` instead of a local fallback.
+- `/api/trade` resolves `current_market_price` server-side; the request price is no longer read.
+- The workshop sells, values stock and procures materials at catalog prices.
+- Every contextual action quotes the catalog price it settles at, including grain, salt, mats,
+  shields, leather, herbs, horses and licenses.
+- Migration `010-complete-market-catalog` adds the four rows the actions needed but the catalog
+  lacked: `COM-TWINE`, `LIC-LUOYANG`, `LIC-JIANYE`, `LIC-JIANGE`.
+- `market-elasticity.ts` is documented as a scenario model; it does not settle trades.
+
+### Verification
+`npm run verify` green: 25/25 suites (4 legacy + 21 modern), 28/28 contracts, 8/8 write smokes
+(the BUY smoke now sends a spoofed price and still charges the catalog price); `npm run audit`
+1,358 invariants, 0 discrepancies. New `verify-market-price-book.ts` checks TS/engine parity,
+action-catalog coverage, spoof rejection and price-less rejection.
+
+---
+
 ## [1.6.5] - 2026-10-30
 
 Chart-of-accounts unification.

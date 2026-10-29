@@ -19,7 +19,7 @@ legacy JS).
 | Correctness / ownership | 9/10 | One writer for the date, caravans, business month, world turn, balance, modal ids, hub |
 | Data integrity | 9/10 | Ledger matches `liquid + safe`; chronicle 15 rows / 14 texts; 1,358 invariants green |
 | Architecture / maintainability | 7.5/10 | God services and gateway still large; legacy client not migrated; cashflow writers unified |
-| Tests & observability | 9/10 | 24 suites, 28 contracts, 8 write smokes, 10 arch rules + UI + API + route ratchets |
+| Tests & observability | 9/10 | 25 suites, 28 contracts, 8 write smokes, 10 arch rules + UI + API + route ratchets |
 | Game design | 4/10 | Cannot lose; world frozen unless the player clicks; NPC economy not conserved |
 | UI/UX | 6.5/10 | Dev telemetry, dual clocks and duplicate chronicle gone; typography and right panel still heavy |
 
@@ -27,7 +27,7 @@ legacy JS).
 
 **Gates**
 
-- `npm run verify`: 24/24 suites (4 legacy + 20 `verify-*.ts`), 28/28 contracts, 8/8 write smokes.
+- `npm run verify`: 25/25 suites (4 legacy + 21 `verify-*.ts`), 28/28 contracts, 8/8 write smokes.
 - `npm run audit`: **1,358 invariants, 0 discrepancies**; `GET /api/audit` reports the same.
 - `tsc --noEmit`: 0 errors.
 
@@ -103,7 +103,7 @@ Remaining god services: `context-action.engine.ts` 1,970, `blacksmith-forge.serv
 | 13 | Two trade modals | ✅ | `openQuickTrade` delegates to the TS `QuickTradeModal` (payload fixed to the SimCore contract); legacy markup is an offline fallback only |
 | 14 | Dead event wiring | ✅ | `TURN_ADVANCED` is published after commit; `AUTUMN_HARVEST_CYCLE` and `LOD1_WEEKLY_TICK` were removed |
 | 15 | Multiple date helpers | ✅ | `engine/time-manager.js` delegates to `engine/date-utils.js`; `game-clock.ts` only reads the DB |
-| 16 | Duplicate wages/prices | ✅ (partial) | Duplicate shift tables merged into `CANONICAL_LABOR_SHIFTS`; `JOB_FORGE_HAND` 75 is a **hire cost**, `SHIFT_FORGE_HAND` 140 is **player income** — different quantities. Four market-price sources remain |
+| 16 | Duplicate wages/prices | ✅ | Duplicate shift tables merged into `CANONICAL_LABOR_SHIFTS`; `JOB_FORGE_HAND` 75 is a **hire cost**, `SHIFT_FORGE_HAND` 140 is **player income**. Market prices come only from `master_items` (1.6.6); the engine, workshop, contextual actions and `/api/trade` all read it |
 
 ## 3. Architecture assessment
 
@@ -128,6 +128,9 @@ Remaining god services: `context-action.engine.ts` 1,970, `blacksmith-forge.serv
 - Labor shifts: one shared `CANONICAL_LABOR_SHIFTS` table.
 - Units and calendar: `config/game-constants.json` (Quan/quan, Thạch/piculs, 30-day calendar,
   fatigue cap) with a drift test across TS, engine and the classic client.
+- Market price: `master_items` only; `engine/market-price-book.js` and
+  `src/shared/market-price-book.ts` are the read paths, and the trade executor ignores a
+  client-supplied price.
 
 **Structural debt, by impact:**
 
@@ -139,8 +142,9 @@ Remaining god services: `context-action.engine.ts` 1,970, `blacksmith-forge.serv
    so legacy edits still need a manual check.
 4. **Map with 4 data sources** (finding 10): `map-data.js`, `spatial-registry.ts`,
    `map-live.service.ts` and the DB. This is the largest remaining item.
-5. **Four market-price sources** (`rules.js`, `master_items`, `market-elasticity`, hardcoded
-   workshop prices).
+5. ~~**Four market-price sources** (`rules.js`, `master_items`, `market-elasticity`, hardcoded
+   workshop prices).~~ Fixed in 1.6.6: `master_items` is the only price source;
+   `market-elasticity` is a scenario model that never settles a trade.
 6. **`engine/gameplay-manager.js:106`** still uses `Date.now()` for the campaign id at new-game
    genesis (does not affect replay within one DB).
 
@@ -211,7 +215,8 @@ Still open, measured:
 4. ~~Move the remaining 18 cashflow INSERTs to `postCashflowEntry`~~ — done in 1.6.4
    (`cashflow-direct-insert` budget 0); chart-of-accounts history rewritten in 1.6.5.
 5. One map source: DB `master_locations`/`master_routes` → the client keeps aliases only.
-6. Collapse the four market-price sources into `master_items` + `market-elasticity`.
+6. ~~Collapse the four market-price sources into `master_items` + `market-elasticity`.~~ — done in
+   1.6.6 (`market-price-book` read path, migration 010 completed the catalog).
 
 **P2 — 1–3 weeks**
 
@@ -224,7 +229,7 @@ Still open, measured:
 ## 8. How to re-verify
 
 ```bash
-npm run verify        # 24 suites, 28 contracts, 8 write smokes
+npm run verify        # 25 suites, 28 contracts, 8 write smokes
 npm run audit         # 1,358 invariants
 npm run perf:compare  # p95 + fingerprint
 node tools/sim-audit.js
@@ -247,7 +252,7 @@ A second pass over the data flows (not covered by the first gate) found and fixe
   the clock/cash/inventory/journal audits with zero foreign-key violations.
 - **Fresh schema and migrations.** `tools/schema.sql` now declares
   `trade_caravans.dispatched_by_player`, `chat_chronicle` plus its dedupe trigger, `active_tasks
-  .last_tick_date` and `world_turn_ledger`; `tools/sim-db.js init` applies all 9 migrations after
+  .last_tick_date` and `world_turn_ledger`; `tools/sim-db.js init` applies all 10 migrations after
   seeding, so a schema-initialized database is never behind.
 - **Task progress.** `last_tick_date` makes `progressTasks` idempotent per campaign date, and
   `advanceTurn` writes task progress after the core turn batch commits (the report uses a pure
@@ -269,5 +274,5 @@ A second pass over the data flows (not covered by the first gate) found and fixe
   is empty and adapts to optional columns, so it also works on a `sim-db init` schema. README now
   documents `ingest-markdown-master.js` + `sim-db init`.
 - **Small fixes.** `startNewGame` uses a deterministic campaign id; the caravan wait button surfaces
-  the day-30 409; suite breakdown corrected to 4 legacy + 20 modern.
+  the day-30 409; suite breakdown corrected to 4 legacy + 21 modern.
 
