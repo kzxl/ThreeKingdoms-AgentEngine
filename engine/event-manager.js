@@ -328,9 +328,9 @@ class EventManager {
 
         // Double-entry Journal (Dr: Operating Expense, Cr: Cash on Hand)
         sql += `INSERT INTO account_journal (txn_id, campaign_id, game_date, account_code, debit, credit, memo)
-          VALUES ('${txnId}', '${campaignId}', '${gameDate}', 'EXP-OPERATING', ${Math.abs(netCashDelta)}, 0, 'Chi phí tài trợ sự kiện ${escapeSql(event.name_vi)}');\n`;
+          VALUES ('${txnId}', '${campaignId}', '${gameDate}', '6001_OPERATING_EXPENSE', ${Math.abs(netCashDelta)}, 0, 'Chi phí tài trợ sự kiện ${escapeSql(event.name_vi)}');\n`;
         sql += `INSERT INTO account_journal (txn_id, campaign_id, game_date, account_code, debit, credit, memo)
-          VALUES ('${txnId}', '${campaignId}', '${gameDate}', 'CASH-ON-HAND', 0, ${Math.abs(netCashDelta)}, 'Xuất quỹ tiền mặt tài trợ sự kiện');\n`;
+          VALUES ('${txnId}', '${campaignId}', '${gameDate}', '1001_CASH_MOBILE', 0, ${Math.abs(netCashDelta)}, 'Xuất quỹ tiền mặt tài trợ sự kiện');\n`;
       } else {
         // Cash inflow
         sql += `INSERT INTO cashflow_ledger 
@@ -339,9 +339,9 @@ class EventManager {
 
         // Double-entry Journal (Dr: Cash on Hand, Cr: Trading Revenue)
         sql += `INSERT INTO account_journal (txn_id, campaign_id, game_date, account_code, debit, credit, memo)
-          VALUES ('${txnId}', '${campaignId}', '${gameDate}', 'CASH-ON-HAND', ${netCashDelta}, 0, 'Thu tiền thưởng sự kiện ${escapeSql(event.name_vi)}');\n`;
+          VALUES ('${txnId}', '${campaignId}', '${gameDate}', '1001_CASH_MOBILE', ${netCashDelta}, 0, 'Thu tiền thưởng sự kiện ${escapeSql(event.name_vi)}');\n`;
         sql += `INSERT INTO account_journal (txn_id, campaign_id, game_date, account_code, debit, credit, memo)
-          VALUES ('${txnId}', '${campaignId}', '${gameDate}', 'REV-TRADING', 0, ${netCashDelta}, 'Doanh thu thương vận sự kiện');\n`;
+          VALUES ('${txnId}', '${campaignId}', '${gameDate}', '4001_SALES_REVENUE', 0, ${netCashDelta}, 'Doanh thu thương vận sự kiện');\n`;
       }
 
       // Update player cash

@@ -871,13 +871,13 @@ export class DailyInteractionEngine {
           this.db.execute(`
             INSERT INTO account_journal (
               txn_id, campaign_id, game_date, account_code, debit, credit, memo
-            ) VALUES (?, ?, ?, 'EXP-OPERATING', ?, 0, ?);
+            ) VALUES (?, ?, ?, '6001_OPERATING_EXPENSE', ?, 0, ?);
           `, [txnId, campaignId, gameDate, cashCost, memo]);
 
           this.db.execute(`
             INSERT INTO account_journal (
               txn_id, campaign_id, game_date, account_code, debit, credit, memo
-            ) VALUES (?, ?, ?, 'CASH-ON-HAND', 0, ?, 'Xuất tiền mặt chi tiêu giao tế');
+            ) VALUES (?, ?, ?, '1001_CASH_MOBILE', 0, ?, 'Xuất tiền mặt chi tiêu giao tế');
           `, [txnId, campaignId, gameDate, cashCost]);
         }
       }

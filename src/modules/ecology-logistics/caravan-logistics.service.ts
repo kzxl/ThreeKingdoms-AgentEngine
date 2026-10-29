@@ -606,7 +606,7 @@ export class CaravanLogisticsService {
       );
       this.db.execute(
         `INSERT INTO account_journal (txn_id, campaign_id, game_date, account_code, debit, credit, memo)
-         VALUES (?, ?, ?, '5001_SALES_REVENUE', 0, ?, ?);`,
+         VALUES (?, ?, ?, '4001_SALES_REVENUE', 0, ?, ?);`,
         [txnId, meta.campaignId, effectiveDate, grossRevenue, `Doanh thu bán hàng liên thành ${destNameVi}`]
       );
 

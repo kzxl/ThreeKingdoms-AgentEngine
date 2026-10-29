@@ -156,8 +156,8 @@ class GameplayManager {
 
       INSERT INTO account_journal (txn_id, campaign_id, game_date, account_code, debit, credit, memo)
       VALUES
-        ('TXN-1840201-0000', '${campaignId}', '${startDate}', '101_TIEN_MAT', ${arch.initial_liquid_cash}, 0, 'Nợ Tiền mặt vốn lưu động ban đầu'),
-        ('TXN-1840201-0000', '${campaignId}', '${startDate}', '301_VON_CHU_SO_HUU', 0, ${arch.initial_liquid_cash}, 'Có Vốn chủ sở hữu ban đầu');
+        ('TXN-1840201-0000', '${campaignId}', '${startDate}', '1001_CASH_MOBILE', ${arch.initial_liquid_cash}, 0, 'Nợ Tiền mặt vốn lưu động ban đầu'),
+        ('TXN-1840201-0000', '${campaignId}', '${startDate}', '3001_OWNER_EQUITY', 0, ${arch.initial_liquid_cash}, 'Có Vốn chủ sở hữu ban đầu');
 
       -- E. Seed Initial Warehouse Inventory from Master Catalog
       ${isCommoner ? `

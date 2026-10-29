@@ -277,8 +277,8 @@ export function registerMilitaryRoutes(router: Router): void {
             counterparty: settlement.name_vi,
             memo: `Điều phối tăng cường ${delta} binh sĩ đồn trú tại ${settlement.name_vi}`,
             outflow: totalCost,
-            debitAccount: 'EXP-OPERATING',
-            creditAccount: 'CASH-ON-HAND'
+            debitAccount: '6001_OPERATING_EXPENSE',
+            creditAccount: '1001_CASH_MOBILE'
           });
         }
 
@@ -465,8 +465,8 @@ export function registerMilitaryRoutes(router: Router): void {
               counterparty: target.name_vi,
               memo: `Công phá đại thắng ${target.name_vi}, thu giữ ${lootQian} quan chiến phí`,
               inflow: lootQian,
-              debitAccount: 'CASH-ON-HAND',
-              creditAccount: 'REV-SALES'
+              debitAccount: '1001_CASH_MOBILE',
+              creditAccount: '4001_SALES_REVENUE'
             });
           }
           db.execute('UPDATE player_state SET fatigue = MIN(100, fatigue + 35) WHERE player_id = ?', [

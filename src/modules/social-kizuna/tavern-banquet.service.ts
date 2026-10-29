@@ -395,14 +395,14 @@ export class TavernBanquetService {
           this.db.execute(
             `INSERT INTO account_journal (
               txn_id, campaign_id, game_date, account_code, debit, credit, memo
-            ) VALUES (?, 'CMP-184-ZHOU-01', ?, 'EXP-OPERATING', ?, 0, ?);`,
+            ) VALUES (?, 'CMP-184-ZHOU-01', ?, '6001_OPERATING_EXPENSE', ?, 0, ?);`,
             [procureTxnId, gameDate, procureCost, `Chi phí thu mua ẩm thực yến tiệc ${req.nameVi}`]
           );
 
           this.db.execute(
             `INSERT INTO account_journal (
               txn_id, campaign_id, game_date, account_code, debit, credit, memo
-            ) VALUES (?, 'CMP-184-ZHOU-01', ?, 'ASSET-CASH', 0, ?, ?);`,
+            ) VALUES (?, 'CMP-184-ZHOU-01', ?, '1001_CASH_MOBILE', 0, ?, ?);`,
             [procureTxnId, gameDate, procureCost, `Xuất tiền mặt thu mua ${req.nameVi}`]
           );
 

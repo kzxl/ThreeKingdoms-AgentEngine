@@ -21,6 +21,7 @@ import { EquipmentSystemService } from '../src/modules/equipment/equipment-syste
 import { CaravanLogisticsService } from '../src/modules/ecology-logistics/caravan-logistics.service';
 import { ensureTurnLedger, isTurnModuleDone, markTurnModuleDone } from '../src/shared/turn-ledger';
 import { getPlayerCapital, postCashflowEntry } from '../src/shared/ledger';
+import { ACCOUNT_CODES, canonicalAccountCode } from '../src/shared/account-codes';
 
 const { applyActionTime, getClock, normalizeDays } = require('../engine/time-manager');
 const { TravelManager } = require('../engine/travel-manager');
@@ -530,6 +531,21 @@ function runStandardizationChecks(): void {
   console.log('   ✅ standardization: one ledger balance, seeded travel encounters');
 }
 
+function runAccountingChecks(): void {
+  const db = DatabaseService.getInstance(TEST_DB);
+  const legacyCodes = ['CASH-ON-HAND', 'EXP-OPERATING', 'REV-SALES', 'REV-TRADING', 'ASSET-CASH', '101_TIEN_MAT', '301_VON_CHU_SO_HUU', '5001_SALES_REVENUE'];
+  for (const code of legacyCodes) {
+    assert.notStrictEqual(canonicalAccountCode(code), code, `${code} must map to a canonical account code`);
+  }
+
+  const allowed = new Set<string>(Object.values(ACCOUNT_CODES));
+  const rows = db.query<{ account_code: string }>('SELECT DISTINCT account_code FROM account_journal;');
+  for (const row of rows) {
+    assert(allowed.has(row.account_code), `account_journal contains non-canonical code ${row.account_code}`);
+  }
+  console.log(`   ✅ accounting: ${rows.length} distinct codes, all canonical`);
+}
+
 function run(): void {
   console.log('=== Logic ownership & duplication regression ===');
   sandboxDatabase();
@@ -542,6 +558,7 @@ function run(): void {
     runBusinessSettlement();
     runWorldTurnGuards();
     runStandardizationChecks();
+    runAccountingChecks();
     console.log('=== PASSED ===');
   } finally {
     // Caravan dispatch/claim sync game/PROGRESS.md from the sandbox; restore the

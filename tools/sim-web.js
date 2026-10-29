@@ -3071,7 +3071,7 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
                 ? `Affinity ${dailyRes.deltas.affinityChange > 0 ? '+' : ''}${dailyRes.deltas.affinityChange} • ${dailyRes.outcomeTitleEn || dailyRes.outcomeTitleVi}`
                 : `Hảo cảm ${dailyRes.deltas.affinityChange > 0 ? '+' : ''}${dailyRes.deltas.affinityChange} • ${dailyRes.outcomeTitleVi}`,
               dispatch: isClientEn ? '[TRỰC DIỆN] Everyday Social' : '[TRỰC DIỆN] Giao tế đời thường',
-              audit: isClientEn ? 'Dr EXP-OPERATING / Cr CASH-ON-HAND' : 'Khớp Nợ Chi Phí / Có Tiền Mặt'
+              audit: isClientEn ? 'Dr 6001_OPERATING_EXPENSE / Cr 1001_CASH_MOBILE' : 'Khớp Nợ Chi Phí / Có Tiền Mặt'
             };
           } else {
             let heroName = 'Trương Phi (Dực Đức)';

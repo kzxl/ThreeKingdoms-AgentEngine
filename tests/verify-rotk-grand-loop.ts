@@ -163,8 +163,8 @@ async function runGrandLoopVerification(): Promise<void> {
     counterparty: 'Trác Huyện',
     memo: `Tăng cường ${troopsToAdd} binh sĩ đồn trú Trác Huyện`,
     outflow: totalCost,
-    debitAccount: 'EXP-OPERATING',
-    creditAccount: 'CASH-ON-HAND'
+    debitAccount: '6001_OPERATING_EXPENSE',
+    creditAccount: '1001_CASH_MOBILE'
   });
 
   db.execute(
@@ -205,8 +205,8 @@ async function runGrandLoopVerification(): Promise<void> {
       counterparty: targetBefore.name_vi,
       memo: `Công phá đại thắng ${targetBefore.name_vi}, thu giữ ${lootQian} tiền chiến phí`,
       inflow: lootQian,
-      debitAccount: 'CASH-ON-HAND',
-      creditAccount: 'REV-SALES'
+      debitAccount: '1001_CASH_MOBILE',
+      creditAccount: '4001_SALES_REVENUE'
     });
   }
 

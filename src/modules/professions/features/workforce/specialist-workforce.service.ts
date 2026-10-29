@@ -254,8 +254,8 @@ export class SpecialistWorkforceService {
           counterparty: masterChar.name_vi,
           memo: `Ký kết khế ước chiêu mộ ${masterChar.name_vi} (${masterChar.baseline_position_vi}) gia nhập ${business.name}`,
           outflow: signingBonus,
-          debitAccount: 'EXP-OPERATING',
-          creditAccount: 'CASH-ON-HAND'
+          debitAccount: '6001_OPERATING_EXPENSE',
+          creditAccount: '1001_CASH_MOBILE'
         });
         costPaid = tx.outflow;
       }

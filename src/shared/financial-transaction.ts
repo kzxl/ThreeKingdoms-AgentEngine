@@ -93,7 +93,7 @@ export function recordFinancialTransaction(
   const amount = inflow > 0 ? inflow : outflow;
   if (inflow > 0) {
     // Inflow: Dr Cash, Cr Revenue
-    const debAccount = input.debitAccount || ACCOUNT_CODES.cashOnHand;
+    const debAccount = input.debitAccount || ACCOUNT_CODES.cashMobile;
     const crAccount = input.creditAccount || ACCOUNT_CODES.salesRevenue;
 
     db.execute(
@@ -110,7 +110,7 @@ export function recordFinancialTransaction(
   } else {
     // Outflow: Dr Expense, Cr Cash
     const debAccount = input.debitAccount || ACCOUNT_CODES.operatingExpense;
-    const crAccount = input.creditAccount || ACCOUNT_CODES.cashOnHand;
+    const crAccount = input.creditAccount || ACCOUNT_CODES.cashMobile;
 
     db.execute(
       `INSERT INTO account_journal (txn_id, campaign_id, game_date, account_code, debit, credit, memo, created_at)

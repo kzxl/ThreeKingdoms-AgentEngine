@@ -302,7 +302,7 @@ async function runRotkDuelsVerification(): Promise<void> {
 
       db.execute(`
         INSERT INTO account_journal (txn_id, campaign_id, game_date, account_code, debit, credit, memo)
-        VALUES (?, 'CMP-184-ZHOU-01', '184-06-01', 'ASSET-CASH', ?, 0, 'Tiền thưởng Diễn Võ');
+        VALUES (?, 'CMP-184-ZHOU-01', '184-06-01', '1001_CASH_MOBILE', ?, 0, 'Tiền thưởng Diễn Võ');
       `, [arenaTestTxn, prizeCash]);
 
       db.execute(`
