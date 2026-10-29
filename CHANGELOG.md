@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.6.5] - 2026-10-30
+
+Chart-of-accounts unification.
+
+### Changed
+- Migration `009-unify-account-codes` rewrites 124 historical `account_journal` rows from the
+  legacy labels (`CASH-ON-HAND`, `EXP-OPERATING`, `REV-SALES`, `REV-TRADING`, `ASSET-CASH`,
+  `101_TIEN_MAT`, `301_VON_CHU_SO_HUU`, `5001_SALES_REVENUE`) to the numeric chart.
+- `ACCOUNT_CODES` now exposes only the numeric canonical set; `ACCOUNT_ALIASES` /
+  `canonicalAccountCode()` remain as the reporting bridge.
+- Every journal writer (caravan, daily interaction, tavern banquet, military, workforce, event
+  manager, new-game seed) emits canonical codes. `verify-logic-ownership` asserts every distinct
+  `account_journal.account_code` is declared in `ACCOUNT_CODES`.
+- `sim-db init` applies migrations 001–009.
+
+### Verification
+`npm run verify` green: 24/24 suites, 28/28 contracts, 8/8 write smokes; `npm run audit` 1,358
+invariants, 0 discrepancies (journal Dr/Cr parity unchanged).
+
+---
+
 ## [1.6.4] - 2026-10-29
 
 Extensibility pass: one cashflow writer, a canonical account-code map, and fresh-schema

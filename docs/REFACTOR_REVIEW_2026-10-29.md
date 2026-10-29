@@ -95,7 +95,7 @@ Remaining god services: `context-action.engine.ts` 1,970, `blacksmith-forge.serv
 | 5 | Three business formulas | ✅ | Shared `BIZ_CYCLE_<biz>_<YYYYMM>` key; the workshop no longer writes `player_state.safe_cash` |
 | 6 | World sim outside a transaction | ✅ (different mechanism) | `world_turn_ledger` is written after each module transaction; a module failure blocks the month close, retry is safe |
 | 7 | Double stamina deduction | ✅ | `KIZUNA_INTERACT`, `WORK_SHIFT`, `PRODUCTION_BATCH` are 0 fatigue in the policy |
-| 8 | Many ledger balance definitions | ✅ (writers) | Every cashflow write goes through `postCashflowEntry`/`postCashflowEntryRaw`; `cashflow-direct-insert` is 0. `ACCOUNT_CODES` + `canonicalAccountCode()` map the two historical account vocabularies; history is not rewritten |
+| 8 | Many ledger balance definitions | ✅ | Every cashflow write goes through `postCashflowEntry`/`postCashflowEntryRaw`; `cashflow-direct-insert` is 0. Migration 009 rewrites 124 historical journal codes to the numeric chart; new postings use `ACCOUNT_CODES` |
 | 9 | Hub/Journal global collision | ✅ | The 4-tab journal owns the modal; the 7-tab hub file was deleted |
 | 10 | Map has 4 data sources | ❌ Open | `map-data.js`, `spatial-registry.ts`, `map-live.service.ts` and the DB still coexist |
 | 11 | Client mirrors the cost table | ✅ | `getActionDayCost` prefers the `policy` from `/api/time/clock`; the local table is an offline fallback |
@@ -133,9 +133,8 @@ Remaining god services: `context-action.engine.ts` 1,970, `blacksmith-forge.serv
 
 1. **God services:** 4 files of 1,290–1,970 lines plus a 3,344-line gateway. P6/P7 of the blueprint
    remain.
-2. **Account-code history:** new postings use `ACCOUNT_CODES`, but historical journal rows still
-   contain both vocabularies; `canonicalAccountCode()` is the reporting bridge, and a data
-   migration would be needed to rewrite history.
+2. **Account-code history:** new postings and historical rows now use the numeric chart
+   (migration 009); `canonicalAccountCode()` remains only for external/legacy inputs.
 3. **Legacy client:** 21 scripts, ~16.6k lines, one `legacy-bridge.ts`; no automated browser test,
    so legacy edits still need a manual check.
 4. **Map with 4 data sources** (finding 10): `map-data.js`, `spatial-registry.ts`,
@@ -248,7 +247,7 @@ A second pass over the data flows (not covered by the first gate) found and fixe
   the clock/cash/inventory/journal audits with zero foreign-key violations.
 - **Fresh schema and migrations.** `tools/schema.sql` now declares
   `trade_caravans.dispatched_by_player`, `chat_chronicle` plus its dedupe trigger, `active_tasks
-  .last_tick_date` and `world_turn_ledger`; `tools/sim-db.js init` applies all 8 migrations after
+  .last_tick_date` and `world_turn_ledger`; `tools/sim-db.js init` applies all 9 migrations after
   seeding, so a schema-initialized database is never behind.
 - **Task progress.** `last_tick_date` makes `progressTasks` idempotent per campaign date, and
   `advanceTurn` writes task progress after the core turn batch commits (the report uses a pure
