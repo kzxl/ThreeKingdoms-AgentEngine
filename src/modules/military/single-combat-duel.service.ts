@@ -27,6 +27,7 @@ import { clampStatModifier } from '../../shared/character-stats';
 import { ProgressionExpService } from '../progression/attribute-progression.service';
 import { RngService } from '../../core/rng';
 import { nextSequentialId } from '../../shared/id-generator';
+import { postCashflowEntry } from '../../shared/ledger';
 
 // ---------------------------------------------------------------------------
 // 1. Data Contracts & Types
@@ -1195,11 +1196,15 @@ export class SingleCombatDuelService {
         );
 
         // 2. Insert cashflow_ledger row
-        this.db.execute(
-          `INSERT INTO cashflow_ledger (txn_id, game_date, counterparty, category, inflow, outflow, balance, memo, status)
-           VALUES (?, ?, 'Diễn Võ Đài Trác Quận', 'Võ Đài Thưởng Kim', ?, 0, ?, ?, 'Confirmed');`,
-          [txnId, date, prizeCash, newTotalBal, `Thưởng kim lôi đài sau khi đả bại ${opponentName}`]
-        );
+        postCashflowEntry(this.db, {
+          txnId,
+          gameDate: date,
+          counterparty: 'Diễn Võ Đài Trác Quận',
+          category: 'Võ Đài Thưởng Kim',
+          inflow: prizeCash,
+          balance: newTotalBal,
+          memo: `Thưởng kim lôi đài sau khi đả bại ${opponentName}`
+        });
 
         // 3. Insert balanced double-entry journal rows
         this.db.execute(

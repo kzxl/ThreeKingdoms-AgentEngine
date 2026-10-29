@@ -11,6 +11,7 @@
 import { DatabaseService } from '../core/database';
 import { syncProgressProjection } from './projection-sync';
 import { nextId } from './id-generator';
+import { ACCOUNT_CODES } from './account-codes';
 
 export interface FinancialTxInput {
   category: string;
@@ -92,8 +93,8 @@ export function recordFinancialTransaction(
   const amount = inflow > 0 ? inflow : outflow;
   if (inflow > 0) {
     // Inflow: Dr Cash, Cr Revenue
-    const debAccount = input.debitAccount || 'CASH-ON-HAND';
-    const crAccount = input.creditAccount || 'REV-SALES';
+    const debAccount = input.debitAccount || ACCOUNT_CODES.cashOnHand;
+    const crAccount = input.creditAccount || ACCOUNT_CODES.salesRevenue;
 
     db.execute(
       `INSERT INTO account_journal (txn_id, campaign_id, game_date, account_code, debit, credit, memo, created_at)
@@ -108,8 +109,8 @@ export function recordFinancialTransaction(
     );
   } else {
     // Outflow: Dr Expense, Cr Cash
-    const debAccount = input.debitAccount || 'EXP-OPERATING';
-    const crAccount = input.creditAccount || 'CASH-ON-HAND';
+    const debAccount = input.debitAccount || ACCOUNT_CODES.operatingExpense;
+    const crAccount = input.creditAccount || ACCOUNT_CODES.cashOnHand;
 
     db.execute(
       `INSERT INTO account_journal (txn_id, campaign_id, game_date, account_code, debit, credit, memo, created_at)

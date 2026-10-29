@@ -12,6 +12,7 @@
 
 import { DatabaseService } from '../../core/database';
 import { nextId } from '../../shared/id-generator';
+import { postCashflowEntry } from '../../shared/ledger';
 import { getGameDate } from '../../shared/game-clock';
 import {
   SuccessionParams,
@@ -161,17 +162,14 @@ export class DynastySuccessionService {
       // 6. Succession Ledger Continuity (Maintains 140/140 audit invariants!)
       const txnId = nextId(this.db, 'cashflow', 'TXN-SUCC', getGameDate(this.db));
 
-      this.db.execute(
-        `INSERT INTO cashflow_ledger (txn_id, game_date, counterparty, category, inflow, outflow, balance, memo, status)
-         VALUES (?, ?, ?, 'DYNASTY_SUCCESSION', 0, 0, ?, ?, 'Confirmed');`,
-        [
-          txnId,
-          meta.currentDate,
-          `Thế Tử Kế Vị (${heir.name_vi})`,
-          totalCash,
-          `Truyền thừa gia nghiệp ngân khố thế hệ ${currentGen + 1}`
-        ]
-      );
+      postCashflowEntry(this.db, {
+        txnId,
+        gameDate: meta.currentDate,
+        counterparty: `Thế Tử Kế Vị (${heir.name_vi})`,
+        category: 'DYNASTY_SUCCESSION',
+        balance: totalCash,
+        memo: `Truyền thừa gia nghiệp ngân khố thế hệ ${currentGen + 1}`
+      });
 
       this.db.execute(
         `INSERT INTO account_journal (txn_id, campaign_id, game_date, account_code, debit, credit, memo)

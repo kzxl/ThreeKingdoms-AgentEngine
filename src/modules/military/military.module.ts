@@ -7,7 +7,7 @@
 
 import { IFeatureModule, ModuleContext, ArmyState, SettlementId } from '../../core/types';
 import { DatabaseService } from '../../core/database';
-import { getPlayerCapital } from '../../shared/ledger';
+import { getPlayerCapital, postCashflowEntry } from '../../shared/ledger';
 import {
   TacticalBattleEngine,
   BattleResult,
@@ -324,20 +324,15 @@ export class MilitaryModule implements IFeatureModule {
             const txnId = `TXN-LOOT-${gameDate.replace(/-/g, '')}-${strongholdId}-${turnNumber}`;
 
             // 2. Insert cashflow ledger entry
-            this.db!.execute(
-              `INSERT INTO cashflow_ledger (txn_id, game_date, counterparty, category, inflow, outflow, balance, memo, status)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Confirmed');`,
-              [
-                txnId,
-                gameDate,
-                'Triều Đình Hán Tộc & Sơn Trại Phỉ Doanh',
-                'Quân Công Tiễu Phỉ',
-                totalReward,
-                0,
-                newBalance,
-                `Đại thắng sơn trại ${stronghold.name_vi}: Thu hồi ${lootCash} quan của thương đoàn, thưởng quân công ${bounty} quan`
-              ]
-            );
+            postCashflowEntry(this.db!, {
+              txnId,
+              gameDate,
+              counterparty: 'Triều Đình Hán Tộc & Sơn Trại Phỉ Doanh',
+              category: 'Quân Công Tiễu Phỉ',
+              inflow: totalReward,
+              balance: newBalance,
+              memo: `Đại thắng sơn trại ${stronghold.name_vi}: Thu hồi ${lootCash} quan của thương đoàn, thưởng quân công ${bounty} quan`
+            });
 
             // 3. Double-entry journal records (Debit Cash, Credit Revenue)
             this.db!.execute(

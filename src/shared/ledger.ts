@@ -48,6 +48,18 @@ export interface CashflowEntryInput {
   balance?: number;
 }
 
+/** Minimal raw better-sqlite3 surface, for callers outside DatabaseService. */
+export interface RawStatementDb {
+  prepare(sql: string): { run(...params: unknown[]): unknown };
+}
+
+const CASHFLOW_INSERT_SQL = `INSERT INTO cashflow_ledger (txn_id, game_date, counterparty, category, inflow, outflow, balance, memo, status)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);`;
+
+function normalizeFlow(value: unknown): number {
+  return Math.max(0, Math.round(Number(value || 0)));
+}
+
 /**
  * Single writer for the player cashflow ledger.
  *
@@ -56,27 +68,43 @@ export interface CashflowEntryInput {
  * the arch guard freezes the remaining direct INSERTs until they migrate.
  */
 export function postCashflowEntry(db: DatabaseService, input: CashflowEntryInput): number {
-  const inflow = Math.max(0, Math.round(Number(input.inflow || 0)));
-  const outflow = Math.max(0, Math.round(Number(input.outflow || 0)));
+  const inflow = normalizeFlow(input.inflow);
+  const outflow = normalizeFlow(input.outflow);
   const balance = input.balance !== undefined
     ? Math.round(Number(input.balance))
     : Math.round(getPlayerCapital(db).total + inflow - outflow);
 
-  db.execute(
-    `INSERT INTO cashflow_ledger (txn_id, game_date, counterparty, category, inflow, outflow, balance, memo, status)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);`,
-    [
-      input.txnId,
-      input.gameDate,
-      input.counterparty,
-      input.category,
-      inflow,
-      outflow,
-      balance,
-      input.memo,
-      input.status || 'Confirmed'
-    ]
-  );
+  db.execute(CASHFLOW_INSERT_SQL, [
+    input.txnId,
+    input.gameDate,
+    input.counterparty,
+    input.category,
+    inflow,
+    outflow,
+    balance,
+    input.memo,
+    input.status || 'Confirmed'
+  ]);
 
+  return balance;
+}
+
+/**
+ * Same writer for raw better-sqlite3 connections (instance bootstrap, engine
+ * tools). The caller supplies the explicit closing balance.
+ */
+export function postCashflowEntryRaw(rawDb: RawStatementDb, input: CashflowEntryInput & { balance: number }): number {
+  const balance = Math.round(Number(input.balance));
+  rawDb.prepare(CASHFLOW_INSERT_SQL).run(
+    input.txnId,
+    input.gameDate,
+    input.counterparty,
+    input.category,
+    normalizeFlow(input.inflow),
+    normalizeFlow(input.outflow),
+    balance,
+    input.memo,
+    input.status || 'Confirmed'
+  );
   return balance;
 }

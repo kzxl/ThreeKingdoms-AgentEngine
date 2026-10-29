@@ -12,6 +12,8 @@ import { ModuleRegistry } from '../../core/module-registry';
 import { EconomyModule } from './economy.module';
 import { RegionalMarketService, SETTLEMENT_PROFILES } from './regional-market.service';
 import { CaravanLogisticsService } from '../ecology-logistics/caravan-logistics.service';
+import { postCashflowEntry } from '../../shared/ledger';
+import { ACCOUNT_CODES } from '../../shared/account-codes';
 
 function getEconomyModule(): EconomyModule | undefined {
   return ModuleRegistry.getInstance().get<EconomyModule>('module.economy');
@@ -282,18 +284,22 @@ export function registerEconomyRoutes(router: Router): void {
           );
 
           // Append double-entry ledger & journal
-          db.execute(
-            `INSERT INTO cashflow_ledger (txn_id, game_date, counterparty, category, inflow, outflow, balance, memo, status)
-             VALUES (?, ?, ?, 'Trade/Purchase', 0, ?, ?, ?, 'Confirmed');`,
-            [txnId, effectiveDate, counterparty, totalAmount, newLedgerBalance, `Mua ${qty} ${itemInfo.name_vi} đơn giá ${effectiveUnitPrice} quan`]
-          );
+          postCashflowEntry(db, {
+            txnId,
+            gameDate: effectiveDate,
+            counterparty,
+            category: 'Trade/Purchase',
+            outflow: totalAmount,
+            balance: newLedgerBalance,
+            memo: `Mua ${qty} ${itemInfo.name_vi} đơn giá ${effectiveUnitPrice} quan`
+          });
 
           insertJournalPair(db, {
             txnId,
             campaignId: meta.campaignId,
             gameDate: effectiveDate,
-            debitAccount: '1201_INVENTORY',
-            creditAccount: '1001_CASH_MOBILE',
+            debitAccount: ACCOUNT_CODES.inventory,
+            creditAccount: ACCOUNT_CODES.cashMobile,
             amount: totalAmount,
             memo: `Nhập kho ${qty} ${itemInfo.name_vi}`
           });
@@ -321,18 +327,22 @@ export function registerEconomyRoutes(router: Router): void {
           db.execute('UPDATE inventory_items SET quantity = quantity - ? WHERE item_code = ?', [qty, itemCode]);
 
           // Append double-entry ledger & journal
-          db.execute(
-            `INSERT INTO cashflow_ledger (txn_id, game_date, counterparty, category, inflow, outflow, balance, memo, status)
-             VALUES (?, ?, ?, 'Trade/Sale', ?, 0, ?, ?, 'Confirmed');`,
-            [txnId, effectiveDate, counterparty, totalAmount, newLedgerBalance, `Bán ${qty} ${itemInfo.name_vi} đơn giá ${effectiveUnitPrice} quan`]
-          );
+          postCashflowEntry(db, {
+            txnId,
+            gameDate: effectiveDate,
+            counterparty,
+            category: 'Trade/Sale',
+            inflow: totalAmount,
+            balance: newLedgerBalance,
+            memo: `Bán ${qty} ${itemInfo.name_vi} đơn giá ${effectiveUnitPrice} quan`
+          });
 
           insertJournalPair(db, {
             txnId,
             campaignId: meta.campaignId,
             gameDate: effectiveDate,
-            debitAccount: '1001_CASH_MOBILE',
-            creditAccount: '4001_SALES_REVENUE',
+            debitAccount: ACCOUNT_CODES.cashMobile,
+            creditAccount: ACCOUNT_CODES.salesRevenue,
             amount: totalAmount,
             memo: `Xuất bán ${qty} ${itemInfo.name_vi}`
           });
@@ -484,18 +494,22 @@ export function registerEconomyRoutes(router: Router): void {
           );
 
           const txnId = nextSequentialId(db, 'cashflow_ledger', 'TXN', effectiveDate);
-          db.execute(
-            `INSERT INTO cashflow_ledger (txn_id, game_date, counterparty, category, inflow, outflow, balance, memo, status)
-             VALUES (?, ?, ?, 'Financing/Loan', ?, 0, ?, ?, 'Confirmed');`,
-            [txnId, effectiveDate, lenderName, numAmount, newCash + safeCash, `Vay vốn kinh doanh từ ${lenderName}`]
-          );
+          postCashflowEntry(db, {
+            txnId,
+            gameDate: effectiveDate,
+            counterparty: lenderName,
+            category: 'Financing/Loan',
+            inflow: numAmount,
+            balance: newCash + safeCash,
+            memo: `Vay vốn kinh doanh từ ${lenderName}`
+          });
 
           insertJournalPair(db, {
             txnId,
             campaignId: meta.campaignId,
             gameDate: effectiveDate,
-            debitAccount: '1001_CASH_MOBILE',
-            creditAccount: '2001_ACCOUNTS_PAYABLE',
+            debitAccount: ACCOUNT_CODES.cashMobile,
+            creditAccount: ACCOUNT_CODES.accountsPayable,
             amount: numAmount,
             memo: `Vay vốn lưu động ${lenderName}`
           });
@@ -526,18 +540,22 @@ export function registerEconomyRoutes(router: Router): void {
           db.execute('UPDATE financial_loans SET outstanding_balance = ?, status = ? WHERE loan_id = ?', [remainingDebt, newStatus, loanId]);
 
           const txnId = nextSequentialId(db, 'cashflow_ledger', 'TXN', effectiveDate);
-          db.execute(
-            `INSERT INTO cashflow_ledger (txn_id, game_date, counterparty, category, inflow, outflow, balance, memo, status)
-             VALUES (?, ?, ?, 'Financing/Repayment', 0, ?, ?, ?, 'Confirmed');`,
-            [txnId, effectiveDate, targetLoan.lender_name, payAmount, newCash + safeCash, `Trả nợ khoản vay ${loanId}`]
-          );
+          postCashflowEntry(db, {
+            txnId,
+            gameDate: effectiveDate,
+            counterparty: targetLoan.lender_name,
+            category: 'Financing/Repayment',
+            outflow: payAmount,
+            balance: newCash + safeCash,
+            memo: `Trả nợ khoản vay ${loanId}`
+          });
 
           insertJournalPair(db, {
             txnId,
             campaignId: meta.campaignId,
             gameDate: effectiveDate,
-            debitAccount: '2001_ACCOUNTS_PAYABLE',
-            creditAccount: '1001_CASH_MOBILE',
+            debitAccount: ACCOUNT_CODES.accountsPayable,
+            creditAccount: ACCOUNT_CODES.cashMobile,
             amount: payAmount,
             memo: `Hoàn trả nợ vay ${loanId}`
           });

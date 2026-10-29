@@ -5,7 +5,7 @@
   "math-random-in-domain": 0,
   "wallclock-id-in-domain": 0,
   "silent-catch": 19,
-  "cashflow-direct-insert": 18,
+  "cashflow-direct-insert": 0,
   "global-service-locator": 4,
   "unquoted-current-date": 0,
   "legacy-ui-script-count": 21

@@ -8,6 +8,7 @@
 
 import { DatabaseService } from '../../core/database';
 import { nextSequenceValue } from '../../shared/id-generator';
+import { postCashflowEntry } from '../../shared/ledger';
 
 export interface PromissoryNote {
   noteId: string;
@@ -81,10 +82,15 @@ export class PromissoryNoteService {
 
         // Cashflow ledger outflow
         const txnId = `TXN-LOAN-${gameDate.replace(/-/g, '')}-${noteId}`;
-        this.db.execute(`
-          INSERT INTO cashflow_ledger (txn_id, game_date, counterparty, category, inflow, outflow, balance, memo, status)
-          VALUES (?, ?, ?, 'Cho Vay Tín Dụng', 0, ?, ?, ?, 'Confirmed');
-        `, [txnId, gameDate, borrowerId, principalAmount, newTotalCash, `Cấp tín dụng khế ước ${noteId}`]);
+        postCashflowEntry(this.db, {
+          txnId,
+          gameDate,
+          counterparty: borrowerId,
+          category: 'Cho Vay Tín Dụng',
+          outflow: principalAmount,
+          balance: newTotalCash,
+          memo: `Cấp tín dụng khế ước ${noteId}`
+        });
 
         // Double-entry: Debit 1003_ACCOUNTS_RECEIVABLE, Credit 1001_CASH_MOBILE
         this.db.execute(`
@@ -114,10 +120,15 @@ export class PromissoryNoteService {
         const newTotalCash = totalCash + principalAmount;
 
         const txnId = `TXN-BORROW-${gameDate.replace(/-/g, '')}-${noteId}`;
-        this.db.execute(`
-          INSERT INTO cashflow_ledger (txn_id, game_date, counterparty, category, inflow, outflow, balance, memo, status)
-          VALUES (?, ?, ?, 'Vay Nợ Ngắn Hạn', ?, 0, ?, ?, 'Confirmed');
-        `, [txnId, gameDate, lenderId, principalAmount, newTotalCash, `Tiếp nhận vốn vay ${noteId}`]);
+        postCashflowEntry(this.db, {
+          txnId,
+          gameDate,
+          counterparty: lenderId,
+          category: 'Vay Nợ Ngắn Hạn',
+          inflow: principalAmount,
+          balance: newTotalCash,
+          memo: `Tiếp nhận vốn vay ${noteId}`
+        });
 
         // Double-entry: Debit 1001_CASH_MOBILE, Credit 2001_ACCOUNTS_PAYABLE
         this.db.execute(`
@@ -180,10 +191,15 @@ export class PromissoryNoteService {
         const newTotalCash = totalCash - totalDue;
 
         const txnId = `TXN-REPAY-${gameDate.replace(/-/g, '')}-${noteId}`;
-        this.db.execute(`
-          INSERT INTO cashflow_ledger (txn_id, game_date, counterparty, category, inflow, outflow, balance, memo, status)
-          VALUES (?, ?, ?, 'Hoàn Trả Nợ Vay', 0, ?, ?, ?, 'Confirmed');
-        `, [txnId, gameDate, note.lender_id, totalDue, newTotalCash, `Hoàn trả gốc + lãi khế ước ${noteId}`]);
+        postCashflowEntry(this.db, {
+          txnId,
+          gameDate,
+          counterparty: note.lender_id,
+          category: 'Hoàn Trả Nợ Vay',
+          outflow: totalDue,
+          balance: newTotalCash,
+          memo: `Hoàn trả gốc + lãi khế ước ${noteId}`
+        });
 
         // Double-entry: Debit 2001_ACCOUNTS_PAYABLE (principal) + Debit 5002_FINANCIAL_EXPENSE (interest), Credit 1001_CASH_MOBILE
         this.db.execute(`
@@ -211,10 +227,15 @@ export class PromissoryNoteService {
         const newTotalCash = totalCash + totalDue;
 
         const txnId = `TXN-COLLECT-${gameDate.replace(/-/g, '')}-${noteId}`;
-        this.db.execute(`
-          INSERT INTO cashflow_ledger (txn_id, game_date, counterparty, category, inflow, outflow, balance, memo, status)
-          VALUES (?, ?, ?, 'Thu Hồi Nợ Cho Vay', ?, 0, ?, ?, 'Confirmed');
-        `, [txnId, gameDate, note.borrower_id, totalDue, newTotalCash, `Thu hồi gốc + lãi khế ước ${noteId}`]);
+        postCashflowEntry(this.db, {
+          txnId,
+          gameDate,
+          counterparty: note.borrower_id,
+          category: 'Thu Hồi Nợ Cho Vay',
+          inflow: totalDue,
+          balance: newTotalCash,
+          memo: `Thu hồi gốc + lãi khế ước ${noteId}`
+        });
 
         // Double-entry: Debit 1001_CASH_MOBILE, Credit 1003_ACCOUNTS_RECEIVABLE (principal) + Credit 4002_FINANCIAL_INCOME (interest)
         this.db.execute(`

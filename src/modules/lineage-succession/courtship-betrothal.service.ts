@@ -12,6 +12,7 @@
 import { DatabaseService } from '../../core/database';
 import { RngService } from '../../core/rng';
 import { nextId } from '../../shared/id-generator';
+import { postCashflowEntry } from '../../shared/ledger';
 import { getGameDate } from '../../shared/game-clock';
 import { DailyInteractionEngine } from '../social-kizuna/daily-interaction.engine';
 import {
@@ -926,18 +927,15 @@ export class CourtshipBetrothalService {
       const txnId = nextId(this.db, 'cashflow', 'TXN-MARR', getGameDate(this.db));
 
       // Insert into cashflow_ledger
-      this.db.execute(
-        `INSERT INTO cashflow_ledger (txn_id, game_date, counterparty, category, inflow, outflow, balance, memo, status)
-         VALUES (?, ?, ?, 'MARRIAGE_DOWRY', 0, ?, ?, ?, 'Confirmed');`,
-        [
-          txnId,
-          meta.currentDate,
-          character.name_vi,
-          dowryCash,
-          newTotalCash,
-          `Nạp sính lễ thành hôn cùng ${character.name_vi}`
-        ]
-      );
+      postCashflowEntry(this.db, {
+        txnId,
+        gameDate: meta.currentDate,
+        counterparty: character.name_vi,
+        category: 'MARRIAGE_DOWRY',
+        outflow: dowryCash,
+        balance: newTotalCash,
+        memo: `Nạp sính lễ thành hôn cùng ${character.name_vi}`
+      });
 
       // Insert balanced double-entry into account_journal
       this.db.execute(

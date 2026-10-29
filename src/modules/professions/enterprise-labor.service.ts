@@ -12,7 +12,7 @@
 import { DatabaseService } from '../../core/database';
 import { seedMasterRecipes } from './recipes-seed';
 import { nextSequentialId } from '../../shared/id-generator';
-import { getPlayerCapital } from '../../shared/ledger';
+import { getPlayerCapital, postCashflowEntry } from '../../shared/ledger';
 import { CANONICAL_LABOR_SHIFTS } from './features/wage-labor/wage-labor.constants';
 
 export type EnterpriseType = 'WORKSHOP' | 'TAVERN' | 'APOTHECARY' | 'BLACKSMITH';
@@ -453,11 +453,15 @@ export class EnterpriseLaborService {
 
       // 2. Record cashflow ledger entry
       const txnId = nextSequentialId(this.db, 'cashflow_ledger', 'TXN-CAPITAL', currentDate);
-      this.db.execute(
-        `INSERT INTO cashflow_ledger (txn_id, game_date, counterparty, category, inflow, outflow, balance, memo)
-         VALUES (?, ?, ?, 'CAPITAL_INVESTMENT', 0, ?, ?, ?);`,
-        [txnId, currentDate, `Khai trương ${name}`, initialCapital, remainingCash, `Đầu tư mở cơ sở kinh doanh ${name}`]
-      );
+      postCashflowEntry(this.db, {
+        txnId,
+        gameDate: currentDate,
+        counterparty: `Khai trương ${name}`,
+        category: 'CAPITAL_INVESTMENT',
+        outflow: initialCapital,
+        balance: remainingCash,
+        memo: `Đầu tư mở cơ sở kinh doanh ${name}`
+      });
 
       // 3. Register business in businesses table
       this.db.execute(
@@ -620,11 +624,15 @@ export class EnterpriseLaborService {
       // 3. Log cashflow ledger entry. Balance is total player capital
       //    (liquid + personal vault), not liquid cash alone.
       const txnId = nextSequentialId(this.db, 'cashflow_ledger', 'TXN-DIVIDEND', currentDate);
-      this.db.execute(
-        `INSERT INTO cashflow_ledger (txn_id, game_date, counterparty, category, inflow, outflow, balance, memo)
-         VALUES (?, ?, ?, 'ENTERPRISE_DIVIDEND', ?, 0, ?, ?);`,
-        [txnId, currentDate, biz.name, toWithdraw, ownerCapital.total, `Rút lợi nhuận kinh doanh từ ${biz.name}`]
-      );
+      postCashflowEntry(this.db, {
+        txnId,
+        gameDate: currentDate,
+        counterparty: biz.name,
+        category: 'ENTERPRISE_DIVIDEND',
+        inflow: toWithdraw,
+        balance: ownerCapital.total,
+        memo: `Rút lợi nhuận kinh doanh từ ${biz.name}`
+      });
 
       const updated = this.getEnterpriseDetails(businessId);
 
@@ -718,11 +726,15 @@ export class EnterpriseLaborService {
 
       // 3. Log cashflow wage transaction
       const txnId = nextSequentialId(this.db, 'cashflow_ledger', 'TXN-WAGE', currentDate);
-      this.db.execute(
-        `INSERT INTO cashflow_ledger (txn_id, game_date, counterparty, category, inflow, outflow, balance, memo)
-         VALUES (?, ?, ?, 'LABOR_WAGE', ?, 0, ?, ?);`,
-        [txnId, currentDate, `Chủ quản cơ sở (${job.businessType})`, job.dailyWage, newLiquidCash, `Tiền công làm thuê: ${job.titleVi}`]
-      );
+      postCashflowEntry(this.db, {
+        txnId,
+        gameDate: currentDate,
+        counterparty: `Chủ quản cơ sở (${job.businessType})`,
+        category: 'LABOR_WAGE',
+        inflow: job.dailyWage,
+        balance: newLiquidCash,
+        memo: `Tiền công làm thuê: ${job.titleVi}`
+      });
 
       // 4. Award Profession EXP
       const existingProf = this.db.queryOne<any>(
@@ -1051,18 +1063,15 @@ export class EnterpriseLaborService {
 
       // Correct Cashflow Ledger insertion
       const txnId = nextSequentialId(this.db, 'cashflow_ledger', 'TXN-WAGE', currentDate);
-      this.db.execute(
-        `INSERT INTO cashflow_ledger (txn_id, game_date, counterparty, category, inflow, outflow, balance, memo, status)
-         VALUES (?, ?, ?, 'LABOR_WAGE', ?, 0, ?, ?, 'Confirmed');`,
-        [
-          txnId,
-          currentDate,
-          shift.workplaceVi,
-          shift.wage,
-          totalBalance,
-          `Tiền công lao động ca: ${shift.titleVi}`
-        ]
-      );
+      postCashflowEntry(this.db, {
+        txnId,
+        gameDate: currentDate,
+        counterparty: shift.workplaceVi,
+        category: 'LABOR_WAGE',
+        inflow: shift.wage,
+        balance: totalBalance,
+        memo: `Tiền công lao động ca: ${shift.titleVi}`
+      });
 
       // Award Profession EXP cleanly
       const existingProf = this.db.queryOne<any>(
@@ -1206,17 +1215,15 @@ export class EnterpriseLaborService {
 
       // 3. Record cashflow ledger entry with CORRECT columns
       const txnId = nextSequentialId(this.db, 'cashflow_ledger', 'TXN-BIZ', currentDate);
-      this.db.execute(
-        `INSERT INTO cashflow_ledger (txn_id, game_date, counterparty, category, inflow, outflow, balance, memo, status)
-         VALUES (?, ?, 'Quan Phủ Trác Quận', 'CAPITAL_INVESTMENT', 0, ?, ?, ?, 'Confirmed');`,
-        [
-          txnId,
-          currentDate,
-          totalCashNeeded,
-          remainingCash,
-          `Đầu tư khai trương sản nghiệp: ${finalName} (${totalTurnkeyDeduction > 0 ? 'kèm bù vật liệu' : 'vật liệu tự túc'})`
-        ]
-      );
+      postCashflowEntry(this.db, {
+        txnId,
+        gameDate: currentDate,
+        counterparty: 'Quan Phủ Trác Quận',
+        category: 'CAPITAL_INVESTMENT',
+        outflow: totalCashNeeded,
+        balance: remainingCash,
+        memo: `Đầu tư khai trương sản nghiệp: ${finalName} (${totalTurnkeyDeduction > 0 ? 'kèm bù vật liệu' : 'vật liệu tự túc'})`
+      });
 
       // 4. Insert into businesses table
       this.db.execute(
