@@ -6,7 +6,8 @@
 
 const fs = require('fs');
 const path = require('path');
-const { COMMODITY_PRICE_INDEX, BILL_OF_MATERIALS, calculateDefectRate } = require('./rules');
+const { getMarketItem, resolveMarketPrice } = require('./market-price-book');
+const { BILL_OF_MATERIALS, calculateDefectRate } = require('./rules');
 const { renderProgressMarkdown } = require('./projector');
 
 const ROOT_DIR = path.resolve(__dirname, '..');
@@ -200,12 +201,18 @@ class SimulationCore {
 
   // TRADE_BUY: Buy goods with cash
   _executeTradeBuy(action) {
-    const { item_code, quantity, unit_price, counterparty, game_date, idempotency_key } = action;
+    const { item_code, quantity, counterparty, game_date, idempotency_key } = action;
 
-    if (!item_code || quantity <= 0 || unit_price <= 0) {
-      return { success: false, code: 'INVALID_PARAMS', error: 'Invalid item_code, quantity, or unit_price.' };
+    if (!item_code || quantity <= 0) {
+      return { success: false, code: 'INVALID_PARAMS', error: 'Invalid item_code or quantity.' };
     }
 
+    // master_items is the only price source; a client-supplied price is ignored.
+    const marketItem = getMarketItem(this.dbPath, item_code);
+    if (!marketItem || marketItem.price <= 0) {
+      return { success: false, code: 'ITEM_NOT_FOUND', error: `Item ${item_code} is not in the market catalog.` };
+    }
+    const unit_price = marketItem.price;
     const totalCost = Math.round(quantity * unit_price);
 
     // Condition check: cash availability
@@ -239,8 +246,8 @@ class SimulationCore {
     // Weighted average cost basis
     const newUnitCost = Math.round(((prevQty * prevCost) + (quantity * unit_price)) / newQty);
 
-    const desc = COMMODITY_PRICE_INDEX[item_code] ? COMMODITY_PRICE_INDEX[item_code].name : item_code;
-    const category = COMMODITY_PRICE_INDEX[item_code] ? 'Procured Commodity' : 'Material';
+    const desc = marketItem.nameVi;
+    const category = marketItem.category;
 
     // SQL Statements
     const sql = `
@@ -296,11 +303,18 @@ class SimulationCore {
 
   // TRADE_SELL: Sell goods for cash
   _executeTradeSell(action) {
-    const { item_code, quantity, unit_price, counterparty, game_date, idempotency_key } = action;
+    const { item_code, quantity, counterparty, game_date, idempotency_key } = action;
 
-    if (!item_code || quantity <= 0 || unit_price <= 0) {
-      return { success: false, code: 'INVALID_PARAMS', error: 'Invalid item_code, quantity, or unit_price.' };
+    if (!item_code || quantity <= 0) {
+      return { success: false, code: 'INVALID_PARAMS', error: 'Invalid item_code or quantity.' };
     }
+
+    // master_items is the only price source; a client-supplied price is ignored.
+    const marketItem = getMarketItem(this.dbPath, item_code);
+    if (!marketItem || marketItem.price <= 0) {
+      return { success: false, code: 'ITEM_NOT_FOUND', error: `Item ${item_code} is not in the market catalog.` };
+    }
+    const unit_price = marketItem.price;
 
     // Condition check: inventory availability
     const itemRow = runSqlJson(this.dbPath, `SELECT quantity, unit_cost_basis FROM inventory_items WHERE item_code = '${item_code}' LIMIT 1;`)[0];
@@ -412,7 +426,10 @@ class SimulationCore {
     const defectUnits = batch_size - usableUnits;
 
     const actionId = this._nextSequenceId('ACT', 'action_log', game_date);
-    const basePrice = COMMODITY_PRICE_INDEX[product_code] ? COMMODITY_PRICE_INDEX[product_code].basePrice : 30;
+    const basePrice = resolveMarketPrice(this.dbPath, product_code);
+    if (basePrice === null) {
+      return { success: false, code: 'MARKET_PRICE_MISSING', error: `No market price for ${product_code}.` };
+    }
 
     let sql = '';
 

@@ -84,6 +84,7 @@ export class QuickTradeModal {
 
     // SimulationCore's /api/action contract: type/item_code/quantity/unit_price.
     // The previous payload (action/item/qty/price) was silently rejected.
+    // unit_price is informational only: the server settles at master_items price.
     const payload = {
       type: this.currentMode === 'BUY' ? 'TRADE_BUY' : 'TRADE_SELL',
       item_code: this.currentItemCode,

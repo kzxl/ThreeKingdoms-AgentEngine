@@ -8,6 +8,7 @@ const fs = require('fs');
 const path = require('path');
 const { runSqlJson, runSqlBatch } = require('./db-adapter');
 const { BILL_OF_MATERIALS, calculateDefectRate } = require('./rules');
+const { resolveMarketPrice } = require('./market-price-book');
 const { SeededRandom } = require('./random');
 const { renderProgressMarkdown } = require('./projector');
 
@@ -119,6 +120,18 @@ class WorkshopEngine {
     }
     const biz = bizRows[0];
 
+    // Prices come from master_items only; a missing price is a data error, not a
+    // reason to fall back to a workshop-local number.
+    const priceCodes = ['PROD-MAT', 'PROD-BASK', 'PROD-SHIELD-BAM', 'COM-BAMBOO', 'COM-TWINE', 'COM-LEATH'];
+    const prices = {};
+    for (const code of priceCodes) {
+      const price = resolveMarketPrice(this.dbPath, code);
+      if (price === null) {
+        return { success: false, code: 'MARKET_PRICE_MISSING', error: `No market price for ${code}.` };
+      }
+      prices[code] = price;
+    }
+
     // Idempotency: the autonomous workshop cycle runs once per business-month.
     // The same key is used by GameplayManager.advanceTurn's passive accrual, so
     // whichever settlement runs first in a month wins and the other is skipped.
@@ -211,7 +224,7 @@ class WorkshopEngine {
         const available = invMap[code] ? invMap[code].qty : 0;
         if (available < reqQty) {
           const needed = reqQty - available;
-          const unitPrice = code === 'COM-BAMBOO' ? 15 : (code === 'COM-TWINE' ? 20 : 100);
+          const unitPrice = prices[code];
           const cost = Math.ceil(needed * unitPrice);
           if (currentSafeCash - procCost - cost >= totalOverhead * 0.7) {
             procCost += cost;
@@ -244,7 +257,7 @@ class WorkshopEngine {
     const sellBaskets = Math.min(producedBaskets, Math.floor(producedBaskets * 0.75));
     const sellShields = Math.min(producedShields, Math.floor(producedShields * 0.65));
 
-    const localRevenue = (sellMats * 25) + (sellBaskets * 50) + (sellShields * 140);
+    const localRevenue = (sellMats * prices['PROD-MAT']) + (sellBaskets * prices['PROD-BASK']) + (sellShields * prices['PROD-SHIELD-BAM']);
 
     // Net additions to finished goods warehouse
     const netMats = producedMats - sellMats;
@@ -368,7 +381,7 @@ class WorkshopEngine {
       sql += `
         UPDATE inventory_items SET quantity = ${newMatQty} WHERE item_code = '${code}';
         INSERT INTO stock_movements (mov_id, game_date, item_code, movement_type, quantity, unit_cost, balance_after, ref_txn)
-        VALUES ('MOV-${dateStamp}-${code}', '${gameDate}', '${code}', 'Autonomous Production & Restock', ${netMatChange}, ${code === 'COM-LEATH' ? 100 : (code === 'COM-TWINE' ? 20 : 15)}, ${newMatQty}, '${actionId}');
+        VALUES ('MOV-${dateStamp}-${code}', '${gameDate}', '${code}', 'Autonomous Production & Restock', ${netMatChange}, ${prices[code]}, ${newMatQty}, '${actionId}');
       `;
     }
 
@@ -381,14 +394,14 @@ class WorkshopEngine {
       UPDATE inventory_items SET quantity = quantity + ${netMats} WHERE item_code = 'PROD-MAT';
       UPDATE inventory_items SET quantity = quantity + ${netBaskets} WHERE item_code = 'PROD-BASK';
       INSERT INTO inventory_items (item_code, category, description, quantity, unit_cost_basis, location)
-      VALUES ('PROD-SHIELD-BAM', 'Finished Good', 'Leather-Bound Bamboo Shield', ${netShields}, 140, 'Zhuo Workshop')
+      VALUES ('PROD-SHIELD-BAM', 'Finished Good', 'Leather-Bound Bamboo Shield', ${netShields}, ${prices['PROD-SHIELD-BAM']}, 'Zhuo Workshop')
       ON CONFLICT(item_code) DO UPDATE SET quantity = quantity + ${netShields};
 
       INSERT INTO stock_movements (mov_id, game_date, item_code, movement_type, quantity, unit_cost, balance_after, ref_txn)
       VALUES
-        ('MOV-${dateStamp}-PROD-MAT', '${gameDate}', 'PROD-MAT', 'Autonomous Net Output', ${netMats}, 25, ${curMatQty}, '${actionId}'),
-        ('MOV-${dateStamp}-PROD-BASK', '${gameDate}', 'PROD-BASK', 'Autonomous Net Output', ${netBaskets}, 50, ${curBaskQty}, '${actionId}'),
-        ('MOV-${dateStamp}-PROD-SHIELD-BAM', '${gameDate}', 'PROD-SHIELD-BAM', 'Autonomous Net Output', ${netShields}, 140, ${curShdQty}, '${actionId}');
+        ('MOV-${dateStamp}-PROD-MAT', '${gameDate}', 'PROD-MAT', 'Autonomous Net Output', ${netMats}, ${prices['PROD-MAT']}, ${curMatQty}, '${actionId}'),
+        ('MOV-${dateStamp}-PROD-BASK', '${gameDate}', 'PROD-BASK', 'Autonomous Net Output', ${netBaskets}, ${prices['PROD-BASK']}, ${curBaskQty}, '${actionId}'),
+        ('MOV-${dateStamp}-PROD-SHIELD-BAM', '${gameDate}', 'PROD-SHIELD-BAM', 'Autonomous Net Output', ${netShields}, ${prices['PROD-SHIELD-BAM']}, ${curShdQty}, '${actionId}');
 
       -- 8. Record Idempotent Action Log
       INSERT INTO action_log (action_id, idempotency_key, turn_number, game_date, action_type, payload, result, status)

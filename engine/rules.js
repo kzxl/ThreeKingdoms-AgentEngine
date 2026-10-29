@@ -1,25 +1,10 @@
 /**
  * ThreeKingdoms-AgentEngine: Simulation Rules & Mathematical Formulas (engine/rules.js)
  * Implements deterministic formulas from game/RULES.md and game/ECONOMY.md.
+ *
+ * Prices are not defined here: `master_items` is the only market-price source and
+ * `engine/market-price-book.js` is the read path.
  */
-
-// Baseline commodity price index (Eastern Han 184 AD wholesale benchmark)
-const COMMODITY_PRICE_INDEX = {
-  'COM-GRAIN': { name: 'Millet/Wheat', unit: 'Thạch', basePrice: 160 },
-  'COM-TIMBER': { name: 'Hardwood Timber', unit: 'Bundle', basePrice: 40 },
-  'COM-BAMBOO': { name: 'Cured Bamboo', unit: 'Bundle', basePrice: 15 },
-  'COM-TWINE': { name: 'Hemp Twine', unit: 'Spool', basePrice: 20 },
-  'COM-LEATH': { name: 'Tanned Hide', unit: 'Piece', basePrice: 100 },
-  'COM-IRON': { name: 'Pig Iron', unit: 'Jin', basePrice: 30 },
-  'COM-SALT': { name: 'Refined Sea Salt', unit: 'Dou', basePrice: 65 },
-  'COM-SPEAR': { name: 'Iron-Tipped Spear', unit: 'Unit', basePrice: 400 },
-  'COM-SWORD': { name: 'Han Dao Sword', unit: 'Unit', basePrice: 800 },
-  'COM-HORSE-D': { name: 'Pack Mule / Draft Horse', unit: 'Head', basePrice: 3500 },
-  'COM-HORSE-W': { name: 'Northern War Steed', unit: 'Head', basePrice: 5000 },
-  'PROD-MAT': { name: 'Woven Straw Mat', unit: 'Unit', basePrice: 25 },
-  'PROD-BASK': { name: 'Military Grain Basket', unit: 'Unit', basePrice: 50 },
-  'PROD-SHIELD-BAM': { name: 'Leather-Bound Bamboo Shield', unit: 'Unit', basePrice: 140 }
-};
 
 // Bill of Materials (BOM) definitions for workshop production
 const BILL_OF_MATERIALS = {
@@ -122,7 +107,6 @@ try {
 } catch (e) {}
 
 module.exports = {
-  COMMODITY_PRICE_INDEX,
   BILL_OF_MATERIALS,
   resolveSkillCheck,
   calculateWorkshopCapacity,

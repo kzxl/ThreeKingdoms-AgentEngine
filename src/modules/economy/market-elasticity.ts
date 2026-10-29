@@ -66,6 +66,14 @@ export interface SettlementMarketQuote {
  * Grain & salt have inelastic demand; weapons surge during wartime;
  * luxury silk declines in severe famine.
  */
+/**
+ * Scenario price model, not the trade price catalog.
+ *
+ * Live buy/sell prices are read from `master_items` through
+ * `src/shared/market-price-book.ts`. The `basePrice` values below are scenario
+ * inputs for elasticity experiments (`sim_calculate_price`) and per-capita
+ * settlement quotes; they never settle a player trade.
+ */
 export const COMMODITY_CONFIGS: Record<string, CommodityElasticityConfig> = {
   GRAIN: {
     commodity: 'GRAIN',

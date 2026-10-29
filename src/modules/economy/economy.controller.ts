@@ -14,6 +14,7 @@ import { RegionalMarketService, SETTLEMENT_PROFILES } from './regional-market.se
 import { CaravanLogisticsService } from '../ecology-logistics/caravan-logistics.service';
 import { postCashflowEntry } from '../../shared/ledger';
 import { ACCOUNT_CODES } from '../../shared/account-codes';
+import { getMarketItem } from '../../shared/market-price-book';
 
 function getEconomyModule(): EconomyModule | undefined {
   return ModuleRegistry.getInstance().get<EconomyModule>('module.economy');
@@ -211,7 +212,6 @@ export function registerEconomyRoutes(router: Router): void {
         action,
         itemCode,
         quantity,
-        unitPrice,
         counterparty = 'Thương Khách Huyện Trác'
       } = ctx.body || {};
 
@@ -233,19 +233,20 @@ export function registerEconomyRoutes(router: Router): void {
         return;
       }
 
-      const itemInfo = db.queryOne<{
-        item_code: string;
-        name_vi: string;
-        category: string;
-        current_market_price: number;
-      }>('SELECT item_code, name_vi, category, current_market_price FROM master_items WHERE item_code = ?', [itemCode]);
-
-      if (!itemInfo) {
-        sendJson(res, 404, { success: false, error: `Commodity ${itemCode} not found in master catalog.` });
+      // master_items is the only price source; a client-supplied price is ignored
+      // so the UI cannot buy or sell off-catalog.
+      const marketItem = getMarketItem(db, itemCode);
+      if (!marketItem || marketItem.price <= 0) {
+        sendJson(res, 404, { success: false, error: `Commodity ${itemCode} has no market price.` });
         return;
       }
 
-      const effectiveUnitPrice = typeof unitPrice === 'number' && unitPrice > 0 ? unitPrice : itemInfo.current_market_price;
+      const effectiveUnitPrice = marketItem.price;
+      const itemInfo = {
+        item_code: marketItem.itemCode,
+        name_vi: marketItem.nameVi,
+        category: marketItem.category
+      };
       const totalAmount = Math.round(qty * effectiveUnitPrice);
       const meta = getCampaignMeta(db);
       // The server clock is authoritative; a client-supplied date could back-date

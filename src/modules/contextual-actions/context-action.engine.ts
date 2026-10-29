@@ -16,6 +16,7 @@
 
 import { DatabaseService } from '../../core/database';
 import { DailyInteractionEngine, EverydayActionType } from '../social-kizuna/daily-interaction.engine';
+import { MarketCatalog, loadMarketCatalog } from '../../shared/market-price-book';
 
 export type ActionPillar =
   | 'KIZUNA_SOCIAL'
@@ -73,6 +74,7 @@ export class ContextActionEngine {
   private static instance: ContextActionEngine | null = null;
   private db: DatabaseService;
   private kizunaEngine: DailyInteractionEngine;
+  private market: MarketCatalog = new Map();
 
   private constructor() {
     this.db = DatabaseService.getInstance();
@@ -100,6 +102,10 @@ export class ContextActionEngine {
     const fatigue = Number(playerState?.fatigue || 0);
     const morale = Number(playerState?.morale || 100);
     const gameDate = campaignMeta?.current_date || '184-05-02';
+
+    // Quote from the same catalog the trade executor settles against, so the
+    // displayed price and the charged price cannot drift apart.
+    this.market = loadMarketCatalog(this.db);
 
     // Helper map for inventory lookup
     const invMap = new Map<string, number>();
@@ -171,6 +177,14 @@ export class ContextActionEngine {
     }
   }
 
+  private quote(itemCode: string): number {
+    const item = this.market.get(itemCode);
+    if (!item || item.price <= 0) {
+      throw new Error(`No market price for ${itemCode}; add it to master_items.`);
+    }
+    return item.price;
+  }
+
   // =========================================================================
   // LOCATION-SPECIFIC 4-PILLAR ACTION GENERATORS
   // =========================================================================
@@ -186,8 +200,9 @@ export class ContextActionEngine {
     bamQty: number,
     gameDate: string
   ): ContextualChoice[] {
-    const buyLeathBatch = liquidCash >= 800 ? 8 : (liquidCash >= 400 ? 4 : (liquidCash >= 100 ? 1 : 0));
-    const buyLeathCost = buyLeathBatch * 100;
+    const leathPrice = this.quote('COM-LEATH');
+    const buyLeathBatch = liquidCash >= leathPrice * 8 ? 8 : (liquidCash >= leathPrice * 4 ? 4 : (liquidCash >= leathPrice ? 1 : 0));
+    const buyLeathCost = buyLeathBatch * leathPrice;
     const canBuyLeath = buyLeathBatch > 0;
 
     return [
@@ -226,19 +241,19 @@ export class ContextActionEngine {
           ? `Procure ${buyLeathBatch} Ox Leather hides from slaughterhouse (Cost ${buyLeathCost} quan)`
           : 'Procure Ox Leather hides (Insufficient Liquid Cash)',
         desc: canBuyLeath
-          ? `+${buyLeathBatch} COM-LEATH vào kho xưởng • Giá sỉ ưu đãi 100 Quan/tấm • Sổ cái bảo toàn`
-          : `Cần tối thiểu 100 Quan tiền mặt • Hiện có ${liquidCash} Quan`,
+          ? `+${buyLeathBatch} COM-LEATH vào kho xưởng • Giá thị trường ${leathPrice} Quan/tấm • Sổ cái bảo toàn`
+          : `Cần tối thiểu ${leathPrice} Quan tiền mặt • Hiện có ${liquidCash} Quan`,
         descEn: canBuyLeath
-          ? `+${buyLeathBatch} COM-LEATH to workshop warehouse • Invariant ledger preserved`
-          : `Requires at least 100 quan • Currently have ${liquidCash} quan`,
+          ? `+${buyLeathBatch} COM-LEATH to workshop warehouse • Market price ${leathPrice} quan/hide • Invariant ledger preserved`
+          : `Requires at least ${leathPrice} quan • Currently have ${liquidCash} quan`,
         disabled: !canBuyLeath,
-        disabledReasonVi: `Ngân khố không đủ: Cần tối thiểu 100 Quan (Hiện có ${liquidCash} Quan)`,
-        disabledReasonEn: `Insufficient cash: Need at least 100 quan (Available: ${liquidCash})`,
+        disabledReasonVi: `Ngân khố không đủ: Cần tối thiểu ${leathPrice} Quan (Hiện có ${liquidCash} Quan)`,
+        disabledReasonEn: `Insufficient cash: Need at least ${leathPrice} quan (Available: ${liquidCash})`,
         action: {
           type: 'TRADE_BUY',
           item_code: 'COM-LEATH',
           quantity: buyLeathBatch || 1,
-          unit_price: 100,
+          unit_price: leathPrice,
           counterparty: 'Trương Phi (Lò mổ Huyện Trác)',
           game_date: gameDate
         }
@@ -349,6 +364,9 @@ export class ContextActionEngine {
     matQty: number,
     gameDate: string
   ): ContextualChoice[] {
+    const matPrice = this.quote('PROD-MAT');
+    const saltPrice = this.quote('COM-SALT');
+    const grainPrice = this.quote('COM-GRAIN');
     const hasMatsToSell = matQty >= 5;
     const sellMatBatch = Math.min(matQty, 10);
     const hasSaltToSell = saltQty >= 5;
@@ -365,13 +383,13 @@ export class ContextActionEngine {
         icon: '工',
         title: `Xuất bán ${sellMatBatch} Tấm Chiếu Trúc Lương Gia cho Thương đoàn Ký Châu`,
         titleEn: `Sell ${sellMatBatch} Liang Family Bamboo Mats to Jizhou Merchants`,
-        desc: `-${sellMatBatch} PROD-MAT • Thu về +${sellMatBatch * 80} Quan tiền mặt lưu động (@80 Quan/tấm) • COM Check DC 35`,
-        descEn: `-${sellMatBatch} PROD-MAT • Receive +${sellMatBatch * 80} quan (@80 quan/ea) • Double-entry balanced`,
+        desc: `-${sellMatBatch} PROD-MAT • Thu về +${sellMatBatch * matPrice} Quan tiền mặt lưu động (@${matPrice} Quan/tấm) • COM Check DC 35`,
+        descEn: `-${sellMatBatch} PROD-MAT • Receive +${sellMatBatch * matPrice} quan (@${matPrice} quan/ea) • Double-entry balanced`,
         action: {
           type: 'TRADE_SELL',
           item_code: 'PROD-MAT',
           quantity: sellMatBatch,
-          unit_price: 80,
+          unit_price: matPrice,
           counterparty: 'Thương nhân Ký Châu',
           game_date: gameDate
         }
@@ -387,22 +405,22 @@ export class ContextActionEngine {
         icon: '商',
         title: `Xuất bán ${sellSaltBatch} Đấu Muối Biển cho tiệm buôn Đông Môn`,
         titleEn: `Sell ${sellSaltBatch} Dou of Sea Salt to East Market Merchant`,
-        desc: `-${sellSaltBatch} COM-SALT • Thu về +${sellSaltBatch * 85} Quan tiền mặt (@85 Quan/đấu)`,
-        descEn: `-${sellSaltBatch} COM-SALT • Receive +${sellSaltBatch * 85} quan (@85 quan/ea)`,
+        desc: `-${sellSaltBatch} COM-SALT • Thu về +${sellSaltBatch * saltPrice} Quan tiền mặt (@${saltPrice} Quan/đấu)`,
+        descEn: `-${sellSaltBatch} COM-SALT • Receive +${sellSaltBatch * saltPrice} quan (@${saltPrice} quan/ea)`,
         action: {
           type: 'TRADE_SELL',
           item_code: 'COM-SALT',
           quantity: sellSaltBatch,
-          unit_price: 85,
+          unit_price: saltPrice,
           counterparty: 'Thương nhân Ký Châu',
           game_date: gameDate
         }
       };
     } else {
       // Procure grain if funds allow
-      const grainBatch = liquidCash >= 800 ? 5 : (liquidCash >= 320 ? 2 : 1);
-      const grainCost = grainBatch * 160;
-      const canBuyGrain = liquidCash >= 160;
+      const grainBatch = liquidCash >= grainPrice * 5 ? 5 : (liquidCash >= grainPrice * 2 ? 2 : 1);
+      const grainCost = grainBatch * grainPrice;
+      const canBuyGrain = liquidCash >= grainPrice;
       facilityChoice = {
         id: 'OPT_2',
         pillar: 'FACILITY_OPERATION',
@@ -417,19 +435,19 @@ export class ContextActionEngine {
           ? `Procure ${grainBatch} piculs of Wheat Rations (Cost ${grainCost} quan)`
           : 'Procure Wheat Rations (Insufficient Cash)',
         desc: canBuyGrain
-          ? `+${grainBatch} COM-GRAIN • Giá chuẩn 160 Quan/thạch • Bảo đảm an ninh lương thực`
-          : `Cần tối thiểu 160 Quan • Hiện có ${liquidCash} Quan`,
+          ? `+${grainBatch} COM-GRAIN • Giá chuẩn ${grainPrice} Quan/thạch • Bảo đảm an ninh lương thực`
+          : `Cần tối thiểu ${grainPrice} Quan • Hiện có ${liquidCash} Quan`,
         descEn: canBuyGrain
-          ? `+${grainBatch} COM-GRAIN • Unit price 160 quan/dan`
-          : `Requires 160 quan • Available: ${liquidCash} quan`,
+          ? `+${grainBatch} COM-GRAIN • Unit price ${grainPrice} quan/picul`
+          : `Requires ${grainPrice} quan • Available: ${liquidCash} quan`,
         disabled: !canBuyGrain,
-        disabledReasonVi: `Ngân khố không đủ: Cần tối thiểu 160 Quan (Hiện có ${liquidCash} Quan)`,
-        disabledReasonEn: `Insufficient cash: Need at least 160 quan (Available: ${liquidCash})`,
+        disabledReasonVi: `Ngân khố không đủ: Cần tối thiểu ${grainPrice} Quan (Hiện có ${liquidCash} Quan)`,
+        disabledReasonEn: `Insufficient cash: Need at least ${grainPrice} quan (Available: ${liquidCash})`,
         action: {
           type: 'TRADE_BUY',
           item_code: 'COM-GRAIN',
           quantity: grainBatch,
-          unit_price: 160,
+          unit_price: grainPrice,
           counterparty: 'Lương thương Huyện Trác',
           game_date: gameDate
         }
@@ -670,6 +688,7 @@ export class ContextActionEngine {
     gameDate: string
   ): ContextualChoice[] {
     const hasGrainToSupply = grainQty >= 5;
+    const grainPrice = this.quote('COM-GRAIN');
 
     return [
       // Pillar 1: Kizuna Social (Lu Zhi)
@@ -702,13 +721,13 @@ export class ContextActionEngine {
         icon: '農',
         title: 'Tiếp tế 5 Thạch Lương tiểu mạch cho Quân Nhu Cục Bắc Quân',
         titleEn: 'Deliver 5 piculs of Wheat Rations to Northern Army Quartermaster',
-        desc: '-5 COM-GRAIN • Thu mua quân nhu giá cao +900 Quan (@180 Quan/thạch) • Ghi sổ kép',
-        descEn: '-5 COM-GRAIN • Receive +900 quan military procurement (@180/dan)',
+        desc: `-5 COM-GRAIN • Thu mua quân nhu +${5 * grainPrice} Quan (@${grainPrice} Quan/thạch) • Ghi sổ kép`,
+        descEn: `-5 COM-GRAIN • Receive +${5 * grainPrice} quan military procurement (@${grainPrice}/picul)`,
         action: {
           type: 'TRADE_SELL',
           item_code: 'COM-GRAIN',
           quantity: 5,
-          unit_price: 180,
+          unit_price: grainPrice,
           counterparty: 'Quân nhu cục Bắc Quân',
           game_date: gameDate
         }
@@ -784,6 +803,8 @@ export class ContextActionEngine {
    * Pingyuan Town (Bình Nguyên Trọng Trấn)
    */
   private generatePingyuanChoices(liquidCash: number, fatigue: number, grainQty: number, shieldQty: number, gameDate: string): ContextualChoice[] {
+    const shieldPrice = this.quote('PROD-SHIELD-BAM');
+    const grainPrice = this.quote('COM-GRAIN');
     return [
       {
         id: 'OPT_1',
@@ -811,15 +832,15 @@ export class ContextActionEngine {
         pillarLabelEn: 'FACILITY OPERATION',
         badgeClass: 'pillar-facility',
         icon: '甲',
-        title: 'Cung cấp 5 Khiên Trúc Lương Gia cho Dân Binh Xã Tắc (Thu 1,200 Quan)',
-        titleEn: 'Supply 5 Liang Family Bamboo Shields to local militia (Earn 1,200 quan)',
-        desc: '-5 PROD-SHIELD-BAM • +1,200 Quan ngân khố huyện phủ (@240 Quan/khiên)',
-        descEn: '-5 PROD-SHIELD-BAM • +1,200 quan procurement cash',
+        title: `Cung cấp 5 Khiên Trúc Lương Gia cho Dân Binh Xã Tắc (Thu ${5 * shieldPrice} Quan)`,
+        titleEn: `Supply 5 Liang Family Bamboo Shields to local militia (Earn ${5 * shieldPrice} quan)`,
+        desc: `-5 PROD-SHIELD-BAM • +${5 * shieldPrice} Quan ngân khố huyện phủ (@${shieldPrice} Quan/khiên)`,
+        descEn: `-5 PROD-SHIELD-BAM • +${5 * shieldPrice} quan procurement cash`,
         action: {
           type: 'TRADE_SELL',
           item_code: 'PROD-SHIELD-BAM',
           quantity: 5,
-          unit_price: 240,
+          unit_price: shieldPrice,
           counterparty: 'Quan phủ Huyện Bình Nguyên',
           game_date: gameDate
         }
@@ -831,18 +852,18 @@ export class ContextActionEngine {
         pillarLabelEn: 'LOCAL INCIDENT',
         badgeClass: 'pillar-opportunity',
         icon: '農',
-        title: 'Thu mua lương thảo ngô khoai Thanh Châu tiếp tế (Chi 600 Quan)',
-        titleEn: 'Procure Qingzhou grain supplies (Cost 600 quan)',
-        desc: '+4 COM-GRAIN • Chi 600 Quan (@150 Quan/thạch) • Bổ sung quân nhu viễn chinh',
-        descEn: '+4 COM-GRAIN • Cost 600 quan (@150/dan)',
-        disabled: liquidCash < 600,
-        disabledReasonVi: `Không đủ 600 Quan (Hiện có ${liquidCash})`,
+        title: `Thu mua lương thảo ngô khoai Thanh Châu tiếp tế (Chi ${4 * grainPrice} Quan)`,
+        titleEn: `Procure Qingzhou grain supplies (Cost ${4 * grainPrice} quan)`,
+        desc: `+4 COM-GRAIN • Chi ${4 * grainPrice} Quan (@${grainPrice} Quan/thạch) • Bổ sung quân nhu viễn chinh`,
+        descEn: `+4 COM-GRAIN • Cost ${4 * grainPrice} quan (@${grainPrice}/picul)`,
+        disabled: liquidCash < 4 * grainPrice,
+        disabledReasonVi: `Không đủ ${4 * grainPrice} Quan (Hiện có ${liquidCash})`,
         disabledReasonEn: `Insufficient funds (Have ${liquidCash} quan)`,
         action: {
           type: 'TRADE_BUY',
           item_code: 'COM-GRAIN',
           quantity: 4,
-          unit_price: 150,
+          unit_price: grainPrice,
           counterparty: 'Thương hội Thanh Châu',
           game_date: gameDate
         }
@@ -876,6 +897,7 @@ export class ContextActionEngine {
    * Host: Cao Cao (NPC-0009 / NPC-0061)
    */
   private generateXuchangChoices(liquidCash: number, fatigue: number, gameDate: string): ContextualChoice[] {
+    const horsePrice = this.quote('COM-HORSE-W');
     return [
       {
         id: 'OPT_1',
@@ -903,18 +925,18 @@ export class ContextActionEngine {
         pillarLabelEn: 'FACILITY OPERATION',
         badgeClass: 'pillar-facility',
         icon: '馬',
-        title: 'Thu mua 2 Chiến mã Dĩnh Xuyên trang bị cho đội kỵ binh (Chi 1,200 Quan)',
-        titleEn: 'Procure 2 Yingchuan Warhorses for cavalry squad (Cost 1,200 quan)',
-        desc: 'Tăng cường sức mạnh cơ động hành quân • Chi 1,200 Quan ngân khố',
-        descEn: 'Enhance expedition movement speed • Cost 1,200 quan',
-        disabled: liquidCash < 1200,
-        disabledReasonVi: `Không đủ 1,200 Quan (Hiện có ${liquidCash})`,
+        title: `Thu mua 2 Chiến mã Dĩnh Xuyên trang bị cho đội kỵ binh (Chi ${2 * horsePrice} Quan)`,
+        titleEn: `Procure 2 Yingchuan Warhorses for cavalry squad (Cost ${2 * horsePrice} quan)`,
+        desc: `Tăng cường sức mạnh cơ động hành quân • Chi ${2 * horsePrice} Quan ngân khố`,
+        descEn: `Enhance expedition movement speed • Cost ${2 * horsePrice} quan`,
+        disabled: liquidCash < 2 * horsePrice,
+        disabledReasonVi: `Không đủ ${2 * horsePrice} Quan (Hiện có ${liquidCash})`,
         disabledReasonEn: `Insufficient funds (Have ${liquidCash} quan)`,
         action: {
           type: 'TRADE_BUY',
-          item_code: 'COM-HORSE',
+          item_code: 'COM-HORSE-W',
           quantity: 2,
-          unit_price: 600,
+          unit_price: horsePrice,
           counterparty: 'Doanh trại Kỵ Đô Úy Tào Tháo',
           game_date: gameDate
         }
@@ -970,6 +992,7 @@ export class ContextActionEngine {
    * Host: He Jin (NPC-0010) / Imperial Court
    */
   private generateLuoyangChoices(liquidCash: number, fatigue: number, gameDate: string): ContextualChoice[] {
+    const licensePrice = this.quote('LIC-LUOYANG');
     return [
       {
         id: 'OPT_1',
@@ -1016,18 +1039,18 @@ export class ContextActionEngine {
         pillarLabelEn: 'LOCAL INCIDENT',
         badgeClass: 'pillar-opportunity',
         icon: '府',
-        title: 'Đăng ký môn bài chi nhánh Lương Gia Thương Hội tại Kinh Sư (Chi 1,000 Quan)',
-        titleEn: 'Register Liang Merchant Guild capital branch license (Cost 1,000 quan)',
+        title: `Đăng ký môn bài chi nhánh Lương Gia Thương Hội tại Kinh Sư (Chi ${licensePrice} Quan)`,
+        titleEn: `Register Liang Merchant Guild capital branch license (Cost ${licensePrice} quan)`,
         desc: 'Mở phân hiệu giao thương kinh đô • Tăng tiềm năng thương vụ đường dài',
         descEn: 'Establish imperial trade presence • Expand long-distance commerce',
-        disabled: liquidCash < 1000,
-        disabledReasonVi: `Không đủ 1,000 Quan môn bài (Hiện có ${liquidCash})`,
+        disabled: liquidCash < licensePrice,
+        disabledReasonVi: `Không đủ ${licensePrice} Quan môn bài (Hiện có ${liquidCash})`,
         disabledReasonEn: `Insufficient funds for license (Have ${liquidCash} quan)`,
         action: {
           type: 'TRADE_BUY',
           item_code: 'LIC-LUOYANG',
           quantity: 1,
-          unit_price: 1000,
+          unit_price: licensePrice,
           counterparty: 'Thị lệnh nha môn Lạc Dương',
           game_date: gameDate
         }
@@ -1061,6 +1084,7 @@ export class ContextActionEngine {
    * Host: Gongsun Zan (NPC-0060)
    */
   private generateBeipingChoices(liquidCash: number, fatigue: number, gameDate: string): ContextualChoice[] {
+    const shieldPrice = this.quote('PROD-SHIELD-BAM');
     return [
       {
         id: 'OPT_1',
@@ -1088,15 +1112,15 @@ export class ContextActionEngine {
         pillarLabelEn: 'FACILITY OPERATION',
         badgeClass: 'pillar-facility',
         icon: '甲',
-        title: 'Giao dịch 8 Khiên Trúc Bọc Da cho Đội Quân Biên Cảnh (Thu 1,920 Quan)',
-        titleEn: 'Trade 8 Leather-Faced Bamboo Shields to Border Legion (Earn 1,920 quan)',
-        desc: '-8 PROD-SHIELD-BAM • +1,920 Quan ngân khố Bắc Bình (@240 Quan/khiên)',
-        descEn: '-8 PROD-SHIELD-BAM • +1,920 quan procurement revenue',
+        title: `Giao dịch 8 Khiên Trúc Bọc Da cho Đội Quân Biên Cảnh (Thu ${8 * shieldPrice} Quan)`,
+        titleEn: `Trade 8 Leather-Faced Bamboo Shields to Border Legion (Earn ${8 * shieldPrice} quan)`,
+        desc: `-8 PROD-SHIELD-BAM • +${8 * shieldPrice} Quan ngân khố Bắc Bình (@${shieldPrice} Quan/khiên)`,
+        descEn: `-8 PROD-SHIELD-BAM • +${8 * shieldPrice} quan procurement revenue`,
         action: {
           type: 'TRADE_SELL',
           item_code: 'PROD-SHIELD-BAM',
           quantity: 8,
-          unit_price: 240,
+          unit_price: shieldPrice,
           counterparty: 'Bắc Bình Quân Nhu Khố',
           game_date: gameDate
         }
@@ -1156,6 +1180,7 @@ export class ContextActionEngine {
     fatigue: number,
     gameDate: string
   ): ContextualChoice[] {
+    const grainPrice = this.quote('COM-GRAIN');
     return [
       {
         id: 'OPT_1',
@@ -1191,7 +1216,7 @@ export class ContextActionEngine {
           type: 'TRADE_BUY',
           item_code: 'COM-GRAIN',
           quantity: 2,
-          unit_price: 150,
+          unit_price: grainPrice,
           counterparty: `Thương cục ${subLocation}`,
           game_date: gameDate
         }
@@ -1245,6 +1270,8 @@ export class ContextActionEngine {
    * Host: Yuan Shao (NPC-0018)
    */
   private generateYechengChoices(liquidCash: number, fatigue: number, gameDate: string): ContextualChoice[] {
+    const matPrice = this.quote('PROD-MAT');
+    const grainPrice = this.quote('COM-GRAIN');
     return [
       {
         id: 'OPT_1',
@@ -1274,13 +1301,13 @@ export class ContextActionEngine {
         icon: '工',
         title: 'Xuất bán 15 Tấm Chiếu Trúc Lương Gia cho các danh gia vọng tộc Nghiệp Thành',
         titleEn: 'Sell 15 Liang Bamboo Mats to prominent Jizhou patrician clans',
-        desc: '-15 PROD-MAT • Thu về +1,200 Quan tiền mặt (@80 Quan/tấm) • Ghi sổ kép',
-        descEn: '-15 PROD-MAT • Receive +1,200 quan (@80/ea)',
+        desc: `-15 PROD-MAT • Thu về +${15 * matPrice} Quan tiền mặt (@${matPrice} Quan/tấm) • Ghi sổ kép`,
+        descEn: `-15 PROD-MAT • Receive +${15 * matPrice} quan (@${matPrice}/ea)`,
         action: {
           type: 'TRADE_SELL',
           item_code: 'PROD-MAT',
           quantity: 15,
-          unit_price: 80,
+          unit_price: matPrice,
           counterparty: 'Vọng tộc Nghiệp Thành',
           game_date: gameDate
         }
@@ -1292,18 +1319,18 @@ export class ContextActionEngine {
         pillarLabelEn: 'LOCAL INCIDENT',
         badgeClass: 'pillar-opportunity',
         icon: '農',
-        title: 'Thu mua 10 Thạch Lương Ký Châu giá sỉ dự trữ chiến lược (Chi 1,500 Quan)',
-        titleEn: 'Procure 10 piculs of Jizhou strategic grain reserve (Cost 1,500 quan)',
-        desc: '+10 COM-GRAIN • Giá sỉ ưu đãi 150 Quan/thạch • Tích trữ lương thảo',
-        descEn: '+10 COM-GRAIN • Wholesale 150 quan/dan',
-        disabled: liquidCash < 1500,
-        disabledReasonVi: `Không đủ 1,500 Quan (Hiện có ${liquidCash})`,
+        title: `Thu mua 10 Thạch Lương Ký Châu giá sỉ dự trữ chiến lược (Chi ${10 * grainPrice} Quan)`,
+        titleEn: `Procure 10 piculs of Jizhou strategic grain reserve (Cost ${10 * grainPrice} quan)`,
+        desc: `+10 COM-GRAIN • Giá thị trường ${grainPrice} Quan/thạch • Tích trữ lương thảo`,
+        descEn: `+10 COM-GRAIN • Market price ${grainPrice} quan/picul`,
+        disabled: liquidCash < 10 * grainPrice,
+        disabledReasonVi: `Không đủ ${10 * grainPrice} Quan (Hiện có ${liquidCash})`,
         disabledReasonEn: `Insufficient funds (Have ${liquidCash} quan)`,
         action: {
           type: 'TRADE_BUY',
           item_code: 'COM-GRAIN',
           quantity: 10,
-          unit_price: 150,
+          unit_price: grainPrice,
           counterparty: 'Lương thương Ký Châu',
           game_date: gameDate
         }
@@ -1337,6 +1364,7 @@ export class ContextActionEngine {
    * Host: Lu Bu (NPC-0057) / Chen Gong (NPC-0058)
    */
   private generateXiapiChoices(liquidCash: number, fatigue: number, gameDate: string): ContextualChoice[] {
+    const shieldPrice = this.quote('PROD-SHIELD-BAM');
     return [
       {
         id: 'OPT_1',
@@ -1364,15 +1392,15 @@ export class ContextActionEngine {
         pillarLabelEn: 'FACILITY OPERATION',
         badgeClass: 'pillar-facility',
         icon: '甲',
-        title: 'Cung cấp 10 Khiên Trúc Bọc Da cho Thiết Kỵ Binh Từ Châu (Thu 2,400 Quan)',
-        titleEn: 'Supply 10 Leather-Faced Bamboo Shields to Xuzhou Cavalry (Earn 2,400 quan)',
-        desc: '-10 PROD-SHIELD-BAM • +2,400 Quan quân phí Hạ Phì (@240 Quan/khiên)',
-        descEn: '-10 PROD-SHIELD-BAM • +2,400 quan revenue',
+        title: `Cung cấp 10 Khiên Trúc Bọc Da cho Thiết Kỵ Binh Từ Châu (Thu ${10 * shieldPrice} Quan)`,
+        titleEn: `Supply 10 Leather-Faced Bamboo Shields to Xuzhou Cavalry (Earn ${10 * shieldPrice} quan)`,
+        desc: `-10 PROD-SHIELD-BAM • +${10 * shieldPrice} Quan quân phí Hạ Phì (@${shieldPrice} Quan/khiên)`,
+        descEn: `-10 PROD-SHIELD-BAM • +${10 * shieldPrice} quan revenue`,
         action: {
           type: 'TRADE_SELL',
           item_code: 'PROD-SHIELD-BAM',
           quantity: 10,
-          unit_price: 240,
+          unit_price: shieldPrice,
           counterparty: 'Hạ Phì Quân Khố',
           game_date: gameDate
         }
@@ -1425,6 +1453,7 @@ export class ContextActionEngine {
    * Host: Dong Zhuo (NPC-0023) / Wang Yun (NPC-0015)
    */
   private generateChanganChoices(liquidCash: number, fatigue: number, gameDate: string): ContextualChoice[] {
+    const leathPrice = this.quote('COM-LEATH');
     return [
       {
         id: 'OPT_1',
@@ -1452,18 +1481,18 @@ export class ContextActionEngine {
         pillarLabelEn: 'FACILITY OPERATION',
         badgeClass: 'pillar-facility',
         icon: '錦',
-        title: 'Thu mua da thú Tây Vực và len dạ Lương Châu giá sỉ (Chi 1,000 Quan)',
-        titleEn: 'Procure Western Region pelts and Liangzhou wool in bulk (Cost 1,000 quan)',
+        title: `Thu mua da thú Tây Vực và len dạ Lương Châu giá sỉ (Chi ${10 * leathPrice} Quan)`,
+        titleEn: `Procure Western Region pelts and Liangzhou wool in bulk (Cost ${10 * leathPrice} quan)`,
         desc: '+10 COM-LEATH đặc chủng Tây Vực • Bổ sung nguyên liệu chế tạo cao cấp',
         descEn: '+10 COM-LEATH exotic pelts • High-tier craft materials',
-        disabled: liquidCash < 1000,
-        disabledReasonVi: `Không đủ 1,000 Quan (Hiện có ${liquidCash})`,
+        disabled: liquidCash < 10 * leathPrice,
+        disabledReasonVi: `Không đủ ${10 * leathPrice} Quan (Hiện có ${liquidCash})`,
         disabledReasonEn: `Insufficient funds (Have ${liquidCash} quan)`,
         action: {
           type: 'TRADE_BUY',
           item_code: 'COM-LEATH',
           quantity: 10,
-          unit_price: 100,
+          unit_price: leathPrice,
           counterparty: 'Tây Lương Mã Đội',
           game_date: gameDate
         }
@@ -1516,6 +1545,7 @@ export class ContextActionEngine {
    * Host: Liu Biao (NPC-0016)
    */
   private generateXiangyangChoices(liquidCash: number, fatigue: number, gameDate: string): ContextualChoice[] {
+    const grainPrice = this.quote('COM-GRAIN');
     return [
       {
         id: 'OPT_1',
@@ -1543,18 +1573,18 @@ export class ContextActionEngine {
         pillarLabelEn: 'FACILITY OPERATION',
         badgeClass: 'pillar-facility',
         icon: '農',
-        title: 'Thu mua 10 Thạch Lương gạo thơm Hán Thủy dự trữ (Chi 1,400 Quan)',
-        titleEn: 'Procure 10 piculs of Han River fragrant rice rations (Cost 1,400 quan)',
-        desc: '+10 COM-GRAIN • Giá tốt 140 Quan/thạch • Lương thảo phì nhiêu Kinh Tương',
-        descEn: '+10 COM-GRAIN • Fertile Jingchu grain reserve',
-        disabled: liquidCash < 1400,
-        disabledReasonVi: `Không đủ 1,400 Quan (Hiện có ${liquidCash})`,
+        title: `Thu mua 10 Thạch Lương gạo thơm Hán Thủy dự trữ (Chi ${10 * grainPrice} Quan)`,
+        titleEn: `Procure 10 piculs of Han River fragrant rice rations (Cost ${10 * grainPrice} quan)`,
+        desc: `+10 COM-GRAIN • Giá thị trường ${grainPrice} Quan/thạch • Lương thảo phì nhiêu Kinh Tương`,
+        descEn: `+10 COM-GRAIN • Market price ${grainPrice} quan/picul`,
+        disabled: liquidCash < 10 * grainPrice,
+        disabledReasonVi: `Không đủ ${10 * grainPrice} Quan (Hiện có ${liquidCash})`,
         disabledReasonEn: `Insufficient funds (Have ${liquidCash} quan)`,
         action: {
           type: 'TRADE_BUY',
           item_code: 'COM-GRAIN',
           quantity: 10,
-          unit_price: 140,
+          unit_price: grainPrice,
           counterparty: 'Nông thương Kinh Châu',
           game_date: gameDate
         }
@@ -1609,6 +1639,7 @@ export class ContextActionEngine {
    * Host: Zhou Yu (NPC-0017) / Huang Gai (NPC-0052)
    */
   private generateNavalCampChoices(liquidCash: number, fatigue: number, gameDate: string): ContextualChoice[] {
+    const shieldPrice = this.quote('PROD-SHIELD-BAM');
     return [
       {
         id: 'OPT_1',
@@ -1636,15 +1667,15 @@ export class ContextActionEngine {
         pillarLabelEn: 'FACILITY OPERATION',
         badgeClass: 'pillar-facility',
         icon: '甲',
-        title: 'Tiếp tế 10 Khiên Trúc Bọc Da chống tên lửa cho Thủy Sư Giang Đông (Thu 2,500 Quan)',
-        titleEn: 'Supply 10 Fire-resistant Bamboo Shields to Dongwu Navy (Earn 2,500 quan)',
-        desc: '-10 PROD-SHIELD-BAM • +2,500 Quan quân nhu thủy trại (@250 Quan/khiên)',
-        descEn: '-10 PROD-SHIELD-BAM • +2,500 quan revenue',
+        title: `Tiếp tế 10 Khiên Trúc Bọc Da chống tên lửa cho Thủy Sư Giang Đông (Thu ${10 * shieldPrice} Quan)`,
+        titleEn: `Supply 10 Fire-resistant Bamboo Shields to Dongwu Navy (Earn ${10 * shieldPrice} quan)`,
+        desc: `-10 PROD-SHIELD-BAM • +${10 * shieldPrice} Quan quân nhu thủy trại (@${shieldPrice} Quan/khiên)`,
+        descEn: `-10 PROD-SHIELD-BAM • +${10 * shieldPrice} quan revenue`,
         action: {
           type: 'TRADE_SELL',
           item_code: 'PROD-SHIELD-BAM',
           quantity: 10,
-          unit_price: 250,
+          unit_price: shieldPrice,
           counterparty: 'Thủy Sư Quân Nhu Khố',
           game_date: gameDate
         }
@@ -1699,6 +1730,8 @@ export class ContextActionEngine {
    * Host: Sun Quan (NPC-0019)
    */
   private generateJianyeChoices(liquidCash: number, fatigue: number, gameDate: string): ContextualChoice[] {
+    const matPrice = this.quote('PROD-MAT');
+    const licensePrice = this.quote('LIC-JIANYE');
     return [
       {
         id: 'OPT_1',
@@ -1726,15 +1759,15 @@ export class ContextActionEngine {
         pillarLabelEn: 'FACILITY OPERATION',
         badgeClass: 'pillar-facility',
         icon: '工',
-        title: 'Xuất bán 20 Tấm Chiếu Trúc Lương Gia sang thương cảng Giang Nam (Thu 1,600 Quan)',
-        titleEn: 'Export 20 Liang Bamboo Mats to Jiangnan seaport market (Earn 1,600 quan)',
-        desc: '-20 PROD-MAT • +1,600 Quan thương cảng (@80 Quan/tấm) • Ghi sổ kép',
-        descEn: '-20 PROD-MAT • +1,600 quan trade revenue',
+        title: `Xuất bán 20 Tấm Chiếu Trúc Lương Gia sang thương cảng Giang Nam (Thu ${20 * matPrice} Quan)`,
+        titleEn: `Export 20 Liang Bamboo Mats to Jiangnan seaport market (Earn ${20 * matPrice} quan)`,
+        desc: `-20 PROD-MAT • +${20 * matPrice} Quan thương cảng (@${matPrice} Quan/tấm) • Ghi sổ kép`,
+        descEn: `-20 PROD-MAT • +${20 * matPrice} quan trade revenue`,
         action: {
           type: 'TRADE_SELL',
           item_code: 'PROD-MAT',
           quantity: 20,
-          unit_price: 80,
+          unit_price: matPrice,
           counterparty: 'Thương hội Giang Nam',
           game_date: gameDate
         }
@@ -1746,18 +1779,18 @@ export class ContextActionEngine {
         pillarLabelEn: 'LOCAL INCIDENT',
         badgeClass: 'pillar-opportunity',
         icon: '津',
-        title: 'Đăng ký giấy phép mậu dịch đường biển và khai thác quặng đồng Đan Dương (Chi 1,000 Quan)',
-        titleEn: 'Register maritime trade permit & Danyang copper mining license (Cost 1,000 quan)',
+        title: `Đăng ký giấy phép mậu dịch đường biển và khai thác quặng đồng Đan Dương (Chi ${licensePrice} Quan)`,
+        titleEn: `Register maritime trade permit & Danyang copper mining license (Cost ${licensePrice} quan)`,
         desc: 'Mở rộng tiềm năng khoáng sản • Tăng uy vọng kinh thương toàn cõi Giang Đông',
         descEn: 'Expand mineral procurement • Boost Wu prestige',
-        disabled: liquidCash < 1000,
-        disabledReasonVi: `Không đủ 1,000 Quan giấy phép (Hiện có ${liquidCash})`,
+        disabled: liquidCash < licensePrice,
+        disabledReasonVi: `Không đủ ${licensePrice} Quan giấy phép (Hiện có ${liquidCash})`,
         disabledReasonEn: `Insufficient funds (Have ${liquidCash} quan)`,
         action: {
           type: 'TRADE_BUY',
           item_code: 'LIC-JIANYE',
           quantity: 1,
-          unit_price: 1000,
+          unit_price: licensePrice,
           counterparty: 'Ngô Đô Thị Lệnh',
           game_date: gameDate
         }
@@ -1791,6 +1824,8 @@ export class ContextActionEngine {
    * Host: Zhang Lu (NPC-0020)
    */
   private generateHanzhongChoices(liquidCash: number, fatigue: number, gameDate: string): ContextualChoice[] {
+    const herbPrice = this.quote('COM-HERB');
+    const passPrice = this.quote('LIC-JIANGE');
     return [
       {
         id: 'OPT_1',
@@ -1818,18 +1853,18 @@ export class ContextActionEngine {
         pillarLabelEn: 'FACILITY OPERATION',
         badgeClass: 'pillar-facility',
         icon: '草',
-        title: 'Thu mua dược liệu quý núi Tần Lĩnh và quế chi Hán Xuyên (Chi 800 Quan)',
-        titleEn: 'Procure rare Qinling herbal medicines and Hanzhong cassia (Cost 800 quan)',
+        title: `Thu mua dược liệu quý núi Tần Lĩnh và quế chi Hán Xuyên (Chi ${8 * herbPrice} Quan)`,
+        titleEn: `Procure rare Qinling herbal medicines and Hanzhong cassia (Cost ${8 * herbPrice} quan)`,
         desc: '+8 Dược liệu quý • Bổ sung vật phẩm bồi bổ thể lực và giao thương viễn xứ',
         descEn: '+8 Rare herbs • Medicinal and trade reserves',
-        disabled: liquidCash < 800,
-        disabledReasonVi: `Không đủ 800 Quan (Hiện có ${liquidCash})`,
+        disabled: liquidCash < 8 * herbPrice,
+        disabledReasonVi: `Không đủ ${8 * herbPrice} Quan (Hiện có ${liquidCash})`,
         disabledReasonEn: `Insufficient funds (Have ${liquidCash} quan)`,
         action: {
           type: 'TRADE_BUY',
           item_code: 'COM-HERB',
           quantity: 8,
-          unit_price: 100,
+          unit_price: herbPrice,
           counterparty: 'Dược phòng Hán Trung',
           game_date: gameDate
         }
@@ -1841,18 +1876,18 @@ export class ContextActionEngine {
         pillarLabelEn: 'LOCAL INCIDENT',
         badgeClass: 'pillar-opportunity',
         icon: '策',
-        title: 'Đàm phán thông hành lộ bài bảo đảm an toàn qua Kiếm Các vào Ba Thục (Chi 500 Quan)',
-        titleEn: 'Negotiate safe-passage transit pact through Jiange Pass into Shu (Cost 500 quan)',
+        title: `Đàm phán thông hành lộ bài bảo đảm an toàn qua Kiếm Các vào Ba Thục (Chi ${passPrice} Quan)`,
+        titleEn: `Negotiate safe-passage transit pact through Jiange Pass into Shu (Cost ${passPrice} quan)`,
         desc: 'Đảm bảo thương đội di chuyển không bị ngăn trở • Tăng quan hệ với Hán Trung',
         descEn: 'Ensure unimpeded expedition transit into Shu',
-        disabled: liquidCash < 500,
-        disabledReasonVi: `Không đủ 500 Quan (Hiện có ${liquidCash})`,
+        disabled: liquidCash < passPrice,
+        disabledReasonVi: `Không đủ ${passPrice} Quan (Hiện có ${liquidCash})`,
         disabledReasonEn: `Insufficient funds (Have ${liquidCash} quan)`,
         action: {
           type: 'TRADE_BUY',
           item_code: 'LIC-JIANGE',
           quantity: 1,
-          unit_price: 500,
+          unit_price: passPrice,
           counterparty: 'Quan ải Hán Trung',
           game_date: gameDate
         }
@@ -1885,6 +1920,7 @@ export class ContextActionEngine {
    * Host: Liu Zhang (NPC-0021) / Fa Zheng (NPC-0027)
    */
   private generateChengduChoices(liquidCash: number, fatigue: number, gameDate: string): ContextualChoice[] {
+    const matPrice = this.quote('PROD-MAT');
     return [
       {
         id: 'OPT_1',
@@ -1912,15 +1948,15 @@ export class ContextActionEngine {
         pillarLabelEn: 'FACILITY OPERATION',
         badgeClass: 'pillar-facility',
         icon: '工',
-        title: 'Xuất bán 20 Tấm Chiếu Trúc Lương Gia sang Chợ Gấm Thành Đô (Thu 1,800 Quan)',
-        titleEn: 'Export 20 Liang Bamboo Mats to Chengdu Brocade Market (Earn 1,800 quan)',
-        desc: '-20 PROD-MAT • +1,800 Quan giá cao (@90 Quan/tấm do vật phẩm thủ công phương Bắc quý hiếm)',
-        descEn: '-20 PROD-MAT • +1,800 quan premium trade revenue',
+        title: `Xuất bán 20 Tấm Chiếu Trúc Lương Gia sang Chợ Gấm Thành Đô (Thu ${20 * matPrice} Quan)`,
+        titleEn: `Export 20 Liang Bamboo Mats to Chengdu Brocade Market (Earn ${20 * matPrice} quan)`,
+        desc: `-20 PROD-MAT • +${20 * matPrice} Quan giá thị trường (@${matPrice} Quan/tấm)`,
+        descEn: `-20 PROD-MAT • +${20 * matPrice} quan trade revenue`,
         action: {
           type: 'TRADE_SELL',
           item_code: 'PROD-MAT',
           quantity: 20,
-          unit_price: 90,
+          unit_price: matPrice,
           counterparty: 'Thục Cẩm Thương Hội',
           game_date: gameDate
         }
