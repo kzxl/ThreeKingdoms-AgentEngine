@@ -31,6 +31,7 @@ scratch/
 tests/.runs/
 tests/.golden-run/
 tests/sandbox/
+tests/.instance-bootstrap/
 tests/perf/.run/
 tests/perf/fixture.db
 tests/perf/fixture.db-*

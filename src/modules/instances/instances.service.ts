@@ -19,6 +19,7 @@ import {
   ARCHETYPE_PRESETS,
   ArchetypePreset
 } from './instances.constants';
+import { initializeInstanceDatabase } from './instance-bootstrap';
 import {
   InstanceSummaryDTO,
   CreateInstanceDTO,
@@ -144,100 +145,17 @@ export class InstanceManagerService {
     const db = new Database(newDbPath);
     try {
       db.pragma('journal_mode = WAL');
+      // The reset deletes tables in bulk; disable FK enforcement for the
+      // transaction, then verify the final graph explicitly.
+      db.pragma('foreign_keys = OFF');
+
+      initializeInstanceDatabase(db, { preset, playerName, playerStyle });
+
       db.pragma('foreign_keys = ON');
-
-      const applyInitTransaction = db.transaction(() => {
-        // Reset Campaign Meta to Turn 1
-        db.prepare(`UPDATE campaign_meta SET active_turn = 1, current_date = '184-05-02';`).run();
-
-        // Apply Archetype to Player State
-        db.prepare(`
-          UPDATE player_state SET
-            name = ?,
-            style_name = ?,
-            age = ?,
-            liquid_cash = ?,
-            safe_cash = ?,
-            fatigue = 0,
-            health = 100,
-            morale = 100,
-            war_attr = ?,
-            ldr_attr = ?,
-            int_attr = ?,
-            pol_attr = ?,
-            dip_attr = ?,
-            com_attr = ?,
-            log_attr = ?,
-            cra_attr = ?,
-            cra_exp = 0,
-            war_exp = 0,
-            int_exp = 0,
-            com_exp = 0,
-            ldr_exp = 0,
-            pol_exp = 0,
-            current_location = 'LOC-0001'
-          WHERE player_id = 'PLY-0001';
-        `).run(
-          playerName,
-          playerStyle,
-          preset.startingAge,
-          preset.initialCash,
-          preset.initialSafeCash,
-          preset.attributes.war,
-          preset.attributes.ldr,
-          preset.attributes.int,
-          preset.attributes.pol,
-          preset.attributes.dip,
-          preset.attributes.com,
-          preset.attributes.log,
-          preset.attributes.cra
-        );
-
-        // Reset dynamic modules for clean start
-        db.prepare(`DELETE FROM character_equipment WHERE character_id = 'PLY-0001';`).run();
-        try { db.prepare(`DELETE FROM family_lineage;`).run(); } catch (e) {}
-        try { db.prepare(`DELETE FROM family_children;`).run(); } catch (e) {}
-        try { db.prepare(`DELETE FROM trade_caravans;`).run(); } catch (e) {}
-        try { db.prepare(`DELETE FROM session_duels;`).run(); } catch (e) {}
-        try { db.prepare(`DELETE FROM chat_chronicle;`).run(); } catch (e) {}
-
-        // If Commoner Youth, transfer business ownership away from protagonist
-        if (preset.id === 'ARCH-COMMONER-YOUTH') {
-          db.prepare(`UPDATE businesses SET owner_character_id = 'NPC-0007', safe_cash = 3000 WHERE business_id = 'BIZ-0001';`).run();
-        } else {
-          db.prepare(`UPDATE businesses SET owner_character_id = 'PLY-0001', safe_cash = ? WHERE business_id = 'BIZ-0001';`).run(preset.initialSafeCash);
-        }
-
-        // Initialize Cashflow Ledger and Double-Entry Journal
-        try { db.prepare(`DELETE FROM account_journal;`).run(); } catch (e) {}
-        db.prepare(`DELETE FROM cashflow_ledger;`).run();
-        db.prepare(`
-          INSERT INTO cashflow_ledger (txn_id, game_date, counterparty, category, inflow, outflow, balance, memo, status)
-          VALUES ('TXN-INIT-001', '184-05-02', 'Bản Doanh Khởi Sự', 'CAPITAL_INJECTION', ?, 0, ?, ?, 'CLEARED');
-        `).run(
-          preset.initialCash,
-          preset.initialCash,
-          `Số vốn khởi nghiệp của thân phận ${preset.nameVi}.`
-        );
-
-        try {
-          db.prepare(`
-            INSERT INTO account_journal (txn_id, game_date, account_code, debit, credit, memo)
-            VALUES ('TXN-INIT-001', '184-05-02', '1001_CASH_MOBILE', ?, 0, 'Vốn tiền mặt ban đầu'),
-                   ('TXN-INIT-001', '184-05-02', '3001_OWNER_EQUITY', 0, ?, 'Vốn chủ sở hữu ban đầu');
-          `).run(preset.initialCash, preset.initialCash);
-        } catch (e) {}
-
-        // First Chronicle Entry
-        db.prepare(`
-          INSERT INTO chat_chronicle (id, turn_number, game_date, type, speaker, title, avatar, text, reasoning)
-          VALUES ('chron_start', 1, '184-05-02', 'narrative', 'Sử Quan', 'Khởi Đầu Gian Nan', 'Sử', ?, 'Khởi tạo tân thủ');
-        `).run(
-          `${playerName} (${playerStyle}), xuất thân ${preset.nameVi}, đặt chân tới Trác Huyện bắt đầu hành trình lập nghiệp giữa thời tao loạn.`
-        );
-      });
-
-      applyInitTransaction();
+      const violations = db.prepare('PRAGMA foreign_key_check').all();
+      if (violations.length > 0) {
+        throw new Error(`Instance bootstrap left ${violations.length} foreign-key violation(s).`);
+      }
       db.pragma('wal_checkpoint(TRUNCATE)');
     } finally {
       db.close();
