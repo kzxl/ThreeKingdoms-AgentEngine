@@ -67,6 +67,7 @@ function collect() {
     legacyButtonClassUsages: countMatches(publicSource, /class="[^"]*\b(?:tactical-btn|btn-[a-z])/g),
     legacyButtonClassesInClientTs: Math.max(0, legacyClientTsUsages),
     inlineStyleAttributes: countMatches(publicSource, /style="/g),
+    tinyFontSizes: countMatches(styles, /font-size:\s*(?:8|8\.5|9|9\.5|10|10\.5)px/g),
     nativeConfirmCalls: countMatches(publicSource, /\bconfirm\(/g),
     uiPrimitiveUsages: countMatches(publicSource, /\bui-(?:btn|badge)\b/g) +
       countMatches(tsSource, /\bui-(?:btn|badge)/g)
@@ -104,6 +105,7 @@ function main() {
     'legacyButtonClassUsages',
     'legacyButtonClassesInClientTs',
     'inlineStyleAttributes',
+    'tinyFontSizes',
     'nativeConfirmCalls'
   ]) {
     const allowed = Number(baseline[key] ?? 0);

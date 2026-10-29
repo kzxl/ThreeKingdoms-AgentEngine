@@ -417,14 +417,14 @@ body.tactical-body {
 }
 
 .story-speaker-title {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--text-muted);
   margin-left: 6px;
 }
 
 .story-time {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 11px;
   color: var(--text-muted);
 }
 
@@ -449,7 +449,7 @@ body.tactical-body {
   align-items: center;
   justify-content: space-between;
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 11px;
   color: #94a3b8;
   margin-top: 2px;
 }
@@ -472,7 +472,7 @@ body.tactical-body {
 }
 
 .story-reasoning {
-  font-size: 10px;
+  font-size: 11px;
   color: #94a3b8;
   background: rgba(0, 0, 0, 0.25);
   border-left: 2px solid #34d399;
@@ -565,7 +565,7 @@ body.tactical-body {
   height: 18px;
   background: rgba(245, 158, 11, 0.3);
   border-radius: 50%;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   color: #fbbf24;
   border: 1px solid #f59e0b;
@@ -578,7 +578,7 @@ body.tactical-body {
 }
 
 .cmd-hero-sentiment {
-  font-size: 9.5px;
+  font-size: 11px;
   font-family: var(--font-mono);
   color: #34d399;
   background: rgba(16, 185, 129, 0.15);
@@ -592,7 +592,7 @@ body.tactical-body {
   color: #7dd3fc;
   padding: 2px 8px;
   border-radius: var(--radius-xs);
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 600;
   display: inline-flex;
   align-items: center;
@@ -619,7 +619,7 @@ body.tactical-body {
   color: #d8b4fe;
   padding: 3px 9px;
   border-radius: var(--radius-xs);
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 600;
   display: inline-flex;
   align-items: center;
@@ -640,7 +640,7 @@ body.tactical-body {
   color: #fde68a;
   padding: 3px 10px;
   border-radius: var(--radius-xs);
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 700;
   display: inline-flex;
   align-items: center;
@@ -665,7 +665,7 @@ body.tactical-body {
 .courier-badge-count {
   background: #a855f7;
   color: #fff;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 700;
   padding: 0 5px;
   border-radius: 8px;
@@ -718,7 +718,7 @@ body.tactical-body {
 }
 
 .courier-drawer-desc {
-  font-size: 10px;
+  font-size: 11px;
   color: #94a3b8;
   margin-bottom: 8px;
 }
@@ -767,12 +767,12 @@ body.tactical-body {
 }
 
 .courier-action-prompt {
-  font-size: 9.5px;
+  font-size: 11px;
   color: #94a3b8;
 }
 
 .courier-action-arrow {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   color: #c084fc;
   white-space: nowrap;
@@ -848,7 +848,7 @@ body.tactical-body {
   color: #fbbf24;
   padding: 1px 6px;
   border-radius: var(--radius-xs);
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.3px;
 }
@@ -886,7 +886,7 @@ body.tactical-body {
   color: var(--text-secondary);
   padding: 3px 8px;
   border-radius: var(--radius-xs);
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
@@ -906,7 +906,7 @@ body.tactical-body {
 
 .local-poi-count {
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 11px;
   line-height: 1;
   padding: 1px 5px;
   border-radius: 999px;
@@ -915,7 +915,7 @@ body.tactical-body {
 }
 
 .poi-trigger-caret {
-  font-size: 9px;
+  font-size: 11px;
   opacity: 0.7;
   transition: transform 0.15s ease;
 }
@@ -972,7 +972,7 @@ body.tactical-body {
   border: 1px solid var(--border-subtle);
   border-radius: 3px;
   color: #fbbf24;
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .local-poi-item-body {
@@ -992,7 +992,7 @@ body.tactical-body {
 
 .local-poi-item-dist {
   font-family: var(--font-mono);
-  font-size: 9.5px;
+  font-size: 11px;
   color: var(--text-muted);
 }
 
@@ -1071,7 +1071,7 @@ body.tactical-body {
 }
 
 .npc-hero-title {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   color: #f59e0b;
   letter-spacing: 0.5px;
@@ -1094,7 +1094,7 @@ body.tactical-body {
   color: #f87171;
   padding: 2px 6px;
   border-radius: var(--radius-xs);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
   font-family: var(--font-mono);
 }
@@ -1115,7 +1115,7 @@ body.tactical-body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .dice-tag-type {
@@ -1178,7 +1178,7 @@ body.tactical-body {
 }
 
 .ai-agent-indicator {
-  font-size: 10px;
+  font-size: 11px;
   color: #34d399;
   font-weight: 600;
   display: flex;
@@ -1214,7 +1214,7 @@ body.tactical-body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .agent-thought-tag {
@@ -1226,7 +1226,7 @@ body.tactical-body {
 .agent-audit-tag {
   color: #fbbf24;
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 11px;
   background: rgba(245, 158, 11, 0.15);
   border: 1px solid var(--border-gold-subtle);
   padding: 1px 6px;
@@ -1248,7 +1248,7 @@ body.tactical-body {
 
 .agent-delta-pill {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
   padding: 2px 7px;
   border-radius: var(--radius-xs);
@@ -1305,7 +1305,7 @@ button:disabled,
 .deck-agent-log-top {
   display: flex;
   justify-content: space-between;
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .deck-agent-log-type {
@@ -1326,13 +1326,13 @@ button:disabled,
 }
 
 .deck-agent-log-reason {
-  font-size: 10px;
+  font-size: 11px;
   color: #94a3b8;
   line-height: 1.4;
 }
 
 .deck-agent-log-delta {
-  font-size: 10px;
+  font-size: 11px;
   font-family: var(--font-mono);
   color: #fbbf24;
   margin-top: 2px;
@@ -1369,11 +1369,11 @@ button:disabled,
 
 .choices-divider {
   color: var(--text-muted);
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .choices-hint {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--text-muted);
 }
 
@@ -1384,7 +1384,7 @@ button:disabled,
 }
 
 .legend-pill {
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 600;
   padding: 1px 6px;
   border-radius: 2px;
@@ -1487,7 +1487,7 @@ button:disabled,
 }
 
 .choice-pillar-badge {
-  font-size: 8px;
+  font-size: 11px;
   padding: 1.5px 5px;
   border-radius: 2px;
   font-weight: 700;
@@ -1532,7 +1532,7 @@ button:disabled,
   color: #34d399;
   padding: 2px 7px;
   border-radius: 3px;
-  font-size: 9.5px;
+  font-size: 11px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -1597,7 +1597,7 @@ button:disabled,
   text-overflow: ellipsis;
   white-space: nowrap;
   color: #e2e8f0;
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 600;
 }
 
@@ -1605,7 +1605,7 @@ button:disabled,
   flex: 0 0 auto;
   color: #7dd3fc;
   font-family: var(--font-mono);
-  font-size: 9.5px;
+  font-size: 11px;
 }
 
 .active-task-progress {
@@ -1620,7 +1620,7 @@ button:disabled,
   border: 1px solid rgba(148, 163, 184, 0.28);
   border-radius: 3px;
   color: #94a3b8;
-  font-size: 9.5px;
+  font-size: 11px;
   cursor: pointer;
 }
 
@@ -1638,7 +1638,7 @@ button:disabled,
 }
 
 .impact-chip {
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 600;
   padding: 1px 5px;
   border-radius: 2px;
@@ -1683,7 +1683,7 @@ button:disabled,
 }
 
 .choice-note {
-  font-size: 9.5px;
+  font-size: 11px;
   color: #94a3b8;
   line-height: 1.3;
   display: -webkit-box;
@@ -1704,7 +1704,7 @@ button:disabled,
   align-items: center;
   gap: 4px;
   color: #f87171;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 600;
   background: rgba(239, 68, 68, 0.1);
   border: 1px solid rgba(239, 68, 68, 0.25);
@@ -1733,7 +1733,7 @@ button:disabled,
   color: #fbbf24;
   padding: 3px 10px;
   border-radius: var(--radius-xs);
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -1750,7 +1750,7 @@ button:disabled,
 }
 
 .btn-arrow {
-  font-size: 10px;
+  font-size: 11px;
   transition: transform 0.15s ease;
 }
 
@@ -1855,13 +1855,13 @@ button:disabled,
 }
 
 .deck-deadline {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--text-muted);
   font-family: var(--font-mono);
 }
 
 .relations-sub-hint {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--text-muted);
   margin-bottom: 10px;
 }
@@ -1898,7 +1898,7 @@ button:disabled,
 }
 
 .rel-status-badge {
-  font-size: 9px;
+  font-size: 11px;
   padding: 1px 6px;
   border-radius: 3px;
   background: rgba(245, 158, 11, 0.12);
@@ -1910,7 +1910,7 @@ button:disabled,
 
 .rel-score {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 11px;
   color: var(--text-secondary);
 }
 
@@ -1992,7 +1992,7 @@ button:disabled,
 
 .deck-mini-table th {
   color: var(--text-muted);
-  font-size: 10px;
+  font-size: 11px;
   padding: 4px 6px;
   text-align: left;
   border-bottom: 1px solid var(--border-subtle);
@@ -2028,7 +2028,7 @@ button:disabled,
 .deck-txn-top {
   display: flex;
   justify-content: space-between;
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .deck-txn-id {
@@ -2047,7 +2047,7 @@ button:disabled,
 }
 
 .deck-txn-bal {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--text-muted);
   text-align: right;
   font-family: var(--font-mono);
@@ -2109,7 +2109,7 @@ button:disabled,
 }
 
 .deck-npc-role {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--text-muted);
 }
 
@@ -2117,7 +2117,7 @@ button:disabled,
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 4px;
-  font-size: 10px;
+  font-size: 11px;
   background-color: rgba(0, 0, 0, 0.2);
   padding: 4px 6px;
   border-radius: var(--radius-xs);
@@ -2138,7 +2138,7 @@ button:disabled,
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 10px;
+  font-size: 11px;
 }
 
 /* ==========================================================================
@@ -2361,7 +2361,7 @@ button:disabled,
 
 .btn-sm {
   padding: 2px 6px;
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .btn-gold {
@@ -2444,7 +2444,7 @@ button:disabled,
 
 .protagonist-age-badge {
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 11px;
   background: rgba(245, 158, 11, 0.15);
   border: 1px solid var(--border-gold-subtle);
   color: #fbbf24;
@@ -2454,7 +2454,7 @@ button:disabled,
 }
 
 .protagonist-title {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--text-muted);
   margin-top: 1px;
 }
@@ -2479,7 +2479,7 @@ button:disabled,
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .vital-name {
@@ -2542,7 +2542,7 @@ button:disabled,
   top: -16px;
   right: 2px;
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   color: #22d3ee;
   pointer-events: none;
@@ -2572,7 +2572,7 @@ button:disabled,
 
 .vital-sub-timer {
   font-family: var(--font-mono);
-  font-size: 8.5px;
+  font-size: 11px;
   color: var(--text-muted);
   margin-top: 2px;
   display: flex;
@@ -2613,7 +2613,7 @@ button:disabled,
   display: flex;
   flex-direction: column;
   gap: 2px;
-  font-size: 10.5px;
+  font-size: 11px;
   min-width: 0;
   transition: all 0.2s ease;
   position: relative;
@@ -2675,7 +2675,7 @@ button:disabled,
 
 .attr-name {
   color: var(--text-muted);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
@@ -2721,7 +2721,7 @@ button:disabled,
 }
 
 .world-map-sub {
-  font-size: 10.5px;
+  font-size: 11px;
   color: var(--text-muted);
 }
 
@@ -2834,7 +2834,7 @@ button:disabled,
 
 .map-zoom-level {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   color: #fbbf24;
   min-width: 36px;
@@ -2848,7 +2848,7 @@ button:disabled,
   bottom: 12px;
   left: 16px;
   z-index: 9;
-  font-size: 9.5px;
+  font-size: 11px;
   color: rgba(255, 255, 255, 0.7);
   pointer-events: none;
   background: #090d16;
@@ -2930,7 +2930,7 @@ button:disabled,
 }
 
 .intel-live-chip {
-  font-size: 9.5px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.5px;
   padding: 1px 5px;
@@ -3015,7 +3015,7 @@ button:disabled,
   content: '▾';
   display: inline-block;
   color: var(--text-muted);
-  font-size: 10px;
+  font-size: 11px;
   transition: transform 0.15s ease;
 }
 
@@ -3025,7 +3025,7 @@ button:disabled,
 
 .intel-accordion-meta {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 500;
   color: var(--text-muted);
   white-space: nowrap;
@@ -3042,13 +3042,13 @@ button:disabled,
   display: flex;
   justify-content: space-between;
   gap: 8px;
-  font-size: 10.5px;
+  font-size: 11px;
   color: var(--text-muted);
 }
 
 .intel-capability-hint {
   padding: 5px 0 2px;
-  font-size: 10.5px;
+  font-size: 11px;
   font-style: italic;
   line-height: 1.4;
   color: var(--text-muted);
@@ -3061,7 +3061,7 @@ button:disabled,
 }
 
 .intel-status-badge {
-  font-size: 9.5px;
+  font-size: 11px;
   padding: 2px 6px;
   border-radius: var(--radius-xs);
   font-weight: 600;
@@ -3100,7 +3100,7 @@ button:disabled,
 }
 
 .intel-metric-lbl {
-  font-size: 9px;
+  font-size: 11px;
   color: var(--text-muted);
 }
 
@@ -3119,7 +3119,7 @@ button:disabled,
 }
 
 .intel-sec-title {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   color: #fbbf24;
   letter-spacing: 0.3px;
@@ -3178,7 +3178,7 @@ button:disabled,
   display: flex;
   align-items: center;
   gap: 12px;
-  font-size: 10px;
+  font-size: 11px;
   color: var(--text-muted);
 }
 
@@ -3225,7 +3225,7 @@ button:disabled,
   border-radius: var(--radius-xs);
   cursor: pointer;
   padding: 3px 8px;
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 600;
   line-height: 1.2;
   display: flex;
@@ -3270,7 +3270,7 @@ button:disabled,
   border: 1px solid transparent;
   border-radius: var(--radius-xs);
   color: var(--text-main);
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 600;
   cursor: pointer;
 }
@@ -3286,7 +3286,7 @@ button:disabled,
 
 .map-layer-count {
   font-family: var(--font-mono);
-  font-size: 9.5px;
+  font-size: 11px;
   font-weight: 500;
   color: var(--text-muted);
 }
@@ -3338,7 +3338,7 @@ button:disabled,
   margin-right: 2px;
   border-right: 1px solid rgba(245, 158, 11, 0.22);
   color: #fbbf24;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -3354,7 +3354,7 @@ button:disabled,
   border: 1px solid transparent;
   border-radius: var(--radius-xs);
   color: var(--text-main);
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 600;
   cursor: pointer;
 }
@@ -3395,7 +3395,7 @@ button:disabled,
 
 .map-resource-count {
   font-family: var(--font-mono);
-  font-size: 9.5px;
+  font-size: 11px;
   font-weight: 500;
   color: var(--text-muted);
 }
@@ -3461,7 +3461,7 @@ button:disabled,
 
 .map-node .node-province {
   fill: #94a3b8;
-  font-size: 9.5px;
+  font-size: 11px;
   font-weight: 500;
 }
 
@@ -3486,7 +3486,7 @@ button:disabled,
 .node-badge text {
   fill: #38bdf8;
   font-family: var(--font-mono);
-  font-size: 9.5px;
+  font-size: 11px;
   font-weight: 700;
 }
 
@@ -3547,7 +3547,7 @@ button:disabled,
 
 .map-tooltip-desc {
   margin-top: 3px;
-  font-size: 10.5px;
+  font-size: 11px;
   color: var(--text-muted);
   line-height: 1.35;
 }
@@ -3557,13 +3557,13 @@ button:disabled,
   gap: 8px;
   margin-top: 5px;
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 11px;
   color: #f1f5f9;
 }
 
 .map-tooltip-risk {
   margin-top: 5px;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
 }
 
@@ -3585,7 +3585,7 @@ button:disabled,
   background: #090d16;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: var(--radius-xs);
-  font-size: 10px;
+  font-size: 11px;
   color: rgba(255, 255, 255, 0.75);
   pointer-events: none;
 }
@@ -3675,7 +3675,7 @@ button:disabled,
 
 .intel-routes-count {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 11px;
   color: var(--text-muted);
 }
 
@@ -3727,7 +3727,7 @@ button:disabled,
   border: 1px solid var(--border-subtle);
   border-radius: 2px;
   color: #fbbf24;
-  font-size: 9.5px;
+  font-size: 11px;
   vertical-align: middle;
 }
 
@@ -3761,14 +3761,14 @@ button.intel-npc-name {
   border: 1px solid rgba(16, 185, 129, 0.35);
   border-radius: 3px;
   color: #34d399;
-  font-size: 9.5px;
+  font-size: 11px;
   font-weight: 700;
   white-space: nowrap;
 }
 
 .intel-npc-empty {
   padding: 4px 0;
-  font-size: 10.5px;
+  font-size: 11px;
   font-style: italic;
   color: var(--text-muted);
 }
@@ -3776,7 +3776,7 @@ button.intel-npc-name {
 .intel-route-meta {
   grid-column: 1 / 2;
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 11px;
   color: var(--text-muted);
 }
 
@@ -3784,7 +3784,7 @@ button.intel-npc-name {
   grid-column: 2 / 3;
   grid-row: 1 / 3;
   align-self: center;
-  font-size: 9.5px;
+  font-size: 11px;
   font-weight: 700;
 }
 
@@ -3794,7 +3794,7 @@ button.intel-npc-name {
 .intel-route-risk[data-risk="EXTREME"] { color: #c084fc; }
 
 .intel-routes-empty {
-  font-size: 10.5px;
+  font-size: 11px;
   font-style: italic;
   color: var(--text-muted);
 }
@@ -3833,7 +3833,7 @@ button.intel-npc-name {
 
 .intel-route-card-desc {
   margin-top: 3px;
-  font-size: 10.5px;
+  font-size: 11px;
   color: var(--text-muted);
   line-height: 1.35;
 }
@@ -3843,7 +3843,7 @@ button.intel-npc-name {
   gap: 8px;
   margin-top: 5px;
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 11px;
   color: #f1f5f9;
 }
 
@@ -3860,7 +3860,7 @@ button.intel-npc-name {
   border: 1px solid #f59e0b;
   border-radius: var(--radius-xs);
   color: #0b0f17;
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 700;
   cursor: pointer;
 }
@@ -3880,7 +3880,7 @@ button.intel-npc-name {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   padding: 2px 7px;
   border-radius: var(--radius-xs);
@@ -3898,7 +3898,7 @@ button.intel-npc-name {
 }
 
 .intel-subcard-title {
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 700;
   color: #fbbf24;
   display: flex;
@@ -3927,7 +3927,7 @@ button.intel-npc-name {
 }
 
 .intel-unit-lbl {
-  font-size: 8.5px;
+  font-size: 11px;
   color: var(--text-muted);
 }
 
@@ -3942,7 +3942,7 @@ button.intel-npc-name {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  font-size: 10px;
+  font-size: 11px;
   color: #cbd5e1;
 }
 
@@ -3953,7 +3953,7 @@ button.intel-npc-name {
 }
 
 .intel-trade-tag {
-  font-size: 8.5px;
+  font-size: 11px;
   font-weight: 700;
   padding: 1px 5px;
   border-radius: 2px;
@@ -3978,7 +3978,7 @@ button.intel-npc-name {
 }
 
 .intel-npc-pill {
-  font-size: 10px;
+  font-size: 11px;
   background: rgba(245, 158, 11, 0.08);
   border: 1px solid rgba(245, 158, 11, 0.25);
   color: #fde68a;
@@ -4002,7 +4002,7 @@ button.intel-npc-name {
   justify-content: center;
   gap: 4px;
   padding: 4px 8px;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   border-radius: var(--radius-xs);
   cursor: pointer;
@@ -4048,7 +4048,7 @@ button.intel-npc-name {
   background: rgba(16, 185, 129, 0.2);
   border: 1px solid rgba(16, 185, 129, 0.5);
   color: #6ee7b7;
-  font-size: 9.5px;
+  font-size: 11px;
   font-weight: 700;
   padding: 2px 7px;
   border-radius: 3px;
@@ -4227,7 +4227,7 @@ button.intel-npc-name {
 }
 
 .gm-sec-hint {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--text-muted);
   font-weight: 500;
 }
@@ -4270,7 +4270,7 @@ button.intel-npc-name {
 .gm-scenario-year {
   background: rgba(245, 158, 11, 0.2);
   color: #fbbf24;
-  font-size: 9.5px;
+  font-size: 11px;
   font-weight: 700;
   padding: 1px 6px;
   border-radius: 2px;
@@ -4278,7 +4278,7 @@ button.intel-npc-name {
 }
 
 .gm-scenario-epoch {
-  font-size: 9.5px;
+  font-size: 11px;
   color: var(--text-muted);
 }
 
@@ -4289,7 +4289,7 @@ button.intel-npc-name {
 }
 
 .gm-scenario-desc {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--text-secondary);
   line-height: 1.4;
 }
@@ -4336,7 +4336,7 @@ button.intel-npc-name {
 }
 
 .gm-archetype-cash {
-  font-size: 10.5px;
+  font-size: 11px;
   font-family: var(--font-mono);
   font-weight: 700;
   color: #fbbf24;
@@ -4346,13 +4346,13 @@ button.intel-npc-name {
 }
 
 .gm-archetype-attrs {
-  font-size: 10px;
+  font-size: 11px;
   font-family: var(--font-mono);
   color: var(--text-muted);
 }
 
 .gm-archetype-desc {
-  font-size: 10.5px;
+  font-size: 11px;
   color: var(--text-secondary);
   line-height: 1.35;
 }
@@ -4421,7 +4421,7 @@ button.intel-npc-name {
 
 .gm-custom-field label {
   display: block;
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 600;
   color: var(--text-muted);
   margin-bottom: 3px;
@@ -4451,7 +4451,7 @@ button.intel-npc-name {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 10.5px;
+  font-size: 11px;
 }
 
 .gm-attr-name {
@@ -4499,7 +4499,7 @@ button.intel-npc-name {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 10.5px;
+  font-size: 11px;
 }
 
 .gm-asset-label {
@@ -4521,7 +4521,7 @@ button.intel-npc-name {
   background: rgba(56, 189, 248, 0.12);
   border: 1px solid rgba(56, 189, 248, 0.3);
   color: #38bdf8;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
   padding: 3px 8px;
   border-radius: 2px;
@@ -4597,7 +4597,7 @@ button.intel-npc-name {
 }
 
 .gm-event-badge {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
   background: rgba(245, 158, 11, 0.15);
@@ -4631,7 +4631,7 @@ button.intel-npc-name {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  font-size: 10px;
+  font-size: 11px;
   color: #94a3b8;
   border-top: 1px dashed rgba(255, 255, 255, 0.08);
   padding-top: 6px;
@@ -4668,7 +4668,7 @@ button.intel-npc-name {
 }
 
 .event-banner-badge {
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.5px;
   text-transform: uppercase;
@@ -4789,7 +4789,7 @@ button.intel-npc-name {
 }
 
 .event-choice-badge {
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 700;
   padding: 2px 6px;
   border-radius: 3px;
@@ -4824,7 +4824,7 @@ button.intel-npc-name {
 }
 
 .event-choice-cost {
-  font-size: 10px;
+  font-size: 11px;
   color: #94a3b8;
 }
 
@@ -4956,7 +4956,7 @@ button.intel-npc-name {
 }
 
 .tactical-card-subtitle {
-  font-size: 10.5px;
+  font-size: 11px;
   color: var(--text-muted);
   margin-top: 2px;
 }
@@ -4964,7 +4964,7 @@ button.intel-npc-name {
 /* Tactical Badges */
 .tactical-badge {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
   padding: 2px 7px;
   border-radius: var(--radius-xs);
@@ -5029,7 +5029,7 @@ button.intel-npc-name {
 
 .tactical-stat-label {
   color: var(--text-muted);
-  font-size: 10.5px;
+  font-size: 11px;
 }
 
 .tactical-stat-val {
@@ -5177,7 +5177,7 @@ button.intel-npc-name {
 
 .dossier-stat-rank {
   width: 78px;
-  font-size: 9.5px;
+  font-size: 11px;
   color: var(--text-muted);
   text-align: right;
   flex-shrink: 0;
@@ -5326,7 +5326,7 @@ button.intel-npc-name {
 }
 
 .career-stage-badge {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   padding: 2px 7px;
   border-radius: 4px;
@@ -5571,7 +5571,7 @@ button.intel-npc-name {
 }
 
 .hub-tab-badge {
-  font-size: 9.5px;
+  font-size: 11px;
   padding: 1px 6px;
   border-radius: 3px;
   font-weight: 500;
@@ -5762,7 +5762,7 @@ button.intel-npc-name {
 }
 
 .hub-item-buffs {
-  font-size: 10.5px;
+  font-size: 11px;
   color: #34d399;
   font-family: 'JetBrains Mono', monospace;
   margin-bottom: 4px;
@@ -5804,7 +5804,7 @@ button.intel-npc-name {
 
 .hub-attr-buff {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9.5px;
+  font-size: 11px;
   color: #34d399;
 }
 
@@ -6019,7 +6019,7 @@ button.intel-npc-name {
 
 .track-step-num {
   font-family: var(--font-sans);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 800;
   color: #64748b;
   text-transform: uppercase;
@@ -6032,7 +6032,7 @@ button.intel-npc-name {
 }
 
 .track-step-criteria {
-  font-size: 10.5px;
+  font-size: 11px;
   color: #94a3b8;
   line-height: 1.3;
 }
@@ -6061,7 +6061,7 @@ button.intel-npc-name {
   position: absolute;
   top: -8px;
   right: 8px;
-  font-size: 8.5px;
+  font-size: 11px;
   font-weight: 800;
   padding: 1px 5px;
   background: #f59e0b;
@@ -6157,7 +6157,7 @@ button.intel-npc-name {
 }
 
 .branch-status-pill {
-  font-size: 9.5px;
+  font-size: 11px;
   font-weight: 700;
   padding: 2px 6px;
   border-radius: 3px;
@@ -6193,7 +6193,7 @@ button.intel-npc-name {
 .branch-progress-label-row {
   display: flex;
   justify-content: space-between;
-  font-size: 10.5px;
+  font-size: 11px;
   color: #cbd5e1;
 }
 
@@ -6217,7 +6217,7 @@ button.intel-npc-name {
 }
 
 .req-pill {
-  font-size: 10px;
+  font-size: 11px;
   font-family: 'JetBrains Mono', monospace;
   padding: 1px 6px;
   border-radius: 3px;
@@ -6416,7 +6416,7 @@ button.intel-npc-name {
 
 .trv-stage-label {
   text-align: center;
-  font-size: 10px;
+  font-size: 11px;
   color: #fbbf24;
   margin-top: 8px;
   letter-spacing: 0.5px;
@@ -6439,7 +6439,7 @@ button.intel-npc-name {
 
 .trv-brief-lbl {
   display: block;
-  font-size: 10px;
+  font-size: 11px;
   color: #94a3b8;
   margin-bottom: 4px;
 }
@@ -6501,7 +6501,7 @@ button.intel-npc-name {
 }
 
 .trv-enc-badge {
-  font-size: 9.5px;
+  font-size: 11px;
   color: #94a3b8;
 }
 
@@ -6559,7 +6559,7 @@ button.intel-npc-name {
 }
 
 .trv-dc-badge {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   padding: 2px 6px;
   border-radius: 3px;
@@ -6663,7 +6663,7 @@ button.intel-npc-name {
 }
 
 .trv-metric-pill .lbl {
-  font-size: 9.5px;
+  font-size: 11px;
   color: #94a3b8;
 }
 
@@ -6744,9 +6744,24 @@ button.intel-npc-name {
 }
 
 .turn-adv-card-desc {
-  font-size: 10.5px;
+  font-size: 11px;
   color: #94a3b8;
   line-height: 1.4;
+}
+
+.turn-adv-error-detail {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  max-height: 180px;
+  overflow: auto;
+  border-radius: 8px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: #fca5a5;
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .turn-adv-action-bar {
@@ -6797,7 +6812,7 @@ button.intel-npc-name {
 }
 
 .turn-rpt-badge {
-  font-size: 9px;
+  font-size: 11px;
   background: rgba(245, 158, 11, 0.15);
   color: #fbbf24;
   border: 1px solid rgba(245, 158, 11, 0.3);
@@ -6876,7 +6891,7 @@ button.intel-npc-name {
 }
 
 .turn-rpt-item-meta {
-  font-size: 10.5px;
+  font-size: 11px;
   color: #94a3b8;
   display: flex;
   flex-wrap: wrap;
@@ -6918,7 +6933,7 @@ button.intel-npc-name {
   align-items: center;
   gap: 4px;
   color: #94a3b8;
-  font-size: 9.5px;
+  font-size: 11px;
 }
 
 .turn-rpt-kpi-value {
@@ -6954,7 +6969,7 @@ button.intel-npc-name {
   border-radius: 3px;
   color: #94a3b8;
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .turn-rpt-task-progress {
@@ -7025,7 +7040,7 @@ button.intel-npc-name {
   margin-top: 4px;
   color: #64748b;
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .time-stat-grid {
@@ -7048,7 +7063,7 @@ button.intel-npc-name {
 
 .time-compare-grid .turn-rpt-stat-row strong {
   white-space: nowrap;
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .time-real-date {
@@ -7077,13 +7092,13 @@ button.intel-npc-name {
   text-overflow: ellipsis;
   white-space: nowrap;
   color: #e2e8f0;
-  font-size: 10.5px;
+  font-size: 11px;
 }
 
 .time-timeline-real {
   color: #64748b;
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 11px;
 }
 
 @media (max-width: 800px) {
@@ -7249,7 +7264,7 @@ button.intel-npc-name {
 }
 
 .title-stat-pills span {
-  font-size: 10.5px;
+  font-size: 11px;
   background: rgba(255, 255, 255, 0.05);
   padding: 2px 7px;
   border-radius: 3px;
@@ -7543,7 +7558,7 @@ button.intel-npc-name {
   position: absolute;
   top: 12px;
   right: 12px;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 700;
   padding: 2px 6px;
   border-radius: 4px;
@@ -7598,7 +7613,7 @@ button.intel-npc-name {
 }
 
 .perk-tag {
-  font-size: 10px;
+  font-size: 11px;
   padding: 2px 7px;
   border-radius: 4px;
   font-weight: 600;
@@ -7732,7 +7747,7 @@ button.intel-npc-name {
 }
 
 .tier-perk {
-  font-size: 10px;
+  font-size: 11px;
   color: #34d399;
   margin-top: 4px;
 }
@@ -7771,7 +7786,7 @@ button.intel-npc-name {
 }
 
 .guest-badge {
-  font-size: 9px;
+  font-size: 11px;
   padding: 1px 5px;
   border-radius: 3px;
   background: rgba(255, 255, 255, 0.08);
@@ -7803,7 +7818,7 @@ button.intel-npc-name {
 }
 
 .clash-status-pill {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   padding: 2px 8px;
   border-radius: 4px;
@@ -7884,7 +7899,7 @@ button.intel-npc-name {
 }
 
 .stat-badge {
-  font-size: 10px;
+  font-size: 11px;
   padding: 1px 5px;
   border-radius: 3px;
   background: rgba(14, 165, 233, 0.2);
@@ -7900,7 +7915,7 @@ button.intel-npc-name {
 }
 
 .vital-label {
-  font-size: 10px;
+  font-size: 11px;
   color: #94a3b8;
   margin-bottom: 2px;
 }
@@ -7962,7 +7977,7 @@ button.intel-npc-name {
 }
 
 .log-delta {
-  font-size: 10px;
+  font-size: 11px;
   color: #94a3b8;
   font-style: italic;
   margin-top: 2px;
@@ -8024,7 +8039,7 @@ button.intel-npc-name {
 
 .cmd-desc {
   display: block;
-  font-size: 10px;
+  font-size: 11px;
   color: #94a3b8;
 }
 
@@ -8082,7 +8097,7 @@ button.intel-npc-name {
 }
 
 .role-badge {
-  font-size: 10px;
+  font-size: 11px;
   padding: 1px 6px;
   border-radius: 4px;
   background: rgba(244, 114, 182, 0.2);
@@ -8163,7 +8178,7 @@ button.intel-npc-name {
 }
 
 .age-badge {
-  font-size: 10px;
+  font-size: 11px;
   padding: 1px 5px;
   border-radius: 3px;
   background: rgba(255, 255, 255, 0.08);
@@ -8184,7 +8199,7 @@ button.intel-npc-name {
 }
 
 .heir-mentor {
-  font-size: 10px;
+  font-size: 11px;
   color: #64748b;
 }
 
@@ -8326,12 +8341,12 @@ button.intel-npc-name {
 
 .ui-btn--sm {
   padding: 3px 8px;
-  font-size: 10.5px;
+  font-size: 11px;
 }
 
 .ui-btn--xs {
   padding: 2px 6px;
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .ui-btn--lg {
@@ -8401,7 +8416,7 @@ button.intel-npc-name {
   padding: 1px 8px;
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-pill);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.02em;
   white-space: nowrap;
@@ -8504,7 +8519,7 @@ body.tactical-body {
 }
 
 .metric-chip .chip-label {
-  font-size: 9.5px;
+  font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.07em;
@@ -8521,7 +8536,7 @@ body.tactical-body {
 .badge-audit {
   min-height: 24px;
   padding: 3px 9px;
-  font-size: 10.5px;
+  font-size: 11px;
 }
 
 .btn-lang-toggle,
@@ -8576,7 +8591,7 @@ body.tactical-body {
 
 .story-speaker-title,
 .story-time {
-  font-size: 10.5px;
+  font-size: 11px;
 }
 
 .story-text {
@@ -8673,7 +8688,7 @@ body.tactical-body {
 }
 
 .impact-chip {
-  font-size: 10px;
+  font-size: 11px;
   padding: 2px 7px;
 }
 
@@ -8965,7 +8980,7 @@ body.tactical-body {
 .space-y-3 > * + * { margin-top: 12px; }
 
 /* --- Typography ---------------------------------------------------------- */
-.text-\[10px\] { font-size: 10px; }
+.text-\[10px\] { font-size: 11px; }
 .text-\[11px\] { font-size: 11px; }
 .text-xs { font-size: 11px; }
 .text-sm { font-size: 12.5px; }
@@ -9044,7 +9059,7 @@ body.tactical-body {
   padding: 1px 8px;
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-pill);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   color: var(--text-secondary);
   background: var(--bg-surface);
@@ -9114,7 +9129,7 @@ body.tactical-body {
   border-radius: var(--radius-pill);
   background: rgba(245, 158, 11, 0.18);
   color: #fcd34d;
-  font-size: 9.5px;
+  font-size: 11px;
   font-weight: 700;
   text-align: center;
 }
@@ -9195,7 +9210,7 @@ textarea {
 .modal-dialog .modal-subtitle {
   margin-top: 2px;
   color: #94a3b8;
-  font-size: 10.5px;
+  font-size: 11px;
   line-height: 1.35;
 }
 
