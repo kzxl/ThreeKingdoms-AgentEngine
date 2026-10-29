@@ -89,7 +89,7 @@ function run(): void {
     ).get();
     assert(ledgerTable, 'schema must declare world_turn_ledger');
     const migrations = (fresh.prepare('SELECT COUNT(*) AS c FROM schema_migrations').get() as any).c;
-    assert.strictEqual(Number(migrations), 9, 'initDb must apply all 9 versioned migrations');
+    assert.strictEqual(Number(migrations), 10, 'initDb must apply all 10 versioned migrations');
     fresh.close();
 
     // Bootstrap must also work on a schema-initialized database (no live-session

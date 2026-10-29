@@ -20,6 +20,19 @@ function seedDatabase() {
   const db = new Database(TEST_DB);
   db.pragma('journal_mode = DELETE');
   db.exec(fs.readFileSync(path.join(ROOT, 'tools', 'schema.sql'), 'utf8'));
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS master_items (
+      item_code TEXT PRIMARY KEY,
+      name_vi TEXT NOT NULL,
+      name_en TEXT NOT NULL,
+      category TEXT NOT NULL,
+      unit_vi TEXT NOT NULL,
+      unit_en TEXT NOT NULL,
+      baseline_peace_price INTEGER NOT NULL,
+      current_market_price INTEGER NOT NULL
+    );
+    INSERT INTO master_items VALUES ('COM-BAMBOO', 'Tre Khô', 'Cured Bamboo', 'Raw Material', 'Bó', 'Bundle', 15, 15);
+  `);
   db.prepare(`
     INSERT INTO campaign_meta (campaign_id, campaign_name, start_date, "current_date", active_turn)
     VALUES ('TEST-ECON', 'Action Economy', '184-02-01', '184-02-01', 1);

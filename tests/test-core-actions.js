@@ -29,6 +29,24 @@ function setupTestDatabase() {
 
   // Seed baseline player with 10,000 Qian and some raw materials
   const seedSql = `
+    CREATE TABLE IF NOT EXISTS master_items (
+      item_code TEXT PRIMARY KEY,
+      name_vi TEXT NOT NULL,
+      name_en TEXT NOT NULL,
+      category TEXT NOT NULL,
+      unit_vi TEXT NOT NULL,
+      unit_en TEXT NOT NULL,
+      baseline_peace_price INTEGER NOT NULL,
+      current_market_price INTEGER NOT NULL
+    );
+    INSERT INTO master_items VALUES
+      ('COM-TIMBER', 'Gỗ', 'Timber', 'Raw Material', 'Bó', 'Bundle', 40, 40),
+      ('COM-HORSE-W', 'Chiến Mã', 'Warhorse', 'Livestock', 'Con', 'Head', 5000, 5000),
+      ('COM-SALT', 'Muối', 'Salt', 'Consumable', 'Đấu', 'Dou', 50, 80),
+      ('COM-BAMBOO', 'Tre', 'Bamboo', 'Raw Material', 'Bó', 'Bundle', 15, 15),
+      ('COM-TWINE', 'Chỉ Gai', 'Twine', 'Raw Material', 'Cuộn', 'Spool', 20, 20),
+      ('PROD-MAT', 'Chiếu', 'Mat', 'Finished Good', 'Tấm', 'Unit', 25, 25);
+
     INSERT INTO campaign_meta (campaign_id, campaign_name, start_date, current_date, active_turn)
     VALUES ('TEST-CAMP', 'Test Campaign', '184-02-01', '184-02-01', 1);
 

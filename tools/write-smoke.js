@@ -132,7 +132,8 @@ async function main() {
     const basketBefore = itemQuantity(invBefore.body, 'PROD-BASK');
 
     await step('trade BUY commodity', async () => {
-      const res = await post('/api/trade', { action: 'BUY', itemCode: 'COM-BAMBOO', quantity: 5 });
+      // unitPrice is deliberately spoofed: the master_items price must win.
+      const res = await post('/api/trade', { action: 'BUY', itemCode: 'COM-BAMBOO', quantity: 5, unitPrice: 1 });
       assert(res.status === 200, `HTTP ${res.status}: ${JSON.stringify(res.body).slice(0, 160)}`);
       assert(res.body.success === true, `success=false: ${res.body.error}`);
       assert(res.body.totalAmount === 75, `expected totalAmount 75, got ${res.body.totalAmount}`);
