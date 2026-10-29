@@ -97,3 +97,52 @@ node tools/sim-db.js query "SELECT * FROM cashflow_ledger ORDER BY txn_id DESC L
 # Re-compile and export game/PROGRESS.md
 node tools/sim-db.js export-progress
 ```
+
+---
+
+## 6. Data Access, Migrations & Verification Gates
+
+### 6.1 One driver, one failure policy
+
+All application code reaches SQLite through `better-sqlite3`, in-process, with a
+cached connection per database path:
+
+| Binding | Consumers | Notes |
+| :--- | :--- | :--- |
+| `src/core/database.ts` (`DatabaseService`) | `src/modules/*`, controllers, MCP | Path-keyed registry; several playthrough instances open at once; `DatabaseQueryError` with DB + statement context. |
+| `engine/db-adapter.js` | `engine/*`, `tools/sim-web.js`, legacy CLI tools | CommonJS binding over the same driver and pragmas: bound parameters, cached connections, throwing errors. |
+
+There is **no** `sqlite3` CLI invocation on the request path. Failed statements throw
+instead of returning `[]`, so data errors surface at the boundary rather than as
+"empty world" symptoms.
+
+### 6.2 Kernel input gate
+
+`engine/action-validation.js` normalizes every agent/API action before it can reach a
+composed SQL script: identifiers must match a strict token alphabet, numbers are
+coerced and bounded, game dates are shape-checked, and free text is capped and
+quote-escaped. `SimulationCore.executeAction()` turns violations into
+`{ success: false, code: 'INVALID_PARAMS' }`.
+
+Persisted identifiers use deterministic sequences (`_nextSequenceId`) rather than
+wall-clock timestamps, so replays remain comparable and IDs cannot collide inside one
+millisecond.
+
+### 6.3 Versioned data migrations
+
+`tools/migrations/` holds idempotent migrations applied inside a transaction and
+recorded in `schema_migrations`. New playthrough instances are brought to a known data
+state with `npm run migrate`; `npm run migrate:status` lists pending work.
+
+### 6.4 Verification gates
+
+| Gate | Command | Guarantee |
+| :--- | :--- | :--- |
+| Types | `npm run typecheck` | `strict` TypeScript across `src/`, `tests/`, `vite.config.ts`. |
+| Architecture | `npm run lint` | Ratchet over `tools/arch-baseline.json`; debt may only shrink. |
+| Behaviour | `npm test` | 22 suites, each modern suite on an isolated DB copy, projections restored afterwards. |
+| API contract | `npm run golden:verify` | 28 read-only endpoints: status code, response shape, behavioural assertions. |
+| Invariants | `npm run audit` | 1,358 SQLite invariants (ledger parity, inventory conservation, projection sync). |
+
+`npm run verify` chains all of them and is the merge gate.
+

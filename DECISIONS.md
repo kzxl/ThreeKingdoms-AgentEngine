@@ -74,3 +74,18 @@ This document records the architectural choices, rationale, and alternatives con
 - **Consequences**:
   - Positive: High-speed, 100% reproducible background simulation. Zero token waste for routine workshop cycles.
   - Positive: High-agency gameplay where the player only intervenes when meaningful strategic decisions are required.
+
+---
+
+## ADR-006: Vanilla Shared UI Primitives Instead of Ant Design
+
+- **Date**: 2026-10-29
+- **Context**: Components drifted across screens: 47 legacy button classes, ~1,000 inline `style` attributes, four modal implementations, and nine native `confirm()` calls. The client is vanilla TypeScript + Vite with ~20k lines of legacy DOM scripts and no React runtime.
+- **Decision**:
+  - Build `src/client/core/ui/` (button, badge, toast, confirm-on-modal-shell) on the existing `:root` design tokens, and expose the same contract to legacy scripts as `window.UI`.
+  - Do **not** adopt Ant Design for now. antd requires React plus roughly 1 MB of bundle, and every screen would have to be rewritten before it paid off.
+  - Ratchet the debt with `npm run lint:ui`: legacy button classes, legacy class usages, inline styles and native confirms may only shrink; shared primitive usage is reported to grow.
+- **Consequences**:
+  - Positive: One visual contract for both UI layers without a new framework; migration can proceed screen by screen.
+  - Positive: The ratchet prevents new per-screen one-off styles.
+  - Negative: Ant Design's form/table/data-grid components are not available; if the client later moves to React, ADR-006 should be revisited and the primitive API maps cleanly onto antd equivalents.

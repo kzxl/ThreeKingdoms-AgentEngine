@@ -250,9 +250,23 @@ npm install
 
 | Command | Action | Description |
 | :--- | :--- | :--- |
-| `npm run audit` | Verification | Executes independent verification of all 193/193 SQLite invariants. |
+| `npm run verify` | **Full Gate** | Runs typecheck → architecture guard → client syntax → UI ratchet → anti-slop lint → client API contract → route-shadow report → 19 verification suites → API contract check → write-path smoke. |
+| `npm run lint:api` | Architecture | Fails when the TS client calls an `/api/*` path that neither the Router nor the gateway serves (known gaps are reasoned in `tools/client-api-allowlist.json`). |
+| `npm run lint:slop` | Architecture | Enforces AS-05 (no emoji), AS-06 (no gradients), neutral elevation, two font families; ratchets the font-size scale. |
+| `npm run lint:ui` | Architecture | Ratchets legacy UI debt (button classes, class usages, inline styles, native confirms); new surfaces should use `src/client/core/ui` (`window.UI`). |
+| `npm run lint:client` | Architecture | Parses every classic client script (`public/app.js`, `public/js/*.js`); one parse error disables a whole UI file. |
+| `npm run routes:shadow` | Architecture | Fails if any legacy `sim-web.js` handler is already served by the modular Router (dead code). |
+| `npm test` | Verification | Runs all 19 suites (4 legacy self-sandboxed + 15 TypeScript `verify-*.ts`) against isolated DB copies. |
+| `npm run smoke:write` | Verification | Boots the app on a sandbox DB and exercises 8 write paths (trade, loans, equip/unequip, idempotency, input rejection, post-write audit). |
+| `npm run lint` | Architecture | Ratcheting guard over `tools/arch-baseline.json`: SQLite-CLI spawns, SQL interpolation, unseeded RNG, silent catches, the `current_date` keyword trap, legacy UI growth. |
+| `npm run golden:verify` | API Contract | Boots the real composition root and diffs 28 read-only endpoints against `tests/golden/api-shape.json`. |
+| `npm run perf:record` | Performance | Captures p95 latency and a normalised body fingerprint per endpoint, plus `tests/perf/fixture.db`. |
+| `npm run perf:compare` | Performance | Re-measures against the fixture and fails on logic drift or p95 regression. |
+| `npm run audit` | Verification | Executes independent verification of all 1,358 SQLite invariants. |
+| `npm run migrate` | Data | Applies versioned, idempotent data migrations to the active session database. |
 | `npm run typecheck` | TypeScript | Performs compile-time strict type-checking across all `.ts` files. |
 | `npm run dev:server` | Fullstack Server | Starts Node.js + `tsx` Hot Reload server on `http://localhost:3300`. |
+| `npm run start` | Fullstack Server | Starts the same composition root without hot reload. |
 | `npm run dev:client` | Frontend UI | Starts Vite 5 HMR dev server on `http://localhost:5173` (proxies `/api` to `:3300`). |
 | `npm run build:client`| Production Build| Compiles and minifies frontend static assets into `dist/`. |
 | `npm run test:mcp` | MCP Verification | Tests JSON-RPC handshake and executes all MCP tools against live database. |
@@ -260,7 +274,7 @@ npm install
 
 ---
 
-## Auditing & Zero-Drift Invariants (193/193)
+## Auditing & Zero-Drift Invariants (1,358 checks)
 
 The engine enforces strict conservation laws across every transaction:
 
@@ -279,7 +293,7 @@ npm run audit
 [5] NPC & ENTERPRISE STATE (P4 Integrity)      : ✅ Passed (Attributes, skills, and safe cash verified)
 ====================================================
  🟢 AUDIT VERDICT: PASSED
-    Total Invariants Verified: 193
+    Total Invariants Verified: 1358
     Discrepancies Detected   : 0
 ====================================================
 ```

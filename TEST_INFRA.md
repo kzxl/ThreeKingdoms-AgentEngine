@@ -79,37 +79,50 @@ The **ThreeKingdoms-AgentEngine** test infrastructure provides an autonomous, mu
 
 ### Running Individual Test Suites
 ```bash
-# Verify Marriage, Childbirth & Lineage Succession
-npx tsx tests/verify-marriage-lineage.ts
+# Run one suite with an isolated database copy (pattern filter)
+node tools/test-runner.js --only=duel
 
-# Verify 1v1 Single Combat Duels
+# Or run a suite directly with tsx against the active database
 npx tsx tests/verify-rotk-duels.ts
-
-# Verify Tavern Banquets & Hero Recruitment
-npx tsx tests/verify-tavern-banquets.ts
-
-# Verify Equipment & EXP Progression
-npx tsx tools/verify-equipment-and-exp.ts
-
-# Verify Enterprise & Wage Labor System
-npx tsx tools/verify-enterprise-labor.ts
-
-# Verify Branch 4 Caravan Trade & Arbitrage
-npx tsx tests/test-branch4-logistics.ts
 ```
 
 ### Full Verification Pipeline
 ```bash
-# 1. Typecheck the entire codebase
-npm run typecheck
+# Single gate: typecheck → arch ratchet → 19 suites → API contract → write smoke
+npm run verify
 
-# 2. Execute all 3 major sandbox E2E test suites
-npx tsx tests/verify-marriage-lineage.ts
-npx tsx tests/verify-rotk-duels.ts
-npx tsx tests/verify-tavern-banquets.ts
+# Individually:
+npm run typecheck      # strict TypeScript
+npm run lint           # architecture ratchet (tools/arch-baseline.json)
+npm run lint:client    # parse every classic client script (a SyntaxError kills the whole UI file)
+npm run lint:ui        # UI debt ratchet (button classes, inline styles, native confirms)
+npm run lint:slop      # anti-slop laws: emoji, gradients, glow shadows, font families
+npm run lint:api       # client /api/* paths must exist or be allowlisted with a reason
+npm run routes:shadow  # fails if a legacy route is already served by the Router
+npm test               # 4 legacy + 15 verify-*.ts suites, isolated DB per suite
+npm run golden:verify  # 28 read-only endpoint contracts
+npm run smoke:write    # 8 HTTP write paths + post-write audit
+npm run audit          # 1,358 SQLite invariants
+```
 
-# 3. Verify SQLite state conservation & audit invariants
-npm run audit
+### Per-Feature Refactor Protocol
+For refactoring or fixing a single feature with proof that logic and performance are
+unchanged, use the `refactor-feature-gate` skill. Its mechanical core:
+
+```bash
+npm run verify && npm run audit && npm run perf:record   # baseline, clean tree
+# ...refactor one slice only...
+npm run verify && npm run audit && npm run perf:compare  # same probes, compared
+```
+
+`perf:compare` fails on logic drift (body fingerprint changed for the same fixture)
+and on p95 regression beyond tolerance. Add new routes to `tools/api-golden.js` and
+`tools/perf-probe.js` before relying on them as gates.
+
+### Data Migrations
+```bash
+npm run migrate:status  # list applied / pending migrations
+npm run migrate         # apply pending, idempotent, transactional
 ```
 
 ---

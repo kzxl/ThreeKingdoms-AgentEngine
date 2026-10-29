@@ -1,0 +1,237 @@
+# Refactor Review
+
+Date: 2026-10-29. Scope: the whole `E:\15. Other\Simulation` repo after waves 1–3 of
+`docs/LOGIC_DUPLICATION_AUDIT_2026-10-29.md` and waves 1–1.5 of the refactor plan.
+Every number below was measured at the working HEAD, not copied from older docs.
+
+## 0. Executive summary
+
+The **"overlapping ownership"** class of bugs — the one that produced empty modals, wrong dates
+and double payouts — is closed. Of the audit's 16 findings: **14 fixed (2 with small caveats),
+1 partial (#8 ledger), 1 open (#10 map)**. The open item is cleanup, not data corruption.
+
+The remaining risk has shifted from **correctness** to **game design** (no losing state, the world
+does not run itself) and **structural debt** (4 god services, a 3.3k-line gateway, ~16k lines of
+legacy JS).
+
+| Axis | Score (subjective) | Note |
+|---|---|---|
+| Correctness / ownership | 9/10 | One writer for the date, caravans, business month, world turn, balance, modal ids, hub |
+| Data integrity | 9/10 | Ledger matches `liquid + safe`; chronicle 15 rows / 14 texts; 1,358 invariants green |
+| Architecture / maintainability | 7/10 | God services and gateway still large; legacy client not migrated; 18 direct cashflow inserts |
+| Tests & observability | 9/10 | 23 suites, 28 contracts, 8 write smokes, 10 arch rules + UI + API + route ratchets |
+| Game design | 4/10 | Cannot lose; world frozen unless the player clicks; NPC economy not conserved |
+| UI/UX | 6.5/10 | Dev telemetry, dual clocks and duplicate chronicle gone; typography and right panel still heavy |
+
+## 1. Current measurements
+
+**Gates**
+
+- `npm run verify`: 23/23 suites (4 legacy + 19 `verify-*.ts`), 28/28 contracts, 8/8 write smokes.
+- `npm run audit`: **1,358 invariants, 0 discrepancies**; `GET /api/audit` reports the same.
+- `tsc --noEmit`: 0 errors.
+
+**Architecture ratchet** (`tools/arch-guard.js`, 10 rules)
+
+| Rule | Current / budget |
+|---|---|
+| `sql-interpolation` | 83 / 85 (down 2) |
+| `silent-catch` | 26 / 29 (down 3) |
+| `cashflow-direct-insert` | **18 / 18** (new; 5 writers moved to `postCashflowEntry`) |
+| `legacy-ui-script-count` | **21 / 21** (7-tab hub deleted) |
+| `math-random-in-domain`, `wallclock-id-in-domain`, `child-process-in-src`, `unquoted-current-date`, `sqlite-cli-spawn` | 0 / 0 |
+| `global-service-locator` | 4 / 4 |
+
+**UI ratchet** (`tools/ui-consistency-report.js`)
+
+- 42 legacy button classes defined (budget full), **89**/92 usages, 0 in TS client.
+- **790** inline styles (budget 790), **8** native `confirm`, **289** shared-primitive usages.
+- 170 `font-size` declarations at 10.5px or below in `public/styles.css` (regex count, includes
+  media-query duplicates) — still the main readability issue.
+
+**API & routes**
+
+- 31 client paths vs 186 routes; 9 reasoned gaps in `tools/client-api-allowlist.json`.
+- 142 router handlers, **47 live legacy handlers**, 0 shadowed/dead.
+
+**Performance** (`npm run perf:compare`)
+
+- p95 improved on **9/11** endpoints (−2% to −41%); worst is +29% on `/api/garrisons` (under the
+  tolerance).
+- 3 fingerprint "DRIFT" flags: `/api/audit` is **expected** (2 new invariants); `/api/market` and
+  `/api/master/catalog` are a **stale baseline** (recorded 13:41, before the previous session's
+  last edits). Both returned identical bodies across two calls, so they are deterministic. Re-record
+  the baseline after accepting the current state.
+
+**Live data** (`saves/session.db`)
+
+- `current_date 185-01-03`, `active_turn 14`, latest `turn_log` turn 14.
+- `chat_chronicle`: 15 rows / 14 texts (before migration 006: 39 / 14).
+- Final `cashflow_ledger` balance **9,586** = liquid 6,586 + safe 3,000 (new definition holds).
+- `businesses.safe_cash` totals 4,442 — separate from player capital by design.
+- Caravans: 3 faction `ARRIVED` (not claimable), 9 player `ARRIVED` (claimable), 6
+  `SUCCESS_TRADED` already settled to a faction (terminal).
+
+**Code size**
+
+| Area | Lines |
+|---|---|
+| `src/` (TypeScript) | 33,233 |
+| `engine/` (CommonJS) | 4,211 |
+| `public/js/` (legacy, 21 scripts) | 16,598 |
+| Total | 54,042 |
+
+Remaining god services: `context-action.engine.ts` 1,970, `blacksmith-forge.service.ts` 1,486,
+`enterprise-labor.service.ts` 1,290, `single-combat-duel.service.ts` 1,356, `tools/sim-web.js` 3,344.
+
+## 2. The audit's 16 findings — status at HEAD
+
+| # | Finding | Status | Evidence |
+|---|---|---|---|
+| 1 | Empty POI modals | ✅ | The bundle no longer contains the POI manager; the shell refuses legacy ids; `ensure*ModalDom` rebuilds its body (DOM repro: 2,215 / 2,742 / 1,485 chars) |
+| 2 | Fractional days + double grain | ✅ | `completeMarch` advances the clock and charges grain once; E2E 1.4 days → +2 days, grain 9.56 → 7.56 |
+| 3 | Missing `WORLD_DAY_TICK` | ✅ | `time-manager` is the only writer of `current_date`, one tick/day; `advanceDays` uses the same helper |
+| 4 | Caravan two state machines | ✅ | One `advanceByDays`; claim only for `ARRIVED` + `dispatched_by_player = 1`; E2E claim 105 Quan once |
+| 5 | Three business formulas | ✅ | Shared `BIZ_CYCLE_<biz>_<YYYYMM>` key; the workshop no longer writes `player_state.safe_cash` |
+| 6 | World sim outside a transaction | ✅ (different mechanism) | `world_turn_ledger` is written after each module transaction; a module failure blocks the month close, retry is safe |
+| 7 | Double stamina deduction | ✅ | `KIZUNA_INTERACT`, `WORK_SHIFT`, `PRODUCTION_BATCH` are 0 fatigue in the policy |
+| 8 | Many ledger balance definitions | ⚠️ Partial (mechanism in place) | `postCashflowEntry` + `getPlayerCapital`; 5 writers migrated, **18 direct INSERTs left** frozen by `cashflow-direct-insert`; two account-code vocabularies remain |
+| 9 | Hub/Journal global collision | ✅ | The 4-tab journal owns the modal; the 7-tab hub file was deleted |
+| 10 | Map has 4 data sources | ❌ Open | `map-data.js`, `spatial-registry.ts`, `map-live.service.ts` and the DB still coexist |
+| 11 | Client mirrors the cost table | ✅ | `getActionDayCost` prefers the `policy` from `/api/time/clock`; the local table is an offline fallback |
+| 12 | Hardcoded `game_date` payloads | ✅ | Removed from 4 client payloads; `/api/trade` ignores the client date; `npc_relationship_deltas` uses the campaign date |
+| 13 | Two trade modals | ✅ | `openQuickTrade` delegates to the TS `QuickTradeModal` (payload fixed to the SimCore contract); legacy markup is an offline fallback only |
+| 14 | Dead event wiring | ✅ | `TURN_ADVANCED` is published after commit; `AUTUMN_HARVEST_CYCLE` and `LOD1_WEEKLY_TICK` were removed |
+| 15 | Multiple date helpers | ✅ | `engine/time-manager.js` delegates to `engine/date-utils.js`; `game-clock.ts` only reads the DB |
+| 16 | Duplicate wages/prices | ✅ (partial) | Duplicate shift tables merged into `CANONICAL_LABOR_SHIFTS`; `JOB_FORGE_HAND` 75 is a **hire cost**, `SHIFT_FORGE_HAND` 140 is **player income** — different quantities. Four market-price sources remain |
+
+## 3. Architecture assessment
+
+**Achieved:** "one writer per concept" is now enforceable:
+
+- Clock: `engine/time-manager.js` (`advanceCampaignDays`) is the only writer of `current_date` and
+  the publisher of `WORLD_DAY_TICK`.
+- Caravans: `CaravanLogisticsService.advanceByDays` (line 341) is the only progression; faction
+  settlement in `settleFactionCaravanOnArrival` (496); claim in `claimCaravan` (520).
+- Business month: `BIZ_CYCLE_<id>_<YYYYMM>` shared by `advanceTurn` and the workshop
+  (`engine/gameplay-manager.js:316`, `engine/workshop-engine.js`).
+- World turn: `src/shared/turn-ledger.ts`; a module failure blocks the close
+  (`engine/gameplay-manager.js:410`).
+- Balance: `src/shared/ledger.ts` (`liquid + safe`); `postCashflowEntry` is the standard writer,
+  5 writers migrated, the rest frozen by the `cashflow-direct-insert` ratchet (18).
+- Modals: `LEGACY_OWNED_MODAL_IDS` + lazy singleton.
+- Hub: one owner (4-tab journal); the 7-tab file was deleted.
+- Trade: `openQuickTrade` delegates to the TS `QuickTradeModal` (one `/api/action` payload).
+- Dates: `time-manager` delegates to `date-utils`.
+- Travel: `SeededRandom` from `random_seed + month + route/event/choice`; no `Math.random`.
+- Equipment: `equipment-system` delegates to `BlacksmithForgeService` (one mutation path).
+- Labor shifts: one shared `CANONICAL_LABOR_SHIFTS` table.
+- Units and calendar: `config/game-constants.json` (Quan/quan, Thạch/piculs, 30-day calendar,
+  fatigue cap) with a drift test across TS, engine and the classic client.
+
+**Structural debt, by impact:**
+
+1. **18 direct cashflow INSERTs** in 8 files (promissory, economy, instances, dynasty, courtship,
+   military, duel, enterprise). The ratchet prevents growth; migrate them to `postCashflowEntry`
+   and lower the budget. Two account-code vocabularies (`6001_*` vs `EXP-*`) remain.
+2. **God services:** 4 files of 1,290–1,970 lines plus a 3,344-line gateway. P6/P7 of the blueprint
+   remain.
+3. **Legacy client:** 21 scripts, ~16.6k lines, one `legacy-bridge.ts`; no automated browser test,
+   so legacy edits still need a manual check.
+4. **Map with 4 data sources** (finding 10): `map-data.js`, `spatial-registry.ts`,
+   `map-live.service.ts` and the DB. This is the largest remaining item.
+5. **Four market-price sources** (`rules.js`, `master_items`, `market-elasticity`, hardcoded
+   workshop prices).
+6. **`engine/gameplay-manager.js:106`** still uses `Date.now()` for the campaign id at new-game
+   genesis (does not affect replay within one DB).
+
+## 4. New trade-offs introduced by the refactor
+
+1. **One business settlement per month.** If the workshop already ran in a month, the month-close
+   button skips that business's passive income (and vice versa). Intentional, but the player needs
+   a note in the monthly report.
+2. **Business books are no longer double-entry.** The workshop does not write
+   `cashflow_ledger`/`account_journal` for internal business revenue and expense (the player ledger
+   tracks player cash only). The trail lives in `businesses.safe_cash` and `action_log.result`; a
+   business subledger would be needed for full business auditing.
+3. **Fail-loud month close.** A world-module failure blocks the month close instead of silently
+   losing that module's work. Correct for data, but a persistent failure would trap the player;
+   the UI must surface the error, not just a generic toast.
+4. **Caravans are slower than armies.** 120 li/day (caravan) vs 240 li/day (army): a 240-li route
+   takes 2 caravan days vs 1 march day. Reasonable for cargo, but a balance change from the old
+   0.2–0.67 progress per tick.
+5. **The "Wait 1 Day" button costs a real day.** Repeated clicks advance the calendar and charge
+   0.02 Thạch/day; it used to move caravans for free. This is a fix, but the player should be told.
+6. **Skipped days at month close do not emit day ticks or charge grain upkeep.** Caravans and tasks
+   advance correctly, but before shipping "Rest one month" we must decide whether to run 29 daily
+   ticks.
+
+## 5. Game design assessment
+
+The five playtest gaps are unchanged:
+
+- **No losing state.** No `is_dead`, no game over; health floors at 20–25, bankruptcy only freezes
+  actions, the player is `RULER` with `betrayal_risk = 0`. This is the biggest "game" gap.
+- **The world does not run itself.** No scheduler; time stands still unless the player clicks.
+  Caravans now move per day, but days still need a player action.
+- **NPC economy is not conserved.** `npc-lifecycle` adds straight to `personal_cash`/`personal_troops`.
+- **Macro-agency is blocked.** No defection, no secession, no settlement sovereignty change except
+  scripted events.
+- **No onboarding/tutorial.** Progression pressure is flat (cap 120, spar +25 EXP).
+
+New positive: the economy now has one source of truth, so every balance change is **measurable**
+(invariants + audit + smoke). Designing win/lose is no longer blocked by data noise.
+
+## 6. UI/UX assessment
+
+Closed: duplicate chronicle, two clocks, dev telemetry in the header, `undefined` caravan fields,
+wrong claim ids, and the claim button for foreign caravans.
+
+Still open, measured:
+
+- **Typography:** 170 `font-size` declarations at 10.5px or below; the right panel is 8.5–10px.
+  The largest readability issue, not a functional bug.
+- **Navigation density:** 5 header buttons (Hành Dinh, Đổi Phiên, Thời Gian, Ngôn Ngữ, Nhật Ký)
+  plus 7 entry points elsewhere (Quân Cơ, Sổ Tay, Nội Thành, Dư Đồ, Phi Thư…), with 3 overlapping
+  vocabularies.
+- **Inline styles:** 790 declarations; 8 native `confirm` (after deleting the 7-tab hub file).
+- **Right panel** still defaults to the raw ledger (`MILITARY_REINFORCE`, `WORKFORCE_HIRE`).
+- **4-tab journal** won; the 7-tab roadmap (enterprise/caravan/duel/banquet) was deleted from the
+  repo — restoring it means rebuilding it in TS.
+
+## 7. Next priorities
+
+**P0 — do now (half a day)**
+
+1. Re-record the perf baseline after confirming the two old drifts (`npm run perf:record`).
+2. Surface the "world simulation failed" error in the month-close modal (currently a generic toast).
+3. Note in the monthly report whether a business settled through the workshop or passive income.
+
+**P1 — 2–5 days**
+
+4. Move the remaining 18 cashflow INSERTs to `postCashflowEntry` and lower the
+   `cashflow-direct-insert` budget; merge the two account-code vocabularies.
+5. One map source: DB `master_locations`/`master_routes` → the client keeps aliases only.
+6. Collapse the four market-price sources into `master_items` + `market-elasticity`.
+
+**P2 — 1–3 weeks**
+
+7. Split the 4 god services (P6) and extract the 47 gateway handlers (P7).
+8. Migrate the 21 legacy scripts to TS (P5), with automated browser tests for modals/POIs.
+9. Typography and inline-style burn-down.
+10. **Design the losing state** (death/bankruptcy/betrayal) — the only item that needs a product
+    decision before touching balance.
+
+## 8. How to re-verify
+
+```bash
+npm run verify        # 23 suites, 28 contracts, 8 write smokes
+npm run audit         # 1,358 invariants
+npm run perf:compare  # p95 + fingerprint
+node tools/sim-audit.js
+node tools/route-shadow-report.js --strict
+```
+
+For legacy UI changes: run `npm run build:client`, restart the server (an old server keeps serving
+the old bundle), then open the real page — the gate does not open modals or assert that a
+`.modal-body` is non-empty.
