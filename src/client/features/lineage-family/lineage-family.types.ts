@@ -8,7 +8,8 @@ export interface CourtshipCandidate {
   nameVi: string;
   nameEn: string;
   baselineLocation: string;
-  dowryCash: number;
+  /** Server DTO field (see src/modules/lineage-succession/lineage-types.ts). */
+  recommendedDowryCash: number;
   dowryItems?: Array<{ itemCode: string; itemNameVi: string; quantity: number }>;
   clueVi: string;
   clueEn: string;

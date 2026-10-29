@@ -12,7 +12,9 @@ export class TitleScreenModal {
 
   constructor() {
     this.modal = createModalShell({
-      id: 'title-screen-modal',
+      // Distinct from the legacy instance-manager modal (#title-screen-modal):
+      // two shells sharing an id made the legacy gate render into an empty body.
+      id: 'title-screen-scenario-modal',
       title: 'Tam Quốc Diễn Nghĩa • Khởi Tạo Niên Đại & Nhân Vật',
       subtitle: 'Chọn niên đại lịch sử và thiết lập danh tính nhân vật chính',
       seal: '國',
@@ -80,7 +82,7 @@ export class TitleScreenModal {
               <input type="text" id="ts-player-style" class="modal-input w-full" value="Chí Viễn" />
             </div>
           </div>
-          <button class="btn btn-action-gold w-full py-2.5 font-bold" onclick="window.TitleScreenUI.startCampaign()">
+          <button class="ui-btn ui-btn--accent w-full py-2.5 font-bold" onclick="window.TitleScreenUI.startCampaign()">
             Khởi Sự Chiến Dịch Lịch Sử
           </button>
         </div>

@@ -22,7 +22,7 @@ export class CaravanLogisticsService {
   }
 
   public async getArbitrageOpportunities(): Promise<ArbitrageRoute[]> {
-    const res = await apiClient.get('/api/logistics/market-arbitrage');
+    const res = await apiClient.get('/api/economy/arbitrage');
     return res.routes || [];
   }
 
@@ -33,7 +33,13 @@ export class CaravanLogisticsService {
     quantity: number;
     escortLevel: string;
   }): Promise<any> {
-    return apiClient.post('/api/logistics/dispatch', payload);
+    return apiClient.post('/api/caravans/dispatch', {
+      cargoItemCode: payload.commodityCode,
+      cargoQuantity: payload.quantity,
+      fromSettlementId: payload.originSettlementId,
+      toSettlementId: payload.destSettlementId,
+      guardTier: payload.escortLevel
+    });
   }
 }
 

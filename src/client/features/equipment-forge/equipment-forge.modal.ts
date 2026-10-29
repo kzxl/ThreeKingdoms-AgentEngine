@@ -20,9 +20,9 @@ export class EquipmentForgeModal {
       seal: '武',
       size: 'xl',
       tabs: [
-        { id: 'gear', label: 'Binh Khí & Giáp Trụ', seal: '⚔️' },
-        { id: 'forge_bespoke', label: 'Đúc Rèn Thần Binh', seal: '🔨' },
-        { id: 'inventory', label: 'Kho Binh Khí', seal: '📦' }
+        { id: 'gear', label: 'Binh Khí & Giáp Trụ', seal: '武' },
+        { id: 'forge_bespoke', label: 'Đúc Rèn Thần Binh', seal: '鍛' },
+        { id: 'inventory', label: 'Kho Binh Khí', seal: '貨' }
       ],
       activeTabId: 'gear',
       onOpen: async () => {
@@ -94,10 +94,10 @@ export class EquipmentForgeModal {
 
         <!-- 4 Equipment Slots Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-          ${this.renderSlotCard('WEAPON', 'Binh Khí Tấn Công', '⚔️', slots.WEAPON)}
-          ${this.renderSlotCard('ARMOR', 'Khôi Giáp Phòng Hộ', '🛡️', slots.ARMOR)}
-          ${this.renderSlotCard('STEED', 'Chiến Mã Tọa Kỵ', '🐎', slots.STEED)}
-          ${this.renderSlotCard('TREASURE', 'Bảo Vật & Binh Thư', '📜', slots.TREASURE)}
+          ${this.renderSlotCard('WEAPON', 'Binh Khí Tấn Công', '武', slots.WEAPON)}
+          ${this.renderSlotCard('ARMOR', 'Khôi Giáp Phòng Hộ', '盾', slots.ARMOR)}
+          ${this.renderSlotCard('STEED', 'Chiến Mã Tọa Kỵ', '馬', slots.STEED)}
+          ${this.renderSlotCard('TREASURE', 'Bảo Vật & Binh Thư', '卷', slots.TREASURE)}
         </div>
       </div>
     `;
@@ -122,9 +122,9 @@ export class EquipmentForgeModal {
         </div>
         <div>
           ${isEquipped ? `
-            <button class="btn btn-xs btn-action-ghost" onclick="window.EquipmentUI.unequip('${this.currentCharacterId}', '${slotKey}')">Tháo Ra</button>
+            <button class="ui-btn ui-btn--ghost ui-btn--sm" onclick="window.EquipmentUI.unequip('${this.currentCharacterId}', '${slotKey}')">Tháo Ra</button>
           ` : `
-            <button class="btn btn-xs btn-primary" onclick="window.EquipmentUI.switchTab('inventory')">Trang Bị</button>
+            <button class="ui-btn ui-btn--primary ui-btn--sm" onclick="window.EquipmentUI.switchTab('inventory')">Trang Bị</button>
           `}
         </div>
       </div>
@@ -138,7 +138,7 @@ export class EquipmentForgeModal {
     const html = `
       <div class="equipment-modal-content">
         <div class="spatial-banner-lead">
-          <div class="lead-seal">🔨</div>
+          <div class="lead-seal">鍛</div>
           <div class="lead-text">
             <h3>Đoán Tạo Thần Binh Tùy Biến (Bespoke Forge)</h3>
             <div class="text-muted text-sm">Chế tác thần binh độc bản khắc tên tướng lĩnh, tiêu hao 25 Thể lực và nguyên liệu luyện tinh.</div>
@@ -187,7 +187,7 @@ export class EquipmentForgeModal {
               </div>
             </div>
 
-            <button class="btn btn-action-gold w-full py-2.5 font-bold" onclick="window.EquipmentUI.executeForge()">
+            <button class="ui-btn ui-btn--accent w-full py-2.5 font-bold" onclick="window.EquipmentUI.executeForge()">
               Khai Lò Đúc Thần Binh
             </button>
           </div>
@@ -204,7 +204,7 @@ export class EquipmentForgeModal {
     const html = `
       <div class="equipment-modal-content">
         <div class="spatial-banner-lead">
-          <div class="lead-seal">📦</div>
+          <div class="lead-seal">貨</div>
           <div class="lead-text">
             <h3>Kho Khí Giới Trác Huyện</h3>
             <div class="text-muted text-sm">Kho vũ khí, giáp trụ và chiến mã sẵn sàng trang bị cho nhân vật.</div>
@@ -223,7 +223,7 @@ export class EquipmentForgeModal {
                   <div class="font-bold text-amber-200 text-sm">${g.nameVi}</div>
                   <div class="text-xs text-muted">Vị trí: ${g.slot} • SL: ${g.quantity}</div>
                 </div>
-                <button class="btn btn-xs btn-primary" onclick="window.EquipmentUI.equip('${this.currentCharacterId}', '${g.slot}', '${g.itemCode}')">
+                <button class="ui-btn ui-btn--primary ui-btn--sm" onclick="window.EquipmentUI.equip('${this.currentCharacterId}', '${g.slot}', '${g.itemCode}')">
                   Mặc Vào
                 </button>
               </div>

@@ -15,6 +15,27 @@ import {
 } from './modal-shell.types';
 import { modalStack } from './modal-stack';
 
+/**
+ * Modal ids that are still owned by a legacy IIFE in `public/js/*`.
+ *
+ * Two renderers must never share one id: the shell replaces the whole
+ * `innerHTML` of the element, deleting the legacy mount points, and the legacy
+ * renderer then finds its body id missing and renders nothing. Until those
+ * surfaces are migrated, the shell must not mount them.
+ */
+export const LEGACY_OWNED_MODAL_IDS: ReadonlySet<string> = new Set([
+  'spatial-tavern-modal',
+  'spatial-arena-modal',
+  'spatial-residence-modal',
+  'grand-command-hub-modal',
+  'personal-journal-modal',
+  'caravan-modal'
+]);
+
+export function isLegacyOwnedModalId(id: string): boolean {
+  return LEGACY_OWNED_MODAL_IDS.has(id);
+}
+
 export class ModalShell implements ModalShellInstance {
   public readonly id: string;
   private options: ModalShellOptions;
@@ -56,6 +77,15 @@ export class ModalShell implements ModalShellInstance {
   private mountDom(): void {
     if (typeof document === 'undefined') return;
 
+    if (isLegacyOwnedModalId(this.id)) {
+      // The legacy module owns this id. Mounting would delete its body id and
+      // leave the dialog empty; skip instead of clobbering another renderer.
+      if (typeof console !== 'undefined') {
+        console.warn(`[ModalShell] "${this.id}" is owned by a legacy renderer; shell not mounted.`);
+      }
+      return;
+    }
+
     let existing = document.getElementById(this.id);
     if (!existing) {
       existing = document.createElement('div');
@@ -86,7 +116,7 @@ export class ModalShell implements ModalShellInstance {
               <div class="modal-subtitle" id="${this.id}-subtitle">${this.options.subtitle || ''}</div>
             </div>
           </div>
-          <button class="btn-close-modal" id="${this.id}-btn-close" title="Đóng [Esc]" aria-label="Close">✕</button>
+          <button class="ui-btn ui-btn--ghost ui-btn--icon" id="${this.id}-btn-close" title="Đóng [Esc]" aria-label="Close">×</button>
         </div>
         ${this.options.tabs && this.options.tabs.length > 0 ? `<div class="modal-tab-bar" id="${this.id}-tab-bar"></div>` : ''}
         <div class="modal-body" id="${this.id}-body"></div>
@@ -258,8 +288,15 @@ export class ModalShell implements ModalShellInstance {
       this.footerEl.className = 'modal-footer flex items-center justify-end gap-3';
       for (const action of content) {
         const btn = document.createElement('button');
-        const variantClass = action.variant === 'ghost' ? 'btn-action-ghost' : action.variant === 'danger' ? 'btn-danger' : action.variant === 'gold' ? 'btn-action-gold' : 'btn-primary';
-        btn.className = `btn ${variantClass}`;
+        const variantClass =
+          action.variant === 'ghost'
+            ? 'ui-btn--ghost'
+            : action.variant === 'danger'
+              ? 'ui-btn--danger'
+              : action.variant === 'gold'
+                ? 'ui-btn--accent'
+                : 'ui-btn--primary';
+        btn.className = `ui-btn ${variantClass}`;
         btn.textContent = action.label;
         if (action.disabled) btn.disabled = true;
         btn.addEventListener('click', async (e) => {

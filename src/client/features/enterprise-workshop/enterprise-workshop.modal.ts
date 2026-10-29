@@ -20,7 +20,7 @@ export class EnterpriseWorkshopModal {
       seal: '業',
       size: 'xl',
       tabs: [
-        { id: 'owner', label: 'Sản Nghiệp Gia Tộc', seal: '🏭' },
+        { id: 'owner', label: 'Sản Nghiệp Gia Tộc', seal: '坊' },
         { id: 'work', label: 'Đi Làm Thuê Thời Vụ', seal: '工' }
       ],
       activeTabId: 'owner',
@@ -89,17 +89,17 @@ export class EnterpriseWorkshopModal {
                 <div class="bg-slate-950/70 p-2.5 rounded font-mono text-xs mb-3 space-y-1">
                   <div class="flex justify-between">
                     <span class="text-muted">Quỹ An Toàn:</span>
-                    <span class="text-amber-400 font-bold">${Number(e.safe_cash || 0).toLocaleString()} Tiền</span>
+                    <span class="text-amber-400 font-bold">${Number(e.safe_cash || 0).toLocaleString()} Quan</span>
                   </div>
                   <div class="flex justify-between">
                     <span class="text-muted">Chi Phí Tháng:</span>
-                    <span class="text-red-400 font-bold">${Number(e.monthly_overhead || 0).toLocaleString()} Tiền</span>
+                    <span class="text-red-400 font-bold">${Number(e.monthly_overhead || 0).toLocaleString()} Quan</span>
                   </div>
                 </div>
 
                 <div class="flex gap-2">
-                  <button class="btn btn-xs btn-primary flex-1" onclick="window.EnterpriseUI.depositSafeCash('${e.enterprise_id}')">Nạp Quỹ</button>
-                  <button class="btn btn-xs btn-action-ghost flex-1" onclick="window.EnterpriseUI.withdrawSafeCash('${e.enterprise_id}')">Rút Tiền</button>
+                  <button class="ui-btn ui-btn--primary ui-btn--sm flex-1" onclick="window.EnterpriseUI.depositSafeCash('${e.enterprise_id}')">Nạp Quỹ</button>
+                  <button class="ui-btn ui-btn--ghost ui-btn--sm flex-1" onclick="window.EnterpriseUI.withdrawSafeCash('${e.enterprise_id}')">Rút Quan</button>
                 </div>
               </div>
             `).join('')}
@@ -125,18 +125,18 @@ export class EnterpriseWorkshopModal {
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800 text-center">
             <h4 class="text-amber-300 font-bold text-sm mb-1">Đốn Củi & Tiêu Xa</h4>
-            <div class="text-xs text-muted mb-2">Tiêu hao 15 Thể lực • Kiếm 40 Tiền • Tăng EXP Võ/Thống</div>
-            <button class="btn btn-xs btn-primary w-full" onclick="window.EnterpriseUI.executeWork('WOODCUT')">Nhận Việc</button>
+            <div class="text-xs text-muted mb-2">Tiêu hao 15 Thể lực • Kiếm 40 Quan • Tăng EXP Võ/Thống</div>
+            <button class="ui-btn ui-btn--primary ui-btn--sm w-full" onclick="window.EnterpriseUI.executeWork('WOODCUT')">Nhận Việc</button>
           </div>
           <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800 text-center">
             <h4 class="text-amber-300 font-bold text-sm mb-1">Đan Lát Chiếu Trúc</h4>
-            <div class="text-xs text-muted mb-2">Tiêu hao 12 Thể lực • Kiếm 50 Tiền • Tăng EXP Kỹ Nghệ</div>
-            <button class="btn btn-xs btn-primary w-full" onclick="window.EnterpriseUI.executeWork('WEAVE_MAT')">Nhận Việc</button>
+            <div class="text-xs text-muted mb-2">Tiêu hao 12 Thể lực • Kiếm 50 Quan • Tăng EXP Kỹ Nghệ</div>
+            <button class="ui-btn ui-btn--primary ui-btn--sm w-full" onclick="window.EnterpriseUI.executeWork('WEAVE_MAT')">Nhận Việc</button>
           </div>
           <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800 text-center">
             <h4 class="text-amber-300 font-bold text-sm mb-1">Phụ Lò Rèn Thiết Điếm</h4>
-            <div class="text-xs text-muted mb-2">Tiêu hao 20 Thể lực • Kiếm 65 Tiền • Tăng EXP Kỹ Nghệ/Võ</div>
-            <button class="btn btn-xs btn-action-gold w-full" onclick="window.EnterpriseUI.executeWork('SMITH_ASSIST')">Nhận Việc</button>
+            <div class="text-xs text-muted mb-2">Tiêu hao 20 Thể lực • Kiếm 65 Quan • Tăng EXP Kỹ Nghệ/Võ</div>
+            <button class="ui-btn ui-btn--accent ui-btn--sm w-full" onclick="window.EnterpriseUI.executeWork('SMITH_ASSIST')">Nhận Việc</button>
           </div>
         </div>
       </div>

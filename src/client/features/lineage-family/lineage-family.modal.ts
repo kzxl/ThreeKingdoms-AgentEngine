@@ -122,11 +122,11 @@ export class LineageFamilyModal {
         <div class="flex items-center justify-between mb-3 border-b border-amber-900/40 pb-2">
           <div class="section-title text-gold font-bold">Danh Sách Giai Nhân & Đối Tượng Cầu Hôn:</div>
           <div class="flex gap-2">
-            <button class="btn btn-xs ${this.selectedStratumFilter === 'ALL' ? 'btn-primary' : 'btn-action-ghost'}" onclick="window.LineageFamilyUI.setFilter('ALL')">Tất Cả (${this.candidates.length})</button>
-            <button class="btn btn-xs ${this.selectedStratumFilter === 'PEASANT' ? 'btn-primary' : 'btn-action-ghost'}" onclick="window.LineageFamilyUI.setFilter('PEASANT')">Nông Gia</button>
-            <button class="btn btn-xs ${this.selectedStratumFilter === 'ARTISAN_SHOP' ? 'btn-primary' : 'btn-action-ghost'}" onclick="window.LineageFamilyUI.setFilter('ARTISAN_SHOP')">Thợ Xưởng</button>
-            <button class="btn btn-xs ${this.selectedStratumFilter === 'GENTRY_CLAN' ? 'btn-primary' : 'btn-action-ghost'}" onclick="window.LineageFamilyUI.setFilter('GENTRY_CLAN')">Sĩ Tộc</button>
-            <button class="btn btn-xs ${this.selectedStratumFilter === 'HISTORICAL_HEROINE' ? 'btn-primary' : 'btn-action-ghost'}" onclick="window.LineageFamilyUI.setFilter('HISTORICAL_HEROINE')">Danh Viện</button>
+            <button class="ui-btn ui-btn--sm ${this.selectedStratumFilter === 'ALL' ? 'ui-btn--primary' : 'ui-btn--ghost'}" onclick="window.LineageFamilyUI.setFilter('ALL')">Tất Cả (${this.candidates.length})</button>
+            <button class="ui-btn ui-btn--sm ${this.selectedStratumFilter === 'PEASANT' ? 'ui-btn--primary' : 'ui-btn--ghost'}" onclick="window.LineageFamilyUI.setFilter('PEASANT')">Nông Gia</button>
+            <button class="ui-btn ui-btn--sm ${this.selectedStratumFilter === 'ARTISAN_SHOP' ? 'ui-btn--primary' : 'ui-btn--ghost'}" onclick="window.LineageFamilyUI.setFilter('ARTISAN_SHOP')">Thợ Xưởng</button>
+            <button class="ui-btn ui-btn--sm ${this.selectedStratumFilter === 'GENTRY_CLAN' ? 'ui-btn--primary' : 'ui-btn--ghost'}" onclick="window.LineageFamilyUI.setFilter('GENTRY_CLAN')">Sĩ Tộc</button>
+            <button class="ui-btn ui-btn--sm ${this.selectedStratumFilter === 'HISTORICAL_HEROINE' ? 'ui-btn--primary' : 'ui-btn--ghost'}" onclick="window.LineageFamilyUI.setFilter('HISTORICAL_HEROINE')">Danh Viện</button>
           </div>
         </div>
 
@@ -162,7 +162,7 @@ export class LineageFamilyModal {
             <div class="text-xs text-muted">Hôn Lễ: Ngày ${spouse.marriage_date} (Lượt ${spouse.marriage_turn})</div>
           </div>
           <div class="badge ${isPregnant ? 'badge-danger animate-pulse' : 'badge-neutral'} text-xs">
-            ${isPregnant ? '🍼 ' + pregnancyText : 'Hảo Cảm: ' + spouse.intimacy}
+            ${isPregnant ? '育 ' + pregnancyText : 'Hảo Cảm: ' + spouse.intimacy}
           </div>
         </div>
 
@@ -176,8 +176,8 @@ export class LineageFamilyModal {
         </div>
 
         <div class="flex gap-2">
-          <button class="btn btn-xs btn-primary flex-1" onclick="window.LineageFamilyUI.restCohabit('${spouse.wife_id}')">
-            ❤️ Nghỉ Ngơi & Đồng Tẩm
+          <button class="ui-btn ui-btn--primary ui-btn--sm flex-1" onclick="window.LineageFamilyUI.restCohabit('${spouse.marriage_id}')">
+            心 Nghỉ Ngơi & Đồng Tẩm
           </button>
         </div>
       </div>
@@ -212,11 +212,11 @@ export class LineageFamilyModal {
 
           <div class="text-xs text-slate-300 mb-3 flex items-center justify-between">
             <span>Sính Lễ Yêu Cầu:</span>
-            <span class="text-amber-400 font-mono font-bold">${cand.dowryCash.toLocaleString()} Tiền</span>
+            <span class="text-amber-400 font-mono font-bold">${(cand.recommendedDowryCash ?? 0).toLocaleString()} Quan</span>
           </div>
         </div>
 
-        <button class="btn btn-xs btn-action-gold w-full" 
+        <button class="ui-btn ui-btn--accent ui-btn--sm w-full" 
                 onclick="window.LineageFamilyUI.proposeMarriage('${cand.npcId}')">
           Cầu Hôn Nạp Sính Lễ
         </button>
@@ -240,7 +240,7 @@ export class LineageFamilyModal {
 
         ${children.length === 0 ? `
           <div class="text-center py-12 text-muted">
-            <div class="text-4xl mb-3">👶</div>
+            <div class="text-4xl mb-3">子</div>
             <div>Hiện tại gia tộc chưa có hậu duệ sinh hạ. Hãy nghỉ ngơi đồng tẩm cùng phu nhân để thụ thai dưỡng dục.</div>
           </div>
         ` : `
@@ -263,7 +263,7 @@ export class LineageFamilyModal {
             <div class="text-xs text-muted">${child.gender === 'MALE' ? 'Nam Tử' : 'Nữ Nhi'} • Tuổi: ${child.age} • Mẫu thân: ${child.mother_name_vi || 'Nội thất'}</div>
           </div>
           <span class="badge ${isHeir ? 'badge-primary' : 'badge-neutral'} text-xs">
-            ${isHeir ? '👑 ĐÍCH TỬ KẾ VỊ' : 'Thứ Tử'}
+            ${isHeir ? '王 ĐÍCH TỬ KẾ VỊ' : 'Thứ Tử'}
           </span>
         </div>
 
@@ -286,11 +286,11 @@ export class LineageFamilyModal {
 
         <div class="flex gap-2">
           ${!isHeir ? `
-            <button class="btn btn-xs btn-action-gold flex-1" onclick="window.LineageFamilyUI.designateHeir('${child.child_id}')">
+            <button class="ui-btn ui-btn--accent ui-btn--sm flex-1" onclick="window.LineageFamilyUI.designateHeir('${child.child_id}')">
               Lập Làm Thế Tử
             </button>
           ` : ''}
-          <button class="btn btn-xs btn-action-ghost flex-1" onclick="window.LineageFamilyUI.assignMentorDialog('${child.child_id}')">
+          <button class="ui-btn ui-btn--ghost ui-btn--sm flex-1" onclick="window.LineageFamilyUI.assignMentorDialog('${child.child_id}')">
             Chỉ Định Danh Sư
           </button>
         </div>
@@ -319,7 +319,7 @@ export class LineageFamilyModal {
             ${(this.overview?.children || []).map(c => `
               <div class="p-3 bg-slate-900 rounded border border-slate-700 min-w-[140px] text-xs">
                 <div class="font-bold text-amber-300">${c.name_vi}</div>
-                <div class="text-muted">${c.is_heir === 1 ? '👑 Thế Tử' : 'Chi tộc'}</div>
+                <div class="text-muted">${c.is_heir === 1 ? '王 Thế Tử' : 'Chi tộc'}</div>
               </div>
             `).join('')}
           </div>
@@ -359,7 +359,7 @@ export class LineageFamilyModal {
               </ul>
             </div>
 
-            <button class="btn btn-action-gold w-full py-2.5 text-base font-bold" 
+            <button class="ui-btn ui-btn--accent w-full py-2.5 text-base font-bold" 
                     onclick="window.LineageFamilyUI.executeSuccession()">
               Khởi Sự Kế Thừa Gia Tộc
             </button>
@@ -390,9 +390,9 @@ export class LineageFamilyModal {
     }
   }
 
-  public async restCohabit(spouseId: string): Promise<void> {
+  public async restCohabit(marriageId: string): Promise<void> {
     try {
-      const res = await lineageFamilyService.restAndCohabit(spouseId);
+      const res = await lineageFamilyService.restAndCohabit(marriageId);
       if (typeof (window as any).showToast === 'function') {
         (window as any).showToast(res.narrativeVi || 'Đồng tẩm nghỉ ngơi tĩnh dưỡng thành công!');
       }
@@ -455,7 +455,9 @@ export class LineageFamilyModal {
   public async executeSuccession(): Promise<void> {
     if (!confirm('Bạn có chắc chắn muốn chuyển giao quyền lực sang Thế tử kế thừa không?')) return;
     try {
-      const res = await lineageFamilyService.executeSuccession();
+      const heirId = this.overview?.activeHeir?.child_id;
+      if (!heirId) throw new Error('Chưa chỉ định Thế tử kế vị.');
+      const res = await lineageFamilyService.executeSuccession(heirId);
       if (typeof (window as any).showToast === 'function') {
         (window as any).showToast(res.narrativeVi || 'Đại điển kế thừa tông miếu hoàn tất!');
       }

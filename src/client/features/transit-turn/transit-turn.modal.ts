@@ -22,8 +22,8 @@ export class TransitTurnModals {
     // 2. Turn Advance Modal
     this.turnModal = createModalShell({
       id: 'turn-advance-modal',
-      title: 'Tuế Nguyệt Lưu Chuyển • Quyết Toán Nguyệt Kỳ',
-      subtitle: 'Thời gian tiến tới 1 tháng, kết toán tài chính, nông vụ và dòng dõi gia tộc',
+      title: 'Quyết Toán Tháng • Luân Chuyển Chiến Cục',
+      subtitle: 'Kết thúc tháng hiện tại, kết toán tài chính, sản nghiệp và mô phỏng thế giới sống động',
       seal: '歲',
       size: 'md'
     });
@@ -32,19 +32,27 @@ export class TransitTurnModals {
   public async showTravelTransit(origin: string, dest: string, days: number, logHtml?: string): Promise<void> {
     this.travelModal.setTitle(
       'Hành Trình Viễn Chinh',
-      `Từ ${origin} ➔ Đến ${dest} (${days} ngày đường)`
+      `Từ ${origin} → Đến ${dest} (${days} ngày đường)`
     );
     this.travelModal.setContent(`
       <div class="travel-transit-body p-2 space-y-3">
         <div class="p-3 bg-slate-950 rounded border border-slate-800 text-xs font-mono">
           ${logHtml || '<div>Xe ngựa lăn bánh trên quan đạo phương bắc... An toàn đến nơi!</div>'}
         </div>
-        <button class="btn btn-primary w-full py-2 font-bold" onclick="window.TravelTransitUI.close()">
+        <button class="ui-btn ui-btn--primary w-full py-2 font-bold" onclick="window.TravelTransitUI.close()">
           Nhập Thành
         </button>
       </div>
     `);
     await this.travelModal.open();
+  }
+
+  public async openTravelTransitModal(): Promise<void> {
+    await this.travelModal.open();
+  }
+
+  public async closeTravelTransitModal(): Promise<void> {
+    await this.travelModal.close();
   }
 
   public async closeTravel(): Promise<void> {
@@ -60,12 +68,12 @@ export class TransitTurnModals {
       <div class="turn-advance-body p-2 space-y-3">
         <div class="p-3 bg-slate-950 rounded border border-slate-800 text-xs font-mono space-y-1">
           ${summaryHtml || `
-            <div class="text-green-400">✦ Hoàn tất chu kỳ sản xuất hàng tháng của các xưởng.</div>
-            <div class="text-amber-300">✦ Kết toán sổ cái kép thu chi tài chính.</div>
-            <div class="text-blue-300">✦ Cập nhật tiến độ thai kỳ và bồi dưỡng thế hệ gia tộc.</div>
+            <div class="text-green-400">◆ Hoàn tất chu kỳ sản xuất hàng tháng của các xưởng.</div>
+            <div class="text-amber-300">◆ Kết toán sổ cái kép thu chi tài chính.</div>
+            <div class="text-blue-300">◆ Cập nhật tiến độ thai kỳ và bồi dưỡng thế hệ gia tộc.</div>
           `}
         </div>
-        <button class="btn btn-action-gold w-full py-2 font-bold" onclick="window.TurnAdvanceUI.close()">
+        <button class="ui-btn ui-btn--accent w-full py-2 font-bold" onclick="window.TurnAdvanceUI.close()">
           Tiếp Tục Mô Phỏng
         </button>
       </div>
@@ -74,6 +82,14 @@ export class TransitTurnModals {
   }
 
   public async closeTurn(): Promise<void> {
+    await this.turnModal.close();
+  }
+
+  public async openTurnAdvanceModal(): Promise<void> {
+    await this.turnModal.open();
+  }
+
+  public async closeTurnAdvanceModal(): Promise<void> {
     await this.turnModal.close();
   }
 }

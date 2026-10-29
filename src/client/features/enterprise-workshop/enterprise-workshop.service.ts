@@ -29,7 +29,7 @@ export class EnterpriseWorkshopService {
   }
 
   public async executeLaborShift(shiftType: string, targetEnterpriseId?: string): Promise<any> {
-    return apiClient.post('/api/enterprise/labor-shift', { shiftType, targetEnterpriseId });
+    return apiClient.post('/api/enterprise/work', { shiftId: shiftType });
   }
 }
 

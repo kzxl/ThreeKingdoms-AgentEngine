@@ -27,35 +27,29 @@ export class LineageFamilyService {
   }
 
   public async proposeMarriage(candidateId: string): Promise<any> {
-    return apiClient.post('/api/lineage/propose-marriage', { candidateId });
+    return apiClient.post('/api/lineage/courtship/propose', { spouseNpcId: candidateId });
   }
 
-  public async restAndCohabit(spouseId: string): Promise<any> {
-    return apiClient.post('/api/lineage/rest-cohabit', { spouseId });
+  public async restAndCohabit(marriageId: string): Promise<any> {
+    return apiClient.post('/api/lineage/household/rest', { marriageId });
   }
 
   public async assignHouseholdRole(marriageId: string, role: string): Promise<any> {
-    return apiClient.post('/api/lineage/assign-role', { marriageId, role });
+    return apiClient.post('/api/lineage/household/set-role', { marriageId, role });
   }
 
-  public async getHeirs(): Promise<any> {
-    return apiClient.get('/api/lineage/heirs');
-  }
 
   public async assignMentor(childId: string, mentorId: string): Promise<any> {
-    return apiClient.post('/api/lineage/assign-mentor', { childId, mentorId });
+    return apiClient.post('/api/lineage/children/assign-mentor', { childId, mentorNpcId: mentorId });
   }
 
   public async designateHeir(childId: string): Promise<any> {
-    return apiClient.post('/api/lineage/designate-heir', { childId });
+    return apiClient.post('/api/lineage/children/designate-heir', { childId });
   }
 
-  public async getSuccessionPreview(): Promise<any> {
-    return apiClient.get('/api/lineage/succession-preview');
-  }
 
-  public async executeSuccession(): Promise<any> {
-    return apiClient.post('/api/lineage/execute-succession', {});
+  public async executeSuccession(heirChildId: string): Promise<any> {
+    return apiClient.post('/api/lineage/succession/execute', { heirChildId });
   }
 }
 

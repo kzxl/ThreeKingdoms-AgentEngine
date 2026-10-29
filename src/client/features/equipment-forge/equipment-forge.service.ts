@@ -17,7 +17,7 @@ export class EquipmentForgeService {
   }
 
   public async getOverview(characterId = 'PLY-0001'): Promise<EquipmentOverview> {
-    const res = await apiClient.get('/api/equipment/overview', { characterId });
+    const res = await apiClient.get('/api/equipment', { characterId });
     return res.overview || res;
   }
 
@@ -30,7 +30,7 @@ export class EquipmentForgeService {
   }
 
   public async forgeBespokeWeapon(payload: BespokeForgePayload): Promise<any> {
-    return apiClient.post('/api/equipment/forge/bespoke', payload);
+    return apiClient.post('/api/professions/forge/bespoke', payload);
   }
 }
 

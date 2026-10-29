@@ -20,8 +20,8 @@ export class PersonalJournalModal {
       seal: '志',
       size: 'xl',
       tabs: [
-        { id: 'career', label: 'Ngũ Đại Phẩm Lộ', seal: '🌟' },
-        { id: 'milestones', label: 'Cột Mốc Huân Công', seal: '🎖️' }
+        { id: 'career', label: 'Ngũ Đại Phẩm Lộ', seal: '◆' },
+        { id: 'milestones', label: 'Cột Mốc Huân Công', seal: '勳' }
       ],
       activeTabId: 'career',
       onOpen: async () => {
@@ -96,7 +96,7 @@ export class PersonalJournalModal {
               </div>
 
               <div class="text-[11px] text-green-400 font-mono bg-slate-950/60 p-1.5 rounded">
-                ✦ Đặc quyền: ${p.unlockedPerks.join(', ')}
+                ◆ Đặc quyền: ${p.unlockedPerks.join(', ')}
               </div>
             </div>
           `).join('')}
@@ -111,7 +111,7 @@ export class PersonalJournalModal {
     const html = `
       <div class="journal-modal-content">
         <div class="spatial-banner-lead">
-          <div class="lead-seal">🎖️</div>
+          <div class="lead-seal">勳</div>
           <div class="lead-text">
             <h3>Cột Mốc Lịch Sử & Huân Công Đã Đạt</h3>
             <div class="text-muted text-sm">Ghi nhận những dấu ấn quan trọng trong hành trình bình định Tam Quốc.</div>

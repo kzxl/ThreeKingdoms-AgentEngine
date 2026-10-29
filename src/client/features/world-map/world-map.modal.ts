@@ -14,16 +14,21 @@ export class WorldMapModal {
       title: 'Dư Đồ Tam Quốc • Khởi Nghĩa Khăn Vàng (184 SCN)',
       subtitle: 'Khảo sát 24 châu quận, phân bố thế lực chư hầu và dịch trạm liên thành',
       seal: '圖',
-      size: 'xl'
+      size: 'xl',
+      dialogClass: 'world-map-dialog'
     });
   }
 
   public async open(): Promise<void> {
-    if (typeof (window as any).renderWorldMap === 'function') {
-      await this.modal.open();
-      (window as any).renderWorldMap();
-    } else {
-      await this.modal.open();
+    await this.modal.open();
+
+    // The cartography renderer is still owned by public/js/world-map.js.
+    // Rebuild its mount points inside the shell body, then draw the map.
+    const refresh = (window as any).refreshWorldMapView;
+    if (typeof refresh === 'function') {
+      refresh();
+    } else if (typeof (window as any).renderWorldMapSvg === 'function') {
+      (window as any).renderWorldMapSvg();
     }
   }
 

@@ -4,7 +4,7 @@
  */
 
 import { createModalShell, ModalShellInstance } from '../../core/modal-shell';
-import { spatialPoiService } from '../spatial-poi';
+import { spatialPoiService } from '../spatial-poi/spatial-poi.service';
 import { DuelRoundState } from '../spatial-poi/spatial-poi.types';
 
 export class TacticalBattleModal {
@@ -73,10 +73,10 @@ export class TacticalBattleModal {
 
           ${!s.isConcluded ? `
             <div class="grid grid-cols-4 gap-2">
-              <button class="btn btn-xs btn-primary" onclick="window.TacticalBattleUI.executeAction('ATTACK')">Công Kích</button>
-              <button class="btn btn-xs btn-action-ghost" onclick="window.TacticalBattleUI.executeAction('DEFEND')">Phòng Ngự</button>
-              <button class="btn btn-xs btn-action-gold" onclick="window.TacticalBattleUI.executeAction('SPECIAL_STRIKE')">Tuyệt Kỹ</button>
-              <button class="btn btn-xs btn-action-ghost" onclick="window.TacticalBattleUI.executeAction('FOCUS_SPIRIT')">Tụ Khí</button>
+              <button class="ui-btn ui-btn--primary ui-btn--sm" onclick="window.TacticalBattleUI.executeAction('ATTACK')">Công Kích</button>
+              <button class="ui-btn ui-btn--ghost ui-btn--sm" onclick="window.TacticalBattleUI.executeAction('DEFEND')">Phòng Ngự</button>
+              <button class="ui-btn ui-btn--accent ui-btn--sm" onclick="window.TacticalBattleUI.executeAction('SPECIAL_STRIKE')">Tuyệt Kỹ</button>
+              <button class="ui-btn ui-btn--ghost ui-btn--sm" onclick="window.TacticalBattleUI.executeAction('FOCUS_SPIRIT')">Tụ Khí</button>
             </div>
           ` : `
             <div class="text-center font-bold text-amber-300 py-2">

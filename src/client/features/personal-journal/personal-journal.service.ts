@@ -25,7 +25,7 @@ export class PersonalJournalService {
       {
         pathKey: 'ARTISAN',
         titleVi: 'Bách Nghệ / Thợ Cả',
-        seal: '🔨',
+        seal: '鍛',
         currentTier: 2,
         maxTier: 5,
         tierNameVi: 'Thợ Cả Trác Huyện',
@@ -36,18 +36,18 @@ export class PersonalJournalService {
       {
         pathKey: 'MERCHANT',
         titleVi: 'Hành Thương / Cự Phú',
-        seal: '💰',
+        seal: '錢',
         currentTier: 3,
         maxTier: 5,
         tierNameVi: 'Đại Lãnh Tiêu Xa',
         progressPercent: 60,
-        nextMilestoneVi: 'Tích lũy ngân khố 20,000 Tiền',
+        nextMilestoneVi: 'Tích lũy ngân khố 20,000 Quan',
         unlockedPerks: ['Miễn 10% quan thuế trạm gác']
       },
       {
         pathKey: 'MARTIAL',
         titleVi: 'Võ Hiệp / Thống Soái',
-        seal: '⚔️',
+        seal: '武',
         currentTier: 2,
         maxTier: 5,
         tierNameVi: 'Kiêu Dũng Hiệp Khách',
@@ -58,7 +58,7 @@ export class PersonalJournalService {
       {
         pathKey: 'SCHOLAR',
         titleVi: 'Sĩ Đồ / Mưu Sĩ',
-        seal: '📜',
+        seal: '卷',
         currentTier: 1,
         maxTier: 5,
         tierNameVi: 'Thư Sinh Áo Vải',
@@ -69,7 +69,7 @@ export class PersonalJournalService {
       {
         pathKey: 'LINEAGE',
         titleVi: 'Tông Tộc / Thế Gia',
-        seal: '🏯',
+        seal: '城',
         currentTier: 1,
         maxTier: 5,
         tierNameVi: 'Hàn Môn Lương Thị',

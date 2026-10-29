@@ -20,9 +20,9 @@ export class CaravanLogisticsModal {
       seal: '商',
       size: 'xl',
       tabs: [
-        { id: 'active', label: 'Thương Đoàn Đang Chạy', seal: '🚛' },
-        { id: 'arbitrage', label: 'Thương Cơ & Chênh Lệch Giá', seal: '📈' },
-        { id: 'dispatch', label: 'Xuất Tiêu Khai Tuyến', seal: '🚩' }
+        { id: 'active', label: 'Thương Đoàn Đang Chạy', seal: '運' },
+        { id: 'arbitrage', label: 'Thương Cơ & Chênh Lệch Giá', seal: '漲' },
+        { id: 'dispatch', label: 'Xuất Tiêu Khai Tuyến', seal: '旗' }
       ],
       activeTabId: 'active',
       onOpen: async () => {
@@ -76,7 +76,7 @@ export class CaravanLogisticsModal {
     const html = `
       <div class="caravan-modal-content">
         <div class="spatial-banner-lead">
-          <div class="lead-seal">🚛</div>
+          <div class="lead-seal">運</div>
           <div class="lead-text">
             <h3>Đội Buôn Lưu Động (${this.caravans.length} Tiêu Xa)</h3>
             <div class="text-muted text-sm">Thương đoàn di chuyển liên thành theo lượt tháng, ứng biến trước thời tiết và thổ phỉ dọc quan đạo.</div>
@@ -95,7 +95,7 @@ export class CaravanLogisticsModal {
                   <h4 class="text-amber-200 font-bold m-0 text-sm">Hàng Hóa: ${c.commodity_code} (SL: ${c.cargo_qty})</h4>
                   <span class="badge ${c.status === 'IN_TRANSIT' ? 'badge-primary' : 'badge-success'} text-xs">${c.status}</span>
                 </div>
-                <div class="text-xs text-muted mb-2">Từ: ${c.origin_settlement_id} ➔ Đến: ${c.dest_settlement_id}</div>
+                <div class="text-xs text-muted mb-2">Từ: ${c.origin_settlement_id} → Đến: ${c.dest_settlement_id}</div>
                 <div class="text-xs text-slate-300 font-mono">Thời gian còn lại: ${c.days_remaining}/${c.total_days} ngày • Hộ vệ: ${c.escort_level}</div>
               </div>
             `).join('')}
@@ -111,7 +111,7 @@ export class CaravanLogisticsModal {
     const html = `
       <div class="caravan-modal-content">
         <div class="spatial-banner-lead">
-          <div class="lead-seal">📈</div>
+          <div class="lead-seal">漲</div>
           <div class="lead-text">
             <h3>Bảng Chênh Lệch Giá Hàng Hóa Liên Châu</h3>
             <div class="text-muted text-sm">Phân tích giá mua tại Trác Huyện và giá bán tại các thành thị lớn (Lạc Dương, Nghiệp Thành, Kiến Nghiệp).</div>
@@ -126,7 +126,7 @@ export class CaravanLogisticsModal {
               <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800 flex justify-between items-center text-xs">
                 <div>
                   <span class="font-bold text-amber-200">${r.commodityNameVi || r.commodityCode}</span>: 
-                  ${r.originNameVi} (${r.buyPrice}đ) ➔ ${r.destNameVi} (${r.sellPrice}đ)
+                  ${r.originNameVi} (${r.buyPrice}đ) → ${r.destNameVi} (${r.sellPrice}đ)
                 </div>
                 <div class="text-right">
                   <span class="text-green-400 font-bold font-mono">+${r.profitPerUnit}đ/đơn vị</span>
@@ -146,7 +146,7 @@ export class CaravanLogisticsModal {
     const html = `
       <div class="caravan-modal-content">
         <div class="spatial-banner-lead">
-          <div class="lead-seal">🚩</div>
+          <div class="lead-seal">旗</div>
           <div class="lead-text">
             <h3>Khởi Hành Tiêu Xa Thương Đoàn</h3>
             <div class="text-muted text-sm">Chọn điểm đến, loại hàng hóa trong kho và cấp bậc thuê tiêu sư bảo an.</div>
@@ -184,13 +184,13 @@ export class CaravanLogisticsModal {
               <label class="block text-xs font-bold text-slate-300 mb-1">Cấp Hộ Tiêu Bảo An:</label>
               <select id="caravan-escort" class="modal-input w-full">
                 <option value="NONE">Không Thuê (Rủi ro thổ phỉ cao)</option>
-                <option value="MILITIA">Dân Binh Địa Phương (+100 Tiền)</option>
-                <option value="MERCENARY">Tiêu Sư Giang Hồ (+300 Tiền, An Toàn 95%)</option>
+                <option value="MILITIA">Dân Binh Địa Phương (+100 Quan)</option>
+                <option value="MERCENARY">Tiêu Sư Giang Hồ (+300 Quan, An Toàn 95%)</option>
               </select>
             </div>
           </div>
 
-          <button class="btn btn-action-gold w-full py-2.5 font-bold" onclick="window.CaravanUI.executeDispatch()">
+          <button class="ui-btn ui-btn--accent w-full py-2.5 font-bold" onclick="window.CaravanUI.executeDispatch()">
             Xuất Phát Thương Đoàn
           </button>
         </div>

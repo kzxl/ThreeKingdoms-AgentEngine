@@ -11,7 +11,7 @@ import { equipmentForgeModal } from '../equipment-forge';
 import { enterpriseWorkshopModal } from '../enterprise-workshop';
 import { caravanLogisticsModal } from '../caravan-logistics';
 import { lineageFamilyModal } from '../lineage-family';
-import { spatialPoiModals } from '../spatial-poi';
+import { getSpatialPoiModals } from '../spatial-poi';
 
 export class GrandCommandHubModal {
   private modal: ModalShellInstance;
@@ -66,10 +66,10 @@ export class GrandCommandHubModal {
       await lineageFamilyModal.open('courtship');
     } else if (tabId === 'duel') {
       await this.modal.close();
-      await spatialPoiModals.openArena('spar');
+      await getSpatialPoiModals().openArena('spar');
     } else if (tabId === 'banquet') {
       await this.modal.close();
-      await spatialPoiModals.openTavern('drink');
+      await getSpatialPoiModals().openTavern('drink');
     } else {
       await this.renderOverviewTab();
     }

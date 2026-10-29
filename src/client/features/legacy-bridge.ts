@@ -8,19 +8,16 @@
  */
 
 import { createModalShell, modalStack } from '../core/modal-shell';
+import { UI } from '../core/ui';
 import { lineageFamilyModal } from './lineage-family';
-import { spatialPoiModals } from './spatial-poi';
 import { equipmentForgeModal } from './equipment-forge';
 import { enterpriseWorkshopModal } from './enterprise-workshop';
-import { caravanLogisticsModal } from './caravan-logistics';
 import { dossiersModal } from './dossiers';
-import { personalJournalModal } from './personal-journal';
-import { grandCommandHubModal } from './grand-command-hub';
 import { quickTradeModal } from './trade-quick';
 import { tacticalBattleModal } from './tactical-battle';
-import { titleScreenModal } from './title-screen';
 import { transitTurnModals } from './transit-turn';
 import { worldMapModal } from './world-map';
+import { mapLiveService } from './world-map/map-live.service';
 
 export function setupLegacyBridge(): void {
   if (typeof window === 'undefined') return;
@@ -32,6 +29,9 @@ export function setupLegacyBridge(): void {
     createModalShell,
     modalStack
   };
+
+  // 1b. Shared UI primitives (buttons, badges, toast, confirm)
+  w.UI = UI;
 
   // 2. Lineage & Family Feature Slice Bridge
   w.LineageFamilyUI = {
@@ -46,22 +46,10 @@ export function setupLegacyBridge(): void {
     executeSuccession: () => lineageFamilyModal.executeSuccession()
   };
 
-  // 3. Spatial POI Feature Slice Bridge (Tavern, Arena, Residence)
-  w.SpatialPoiModals = {
-    openTavernModal: (tab?: string) => spatialPoiModals.openTavern(tab),
-    closeTavernModal: () => spatialPoiModals.closeTavern(),
-    openArenaModal: (tab?: string) => spatialPoiModals.openArena(tab),
-    closeArenaModal: () => spatialPoiModals.closeArena(),
-    openResidenceModal: (tab?: string) => spatialPoiModals.openResidence(tab),
-    closeResidenceModal: () => spatialPoiModals.closeResidence(),
-
-    executeDrinkWine: () => spatialPoiModals.executeDrinkWine(),
-    hostBanquet: (tierId: string) => spatialPoiModals.hostBanquet(tierId),
-    swearBrotherhood: (targetNpcId: string) => spatialPoiModals.swearBrotherhood(targetNpcId),
-    startDuel: (opponentId: string) => spatialPoiModals.startDuel(opponentId),
-    executeDuelRound: (action: string) => spatialPoiModals.executeDuelRound(action),
-    executeRestAtResidence: () => spatialPoiModals.executeRestAtResidence()
-  };
+  // 3. Spatial POI modals are provided by the legacy module
+  // (public/js/spatial-poi-modals.js). The TS slice still targets endpoints
+  // that do not exist (/api/arena/*, /api/banquet/drink, /api/character/rest),
+  // so it must not replace the working legacy modals yet.
 
   // 4. Equipment & Bespoke Forge
   w.EquipmentUI = {
@@ -82,12 +70,10 @@ export function setupLegacyBridge(): void {
     executeWork: (shiftType: string) => enterpriseWorkshopModal.executeWork(shiftType)
   };
 
-  // 6. Caravans & Logistics
-  w.CaravanUI = {
-    openCaravanModal: (tab?: string) => caravanLogisticsModal.open(tab),
-    closeCaravanModal: () => caravanLogisticsModal.close(),
-    executeDispatch: () => caravanLogisticsModal.executeDispatch()
-  };
+  // 6. Caravans & Logistics are provided by the legacy module
+  // (public/js/caravan-ui.js), which owns the full inventory/cost/guard-tier
+  // projection and is still the complete surface. The TS shell remains for a
+  // later migration and must not replace it yet.
 
   // 7. Dossiers (Protagonist & NPC)
   w.ProtagonistDossierModal = {
@@ -99,17 +85,14 @@ export function setupLegacyBridge(): void {
     close: () => dossiersModal.closeNpc()
   };
 
-  // 8. Personal Journal & Roadmaps
-  w.PersonalJournalUI = {
-    open: (tab?: string) => personalJournalModal.open(tab),
-    close: () => personalJournalModal.close()
-  };
+  // 8. Personal Journal & Roadmaps are provided by the legacy module
+  // (public/js/personal-journal-ui.js) which owns the 4-tab journal DOM
+  // (#grand-command-hub-modal). The TS journal shell is kept for a later
+  // migration and must not replace the working legacy surface yet.
 
-  // 9. Grand Command Hub
-  w.GrandCommandHubUI = {
-    open: (tab?: string) => grandCommandHubModal.open(tab),
-    close: () => grandCommandHubModal.close()
-  };
+  // 9. Grand Command Hub is provided by the legacy journal module
+  // (public/js/personal-journal-ui.js), which owns #grand-command-hub-modal and
+  // the 4 tabs the static markup defines. The old 7-tab hub was removed.
 
   // 10. Quick Trade Modal
   w.QuickTradeModal = {
@@ -126,28 +109,44 @@ export function setupLegacyBridge(): void {
     executeAction: (action: string) => tacticalBattleModal.executeAction(action)
   };
 
-  // 12. Title Screen & Scenario Selector
-  w.TitleScreenUI = {
-    open: () => titleScreenModal.open(),
-    close: () => titleScreenModal.close(),
-    selectScenario: (scen: string) => titleScreenModal.selectScenario(scen),
-    startCampaign: () => titleScreenModal.startCampaign()
-  };
-
   // 13. Travel Transit & Turn Advance
   w.TravelTransitUI = {
     show: (origin: string, dest: string, days: number, logs?: string) => transitTurnModals.showTravelTransit(origin, dest, days, logs),
-    close: () => transitTurnModals.closeTravel()
+    close: () => transitTurnModals.closeTravel(),
+    openLegacy: () => transitTurnModals.openTravelTransitModal(),
+    closeLegacy: () => transitTurnModals.closeTravelTransitModal()
   };
   w.TurnAdvanceUI = {
     show: (turn: number, date: string, summary?: string) => transitTurnModals.showTurnAdvance(turn, date, summary),
-    close: () => transitTurnModals.closeTurn()
+    close: () => transitTurnModals.closeTurn(),
+    openLegacy: () => transitTurnModals.openTurnAdvanceModal(),
+    closeLegacy: () => transitTurnModals.closeTurnAdvanceModal()
   };
 
-  // 14. World Map Modal
+  // 14. World Map Modal & Live Settlement State
   w.WorldMapUI = {
     open: () => worldMapModal.open(),
     close: () => worldMapModal.close()
+  };
+  w.MapLiveService = {
+    load: (force = false) => mapLiveService.load(force),
+    getForMapNode: (nodeId: string) => mapLiveService.getForMapNode(nodeId),
+    getStatusForMapNode: (nodeId: string) => mapLiveService.getStatusForMapNode(nodeId),
+    getThreatForMapNode: (nodeId: string) => mapLiveService.getThreatForMapNode(nodeId),
+    findNpcByName: (name: string) => mapLiveService.findNpcByName(name),
+    findSpecialistByName: (name: string) => mapLiveService.findSpecialistByName(name),
+    getSpecialistsForMapNode: (nodeId: string) => mapLiveService.getSpecialistsForMapNode(nodeId),
+    getLocIdForNode: (nodeId: string) => mapLiveService.getLocIdForNode(nodeId),
+    getRecruitRequirement: (name: string) => mapLiveService.getRecruitRequirement(name),
+    getActionRequirements: () => mapLiveService.getActionRequirements(),
+    getRoute: (from: string, to: string) => mapLiveService.getRoute(from, to),
+    getLivingEntities: () => mapLiveService.getLivingEntities(),
+    getResourceDistribution: () => mapLiveService.getResourceDistribution(),
+    getResourceNodesForMapNode: (nodeId: string) => mapLiveService.getResourceNodesForMapNode(nodeId),
+    resolveMapNodeId: (settlementId: string) => mapLiveService.resolveMapNodeId(settlementId),
+    hasArmy: () => mapLiveService.hasArmy(),
+    getState: () => mapLiveService.getState(),
+    ALIASES: mapLiveService.ALIASES
   };
 
   console.log('[ThreeKingdoms-AgentEngine] All 14 client feature slices successfully bridged to window.*');

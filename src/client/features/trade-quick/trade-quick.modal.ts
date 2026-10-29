@@ -29,7 +29,7 @@ export class QuickTradeModal {
 
     this.modal.setTitle(
       mode === 'BUY' ? 'Thu Mua Vật Phẩm' : 'Xuất Bán Hàng Hóa',
-      `Mã vật phẩm: ${itemCode} • Đơn giá hiện tại: ${defaultPrice} Tiền`,
+      `Mã vật phẩm: ${itemCode} • Đơn giá hiện tại: ${defaultPrice} Quan`,
       mode === 'BUY' ? '買' : '賣'
     );
 
@@ -53,14 +53,14 @@ export class QuickTradeModal {
           <input type="number" id="quick-trade-qty" class="modal-input w-full" min="1" value="${qty}" oninput="window.QuickTradeModal.updateTotal()" />
         </div>
         <div>
-          <label class="block text-xs font-bold text-slate-300 mb-1">Đơn Giá Đơn Vị (Tiền):</label>
+          <label class="block text-xs font-bold text-slate-300 mb-1">Đơn Giá Đơn Vị (Quan):</label>
           <input type="number" id="quick-trade-price" class="modal-input w-full" value="${this.currentPrice}" readonly />
         </div>
         <div class="bg-slate-950 p-2.5 rounded flex justify-between items-center text-xs font-mono">
           <span class="text-muted">Tổng Giá Trị:</span>
-          <span class="text-amber-400 font-bold text-sm" id="quick-trade-total">${(qty * this.currentPrice).toLocaleString()} Tiền</span>
+          <span class="text-amber-400 font-bold text-sm" id="quick-trade-total">${(qty * this.currentPrice).toLocaleString()} Quan</span>
         </div>
-        <button class="btn btn-action-gold w-full py-2 font-bold mt-2" onclick="window.QuickTradeModal.submit()">
+        <button class="ui-btn ui-btn--accent w-full py-2 font-bold mt-2" onclick="window.QuickTradeModal.submit()">
           Xác Nhận ${this.currentMode === 'BUY' ? 'Thu Mua' : 'Bán Hàng'}
         </button>
       </div>
@@ -74,7 +74,7 @@ export class QuickTradeModal {
     const totalEl = document.getElementById('quick-trade-total');
     if (!qtyEl || !totalEl) return;
     const qty = parseFloat(qtyEl.value) || 0;
-    totalEl.textContent = `${(qty * this.currentPrice).toLocaleString()} Tiền`;
+    totalEl.textContent = `${(qty * this.currentPrice).toLocaleString()} Quan`;
   }
 
   public async submit(): Promise<void> {
@@ -82,21 +82,35 @@ export class QuickTradeModal {
     const qty = parseFloat(qtyEl?.value || '1');
     if (isNaN(qty) || qty <= 0) return;
 
-    const action = this.currentMode === 'BUY' ? 'TRADE_BUY' : 'TRADE_SELL';
+    // SimulationCore's /api/action contract: type/item_code/quantity/unit_price.
+    // The previous payload (action/item/qty/price) was silently rejected.
+    const payload = {
+      type: this.currentMode === 'BUY' ? 'TRADE_BUY' : 'TRADE_SELL',
+      item_code: this.currentItemCode,
+      quantity: qty,
+      unit_price: this.currentPrice,
+      counterparty: 'Thương Khách Chợ Phiên',
+      idempotency_key: `TSQUICK_${this.currentMode}_${this.currentItemCode}_${Date.now()}`
+    };
+
     try {
-      const res = await apiClient.post('/api/action', {
-        action,
-        item: this.currentItemCode,
-        qty,
-        price: this.currentPrice
-      });
-      if (typeof (window as any).showToast === 'function') {
-        (window as any).showToast(res.message || 'Giao dịch thành công!');
+      // Reuse the shared dispatcher when present so the toast and deck refresh
+      // behave exactly like every other action button.
+      const dispatch = (window as any).dispatchDirectAction;
+      const res = dispatch
+        ? await dispatch(payload)
+        : await apiClient.post('/api/action', payload);
+
+      if (res && res.success === false) {
+        if (typeof (window as any).showToast === 'function') {
+          (window as any).showToast(`Bị từ chối: ${res.error || 'Giao dịch thất bại'}`, true);
+        }
+        return;
       }
+
       await this.modal.close();
-      if (typeof (window as any).refreshGameStatus === 'function') {
-        (window as any).refreshGameStatus();
-      }
+      if (typeof (window as any).loadStatus === 'function') await (window as any).loadStatus();
+      if (typeof (window as any).loadDeckInventory === 'function') await (window as any).loadDeckInventory();
     } catch (e: any) {
       if (typeof (window as any).showToast === 'function') {
         (window as any).showToast(e.message || 'Giao dịch thất bại!', true);
