@@ -1986,6 +1986,9 @@ button:disabled,
   border-radius: var(--radius-md);
   width: 90%;
   max-width: 440px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.8);
   overflow: hidden;
 }
@@ -2084,6 +2087,9 @@ button:disabled,
   display: flex;
   flex-direction: column;
   gap: 10px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
 }
 
 .form-group {
@@ -3088,10 +3094,13 @@ button:disabled,
   display: flex;
   border-bottom: 1px solid var(--border-subtle);
   background-color: var(--bg-surface-elevated);
+  overflow-x: auto;
+  white-space: nowrap;
+  scrollbar-width: thin;
 }
 
 .gm-tab-btn {
-  flex: 1;
+  flex-shrink: 0;
   padding: 10px 14px;
   border: none;
   background: transparent;
@@ -3120,7 +3129,9 @@ button:disabled,
   display: flex;
   flex-direction: column;
   gap: 14px;
-  max-height: 60vh;
+  flex: 1;
+  min-height: 0;
+  max-height: 75vh;
 }
 
 .gm-session-card {
@@ -3696,6 +3707,16 @@ button:disabled,
 .event-modal-card {
   max-width: 720px;
   width: 90%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.event-modal-body {
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
 }
 
 .event-lore-box {
@@ -5379,6 +5400,10 @@ button:disabled,
 .travel-transit-card {
   max-width: 680px;
   width: 90vw;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   background: #0b0f19;
   border: 1px solid rgba(245, 158, 11, 0.3);
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(245, 158, 11, 0.1);
@@ -5386,6 +5411,9 @@ button:disabled,
 
 .travel-transit-body {
   padding: 16px 20px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
 }
 
 .trv-route-banner {
@@ -5715,6 +5743,10 @@ button:disabled,
 .turn-advance-card {
   max-width: 720px;
   width: 90vw;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   background: #0b0f19;
   border: 1px solid rgba(217, 119, 6, 0.35);
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(217, 119, 6, 0.1);
@@ -5722,6 +5754,9 @@ button:disabled,
 
 .turn-advance-body {
   padding: 16px 20px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
 }
 
 .turn-adv-confirm-box {
@@ -5934,59 +5969,22 @@ button:disabled,
 .title-screen-card {
   max-width: 1060px;
   width: 95%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   background: #090d16;
   border: 1px solid rgba(245, 158, 11, 0.35);
   box-shadow: 0 0 35px rgba(0, 0, 0, 0.8), 0 0 15px rgba(245, 158, 11, 0.15);
   border-radius: var(--radius-md, 8px);
 }
 
-.title-screen-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 24px;
-  background: #0c121e;
-  border-bottom: 1px solid rgba(245, 158, 11, 0.25);
-}
-
-.title-screen-branding {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.title-screen-seal {
-  font-family: 'Cinzel', serif;
-  font-size: 20px;
-  font-weight: 800;
-  background: linear-gradient(135deg, #b45309 0%, #78350f 100%);
-  color: #fde68a;
-  padding: 6px 12px;
-  border-radius: 4px;
-  border: 1px solid rgba(251, 191, 36, 0.6);
-  box-shadow: 0 0 12px rgba(217, 119, 6, 0.4);
-  letter-spacing: 3px;
-}
-
-.title-screen-main-title {
-  margin: 0;
-  font-family: 'Cinzel', serif;
-  font-size: 18px;
-  font-weight: 800;
-  color: #f1f5f9;
-  letter-spacing: 2px;
-}
-
-.title-screen-subtitle {
-  font-size: 11.5px;
-  color: #94a3b8;
-  margin-top: 3px;
-}
-
 .title-screen-body {
   padding: 20px 24px;
   max-height: calc(88vh - 100px);
   overflow-y: auto;
+  flex: 1;
+  min-height: 0;
 }
 
 .title-screen-grid {
@@ -6297,11 +6295,22 @@ button:disabled,
 /* Spatial POI Modals Dialog Shell */
 .spatial-poi-dialog {
   max-width: 900px;
+  width: 95vw;
+  max-height: 90vh;
+  display: flex !important;
+  flex-direction: column !important;
   background: #0b0f17 !important;
   border: 1px solid rgba(245, 158, 11, 0.35) !important;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(245, 158, 11, 0.15) !important;
   border-radius: 12px !important;
   overflow: hidden;
+}
+
+.spatial-poi-dialog .modal-body {
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  padding: 16px 20px;
 }
 
 .spatial-banner-lead {
