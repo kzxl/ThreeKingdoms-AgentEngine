@@ -191,7 +191,7 @@ async function verifyHolisticEnhancements(): Promise<void> {
   `);
 
   // Simulate diplomatic relations (even turn number triggers emergence checks)
-  const diploTurn = activeTurn % 2 === 0 ? activeTurn : activeTurn + 2;
+  const diploTurn = activeTurn % 2 === 0 ? activeTurn : activeTurn + 1;
   const diploEvents = politicsMod.simulateDiplomaticRelations(diploTurn, activeDate);
   const allianceEvent = diploEvents.find(e => e.eventType === 'DIPLOMATIC_ALLIANCE');
   assert(allianceEvent !== undefined, 'Warm diplomatic relations must trigger DIPLOMATIC_ALLIANCE event');

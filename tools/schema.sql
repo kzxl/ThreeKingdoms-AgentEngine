@@ -465,6 +465,54 @@ CREATE TABLE IF NOT EXISTS faction_diplomacy (
     UNIQUE(faction_id_a, faction_id_b)
 );
 
+-- 32. Civilian Maidens & Social Strata Heroines (Giai Nhân Dân Sinh & Khuê Tú Các Tầng Lớp Xã Hội)
+CREATE TABLE IF NOT EXISTS civilian_maidens (
+    maiden_id TEXT PRIMARY KEY,
+    name_vi TEXT NOT NULL,
+    name_en TEXT NOT NULL,
+    settlement_id TEXT NOT NULL,
+    social_stratum TEXT NOT NULL,        -- 'PEASANT', 'ARTISAN_SHOP', 'GENTRY_CLAN'
+    father_profession_vi TEXT NOT NULL,
+    dowry_cash INTEGER NOT NULL CHECK (dowry_cash >= 0),
+    dowry_item_code TEXT,
+    dowry_item_qty INTEGER DEFAULT 0,
+    maternal_trait_code TEXT NOT NULL,
+    maternal_trait_name_vi TEXT NOT NULL,
+    maternal_trait_desc_vi TEXT NOT NULL,
+    bonus_stat TEXT NOT NULL,            -- 'war', 'int', 'com', 'ldr', 'pol', 'dip', 'cra', 'log'
+    bonus_val INTEGER DEFAULT 2,
+    clue_vi TEXT NOT NULL,
+    clue_en TEXT NOT NULL,
+    is_married INTEGER DEFAULT 0 CHECK (is_married IN (0, 1)),
+    husband_id TEXT,
+    personality TEXT NOT NULL DEFAULT 'PRAGMATIC',
+    motivation TEXT NOT NULL DEFAULT 'FAMILY_SECURITY',
+    war_attr INTEGER NOT NULL DEFAULT 30,
+    int_attr INTEGER NOT NULL DEFAULT 50,
+    com_attr INTEGER NOT NULL DEFAULT 50,
+    ldr_attr INTEGER NOT NULL DEFAULT 40,
+    pol_attr INTEGER NOT NULL DEFAULT 40,
+    dip_attr INTEGER NOT NULL DEFAULT 50,
+    cra_attr INTEGER NOT NULL DEFAULT 50,
+    log_attr INTEGER NOT NULL DEFAULT 40,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(settlement_id) REFERENCES session_settlements(settlement_id)
+);
+
+-- 33. Location & Activity Encounter Probability Matrix (Bảng Trọng Số Xác Suất Tương Ngộ)
+CREATE TABLE IF NOT EXISTS location_encounter_rates (
+    rate_id TEXT PRIMARY KEY,
+    settlement_id TEXT NOT NULL DEFAULT 'ALL',
+    facility_type TEXT NOT NULL,         -- 'FARM_FIELD', 'MARKET', 'WORKSHOP', 'TAVERN', 'GOVERNOR_COURT', 'REGIONAL_ROAD'
+    action_type TEXT NOT NULL,           -- 'FARM', 'TRADE', 'PRODUCE', 'DRINK', 'BANQUET', 'CARAVAN'
+    social_stratum TEXT NOT NULL,        -- 'PEASANT', 'ARTISAN_SHOP', 'GENTRY_CLAN'
+    base_probability REAL NOT NULL CHECK (base_probability >= 0.0 AND base_probability <= 1.0),
+    min_player_prestige INTEGER DEFAULT 0,
+    cooldown_days INTEGER DEFAULT 7,
+    notes TEXT,
+    UNIQUE(settlement_id, facility_type, action_type, social_stratum)
+);
+
 -- Indices for rapid querying & integrity checks
 CREATE INDEX IF NOT EXISTS idx_cashflow_date ON cashflow_ledger(game_date);
 CREATE INDEX IF NOT EXISTS idx_stock_mov_item ON stock_movements(item_code);
@@ -492,6 +540,10 @@ CREATE INDEX IF NOT EXISTS idx_memories_npc ON npc_episodic_memories(npc_id);
 CREATE INDEX IF NOT EXISTS idx_notes_borrower ON merchant_promissory_notes(borrower_id);
 CREATE INDEX IF NOT EXISTS idx_notes_lender ON merchant_promissory_notes(lender_id);
 CREATE INDEX IF NOT EXISTS idx_diplo_pair ON faction_diplomacy(faction_id_a, faction_id_b);
+CREATE INDEX IF NOT EXISTS idx_maidens_settlement ON civilian_maidens(settlement_id);
+CREATE INDEX IF NOT EXISTS idx_maidens_married ON civilian_maidens(is_married);
+CREATE INDEX IF NOT EXISTS idx_maidens_stratum ON civilian_maidens(social_stratum);
+CREATE INDEX IF NOT EXISTS idx_encounter_lookup ON location_encounter_rates(settlement_id, facility_type, action_type);
 
 
 

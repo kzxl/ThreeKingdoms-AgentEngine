@@ -428,6 +428,96 @@ function auditProjectionSync(cashResult, invResult) {
   };
 }
 
+function auditCivilianMaidensAndLifeSim() {
+  const errors = [];
+  let checksCount = 0;
+
+  const tableRows = runSqlJson(`SELECT name FROM sqlite_master WHERE type='table';`);
+  const existingTables = new Set(tableRows.map(r => r.name));
+
+  let maidenCount = 0;
+  if (existingTables.has('civilian_maidens')) {
+    const maidens = runSqlJson('SELECT maiden_id, dowry_cash, social_stratum, war_attr, int_attr, com_attr, ldr_attr, pol_attr, dip_attr, cra_attr, log_attr, is_married FROM civilian_maidens;');
+    maidenCount = maidens.length;
+    for (const m of maidens) {
+      checksCount++;
+      const dowry = Number(m.dowry_cash);
+      if (dowry < 0) {
+        errors.push(`Civilian maiden ${m.maiden_id} has negative dowry: ${dowry}`);
+      }
+      checksCount++;
+      if (!['PEASANT', 'ARTISAN_SHOP', 'GENTRY_CLAN'].includes(m.social_stratum)) {
+        errors.push(`Civilian maiden ${m.maiden_id} has invalid stratum: ${m.social_stratum}`);
+      }
+      checksCount++;
+      if (![0, 1].includes(Number(m.is_married))) {
+        errors.push(`Civilian maiden ${m.maiden_id} has invalid is_married flag: ${m.is_married}`);
+      }
+      const attrs = ['war_attr', 'int_attr', 'com_attr', 'ldr_attr', 'pol_attr', 'dip_attr', 'cra_attr', 'log_attr'];
+      for (const a of attrs) {
+        checksCount++;
+        const val = Number(m[a]);
+        if (val < 0 || val > 120) {
+          errors.push(`Civilian maiden ${m.maiden_id} attribute ${a} out of range [0, 120]: ${val}`);
+        }
+      }
+    }
+  }
+
+  let rateCount = 0;
+  if (existingTables.has('location_encounter_rates')) {
+    const rates = runSqlJson('SELECT rate_id, base_probability, cooldown_days, min_player_prestige FROM location_encounter_rates;');
+    rateCount = rates.length;
+    for (const r of rates) {
+      checksCount++;
+      const prob = Number(r.base_probability);
+      if (prob < 0.0 || prob > 1.0) {
+        errors.push(`Encounter rate ${r.rate_id} has invalid probability: ${prob}`);
+      }
+      checksCount++;
+      if (Number(r.cooldown_days) < 0) {
+        errors.push(`Encounter rate ${r.rate_id} has negative cooldown: ${r.cooldown_days}`);
+      }
+      checksCount++;
+      if (Number(r.min_player_prestige) < 0) {
+        errors.push(`Encounter rate ${r.rate_id} has negative min_player_prestige: ${r.min_player_prestige}`);
+      }
+    }
+  }
+
+  let spouseCount = 0;
+  if (existingTables.has('family_spouses')) {
+    const spouses = runSqlJson('SELECT marriage_id, intimacy, pregnancy_stage, dowry_cash FROM family_spouses;');
+    spouseCount = spouses.length;
+    for (const s of spouses) {
+      checksCount++;
+      const intimacy = Number(s.intimacy);
+      if (intimacy < 0 || intimacy > 100) {
+        errors.push(`Spouse ${s.marriage_id} intimacy out of range [0, 100]: ${intimacy}`);
+      }
+      checksCount++;
+      const preg = Number(s.pregnancy_stage);
+      if (preg < 0 || preg > 3) {
+        errors.push(`Spouse ${s.marriage_id} pregnancy stage out of range [0, 3]: ${preg}`);
+      }
+      checksCount++;
+      if (Number(s.dowry_cash) < 0) {
+        errors.push(`Spouse ${s.marriage_id} has negative dowry: ${s.dowry_cash}`);
+      }
+    }
+  }
+
+  return {
+    passed: errors.length === 0,
+    checksCount,
+    errors,
+    installed: existingTables.has('civilian_maidens') || existingTables.has('location_encounter_rates'),
+    maidenCount,
+    rateCount,
+    spouseCount
+  };
+}
+
 function runAudit() {
   console.log('====================================================');
   console.log(' ⚡ ThreeKingdoms-AgentEngine: Invariant & State Auditor');
@@ -529,6 +619,22 @@ function runAudit() {
       }
     }
 
+    // 7. Life-Sim & Civilian Maidens Audit
+    const maidenResult = auditCivilianMaidensAndLifeSim();
+    totalChecks += maidenResult.checksCount;
+    if (maidenResult.installed && (maidenResult.maidenCount > 0 || maidenResult.rateCount > 0)) {
+      console.log(`\n[${journalResult.installed ? 7 : 6}] LIFE-SIM & CIVILIAN MAIDENS INVARIANTS:`);
+      console.log(`    Civilian Maidens Checked: ${maidenResult.maidenCount}`);
+      console.log(`    Encounter Rates Checked : ${maidenResult.rateCount}`);
+      console.log(`    Spouses State Checked   : ${maidenResult.spouseCount}`);
+      if (!maidenResult.passed) {
+        allPassed = false;
+        maidenResult.errors.forEach(e => { console.error(`    ❌ ${e}`); allErrors.push(e); });
+      } else {
+        console.log(`    ✅ Passed: Non-negative dowries, valid strata, and bounded encounter rates.`);
+      }
+    }
+
     console.log('\n====================================================');
     if (allPassed) {
       console.log(` 🟢 AUDIT VERDICT: PASSED`);
@@ -560,5 +666,6 @@ module.exports = {
   auditProjectionSync,
   auditNpcAndBusinesses,
   auditSqliteFactionsAndSettlements,
+  auditCivilianMaidensAndLifeSim,
   runAudit
 };
