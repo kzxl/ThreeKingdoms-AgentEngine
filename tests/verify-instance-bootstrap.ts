@@ -91,12 +91,35 @@ function run(): void {
     const migrations = (fresh.prepare('SELECT COUNT(*) AS c FROM schema_migrations').get() as any).c;
     assert.strictEqual(Number(migrations), 8, 'initDb must apply all 8 versioned migrations');
     fresh.close();
+
+    // Bootstrap must also work on a schema-initialized database (no live-session
+    // NPC/stock/business rows to inherit).
+    const freshBootPath = path.join(DIR, 'fresh-boot.db');
+    fs.copyFileSync(freshPath, freshBootPath);
+    const freshBoot = new Database(freshBootPath);
+    freshBoot.pragma('foreign_keys = OFF');
+    initializeInstanceDatabase(freshBoot, {
+      preset: ARCHETYPE_PRESETS['ARCH-COMMONER-YOUTH'],
+      playerName: 'Fresh Player',
+      playerStyle: 'Fresh Style'
+    });
+    freshBoot.pragma('foreign_keys = ON');
+    assert.strictEqual((freshBoot.prepare('PRAGMA foreign_key_check').all() as any[]).length, 0, 'fresh-schema bootstrap must be FK-clean');
+    assert.strictEqual((freshBoot.prepare("SELECT COUNT(*) AS c FROM npc_state WHERE npc_id IN ('NPC-0007','NPC-0008')").get() as any).c, 2, 'bootstrap must seed the two core retainers');
+    assert.strictEqual((freshBoot.prepare('SELECT COUNT(*) AS c FROM businesses').get() as any).c, 1, 'bootstrap must seed the workshop');
+    freshBoot.close();
+    audit(freshBootPath);
     adapter.closeConnections();
 
     console.log('   ✅ new instances are clean and audit-green; fresh schema is migration-complete');
   } finally {
     adapter.closeConnections();
-    fs.rmSync(DIR, { recursive: true, force: true });
+    try {
+      fs.rmSync(DIR, { recursive: true, force: true });
+    } catch (error: any) {
+      // Windows may still hold a handle briefly; the directory is gitignored.
+      if (error?.code !== 'EBUSY' && error?.code !== 'EPERM') throw error;
+    }
   }
 }
 

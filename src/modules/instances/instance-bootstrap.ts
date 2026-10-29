@@ -16,6 +16,8 @@
 
 import Database from 'better-sqlite3';
 import { ArchetypePreset } from './instances.constants';
+import { postCashflowEntryRaw } from '../../shared/ledger';
+import { ACCOUNT_CODES } from '../../shared/account-codes';
 
 export interface InstanceBootstrapOptions {
   preset: ArchetypePreset;
@@ -98,19 +100,21 @@ export function initializeInstanceDatabase(
       if (tableExists(db, table)) db.prepare(`DELETE FROM ${table}`).run();
     }
     if (columnExists(db, 'npc_state', 'npc_id')) {
-      db.prepare(`
-        UPDATE npc_state SET
-          loyalty = 80,
-          morale = 100,
-          fatigue = 0,
-          assigned_business_id = NULL,
-          assigned_role = 'UNASSIGNED',
-          monthly_wage = 0,
-          management_exp = 0,
-          craft_exp = 0,
-          int_exp = 0, war_exp = 0, ldr_exp = 0, pol_exp = 0,
-          dip_exp = 0, com_exp = 0, log_exp = 0, cra_exp = 0
-      `).run();
+      // Older/newer schemas differ in optional exp columns; reset only those
+      // that exist so the bootstrap works on any session schema.
+      const resetColumns = [
+        'loyalty = 80',
+        'morale = 100',
+        'fatigue = 0',
+        'assigned_business_id = NULL',
+        "assigned_role = 'UNASSIGNED'",
+        'monthly_wage = 0'
+      ];
+      for (const column of ['management_exp', 'craft_exp', 'int_exp', 'war_exp', 'ldr_exp', 'pol_exp', 'dip_exp', 'com_exp', 'log_exp', 'cra_exp']) {
+        if (columnExists(db, 'npc_state', column)) resetColumns.push(`${column} = 0`);
+      }
+      // arch-guard:allow-sql-interpolation — resetColumns is a fixed allowlist.
+      db.prepare(`UPDATE npc_state SET ${resetColumns.join(', ')}`).run();
     }
 
     // 2. Campaign clock and player state.
@@ -171,42 +175,78 @@ export function initializeInstanceDatabase(
     //    (the foreman does), matching the zero-to-hero archetype.
     const owner = isCommoner ? 'NPC-0007' : 'PLY-0001';
     const businessSafe = isCommoner ? 3000 : Number(preset.initialSafeCash);
-    db.prepare(`
-      INSERT INTO businesses (
-        business_id, name, location_id, manager_npc_id, owner_character_id, safe_cash,
-        delegation_level, efficiency_multiplier, current_workforce,
-        monthly_capacity_hours, monthly_rent, auto_procure, status
-      ) VALUES ('BIZ-0001', 'Lương Thị Chức Tác Phường', 'LOC-0001', 'NPC-0007', ?, ?, 2, 0.85, 4, 800, 200, 1, 'ACTIVE')
-    `).run(owner, businessSafe);
+    const businessColumns = [
+      'business_id', 'name', 'location_id', 'manager_npc_id',
+      ...(columnExists(db, 'businesses', 'owner_character_id') ? ['owner_character_id'] : []),
+      'safe_cash', 'delegation_level', 'efficiency_multiplier', 'current_workforce',
+      'monthly_capacity_hours', 'monthly_rent', 'auto_procure', 'status'
+    ];
+    const businessValues: unknown[] = [
+      'BIZ-0001', 'Lương Thị Chức Tác Phường', 'LOC-0001', 'NPC-0007',
+      ...(businessColumns.includes('owner_character_id') ? [owner] : []),
+      businessSafe, 2, 0.85, 4, 800, 200, 1, 'ACTIVE'
+    ];
+    // arch-guard:allow-sql-interpolation — businessColumns is a fixed allowlist.
+    db.prepare(
+      `INSERT INTO businesses (${businessColumns.join(', ')}) VALUES (${businessColumns.map(() => '?').join(', ')})`
+    ).run(...businessValues);
     if (tableExists(db, 'npc_state')) {
+      const foreground = isCommoner
+        ? { loyalty: 65, business: null, role: 'CRAFTSMAN', wage: 0 }
+        : { loyalty: 85, business: 'BIZ-0001', role: 'FOREMAN', wage: 750 };
+      const carpenter = isCommoner
+        ? { loyalty: 65, business: null, role: 'CARPENTER', wage: 0 }
+        : { loyalty: 80, business: 'BIZ-0001', role: 'CARPENTER', wage: 600 };
+      const insertNpc = db.prepare(`
+        INSERT OR IGNORE INTO npc_state (
+          npc_id, name, loyalty, morale, fatigue,
+          int_attr, pol_attr, war_attr, ldr_attr, dip_attr, com_attr, log_attr, cra_attr,
+          personality, motivation, assigned_business_id, assigned_role, monthly_wage
+        ) VALUES (?, ?, ?, 100, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+      insertNpc.run(
+        'NPC-0007', 'Trần Bảo (Thợ Cả)', foreground.loyalty,
+        58, 52, 45, 60, 55, 62, 65, 75,
+        'PRAGMATIC', 'LOYALTY', foreground.business, foreground.role, foreground.wage
+      );
+      insertNpc.run(
+        'NPC-0008', 'Triệu An (Thợ Mộc)', carpenter.loyalty,
+        50, 45, 42, 50, 48, 55, 60, 70,
+        'DILIGENT', 'SECURITY', carpenter.business, carpenter.role, carpenter.wage
+      );
       db.prepare(`
-        UPDATE npc_state SET assigned_business_id = 'BIZ-0001', assigned_role = 'FOREMAN', monthly_wage = 750
+        UPDATE npc_state SET assigned_business_id = ?, assigned_role = ?, monthly_wage = ?
         WHERE npc_id = 'NPC-0007'
-      `).run();
+      `).run(foreground.business, foreground.role, foreground.wage);
       db.prepare(`
-        UPDATE npc_state SET assigned_business_id = 'BIZ-0001', assigned_role = 'CARPENTER', monthly_wage = 600
+        UPDATE npc_state SET assigned_business_id = ?, assigned_role = ?, monthly_wage = ?
         WHERE npc_id = 'NPC-0008'
-      `).run();
+      `).run(carpenter.business, carpenter.role, carpenter.wage);
     }
 
     // 5. Opening ledger: one balanced transaction for liquid + safe capital.
     const txnId = 'TXN-INIT-001';
-    db.prepare(`
-      INSERT INTO cashflow_ledger
-        (txn_id, game_date, counterparty, category, inflow, outflow, balance, memo, status)
-      VALUES (?, ?, 'Bản Doanh Khởi Sự', 'CAPITAL_INJECTION', ?, 0, ?, ?, 'Confirmed')
-    `).run(txnId, START_DATE, totalCash, totalCash, `Số vốn khởi nghiệp của thân phận ${preset.nameVi}.`);
+    postCashflowEntryRaw(db, {
+      txnId,
+      gameDate: START_DATE,
+      counterparty: 'Bản Doanh Khởi Sự',
+      category: 'CAPITAL_INJECTION',
+      inflow: totalCash,
+      balance: totalCash,
+      memo: `Số vốn khởi nghiệp của thân phận ${preset.nameVi}.`,
+      status: 'Confirmed'
+    });
 
     const insertJournal = db.prepare(`
       INSERT INTO account_journal (txn_id, campaign_id, game_date, account_code, debit, credit, memo)
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `);
     const campaignId = `CMP-${START_DATE.replace(/-/g, '')}-INSTANCE`;
-    insertJournal.run(txnId, campaignId, START_DATE, '1001_CASH_MOBILE', preset.initialCash, 0, 'Vốn tiền mặt ban đầu');
+    insertJournal.run(txnId, campaignId, START_DATE, ACCOUNT_CODES.cashMobile, preset.initialCash, 0, 'Vốn tiền mặt ban đầu');
     if (Number(preset.initialSafeCash) > 0) {
-      insertJournal.run(txnId, campaignId, START_DATE, '1002_CASH_SAFE', preset.initialSafeCash, 0, 'Vốn két sản nghiệp ban đầu');
+      insertJournal.run(txnId, campaignId, START_DATE, ACCOUNT_CODES.cashSafe, preset.initialSafeCash, 0, 'Vốn két sản nghiệp ban đầu');
     }
-    insertJournal.run(txnId, campaignId, START_DATE, '3001_OWNER_EQUITY', 0, totalCash, 'Vốn chủ sở hữu ban đầu');
+    insertJournal.run(txnId, campaignId, START_DATE, ACCOUNT_CODES.ownerEquity, 0, totalCash, 'Vốn chủ sở hữu ban đầu');
 
     // 6. First turn and chronicle entry.
     db.prepare(`
