@@ -19,7 +19,7 @@ legacy JS).
 | Correctness / ownership | 9/10 | One writer for the date, caravans, business month, world turn, balance, modal ids, hub |
 | Data integrity | 9/10 | Ledger matches `liquid + safe`; chronicle 15 rows / 14 texts; 1,358 invariants green |
 | Architecture / maintainability | 7/10 | God services and gateway still large; legacy client not migrated; 18 direct cashflow inserts |
-| Tests & observability | 9/10 | 23 suites, 28 contracts, 8 write smokes, 10 arch rules + UI + API + route ratchets |
+| Tests & observability | 9/10 | 24 suites, 28 contracts, 8 write smokes, 10 arch rules + UI + API + route ratchets |
 | Game design | 4/10 | Cannot lose; world frozen unless the player clicks; NPC economy not conserved |
 | UI/UX | 6.5/10 | Dev telemetry, dual clocks and duplicate chronicle gone; typography and right panel still heavy |
 
@@ -27,7 +27,7 @@ legacy JS).
 
 **Gates**
 
-- `npm run verify`: 23/23 suites (4 legacy + 19 `verify-*.ts`), 28/28 contracts, 8/8 write smokes.
+- `npm run verify`: 24/24 suites (4 legacy + 19 `verify-*.ts`), 28/28 contracts, 8/8 write smokes.
 - `npm run audit`: **1,358 invariants, 0 discrepancies**; `GET /api/audit` reports the same.
 - `tsc --noEmit`: 0 errors.
 
@@ -225,7 +225,7 @@ Still open, measured:
 ## 8. How to re-verify
 
 ```bash
-npm run verify        # 23 suites, 28 contracts, 8 write smokes
+npm run verify        # 24 suites, 28 contracts, 8 write smokes
 npm run audit         # 1,358 invariants
 npm run perf:compare  # p95 + fingerprint
 node tools/sim-audit.js
@@ -235,3 +235,31 @@ node tools/route-shadow-report.js --strict
 For legacy UI changes: run `npm run build:client`, restart the server (an old server keeps serving
 the old bundle), then open the real page — the gate does not open modals or assert that a
 `.modal-body` is non-empty.
+
+## 9. Post-review fixes (1.6.3, same day)
+
+A second pass over the data flows (not covered by the first gate) found and fixed:
+
+- **New-game isolation.** `src/modules/instances/instance-bootstrap.ts` clears every history and
+  runtime table (turn log, action log, chronicle, tasks, caravans, duels, loans, family, equipment,
+  NPC progression/journeys/relations, world-turn markers, player/ledger/stock) and reseeds the
+  player, starting stock, workshop, NPC assignments, opening ledger and first turn. A commoner does
+  not own the workshop (NPC-0007 does). `verify-instance-bootstrap.ts` proves both archetypes pass
+  the clock/cash/inventory/journal audits with zero foreign-key violations.
+- **Fresh schema and migrations.** `tools/schema.sql` now declares
+  `trade_caravans.dispatched_by_player`, `chat_chronicle` plus its dedupe trigger, `active_tasks
+  .last_tick_date` and `world_turn_ledger`; `tools/sim-db.js init` applies all 8 migrations after
+  seeding, so a schema-initialized database is never behind.
+- **Task progress.** `last_tick_date` makes `progressTasks` idempotent per campaign date, and
+  `advanceTurn` writes task progress after the core turn batch commits (the report uses a pure
+  projection), removing the double-progress path on a retried month close.
+- **Instance routing guard.** The gateway no longer keeps the previous request's instance sticky
+  and returns **409 `INSTANCE_NOT_ACTIVE`** for a modular route when the selected database is not
+  the startup campaign. True per-request multi-campaign switching still requires rebinding the
+  module registry, which is a separate architectural decision; the guard prevents silent
+  cross-database writes in the meantime.
+- **Day-30 tick.** `POST /api/caravans/tick-progress` returns **409 `MONTH_END`** instead of a
+  success response that advanced nothing.
+- **Data migration.** Migration `008-normalize-grain-unit` rewrites archived `master_items` grain
+  units from `Dan` to `Thạch`/`piculs` (1 row on the live DB).
+

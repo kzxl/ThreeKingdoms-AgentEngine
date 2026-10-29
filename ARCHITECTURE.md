@@ -140,7 +140,7 @@ state with `npm run migrate`; `npm run migrate:status` lists pending work.
 | :--- | :--- | :--- |
 | Types | `npm run typecheck` | `strict` TypeScript across `src/`, `tests/`, `vite.config.ts`. |
 | Architecture | `npm run lint` | Ratchet over `tools/arch-baseline.json`; debt may only shrink. |
-| Behaviour | `npm test` | 22 suites, each modern suite on an isolated DB copy, projections restored afterwards. |
+| Behaviour | `npm test` | 24 suites, each modern suite on an isolated DB copy, projections restored afterwards. |
 | API contract | `npm run golden:verify` | 28 read-only endpoints: status code, response shape, behavioural assertions. |
 | Invariants | `npm run audit` | 1,358 SQLite invariants (ledger parity, inventory conservation, projection sync). |
 

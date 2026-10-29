@@ -25,7 +25,7 @@ this file (language, communication style, engineering workflow, safety, Semantic
 ## Verification and commits
 
 - Run `npm run verify` after every change (typecheck, four lint ratchets, route shadowing,
-  23 suites, 28 API contracts, 8 write smokes). Run `npm run audit` for the 1,358 invariants.
+  24 suites, 28 API contracts, 8 write smokes). Run `npm run audit` for the 1,358 invariants.
 - Run `npm run build:client` after any `src/client` or `public/js` change; restart the dev server
   before a browser check (an old server keeps serving the old bundle).
 - Tests under `tests/verify-*.ts` are auto-discovered; no list edit is needed.

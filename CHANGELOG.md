@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.6.3] - 2026-10-29
+
+Post-review hardening of the data flows the first gate could not see.
+
+### Fixed
+- **New games inherited the live playthrough.** `instance-bootstrap.ts` now clears every history
+  and runtime table (turn/action logs, chronicle, tasks, caravans, duels, loans, family, equipment,
+  NPC progression/journeys/relations, world-turn markers, player/ledger/stock) and reseeds the
+  player, starting stock, workshop, NPC assignments, opening ledger and first turn. New instances
+  pass the clock/cash/inventory/journal audits; a commoner starts without owning the workshop.
+  `tests/verify-instance-bootstrap.ts` covers both archetypes and foreign-key integrity.
+- **Fresh schema was behind migrations.** `tools/schema.sql` now declares
+  `trade_caravans.dispatched_by_player`, `chat_chronicle` with its dedupe trigger,
+  `active_tasks.last_tick_date` and `world_turn_ledger`; `tools/sim-db.js init` applies all 8
+  migrations after seeding.
+- **Task progress could double on a failed month close.** `progressTasks` is idempotent per
+  campaign date (`last_tick_date`) and `advanceTurn` now writes it after the core turn batch
+  commits; the report uses a pure projection.
+- **Instance switching could write the wrong database.** The gateway no longer keeps the previous
+  request's instance sticky and returns `409 INSTANCE_NOT_ACTIVE` for modular routes when the
+  selected DB is not the startup campaign. `/api/instances/select` reports `restartRequired`.
+- **Day-30 caravan tick reported a day that never passed.** It now returns `409 MONTH_END`.
+- **Archived grain units.** Migration `008-normalize-grain-unit` rewrites `master_items` `Dan`
+  cells to `Thạch`/`piculs` (applied to the live DB).
+
+### Verification
+`npm run verify` green: **24/24** suites, 28/28 contracts, 8/8 write smokes; `npm run audit`
+1,358 invariants, 0 discrepancies. Arch guard: 10 rules, silent-catch 26 → 19.
+
+---
+
 ## [1.6.2] - 2026-10-29
 
 Currency unit standard: **Quan** (VI) / **quan** (EN), replacing the mixed `Tiền` / `Qian`
