@@ -206,7 +206,7 @@ function advanceCampaignDays(dbPath, rawDays, options = {}) {
     }
   }
 
-  const tasks = advancedDays > 0 ? progressTasks(dbPath, advancedDays) : [];
+  const tasks = advancedDays > 0 ? progressTasks(dbPath, advancedDays, nextDate) : [];
 
   // Publish after the write so subscribers observe the new calendar day.
   const dayTicksPublished = publishTicks ? publishDayTicks(clock.currentDate, advancedDays) : 0;

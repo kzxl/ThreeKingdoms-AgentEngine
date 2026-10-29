@@ -15,7 +15,7 @@ const path = require('path');
 const { runSqlJson, runSqlBatch, escapeSql } = require('./db-adapter');
 const { advanceCalendarMonth, parseGameDate, formatGameDate, getSeasonInfo } = require('./date-utils');
 const { advanceCampaignDays } = require('./time-manager');
-const { progressTasks, listTasks } = require('./task-manager');
+const { progressTasks, projectTaskProgress, listTasks } = require('./task-manager');
 
 const ROOT_DIR = path.resolve(__dirname, '..');
 const SAVES_DIR = path.join(ROOT_DIR, 'saves');
@@ -300,11 +300,11 @@ class GameplayManager {
     }
 
     // Multi-day tasks keep progressing through the days that remain in the
-    // month, even when the player closes the month early.
+    // month, even when the player closes the month early. The report uses a
+    // pure projection; the write happens after the core turn batch commits.
     const prevDateParts = String(prevDate).split('-').map(Number);
     const remainingMonthDays = Math.max(0, 30 - (prevDateParts[2] || 1));
-    if (remainingMonthDays > 0) progressTasks(this.dbPath, remainingMonthDays);
-    const allTasks = listTasks(this.dbPath);
+    const allTasks = projectTaskProgress(listTasks(this.dbPath), remainingMonthDays);
     const activeTasks = allTasks.filter(task => task.status === 'IN_PROGRESS');
     const completedTasks = allTasks.filter(task => task.status === 'COMPLETED' && task.completed_at);
 
@@ -583,6 +583,16 @@ class GameplayManager {
     const txResult = runSqlBatch(this.dbPath, atomicTurnBatch);
     if (!txResult.success) {
       throw new Error(`Failed to commit turn advance transaction: ${txResult.error}`);
+    }
+
+    // Task writes happen after the core turn commits; last_tick_date makes a
+    // replay of the same close idempotent.
+    if (remainingMonthDays > 0) {
+      try {
+        progressTasks(this.dbPath, remainingMonthDays, nextDate);
+      } catch (taskError) {
+        console.warn('[GameplayManager] task progress failed:', taskError.message);
+      }
     }
 
     // Cascade only after the core turn is committed. Subscribers re-entering

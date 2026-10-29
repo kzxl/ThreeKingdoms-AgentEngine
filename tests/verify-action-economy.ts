@@ -8,7 +8,7 @@ import path from 'path';
 import Database from 'better-sqlite3';
 const { SimulationCore } = require('../engine/sim-core');
 const { getClock, canSpendActionTime, applyActionTime } = require('../engine/time-manager');
-const { startTask, progressTasks } = require('../engine/task-manager');
+const { startTask, progressTasks, listTasks } = require('../engine/task-manager');
 
 const ROOT = path.resolve(__dirname, '..');
 const TEST_DIR = path.join(ROOT, 'tests', '.action-economy');
@@ -81,6 +81,20 @@ function run() {
   const skill = db2.prepare(`SELECT current_exp FROM player_skills WHERE skill_code = 'SKL-WAR-SPEAR';`).get() as any;
   db2.close();
   assert.strictEqual(skill.current_exp, 20);
+
+  // 3b. Replaying the same campaign date must not advance a task twice
+  //     (advanceTurn retries and duplicate time-spend requests).
+  const replayTask = startTask(TEST_DB, {
+    taskType: 'TRAIN_REPLAY',
+    titleVi: 'Kiểm tra idempotency',
+    durationDays: 3,
+    gameDate: '184-02-03',
+    payload: {}
+  });
+  progressTasks(TEST_DB, 1, '184-02-04');
+  progressTasks(TEST_DB, 1, '184-02-04');
+  const replay = listTasks(TEST_DB).find((task: any) => task.task_id === replayTask.taskId);
+  assert.strictEqual(replay.elapsed_days, 1, 'same-date replay must not double task progress');
 
   // 4. Month close progresses tasks through the remaining days.
   const clock = getClock(TEST_DB);

@@ -18,10 +18,16 @@ function ensureTaskSchema(dbPath) {
       status TEXT NOT NULL DEFAULT 'IN_PROGRESS',
       payload_json TEXT,
       result_json TEXT,
+      last_tick_date TEXT,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       completed_at TIMESTAMP
     );
   `);
+  // Older databases predate last_tick_date.
+  const columns = runSqlJson(dbPath, `PRAGMA table_info(active_tasks);`).map(c => c.name);
+  if (!columns.includes('last_tick_date')) {
+    runSqlExec(dbPath, `ALTER TABLE active_tasks ADD COLUMN last_tick_date TEXT;`);
+  }
 }
 
 function makeTaskId(dbPath, taskType, gameDate) {
@@ -65,13 +71,16 @@ function startTask(dbPath, input) {
   };
 }
 
-function progressTasks(dbPath, days) {
+function progressTasks(dbPath, days, asOfDate = null) {
   ensureTaskSchema(dbPath);
   const amount = Math.max(0, Number(days) || 0);
   if (amount === 0) return [];
 
   const tasks = runSqlJson(dbPath, `SELECT * FROM active_tasks WHERE status = 'IN_PROGRESS';`);
   for (const task of tasks) {
+    // Idempotent per campaign date: replaying the same close/advance must not
+    // move a task twice.
+    if (asOfDate && task.last_tick_date === asOfDate) continue;
     const duration = Math.max(1, Number(task.duration_days) || 1);
     const elapsed = Math.min(duration, Number(task.elapsed_days || 0) + amount);
     if (elapsed >= duration) {
@@ -79,19 +88,35 @@ function progressTasks(dbPath, days) {
       runSqlExec(
         dbPath,
         `UPDATE active_tasks
-           SET elapsed_days = ?, status = 'COMPLETED', completed_at = CURRENT_TIMESTAMP, result_json = ?
+           SET elapsed_days = ?, status = 'COMPLETED', completed_at = CURRENT_TIMESTAMP,
+               result_json = ?, last_tick_date = COALESCE(?, last_tick_date)
          WHERE task_id = ?;`,
-        [elapsed, JSON.stringify(reward), task.task_id]
+        [elapsed, JSON.stringify(reward), asOfDate, task.task_id]
       );
     } else {
       runSqlExec(
         dbPath,
-        `UPDATE active_tasks SET elapsed_days = ? WHERE task_id = ?;`,
-        [elapsed, task.task_id]
+        `UPDATE active_tasks SET elapsed_days = ?, last_tick_date = COALESCE(?, last_tick_date)
+         WHERE task_id = ?;`,
+        [elapsed, asOfDate, task.task_id]
       );
     }
   }
   return listTasks(dbPath);
+}
+
+/**
+ * Pure projection of what progressTasks would produce, for month-close reports
+ * built before the atomic commit.
+ */
+function projectTaskProgress(tasks, days) {
+  const amount = Math.max(0, Number(days) || 0);
+  return tasks.map(task => {
+    if (task.status !== 'IN_PROGRESS') return task;
+    const duration = Math.max(1, Number(task.duration_days) || 1);
+    const elapsed = Math.min(duration, Number(task.elapsed_days || 0) + amount);
+    return { ...task, elapsed_days: elapsed, status: elapsed >= duration ? 'COMPLETED' : task.status };
+  });
 }
 
 function applyTaskReward(dbPath, task) {
@@ -165,6 +190,7 @@ module.exports = {
   ensureTaskSchema,
   startTask,
   progressTasks,
+  projectTaskProgress,
   listTasks,
   cancelTask
 };
