@@ -14,7 +14,7 @@ const fs = require('fs');
 const path = require('path');
 const { runSqlJson, runSqlBatch, escapeSql } = require('./db-adapter');
 const { advanceCalendarMonth, parseGameDate, formatGameDate, getSeasonInfo } = require('./date-utils');
-const { advanceCampaignDays } = require('./time-manager');
+const { advanceCampaignDays, publishDayTicks, GRAIN_PER_DAY } = require('./time-manager');
 const { progressTasks, projectTaskProgress, listTasks } = require('./task-manager');
 
 const ROOT_DIR = path.resolve(__dirname, '..');
@@ -272,18 +272,31 @@ class GameplayManager {
     const prevTurn = Number(meta.active_turn || 1);
     const nextTurn = prevTurn + 1;
     const prevDate = meta.current_date || '184-05-02';
+    const prevYear = Number(String(prevDate).split('-')[0]);
+    if (!Number.isFinite(prevYear) || prevYear < 180 || prevYear > 300) {
+      throw new Error(`Campaign clock ${prevDate} is outside the game era; run npm run migrate to repair it.`);
+    }
 
     // 2. Advance game date to the 1st of next month
     const nextDate = advanceCalendarMonth(prevDate, 1, true);
 
     // 3. Player State Fatigue Recovery & Morale Stabilization (Gradual Health Recovery, No Invincible Resets)
     const player = runSqlJson(this.dbPath, `SELECT * FROM player_state LIMIT 1;`)[0];
+    const prevDateParts = String(prevDate).split('-').map(Number);
+    // Closing on day D jumps to the 1st of the next month: days D+1..30 are
+    // skipped (31 - D). Those days are not free: they consume grain upkeep and
+    // advance tasks/caravans exactly like the day clock would.
+    const skippedDays = Math.max(0, 31 - (prevDateParts[2] || 1));
+    const grainCost = Number((skippedDays * GRAIN_PER_DAY).toFixed(2));
+    const currentGrain = Number(player ? (player.strategic_grain || 0) : 0);
+    const grainMissing = grainCost > currentGrain;
+    const grainAfter = Math.max(0, Number((currentGrain - grainCost).toFixed(2)));
     let recoveredFatigue = 0;
     let playerUpdateSql = '';
     let playerStatus = null;
     if (player) {
       const currentFatigue = Number(player.fatigue || 0);
-      const newFatigue = Math.max(0, currentFatigue - 35);
+      const newFatigue = Math.max(0, currentFatigue - 35 + (grainMissing ? 5 : 0));
       recoveredFatigue = currentFatigue - newFatigue;
       const currentMorale = Number(player.morale || 100);
       const newMorale = Math.min(100, currentMorale + 10);
@@ -296,16 +309,16 @@ class GameplayManager {
         health: newHealth,
         liquidCash: Number(player.liquid_cash || 0),
         safeCash: Number(player.safe_cash || 0),
+        strategicGrain: grainAfter,
         location: player.current_location || 'LOC-0001'
       };
-      playerUpdateSql = `UPDATE player_state SET fatigue = ${newFatigue}, morale = ${newMorale}, health = ${newHealth} WHERE player_id = '${player.player_id}';`;
+      playerUpdateSql = `UPDATE player_state SET fatigue = ${newFatigue}, morale = ${newMorale}, health = ${newHealth}, strategic_grain = ${grainAfter} WHERE player_id = '${player.player_id}';`;
     }
 
     // Multi-day tasks keep progressing through the days that remain in the
     // month, even when the player closes the month early. The report uses a
     // pure projection; the write happens after the core turn batch commits.
-    const prevDateParts = String(prevDate).split('-').map(Number);
-    const remainingMonthDays = Math.max(0, 30 - (prevDateParts[2] || 1));
+    const remainingMonthDays = skippedDays;
     const allTasks = projectTaskProgress(listTasks(this.dbPath), remainingMonthDays);
     const activeTasks = allTasks.filter(task => task.status === 'IN_PROGRESS');
     const completedTasks = allTasks.filter(task => task.status === 'COMPLETED' && task.completed_at);
@@ -353,7 +366,8 @@ class GameplayManager {
           newSafeCash: currentSafe,
           staffCount: staff.length,
           skipped: true,
-          skippedReason: 'WORKSHOP_CYCLE_SETTLED'
+          skippedReason: 'WORKSHOP_CYCLE_SETTLED',
+          settlementMethod: 'WORKSHOP'
         });
         continue;
       }
@@ -373,7 +387,8 @@ class GameplayManager {
         totalWages,
         netProfit,
         newSafeCash: updatedSafe,
-        staffCount: staff.length
+        staffCount: staff.length,
+        settlementMethod: 'PASSIVE'
       });
     }
 
@@ -597,6 +612,17 @@ class GameplayManager {
       }
     }
 
+    // Publish the skipped days (excluding the new month's first day, which the
+    // month tick already represents) so daily subscribers see every elapsed day.
+    let dayTicksPublished = 0;
+    if (skippedDays > 1) {
+      try {
+        dayTicksPublished = publishDayTicks(prevDate, skippedDays - 1);
+      } catch (tickError) {
+        console.warn('[GameplayManager] day tick publish failed:', tickError.message);
+      }
+    }
+
     // Cascade only after the core turn is committed. Subscribers re-entering
     // the world modules are safe: world_turn_ledger already marks this turn.
     if (eventBus && typeof eventBus.publish === 'function') {
@@ -643,6 +669,12 @@ class GameplayManager {
       prevDate,
       nextDate,
       recoveredFatigue,
+      skippedDays,
+      skippedFromDate: prevDate,
+      grainCost,
+      grainAfter,
+      grainMissing,
+      dayTicksPublished,
       playerStatus,
       playerLocationName: locationRow ? locationRow.name_vi : (playerLoc || ''),
       bizReports,

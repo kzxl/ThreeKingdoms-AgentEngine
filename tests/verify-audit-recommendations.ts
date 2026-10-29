@@ -47,7 +47,10 @@ async function verifyAll(): Promise<void> {
 
   const { GameplayManager } = require('../engine/gameplay-manager');
   const gm = new GameplayManager(dbPath);
-  const preMeta = db.queryOne<any>(`SELECT active_turn, current_date FROM campaign_meta LIMIT 1;`);
+  const preMeta = db.queryOne<any>(`SELECT active_turn, "current_date" AS current_date FROM campaign_meta LIMIT 1;`);
+  const preGrain = Number(
+    db.queryOne<any>(`SELECT strategic_grain FROM player_state LIMIT 1;`)?.strategic_grain || 0
+  );
   
   // Set global gsm so advanceTurn can dispatch to eventBus
   (globalThis as any).__GRAND_STRATEGY_MODULES__ = {
@@ -58,6 +61,13 @@ async function verifyAll(): Promise<void> {
   assert(advanceResult.success === true, 'advanceTurn must succeed atomically');
   assert(receivedTick !== null, 'WORLD_MONTH_TICK event must be published onto EventBus');
   assert(receivedTick.turn === advanceResult.nextTurn, 'WORLD_MONTH_TICK turn must match nextTurn');
+  const expectedSkipped = 31 - Number(String(preMeta.current_date).split('-')[2]);
+  assert(advanceResult.skippedDays === expectedSkipped, 'month close must count every skipped day');
+  assert(advanceResult.dayTicksPublished === Math.max(0, expectedSkipped - 1), 'skipped days must emit day ticks');
+  const postGrain = Number(
+    db.queryOne<any>(`SELECT strategic_grain FROM player_state LIMIT 1;`)?.strategic_grain || 0
+  );
+  assert(Number((preGrain - postGrain).toFixed(2)) === advanceResult.grainCost, 'skipped days must consume grain upkeep');
   console.log(`      ✅ Passed: Turn advanced ${preMeta.active_turn} -> ${advanceResult.nextTurn}, WORLD_MONTH_TICK received (${receivedTick.year}-${receivedTick.month}).`);
 
   // ---------------------------------------------------------------

@@ -152,9 +152,37 @@ async function submitExecuteAdvanceTurn() {
 
   } catch (err) {
     console.error('Turn advance failed:', err);
-    showToast(`Chuyển lượt thất bại: ${err.message}`, true);
-    renderTurnAdvanceConfirm();
+    // The month close is transactional: the server rolled back, so the only
+    // safe action is to show the failing module and let the player retry.
+    renderTurnAdvanceError(err);
   }
+}
+
+function renderTurnAdvanceError(err) {
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+  const container = getTurnAdvanceContent();
+  if (!container) return;
+  const message = String(err && err.message ? err.message : err || '');
+  container.innerHTML = `
+    <div class="turn-adv-card" role="alert">
+      <div class="turn-adv-card-icon">${uiIcon('alert')}</div>
+      <div class="turn-adv-card-title">${isEn ? 'Month Close Failed' : 'Chốt Tháng Thất Bại'}</div>
+      <div class="turn-adv-card-desc">
+        ${isEn
+          ? 'The world simulation did not commit. No cash, stock or calendar change was saved; retrying is safe.'
+          : 'Mô phỏng thế cuộc chưa ghi nhận. Tiền, kho và lịch chưa đổi; thử lại là an toàn.'}
+      </div>
+      <pre class="turn-adv-error-detail">${message.replace(/</g, '&lt;')}</pre>
+      <div class="turn-adv-action-bar">
+        <button class="btn btn-outline" onclick="closeTurnAdvanceModal()">
+          ${isEn ? 'Close' : 'Đóng'}
+        </button>
+        <button class="btn btn-primary font-bold" onclick="submitExecuteAdvanceTurn()">
+          ${isEn ? 'Retry Month Close' : 'Thử Lại Chốt Tháng'}
+        </button>
+      </div>
+    </div>
+  `;
 }
 
 const TURN_ACTION_LABELS = {
@@ -192,16 +220,21 @@ function renderTurnAdvanceReport(res) {
   const status = res.playerStatus || {};
   const eco = res.ecologyResults || {};
 
-  const bizHtml = bizList.length > 0 ? bizList.map(b => `
+  const bizHtml = bizList.length > 0 ? bizList.map(b => {
+    const method = b.settlementMethod === 'WORKSHOP'
+      ? (isEn ? 'Workshop cycle' : 'Xưởng tự vận hành')
+      : (isEn ? 'Passive accrual' : 'Doanh thu thụ động');
+    return `
     <div class="turn-rpt-item">
-      <div class="turn-rpt-item-title">${uiIcon('coin')} ${b.businessName}</div>
+      <div class="turn-rpt-item-title">${uiIcon('coin')} ${b.businessName} <span class="turn-rpt-chip">${method}</span></div>
       <div class="turn-rpt-item-meta">
         <span>${isEn ? 'Gross:' : 'Tổng thu:'} <strong class="gold-text">+${b.grossIncome}</strong> Quan</span>
         <span>${isEn ? 'Wages:' : 'Lương:'} <strong class="danger-text">-${b.totalWages}</strong> Quan (${b.staffCount} ${isEn ? 'staff' : 'thợ'})</span>
         <span>${isEn ? 'Net:' : 'Lợi nhuận:'} <strong class="${b.netProfit >= 0 ? 'green-text' : 'danger-text'} font-bold">${b.netProfit >= 0 ? '+' : ''}${b.netProfit} Quan</strong></span>
       </div>
     </div>
-  `).join('') : turnReportEmpty(isEn, 'Chưa có sản nghiệp xưởng thợ trực thuộc.', 'No family workshops established yet.');
+  `;
+  }).join('') : turnReportEmpty(isEn, 'Chưa có sản nghiệp xưởng thợ trực thuộc.', 'No family workshops established yet.');
 
   const actionHtml = actionList.length > 0 ? actionList.map(a => {
     const label = TURN_ACTION_LABELS[a.actionType] || { vi: a.actionType, en: a.actionType };
@@ -313,6 +346,10 @@ function renderTurnAdvanceReport(res) {
             <div class="turn-rpt-stat-row">
               <span>${isEn ? 'Location:' : 'Vị trí:'}</span>
               <span>${res.playerLocationName || activeSubLocation || '—'}</span>
+            </div>
+            <div class="turn-rpt-stat-row">
+              <span>${isEn ? 'Skipped days / grain upkeep:' : 'Ngày bỏ qua / hao lương:'}</span>
+              <strong class="${res.grainMissing ? 'danger-text' : 'amber-text'}">${res.skippedDays || 0} • -${Number(res.grainCost || 0).toFixed(2)} ${isEn ? 'piculs' : 'Thạch'}</strong>
             </div>
             <div class="turn-rpt-stat-row">
               <span>${isEn ? 'Cash in / out:' : 'Thu / Chi:'}</span>
