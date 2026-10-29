@@ -192,7 +192,7 @@ async function runVerification(): Promise<void> {
   assert(collectResult.ownerNewCash === 5500 + profitBefore, 'Owner liquid cash must increase by collected profit.');
 
   passedTests++;
-  console.log(`  PASS 5: Accrued (${profitBefore} Qian) and collected profits into owner liquid cash.`);
+  console.log(`  PASS 5: Accrued (${profitBefore} quan) and collected profits into owner liquid cash.`);
 
   // Test 2.5: Insufficient Capital Prevention
   let capitalErrorCaught = false;
@@ -226,7 +226,7 @@ async function runVerification(): Promise<void> {
   assert(cookShift.success, 'Work shift as Tavern Cook must succeed.');
   assert(cookShift.fatigueConsumed === 15, 'Work shift must consume 15 fatigue.');
   assert(cookShift.newFatigue === 15, 'New fatigue must be 15.');
-  assert(cookShift.wagePaid === 65, 'Tavern Cook must earn 65 Qian daily wage.');
+  assert(cookShift.wagePaid === 65, 'Tavern Cook must earn 65 quan daily wage.');
   assert(cookShift.newLiquidCash === 65, 'Worker liquid cash must increase from 0 to 65.');
   assert(cookShift.professionCode === 'PROF_CHEF', 'Profession rewarded must be PROF_CHEF.');
   assert(cookShift.professionExpGained === 25, 'Profession EXP gained must be 25.');
@@ -254,7 +254,7 @@ async function runVerification(): Promise<void> {
   assert(compounderShift.success, 'Work shift as Apothecary Compounder must succeed.');
   assert(compounderShift.fatigueConsumed === 15, 'Shift must consume 15 fatigue.');
   assert(compounderShift.newFatigue === 30, 'Worker fatigue must now be 30 (15 + 15).');
-  assert(compounderShift.wagePaid === 60, 'Medicine Compounder wage must be 60 Qian.');
+  assert(compounderShift.wagePaid === 60, 'Medicine Compounder wage must be 60 quan.');
   assert(compounderShift.newLiquidCash === 125, 'Worker liquid cash must now be 125 (65 + 60).');
   assert(compounderShift.professionCode === 'PROF_MEDICINE', 'Profession must be PROF_MEDICINE.');
   assert(compounderShift.professionExpGained === 25, 'Profession EXP must be 25.');
@@ -272,7 +272,7 @@ async function runVerification(): Promise<void> {
   // Test 3.3: Work as Tavern Staff (JOB_TAVERN_STAFF)
   const waiterShift = service.workShift(testWorkerId, 'JOB_TAVERN_STAFF');
   assert(waiterShift.success, 'Work shift as Tavern Staff must succeed.');
-  assert(waiterShift.wagePaid === 40, 'Tavern Staff wage must be 40 Qian.');
+  assert(waiterShift.wagePaid === 40, 'Tavern Staff wage must be 40 quan.');
   assert(waiterShift.newLiquidCash === 165, 'Worker cash must now be 165 (125 + 40).');
   assert(waiterShift.attributeTarget === 'com', 'Waiter attribute target must be COM.');
   assert(waiterShift.attributeExpGained === 10, 'Waiter attribute COM EXP must be 10.');
@@ -288,7 +288,7 @@ async function runVerification(): Promise<void> {
   const forgeShift = service.workShift(testWorkerId, 'JOB_FORGE_HAND');
   assert(forgeShift.success, 'Forge Hand shift must succeed.');
   assert(forgeShift.professionCode === 'PROF_BLACKSMITH', 'Profession must be PROF_BLACKSMITH.');
-  assert(forgeShift.wagePaid === 75, 'Forge hand wage must be 75 Qian.');
+  assert(forgeShift.wagePaid === 75, 'Forge hand wage must be 75 quan.');
 
   passedTests++;
   console.log('  PASS 10: Herbal Forager and Forge Hand shifts verified across disciplines.');

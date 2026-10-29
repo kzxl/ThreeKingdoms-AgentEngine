@@ -1,0 +1,12 @@
+{
+  "sqlite-cli-spawn": 0,
+  "child-process-in-src": 0,
+  "sql-interpolation": 83,
+  "math-random-in-domain": 0,
+  "wallclock-id-in-domain": 0,
+  "silent-catch": 26,
+  "cashflow-direct-insert": 18,
+  "global-service-locator": 4,
+  "unquoted-current-date": 0,
+  "legacy-ui-script-count": 21
+}

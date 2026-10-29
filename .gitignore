@@ -28,6 +28,12 @@ node_modules/
 dist-server/
 scratch/
 .agents/
+tests/.runs/
+tests/.golden-run/
+tests/sandbox/
+tests/perf/.run/
+tests/perf/fixture.db
+tests/perf/fixture.db-*
 *.tmp
 *.log
 .DS_Store

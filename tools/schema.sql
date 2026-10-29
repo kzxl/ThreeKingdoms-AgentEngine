@@ -16,6 +16,12 @@ CREATE TABLE IF NOT EXISTS campaign_meta (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 1b. Deterministic Identifier Sequences (per id scope)
+CREATE TABLE IF NOT EXISTS id_sequence (
+    scope      TEXT PRIMARY KEY,
+    next_value INTEGER NOT NULL DEFAULT 0
+);
+
 -- 2. Character & Player State (Active Session Overlay)
 CREATE TABLE IF NOT EXISTS player_state (
     player_id TEXT PRIMARY KEY,
@@ -513,8 +519,25 @@ CREATE TABLE IF NOT EXISTS location_encounter_rates (
     UNIQUE(settlement_id, facility_type, action_type, social_stratum)
 );
 
+-- 34. Multi-day action progress (Công việc dài ngày)
+CREATE TABLE IF NOT EXISTS active_tasks (
+    task_id TEXT PRIMARY KEY,
+    task_type TEXT NOT NULL,
+    title_vi TEXT NOT NULL,
+    title_en TEXT,
+    start_date TEXT NOT NULL,
+    duration_days INTEGER NOT NULL,
+    elapsed_days INTEGER NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'IN_PROGRESS',
+    payload_json TEXT,
+    result_json TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    completed_at TIMESTAMP
+);
+
 -- Indices for rapid querying & integrity checks
 CREATE INDEX IF NOT EXISTS idx_cashflow_date ON cashflow_ledger(game_date);
+CREATE INDEX IF NOT EXISTS idx_active_tasks_status ON active_tasks(status);
 CREATE INDEX IF NOT EXISTS idx_stock_mov_item ON stock_movements(item_code);
 CREATE INDEX IF NOT EXISTS idx_npc_delta_npc ON npc_relationship_deltas(npc_id);
 CREATE INDEX IF NOT EXISTS idx_account_journal_txn ON account_journal(txn_id);

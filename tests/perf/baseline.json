@@ -1,0 +1,83 @@
+{
+  "generatedAt": "2026-10-29T06:41:04.836Z",
+  "iterations": 12,
+  "endpoints": {
+    "/api/status": {
+      "status": 200,
+      "p50": 2.11,
+      "p95": 2.99,
+      "mean": 2.22,
+      "fingerprint": "340d9a428ceabacb"
+    },
+    "/api/inventory": {
+      "status": 200,
+      "p50": 1.16,
+      "p95": 1.81,
+      "mean": 1.24,
+      "fingerprint": "3d16ef398e672d8c"
+    },
+    "/api/ledger": {
+      "status": 200,
+      "p50": 1.5,
+      "p95": 2.29,
+      "mean": 1.63,
+      "fingerprint": "30080b32684fde75"
+    },
+    "/api/npcs": {
+      "status": 200,
+      "p50": 1.32,
+      "p95": 2.15,
+      "mean": 1.44,
+      "fingerprint": "2b768124cfeb7734"
+    },
+    "/api/military": {
+      "status": 200,
+      "p50": 0.79,
+      "p95": 1.42,
+      "mean": 0.91,
+      "fingerprint": "9f589033365a4c26"
+    },
+    "/api/garrisons": {
+      "status": 200,
+      "p50": 0.81,
+      "p95": 0.85,
+      "mean": 0.81,
+      "fingerprint": "b6277126193d0862"
+    },
+    "/api/market": {
+      "status": 200,
+      "p50": 2.05,
+      "p95": 3.01,
+      "mean": 2.14,
+      "fingerprint": "dc44d4ef1ee27cb8"
+    },
+    "/api/enterprise/status": {
+      "status": 200,
+      "p50": 1.36,
+      "p95": 2.11,
+      "mean": 1.47,
+      "fingerprint": "e023456c8b083d81"
+    },
+    "/api/lineage/overview": {
+      "status": 200,
+      "p50": 0.85,
+      "p95": 1.61,
+      "mean": 0.98,
+      "fingerprint": "f52e48fc09ada0e9"
+    },
+    "/api/master/catalog": {
+      "status": 200,
+      "p50": 12.02,
+      "p95": 12.98,
+      "mean": 12.19,
+      "fingerprint": "94ba4179a67fa014"
+    },
+    "/api/audit": {
+      "status": 200,
+      "p50": 4.85,
+      "p95": 5.86,
+      "mean": 5.04,
+      "fingerprint": "d042e55086e553a9"
+    }
+  }
+}

@@ -1,0 +1,38 @@
+[
+  {
+    "path": "/api/arena/roster",
+    "reason": "TS spatial-poi arena tab; legacy arena UI uses /api/duel/arena/challenge"
+  },
+  {
+    "path": "/api/arena/duel/start",
+    "reason": "TS spatial-poi arena tab; server exposes /api/duel/initiate"
+  },
+  {
+    "path": "/api/arena/duel/round",
+    "reason": "TS spatial-poi arena tab; server exposes /api/duel/round"
+  },
+  {
+    "path": "/api/banquet/drink",
+    "reason": "TS spatial-poi tavern tab; legacy tavern modal handles drinks client-side"
+  },
+  {
+    "path": "/api/character/rest",
+    "reason": "TS spatial-poi residence tab; lineage rest needs a marriageId"
+  },
+  {
+    "path": "/api/enterprise/manage-safe-cash",
+    "reason": "Deposit/withdraw between liquid cash and enterprise safe cash is not implemented server-side"
+  },
+  {
+    "path": "/api/npcs/dossier",
+    "reason": "TS dossier slice expects one aggregated endpoint; legacy NPC dossier composes several reads"
+  },
+  {
+    "path": "/api/progression/career-paths",
+    "reason": "Personal journal calls it with a swallowed catch and falls back to empty paths"
+  },
+  {
+    "path": "/api/session/new-game",
+    "reason": "TS title modal path; the active title screen uses the legacy /api/game/new"
+  }
+]

@@ -44,10 +44,10 @@ async function runTests() {
     const courierRes = engine.executeDailyInteraction('NPC-0007', 'SEND_COURIER_LETTER');
     console.log(`- Action: ${courierRes.actionTitleVi}`);
     console.log(`- Outcome: ${courierRes.outcomeTitleVi}`);
-    console.log(`- Cash Cost: ${courierRes.deltas.cashCost} Qian`);
+    console.log(`- Cash Cost: ${courierRes.deltas.cashCost} quan`);
     console.log(`- Affinity Delta: +${courierRes.deltas.affinityChange}`);
     console.log(`- Dialogue: "${courierRes.dialogueNarrativeVi.slice(0, 100)}..."`);
-    if (courierRes.deltas.cashCost !== 3) throw new Error('Courier fee must be 3 Qian');
+    if (courierRes.deltas.cashCost !== 3) throw new Error('Courier fee must be 3 quan');
     console.log('✅ Test 3 Passed: Remote servant courier successfully delivered letter.');
 
     // Test 4: Test TEA_CONVERSE stamina recovery
