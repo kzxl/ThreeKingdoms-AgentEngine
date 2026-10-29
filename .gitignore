@@ -24,7 +24,7 @@ game/characters/player.md
 
 # 3. Scratch & Temporary Files
 node_modules/
-dist/
+/dist/
 dist-server/
 scratch/
 .agents/

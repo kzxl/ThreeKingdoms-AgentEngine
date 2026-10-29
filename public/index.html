@@ -227,7 +227,7 @@
                 <span class="path-icon-dot" id="dot-path-merchant" title="Hành Thương / Cự Phú" onclick="if(window.GrandCommandHubUI){GrandCommandHubUI.open('caravan');}">💰</span>
                 <span class="path-icon-dot" id="dot-path-martial" title="Võ Hiệp / Quân Lữ" onclick="if(window.GrandCommandHubUI){GrandCommandHubUI.open('duel');}">⚔️</span>
                 <span class="path-icon-dot" id="dot-path-scholar" title="Sĩ Đồ / Quân Sư" onclick="if(window.GrandCommandHubUI){GrandCommandHubUI.open('career');}">📜</span>
-                <span class="path-icon-dot" id="dot-path-lineage" title="Tông Tộc / Thế Gia" onclick="if(window.GrandCommandHubUI){GrandCommandHubUI.open('family');}">🏯</span>
+                <span class="path-icon-dot" id="dot-path-lineage" title="Tông Tộc / Thế Gia" onclick="if(window.LineageFamilyUI){LineageFamilyUI.open('courtship');}else if(window.GrandCommandHubUI){GrandCommandHubUI.open('family');}">🏯</span>
               </div>
             </div>
           </div>
@@ -922,6 +922,8 @@
   <div id="toast" class="toast hidden"></div>
 
   <!-- Application Modular Scripts -->
+  <script type="module" src="/dist/client-bundle.es.js"></script>
+  <script nomodule src="/dist/client-bundle.iife.js"></script>
   <script src="/js/config.js"></script>
   <script src="/js/i18n.js"></script>
   <script src="/js/map-data.js"></script>
