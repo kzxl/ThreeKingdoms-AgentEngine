@@ -1,11 +1,11 @@
-var k = Object.defineProperty;
-var E = (d, t, e) => t in d ? k(d, t, { enumerable: !0, configurable: !0, writable: !0, value: e }) : d[t] = e;
-var s = (d, t, e) => E(d, typeof t != "symbol" ? t + "" : t, e);
-class C {
+var Y = Object.defineProperty;
+var W = (s, t, e) => t in s ? Y(s, t, { enumerable: !0, configurable: !0, writable: !0, value: e }) : s[t] = e;
+var i = (s, t, e) => W(s, typeof t != "symbol" ? t + "" : t, e);
+class X {
   constructor() {
-    s(this, "stack", []);
-    s(this, "isEscListenerAttached", !1);
-    s(this, "BASE_Z_INDEX", 1e3);
+    i(this, "stack", []);
+    i(this, "isEscListenerAttached", !1);
+    i(this, "BASE_Z_INDEX", 1e3);
     this.handleKeyDown = this.handleKeyDown.bind(this);
   }
   /**
@@ -14,8 +14,8 @@ class C {
   push(t, e) {
     const a = this.stack.indexOf(t);
     a > -1 && this.stack.splice(a, 1), this.stack.push(t);
-    const i = this.BASE_Z_INDEX + this.stack.length * 10;
-    e.style.zIndex = i.toString(), this.ensureEscListener(), this.updateBodyScrollLock();
+    const n = this.BASE_Z_INDEX + this.stack.length * 10;
+    e.style.zIndex = n.toString(), this.ensureEscListener(), this.updateBodyScrollLock();
   }
   /**
    * Removes a closed modal from the stack.
@@ -46,21 +46,21 @@ class C {
     typeof document > "u" || (this.stack.length > 0 ? document.body.classList.add("modal-open") : document.body.classList.remove("modal-open"));
   }
 }
-const T = new C();
-class S {
+const P = new X();
+class z {
   constructor(t) {
-    s(this, "id");
-    s(this, "options");
-    s(this, "backdropEl", null);
-    s(this, "dialogEl", null);
-    s(this, "titleEl", null);
-    s(this, "subtitleEl", null);
-    s(this, "sealEl", null);
-    s(this, "tabBarEl", null);
-    s(this, "bodyEl", null);
-    s(this, "footerEl", null);
-    s(this, "_isOpen", !1);
-    s(this, "_activeTab", null);
+    i(this, "id");
+    i(this, "options");
+    i(this, "backdropEl", null);
+    i(this, "dialogEl", null);
+    i(this, "titleEl", null);
+    i(this, "subtitleEl", null);
+    i(this, "sealEl", null);
+    i(this, "tabBarEl", null);
+    i(this, "bodyEl", null);
+    i(this, "footerEl", null);
+    i(this, "_isOpen", !1);
+    i(this, "_activeTab", null);
     this.id = t.id, this.options = {
       closeOnEsc: !0,
       closeOnBackdrop: !0,
@@ -105,11 +105,11 @@ class S {
         <div class="modal-footer hidden" id="${this.id}-footer"></div>
       </div>
     `, this.dialogEl = this.backdropEl.querySelector(".modal-dialog"), this.titleEl = this.backdropEl.querySelector(`#${this.id}-title`), this.subtitleEl = this.backdropEl.querySelector(`#${this.id}-subtitle`), this.sealEl = this.backdropEl.querySelector(`#${this.id}-seal`), this.tabBarEl = this.backdropEl.querySelector(`#${this.id}-tab-bar`), this.bodyEl = this.backdropEl.querySelector(`#${this.id}-body`), this.footerEl = this.backdropEl.querySelector(`#${this.id}-footer`);
-    const i = this.backdropEl.querySelector(`#${this.id}-btn-close`);
-    i && i.addEventListener("click", (n) => {
-      n.preventDefault(), this.close();
-    }), this.options.closeOnBackdrop && this.backdropEl.addEventListener("click", (n) => {
-      n.target === this.backdropEl && this.close();
+    const n = this.backdropEl.querySelector(`#${this.id}-btn-close`);
+    n && n.addEventListener("click", (o) => {
+      o.preventDefault(), this.close();
+    }), this.options.closeOnBackdrop && this.backdropEl.addEventListener("click", (o) => {
+      o.target === this.backdropEl && this.close();
     }), this.options.tabs && this.options.tabs.length > 0 && this.renderTabs(this.options.tabs), this.options.actions && this.options.actions.length > 0 && this.setFooter(this.options.actions);
   }
   /**
@@ -129,16 +129,16 @@ class S {
     ).join(""), this.tabBarEl.querySelectorAll(".modal-tab-btn").forEach((e) => {
       e.addEventListener("click", (a) => {
         a.preventDefault();
-        const i = e.getAttribute("data-tab-id");
-        i && i !== this._activeTab && this.switchTab(i);
+        const n = e.getAttribute("data-tab-id");
+        n && n !== this._activeTab && this.switchTab(n);
       });
     }));
   }
   async open(t) {
-    this.backdropEl || this.mountDom(), this.backdropEl && (t && t !== this._activeTab && (this._activeTab = t, this.updateActiveTabButton()), this.backdropEl.classList.remove("hidden"), this._isOpen = !0, T.push(this, this.backdropEl), this.options.onOpen && await this.options.onOpen(this));
+    this.backdropEl || this.mountDom(), this.backdropEl && (t && t !== this._activeTab && (this._activeTab = t, this.updateActiveTabButton()), this.backdropEl.classList.remove("hidden"), this._isOpen = !0, P.push(this, this.backdropEl), this.options.onOpen && await this.options.onOpen(this));
   }
   async close() {
-    !this._isOpen || !this.backdropEl || (this.backdropEl.classList.add("hidden"), this._isOpen = !1, T.remove(this), this.options.onClose && await this.options.onClose(this));
+    !this._isOpen || !this.backdropEl || (this.backdropEl.classList.add("hidden"), this._isOpen = !1, P.remove(this), this.options.onClose && await this.options.onClose(this));
   }
   async toggle() {
     this._isOpen ? await this.close() : await this.open();
@@ -162,17 +162,17 @@ class S {
     if (!this.tabBarEl) return;
     const a = this.tabBarEl.querySelector(`[data-tab-id="${t}"]`);
     if (!a) return;
-    let i = a.querySelector(".tab-badge");
-    e == null || e === "" ? i && i.remove() : (i || (i = document.createElement("span"), i.className = "tab-badge", a.appendChild(i)), i.textContent = String(e));
+    let n = a.querySelector(".tab-badge");
+    e == null || e === "" ? n && n.remove() : (n || (n = document.createElement("span"), n.className = "tab-badge", a.appendChild(n)), n.textContent = String(e));
   }
   setFooter(t) {
     if (this.footerEl)
       if (Array.isArray(t)) {
         this.footerEl.innerHTML = "", this.footerEl.className = "modal-footer flex items-center justify-end gap-3";
         for (const e of t) {
-          const a = document.createElement("button"), i = e.variant === "ghost" ? "btn-action-ghost" : e.variant === "danger" ? "btn-danger" : e.variant === "gold" ? "btn-action-gold" : "btn-primary";
-          a.className = `btn ${i}`, a.textContent = e.label, e.disabled && (a.disabled = !0), a.addEventListener("click", async (n) => {
-            n.preventDefault(), await e.onClick(this);
+          const a = document.createElement("button"), n = e.variant === "ghost" ? "btn-action-ghost" : e.variant === "danger" ? "btn-danger" : e.variant === "gold" ? "btn-action-gold" : "btn-primary";
+          a.className = `btn ${n}`, a.textContent = e.label, e.disabled && (a.disabled = !0), a.addEventListener("click", async (o) => {
+            o.preventDefault(), await e.onClick(this);
           }), this.footerEl.appendChild(a);
         }
         this.footerEl.classList.remove("hidden");
@@ -188,28 +188,28 @@ class S {
     this._isOpen && this.close(), this.options.onDestroy && this.options.onDestroy(this), this.backdropEl && this.backdropEl.parentNode && this.backdropEl.parentNode.removeChild(this.backdropEl), this.backdropEl = null, this.dialogEl = null, this.bodyEl = null, this.tabBarEl = null, this.footerEl = null;
   }
 }
-function m(d) {
-  return new S(d);
+function r(s) {
+  return new z(s);
 }
-const b = class b {
+const p = class p {
   static getInstance() {
-    return b.instance || (b.instance = new b()), b.instance;
+    return p.instance || (p.instance = new p()), p.instance;
   }
   async get(t, e) {
     let a = t;
     if (e) {
-      const n = new URLSearchParams();
-      for (const [w, c] of Object.entries(e))
-        c != null && n.append(w, String(c));
-      const r = n.toString();
-      r && (a += (a.includes("?") ? "&" : "?") + r);
+      const o = new URLSearchParams();
+      for (const [S, u] of Object.entries(e))
+        u != null && o.append(S, String(u));
+      const d = o.toString();
+      d && (a += (a.includes("?") ? "&" : "?") + d);
     }
-    const i = await fetch(a);
-    if (!i.ok) {
-      const n = await i.json().catch(() => ({}));
-      throw new Error(n.error || `HTTP error ${i.status}: ${i.statusText}`);
+    const n = await fetch(a);
+    if (!n.ok) {
+      const o = await n.json().catch(() => ({}));
+      throw new Error(o.error || `HTTP error ${n.status}: ${n.statusText}`);
     }
-    return i.json();
+    return n.json();
   }
   async post(t, e) {
     const a = await fetch(t, {
@@ -218,60 +218,60 @@ const b = class b {
         "Content-Type": "application/json"
       },
       body: e ? JSON.stringify(e) : void 0
-    }), i = await a.json().catch(() => ({}));
-    if (!a.ok || i && i.success === !1)
-      throw new Error(i.error || `HTTP error ${a.status}: ${a.statusText}`);
-    return i;
+    }), n = await a.json().catch(() => ({}));
+    if (!a.ok || n && n.success === !1)
+      throw new Error(n.error || `HTTP error ${a.status}: ${a.statusText}`);
+    return n;
   }
 };
-s(b, "instance");
-let x = b;
-const o = x.getInstance(), g = class g {
+i(p, "instance");
+let B = p;
+const l = B.getInstance(), m = class m {
   static getInstance() {
-    return g.instance || (g.instance = new g()), g.instance;
+    return m.instance || (m.instance = new m()), m.instance;
   }
   async getOverview() {
-    const t = await o.get("/api/lineage/status");
+    const t = await l.get("/api/lineage/status");
     return t.overview || t;
   }
   async getCourtshipCandidates() {
-    return (await o.get("/api/lineage/courtship-candidates")).candidates || [];
+    return (await l.get("/api/lineage/courtship-candidates")).candidates || [];
   }
   async proposeMarriage(t) {
-    return o.post("/api/lineage/propose-marriage", { candidateId: t });
+    return l.post("/api/lineage/propose-marriage", { candidateId: t });
   }
   async restAndCohabit(t) {
-    return o.post("/api/lineage/rest-cohabit", { spouseId: t });
+    return l.post("/api/lineage/rest-cohabit", { spouseId: t });
   }
   async assignHouseholdRole(t, e) {
-    return o.post("/api/lineage/assign-role", { marriageId: t, role: e });
+    return l.post("/api/lineage/assign-role", { marriageId: t, role: e });
   }
   async getHeirs() {
-    return o.get("/api/lineage/heirs");
+    return l.get("/api/lineage/heirs");
   }
   async assignMentor(t, e) {
-    return o.post("/api/lineage/assign-mentor", { childId: t, mentorId: e });
+    return l.post("/api/lineage/assign-mentor", { childId: t, mentorId: e });
   }
   async designateHeir(t) {
-    return o.post("/api/lineage/designate-heir", { childId: t });
+    return l.post("/api/lineage/designate-heir", { childId: t });
   }
   async getSuccessionPreview() {
-    return o.get("/api/lineage/succession-preview");
+    return l.get("/api/lineage/succession-preview");
   }
   async executeSuccession() {
-    return o.post("/api/lineage/execute-succession", {});
+    return l.post("/api/lineage/execute-succession", {});
   }
 };
-s(g, "instance");
-let f = g;
-const u = f.getInstance();
-class $ {
+i(m, "instance");
+let R = m;
+const b = R.getInstance();
+class J {
   constructor() {
-    s(this, "modal");
-    s(this, "overview", null);
-    s(this, "candidates", []);
-    s(this, "selectedStratumFilter", "ALL");
-    this.modal = m({
+    i(this, "modal");
+    i(this, "overview", null);
+    i(this, "candidates", []);
+    i(this, "selectedStratumFilter", "ALL");
+    this.modal = r({
       id: "standard-lineage-family-modal",
       title: "Gia Thất & Thế Gia Vọng Tộc",
       subtitle: "Cầu hôn giai nhân, bồi dưỡng thế tử kế nghiệp, kiến lập gia tộc ngàn đời",
@@ -301,13 +301,13 @@ class $ {
   async refreshData() {
     var t, e;
     try {
-      const [a, i] = await Promise.all([
-        u.getOverview().catch(() => null),
-        u.getCourtshipCandidates().catch(() => [])
+      const [a, n] = await Promise.all([
+        b.getOverview().catch(() => null),
+        b.getCourtshipCandidates().catch(() => [])
       ]);
-      this.overview = a, this.candidates = i;
-      const n = ((t = a == null ? void 0 : a.spouses) == null ? void 0 : t.length) || 0, r = ((e = a == null ? void 0 : a.children) == null ? void 0 : e.length) || 0;
-      this.modal.updateTabBadge("courtship", n > 0 ? n : void 0), this.modal.updateTabBadge("heirs", r > 0 ? r : void 0);
+      this.overview = a, this.candidates = n;
+      const o = ((t = a == null ? void 0 : a.spouses) == null ? void 0 : t.length) || 0, d = ((e = a == null ? void 0 : a.children) == null ? void 0 : e.length) || 0;
+      this.modal.updateTabBadge("courtship", o > 0 ? o : void 0), this.modal.updateTabBadge("heirs", d > 0 ? d : void 0);
     } catch (a) {
       console.error("[LineageFamilyModal] Error refreshing data:", a);
     }
@@ -331,17 +331,17 @@ class $ {
     }
   }
   renderCourtshipTab() {
-    var n, r, w;
-    const t = ((n = this.overview) == null ? void 0 : n.spouses) || [], e = t.length > 0;
+    var o, d, S;
+    const t = ((o = this.overview) == null ? void 0 : o.spouses) || [], e = t.length > 0;
     let a = this.candidates;
-    this.selectedStratumFilter !== "ALL" && (a = this.candidates.filter((c) => c.socialStratum === this.selectedStratumFilter));
-    const i = `
+    this.selectedStratumFilter !== "ALL" && (a = this.candidates.filter((u) => u.socialStratum === this.selectedStratumFilter));
+    const n = `
       <div class="lineage-modal-content">
         <!-- Clan Banner -->
         <div class="spatial-banner-lead">
           <div class="lead-seal">家</div>
           <div class="lead-text">
-            <h3>Gia Tộc Thế Hệ Thứ ${((r = this.overview) == null ? void 0 : r.generation) || 1} • Danh Vọng Gia Tộc: ${((w = this.overview) == null ? void 0 : w.clanPrestige) || 100}</h3>
+            <h3>Gia Tộc Thế Hệ Thứ ${((d = this.overview) == null ? void 0 : d.generation) || 1} • Danh Vọng Gia Tộc: ${((S = this.overview) == null ? void 0 : S.clanPrestige) || 100}</h3>
             <div class="text-muted text-sm">
               ${e ? `Đã thành gia lập thất với ${t.length} phu nhân. Gia đạo hòa thuận, con cháu hưng vượng.` : "Chưa lập gia thất. Hãy tìm kiếm giai nhân phù hợp từ thường dân hoặc danh môn để kết tóc se duyên."}
             </div>
@@ -352,7 +352,7 @@ class $ {
         ${e ? `
           <div class="section-title text-gold font-bold mb-3">Chính Thê & Thê Thiếp Đang Chung Sống:</div>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
-            ${t.map((c) => this.renderSpouseCard(c)).join("")}
+            ${t.map((u) => this.renderSpouseCard(u)).join("")}
           </div>
         ` : ""}
 
@@ -369,11 +369,11 @@ class $ {
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          ${a.length > 0 ? a.map((c) => this.renderCandidateCard(c)).join("") : '<div class="text-muted col-span-full py-6 text-center">Không có giai nhân nào trong danh mục này.</div>'}
+          ${a.length > 0 ? a.map((u) => this.renderCandidateCard(u)).join("") : '<div class="text-muted col-span-full py-6 text-center">Không có giai nhân nào trong danh mục này.</div>'}
         </div>
       </div>
     `;
-    this.modal.setContent(i);
+    this.modal.setContent(n);
   }
   renderSpouseCard(t) {
     const e = [
@@ -381,7 +381,7 @@ class $ {
       { id: "ENTERPRISE_SUPERVISOR", name: "Giám Sát Sản Nghiệp" },
       { id: "STRATEGIC_ADVISOR", name: "Mưu Lược Tham Mưu" },
       { id: "MILITARY_DEFENDER", name: "Thống Soái Hộ Vệ" }
-    ], a = Number(t.pregnancy_stage) > 0, i = Number(t.pregnancy_stage) === 1 ? "Thai Nghén Sơ Kỳ (Tháng 1)" : Number(t.pregnancy_stage) === 2 ? "Thai Kỳ Trung Kỳ (Tháng 2)" : Number(t.pregnancy_stage) === 3 ? "Sắp Đến Ngày Lâm Bồn!" : "Bình thường";
+    ], a = Number(t.pregnancy_stage) > 0, n = Number(t.pregnancy_stage) === 1 ? "Thai Nghén Sơ Kỳ (Tháng 1)" : Number(t.pregnancy_stage) === 2 ? "Thai Kỳ Trung Kỳ (Tháng 2)" : Number(t.pregnancy_stage) === 3 ? "Sắp Đến Ngày Lâm Bồn!" : "Bình thường";
     return `
       <div class="tactical-card border-l-4 border-pink-500 p-3 bg-slate-900/80 rounded">
         <div class="flex justify-between items-start mb-2">
@@ -390,7 +390,7 @@ class $ {
             <div class="text-xs text-muted">Hôn Lễ: Ngày ${t.marriage_date} (Lượt ${t.marriage_turn})</div>
           </div>
           <div class="badge ${a ? "badge-danger animate-pulse" : "badge-neutral"} text-xs">
-            ${a ? "🍼 " + i : "Hảo Cảm: " + t.intimacy}
+            ${a ? "🍼 " + n : "Hảo Cảm: " + t.intimacy}
           </div>
         </div>
 
@@ -398,7 +398,7 @@ class $ {
           <div class="font-semibold text-amber-300/90 mb-1">Trọng Trách Nội Trạch:</div>
           <select class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-amber-100" 
                   onchange="window.LineageFamilyUI.assignRole('${t.marriage_id}', this.value)">
-            ${e.map((n) => `<option value="${n.id}" ${t.household_role === n.id ? "selected" : ""}>${n.name}</option>`).join("")}
+            ${e.map((o) => `<option value="${o.id}" ${t.household_role === o.id ? "selected" : ""}>${o.name}</option>`).join("")}
           </select>
           <div class="text-muted mt-1 italic">${t.role_effect_desc_vi || ""}</div>
         </div>
@@ -469,7 +469,7 @@ class $ {
           </div>
         ` : `
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            ${t.map((i) => this.renderChildCard(i)).join("")}
+            ${t.map((n) => this.renderChildCard(n)).join("")}
           </div>
         `}
       </div>
@@ -521,7 +521,7 @@ class $ {
     `;
   }
   renderTreeTab() {
-    var e, a, i, n;
+    var e, a, n, o;
     const t = `
       <div class="lineage-modal-content">
         <div class="spatial-banner-lead">
@@ -534,15 +534,15 @@ class $ {
 
         <div class="p-6 bg-slate-950/60 rounded border border-amber-900/30 text-center">
           <div class="inline-block p-4 border-2 border-amber-500 rounded bg-slate-900 text-amber-200 font-bold text-lg mb-4">
-            Đời Thứ ${((a = this.overview) == null ? void 0 : a.generation) || 1}: ${((i = this.overview) == null ? void 0 : i.clanName) || "Lương Gia Tộc"}
+            Đời Thứ ${((a = this.overview) == null ? void 0 : a.generation) || 1}: ${((n = this.overview) == null ? void 0 : n.clanName) || "Lương Gia Tộc"}
           </div>
           <div class="text-xs text-muted mb-6">↓ Các chi phu nhân & thế tử tiếp nối ↓</div>
           
           <div class="flex flex-wrap justify-center gap-4">
-            ${(((n = this.overview) == null ? void 0 : n.children) || []).map((r) => `
+            ${(((o = this.overview) == null ? void 0 : o.children) || []).map((d) => `
               <div class="p-3 bg-slate-900 rounded border border-slate-700 min-w-[140px] text-xs">
-                <div class="font-bold text-amber-300">${r.name_vi}</div>
-                <div class="text-muted">${r.is_heir === 1 ? "👑 Thế Tử" : "Chi tộc"}</div>
+                <div class="font-bold text-amber-300">${d.name_vi}</div>
+                <div class="text-muted">${d.is_heir === 1 ? "👑 Thế Tử" : "Chi tộc"}</div>
               </div>
             `).join("")}
           </div>
@@ -552,7 +552,7 @@ class $ {
     this.modal.setContent(t);
   }
   renderSuccessionTab() {
-    var a, i;
+    var a, n;
     const t = (a = this.overview) == null ? void 0 : a.activeHeir, e = `
       <div class="lineage-modal-content">
         <div class="spatial-banner-lead">
@@ -572,7 +572,7 @@ class $ {
               Khi thực hiện chuyển giao:
               <ul class="list-disc list-inside mt-2 space-y-1 text-slate-400">
                 <li>Nhân vật người chơi sẽ chuyển sang điều khiển <strong class="text-amber-200">${t.name_vi}</strong>.</li>
-                <li>Thế hệ gia tộc tăng lên <strong>Thế Hệ Thứ ${(((i = this.overview) == null ? void 0 : i.generation) || 1) + 1}</strong>.</li>
+                <li>Thế hệ gia tộc tăng lên <strong>Thế Hệ Thứ ${(((n = this.overview) == null ? void 0 : n.generation) || 1) + 1}</strong>.</li>
                 <li>100% Tiền mặt, Sản nghiệp và Binh khí truyền quốc được bảo lưu toàn vẹn.</li>
               </ul>
             </div>
@@ -596,7 +596,7 @@ class $ {
   }
   async proposeMarriage(t) {
     try {
-      const e = await u.proposeMarriage(t);
+      const e = await b.proposeMarriage(t);
       typeof window.showToast == "function" && window.showToast(e.narrativeVi || "Kết tóc se duyên thành công!"), await this.refreshData(), await this.renderActiveTab();
     } catch (e) {
       typeof window.showToast == "function" && window.showToast(e.message || "Cầu hôn thất bại!", !0);
@@ -604,7 +604,7 @@ class $ {
   }
   async restCohabit(t) {
     try {
-      const e = await u.restAndCohabit(t);
+      const e = await b.restAndCohabit(t);
       typeof window.showToast == "function" && window.showToast(e.narrativeVi || "Đồng tẩm nghỉ ngơi tĩnh dưỡng thành công!"), await this.refreshData(), await this.renderActiveTab();
     } catch (e) {
       typeof window.showToast == "function" && window.showToast(e.message || "Không thể nghỉ ngơi lúc này!", !0);
@@ -612,14 +612,14 @@ class $ {
   }
   async assignRole(t, e) {
     try {
-      await u.assignHouseholdRole(t, e), typeof window.showToast == "function" && window.showToast("Đã phân công trọng trách nội trạch thành công!"), await this.refreshData();
+      await b.assignHouseholdRole(t, e), typeof window.showToast == "function" && window.showToast("Đã phân công trọng trách nội trạch thành công!"), await this.refreshData();
     } catch (a) {
       typeof window.showToast == "function" && window.showToast(a.message || "Lỗi phân công trọng trách!", !0);
     }
   }
   async designateHeir(t) {
     try {
-      await u.designateHeir(t), typeof window.showToast == "function" && window.showToast("Đã chỉ định đích tử kế vị gia tộc!"), await this.refreshData(), await this.renderActiveTab();
+      await b.designateHeir(t), typeof window.showToast == "function" && window.showToast("Đã chỉ định đích tử kế vị gia tộc!"), await this.refreshData(), await this.renderActiveTab();
     } catch (e) {
       typeof window.showToast == "function" && window.showToast(e.message || "Không thể lập thế tử!", !0);
     }
@@ -628,7 +628,7 @@ class $ {
     const e = prompt("Nhập ID danh sư thụ giáo (ví dụ: NPC-0003 cho Quan Vũ, NPC-0001 cho Lư Thực):", "NPC-0003");
     if (e)
       try {
-        await u.assignMentor(t, e), typeof window.showToast == "function" && window.showToast("Đã bái kiến danh sư thụ giáo thành công!"), await this.refreshData(), await this.renderActiveTab();
+        await b.assignMentor(t, e), typeof window.showToast == "function" && window.showToast("Đã bái kiến danh sư thụ giáo thành công!"), await this.refreshData(), await this.renderActiveTab();
       } catch (a) {
         typeof window.showToast == "function" && window.showToast(a.message || "Lỗi chỉ định danh sư!", !0);
       }
@@ -636,57 +636,57 @@ class $ {
   async executeSuccession() {
     if (confirm("Bạn có chắc chắn muốn chuyển giao quyền lực sang Thế tử kế thừa không?"))
       try {
-        const t = await u.executeSuccession();
+        const t = await b.executeSuccession();
         typeof window.showToast == "function" && window.showToast(t.narrativeVi || "Đại điển kế thừa tông miếu hoàn tất!"), await this.refreshData(), await this.renderActiveTab();
       } catch (t) {
         typeof window.showToast == "function" && window.showToast(t.message || "Kế thừa thất bại!", !0);
       }
   }
 }
-const h = new $(), v = class v {
+const h = new J(), T = class T {
   static getInstance() {
-    return v.instance || (v.instance = new v()), v.instance;
+    return T.instance || (T.instance = new T()), T.instance;
   }
   // --- Tavern Endpoints ---
   async getBanquetStatus() {
-    return o.get("/api/banquet/status");
+    return l.get("/api/banquet/status");
   }
   async drinkWine() {
-    return o.post("/api/banquet/drink", {});
+    return l.post("/api/banquet/drink", {});
   }
   async hostBanquet(t) {
-    return o.post("/api/banquet/host", { tierId: t });
+    return l.post("/api/banquet/host", { tierId: t });
   }
   async swearBrotherhood(t) {
-    return o.post("/api/banquet/brotherhood", { targetNpcId: t });
+    return l.post("/api/banquet/brotherhood", { targetNpcId: t });
   }
   // --- Arena Endpoints ---
   async getArenaRoster() {
-    return o.get("/api/arena/roster");
+    return l.get("/api/arena/roster");
   }
   async startDuel(t) {
-    return o.post("/api/arena/duel/start", { opponentId: t });
+    return l.post("/api/arena/duel/start", { opponentId: t });
   }
   async executeDuelRound(t, e) {
-    return o.post("/api/arena/duel/round", { duelId: t, action: e });
+    return l.post("/api/arena/duel/round", { duelId: t, action: e });
   }
   // --- Residence Endpoints ---
   async restAtResidence(t = 1) {
-    return o.post("/api/character/rest", { days: t });
+    return l.post("/api/character/rest", { days: t });
   }
 };
-s(v, "instance");
-let y = v;
-const p = y.getInstance();
-class M {
+i(T, "instance");
+let V = T;
+const g = V.getInstance();
+class Z {
   constructor() {
-    s(this, "tavernModal");
-    s(this, "arenaModal");
-    s(this, "residenceModal");
-    s(this, "currentDuelId", null);
-    s(this, "currentDuelState", null);
-    s(this, "arenaRoster", []);
-    this.tavernModal = m({
+    i(this, "tavernModal");
+    i(this, "arenaModal");
+    i(this, "residenceModal");
+    i(this, "currentDuelId", null);
+    i(this, "currentDuelState", null);
+    i(this, "arenaRoster", []);
+    this.tavernModal = r({
       id: "spatial-tavern-modal",
       title: "Tửu Quán Trác Huyện • Ẩm Tửu & Tụ Nghĩa",
       subtitle: "Gặp gỡ anh hùng bốn phương, mở tiệc rượu kết giao và chiêu mộ môn khách",
@@ -705,7 +705,7 @@ class M {
       onTabChange: async () => {
         await this.renderTavernTab();
       }
-    }), this.arenaModal = m({
+    }), this.arenaModal = r({
       id: "spatial-arena-modal",
       title: "Lôi Đài Giáo Trường • Luận Kiếm & Diễn Võ",
       subtitle: "Thao trường luận kiếm danh tướng, giao đấu 1v1 đoạt danh vọng và chiến tích",
@@ -723,7 +723,7 @@ class M {
       onTabChange: async () => {
         await this.renderArenaTab();
       }
-    }), this.residenceModal = m({
+    }), this.residenceModal = r({
       id: "spatial-residence-modal",
       title: "Tư Trạch Vườn Đào • Dưỡng Thần & Gia Đạo",
       subtitle: "Trang viên tư gia, tề gia lập thất, nghỉ ngơi phục hồi sinh lực và bồi dưỡng thế hệ",
@@ -1000,7 +1000,7 @@ class M {
   // =========================================================================
   async executeDrinkWine() {
     try {
-      const t = await p.drinkWine();
+      const t = await g.drinkWine();
       typeof window.showToast == "function" && window.showToast(t.narrativeVi || "Ẩm tửu tiêu sầu, thể lực sảng khoái!");
     } catch (t) {
       typeof window.showToast == "function" && window.showToast(t.message || "Không thể uống rượu lúc này!", !0);
@@ -1008,7 +1008,7 @@ class M {
   }
   async hostBanquet(t) {
     try {
-      const e = await p.hostBanquet(t);
+      const e = await g.hostBanquet(t);
       typeof window.showToast == "function" && window.showToast(e.narrativeVi || "Yến tiệc tưng bừng, tân khách hoan hỉ!");
     } catch (e) {
       typeof window.showToast == "function" && window.showToast(e.message || "Không đủ ngân lượng hoặc rượu để khai yến!", !0);
@@ -1016,7 +1016,7 @@ class M {
   }
   async swearBrotherhood(t) {
     try {
-      const e = await p.swearBrotherhood(t);
+      const e = await g.swearBrotherhood(t);
       typeof window.showToast == "function" && window.showToast(e.narrativeVi || "Đào Viên kết bái thành công!");
     } catch (e) {
       typeof window.showToast == "function" && window.showToast(e.message || "Chưa đủ điều kiện kết bái huynh đệ!", !0);
@@ -1024,7 +1024,7 @@ class M {
   }
   async startDuel(t) {
     try {
-      const e = await p.startDuel(t);
+      const e = await g.startDuel(t);
       this.currentDuelId = e.duelId, this.currentDuelState = e.state, await this.arenaModal.switchTab("duel");
     } catch (e) {
       typeof window.showToast == "function" && window.showToast(e.message || "Lỗi khởi động lôi đài!", !0);
@@ -1033,7 +1033,7 @@ class M {
   async executeDuelRound(t) {
     if (this.currentDuelId)
       try {
-        const e = await p.executeDuelRound(this.currentDuelId, t);
+        const e = await g.executeDuelRound(this.currentDuelId, t);
         this.currentDuelState = e, this.renderActiveDuelState();
       } catch (e) {
         typeof window.showToast == "function" && window.showToast(e.message || "Lỗi hiệp đấu!", !0);
@@ -1041,21 +1041,1431 @@ class M {
   }
   async executeRestAtResidence() {
     try {
-      const t = await p.restAtResidence(1);
+      const t = await g.restAtResidence(1);
       typeof window.showToast == "function" && window.showToast(t.narrativeVi || "Dưỡng sinh nghỉ ngơi hoàn tất, thể lực tràn trề!");
     } catch (t) {
       typeof window.showToast == "function" && window.showToast(t.message || "Không thể nghỉ ngơi lúc này!", !0);
     }
   }
 }
-const l = new M();
-function L() {
+const c = new Z(), w = class w {
+  static getInstance() {
+    return w.instance || (w.instance = new w()), w.instance;
+  }
+  async getOverview(t = "PLY-0001") {
+    const e = await l.get("/api/equipment/overview", { characterId: t });
+    return e.overview || e;
+  }
+  async equipItem(t, e, a) {
+    return l.post("/api/equipment/equip", { characterId: t, slot: e, itemCode: a });
+  }
+  async unequipItem(t, e) {
+    return l.post("/api/equipment/unequip", { characterId: t, slot: e });
+  }
+  async forgeBespokeWeapon(t) {
+    return l.post("/api/equipment/forge/bespoke", t);
+  }
+};
+i(w, "instance");
+let K = w;
+const $ = K.getInstance();
+class tt {
+  constructor() {
+    i(this, "modal");
+    i(this, "currentCharacterId", "PLY-0001");
+    i(this, "overview", null);
+    this.modal = r({
+      id: "equipment-forge-modal",
+      title: "Vũ Khố & Lò Rèn Thiết Điếm",
+      subtitle: "Quản lý 4 ô chiến bị truyền quốc và đúc rèn thần binh độc bản",
+      seal: "武",
+      size: "xl",
+      tabs: [
+        { id: "gear", label: "Binh Khí & Giáp Trụ", seal: "⚔️" },
+        { id: "forge_bespoke", label: "Đúc Rèn Thần Binh", seal: "🔨" },
+        { id: "inventory", label: "Kho Binh Khí", seal: "📦" }
+      ],
+      activeTabId: "gear",
+      onOpen: async () => {
+        await this.refreshData(), await this.renderActiveTab();
+      },
+      onTabChange: async () => {
+        await this.renderActiveTab();
+      }
+    });
+  }
+  async open(t = "PLY-0001", e = "gear") {
+    this.currentCharacterId = t, await this.modal.open(e);
+  }
+  async close() {
+    await this.modal.close();
+  }
+  async refreshData() {
+    try {
+      this.overview = await $.getOverview(this.currentCharacterId);
+    } catch (t) {
+      console.error("[EquipmentForgeModal] Error refreshing data:", t);
+    }
+  }
+  async renderActiveTab() {
+    switch (this.modal.activeTab || "gear") {
+      case "gear":
+        this.renderGearTab();
+        break;
+      case "forge_bespoke":
+        this.renderForgeBespokeTab();
+        break;
+      case "inventory":
+        this.renderInventoryTab();
+        break;
+    }
+  }
+  renderGearTab() {
+    if (!this.overview) return;
+    const t = this.overview.slots, e = this.overview.effectiveStats || {}, a = this.overview.baseStats || {}, n = `
+      <div class="equipment-modal-content">
+        <!-- Lead Banner -->
+        <div class="spatial-banner-lead">
+          <div class="lead-seal">武</div>
+          <div class="lead-text">
+            <h3>Chiến Bị Của ${this.overview.characterNameVi || "Lương Diễn"}</h3>
+            <div class="text-muted text-sm">Hiệu ứng chiến bị kích hoạt thuộc tính vàng khi vượt ngưỡng 100 điểm.</div>
+          </div>
+        </div>
+
+        <!-- Effective Attributes Bar -->
+        <div class="grid grid-cols-4 gap-2 mb-4 font-mono text-xs text-center bg-slate-950/80 p-2.5 rounded border border-amber-900/40">
+          <div>VÕ: <strong class="${(e.war || 0) >= 100 ? "text-amber-400 font-bold" : "text-red-400"}">${e.war || a.war || 50}</strong> <span class="text-muted text-[10px]">(${a.war || 50})</span></div>
+          <div>THỐNG: <strong class="${(e.ldr || 0) >= 100 ? "text-amber-400 font-bold" : "text-amber-300"}">${e.ldr || a.ldr || 50}</strong> <span class="text-muted text-[10px]">(${a.ldr || 50})</span></div>
+          <div>TRÍ: <strong class="${(e.int || 0) >= 100 ? "text-amber-400 font-bold" : "text-blue-400"}">${e.int || a.int || 50}</strong> <span class="text-muted text-[10px]">(${a.int || 50})</span></div>
+          <div>XẢO: <strong class="${(e.cra || 0) >= 100 ? "text-amber-400 font-bold" : "text-cyan-400"}">${e.cra || a.cra || 50}</strong> <span class="text-muted text-[10px]">(${a.cra || 50})</span></div>
+        </div>
+
+        <!-- 4 Equipment Slots Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          ${this.renderSlotCard("WEAPON", "Binh Khí Tấn Công", "⚔️", t.WEAPON)}
+          ${this.renderSlotCard("ARMOR", "Khôi Giáp Phòng Hộ", "🛡️", t.ARMOR)}
+          ${this.renderSlotCard("STEED", "Chiến Mã Tọa Kỵ", "🐎", t.STEED)}
+          ${this.renderSlotCard("TREASURE", "Bảo Vật & Binh Thư", "📜", t.TREASURE)}
+        </div>
+      </div>
+    `;
+    this.modal.setContent(n);
+  }
+  renderSlotCard(t, e, a, n) {
+    const o = n && n.itemCode;
+    return `
+      <div class="tactical-card p-3 bg-slate-900/80 rounded border ${o ? "border-amber-500/50" : "border-slate-800"} flex justify-between items-center">
+        <div>
+          <div class="text-xs text-muted font-bold flex items-center gap-1">
+            <span>${a}</span> ${e}
+          </div>
+          <div class="font-bold text-sm ${o ? "text-amber-200" : "text-slate-500"} mt-1">
+            ${o ? n.nameVi : "Trống (Chưa Trang Bị)"}
+          </div>
+          ${o && n.statModifierDesc ? `
+            <div class="text-[11px] text-green-400 font-mono mt-0.5">${n.statModifierDesc}</div>
+          ` : ""}
+        </div>
+        <div>
+          ${o ? `
+            <button class="btn btn-xs btn-action-ghost" onclick="window.EquipmentUI.unequip('${this.currentCharacterId}', '${t}')">Tháo Ra</button>
+          ` : `
+            <button class="btn btn-xs btn-primary" onclick="window.EquipmentUI.switchTab('inventory')">Trang Bị</button>
+          `}
+        </div>
+      </div>
+    `;
+  }
+  renderForgeBespokeTab() {
+    var n, o;
+    const t = ((o = (n = this.overview) == null ? void 0 : n.baseStats) == null ? void 0 : o.cra) || 50, a = `
+      <div class="equipment-modal-content">
+        <div class="spatial-banner-lead">
+          <div class="lead-seal">🔨</div>
+          <div class="lead-text">
+            <h3>Đoán Tạo Thần Binh Tùy Biến (Bespoke Forge)</h3>
+            <div class="text-muted text-sm">Chế tác thần binh độc bản khắc tên tướng lĩnh, tiêu hao 25 Thể lực và nguyên liệu luyện tinh.</div>
+          </div>
+        </div>
+
+        ${t >= 50 ? `
+          <div class="tactical-card p-4 bg-slate-900 rounded border border-slate-800">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-300 mb-1">Tên Thần Binh Độc Bản:</label>
+                <input type="text" id="forge-weapon-name" class="modal-input w-full" placeholder="Thanh Long Uyển Nguyệt Đao" />
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-300 mb-1">Phân Loại Binh Khí:</label>
+                <select id="forge-weapon-cat" class="modal-input w-full">
+                  <option value="BLADE">Đao / Trực Đao (WAR +1..+5)</option>
+                  <option value="SPEAR">Thương / Xà Mâu (WAR/LDR +1..+5)</option>
+                  <option value="HALBERD">Kích / Phương Thiên (WAR/LDR +1..+5)</option>
+                  <option value="SWORD">Kiếm / Bảo Kiếm (LDR/POL +1..+5)</option>
+                  <option value="BOW">Cung / Cương Nỏ (WAR/CRA +1..+5)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-300 mb-1">Cấp Phẩm Nguyên Liệu:</label>
+                <select id="forge-material-tier" class="modal-input w-full">
+                  <option value="STANDARD">Nguyên Liệu Tiêu Chuẩn (Sắt Thỏi + Than)</option>
+                  <option value="FINE">Bách Luyện Tinh Cương (Thép Tinh Luyện + Da Thú)</option>
+                  <option value="LEGENDARY">Huyền Thiết Thiên Thạch (Huyền Thiết + Thiên Thạch)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-300 mb-1">Nơi Tiếp Nhận Sau Đúc:</label>
+                <select id="forge-destination" class="modal-input w-full">
+                  <option value="EQUIP">Tự Động Trang Bị Luôn</option>
+                  <option value="WAREHOUSE">Chuyển Vào Kho Huyện Trác</option>
+                  <option value="GIFT">Tặng Cho Quan Vũ / Trương Phi</option>
+                </select>
+              </div>
+            </div>
+
+            <button class="btn btn-action-gold w-full py-2.5 font-bold" onclick="window.EquipmentUI.executeForge()">
+              Khai Lò Đúc Thần Binh
+            </button>
+          </div>
+        ` : `
+          <div class="text-center py-8 text-muted">
+            Cần chỉ số Kỹ Nghệ (CRA) đạt tối thiểu 50 để mở lò rèn thần binh. Hiện tại CRA của bạn: ${t}.
+          </div>
+        `}
+      </div>
+    `;
+    this.modal.setContent(a);
+  }
+  renderInventoryTab() {
+    var a;
+    const t = ((a = this.overview) == null ? void 0 : a.inventoryGear) || [], e = `
+      <div class="equipment-modal-content">
+        <div class="spatial-banner-lead">
+          <div class="lead-seal">📦</div>
+          <div class="lead-text">
+            <h3>Kho Khí Giới Trác Huyện</h3>
+            <div class="text-muted text-sm">Kho vũ khí, giáp trụ và chiến mã sẵn sàng trang bị cho nhân vật.</div>
+          </div>
+        </div>
+
+        ${t.length === 0 ? `
+          <div class="text-center py-8 text-muted">
+            Kho vũ khí hiện không có trang bị nào. Hãy mua từ chợ phiên hoặc chế tác tại Lò Rèn.
+          </div>
+        ` : `
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            ${t.map((n) => `
+              <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800 flex justify-between items-center">
+                <div>
+                  <div class="font-bold text-amber-200 text-sm">${n.nameVi}</div>
+                  <div class="text-xs text-muted">Vị trí: ${n.slot} • SL: ${n.quantity}</div>
+                </div>
+                <button class="btn btn-xs btn-primary" onclick="window.EquipmentUI.equip('${this.currentCharacterId}', '${n.slot}', '${n.itemCode}')">
+                  Mặc Vào
+                </button>
+              </div>
+            `).join("")}
+          </div>
+        `}
+      </div>
+    `;
+    this.modal.setContent(e);
+  }
+  async equip(t, e, a) {
+    try {
+      await $.equipItem(t, e, a), typeof window.showToast == "function" && window.showToast("Đã trang bị thành công!"), await this.refreshData(), await this.renderActiveTab();
+    } catch (n) {
+      typeof window.showToast == "function" && window.showToast(n.message || "Lỗi trang bị!", !0);
+    }
+  }
+  async unequip(t, e) {
+    try {
+      await $.unequipItem(t, e), typeof window.showToast == "function" && window.showToast("Đã tháo trang bị về kho!"), await this.refreshData(), await this.renderActiveTab();
+    } catch (a) {
+      typeof window.showToast == "function" && window.showToast(a.message || "Lỗi tháo trang bị!", !0);
+    }
+  }
+  async executeForge() {
+    const t = document.getElementById("forge-weapon-name"), e = document.getElementById("forge-weapon-cat"), a = document.getElementById("forge-material-tier"), n = document.getElementById("forge-destination"), o = {
+      characterId: this.currentCharacterId,
+      weaponNameVi: (t == null ? void 0 : t.value) || "Thần Binh Trác Huyện",
+      weaponCategory: (e == null ? void 0 : e.value) || "BLADE",
+      targetAttr: "war",
+      materialTier: (a == null ? void 0 : a.value) || "STANDARD",
+      destination: (n == null ? void 0 : n.value) || "EQUIP"
+    };
+    try {
+      const d = await $.forgeBespokeWeapon(o);
+      typeof window.showToast == "function" && window.showToast(d.narrativeVi || "Đúc rèn thần binh thành công!"), await this.refreshData(), await this.modal.switchTab("gear");
+    } catch (d) {
+      typeof window.showToast == "function" && window.showToast(d.message || "Đúc rèn thất bại!", !0);
+    }
+  }
+}
+const v = new tt(), x = class x {
+  static getInstance() {
+    return x.instance || (x.instance = new x()), x.instance;
+  }
+  async getStatus(t = "PLY-0001") {
+    const e = await l.get("/api/enterprise/status", { characterId: t });
+    return e.status || e;
+  }
+  async manageSafeCash(t, e, a) {
+    return l.post("/api/enterprise/manage-safe-cash", { enterpriseId: t, action: e, amount: a });
+  }
+  async executeLaborShift(t, e) {
+    return l.post("/api/enterprise/labor-shift", { shiftType: t, targetEnterpriseId: e });
+  }
+};
+i(x, "instance");
+let q = x;
+const M = q.getInstance();
+class et {
+  constructor() {
+    i(this, "modal");
+    i(this, "enterprises", []);
+    i(this, "laborOptions", []);
+    this.modal = r({
+      id: "enterprise-modal",
+      title: "Sản Nghiệp & Phường Xưởng Bách Nghệ",
+      subtitle: "Quản lý xưởng dệt, xưởng rèn, đi làm thuê công nhật tích lũy ngân lượng",
+      seal: "業",
+      size: "xl",
+      tabs: [
+        { id: "owner", label: "Sản Nghiệp Gia Tộc", seal: "🏭" },
+        { id: "work", label: "Đi Làm Thuê Thời Vụ", seal: "工" }
+      ],
+      activeTabId: "owner",
+      onOpen: async () => {
+        await this.refreshData(), await this.renderActiveTab();
+      },
+      onTabChange: async () => {
+        await this.renderActiveTab();
+      }
+    });
+  }
+  async open(t = "owner") {
+    await this.modal.open(t);
+  }
+  async close() {
+    await this.modal.close();
+  }
+  async refreshData() {
+    try {
+      const t = await M.getStatus("PLY-0001");
+      this.enterprises = (t == null ? void 0 : t.ownedBusinesses) || (t == null ? void 0 : t.activeEnterprises) || [], this.laborOptions = (t == null ? void 0 : t.laborOptions) || [];
+    } catch (t) {
+      console.error("[EnterpriseWorkshopModal] Error refreshing data:", t);
+    }
+  }
+  async renderActiveTab() {
+    (this.modal.activeTab || "owner") === "owner" ? this.renderOwnerTab() : this.renderWorkTab();
+  }
+  renderOwnerTab() {
+    const t = `
+      <div class="enterprise-modal-content">
+        <div class="spatial-banner-lead">
+          <div class="lead-seal">業</div>
+          <div class="lead-text">
+            <h3>Sản Nghiệp Sở Hữu (${this.enterprises.length} Cơ Sở)</h3>
+            <div class="text-muted text-sm">Các xưởng chế tác tự động vận hành chu kỳ sản xuất hàng tháng và tích lũy doanh thu vào Quỹ an toàn.</div>
+          </div>
+        </div>
+
+        ${this.enterprises.length === 0 ? `
+          <div class="text-center py-10 text-muted">
+            Hiện tại bạn chưa sở hữu sản nghiệp nào. Hãy tích lũy tiền tệ hoặc làm thuê để mua lại xưởng mộc, xưởng rèn tại Trác Huyện.
+          </div>
+        ` : `
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            ${this.enterprises.map((e) => `
+              <div class="tactical-card p-4 bg-slate-900 rounded border border-slate-800">
+                <div class="flex justify-between items-start mb-2">
+                  <h4 class="text-amber-200 font-bold m-0 text-base">${e.name_vi}</h4>
+                  <span class="badge badge-success text-xs">${e.status || "VẬN HÀNH"}</span>
+                </div>
+                <div class="text-xs text-muted mb-3">Địa điểm: ${e.settlement_id} • Thợ xưởng: ${e.worker_count || 1}/${e.max_workers || 5}</div>
+
+                <div class="bg-slate-950/70 p-2.5 rounded font-mono text-xs mb-3 space-y-1">
+                  <div class="flex justify-between">
+                    <span class="text-muted">Quỹ An Toàn:</span>
+                    <span class="text-amber-400 font-bold">${Number(e.safe_cash || 0).toLocaleString()} Tiền</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-muted">Chi Phí Tháng:</span>
+                    <span class="text-red-400 font-bold">${Number(e.monthly_overhead || 0).toLocaleString()} Tiền</span>
+                  </div>
+                </div>
+
+                <div class="flex gap-2">
+                  <button class="btn btn-xs btn-primary flex-1" onclick="window.EnterpriseUI.depositSafeCash('${e.enterprise_id}')">Nạp Quỹ</button>
+                  <button class="btn btn-xs btn-action-ghost flex-1" onclick="window.EnterpriseUI.withdrawSafeCash('${e.enterprise_id}')">Rút Tiền</button>
+                </div>
+              </div>
+            `).join("")}
+          </div>
+        `}
+      </div>
+    `;
+    this.modal.setContent(t);
+  }
+  renderWorkTab() {
+    this.modal.setContent(`
+      <div class="enterprise-modal-content">
+        <div class="spatial-banner-lead">
+          <div class="lead-seal">工</div>
+          <div class="lead-text">
+            <h3>Lao Động Làm Thuê Thời Vụ</h3>
+            <div class="text-muted text-sm">Đi làm thuê tại các xưởng nghề, đồn điền nông nghiệp để kiếm tiền trang trải và rèn luyện kỹ năng.</div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800 text-center">
+            <h4 class="text-amber-300 font-bold text-sm mb-1">Đốn Củi & Tiêu Xa</h4>
+            <div class="text-xs text-muted mb-2">Tiêu hao 15 Thể lực • Kiếm 40 Tiền • Tăng EXP Võ/Thống</div>
+            <button class="btn btn-xs btn-primary w-full" onclick="window.EnterpriseUI.executeWork('WOODCUT')">Nhận Việc</button>
+          </div>
+          <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800 text-center">
+            <h4 class="text-amber-300 font-bold text-sm mb-1">Đan Lát Chiếu Trúc</h4>
+            <div class="text-xs text-muted mb-2">Tiêu hao 12 Thể lực • Kiếm 50 Tiền • Tăng EXP Kỹ Nghệ</div>
+            <button class="btn btn-xs btn-primary w-full" onclick="window.EnterpriseUI.executeWork('WEAVE_MAT')">Nhận Việc</button>
+          </div>
+          <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800 text-center">
+            <h4 class="text-amber-300 font-bold text-sm mb-1">Phụ Lò Rèn Thiết Điếm</h4>
+            <div class="text-xs text-muted mb-2">Tiêu hao 20 Thể lực • Kiếm 65 Tiền • Tăng EXP Kỹ Nghệ/Võ</div>
+            <button class="btn btn-xs btn-action-gold w-full" onclick="window.EnterpriseUI.executeWork('SMITH_ASSIST')">Nhận Việc</button>
+          </div>
+        </div>
+      </div>
+    `);
+  }
+  async depositSafeCash(t) {
+    const e = prompt("Nhập số tiền muốn nạp vào quỹ an toàn:", "500");
+    if (!e) return;
+    const a = parseInt(e, 10);
+    if (!(isNaN(a) || a <= 0))
+      try {
+        await M.manageSafeCash(t, "DEPOSIT", a), typeof window.showToast == "function" && window.showToast("Đã nạp tiền vào Quỹ an toàn!"), await this.refreshData(), await this.renderActiveTab();
+      } catch (n) {
+        typeof window.showToast == "function" && window.showToast(n.message || "Lỗi nạp tiền!", !0);
+      }
+  }
+  async withdrawSafeCash(t) {
+    const e = prompt("Nhập số tiền muốn rút từ quỹ an toàn:", "500");
+    if (!e) return;
+    const a = parseInt(e, 10);
+    if (!(isNaN(a) || a <= 0))
+      try {
+        await M.manageSafeCash(t, "WITHDRAW", a), typeof window.showToast == "function" && window.showToast("Đã rút tiền từ Quỹ an toàn về ngân khố!"), await this.refreshData(), await this.renderActiveTab();
+      } catch (n) {
+        typeof window.showToast == "function" && window.showToast(n.message || "Lỗi rút tiền!", !0);
+      }
+  }
+  async executeWork(t) {
+    try {
+      const e = await M.executeLaborShift(t);
+      typeof window.showToast == "function" && window.showToast(e.narrativeVi || "Lao động hoàn tất, nhận tiền công!"), await this.refreshData(), await this.renderActiveTab();
+    } catch (e) {
+      typeof window.showToast == "function" && window.showToast(e.message || "Không thể làm việc lúc này!", !0);
+    }
+  }
+}
+const k = new et(), f = class f {
+  static getInstance() {
+    return f.instance || (f.instance = new f()), f.instance;
+  }
+  async getCaravans() {
+    return (await l.get("/api/logistics/caravans")).caravans || [];
+  }
+  async getArbitrageOpportunities() {
+    return (await l.get("/api/logistics/market-arbitrage")).routes || [];
+  }
+  async dispatchCaravan(t) {
+    return l.post("/api/logistics/dispatch", t);
+  }
+};
+i(f, "instance");
+let G = f;
+const A = G.getInstance();
+class at {
+  constructor() {
+    i(this, "modal");
+    i(this, "caravans", []);
+    i(this, "routes", []);
+    this.modal = r({
+      id: "caravan-modal",
+      title: "Thương Đoàn Viễn Chinh & Trục Vận Chuyển",
+      subtitle: "Thiết lập tuyến buôn liên châu, kinh doanh chênh lệch giá và thuê hộ tiêu áp tải",
+      seal: "商",
+      size: "xl",
+      tabs: [
+        { id: "active", label: "Thương Đoàn Đang Chạy", seal: "🚛" },
+        { id: "arbitrage", label: "Thương Cơ & Chênh Lệch Giá", seal: "📈" },
+        { id: "dispatch", label: "Xuất Tiêu Khai Tuyến", seal: "🚩" }
+      ],
+      activeTabId: "active",
+      onOpen: async () => {
+        await this.refreshData(), await this.renderActiveTab();
+      },
+      onTabChange: async () => {
+        await this.renderActiveTab();
+      }
+    });
+  }
+  async open(t = "active") {
+    await this.modal.open(t);
+  }
+  async close() {
+    await this.modal.close();
+  }
+  async refreshData() {
+    try {
+      const [t, e] = await Promise.all([
+        A.getCaravans().catch(() => []),
+        A.getArbitrageOpportunities().catch(() => [])
+      ]);
+      this.caravans = t, this.routes = e, this.modal.updateTabBadge("active", t.length > 0 ? t.length : void 0);
+    } catch (t) {
+      console.error("[CaravanLogisticsModal] Error refreshing data:", t);
+    }
+  }
+  async renderActiveTab() {
+    switch (this.modal.activeTab || "active") {
+      case "active":
+        this.renderActiveTabContent();
+        break;
+      case "arbitrage":
+        this.renderArbitrageTabContent();
+        break;
+      case "dispatch":
+        this.renderDispatchTabContent();
+        break;
+    }
+  }
+  renderActiveTabContent() {
+    const t = `
+      <div class="caravan-modal-content">
+        <div class="spatial-banner-lead">
+          <div class="lead-seal">🚛</div>
+          <div class="lead-text">
+            <h3>Đội Buôn Lưu Động (${this.caravans.length} Tiêu Xa)</h3>
+            <div class="text-muted text-sm">Thương đoàn di chuyển liên thành theo lượt tháng, ứng biến trước thời tiết và thổ phỉ dọc quan đạo.</div>
+          </div>
+        </div>
+
+        ${this.caravans.length === 0 ? `
+          <div class="text-center py-10 text-muted">
+            Hiện không có thương đoàn nào trên đường. Hãy vào mục "Xuất Tiêu Khai Tuyến" để phái chuyến buôn đầu tiên.
+          </div>
+        ` : `
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            ${this.caravans.map((e) => `
+              <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800">
+                <div class="flex justify-between items-start mb-2">
+                  <h4 class="text-amber-200 font-bold m-0 text-sm">Hàng Hóa: ${e.commodity_code} (SL: ${e.cargo_qty})</h4>
+                  <span class="badge ${e.status === "IN_TRANSIT" ? "badge-primary" : "badge-success"} text-xs">${e.status}</span>
+                </div>
+                <div class="text-xs text-muted mb-2">Từ: ${e.origin_settlement_id} ➔ Đến: ${e.dest_settlement_id}</div>
+                <div class="text-xs text-slate-300 font-mono">Thời gian còn lại: ${e.days_remaining}/${e.total_days} ngày • Hộ vệ: ${e.escort_level}</div>
+              </div>
+            `).join("")}
+          </div>
+        `}
+      </div>
+    `;
+    this.modal.setContent(t);
+  }
+  renderArbitrageTabContent() {
+    const t = `
+      <div class="caravan-modal-content">
+        <div class="spatial-banner-lead">
+          <div class="lead-seal">📈</div>
+          <div class="lead-text">
+            <h3>Bảng Chênh Lệch Giá Hàng Hóa Liên Châu</h3>
+            <div class="text-muted text-sm">Phân tích giá mua tại Trác Huyện và giá bán tại các thành thị lớn (Lạc Dương, Nghiệp Thành, Kiến Nghiệp).</div>
+          </div>
+        </div>
+
+        ${this.routes.length === 0 ? `
+          <div class="text-center py-8 text-muted">Đang cập nhật tỷ giá liên thành...</div>
+        ` : `
+          <div class="grid grid-cols-1 gap-2">
+            ${this.routes.map((e) => `
+              <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800 flex justify-between items-center text-xs">
+                <div>
+                  <span class="font-bold text-amber-200">${e.commodityNameVi || e.commodityCode}</span>: 
+                  ${e.originNameVi} (${e.buyPrice}đ) ➔ ${e.destNameVi} (${e.sellPrice}đ)
+                </div>
+                <div class="text-right">
+                  <span class="text-green-400 font-bold font-mono">+${e.profitPerUnit}đ/đơn vị</span>
+                  <div class="text-muted text-[11px]">${e.distanceDays} ngày hành trình</div>
+                </div>
+              </div>
+            `).join("")}
+          </div>
+        `}
+      </div>
+    `;
+    this.modal.setContent(t);
+  }
+  renderDispatchTabContent() {
+    this.modal.setContent(`
+      <div class="caravan-modal-content">
+        <div class="spatial-banner-lead">
+          <div class="lead-seal">🚩</div>
+          <div class="lead-text">
+            <h3>Khởi Hành Tiêu Xa Thương Đoàn</h3>
+            <div class="text-muted text-sm">Chọn điểm đến, loại hàng hóa trong kho và cấp bậc thuê tiêu sư bảo an.</div>
+          </div>
+        </div>
+
+        <div class="tactical-card p-4 bg-slate-900 rounded border border-slate-800">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-300 mb-1">Thành Thị Đích:</label>
+              <select id="caravan-dest-id" class="modal-input w-full">
+                <option value="ye_cheng">Nghiệp Thành (Hà Bắc - 5 ngày)</option>
+                <option value="luo_yang">Lạc Dương (Kinh Đô - 12 ngày)</option>
+                <option value="xu_chang">Hứa Xương (Trung Nguyên - 10 ngày)</option>
+                <option value="jian_ye">Kiến Nghiệp (Giang Đông - 18 ngày)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-300 mb-1">Hàng Hóa Vận Chuyển:</label>
+              <select id="caravan-commodity" class="modal-input w-full">
+                <option value="PROD-MAT">Chiếu Trúc Lương Gia</option>
+                <option value="PROD-BASK">Giỏ Thùng Đan Vận Chuyển</option>
+                <option value="COM-SILK">Tơ Lụa Nguyên Tấm</option>
+                <option value="COM-IRON">Sắt Thỏi Luyện Tinh</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-300 mb-1">Số Lượng Xuất Kho:</label>
+              <input type="number" id="caravan-qty" class="modal-input w-full" value="20" min="5" max="100" />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-300 mb-1">Cấp Hộ Tiêu Bảo An:</label>
+              <select id="caravan-escort" class="modal-input w-full">
+                <option value="NONE">Không Thuê (Rủi ro thổ phỉ cao)</option>
+                <option value="MILITIA">Dân Binh Địa Phương (+100 Tiền)</option>
+                <option value="MERCENARY">Tiêu Sư Giang Hồ (+300 Tiền, An Toàn 95%)</option>
+              </select>
+            </div>
+          </div>
+
+          <button class="btn btn-action-gold w-full py-2.5 font-bold" onclick="window.CaravanUI.executeDispatch()">
+            Xuất Phát Thương Đoàn
+          </button>
+        </div>
+      </div>
+    `);
+  }
+  async executeDispatch() {
+    const t = document.getElementById("caravan-dest-id"), e = document.getElementById("caravan-commodity"), a = document.getElementById("caravan-qty"), n = document.getElementById("caravan-escort"), o = {
+      originSettlementId: "zhuo_xian",
+      destSettlementId: (t == null ? void 0 : t.value) || "ye_cheng",
+      commodityCode: (e == null ? void 0 : e.value) || "PROD-MAT",
+      quantity: parseInt((a == null ? void 0 : a.value) || "20", 10),
+      escortLevel: (n == null ? void 0 : n.value) || "MILITIA"
+    };
+    try {
+      const d = await A.dispatchCaravan(o);
+      typeof window.showToast == "function" && window.showToast(d.narrativeVi || "Thương đoàn đã xuất phát!"), await this.refreshData(), await this.modal.switchTab("active");
+    } catch (d) {
+      typeof window.showToast == "function" && window.showToast(d.message || "Lỗi xuất thương đoàn!", !0);
+    }
+  }
+}
+const D = new at(), y = class y {
+  static getInstance() {
+    return y.instance || (y.instance = new y()), y.instance;
+  }
+  async getProtagonistDossier() {
+    var a;
+    const t = await l.get("/api/status"), e = t.player || {};
+    return {
+      characterId: e.character_id || "PLY-0001",
+      nameVi: e.name_vi || "Lương Diễn",
+      nameEn: e.name_en || "Liang Yan",
+      styleName: e.style_name || "Chí Viễn",
+      age: e.age || 20,
+      locationVi: ((a = t.settlement) == null ? void 0 : a.nameVi) || "Trác Huyện",
+      positionVi: e.position_vi || "Thương Gia Tự Do",
+      personality: "PRAGMATIC",
+      motivation: "HEGEMONY",
+      bioVi: "Hậu nhân Lương thị U Châu, thông tuệ thương đạo, ôm chí lớn bình định loạn thế Tam Quốc.",
+      stats: {
+        war: e.war_attr || 50,
+        int: e.int_attr || 50,
+        ldr: e.ldr_attr || 50,
+        pol: e.pol_attr || 50,
+        com: e.com_attr || 60,
+        dip: e.dip_attr || 50,
+        cra: e.cra_attr || 55,
+        log: e.log_attr || 50
+      },
+      talents: e.talents ? typeof e.talents == "string" ? JSON.parse(e.talents) : e.talents : ["THƯƠNG_TRÍ", "KỸ_XẢO"]
+    };
+  }
+  async getNpcDossier(t) {
+    const e = await l.get("/api/npcs/dossier", { npcId: t });
+    return e.dossier || e;
+  }
+};
+i(y, "instance");
+let O = y;
+const _ = O.getInstance();
+class nt {
+  constructor() {
+    i(this, "protagonistModal");
+    i(this, "npcModal");
+    i(this, "currentProtagonist", null);
+    i(this, "currentNpc", null);
+    this.protagonistModal = r({
+      id: "protagonist-dossier-modal",
+      title: "Hồ Sơ Nhân Vật Chính • Lương Diễn (Chí Viễn)",
+      subtitle: "Toàn bộ chỉ số năng lực 8 chiều, danh hiệu và thiên phú bản mệnh",
+      seal: "主",
+      size: "lg",
+      onOpen: async () => {
+        await this.loadProtagonist();
+      }
+    }), this.npcModal = r({
+      id: "npc-dossier-modal",
+      title: "Hồ Sơ Nhân Vật • Danh Tướng Tam Quốc",
+      subtitle: "Tình báo nhân vật, mức độ thân thiện và bí mật sương mù chiến tranh",
+      seal: "将",
+      size: "lg"
+    });
+  }
+  async openProtagonist() {
+    await this.protagonistModal.open();
+  }
+  async closeProtagonist() {
+    await this.protagonistModal.close();
+  }
+  async openNpc(t) {
+    try {
+      this.currentNpc = await _.getNpcDossier(t), this.npcModal.setTitle(
+        `Hồ Sơ Nhân Vật • ${this.currentNpc.nameVi}`,
+        `Địa điểm: ${this.currentNpc.locationVi || "U Châu"} • Thân phận: ${this.currentNpc.positionVi || "Võ Tướng"}`
+      ), this.renderNpcContent(), await this.npcModal.open();
+    } catch (e) {
+      console.error("[DossiersModal] Error loading NPC:", e);
+    }
+  }
+  async closeNpc() {
+    await this.npcModal.close();
+  }
+  async loadProtagonist() {
+    try {
+      this.currentProtagonist = await _.getProtagonistDossier(), this.renderProtagonistContent();
+    } catch (t) {
+      console.error("[DossiersModal] Error loading protagonist:", t);
+    }
+  }
+  renderProtagonistContent() {
+    const t = this.currentProtagonist;
+    if (!t) return;
+    const e = t.stats, a = `
+      <div class="dossier-content">
+        <div class="spatial-banner-lead">
+          <div class="lead-seal">主</div>
+          <div class="lead-text">
+            <h3>${t.nameVi} (${t.styleName || "Chí Viễn"}) • Tuổi: ${t.age}</h3>
+            <div class="text-muted text-sm">${t.positionVi} • Cư ngụ tại ${t.locationVi}</div>
+          </div>
+        </div>
+
+        <div class="tactical-card p-4 bg-slate-900 rounded border border-slate-800 mb-3">
+          <h4 class="text-amber-300 font-bold text-xs uppercase mb-2">Bát Diện Năng Lực (Thuộc Tính Bản Thể):</h4>
+          <div class="grid grid-cols-4 gap-2 font-mono text-xs text-center bg-slate-950 p-3 rounded">
+            <div>VÕ LỰC: <strong class="text-red-400 font-bold">${e.war}</strong></div>
+            <div>MƯU TRÍ: <strong class="text-blue-400 font-bold">${e.int}</strong></div>
+            <div>THỐNG SOÁI: <strong class="text-amber-400 font-bold">${e.ldr}</strong></div>
+            <div>CHÍNH TRỊ: <strong class="text-purple-400 font-bold">${e.pol}</strong></div>
+            <div>THƯƠNG NGHIỆP: <strong class="text-yellow-400 font-bold">${e.com}</strong></div>
+            <div>NGOẠI GIAO: <strong class="text-green-400 font-bold">${e.dip}</strong></div>
+            <div>KỸ NGHỆ: <strong class="text-cyan-400 font-bold">${e.cra}</strong></div>
+            <div>HẬU CẦN: <strong class="text-orange-400 font-bold">${e.log}</strong></div>
+          </div>
+        </div>
+
+        <div class="tactical-card p-4 bg-slate-900 rounded border border-slate-800">
+          <h4 class="text-amber-300 font-bold text-xs uppercase mb-1">Tiểu Sử & Chí Hướng:</h4>
+          <p class="text-xs text-slate-300 leading-relaxed">${t.bioVi}</p>
+        </div>
+      </div>
+    `;
+    this.protagonistModal.setContent(a);
+  }
+  renderNpcContent() {
+    const t = this.currentNpc;
+    if (!t) return;
+    const e = t.stats || { war: 50, int: 50, ldr: 50, pol: 50 }, a = `
+      <div class="dossier-content">
+        <div class="spatial-banner-lead">
+          <div class="lead-seal">将</div>
+          <div class="lead-text">
+            <h3>${t.nameVi} • Tính Cách: ${t.personality}</h3>
+            <div class="text-muted text-sm">Động cơ: ${t.motivation} • Thân phận: ${t.positionVi}</div>
+          </div>
+        </div>
+
+        <div class="tactical-card p-4 bg-slate-900 rounded border border-slate-800 mb-3">
+          <h4 class="text-amber-300 font-bold text-xs uppercase mb-2">Chỉ Số Năng Lực Nổi Trội:</h4>
+          <div class="grid grid-cols-4 gap-2 font-mono text-xs text-center bg-slate-950 p-3 rounded">
+            <div>VÕ: <strong class="text-red-400 font-bold">${e.war}</strong></div>
+            <div>TRÍ: <strong class="text-blue-400 font-bold">${e.int}</strong></div>
+            <div>SOÁI: <strong class="text-amber-400 font-bold">${e.ldr}</strong></div>
+            <div>CHÍNH: <strong class="text-purple-400 font-bold">${e.pol}</strong></div>
+          </div>
+        </div>
+
+        <div class="tactical-card p-4 bg-slate-900 rounded border border-slate-800">
+          <h4 class="text-amber-300 font-bold text-xs uppercase mb-1">Hành Trạng Lịch Sử:</h4>
+          <p class="text-xs text-slate-300 leading-relaxed">${t.bioVi || "Nhân tài hào kiệt uy chấn phương bắc."}</p>
+        </div>
+      </div>
+    `;
+    this.npcModal.setContent(a);
+  }
+}
+const N = new nt(), C = class C {
+  static getInstance() {
+    return C.instance || (C.instance = new C()), C.instance;
+  }
+  async getCareerRoadmap(t = "PLY-0001") {
+    const e = await l.get("/api/progression/career-paths", { characterId: t }).catch(() => ({})), a = [
+      {
+        pathKey: "ARTISAN",
+        titleVi: "Bách Nghệ / Thợ Cả",
+        seal: "🔨",
+        currentTier: 2,
+        maxTier: 5,
+        tierNameVi: "Thợ Cả Trác Huyện",
+        progressPercent: 45,
+        nextMilestoneVi: "Đúc 1 Thần Binh Bách Luyện độc bản",
+        unlockedPerks: ["Giảm 15% hao hụt nguyên liệu xưởng"]
+      },
+      {
+        pathKey: "MERCHANT",
+        titleVi: "Hành Thương / Cự Phú",
+        seal: "💰",
+        currentTier: 3,
+        maxTier: 5,
+        tierNameVi: "Đại Lãnh Tiêu Xa",
+        progressPercent: 60,
+        nextMilestoneVi: "Tích lũy ngân khố 20,000 Tiền",
+        unlockedPerks: ["Miễn 10% quan thuế trạm gác"]
+      },
+      {
+        pathKey: "MARTIAL",
+        titleVi: "Võ Hiệp / Thống Soái",
+        seal: "⚔️",
+        currentTier: 2,
+        maxTier: 5,
+        tierNameVi: "Kiêu Dũng Hiệp Khách",
+        progressPercent: 30,
+        nextMilestoneVi: "Thắng 3 trận lôi đài giáo trường",
+        unlockedPerks: ["Khai mở Tuyệt Kỹ chiến trường"]
+      },
+      {
+        pathKey: "SCHOLAR",
+        titleVi: "Sĩ Đồ / Mưu Sĩ",
+        seal: "📜",
+        currentTier: 1,
+        maxTier: 5,
+        tierNameVi: "Thư Sinh Áo Vải",
+        progressPercent: 20,
+        nextMilestoneVi: "Đạt Hảo Cảm 80 cùng Lư Thực",
+        unlockedPerks: ["Mở đàm phán giảm giá tiêu xa"]
+      },
+      {
+        pathKey: "LINEAGE",
+        titleVi: "Tông Tộc / Thế Gia",
+        seal: "🏯",
+        currentTier: 1,
+        maxTier: 5,
+        tierNameVi: "Hàn Môn Lương Thị",
+        progressPercent: 25,
+        nextMilestoneVi: "Thành gia lập thất nạp sính lễ",
+        unlockedPerks: ["Khai sáng Phả Hệ Đời 1"]
+      }
+    ];
+    return {
+      paths: e.paths || a,
+      milestones: e.milestones || []
+    };
+  }
+};
+i(C, "instance");
+let U = C;
+const it = U.getInstance();
+class st {
+  constructor() {
+    i(this, "modal");
+    i(this, "paths", []);
+    i(this, "milestones", []);
+    this.modal = r({
+      id: "personal-journal-modal",
+      title: "Sổ Tay Cá Nhân & Chí Hướng Cuộc Đời [J]",
+      subtitle: "Theo dõi tiến trình Ngũ Đại Phẩm Lộ, cột mốc huân công và lý tưởng nhân vật",
+      seal: "志",
+      size: "xl",
+      tabs: [
+        { id: "career", label: "Ngũ Đại Phẩm Lộ", seal: "🌟" },
+        { id: "milestones", label: "Cột Mốc Huân Công", seal: "🎖️" }
+      ],
+      activeTabId: "career",
+      onOpen: async () => {
+        await this.refreshData(), await this.renderActiveTab();
+      },
+      onTabChange: async () => {
+        await this.renderActiveTab();
+      }
+    });
+  }
+  async open(t = "career") {
+    await this.modal.open(t);
+  }
+  async close() {
+    await this.modal.close();
+  }
+  async refreshData() {
+    try {
+      const t = await it.getCareerRoadmap("PLY-0001");
+      this.paths = t.paths, this.milestones = t.milestones;
+    } catch (t) {
+      console.error("[PersonalJournalModal] Error refreshing data:", t);
+    }
+  }
+  async renderActiveTab() {
+    (this.modal.activeTab || "career") === "career" ? this.renderCareerTab() : this.renderMilestonesTab();
+  }
+  renderCareerTab() {
+    const t = `
+      <div class="journal-modal-content">
+        <div class="spatial-banner-lead">
+          <div class="lead-seal">志</div>
+          <div class="lead-text">
+            <h3>Ngũ Đại Phẩm Lộ Tiến Trình</h3>
+            <div class="text-muted text-sm">Tự do phát triển theo 5 con đường: Thợ Cả, Đại Thương, Thống Soái, Danh Sĩ, Tông Tộc.</div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          ${this.paths.map((e) => `
+            <div class="tactical-card p-3.5 bg-slate-900 rounded border border-slate-800">
+              <div class="flex justify-between items-start mb-2">
+                <div class="flex items-center gap-2">
+                  <span class="text-xl">${e.seal}</span>
+                  <div>
+                    <h4 class="text-amber-200 font-bold m-0 text-sm">${e.titleVi}</h4>
+                    <span class="text-xs text-amber-400 font-semibold">${e.tierNameVi} (Bậc ${e.currentTier}/${e.maxTier})</span>
+                  </div>
+                </div>
+                <span class="text-xs font-mono font-bold text-slate-300">${e.progressPercent}%</span>
+              </div>
+
+              <!-- Progress Bar -->
+              <div class="w-full bg-slate-950 rounded-full h-2 mb-2.5 overflow-hidden border border-slate-700">
+                <div class="bg-amber-400 h-2 rounded-full transition-all" style="width: ${e.progressPercent}%"></div>
+              </div>
+
+              <div class="text-[11px] text-muted mb-2">
+                <strong class="text-slate-300">Cột mốc kế tiếp:</strong> ${e.nextMilestoneVi}
+              </div>
+
+              <div class="text-[11px] text-green-400 font-mono bg-slate-950/60 p-1.5 rounded">
+                ✦ Đặc quyền: ${e.unlockedPerks.join(", ")}
+              </div>
+            </div>
+          `).join("")}
+        </div>
+      </div>
+    `;
+    this.modal.setContent(t);
+  }
+  renderMilestonesTab() {
+    this.modal.setContent(`
+      <div class="journal-modal-content">
+        <div class="spatial-banner-lead">
+          <div class="lead-seal">🎖️</div>
+          <div class="lead-text">
+            <h3>Cột Mốc Lịch Sử & Huân Công Đã Đạt</h3>
+            <div class="text-muted text-sm">Ghi nhận những dấu ấn quan trọng trong hành trình bình định Tam Quốc.</div>
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <div class="tactical-card p-3 bg-slate-900 rounded border border-amber-500/40 flex justify-between items-center text-xs">
+            <div>
+              <div class="font-bold text-amber-200">Khởi Đầu Tại Trác Huyện</div>
+              <div class="text-muted">Hoàn tất giao dịch quân nhu ban đầu và thiết lập cân bằng sổ cái kép.</div>
+            </div>
+            <span class="badge badge-success">ĐÃ ĐẠT</span>
+          </div>
+
+          <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800 flex justify-between items-center text-xs">
+            <div>
+              <div class="font-bold text-slate-300">Đào Viên Tụ Nghĩa</div>
+              <div class="text-muted">Gặp gỡ Lưu Bị, Quan Vũ, Trương Phi tại Tửu quán Trác Huyện.</div>
+            </div>
+            <span class="badge badge-neutral">ĐANG THỰC HIỆN</span>
+          </div>
+        </div>
+      </div>
+    `);
+  }
+}
+const F = new st();
+class ot {
+  constructor() {
+    i(this, "modal");
+    this.modal = r({
+      id: "grand-command-hub-modal",
+      title: "Đại Bản Doanh • Quân Cơ Xứ",
+      subtitle: "Trung tâm điều hành Lục Đại Trụ Cột Chiến Lược (Quân Trang, Sản Nghiệp, Thương Đoàn, Gia Thất, Diễn Võ, Tụ Nghĩa)",
+      seal: "帥",
+      size: "xl",
+      tabs: [
+        { id: "overview", label: "Tổng Quan Bản Doanh", seal: "帥" },
+        { id: "gear", label: "Quân Trang & Lò Rèn", seal: "武" },
+        { id: "enterprise", label: "Sản Nghiệp & Xưởng", seal: "業" },
+        { id: "caravan", label: "Thương Đoàn & Tiêu Xa", seal: "商" },
+        { id: "family", label: "Gia Thất & Dòng Tộc", seal: "家" },
+        { id: "duel", label: "Diễn Võ & Lôi Đài", seal: "演" },
+        { id: "banquet", label: "Tụ Nghĩa & Yến Tiệc", seal: "義" }
+      ],
+      activeTabId: "overview",
+      onOpen: async () => {
+        await this.renderActiveTab();
+      },
+      onTabChange: async (t) => {
+        await this.handleTabSwitch(t);
+      }
+    });
+  }
+  async open(t = "overview") {
+    t === "career" && (t = "overview"), await this.modal.open(t);
+  }
+  async close() {
+    await this.modal.close();
+  }
+  async handleTabSwitch(t) {
+    t === "gear" ? (await this.modal.close(), await v.open("PLY-0001", "gear")) : t === "enterprise" ? (await this.modal.close(), await k.open("owner")) : t === "caravan" ? (await this.modal.close(), await D.open("active")) : t === "family" ? (await this.modal.close(), await h.open("courtship")) : t === "duel" ? (await this.modal.close(), await c.openArena("spar")) : t === "banquet" ? (await this.modal.close(), await c.openTavern("drink")) : await this.renderOverviewTab();
+  }
+  async renderActiveTab() {
+    await this.renderOverviewTab();
+  }
+  async renderOverviewTab() {
+    this.modal.setContent(`
+      <div class="grand-hub-content">
+        <div class="spatial-banner-lead">
+          <div class="lead-seal">帥</div>
+          <div class="lead-text">
+            <h3>Tổng Quan Lục Đại Trụ Cột Chiến Lược</h3>
+            <div class="text-muted text-sm">Chọn một trụ cột để đi sâu vào hệ thống quản lý chuyên biệt.</div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div class="tactical-card p-4 bg-slate-900 rounded border border-slate-800 hover:border-amber-400 cursor-pointer transition-all"
+               onclick="window.GrandCommandHubUI.open('gear')">
+            <div class="text-2xl mb-2">武</div>
+            <h4 class="text-amber-200 font-bold mb-1">Quân Trang & Lò Rèn</h4>
+            <div class="text-xs text-muted">Trang bị vũ khí, giáp trụ, chiến mã và đúc thần binh độc bản.</div>
+          </div>
+
+          <div class="tactical-card p-4 bg-slate-900 rounded border border-slate-800 hover:border-amber-400 cursor-pointer transition-all"
+               onclick="window.GrandCommandHubUI.open('enterprise')">
+            <div class="text-2xl mb-2">業</div>
+            <h4 class="text-amber-200 font-bold mb-1">Sản Nghiệp & Xưởng Nghề</h4>
+            <div class="text-xs text-muted">Quản lý xưởng dệt, xưởng rèn và làm thuê công nhật.</div>
+          </div>
+
+          <div class="tactical-card p-4 bg-slate-900 rounded border border-slate-800 hover:border-amber-400 cursor-pointer transition-all"
+               onclick="window.GrandCommandHubUI.open('caravan')">
+            <div class="text-2xl mb-2">商</div>
+            <h4 class="text-amber-200 font-bold mb-1">Thương Đoàn & Tiêu Xa</h4>
+            <div class="text-xs text-muted">Vận chuyển liên thành, kinh doanh chênh lệch giá và thuê hộ tiêu.</div>
+          </div>
+
+          <div class="tactical-card p-4 bg-slate-900 rounded border border-slate-800 hover:border-amber-400 cursor-pointer transition-all"
+               onclick="window.GrandCommandHubUI.open('family')">
+            <div class="text-2xl mb-2">家</div>
+            <h4 class="text-amber-200 font-bold mb-1">Gia Thất & Dòng Tộc</h4>
+            <div class="text-xs text-muted">Cầu hôn giai nhân, bồi dưỡng thế tử và thừa kế tông miếu.</div>
+          </div>
+
+          <div class="tactical-card p-4 bg-slate-900 rounded border border-slate-800 hover:border-amber-400 cursor-pointer transition-all"
+               onclick="window.GrandCommandHubUI.open('duel')">
+            <div class="text-2xl mb-2">演</div>
+            <h4 class="text-amber-200 font-bold mb-1">Diễn Võ & Lôi Đài</h4>
+            <div class="text-xs text-muted">Luận kiếm cùng Quan Vũ, Trương Phi và quyết đấu 1v1.</div>
+          </div>
+
+          <div class="tactical-card p-4 bg-slate-900 rounded border border-slate-800 hover:border-amber-400 cursor-pointer transition-all"
+               onclick="window.GrandCommandHubUI.open('banquet')">
+            <div class="text-2xl mb-2">義</div>
+            <h4 class="text-amber-200 font-bold mb-1">Tụ Nghĩa & Yến Tiệc</h4>
+            <div class="text-xs text-muted">Ẩm tửu dưỡng thần, đại yến hào kiệt và kết bái huynh đệ.</div>
+          </div>
+        </div>
+      </div>
+    `);
+  }
+}
+const Q = new ot();
+class lt {
+  constructor() {
+    i(this, "modal");
+    i(this, "currentMode", "BUY");
+    i(this, "currentItemCode", "COM-GRAIN");
+    i(this, "currentPrice", 50);
+    this.modal = r({
+      id: "standard-trade-modal",
+      title: "Giao Dịch Hàng Hóa Chợ Phiên",
+      subtitle: "Thực thi giao thương hàng hóa, cân bằng sổ cái kép kế toán ACID",
+      seal: "貿",
+      size: "sm"
+    });
+  }
+  async open(t, e, a = 1, n = 50) {
+    this.currentMode = t, this.currentItemCode = e, this.currentPrice = n, this.modal.setTitle(
+      t === "BUY" ? "Thu Mua Vật Phẩm" : "Xuất Bán Hàng Hóa",
+      `Mã vật phẩm: ${e} • Đơn giá hiện tại: ${n} Tiền`,
+      t === "BUY" ? "買" : "賣"
+    ), this.renderForm(a), await this.modal.open();
+  }
+  async close() {
+    await this.modal.close();
+  }
+  renderForm(t) {
+    const e = `
+      <div class="space-y-3 p-1">
+        <div>
+          <label class="block text-xs font-bold text-slate-300 mb-1">Mã Vật Phẩm:</label>
+          <input type="text" class="modal-input w-full" value="${this.currentItemCode}" readonly />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-300 mb-1">Số Lượng Giao Dịch:</label>
+          <input type="number" id="quick-trade-qty" class="modal-input w-full" min="1" value="${t}" oninput="window.QuickTradeModal.updateTotal()" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-300 mb-1">Đơn Giá Đơn Vị (Tiền):</label>
+          <input type="number" id="quick-trade-price" class="modal-input w-full" value="${this.currentPrice}" readonly />
+        </div>
+        <div class="bg-slate-950 p-2.5 rounded flex justify-between items-center text-xs font-mono">
+          <span class="text-muted">Tổng Giá Trị:</span>
+          <span class="text-amber-400 font-bold text-sm" id="quick-trade-total">${(t * this.currentPrice).toLocaleString()} Tiền</span>
+        </div>
+        <button class="btn btn-action-gold w-full py-2 font-bold mt-2" onclick="window.QuickTradeModal.submit()">
+          Xác Nhận ${this.currentMode === "BUY" ? "Thu Mua" : "Bán Hàng"}
+        </button>
+      </div>
+    `;
+    this.modal.setContent(e);
+  }
+  updateTotal() {
+    const t = document.getElementById("quick-trade-qty"), e = document.getElementById("quick-trade-total");
+    if (!t || !e) return;
+    const a = parseFloat(t.value) || 0;
+    e.textContent = `${(a * this.currentPrice).toLocaleString()} Tiền`;
+  }
+  async submit() {
+    const t = document.getElementById("quick-trade-qty"), e = parseFloat((t == null ? void 0 : t.value) || "1");
+    if (isNaN(e) || e <= 0) return;
+    const a = this.currentMode === "BUY" ? "TRADE_BUY" : "TRADE_SELL";
+    try {
+      const n = await l.post("/api/action", {
+        action: a,
+        item: this.currentItemCode,
+        qty: e,
+        price: this.currentPrice
+      });
+      typeof window.showToast == "function" && window.showToast(n.message || "Giao dịch thành công!"), await this.modal.close(), typeof window.refreshGameStatus == "function" && window.refreshGameStatus();
+    } catch (n) {
+      typeof window.showToast == "function" && window.showToast(n.message || "Giao dịch thất bại!", !0);
+    }
+  }
+}
+const L = new lt();
+class dt {
+  constructor() {
+    i(this, "modal");
+    i(this, "currentDuelId", null);
+    i(this, "duelState", null);
+    this.modal = r({
+      id: "tactical-battle-modal",
+      title: "Quyết Đấu Sa Trường • Đơn Đả Độc Đấu 1v1",
+      subtitle: "Tương tác chiến thuật 4 lệnh (Công Kích, Phòng Ngự, Tuyệt Kỹ, Tụ Khí)",
+      seal: "斗",
+      size: "lg"
+    });
+  }
+  async startDuel(t) {
+    try {
+      const e = await g.startDuel(t);
+      this.currentDuelId = e.duelId, this.duelState = e.state, this.renderDuel(), await this.modal.open();
+    } catch (e) {
+      typeof window.showToast == "function" && window.showToast(e.message || "Lỗi khởi động giao đấu!", !0);
+    }
+  }
+  async close() {
+    await this.modal.close();
+  }
+  renderDuel() {
+    const t = this.duelState;
+    if (!t) return;
+    const e = `
+      <div class="tactical-battle-content">
+        <div class="p-3 bg-slate-950/80 rounded border border-amber-900/40 mb-3">
+          <div class="flex justify-between items-center mb-3">
+            <span class="font-bold text-amber-200">Hiệp Đấu Thứ ${t.round}</span>
+            <span class="badge ${t.isConcluded ? "badge-danger" : "badge-primary"}">${t.isConcluded ? "TRẬN ĐẤU KẾT THÚC" : "ĐANG ĐỐI ĐẦU"}</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 mb-3">
+            <div class="p-3 bg-slate-900 rounded border border-slate-800">
+              <div class="text-xs font-bold text-amber-300 mb-1">Người Chơi</div>
+              <div class="text-xs space-y-0.5 font-mono">
+                <div>Sinh Lực: <strong class="text-green-400">${t.playerHp}</strong></div>
+                <div>Khí Lực: <strong class="text-blue-400">${t.playerSpirit}</strong></div>
+                <div>Sĩ Khí: <strong class="text-amber-400">${t.playerMorale}</strong></div>
+              </div>
+            </div>
+            <div class="p-3 bg-slate-900 rounded border border-slate-800">
+              <div class="text-xs font-bold text-red-300 mb-1">Đối Thủ</div>
+              <div class="text-xs space-y-0.5 font-mono">
+                <div>Sinh Lực: <strong class="text-red-400">${t.oppHp}</strong></div>
+                <div>Khí Lực: <strong class="text-blue-400">${t.oppSpirit}</strong></div>
+                <div>Sĩ Khí: <strong class="text-amber-400">${t.oppMorale}</strong></div>
+              </div>
+            </div>
+          </div>
+
+          ${t.isConcluded ? `
+            <div class="text-center font-bold text-amber-300 py-2">
+              ${t.outcome || "Quyết đấu hoàn tất!"}
+            </div>
+          ` : `
+            <div class="grid grid-cols-4 gap-2">
+              <button class="btn btn-xs btn-primary" onclick="window.TacticalBattleUI.executeAction('ATTACK')">Công Kích</button>
+              <button class="btn btn-xs btn-action-ghost" onclick="window.TacticalBattleUI.executeAction('DEFEND')">Phòng Ngự</button>
+              <button class="btn btn-xs btn-action-gold" onclick="window.TacticalBattleUI.executeAction('SPECIAL_STRIKE')">Tuyệt Kỹ</button>
+              <button class="btn btn-xs btn-action-ghost" onclick="window.TacticalBattleUI.executeAction('FOCUS_SPIRIT')">Tụ Khí</button>
+            </div>
+          `}
+        </div>
+
+        <div class="bg-black/60 p-3 rounded text-xs font-mono max-h-48 overflow-y-auto space-y-1">
+          ${t.combatLogs.map((a) => `<div>${a}</div>`).join("")}
+        </div>
+      </div>
+    `;
+    this.modal.setContent(e);
+  }
+  async executeAction(t) {
+    if (this.currentDuelId)
+      try {
+        this.duelState = await g.executeDuelRound(this.currentDuelId, t), this.renderDuel();
+      } catch (e) {
+        typeof window.showToast == "function" && window.showToast(e.message || "Lỗi hiệp đấu!", !0);
+      }
+  }
+}
+const H = new dt();
+class rt {
+  constructor() {
+    i(this, "modal");
+    i(this, "selectedScenario", "184_YELLOW_TURBAN");
+    this.modal = r({
+      id: "title-screen-modal",
+      title: "Tam Quốc Diễn Nghĩa • Khởi Tạo Niên Đại & Nhân Vật",
+      subtitle: "Chọn niên đại lịch sử và thiết lập danh tính nhân vật chính",
+      seal: "國",
+      size: "lg",
+      onOpen: async () => {
+        this.renderContent();
+      }
+    });
+  }
+  async open() {
+    await this.modal.open();
+  }
+  async close() {
+    await this.modal.close();
+  }
+  renderContent() {
+    const t = `
+      <div class="title-screen-content">
+        <div class="spatial-banner-lead">
+          <div class="lead-seal">國</div>
+          <div class="lead-text">
+            <h3>Chọn Khởi Điểm Chiến Dịch</h3>
+            <div class="text-muted text-sm">Mỗi niên đại có cục diện chư hầu, kinh tế và thế lực hoàn toàn khác biệt.</div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+          <div class="tactical-card p-3 bg-slate-900 rounded border ${this.selectedScenario === "184_YELLOW_TURBAN" ? "border-amber-400 bg-amber-950/20" : "border-slate-800"} cursor-pointer"
+               onclick="window.TitleScreenUI.selectScenario('184_YELLOW_TURBAN')">
+            <h4 class="text-amber-200 font-bold text-sm mb-1">184 SCN: Khởi Nghĩa Khăn Vàng</h4>
+            <div class="text-xs text-muted">Trương Giác dấy binh, triều đình suy vi, anh hùng thảo mộc bắt đầu khởi nghiệp.</div>
+          </div>
+
+          <div class="tactical-card p-3 bg-slate-900 rounded border ${this.selectedScenario === "190_DONG_ZHUO" ? "border-amber-400 bg-amber-950/20" : "border-slate-800"} cursor-pointer"
+               onclick="window.TitleScreenUI.selectScenario('190_DONG_ZHUO')">
+            <h4 class="text-amber-200 font-bold text-sm mb-1">190 SCN: Thảo Phạt Đổng Trác</h4>
+            <div class="text-xs text-muted">Mười tám lộ chư hầu hội minh Quan Đông, Lạc Dương biển lửa.</div>
+          </div>
+
+          <div class="tactical-card p-3 bg-slate-900 rounded border ${this.selectedScenario === "200_GUANDU" ? "border-amber-400 bg-amber-950/20" : "border-slate-800"} cursor-pointer"
+               onclick="window.TitleScreenUI.selectScenario('200_GUANDU')">
+            <h4 class="text-amber-200 font-bold text-sm mb-1">200 SCN: Quan Độ Chi Chiến</h4>
+            <div class="text-xs text-muted">Tào Tháo đối đầu Viên Thiệu tranh đoạt bá chủ phương bắc.</div>
+          </div>
+
+          <div class="tactical-card p-3 bg-slate-900 rounded border ${this.selectedScenario === "208_CHIBI" ? "border-amber-400 bg-amber-950/20" : "border-slate-800"} cursor-pointer"
+               onclick="window.TitleScreenUI.selectScenario('208_CHIBI')">
+            <h4 class="text-amber-200 font-bold text-sm mb-1">208 SCN: Xích Bích Đại Chiến</h4>
+            <div class="text-xs text-muted">Tôn Lưu liên minh, đại chiến thủy quân Trường Giang định hình Tam Quốc.</div>
+          </div>
+        </div>
+
+        <div class="tactical-card p-3.5 bg-slate-900 rounded border border-slate-800">
+          <h4 class="text-amber-300 font-bold text-xs uppercase mb-2">Thông Tin Nhân Vật Khởi Tạo:</h4>
+          <div class="grid grid-cols-2 gap-3 mb-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-300 mb-1">Họ & Tên:</label>
+              <input type="text" id="ts-player-name" class="modal-input w-full" value="Lương Diễn" />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-300 mb-1">Tên Chữ (Tự):</label>
+              <input type="text" id="ts-player-style" class="modal-input w-full" value="Chí Viễn" />
+            </div>
+          </div>
+          <button class="btn btn-action-gold w-full py-2.5 font-bold" onclick="window.TitleScreenUI.startCampaign()">
+            Khởi Sự Chiến Dịch Lịch Sử
+          </button>
+        </div>
+      </div>
+    `;
+    this.modal.setContent(t);
+  }
+  selectScenario(t) {
+    this.selectedScenario = t, this.renderContent();
+  }
+  async startCampaign() {
+    const t = document.getElementById("ts-player-name"), e = document.getElementById("ts-player-style");
+    try {
+      await l.post("/api/session/new-game", {
+        scenario: this.selectedScenario,
+        playerName: (t == null ? void 0 : t.value) || "Lương Diễn",
+        playerStyle: (e == null ? void 0 : e.value) || "Chí Viễn"
+      }), typeof window.showToast == "function" && window.showToast("Khởi tạo chiến dịch thành công!"), await this.modal.close(), window.location.reload();
+    } catch (a) {
+      typeof window.showToast == "function" && window.showToast(a.message || "Lỗi khởi tạo chiến dịch!", !0);
+    }
+  }
+}
+const E = new rt();
+class ct {
+  constructor() {
+    i(this, "travelModal");
+    i(this, "turnModal");
+    this.travelModal = r({
+      id: "travel-transit-modal",
+      title: "Lộ Trình Viễn Chinh • Dặm Trường Phong Vân",
+      subtitle: "Hành quân liên châu, khảo sát địa hình và ứng biến trước hiểm họa dọc đường",
+      seal: "行",
+      size: "md"
+    }), this.turnModal = r({
+      id: "turn-advance-modal",
+      title: "Tuế Nguyệt Lưu Chuyển • Quyết Toán Nguyệt Kỳ",
+      subtitle: "Thời gian tiến tới 1 tháng, kết toán tài chính, nông vụ và dòng dõi gia tộc",
+      seal: "歲",
+      size: "md"
+    });
+  }
+  async showTravelTransit(t, e, a, n) {
+    this.travelModal.setTitle(
+      "Hành Trình Viễn Chinh",
+      `Từ ${t} ➔ Đến ${e} (${a} ngày đường)`
+    ), this.travelModal.setContent(`
+      <div class="travel-transit-body p-2 space-y-3">
+        <div class="p-3 bg-slate-950 rounded border border-slate-800 text-xs font-mono">
+          ${n || "<div>Xe ngựa lăn bánh trên quan đạo phương bắc... An toàn đến nơi!</div>"}
+        </div>
+        <button class="btn btn-primary w-full py-2 font-bold" onclick="window.TravelTransitUI.close()">
+          Nhập Thành
+        </button>
+      </div>
+    `), await this.travelModal.open();
+  }
+  async closeTravel() {
+    await this.travelModal.close();
+  }
+  async showTurnAdvance(t, e, a) {
+    this.turnModal.setTitle(
+      `Quyết Toán Lượt Thứ ${t}`,
+      `Thời gian: ${e} • Thiên thời địa lợi`
+    ), this.turnModal.setContent(`
+      <div class="turn-advance-body p-2 space-y-3">
+        <div class="p-3 bg-slate-950 rounded border border-slate-800 text-xs font-mono space-y-1">
+          ${a || `
+            <div class="text-green-400">✦ Hoàn tất chu kỳ sản xuất hàng tháng của các xưởng.</div>
+            <div class="text-amber-300">✦ Kết toán sổ cái kép thu chi tài chính.</div>
+            <div class="text-blue-300">✦ Cập nhật tiến độ thai kỳ và bồi dưỡng thế hệ gia tộc.</div>
+          `}
+        </div>
+        <button class="btn btn-action-gold w-full py-2 font-bold" onclick="window.TurnAdvanceUI.close()">
+          Tiếp Tục Mô Phỏng
+        </button>
+      </div>
+    `), await this.turnModal.open();
+  }
+  async closeTurn() {
+    await this.turnModal.close();
+  }
+}
+const I = new ct();
+class ht {
+  constructor() {
+    i(this, "modal");
+    this.modal = r({
+      id: "world-map-modal",
+      title: "Dư Đồ Tam Quốc • Khởi Nghĩa Khăn Vàng (184 SCN)",
+      subtitle: "Khảo sát 24 châu quận, phân bố thế lực chư hầu và dịch trạm liên thành",
+      seal: "圖",
+      size: "xl"
+    });
+  }
+  async open() {
+    typeof window.renderWorldMap == "function" ? (await this.modal.open(), window.renderWorldMap()) : await this.modal.open();
+  }
+  async close() {
+    await this.modal.close();
+  }
+}
+const j = new ht();
+function ut() {
   if (typeof window > "u") return;
-  const d = window;
-  d.ModalShellCore = {
-    createModalShell: m,
-    modalStack: T
-  }, d.LineageFamilyUI = {
+  const s = window;
+  s.ModalShellCore = {
+    createModalShell: r,
+    modalStack: P
+  }, s.LineageFamilyUI = {
     open: (t) => h.open(t),
     close: () => h.close(),
     setFilter: (t) => h.setFilter(t),
@@ -1065,24 +2475,76 @@ function L() {
     designateHeir: (t) => h.designateHeir(t),
     assignMentorDialog: (t) => h.assignMentorDialog(t),
     executeSuccession: () => h.executeSuccession()
-  }, d.SpatialPoiModals = {
-    openTavernModal: (t) => l.openTavern(t),
-    closeTavernModal: () => l.closeTavern(),
-    openArenaModal: (t) => l.openArena(t),
-    closeArenaModal: () => l.closeArena(),
-    openResidenceModal: (t) => l.openResidence(t),
-    closeResidenceModal: () => l.closeResidence(),
-    executeDrinkWine: () => l.executeDrinkWine(),
-    hostBanquet: (t) => l.hostBanquet(t),
-    swearBrotherhood: (t) => l.swearBrotherhood(t),
-    startDuel: (t) => l.startDuel(t),
-    executeDuelRound: (t) => l.executeDuelRound(t),
-    executeRestAtResidence: () => l.executeRestAtResidence()
-  }, console.log("[ThreeKingdoms-AgentEngine] Modern ES Module Client & ModalShell successfully initialized.");
+  }, s.SpatialPoiModals = {
+    openTavernModal: (t) => c.openTavern(t),
+    closeTavernModal: () => c.closeTavern(),
+    openArenaModal: (t) => c.openArena(t),
+    closeArenaModal: () => c.closeArena(),
+    openResidenceModal: (t) => c.openResidence(t),
+    closeResidenceModal: () => c.closeResidence(),
+    executeDrinkWine: () => c.executeDrinkWine(),
+    hostBanquet: (t) => c.hostBanquet(t),
+    swearBrotherhood: (t) => c.swearBrotherhood(t),
+    startDuel: (t) => c.startDuel(t),
+    executeDuelRound: (t) => c.executeDuelRound(t),
+    executeRestAtResidence: () => c.executeRestAtResidence()
+  }, s.EquipmentUI = {
+    openEquipmentModal: (t, e) => v.open(t, e),
+    closeEquipmentModal: () => v.close(),
+    switchTab: (t) => v.modal.switchTab(t),
+    equip: (t, e, a) => v.equip(t, e, a),
+    unequip: (t, e) => v.unequip(t, e),
+    executeForge: () => v.executeForge()
+  }, s.EnterpriseUI = {
+    openEnterpriseModal: (t) => k.open(t),
+    closeEnterpriseModal: () => k.close(),
+    depositSafeCash: (t) => k.depositSafeCash(t),
+    withdrawSafeCash: (t) => k.withdrawSafeCash(t),
+    executeWork: (t) => k.executeWork(t)
+  }, s.CaravanUI = {
+    openCaravanModal: (t) => D.open(t),
+    closeCaravanModal: () => D.close(),
+    executeDispatch: () => D.executeDispatch()
+  }, s.ProtagonistDossierModal = {
+    open: () => N.openProtagonist(),
+    close: () => N.closeProtagonist()
+  }, s.NpcDossierModal = {
+    open: (t) => N.openNpc(t),
+    close: () => N.closeNpc()
+  }, s.PersonalJournalUI = {
+    open: (t) => F.open(t),
+    close: () => F.close()
+  }, s.GrandCommandHubUI = {
+    open: (t) => Q.open(t),
+    close: () => Q.close()
+  }, s.QuickTradeModal = {
+    open: (t, e, a, n) => L.open(t, e, a, n),
+    close: () => L.close(),
+    updateTotal: () => L.updateTotal(),
+    submit: () => L.submit()
+  }, s.TacticalBattleUI = {
+    startDuel: (t) => H.startDuel(t),
+    close: () => H.close(),
+    executeAction: (t) => H.executeAction(t)
+  }, s.TitleScreenUI = {
+    open: () => E.open(),
+    close: () => E.close(),
+    selectScenario: (t) => E.selectScenario(t),
+    startCampaign: () => E.startCampaign()
+  }, s.TravelTransitUI = {
+    show: (t, e, a, n) => I.showTravelTransit(t, e, a, n),
+    close: () => I.closeTravel()
+  }, s.TurnAdvanceUI = {
+    show: (t, e, a) => I.showTurnAdvance(t, e, a),
+    close: () => I.closeTurn()
+  }, s.WorldMapUI = {
+    open: () => j.open(),
+    close: () => j.close()
+  }, console.log("[ThreeKingdoms-AgentEngine] All 14 client feature slices successfully bridged to window.*");
 }
-class D {
+class bt {
   constructor() {
-    s(this, "handlers", /* @__PURE__ */ new Map());
+    i(this, "handlers", /* @__PURE__ */ new Map());
   }
   on(t, e) {
     return this.handlers.has(t) || this.handlers.set(t, /* @__PURE__ */ new Set()), this.handlers.get(t).add(e), () => {
@@ -1095,31 +2557,63 @@ class D {
   }
   emit(t, e) {
     const a = this.handlers.get(t);
-    a && a.forEach((i) => {
+    a && a.forEach((n) => {
       try {
-        i(e);
-      } catch (n) {
-        console.error(`[EventBus] Error handling event ${t}:`, n);
+        n(e);
+      } catch (o) {
+        console.error(`[EventBus] Error handling event ${t}:`, o);
       }
     });
   }
 }
-const N = new D();
-L();
+const vt = new bt();
+ut();
 export {
-  x as ClientApiClient,
-  $ as LineageFamilyModal,
-  f as LineageFamilyService,
-  S as ModalShell,
-  M as SpatialPoiModalsManager,
-  y as SpatialPoiService,
-  o as apiClient,
-  m as createModalShell,
-  N as eventBus,
+  at as CaravanLogisticsModal,
+  G as CaravanLogisticsService,
+  B as ClientApiClient,
+  nt as DossiersModal,
+  O as DossiersService,
+  et as EnterpriseWorkshopModal,
+  q as EnterpriseWorkshopService,
+  tt as EquipmentForgeModal,
+  K as EquipmentForgeService,
+  ot as GrandCommandHubModal,
+  J as LineageFamilyModal,
+  R as LineageFamilyService,
+  z as ModalShell,
+  st as PersonalJournalModal,
+  U as PersonalJournalService,
+  lt as QuickTradeModal,
+  Z as SpatialPoiModalsManager,
+  V as SpatialPoiService,
+  dt as TacticalBattleModal,
+  rt as TitleScreenModal,
+  ct as TransitTurnModals,
+  ht as WorldMapModal,
+  l as apiClient,
+  D as caravanLogisticsModal,
+  A as caravanLogisticsService,
+  r as createModalShell,
+  N as dossiersModal,
+  _ as dossiersService,
+  k as enterpriseWorkshopModal,
+  M as enterpriseWorkshopService,
+  v as equipmentForgeModal,
+  $ as equipmentForgeService,
+  vt as eventBus,
+  Q as grandCommandHubModal,
   h as lineageFamilyModal,
-  u as lineageFamilyService,
-  T as modalStack,
-  l as spatialPoiModals,
-  p as spatialPoiService
+  b as lineageFamilyService,
+  P as modalStack,
+  F as personalJournalModal,
+  it as personalJournalService,
+  L as quickTradeModal,
+  c as spatialPoiModals,
+  g as spatialPoiService,
+  H as tacticalBattleModal,
+  E as titleScreenModal,
+  I as transitTurnModals,
+  j as worldMapModal
 };
 //# sourceMappingURL=client-bundle.es.js.map

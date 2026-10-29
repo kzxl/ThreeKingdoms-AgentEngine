@@ -15,6 +15,17 @@ export * from './core/api/client-api';
 export * from './core/events/event-bus';
 export * from './features/lineage-family';
 export * from './features/spatial-poi';
+export * from './features/equipment-forge';
+export * from './features/enterprise-workshop';
+export * from './features/caravan-logistics';
+export * from './features/dossiers';
+export * from './features/personal-journal';
+export * from './features/grand-command-hub';
+export * from './features/trade-quick';
+export * from './features/tactical-battle';
+export * from './features/title-screen';
+export * from './features/transit-turn';
+export * from './features/world-map';
 
 // Auto-initialize legacy bridge upon module execution in browser
 setupLegacyBridge();
