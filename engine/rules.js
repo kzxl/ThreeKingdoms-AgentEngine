@@ -5,7 +5,7 @@
 
 // Baseline commodity price index (Eastern Han 184 AD wholesale benchmark)
 const COMMODITY_PRICE_INDEX = {
-  'COM-GRAIN': { name: 'Millet/Wheat', unit: 'Dan', basePrice: 160 },
+  'COM-GRAIN': { name: 'Millet/Wheat', unit: 'Thạch', basePrice: 160 },
   'COM-TIMBER': { name: 'Hardwood Timber', unit: 'Bundle', basePrice: 40 },
   'COM-BAMBOO': { name: 'Cured Bamboo', unit: 'Bundle', basePrice: 15 },
   'COM-TWINE': { name: 'Hemp Twine', unit: 'Spool', basePrice: 20 },

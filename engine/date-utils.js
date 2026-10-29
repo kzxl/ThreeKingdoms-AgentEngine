@@ -12,6 +12,13 @@ const MONTH_NAMES_EN = [
   'July', 'August', 'September', 'October', 'November', 'December'
 ];
 
+const GAME_CONSTANTS = require('../config/game-constants.json');
+const DAYS_PER_MONTH = GAME_CONSTANTS.calendar.daysPerMonth;
+const MONTHS_PER_YEAR = GAME_CONSTANTS.calendar.monthsPerYear;
+const DAYS_PER_YEAR = DAYS_PER_MONTH * MONTHS_PER_YEAR;
+const FALLBACK_DATE = GAME_CONSTANTS.calendar.fallbackDate;
+const FALLBACK_PARTS = FALLBACK_DATE.split('-').map(Number);
+
 /**
  * Parses a game date string into numeric year, month, and day components.
  * Defaults to 184-05-01 if invalid or empty.
@@ -21,13 +28,13 @@ const MONTH_NAMES_EN = [
  */
 function parseGameDate(dateStr) {
   if (!dateStr || typeof dateStr !== 'string') {
-    return { year: 184, month: 5, day: 1 };
+    return { year: FALLBACK_PARTS[0], month: FALLBACK_PARTS[1], day: FALLBACK_PARTS[2] };
   }
   const clean = dateStr.trim().replace(/[/.]/g, '-');
   const parts = clean.split('-').map(p => parseInt(p, 10));
-  const year = isNaN(parts[0]) ? 184 : parts[0];
-  const month = isNaN(parts[1]) || parts[1] < 1 || parts[1] > 12 ? 5 : parts[1];
-  const day = isNaN(parts[2]) || parts[2] < 1 || parts[2] > 31 ? 1 : parts[2];
+  const year = isNaN(parts[0]) ? FALLBACK_PARTS[0] : parts[0];
+  const month = isNaN(parts[1]) || parts[1] < 1 || parts[1] > MONTHS_PER_YEAR ? FALLBACK_PARTS[1] : parts[1];
+  const day = isNaN(parts[2]) || parts[2] < 1 || parts[2] > DAYS_PER_MONTH ? FALLBACK_PARTS[2] : parts[2];
   return { year, month, day };
 }
 
@@ -41,8 +48,8 @@ function parseGameDate(dateStr) {
  */
 function formatGameDate(year, month, day = 1) {
   const y = Math.max(1, Math.round(year));
-  const m = String(Math.max(1, Math.min(12, Math.round(month)))).padStart(2, '0');
-  const d = String(Math.max(1, Math.min(31, Math.round(day)))).padStart(2, '0');
+  const m = String(Math.max(1, Math.min(MONTHS_PER_YEAR, Math.round(month)))).padStart(2, '0');
+  const d = String(Math.max(1, Math.min(DAYS_PER_MONTH, Math.round(day)))).padStart(2, '0');
   return `${y}-${m}-${d}`;
 }
 
@@ -56,10 +63,10 @@ function formatGameDate(year, month, day = 1) {
  */
 function advanceCalendarMonth(dateStr, monthsToAdd = 1, resetDayToOne = true) {
   const parsed = parseGameDate(dateStr);
-  const totalMonths = parsed.year * 12 + (parsed.month - 1) + Math.round(monthsToAdd);
-  const nextYear = Math.floor(totalMonths / 12);
-  const nextMonth = (totalMonths % 12) + 1;
-  const nextDay = resetDayToOne ? 1 : Math.min(parsed.day, 30);
+  const totalMonths = parsed.year * MONTHS_PER_YEAR + (parsed.month - 1) + Math.round(monthsToAdd);
+  const nextYear = Math.floor(totalMonths / MONTHS_PER_YEAR);
+  const nextMonth = (totalMonths % MONTHS_PER_YEAR) + 1;
+  const nextDay = resetDayToOne ? 1 : Math.min(parsed.day, DAYS_PER_MONTH);
   return formatGameDate(nextYear, nextMonth, nextDay);
 }
 
@@ -72,13 +79,13 @@ function advanceCalendarMonth(dateStr, monthsToAdd = 1, resetDayToOne = true) {
  */
 function addDaysToDate(dateStr, daysToAdd = 1) {
   const parsed = parseGameDate(dateStr);
-  let totalDays = (parsed.year * 360) + ((parsed.month - 1) * 30) + (parsed.day - 1) + Math.round(daysToAdd);
+  let totalDays = (parsed.year * DAYS_PER_YEAR) + ((parsed.month - 1) * DAYS_PER_MONTH) + (parsed.day - 1) + Math.round(daysToAdd);
   if (totalDays < 0) totalDays = 0;
 
-  const nextYear = Math.floor(totalDays / 360);
-  const remainderDays = totalDays % 360;
-  const nextMonth = Math.floor(remainderDays / 30) + 1;
-  const nextDay = (remainderDays % 30) + 1;
+  const nextYear = Math.floor(totalDays / DAYS_PER_YEAR);
+  const remainderDays = totalDays % DAYS_PER_YEAR;
+  const nextMonth = Math.floor(remainderDays / DAYS_PER_MONTH) + 1;
+  const nextDay = (remainderDays % DAYS_PER_MONTH) + 1;
 
   return formatGameDate(nextYear, nextMonth, nextDay);
 }
@@ -137,7 +144,7 @@ function formatDateEn(dateStr) {
 function calculateMonthDiff(fromDateStr, toDateStr) {
   const from = parseGameDate(fromDateStr);
   const to = parseGameDate(toDateStr);
-  return (to.year * 12 + to.month) - (from.year * 12 + from.month);
+  return (to.year * MONTHS_PER_YEAR + to.month) - (from.year * MONTHS_PER_YEAR + from.month);
 }
 
 module.exports = {

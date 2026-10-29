@@ -14,6 +14,8 @@ const fs = require('fs');
 const path = require('path');
 const { runSqlJson, runSqlBatch, escapeSql } = require('./db-adapter');
 const { advanceCalendarMonth, parseGameDate, formatGameDate, getSeasonInfo } = require('./date-utils');
+const { advanceCampaignDays } = require('./time-manager');
+const { progressTasks, listTasks } = require('./task-manager');
 
 const ROOT_DIR = path.resolve(__dirname, '..');
 const SAVES_DIR = path.join(ROOT_DIR, 'saves');
@@ -127,7 +129,7 @@ class GameplayManager {
       DELETE FROM chat_chronicle;
 
       -- B. Seed Campaign Metadata
-      INSERT INTO campaign_meta (campaign_id, campaign_name, start_date, current_date, active_turn, rules_version, random_seed)
+      INSERT INTO campaign_meta (campaign_id, campaign_name, start_date, "current_date", active_turn, rules_version, random_seed)
       VALUES ('${campaignId}', '${scenario.name_vi.replace(/'/g, "''")}', '${startDate}', '${startDate}', 1, '1.1.0', ${seed});
 
       -- C. Seed Player State from Archetype
@@ -203,7 +205,7 @@ class GameplayManager {
         'turn_init_welcome', 1, '${startDate}', 'npc',
         'Trương Phi (Dực Đức)', 'Hào Kiệt Huyện Trác — WAR 97', '張',
         '${isCommoner ? 'Trương Phi xách vò rượu bước ra khỏi lò mổ, thấy Lương Diễn vai vác đòn gánh đứng nhìn bảng cáo thị, liền cười vang: "Tiểu huynh đệ! Thời loạn này, muốn lập thân thì trước tiên phải có cái ăn: nếu cần tiền thì tới lò mổ, lò rèn hoặc tửu quán phụ việc làm thuê kiếm tiền công nhật; nếu có chí thì rèn luyện võ nghệ tùng quân! Lão Trương ta nhìn ngươi có chí khí, mau tới uống chén rượu cùng ta!"' : 'Trương Phi đặt vò rượu Trác Thành Trán Nương xuống gốc đào, lau miệng cười vang: "Lương Chí Viễn, đệ dệt đường thương rất nhanh! Lò mổ của lão Trương hôm nay vừa lột được da bò hảo hạng. Chúng ta cùng nâng chén bàn tính đại sự cứu giúp lê dân chứ?"'}',
-        NULL, '{"cash":"+${arch.initial_liquid_cash} Qian","location":"Vườn Đào"}', 'Khởi tạo bối cảnh Tân Du Hý từ Master Blueprint.'
+        NULL, '{"cash":"+${arch.initial_liquid_cash} quan","location":"Vườn Đào"}', 'Khởi tạo bối cảnh Tân Du Hý từ Master Blueprint.'
       );
 
       COMMIT;
@@ -276,6 +278,7 @@ class GameplayManager {
     const player = runSqlJson(this.dbPath, `SELECT * FROM player_state LIMIT 1;`)[0];
     let recoveredFatigue = 0;
     let playerUpdateSql = '';
+    let playerStatus = null;
     if (player) {
       const currentFatigue = Number(player.fatigue || 0);
       const newFatigue = Math.max(0, currentFatigue - 35);
@@ -285,13 +288,45 @@ class GameplayManager {
       const currentHealth = Number(player.health !== undefined ? player.health : 100);
       // Natural health recovery of +15 if alive, capped at 100
       const newHealth = currentHealth > 0 ? Math.min(100, currentHealth + 15) : 0;
+      playerStatus = {
+        fatigue: newFatigue,
+        morale: newMorale,
+        health: newHealth,
+        liquidCash: Number(player.liquid_cash || 0),
+        safeCash: Number(player.safe_cash || 0),
+        location: player.current_location || 'LOC-0001'
+      };
       playerUpdateSql = `UPDATE player_state SET fatigue = ${newFatigue}, morale = ${newMorale}, health = ${newHealth} WHERE player_id = '${player.player_id}';`;
     }
+
+    // Multi-day tasks keep progressing through the days that remain in the
+    // month, even when the player closes the month early.
+    const prevDateParts = String(prevDate).split('-').map(Number);
+    const remainingMonthDays = Math.max(0, 30 - (prevDateParts[2] || 1));
+    if (remainingMonthDays > 0) progressTasks(this.dbPath, remainingMonthDays);
+    const allTasks = listTasks(this.dbPath);
+    const activeTasks = allTasks.filter(task => task.status === 'IN_PROGRESS');
+    const completedTasks = allTasks.filter(task => task.status === 'COMPLETED' && task.completed_at);
 
     // 4. Prepare campaign_meta update SQL
     const metaUpdateSql = `UPDATE campaign_meta SET active_turn = ${nextTurn}, current_date = '${nextDate}' WHERE campaign_id = '${meta.campaign_id}';`;
 
     // 5. Monthly Business / Enterprise Cycle & Retainer Wages
+    // One settlement per (business, month): the autonomous workshop cycle and
+    // this passive accrual share the BIZ_CYCLE_<id>_<YYYYMM> key, so whichever
+    // runs first in a month pays and the other is skipped.
+    const closingMonth = String(prevDate).slice(0, 7).replace('-', '');
+    const settledRows = runSqlJson(
+      this.dbPath,
+      `SELECT idempotency_key FROM action_log WHERE idempotency_key LIKE 'BIZ_CYCLE_%_${closingMonth}';`
+    );
+    const settledBusinesses = new Set(
+      settledRows.map(row => {
+        const key = String(row.idempotency_key);
+        return key.slice('BIZ_CYCLE_'.length, key.length - closingMonth.length - 1);
+      })
+    );
+
     const businesses = runSqlJson(this.dbPath, `SELECT * FROM businesses;`);
     const bizReports = [];
     const bizUpdates = [];
@@ -304,12 +339,30 @@ class GameplayManager {
       const tier = Number(b.tier || 1);
       const workforce = Number(b.current_workforce || 2);
       const eff = Number(b.efficiency_multiplier || 1.0);
+      let currentSafe = Number(b.safe_cash || 0);
+
+      if (settledBusinesses.has(b.business_id)) {
+        bizReports.push({
+          businessId: b.business_id,
+          businessName: b.name,
+          grossIncome: 0,
+          totalWages,
+          netProfit: 0,
+          newSafeCash: currentSafe,
+          staffCount: staff.length,
+          skipped: true,
+          skippedReason: 'WORKSHOP_CYCLE_SETTLED'
+        });
+        continue;
+      }
+
       const grossIncome = Math.round(tier * 260 * eff + workforce * 25);
       const netProfit = grossIncome - totalWages;
-
-      let currentSafe = Number(b.safe_cash || 0);
-      let updatedSafe = Math.max(0, currentSafe + netProfit);
+      const updatedSafe = Math.max(0, currentSafe + netProfit);
       bizUpdates.push(`UPDATE businesses SET safe_cash = ${updatedSafe} WHERE business_id = '${b.business_id}';`);
+      bizUpdates.push(`INSERT OR IGNORE INTO action_log (action_id, idempotency_key, turn_number, game_date, action_type, payload, result, status)
+        VALUES ('ACT-BIZ-${b.business_id}-${closingMonth}', 'BIZ_CYCLE_${b.business_id}_${closingMonth}', ${prevTurn}, '${prevDate}', 'BUSINESS_MONTHLY_ACCRUAL',
+        '{"business_id": "${b.business_id}"}', '{"grossIncome": ${grossIncome}, "netProfit": ${netProfit}, "newSafeCash": ${updatedSafe}}', 'SUCCESS');`);
 
       bizReports.push({
         businessId: b.business_id,
@@ -323,31 +376,43 @@ class GameplayManager {
     }
 
     // 6. Living World Simulation (NPCs, Politics, Logistics)
+    // Each world module records completion in world_turn_ledger after its own
+    // writes, so a retry of this turn re-runs only the modules that failed.
+    // A module failure aborts the month close before the core batch commits;
+    // the player can retry instead of silently losing that module's work.
     const gsm = globalThis.__GRAND_STRATEGY_MODULES__;
     let npcLogs = [];
     let politicalEvents = [];
     let ecologyResults = null;
+    const worldErrors = [];
 
     if (gsm && gsm.npcLifecycle && typeof gsm.npcLifecycle.simulateAllActiveNpcs === 'function') {
-      try { npcLogs = gsm.npcLifecycle.simulateAllActiveNpcs(nextTurn, nextDate); } catch (e) {}
+      try { npcLogs = gsm.npcLifecycle.simulateAllActiveNpcs(nextTurn, nextDate); }
+      catch (e) { worldErrors.push(`npc: ${e.message}`); }
     }
     if (gsm && gsm.factionPolitics && typeof gsm.factionPolitics.simulatePoliticalCycle === 'function') {
-      try { politicalEvents = gsm.factionPolitics.simulatePoliticalCycle(nextTurn, nextDate); } catch (e) {}
+      try { politicalEvents = gsm.factionPolitics.simulatePoliticalCycle(nextTurn, nextDate); }
+      catch (e) { worldErrors.push(`politics: ${e.message}`); }
     }
     if (gsm && gsm.ecologyLogistics && typeof gsm.ecologyLogistics.simulateEcologyAndLogisticsTurn === 'function') {
-      try { ecologyResults = gsm.ecologyLogistics.simulateEcologyAndLogisticsTurn(nextTurn, nextDate); } catch (e) {}
+      try { ecologyResults = gsm.ecologyLogistics.simulateEcologyAndLogisticsTurn(nextTurn, nextDate); }
+      catch (e) { worldErrors.push(`ecology: ${e.message}`); }
     }
 
-    // Wire WORLD_MONTH_TICK EventBus notification to cascade time advancement
-    const eventBus = gsm?.registry?.ctx?.eventBus || gsm?.utilityAi?.ctx?.eventBus;
-    if (eventBus && typeof eventBus.publish === 'function') {
-      const [y, m] = nextDate.split('-').map(Number);
-      try {
-        eventBus.publish('WORLD_MONTH_TICK', { year: y, month: m, turn: nextTurn });
-      } catch (e) {
-        console.warn('[GameplayManager] WORLD_MONTH_TICK publish failed:', e.message);
-      }
+    // Closing a month skips the days the player did not play: caravans travel
+    // through them exactly as they would have on the day clock.
+    if (gsm && gsm.caravanLogistics && typeof gsm.caravanLogistics.advanceByDays === 'function' && remainingMonthDays > 0) {
+      try { gsm.caravanLogistics.advanceByDays(remainingMonthDays); }
+      catch (e) { worldErrors.push(`caravans: ${e.message}`); }
     }
+
+    if (worldErrors.length > 0) {
+      throw new Error(`World simulation failed for turn ${nextTurn}; month not closed (retry is safe): ${worldErrors.join('; ')}`);
+    }
+
+    // EventBus cascade is published after the core batch commits, so
+    // subscribers always observe the new calendar state.
+    const eventBus = gsm?.registry?.ctx?.eventBus || gsm?.utilityAi?.ctx?.eventBus;
 
     let proceduralNpcSql = '';
     // Procedural Fallback & Comprehensive Simulation Enrichment
@@ -395,10 +460,80 @@ class GameplayManager {
       };
     }
 
+    // 6b. Detailed digest so the monthly report can explain what actually
+    // changed instead of repeating generic flavour text.
+    const recentActions = runSqlJson(
+      this.dbPath,
+      `SELECT action_id, action_type, game_date, payload, result, status
+       FROM action_log
+       WHERE datetime(created_at) >= COALESCE(
+         (SELECT datetime(created_at) FROM turn_log ORDER BY turn_number DESC LIMIT 1),
+         datetime('now', '-30 days')
+       )
+       ORDER BY created_at DESC
+       LIMIT 15;`
+    ).map(row => {
+      let payload = {};
+      try { payload = JSON.parse(row.payload || '{}'); } catch (e) { /* keep defaults */ }
+      return {
+        actionId: row.action_id,
+        actionType: row.action_type,
+        gameDate: row.game_date,
+        status: row.status,
+        memo: payload.memo || payload.prompt || payload.item_code || payload.sub_type || '',
+        quantity: payload.quantity || null,
+        unitPrice: payload.unit_price || null
+      };
+    });
+
+    const financeRow = runSqlJson(
+      this.dbPath,
+      `SELECT COALESCE(SUM(inflow), 0) AS inflow, COALESCE(SUM(outflow), 0) AS outflow
+       FROM cashflow_ledger
+       WHERE game_date >= ? AND game_date <= ?;`,
+      [prevDate, nextDate]
+    )[0] || { inflow: 0, outflow: 0 };
+
+    const caravanRows = runSqlJson(
+      this.dbPath,
+      `SELECT status, COUNT(*) AS count, COALESCE(SUM(cargo_value_qian), 0) AS cargoValue
+       FROM trade_caravans
+       GROUP BY status;`
+    );
+    const caravanStatus = caravanRows.reduce((acc, row) => {
+      acc[row.status] = { count: Number(row.count || 0), cargoValue: Number(row.cargoValue || 0) };
+      return acc;
+    }, {});
+
+    const activeCrises = runSqlJson(
+      this.dbPath,
+      `SELECT crisis_id, settlement_id, crisis_type, severity_level, duration_turns_left, title_vi, narrative_vi
+       FROM regional_ecological_crises
+       WHERE is_active = 1
+       ORDER BY severity_level DESC
+       LIMIT 8;`
+    );
+
+    const locationRow = player
+      ? runSqlJson(this.dbPath, `SELECT name_vi FROM master_locations WHERE location_id = ? LIMIT 1;`, [player.current_location || ''])[0]
+      : null;
+
+    const ecologyEvents = (ecologyResults && Array.isArray(ecologyResults.events)) ? ecologyResults.events : [];
+    const worldDigest = {
+      businesses: bizReports.length,
+      npcActivities: (npcLogs || []).length,
+      politicalEvents: (politicalEvents || []).length,
+      ecologyEvents: ecologyEvents.length,
+      caravans: Object.values(caravanStatus).reduce((sum, item) => sum + item.count, 0),
+      activeCrises: activeCrises.length,
+      playerActions: recentActions.length,
+      activeTasks: activeTasks.length
+    };
+
     // 7. Write Turn Log SQL
     const turnTitle = `Lượt ${nextTurn} • Phong Vân Biến Động (${nextDate})`;
     const playerLoc = player?.current_location || 'LOC-0001';
-    const turnSummary = `Chuyển sang tháng mới (${nextDate}). Vận hành ${bizReports.length} sản nghiệp; thể lực phục hồi +${recoveredFatigue}; thế cuộc quần hùng thiên hạ và nghĩa quân chuyển dịch.`;
+    const turnSummary = `Chuyển sang tháng mới (${nextDate}). ${worldDigest.businesses} sản nghiệp vận hành; ${worldDigest.npcActivities} hoạt động hào kiệt; ${worldDigest.politicalEvents} biến động chính trị; ${worldDigest.ecologyEvents} sự kiện sinh thái/thương đoàn; ${worldDigest.activeCrises} khủng hoảng đang hoạt động; thể lực hồi phục +${recoveredFatigue}.`;
 
     const turnLogSql = `
       INSERT INTO turn_log (turn_number, game_date, turn_title, location, summary, dilemma_choice)
@@ -407,11 +542,14 @@ class GameplayManager {
 
     // 8. Record Chat Chronicle SQL
     const chronicleId = `turn_adv_${nextTurn}_${nextDate.replace(/-/g, '')}`;
-    const chronicleText = `【KẾT THÚC LƯỢT ${prevTurn} ➔ BƯỚC VÀO LƯỢT ${nextTurn}】\n` +
+    const chronicleText = `【KẾT THÚC LƯỢT ${prevTurn} → BƯỚC VÀO LƯỢT ${nextTurn}】\n` +
       `Thời quang thấm thoát, chiến cuộc chuyển sang ngày **${nextDate}**.\n` +
       `• **Trạng thái cá nhân**: Thể lực hồi phục (${recoveredFatigue > 0 ? `+${recoveredFatigue}` : 'Tối đa'}), sĩ khí ổn định.\n` +
-      `• **Vận hành sản nghiệp**: ${bizReports.length > 0 ? bizReports.map(br => `${br.businessName} (Lợi nhuận: ${br.netProfit >= 0 ? '+' : ''}${br.netProfit} Tiền)`).join(', ') : 'Chưa có xưởng trực thuộc, tiếp tục tự do hành hiệp.'}\n` +
-      `• **Động thái thiên hạ**: Các chư hầu Bắc Cương và triều đình Lạc Dương tiếp tục điều động binh mã, giá cả thị trường biến động theo mùa.`;
+      `• **Vận hành sản nghiệp**: ${bizReports.length > 0 ? bizReports.map(br => `${br.businessName} (Lợi nhuận: ${br.netProfit >= 0 ? '+' : ''}${br.netProfit} Quan)`).join(', ') : 'Chưa có xưởng trực thuộc, tiếp tục tự do hành hiệp.'}\n` +
+      `• **Quần hùng**: ${worldDigest.npcActivities} hoạt động tự chủ. ${(npcLogs || []).slice(0, 2).map(n => n.titleVi || n.action || '').filter(Boolean).join(' • ')}\n` +
+      `• **Chính trị**: ${worldDigest.politicalEvents} biến động. ${(politicalEvents || []).slice(0, 2).map(p => p.titleVi || p.title || '').filter(Boolean).join(' • ')}\n` +
+      `• **Sinh thái & thương đoàn**: ${worldDigest.ecologyEvents} sự kiện. ${ecologyEvents.slice(0, 2).join(' • ')}\n` +
+      `• **Khủng hoảng đang hoạt động**: ${worldDigest.activeCrises}.`;
 
     const chronicleSql = `
       INSERT INTO chat_chronicle (id, turn_number, game_date, type, speaker, title, avatar, text, deltas, reasoning)
@@ -447,6 +585,27 @@ class GameplayManager {
       throw new Error(`Failed to commit turn advance transaction: ${txResult.error}`);
     }
 
+    // Cascade only after the core turn is committed. Subscribers re-entering
+    // the world modules are safe: world_turn_ledger already marks this turn.
+    if (eventBus && typeof eventBus.publish === 'function') {
+      const [eventYear, eventMonth] = nextDate.split('-').map(Number);
+      try {
+        eventBus.publish('WORLD_MONTH_TICK', { year: eventYear, month: eventMonth, turn: nextTurn });
+      } catch (e) {
+        console.warn('[GameplayManager] WORLD_MONTH_TICK publish failed:', e.message);
+      }
+      try {
+        eventBus.publish('TURN_ADVANCED', {
+          turnNumber: nextTurn,
+          gameDate: nextDate,
+          previousTurn: prevTurn,
+          previousDate: prevDate
+        });
+      } catch (e) {
+        console.warn('[GameplayManager] TURN_ADVANCED publish failed:', e.message);
+      }
+    }
+
     // 9. Sync PROGRESS.md Header & Turn Section
     const progressPath = path.join(ROOT_DIR, 'game', 'PROGRESS.md');
     if (fs.existsSync(progressPath)) {
@@ -472,10 +631,24 @@ class GameplayManager {
       prevDate,
       nextDate,
       recoveredFatigue,
+      playerStatus,
+      playerLocationName: locationRow ? locationRow.name_vi : (playerLoc || ''),
       bizReports,
       npcLogs: npcLogs || [],
       politicalEvents: politicalEvents || [],
       ecologyResults,
+      ecologyEvents,
+      activeCrises,
+      caravanStatus,
+      financeSummary: {
+        inflow: Number(financeRow.inflow || 0),
+        outflow: Number(financeRow.outflow || 0),
+        net: Number(financeRow.inflow || 0) - Number(financeRow.outflow || 0)
+      },
+      recentActions,
+      activeTasks,
+      completedTasks,
+      worldDigest,
       turnTitle,
       turnSummary
     };
@@ -486,63 +659,23 @@ class GameplayManager {
    * Publishes WORLD_DAY_TICK on EventBus, updates player fatigue recovery, advances caravan transit.
    */
   advanceDays(dayCount = 7, { notes = '' } = {}) {
-    const meta = runSqlJson(this.dbPath, `SELECT * FROM campaign_meta LIMIT 1;`)[0];
-    if (!meta) throw new Error('Campaign metadata missing in session database.');
-
-    const currentDate = meta.current_date || '184-05-02';
-    const [y, m, d] = currentDate.split('-').map(Number);
-
-    // Compute new date
-    let newDay = d + dayCount;
-    let newMonth = m;
-    let newYear = y;
-    while (newDay > 30) {
-      newDay -= 30;
-      newMonth += 1;
-      if (newMonth > 12) {
-        newMonth = 1;
-        newYear += 1;
-      }
-    }
-    const newDate = `${newYear}-${String(newMonth).padStart(2, '0')}-${String(newDay).padStart(2, '0')}`;
-
-    // Publish WORLD_DAY_TICK on EventBus for each intermediate day
-    const gsm = globalThis.__GRAND_STRATEGY_MODULES__;
-    const eventBus = gsm?.registry?.ctx?.eventBus || gsm?.utilityAi?.ctx?.eventBus;
-    if (eventBus && typeof eventBus.publish === 'function') {
-      for (let i = 1; i <= dayCount; i++) {
-        let tickD = d + i;
-        let tickM = m;
-        let tickY = y;
-        if (tickD > 30) {
-          tickD -= 30;
-          tickM += 1;
-          if (tickM > 12) { tickM = 1; tickY += 1; }
-        }
-        try {
-          eventBus.publish('WORLD_DAY_TICK', { day: tickD, month: tickM, year: tickY });
-        } catch {}
-      }
-    }
-
-    // Atomic day progression
-    const dailyFatigueRecovery = Math.min(30, dayCount * 3);
-    const caravanProgressBonus = Math.round(dayCount * 0.02 * 100) / 100;
-
-    const dailyBatch = `
-      UPDATE campaign_meta SET current_date = '${newDate}' WHERE campaign_id = '${meta.campaign_id}';
-      UPDATE player_state SET fatigue = MAX(0, fatigue - ${dailyFatigueRecovery}) WHERE player_id = 'PLY-0001';
-      UPDATE trade_caravans SET route_progress = MIN(1.0, route_progress + ${caravanProgressBonus}) WHERE status = 'EN_ROUTE';
-    `;
-    const res = runSqlBatch(this.dbPath, dailyBatch);
-    if (!res.success) throw new Error(`Failed to advance days: ${res.error}`);
+    // Explicit rest/advance may roll into the next month; it consumes no grain
+    // provisions and recovers 3 fatigue per day.
+    const result = advanceCampaignDays(this.dbPath, dayCount, {
+      reason: notes || 'advanceDays',
+      clampToMonthEnd: false,
+      grainUpkeepPerDay: 0,
+      fatigueRecoveryPerDay: 3
+    });
+    if (!result.success) throw new Error(result.error || 'Failed to advance days');
 
     return {
       success: true,
-      prevDate: currentDate,
-      newDate,
-      daysAdvanced: dayCount,
-      fatigueRecovered: dailyFatigueRecovery
+      prevDate: result.prevDate,
+      newDate: result.nextDate,
+      daysAdvanced: result.advancedDays,
+      fatigueRecovered: result.dailyRecovery,
+      dayTicksPublished: result.dayTicksPublished
     };
   }
 }

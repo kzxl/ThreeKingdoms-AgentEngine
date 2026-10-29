@@ -11,7 +11,37 @@
 
 const fs = require('fs');
 const path = require('path');
-const { runSqlJson, runSqlBatch, escapeSql } = require('./db-adapter');
+const { runSqlJson, runSqlExec, runSqlBatch, escapeSql } = require('./db-adapter');
+const { advanceCampaignDays, getClock, normalizeDays, DAYS_PER_MONTH } = require('./time-manager');
+const { getActionTimeCost } = require('./action-policy');
+const { SeededRandom } = require('./random');
+
+/** FNV-1a over a string, used to fold route/event keys into a 32-bit seed. */
+function hashString(input) {
+  let hash = 2166136261;
+  const text = String(input);
+  for (let i = 0; i < text.length; i += 1) {
+    hash ^= text.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+
+/**
+ * Seeded RNG for one travel interaction. The seed combines the campaign's
+ * random_seed, the active month and stable keys (route/event/choice), so
+ * replaying the same turn produces the same encounter and d20 result.
+ */
+function travelRng(dbPath, ...parts) {
+  const meta = runSqlJson(dbPath, `SELECT * FROM campaign_meta LIMIT 1;`)[0] || {};
+  const base = Number(meta.random_seed || 1840201) >>> 0;
+  const turn = Number(meta.active_turn || 1);
+  let seed = (base ^ Math.imul(turn + 1, 0x9e3779b1)) >>> 0;
+  for (const part of parts) {
+    seed = Math.imul(seed ^ hashString(part), 0x85ebca6b) >>> 0;
+  }
+  return new SeededRandom(seed);
+}
 const {
   NODE_TO_LOC_MAP,
   LOC_TO_NODE_MAP,
@@ -30,7 +60,7 @@ const TRAVEL_EVENTS_POOL = [
     category: 'combat',
     titleVi: 'Toán Thám Báo Khăn Vàng Phục Kích',
     titleEn: 'Yellow Turban Scout Ambush',
-    icon: '⚔️',
+    icon: '武',
     threat: 'high',
     narrativeVi: 'Bên sườn dốc hẹp rậm rạp cỏ lau, tiếng còi hiệu sắc nhọn vang lên! Một toán thám mã Khăn Vàng tay lăm lăm trường thương và cung tên bất ngờ xuất hiện chặn đứng lộ trình.',
     narrativeEn: 'Amidst dense reed hills, sharp war horns echo! A patrol of Yellow Turban scouts brandishing lances and recurve bows blocks the mountain pass.',
@@ -44,7 +74,7 @@ const TRAVEL_EVENTS_POOL = [
         targetDC: 12,
         successNarrativeVi: 'Lương Diễn vũ bão xung phong, một kiếm chém gục tên đầu sỏ! Quân Khăn Vàng tan tác chạy tháo thân, bỏ lại chiến lợi phẩm và ngựa thồ.',
         successNarrativeEn: 'Liang Yan strikes like lightning, cleaving the rebel squad leader! The scouts scatter in terror, abandoning pack supplies.',
-        successDelta: { warExp: 25, morale: 5, lootQian: 120, narrative: '+25 EXP Võ Lực, +120 Tiền chiến lợi phẩm, Sĩ khí dâng cao' },
+        successDelta: { warExp: 25, morale: 5, lootQian: 120, narrative: '+25 EXP Võ Lực, +120 Quan chiến lợi phẩm, Sĩ khí dâng cao' },
         failureNarrativeVi: 'Quân địch chiếm cứ địa hình hiểm yếu bắn tên xối xả. Dù phá được vây nhưng đoàn hành quân phải chịu một phen trầy trật.',
         failureNarrativeEn: 'Rebel archers hold high ground, showering arrows. You break through but suffer exhaustion.',
         failureDelta: { fatigue: 15, morale: -5, narrative: '+15 Điểm mệt mỏi, Sĩ khí sụt giảm' }
@@ -83,7 +113,7 @@ const TRAVEL_EVENTS_POOL = [
     category: 'commerce',
     titleVi: 'Thương Đoàn Dịch Trạm Giao Lưu',
     titleEn: 'Wandering Merchant Caravan',
-    icon: '🏪',
+    icon: '市',
     threat: 'low',
     narrativeVi: 'Dưới rặng liễu bên cạnh trạm dịch công đường, một đoàn thương buôn phương xa với nhiều xe thồ hàng hóa đang dừng chân cho ngựa uống nước.',
     narrativeEn: 'Beneath weeping willows by a roadside relay post, a far-traveling caravan with laden pack mules rests near a freshwater spring.',
@@ -97,7 +127,7 @@ const TRAVEL_EVENTS_POOL = [
         targetDC: 11,
         successNarrativeVi: 'Khẩu tài thương nghiệp bén nhạy! Chủ đoàn kính nể trao đổi hàng hóa giá vốn, tặng thêm lộ phí và chia sẻ mạng lưới buôn bán.',
         successNarrativeEn: 'Sharp commercial acuity! The factor respects your acumen, granting wholesale discounts and regional trade intel.',
-        successDelta: { comExp: 30, lootQian: 150, narrative: '+30 EXP Thương Nghiệp, +150 Tiền lợi tức giao thương' },
+        successDelta: { comExp: 30, lootQian: 150, narrative: '+30 EXP Thương Nghiệp, +150 Quan lợi tức giao thương' },
         failureNarrativeVi: 'Thương nhân lão luyện giữ giá chặt chẽ, đôi bên chỉ đàm phán được vài món hàng tạp hóa thông thường.',
         failureNarrativeEn: 'The shrewd veteran factor holds firm on pricing; you manage only routine exchanges.',
         failureDelta: { comExp: 10, narrative: '+10 EXP Thương Nghiệp' }
@@ -136,7 +166,7 @@ const TRAVEL_EVENTS_POOL = [
     category: 'recruitment',
     titleVi: 'Gia Đình Thợ Thủ Công Bơ Vơ',
     titleEn: 'Displaced Artisan Family',
-    icon: '🔨',
+    icon: '鍛',
     threat: 'moderate',
     narrativeVi: 'Ven bìa rừng, một gia đình thợ thủ công mang theo đồ nghề đan lát và đồ rèn bị kiệt sức vì thiếu lương thực giữa dòng người chạy loạn.',
     narrativeEn: 'At the forest edge, a displaced family of skilled woodcutters and blacksmiths sits exhausted beside a broken handcart without food.',
@@ -188,7 +218,7 @@ const TRAVEL_EVENTS_POOL = [
     category: 'hazard',
     titleVi: 'Mưa Lũ Núi Đất Sạt Lở',
     titleEn: 'Mountain Torrent & Landslide',
-    icon: '🌧️',
+    icon: '雨',
     threat: 'moderate',
     narrativeVi: 'Mưa giông mùa hạ bất ngờ trút xuống như thác đổ khiến nước suối khe dâng cuồn cuộn, chiếc cầu gỗ độc đạo đã bị đất đá cuốn trôi!',
     narrativeEn: 'A sudden summer cloudburst triggers flash floods and mudslides, washing away the narrow wooden bridge across the mountain gorge!',
@@ -241,7 +271,7 @@ const TRAVEL_EVENTS_POOL = [
     category: 'martial',
     titleVi: 'Hiệp Khách Luận Kiếm Bên Đường',
     titleEn: 'Wandering Swordsman Encounter',
-    icon: '🥋',
+    icon: '藝',
     threat: 'moderate',
     narrativeVi: 'Dưới gốc tùng cổ thụ bên triền núi cao, một tráng sĩ áo vải tay cầm trường kiếm thảnh thơi nhấm rượu, khí chất tiêu sái anh hùng.',
     narrativeEn: 'Under an ancient pine tree along the cliff path, an unkempt itinerant swordsman sips wine with nonchalant, fearsome martial composure.',
@@ -306,19 +336,22 @@ class TravelManager {
     // 1. Fetch route from master_routes
     const routes = runSqlJson(this.dbPath, `
       SELECT * FROM master_routes 
-      WHERE (source_location_id = '${srcLoc}' AND target_location_id = '${tgtLoc}')
-         OR (source_location_id = '${tgtLoc}' AND target_location_id = '${srcLoc}')
+      WHERE (source_location_id = ? AND target_location_id = ?)
+         OR (source_location_id = ? AND target_location_id = ?)
       LIMIT 1;
-    `);
+    `, [srcLoc, tgtLoc, tgtLoc, srcLoc]);
     const route = routes && routes.length > 0 ? routes[0] : null;
 
     // 2. Fetch target location info for fallback
-    const locRows = runSqlJson(this.dbPath, `SELECT * FROM master_locations WHERE location_id = '${tgtLoc}' LIMIT 1;`);
+    const locRows = runSqlJson(this.dbPath, `SELECT * FROM master_locations WHERE location_id = ? LIMIT 1;`, [tgtLoc]);
     const tgtLocation = locRows && locRows.length > 0 ? locRows[0] : null;
 
     const distanceLi = route ? Number(route.distance_li) : (tgtLocation?.distance_from_zhuo || 300);
     const terrainType = route ? route.terrain_type : 'PLAINS';
-    const marchDays = route ? Number(route.standard_march_days) : (tgtLocation?.march_days || 2.0);
+    // Calendar days are whole days; round the archived route estimate once, at
+    // the boundary, so the plan shown matches the days actually charged.
+    const rawMarchDays = route ? Number(route.standard_march_days) : (tgtLocation?.march_days || 2.0);
+    const marchDays = Math.max(1, Math.round(Number(rawMarchDays) || 1));
     const grainCost = route ? Number(route.grain_provision_cost) : (tgtLocation?.grain_cost || 2.0);
     const riskLevel = route ? route.ambush_risk_level : (tgtLocation?.threat_level_vi || 'MODERATE');
     const routeDescVi = route?.description_vi || `Đại lộ quan đạo tiến về ${tgtLocation?.name_vi || toNodeId}.`;
@@ -361,12 +394,13 @@ class TravelManager {
     else if (plan.riskLevel === 'MODERATE') encounterProb = 0.35;
     else if (plan.riskLevel === 'LOW') encounterProb = 0.20;
 
-    const roll = Math.random();
+    const rng = travelRng(this.dbPath, 'travel-start', fromNodeId, toNodeId);
+    const roll = rng.nextFloat();
     const hasEncounter = roll <= encounterProb;
 
     let encounter = null;
     if (hasEncounter) {
-      encounter = this.generateTravelEncounter(fromNodeId, toNodeId);
+      encounter = this.generateTravelEncounter(fromNodeId, toNodeId, rng);
       // Annotate encounter with terrain
       encounter.terrainType = plan.terrainType;
     }
@@ -382,9 +416,11 @@ class TravelManager {
   /**
    * Generates a road event for transit between two map nodes
    */
-  generateTravelEncounter(fromNodeId, toNodeId) {
-    // Pick event based on random roll or specific route profile
-    const randIdx = Math.floor(Math.random() * TRAVEL_EVENTS_POOL.length);
+  generateTravelEncounter(fromNodeId, toNodeId, rng = null) {
+    // Pick event based on a seeded roll (route + campaign) or a shared RNG
+    // passed by startTravel so the encounter and its event are one draw stream.
+    const generator = rng || travelRng(this.dbPath, 'travel-encounter', fromNodeId, toNodeId);
+    const randIdx = generator.nextInt(0, TRAVEL_EVENTS_POOL.length - 1);
     const ev = TRAVEL_EVENTS_POOL[randIdx];
 
     // Fetch player attributes to calculate check modifiers
@@ -433,7 +469,11 @@ class TravelManager {
       mod = Math.floor((attrVal - 50) / 5);
     }
 
-    const d20Roll = roll !== null ? Number(roll) : Math.floor(Math.random() * 20) + 1;
+    // A caller/tests may pass an explicit roll; otherwise the server rolls from
+    // the same seeded stream so resolution is reproducible.
+    const d20Roll = roll !== null
+      ? Number(roll)
+      : travelRng(this.dbPath, 'travel-resolve', eventId, choiceId, fromNodeId, toNodeId).d20();
     const totalScore = d20Roll + mod;
     const isSuccess = choice.targetDC === 0 || totalScore >= choice.targetDC;
 
@@ -480,41 +520,70 @@ class TravelManager {
 
   /**
    * Finalizes the march arrival:
-   * Deducts march grain, updates player location in DB, syncs PROGRESS.md, appends chronicle.
+   * Deducts march grain once, advances the campaign clock, updates player
+   * location in DB, syncs PROGRESS.md, appends chronicle.
+   *
+   * Grain is charged exactly once here: the route's `grainCost` covers the
+   * march provisions, so the clock advance is made with daily upkeep disabled.
    */
-  completeMarch({ targetSubLoc, grainCost = 1.0, targetNameVi = 'Chiến Tuyến', targetNameEn = 'Destination', daysRequired = 2.0, distanceFromZhuo = 200 } = {}) {
+  completeMarch({ targetSubLoc, grainCost = 1.0, targetNameVi = 'Chiến Tuyến', targetNameEn = 'Destination', daysRequired = 2.0, marchDays = null, distanceFromZhuo = 200 } = {}) {
     if (!targetSubLoc) throw new Error('targetSubLoc is required for march completion');
 
     const player = runSqlJson(this.dbPath, `SELECT * FROM player_state LIMIT 1;`)[0];
     if (!player) throw new Error('Player state not found');
 
-    const meta = runSqlJson(this.dbPath, `SELECT * FROM campaign_meta LIMIT 1;`)[0] || { current_date: '184-05-02', active_turn: 6 };
+    const meta = runSqlJson(this.dbPath, `SELECT * FROM campaign_meta LIMIT 1;`)[0] || { "current_date": '184-05-02', active_turn: 6 };
 
-    // Deduct march grain and update location
+    // 1. Advance the campaign clock by whole march days. This emits one
+    //    WORLD_DAY_TICK per day and applies travel fatigue; grain upkeep is
+    //    disabled because the route provision cost is charged below.
+    const requestedDays = marchDays === null || marchDays === undefined ? daysRequired : marchDays;
+    const clockBeforeMarch = getClock(this.dbPath);
+    if (normalizeDays(requestedDays) > 0 && clockBeforeMarch.dayOfMonth >= DAYS_PER_MONTH) {
+      throw new Error('Đã hết ngày 30. Hãy bấm Qua Tháng trước khi hành quân.');
+    }
+    const time = advanceCampaignDays(this.dbPath, requestedDays, {
+      reason: `Hành trình tới ${targetNameVi}`,
+      clampToMonthEnd: true,
+      grainUpkeepPerDay: 0,
+      fatigueDelta: Number(getActionTimeCost('MOVE_LOCATION').fatigue || 0)
+    });
+    if (!time.success) throw new Error(time.error || 'Failed to advance march days');
+
+    // 2. Deduct the route's provision cost once and move the player.
     const cost = Math.max(0, Number(grainCost) || 0);
     const newGrain = Math.max(0, Number((Number(player.strategic_grain || 0) - cost).toFixed(2)));
 
-    runSqlBatch(this.dbPath, `
-      UPDATE player_state 
-      SET current_location = '${targetSubLoc.replace(/'/g, "''")}',
-          strategic_grain = ${newGrain}
-      WHERE player_id = '${player.player_id}';
-    `);
+    runSqlExec(
+      this.dbPath,
+      `UPDATE player_state SET current_location = ?, strategic_grain = ? WHERE player_id = ?;`,
+      [targetSubLoc, newGrain, player.player_id]
+    );
 
-    // Record Story Chronicle Turn
-    const chronicleId = `march_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`;
+    // 3. Record Story Chronicle Turn on the post-march date.
+    const chronicleId = `march_${String(time.nextDate).replace(/-/g, '')}_${meta.active_turn || 1}`;
     const marchNarrative = `Lương Diễn hoàn tất lộ trình viễn chinh ${distanceFromZhuo} dặm, mang theo tùy tùng tiêu hao ${cost} thạch quân lương, cờ lệnh tung bay uy nghi tiến nhập **${targetNameVi}**! Căn cứ tiền tuyến đã thiết lập an toàn.`;
+    const marchDeltas = JSON.stringify({
+      location: targetSubLoc,
+      grainCost: `-${cost} Thạch`,
+      distance: `${distanceFromZhuo} Dặm`
+    });
 
-    runSqlBatch(this.dbPath, `
-      INSERT INTO chat_chronicle (id, turn_number, game_date, type, speaker, title, avatar, text, deltas, reasoning)
-      VALUES (
-        '${chronicleId}', ${meta.active_turn || 1}, '${meta.current_date || '184-05-02'}', 'player',
-        'Lương Diễn (Hành Quân)', 'Chiến Tuyến Viễn Chinh', 'Diễn',
-        '${marchNarrative.replace(/'/g, "''")}',
-        '{"location": "${targetSubLoc.replace(/'/g, "''")}", "grainCost": "-${cost} Thạch", "distance": "${distanceFromZhuo} Dặm"}',
+    runSqlExec(
+      this.dbPath,
+      `INSERT OR IGNORE INTO chat_chronicle (id, turn_number, game_date, type, speaker, title, avatar, text, deltas, reasoning)
+       VALUES (?, ?, ?, 'player', ?, ?, 'Diễn', ?, ?, ?);`,
+      [
+        chronicleId,
+        meta.active_turn || 1,
+        time.nextDate,
+        'Lương Diễn (Hành Quân)',
+        'Chiến Tuyến Viễn Chinh',
+        marchNarrative,
+        marchDeltas,
         'Hoàn tất hành quân viễn chinh và đồng bộ hóa tọa độ chiến trường.'
-      );
-    `);
+      ]
+    );
 
     // Update PROGRESS.md Current Location and Strategic Grain
     const progressPath = path.join(ROOT_DIR, 'game', 'PROGRESS.md');
@@ -522,7 +591,7 @@ class TravelManager {
       try {
         let pContent = fs.readFileSync(progressPath, 'utf8');
         pContent = pContent.replace(/\|\s*\*\*Current Location\*\*\s*\|\s*[^\n|]+\|/i, `| **Current Location** | ${targetSubLoc} |`);
-        pContent = pContent.replace(/\|\s*\*\*Strategic Grain\*\*\s*\|\s*\*\*([^*]+)\*\*/i, `| **Strategic Grain** | **${newGrain.toFixed(2)} Dan**`);
+        pContent = pContent.replace(/\|\s*\*\*Strategic Grain\*\*\s*\|\s*\*\*([^*]+)\*\*/i, `| **Strategic Grain** | **${newGrain.toFixed(2)} piculs**`);
         fs.writeFileSync(progressPath, pContent, 'utf8');
       } catch (e) {}
     }
@@ -533,7 +602,8 @@ class TravelManager {
       newGrain,
       grainDeducted: cost,
       targetNameVi,
-      targetNameEn
+      targetNameEn,
+      time
     };
   }
 }

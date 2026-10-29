@@ -40,11 +40,11 @@ function renderProgressMarkdown(dbPath, outputPath) {
 | **Active Turn** | **Turn ${meta.active_turn || 0} (${activeTurnObj.turn_title || 'Active Turn'})** |
 | **Current Location** | ${player.current_location || 'LOC-0001'} |
 | **Permanent Base** | ${player.permanent_base || 'LOC-0001'} |
-| **Liquid Capital** | **${totalCash.toLocaleString()} Qian** (${liquidCash.toLocaleString()} Qian mobile + ${safeCash.toLocaleString()} Qian safe) |
-| **Strategic Grain** | **${Number(player.strategic_grain || 0).toFixed(2)} Dan** |
-| **Inventory Valuation** | **${invVal.toLocaleString()} Qian** (${invSummary.item_count} items) |
-| **Fixed Capital** | **${fixedCap.toLocaleString()} Qian** |
-| **Total Net Worth** | **${netWorth.toLocaleString()} Qian** |
+| **Liquid Capital** | **${totalCash.toLocaleString()} quan** (${liquidCash.toLocaleString()} quan mobile + ${safeCash.toLocaleString()} quan safe) |
+| **Strategic Grain** | **${Number(player.strategic_grain || 0).toFixed(2)} piculs** |
+| **Inventory Valuation** | **${invVal.toLocaleString()} quan** (${invSummary.item_count} items) |
+| **Fixed Capital** | **${fixedCap.toLocaleString()} quan** |
+| **Total Net Worth** | **${netWorth.toLocaleString()} quan** |
 | **Audit Status** | **100% Reconciled (Verified via SQLite ACID)** |
 
 ---

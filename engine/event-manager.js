@@ -25,18 +25,18 @@ function syncProgressLiquidCash(totalClosing, liquidCash, safeCash) {
     const fmtLiquid = Number(liquidCash).toLocaleString('en-US');
     const fmtSafe = Number(safeCash).toLocaleString('en-US');
     content = content.replace(
-      /(\|\s*\*\*Liquid Capital\*\*\s*\|\s*\*\*)[0-9,]+(\s*Qian\*\*\s*\()[^)]+(\)\s*\|)/i,
-      (match, p1, p2, p3) => `${p1}${fmtTotal} Qian** (${fmtLiquid} Qian mobile + ${fmtSafe} Qian safe)${p3}`
+      /(\|\s*\*\*Liquid Capital\*\*\s*\|\s*\*\*)[0-9,]+(\s*(?:Qian|quan)\*\*\s*\()[^)]+(\)\s*\|)/i,
+      (match, p1, p2, p3) => `${p1}${fmtTotal} quan** (${fmtLiquid} quan mobile + ${fmtSafe} quan safe)${p3}`
     );
 
     // Also update Total Net Worth in PROGRESS.md
-    const invMatch = content.match(/\*\*Inventory Valuation\*\*\s*\|\s*\*\*([0-9,]+)\s*Qian\*\*/i);
+    const invMatch = content.match(/\*\*Inventory Valuation\*\*\s*\|\s*\*\*([0-9,]+)\s*(?:Qian|quan)\*\*/i);
     const invVal = invMatch ? Number(invMatch[1].replace(/,/g, '')) : 47918;
     const fixedCap = 19600;
     const expectedNetWorth = Math.round(Number(totalClosing) + invVal + fixedCap);
     const fmtNetWorth = expectedNetWorth.toLocaleString('en-US');
     content = content.replace(
-      /(\|\s*\*\*Total Net Worth\*\*\s*\|\s*\*\*)[0-9,]+(\s*Qian\*\*\s*\|)/i,
+      /(\|\s*\*\*Total Net Worth\*\*\s*\|\s*\*\*)[0-9,]+(\s*(?:Qian|quan)\*\*\s*\|)/i,
       (match, p1, p2) => `${p1}${fmtNetWorth}${p2}`
     );
 
@@ -173,8 +173,8 @@ class EventManager {
             sentiment: { 'NPC-0001': 35, 'NPC-0002': 45, 'NPC-0003': 40 },
             items: [{ code: 'COM-WINE-ZHUO', qty: 2 }]
           },
-          narrative_vi: 'Bạn xuất 1,500 Tiền điều phối xưởng Lương Gia cung cấp quặng sắt và giáp nhẹ cho đoàn hương dũng. Lưu Bị nắm tay bạn cảm kích khôn xiết, Trương Phi reo hò uống cạn ba vò rượu đào.',
-          narrative_en: 'You sponsor 1,500 Qian in weapons and light shields. Liu Bei grasps your hands in profound gratitude.'
+          narrative_vi: 'Bạn xuất 1,500 Quan điều phối xưởng Lương Gia cung cấp quặng sắt và giáp nhẹ cho đoàn hương dũng. Lưu Bị nắm tay bạn cảm kích khôn xiết, Trương Phi reo hò uống cạn ba vò rượu đào.',
+          narrative_en: 'You sponsor 1,500 quan in weapons and light shields. Liu Bei grasps your hands in profound gratitude.'
         },
         {
           choice_id: 'JOIN_BROTHERHOOD',
@@ -250,8 +250,8 @@ class EventManager {
         outcome_type: 'CANON',
         required_stat: { com: 50 },
         rewards: { cash_gain: 1500, rep_gain: 10 },
-        narrative_vi: `Bạn nắm bắt biến động giá cả do chiến cuộc đem lại, thu về 1,500 Tiền lợi nhuận thương vận.`,
-        narrative_en: `You leverage market arbitrage created by the crisis, netting 1,500 Qian in commercial trade.`
+        narrative_vi: `Bạn nắm bắt biến động giá cả do chiến cuộc đem lại, thu về 1,500 Quan lợi nhuận thương vận.`,
+        narrative_en: `You leverage market arbitrage created by the crisis, netting 1,500 quan in commercial trade.`
       },
       {
         choice_id: 'STRATEGIC_MEDITATION',
@@ -292,7 +292,7 @@ class EventManager {
     // 5. Validate Requirements
     const reqCost = choice.required_cost || {};
     if (reqCost.cash && (player.liquid_cash || 0) < reqCost.cash) {
-      throw new Error(`Không đủ ngân lượng mặt! Yêu cầu: ${reqCost.cash} Tiền (Hiện có: ${player.liquid_cash || 0} Tiền).`);
+      throw new Error(`Không đủ ngân lượng mặt! Yêu cầu: ${reqCost.cash} Quan (Hiện có: ${player.liquid_cash || 0} Quan).`);
     }
 
     // 6. Build Atomic State Mutation Script
@@ -305,7 +305,9 @@ class EventManager {
     const outcomeType = choice.outcome_type || 'CANON';
     const resolutionNarrative = customNarrative || choice.narrative_vi || event.summary_vi;
 
-    const txnId = `TXN-EVT-${Date.now().toString(36).toUpperCase()}`;
+    // Deterministic ids: replaying the same event choice must not create a
+    // second ledger row or chronicle entry (the primary key rejects a duplicate).
+    const txnId = `TXN-EVT-${eventId}-${choiceId}`;
 
     let sql = 'BEGIN TRANSACTION;\n';
 
@@ -366,11 +368,11 @@ class EventManager {
       VALUES ('${eventId}', ${activeTurn}, 'RESOLVED', '${choiceId}', '${outcomeType}', '${escapeSql(choice.title_vi)}', '${escapeSql(resolutionNarrative)}', '${escapeSql(JSON.stringify(rewards))}', CURRENT_TIMESTAMP);\n`;
 
     // D. Record Narrative into chat_chronicle
-    const chronicleId = `CHRON-EVT-${Date.now().toString(36).toUpperCase()}`;
-    const chronicleNarrative = `📜 [BIẾN CỐ LỊCH SỬ] ${event.name_vi} (${event.historical_year} SCN):\n• Quyết định: ${choice.title_vi}\n• Diễn biến: ${resolutionNarrative}`;
+    const chronicleId = `CHRON-EVT-${eventId}-${choiceId}`;
+    const chronicleNarrative = `卷 [BIẾN CỐ LỊCH SỬ] ${event.name_vi} (${event.historical_year} SCN):\n• Quyết định: ${choice.title_vi}\n• Diễn biến: ${resolutionNarrative}`;
     sql += `INSERT INTO chat_chronicle
       (id, turn_number, game_date, type, speaker, title, text, reasoning)
-      VALUES ('${chronicleId}', ${activeTurn}, '${gameDate}', 'EVENT_CHRONICLE', 'Sử Quan Ghi Chép', '📜 ${escapeSql(event.name_vi)}', '${escapeSql(chronicleNarrative)}', 'Người chơi tham gia sự kiện lịch sử.');\n`;
+      VALUES ('${chronicleId}', ${activeTurn}, '${gameDate}', 'EVENT_CHRONICLE', 'Sử Quan Ghi Chép', '卷 ${escapeSql(event.name_vi)}', '${escapeSql(chronicleNarrative)}', 'Người chơi tham gia sự kiện lịch sử.');\n`;
 
     sql += 'COMMIT;';
 

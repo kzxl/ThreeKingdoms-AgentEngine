@@ -72,7 +72,7 @@ class WorkshopEngine {
         type: 'CRITICAL_LIQUIDITY_WARNING',
         severity: 'HIGH',
         title: 'Liang Clan Workshop Near Insolvency',
-        description: `Workshop safe cash has fallen to ${endingSafeCash} Qian, endangering next month's payroll. Liang Yan must inject funds or scale down operations.`
+        description: `Workshop safe cash has fallen to ${endingSafeCash} quan, endangering next month's payroll. Liang Yan must inject funds or scale down operations.`
       };
     }
 
@@ -95,7 +95,7 @@ class WorkshopEngine {
         type: 'SPECIAL_OPPORTUNITY',
         severity: 'LOW',
         title: 'Guangzong Garrison Military Contract Offer',
-        description: 'An imperial supply officer requests an emergency order of 25 Leather-Bound Bamboo Shields at 160 Qian each. Requires proprietor approval.'
+        description: 'An imperial supply officer requests an emergency order of 25 Leather-Bound Bamboo Shields at 160 quan each. Requires proprietor approval.'
       };
     }
 
@@ -118,6 +118,28 @@ class WorkshopEngine {
       return { success: false, code: 'BIZ_NOT_FOUND', error: `Business ${businessId} not found.` };
     }
     const biz = bizRows[0];
+
+    // Idempotency: the autonomous workshop cycle runs once per business-month.
+    // The same key is used by GameplayManager.advanceTurn's passive accrual, so
+    // whichever settlement runs first in a month wins and the other is skipped.
+    const monthKey = `BIZ_CYCLE_${businessId}_${String(gameDate).slice(0, 7).replace('-', '')}`;
+    const priorRun = runSqlJson(
+      this.dbPath,
+      `SELECT result, game_date FROM action_log WHERE idempotency_key = ? LIMIT 1;`,
+      [monthKey]
+    )[0];
+    if (priorRun) {
+      let priorResult = null;
+      try { priorResult = JSON.parse(priorRun.result); } catch (e) {}
+      return {
+        success: true,
+        idempotent: true,
+        businessId,
+        gameDate: priorRun.game_date,
+        message: `Workshop cycle already simulated for ${businessId} in ${monthKey.slice(-6)}; no double payout.`,
+        previousResult: priorResult
+      };
+    }
 
     // 2. Fetch manager and full assigned workforce
     const workforce = runSqlJson(this.dbPath, `SELECT * FROM npc_state WHERE assigned_business_id = '${businessId}';`);
@@ -245,15 +267,13 @@ class WorkshopEngine {
     }
 
     const dateStamp = gameDate.replace(/-/g, '');
-    const txnRevId = `TXN-${dateStamp}-01_WS_REV`;
-    const txnExpId = `TXN-${dateStamp}-02_WS_EXP`;
     const actionId = `ACT-WS-${dateStamp}`;
 
-    // Get current global cash balance
+    // Informational snapshot of the player ledger (business cash is separate).
     const lastTxn = runSqlJson(this.dbPath, `SELECT balance FROM cashflow_ledger ORDER BY game_date DESC, txn_id DESC LIMIT 1;`)[0];
     const prevGlobalCash = lastTxn ? Number(lastTxn.balance) : 24200;
-    const revGlobalCash = prevGlobalCash + localRevenue;
-    const newGlobalCash = revGlobalCash - totalDisbursements;
+    const playerLiquid = runSqlJson(this.dbPath, `SELECT liquid_cash, safe_cash FROM player_state WHERE player_id = 'PLY-0001';`)[0] || {};
+    const newGlobalCash = Number(playerLiquid.liquid_cash || 0) + Number(playerLiquid.safe_cash || 0);
 
     // 10. NPC Experience & Promotions
     const promotions = [];
@@ -303,9 +323,10 @@ class WorkshopEngine {
 
     // 11. Build Atomic SQL Batch
     let sql = `
-      -- 1. Update business safe cash
+      -- 1. Update business safe cash. The player's personal safe_cash is a
+      --    separate vault (deposit/withdraw only) and must never be rewritten
+      --    by an autonomous business cycle.
       UPDATE businesses SET safe_cash = ${newSafeCash} WHERE business_id = '${businessId}';
-      UPDATE player_state SET safe_cash = ${newSafeCash};
 
       -- 2. Update NPC active state (morale, fatigue, EXP)
       UPDATE npc_state SET
@@ -321,24 +342,12 @@ class WorkshopEngine {
         fatigue = MAX(0, fatigue - 1)
       WHERE assigned_business_id = '${businessId}' AND npc_id != '${managerId}';
 
-      -- 3. Inflow Transaction: Wholesale Liquidation
-      INSERT INTO cashflow_ledger (txn_id, game_date, counterparty, category, inflow, outflow, balance, memo, status)
-      VALUES ('${txnRevId}', '${gameDate}', 'Zhuo Local Market', 'Workshop Revenue', ${localRevenue}, 0, ${revGlobalCash}, 'Autonomous wholesale liquidation (${sellMats} mats, ${sellBaskets} baskets, ${sellShields} shields)', 'Confirmed');
-
-      INSERT INTO account_journal (txn_id, game_date, account_code, debit, credit, memo)
-      VALUES
-        ('${txnRevId}', '${gameDate}', '1002_CASH_SAFE', ${localRevenue}, 0, 'Workshop wholesale sales'),
-        ('${txnRevId}', '${gameDate}', '4001_SALES_REVENUE', 0, ${localRevenue}, 'Workshop wholesale sales');
-
-      -- 4. Outflow Transaction: Payroll, Overhead & Procurements
-      INSERT INTO cashflow_ledger (txn_id, game_date, counterparty, category, inflow, outflow, balance, memo, status)
-      VALUES ('${txnExpId}', '${gameDate}', 'Workshop Workforce & Suppliers', 'Operating Expense', 0, ${totalDisbursements}, ${newGlobalCash}, 'Monthly payroll (${totalPayroll}), rent (${monthlyRent}), procurement (${procCost})', 'Confirmed');
-
-      INSERT INTO account_journal (txn_id, game_date, account_code, debit, credit, memo)
-      VALUES
-        ('${txnExpId}', '${gameDate}', '6001_OPERATING_EXPENSE', ${totalOverhead}, 0, 'Workforce wages and workshop rent'),
-        ${procCost > 0 ? `('${txnExpId}', '${gameDate}', '1201_INVENTORY', ${procCost}, 0, 'Procured raw materials'),` : ''}
-        ('${txnExpId}', '${gameDate}', '1002_CASH_SAFE', 0, ${totalDisbursements}, 'Safe cash disbursement');
+      -- 3. Business books are NOT the player's cashflow ledger.
+      --    The workshop moves the business's own safe cash; the player ledger
+      --    tracks player liquid + personal vault only. Recording business
+      --    revenue/expense here would shift the ledger running balance without
+      --    moving player cash and break the audit identity. Business P&L is
+      --    stored on businesses.safe_cash and the action_log result above.
     `;
 
     // 5. Update NPC skills
@@ -385,7 +394,7 @@ class WorkshopEngine {
       INSERT INTO action_log (action_id, idempotency_key, turn_number, game_date, action_type, payload, result, status)
       VALUES (
         '${actionId}',
-        'WS_${businessId}_${dateStamp}',
+        '${monthKey}',
         (SELECT active_turn FROM campaign_meta LIMIT 1),
         '${gameDate}',
         'WORKSHOP_CYCLE',
