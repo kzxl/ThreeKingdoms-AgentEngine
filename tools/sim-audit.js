@@ -273,14 +273,14 @@ function auditSqliteFactionsAndSettlements() {
   // Check if session_factions and session_settlements exist in sqlite_master
   let tableCheck = [];
   try {
-    tableCheck = runSqlJson(`SELECT name FROM sqlite_master WHERE type='table' AND name IN ('session_factions', 'session_settlements', 'npc_personal_progression');`);
+    tableCheck = runSqlJson(`SELECT name FROM sqlite_master WHERE type='table' AND name IN ('session_factions', 'session_settlements', 'npc_personal_progression', 'merchant_promissory_notes', 'faction_diplomacy');`);
   } catch (e) {
-    return { passed: true, checksCount: 0, errors: [], installed: false, factionCount: 0, settlementCount: 0, progCount: 0 };
+    return { passed: true, checksCount: 0, errors: [], installed: false, factionCount: 0, settlementCount: 0, progCount: 0, noteCount: 0, diploCount: 0 };
   }
 
   const existingTables = new Set(tableCheck.map(t => t.name));
   if (!existingTables.has('session_factions') || !existingTables.has('session_settlements')) {
-    return { passed: true, checksCount: 0, errors: [], installed: false, factionCount: 0, settlementCount: 0, progCount: 0 };
+    return { passed: true, checksCount: 0, errors: [], installed: false, factionCount: 0, settlementCount: 0, progCount: 0, noteCount: 0, diploCount: 0 };
   }
 
   // 1. Audit Factions
@@ -297,7 +297,7 @@ function auditSqliteFactionsAndSettlements() {
   }
 
   // 2. Audit Settlements
-  const settlements = runSqlJson(`SELECT settlement_id, garrison_troops, defense FROM session_settlements;`);
+  const settlements = runSqlJson(`SELECT settlement_id, garrison_troops, defense, granary_grain FROM session_settlements;`);
   for (const s of settlements) {
     checksCount++;
     if (s.garrison_troops < 0) {
@@ -306,6 +306,10 @@ function auditSqliteFactionsAndSettlements() {
     checksCount++;
     if (s.defense < 10 || s.defense > 100) {
       errors.push(`Settlement ${s.settlement_id} defense out of bounds (10-100): ${s.defense}`);
+    }
+    checksCount++;
+    if (Number(s.granary_grain) < 0) {
+      errors.push(`Settlement ${s.settlement_id} has negative granary grain: ${s.granary_grain}`);
     }
   }
 
@@ -322,6 +326,36 @@ function auditSqliteFactionsAndSettlements() {
     }
   }
 
+  // 4. Audit Promissory Notes if table exists
+  let noteCount = 0;
+  if (existingTables.has('merchant_promissory_notes')) {
+    const notes = runSqlJson(`SELECT note_id, principal_amount, accrued_interest FROM merchant_promissory_notes;`);
+    noteCount = notes.length;
+    for (const n of notes) {
+      checksCount++;
+      if (n.principal_amount <= 0) errors.push(`Promissory note ${n.note_id} has non-positive principal: ${n.principal_amount}`);
+      checksCount++;
+      if (n.accrued_interest < 0) errors.push(`Promissory note ${n.note_id} has negative accrued interest: ${n.accrued_interest}`);
+    }
+  }
+
+  // 5. Audit Faction Diplomacy if table exists
+  let diploCount = 0;
+  if (existingTables.has('faction_diplomacy')) {
+    const treaties = runSqlJson(`SELECT id, diplomatic_attitude, truce_turns_remaining, tribute_amount FROM faction_diplomacy;`);
+    diploCount = treaties.length;
+    for (const tr of treaties) {
+      checksCount++;
+      if (tr.diplomatic_attitude < -100 || tr.diplomatic_attitude > 100) {
+        errors.push(`Diplomatic treaty ${tr.id} attitude out of bounds: ${tr.diplomatic_attitude}`);
+      }
+      checksCount++;
+      if (tr.truce_turns_remaining < 0) errors.push(`Diplomatic treaty ${tr.id} negative truce turns: ${tr.truce_turns_remaining}`);
+      checksCount++;
+      if (tr.tribute_amount < 0) errors.push(`Diplomatic treaty ${tr.id} negative tribute: ${tr.tribute_amount}`);
+    }
+  }
+
   return {
     passed: errors.length === 0,
     checksCount,
@@ -329,7 +363,9 @@ function auditSqliteFactionsAndSettlements() {
     installed: true,
     factionCount: factions.length,
     settlementCount: settlements.length,
-    progCount
+    progCount,
+    noteCount,
+    diploCount
   };
 }
 
@@ -478,6 +514,12 @@ function runAudit() {
       console.log(`    Settlements Verified  : ${factionResult.settlementCount}`);
       if (factionResult.progCount > 0) {
         console.log(`    Personal Assets Checked: ${factionResult.progCount}`);
+      }
+      if (factionResult.noteCount > 0) {
+        console.log(`    Credit Notes Checked  : ${factionResult.noteCount}`);
+      }
+      if (factionResult.diploCount > 0) {
+        console.log(`    Diplomatic Pacts Checked: ${factionResult.diploCount}`);
       }
       if (!factionResult.passed) {
         allPassed = false;

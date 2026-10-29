@@ -51,6 +51,8 @@ async function runGrandLoopVerification(): Promise<void> {
   assert(!!resolved && resolved.npcId === 'NPC-0201', 'Candidate resolution by name must return NPC-0201');
 
   // 1c. Verify player businesses retrieval
+  // Reset primary business efficiency for deterministic hiring verification
+  db.execute("UPDATE businesses SET efficiency_multiplier = 1.2, current_workforce = 3 WHERE business_id = 'BIZ-0001';");
   const businesses = workforceService.getPlayerBusinesses('PLY-0001');
   console.log(`      Found ${businesses.length} player-owned business enterprises.`);
   assert(businesses.length >= 1, 'Player must own at least 1 business enterprise');
@@ -177,6 +179,8 @@ async function runGrandLoopVerification(): Promise<void> {
 
   // 3b. Citadel Siege Assault Resolution
   const targetId = 'guang_zong';
+  // Ensure target has sufficient defense and garrison to test degradation
+  db.execute("UPDATE session_settlements SET defense = CASE WHEN defense <= 20 THEN 65 ELSE defense END, garrison_troops = CASE WHEN garrison_troops < 500 THEN 2000 ELSE garrison_troops END WHERE settlement_id = 'guang_zong';");
   const targetBefore = db.queryOne<any>('SELECT * FROM session_settlements WHERE settlement_id = ?;', [targetId]);
   assert(!!targetBefore, 'Target settlement guang_zong must exist');
 

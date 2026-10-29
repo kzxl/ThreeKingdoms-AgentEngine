@@ -423,12 +423,21 @@ class GameplayManager {
       );
     `;
 
+    // 8b. Promissory Note Monthly Interest Compounding
+    const promissoryInterestSql = `
+      UPDATE merchant_promissory_notes 
+      SET accrued_interest = accrued_interest + MAX(1, ROUND(principal_amount * interest_rate_monthly)),
+          updated_at = CURRENT_TIMESTAMP
+      WHERE status = 'ACTIVE';
+    `;
+
     // Execute all core turn mutations inside an ACID transaction to prevent partial state corruption
     const atomicTurnBatch = [
       playerUpdateSql,
       metaUpdateSql,
       ...bizUpdates,
       proceduralNpcSql,
+      promissoryInterestSql,
       turnLogSql,
       chronicleSql
     ].filter(Boolean).join('\n');
@@ -469,6 +478,71 @@ class GameplayManager {
       ecologyResults,
       turnTitle,
       turnSummary
+    };
+  }
+
+  /**
+   * Advances simulation calendar by a discrete number of days (Sub-Monthly Micro Ticks).
+   * Publishes WORLD_DAY_TICK on EventBus, updates player fatigue recovery, advances caravan transit.
+   */
+  advanceDays(dayCount = 7, { notes = '' } = {}) {
+    const meta = runSqlJson(this.dbPath, `SELECT * FROM campaign_meta LIMIT 1;`)[0];
+    if (!meta) throw new Error('Campaign metadata missing in session database.');
+
+    const currentDate = meta.current_date || '184-05-02';
+    const [y, m, d] = currentDate.split('-').map(Number);
+
+    // Compute new date
+    let newDay = d + dayCount;
+    let newMonth = m;
+    let newYear = y;
+    while (newDay > 30) {
+      newDay -= 30;
+      newMonth += 1;
+      if (newMonth > 12) {
+        newMonth = 1;
+        newYear += 1;
+      }
+    }
+    const newDate = `${newYear}-${String(newMonth).padStart(2, '0')}-${String(newDay).padStart(2, '0')}`;
+
+    // Publish WORLD_DAY_TICK on EventBus for each intermediate day
+    const gsm = globalThis.__GRAND_STRATEGY_MODULES__;
+    const eventBus = gsm?.registry?.ctx?.eventBus || gsm?.utilityAi?.ctx?.eventBus;
+    if (eventBus && typeof eventBus.publish === 'function') {
+      for (let i = 1; i <= dayCount; i++) {
+        let tickD = d + i;
+        let tickM = m;
+        let tickY = y;
+        if (tickD > 30) {
+          tickD -= 30;
+          tickM += 1;
+          if (tickM > 12) { tickM = 1; tickY += 1; }
+        }
+        try {
+          eventBus.publish('WORLD_DAY_TICK', { day: tickD, month: tickM, year: tickY });
+        } catch {}
+      }
+    }
+
+    // Atomic day progression
+    const dailyFatigueRecovery = Math.min(30, dayCount * 3);
+    const caravanProgressBonus = Math.round(dayCount * 0.02 * 100) / 100;
+
+    const dailyBatch = `
+      UPDATE campaign_meta SET current_date = '${newDate}' WHERE campaign_id = '${meta.campaign_id}';
+      UPDATE player_state SET fatigue = MAX(0, fatigue - ${dailyFatigueRecovery}) WHERE player_id = 'PLY-0001';
+      UPDATE trade_caravans SET route_progress = MIN(1.0, route_progress + ${caravanProgressBonus}) WHERE status = 'EN_ROUTE';
+    `;
+    const res = runSqlBatch(this.dbPath, dailyBatch);
+    if (!res.success) throw new Error(`Failed to advance days: ${res.error}`);
+
+    return {
+      success: true,
+      prevDate: currentDate,
+      newDate,
+      daysAdvanced: dayCount,
+      fatigueRecovered: dailyFatigueRecovery
     };
   }
 }

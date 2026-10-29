@@ -439,6 +439,35 @@ export class EcologyLogisticsModule implements IFeatureModule {
       }
     }
 
+    // 3. Dynamic Outlaw Stronghold Spawning from Collapsed Public Order
+    const lawlessSettlements = this.db.query<any>(`
+      SELECT settlement_id, name_vi, public_order 
+      FROM session_settlements 
+      WHERE public_order < 35;
+    `);
+
+    for (const s of lawlessSettlements) {
+      const existingStronghold = this.db.queryOne<any>(`
+        SELECT stronghold_id FROM bandit_strongholds 
+        WHERE location_near = ? AND status = 'ACTIVE';
+      `, [s.settlement_id]);
+
+      if (!existingStronghold) {
+        const strongholdId = `STRONGHOLD-EMERGENT-${s.settlement_id}`;
+        this.db.execute(`
+          INSERT OR REPLACE INTO bandit_strongholds 
+          (stronghold_id, name_vi, location_near, bandit_chief_name, bandit_power, plundered_wealth, bounty_reward, status)
+          VALUES (?, ?, ?, ?, 220, 500, 800, 'ACTIVE');
+        `, [
+          strongholdId,
+          `Tàn Binh Khăn Vàng ${s.name_vi}`,
+          s.settlement_id,
+          `Thủ Lĩnh Dân Biến ${s.name_vi}`
+        ]);
+        events.push(`[GIẶC CỎ] Trị an tại ${s.name_vi} suy kiệt (${s.public_order}/100), sơn tặc tụ đảng lập trại ${strongholdId}!`);
+      }
+    }
+
     return {
       turnNumber,
       gameDate,

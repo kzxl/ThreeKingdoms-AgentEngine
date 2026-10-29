@@ -339,7 +339,47 @@ export class NpcLifecycleModule implements IFeatureModule {
     // 6. Check Career Paradigm Shift (Đột phá thân phận)
     this.checkAndExecuteCareerShift(npcId, turnNumber, gameDate, prog);
 
+    // 7. Check Emergent Rival Workshop Founding
+    this.checkAndFoundEmergentWorkshop(npcId, prog, npc, turnNumber, gameDate);
+
     return log;
+  }
+
+  /**
+   * Checks and executes emergent workshop founding when an artisan/merchant accumulates wealth
+   */
+  public checkAndFoundEmergentWorkshop(
+    npcId: CharacterId,
+    prog: any,
+    npc: any,
+    turnNumber: number,
+    gameDate: string
+  ): any | null {
+    if (prog.personal_cash >= 3000 && (prog.life_ambition === 'COMMERCE_TYCOON' || prog.life_ambition === 'MASTER_ARTISAN')) {
+      const bizId = `BIZ-RIVAL-${npcId}`;
+      const existing = this.db.queryOne<any>(`SELECT business_id FROM businesses WHERE business_id = ?;`, [bizId]);
+      if (!existing) {
+        const initialCapital = 1500;
+        prog.personal_cash -= initialCapital;
+
+        this.db.transaction(() => {
+          this.db.execute(`UPDATE npc_personal_progression SET personal_cash = ? WHERE npc_id = ?;`, [prog.personal_cash, npcId]);
+
+          this.db.execute(`
+            INSERT OR REPLACE INTO businesses 
+            (business_id, name, location_id, manager_npc_id, safe_cash, delegation_level, efficiency_multiplier, current_workforce, monthly_capacity_hours, monthly_rent, auto_procure, status)
+            VALUES (?, ?, 'LOC-0001', ?, ?, 2, 1.0, 3, 600, 150, 1, 'ACTIVE');
+          `, [bizId, `Thương Hào ${npc.name}`, npcId, initialCapital]);
+
+          this.db.execute(`UPDATE npc_state SET assigned_business_id = ? WHERE npc_id = ?;`, [bizId, npcId]);
+        });
+
+        const bizData = { businessId: bizId, founderId: npcId, founderName: npc.name, initialCapital, turnNumber, gameDate };
+        this.ctx.eventBus.publish('EMERGENT_WORKSHOP_FOUNDED', bizData);
+        return bizData;
+      }
+    }
+    return null;
   }
 
   /**

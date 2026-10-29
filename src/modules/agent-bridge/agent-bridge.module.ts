@@ -118,28 +118,59 @@ export class AgentBridgeModule implements IFeatureModule {
   }
 
   /**
-   * Retrieves memories related to an NPC for rich LLM context injection
+   * Retrieves memories related to an NPC for rich LLM context injection with optional contextual relevance ranking
    */
-  public getNpcMemories(npcId: CharacterId, limit = 5): NpcMemory[] {
-    const inMem = this.memories.filter(m => m.npcId === npcId).slice(0, limit);
-    if (inMem.length >= limit || !this.db) {
-      return inMem;
+  public getNpcMemories(npcId: CharacterId, queryTopicOrLimit?: string | number, limit = 5): NpcMemory[] {
+    const queryTopic = typeof queryTopicOrLimit === 'string' ? queryTopicOrLimit : undefined;
+    const effectiveLimit = typeof queryTopicOrLimit === 'number' ? queryTopicOrLimit : limit;
+
+    let pool = this.memories.filter(m => m.npcId === npcId);
+
+    if (this.db) {
+      try {
+        const fromDb = this.db.query<any>(`
+          SELECT id, npc_id as npcId, turn_number as turnNumber, topic,
+                 emotional_valence as emotionalValence, lesson_learned as lessonLearned,
+                 created_date as createdDate
+          FROM npc_episodic_memories
+          WHERE npc_id = ?
+          ORDER BY turn_number DESC, rowid DESC
+          LIMIT 50;
+        `, [npcId]);
+
+        const existingIds = new Set(pool.map(m => m.id));
+        for (const row of fromDb) {
+          if (!existingIds.has(row.id)) pool.push(row);
+        }
+      } catch {}
     }
 
-    try {
-      const fromDb = this.db.query<any>(`
-        SELECT id, npc_id as npcId, turn_number as turnNumber, topic,
-               emotional_valence as emotionalValence, lesson_learned as lessonLearned,
-               created_date as createdDate
-        FROM npc_episodic_memories
-        WHERE npc_id = ?
-        ORDER BY turn_number DESC, rowid DESC
-        LIMIT ?;
-      `, [npcId, limit]);
-      return fromDb;
-    } catch {
-      return inMem;
+    if (!queryTopic || queryTopic.trim() === '') {
+      return pool.slice(0, effectiveLimit);
     }
+
+    // Contextual Semantic Scoring Heuristic (Keyword overlap, Topic match, Emotional weight, Recency)
+    const normalizedQuery = queryTopic.toLowerCase();
+    const queryTokens = normalizedQuery.split(/\s+/).filter(t => t.length > 1);
+
+    const scored = pool.map(m => {
+      let score = 0;
+      const memText = `${m.topic} ${m.lessonLearned}`.toLowerCase();
+
+      for (const token of queryTokens) {
+        if (memText.includes(token)) score += 10;
+        if (m.topic.toLowerCase().includes(token)) score += 15;
+      }
+
+      if (m.emotionalValence === 'NEGATIVE') score += 3;
+      else if (m.emotionalValence === 'POSITIVE') score += 2;
+
+      score += Math.min(5, m.turnNumber * 0.5);
+      return { memory: m, score };
+    });
+
+    scored.sort((a, b) => b.score - a.score);
+    return scored.map(s => s.memory).slice(0, effectiveLimit);
   }
 
   /**

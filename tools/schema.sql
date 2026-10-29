@@ -437,6 +437,34 @@ CREATE TABLE IF NOT EXISTS npc_episodic_memories (
     created_date TEXT NOT NULL
 );
 
+-- 30. Promissory Notes & Merchant Credit Ledger (Khế Ước Nợ Vay & Tín Dụng Thương Mại)
+CREATE TABLE IF NOT EXISTS merchant_promissory_notes (
+    note_id TEXT PRIMARY KEY,
+    borrower_id TEXT NOT NULL,
+    lender_id TEXT NOT NULL,
+    principal_amount INTEGER NOT NULL CHECK (principal_amount > 0),
+    interest_rate_monthly REAL NOT NULL DEFAULT 0.03 CHECK (interest_rate_monthly >= 0.0),
+    accrued_interest INTEGER NOT NULL DEFAULT 0 CHECK (accrued_interest >= 0),
+    due_turn INTEGER NOT NULL,
+    status TEXT NOT NULL DEFAULT 'ACTIVE', -- 'ACTIVE', 'REPAID', 'DEFAULTED'
+    created_turn INTEGER NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 31. Faction Diplomacy & Geopolitical Treaties (Quan Hệ Ngoại Giao & Hòa Ước Chư Hầu)
+CREATE TABLE IF NOT EXISTS faction_diplomacy (
+    id TEXT PRIMARY KEY,
+    faction_id_a TEXT NOT NULL,
+    faction_id_b TEXT NOT NULL,
+    relation_state TEXT NOT NULL DEFAULT 'NEUTRAL', -- 'WAR', 'HOSTILE', 'NEUTRAL', 'TRUCE', 'ALLIANCE'
+    diplomatic_attitude INTEGER NOT NULL DEFAULT 0 CHECK (diplomatic_attitude >= -100 AND diplomatic_attitude <= 100),
+    truce_turns_remaining INTEGER NOT NULL DEFAULT 0 CHECK (truce_turns_remaining >= 0),
+    tribute_amount INTEGER NOT NULL DEFAULT 0 CHECK (tribute_amount >= 0),
+    updated_turn INTEGER NOT NULL DEFAULT 1,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(faction_id_a, faction_id_b)
+);
+
 -- Indices for rapid querying & integrity checks
 CREATE INDEX IF NOT EXISTS idx_cashflow_date ON cashflow_ledger(game_date);
 CREATE INDEX IF NOT EXISTS idx_stock_mov_item ON stock_movements(item_code);
@@ -461,6 +489,9 @@ CREATE INDEX IF NOT EXISTS idx_crisis_settlement ON regional_ecological_crises(s
 CREATE INDEX IF NOT EXISTS idx_caravan_faction ON trade_caravans(owner_faction_id);
 CREATE INDEX IF NOT EXISTS idx_stronghold_status ON bandit_strongholds(status);
 CREATE INDEX IF NOT EXISTS idx_memories_npc ON npc_episodic_memories(npc_id);
+CREATE INDEX IF NOT EXISTS idx_notes_borrower ON merchant_promissory_notes(borrower_id);
+CREATE INDEX IF NOT EXISTS idx_notes_lender ON merchant_promissory_notes(lender_id);
+CREATE INDEX IF NOT EXISTS idx_diplo_pair ON faction_diplomacy(faction_id_a, faction_id_b);
 
 
 

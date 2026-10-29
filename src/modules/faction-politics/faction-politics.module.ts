@@ -447,7 +447,183 @@ export class FactionPoliticsModule implements IFeatureModule {
         updated_at = CURRENT_TIMESTAMP;
     `);
 
+    // Settlement grain consumption by garrisons & populace
+    const settlements = this.db.query<any>(`SELECT settlement_id, name_vi, garrison_troops, granary_grain, public_order, agriculture FROM session_settlements;`);
+    for (const s of settlements) {
+      const troops = Number(s.garrison_troops || 0);
+      const monthlyConsumption = Math.round((troops * 0.02 + 8.0) * 10) / 10;
+      const currentGrain = Number(s.granary_grain || 0);
+      const newGrain = Math.max(0, Math.round((currentGrain - monthlyConsumption) * 10) / 10);
+
+      let orderDelta = 0;
+      let troopDelta = 0;
+      if (newGrain <= 0) {
+        // Famine hits when settlement granary runs out
+        orderDelta = -10;
+        troopDelta = Math.min(0, -Math.round(troops * 0.05));
+      } else if (currentGrain > 100 && s.public_order < 90) {
+        // Grain abundance lifts public morale
+        orderDelta = 2;
+      }
+
+      this.db.execute(`
+        UPDATE session_settlements 
+        SET granary_grain = ?,
+            public_order = MAX(10, MIN(100, public_order + ?)),
+            garrison_troops = MAX(50, garrison_troops + ?)
+        WHERE settlement_id = ?;
+      `, [newGrain, orderDelta, troopDelta, s.settlement_id]);
+    }
+
+    // Multilateral Diplomatic Geopolitical Evolution
+    const diploEvents = this.simulateDiplomaticRelations(turnNumber, gameDate);
+    events.push(...diploEvents);
+
     return events;
+  }
+
+  /**
+   * Simulates multilateral geopolitical diplomatic relations (alliances, truces, wars, tributes)
+   */
+  public simulateDiplomaticRelations(turnNumber: number, gameDate: string): FactionPoliticalEvent[] {
+    const events: FactionPoliticalEvent[] = [];
+    const factions = this.db.query<any>(`
+      SELECT faction_id, name_vi, military_power, prestige, ideology, treasury_cash 
+      FROM session_factions 
+      WHERE is_active = 1;
+    `);
+
+    // Ensure baseline relations exist for all pairs
+    for (let i = 0; i < factions.length; i++) {
+      for (let j = i + 1; j < factions.length; j++) {
+        const fa = factions[i];
+        const fb = factions[j];
+        const pairId = `DIPLO-${fa.faction_id}-${fb.faction_id}`;
+
+        let rel = this.db.queryOne<any>(`
+          SELECT * FROM faction_diplomacy 
+          WHERE (faction_id_a = ? AND faction_id_b = ?) OR (faction_id_a = ? AND faction_id_b = ?);
+        `, [fa.faction_id, fb.faction_id, fb.faction_id, fa.faction_id]);
+
+        if (!rel) {
+          const isYellowTurban = fa.faction_id.includes('YELLOW-TURBAN') || fb.faction_id.includes('YELLOW-TURBAN');
+          const isRebel = fa.ideology === 'REBEL' || fb.ideology === 'REBEL';
+          const defaultState = (isYellowTurban || isRebel) ? 'WAR' : 'NEUTRAL';
+          const defaultAttitude = defaultState === 'WAR' ? -80 : 10;
+
+          this.db.execute(`
+            INSERT OR IGNORE INTO faction_diplomacy 
+            (id, faction_id_a, faction_id_b, relation_state, diplomatic_attitude, truce_turns_remaining, updated_turn)
+            VALUES (?, ?, ?, ?, ?, 0, ?);
+          `, [pairId, fa.faction_id, fb.faction_id, defaultState, defaultAttitude, turnNumber]);
+
+          rel = {
+            id: pairId,
+            faction_id_a: fa.faction_id,
+            faction_id_b: fb.faction_id,
+            relation_state: defaultState,
+            diplomatic_attitude: defaultAttitude,
+            truce_turns_remaining: 0,
+            tribute_amount: 0
+          };
+        }
+
+        // Advance truce if active
+        if (rel.truce_turns_remaining > 0) {
+          this.db.execute(`
+            UPDATE faction_diplomacy 
+            SET truce_turns_remaining = truce_turns_remaining - 1 
+            WHERE id = ?;
+          `, [rel.id]);
+          if (rel.truce_turns_remaining - 1 === 0 && rel.relation_state === 'TRUCE') {
+            this.db.execute(`UPDATE faction_diplomacy SET relation_state = 'NEUTRAL' WHERE id = ?;`, [rel.id]);
+          }
+        }
+
+        // Process active tribute
+        if (rel.tribute_amount > 0 && rel.relation_state === 'TRUCE') {
+          const tribute = Math.min(rel.tribute_amount, fa.treasury_cash);
+          if (tribute > 0) {
+            this.db.transaction(() => {
+              this.db.execute(`UPDATE session_factions SET treasury_cash = treasury_cash - ? WHERE faction_id = ?;`, [tribute, fa.faction_id]);
+              this.db.execute(`UPDATE session_factions SET treasury_cash = treasury_cash + ? WHERE faction_id = ?;`, [tribute, fb.faction_id]);
+            });
+          }
+        }
+
+        // Geopolitical Emergence: Alliance or War declaration based on attitude & balance of power
+        if (turnNumber % 2 === 0) {
+          if (rel.relation_state === 'NEUTRAL' && rel.diplomatic_attitude > 60 && !fa.faction_id.includes('YELLOW') && !fb.faction_id.includes('YELLOW')) {
+            // Forge alliance
+            this.db.execute(`UPDATE faction_diplomacy SET relation_state = 'ALLIANCE', updated_turn = ? WHERE id = ?;`, [turnNumber, rel.id]);
+            const eventId = `EVT-DIPLO-ALLIANCE-${turnNumber}-${fa.faction_id}-${fb.faction_id}`;
+            const titleVi = `Minh Thệ Liên Thủ: ${fa.name_vi} & ${fb.name_vi} Kết Đồng Minh`;
+            const narrativeVi = `Trước cục diện loạn thế, sứ giả hai bên qua lại giao hảo, chính thức ký kết hòa ước đồng minh cùng tiến thoái.`;
+            const consequences = { relationState: 'ALLIANCE', factionA: fa.faction_id, factionB: fb.faction_id };
+            
+            const instigatorOfficerId = fa.leader_id || 'OFFICER-LEADER';
+            this.db.execute(`
+              INSERT OR REPLACE INTO faction_political_events (event_id, turn_number, game_date, event_type, source_faction_id, target_faction_id, instigator_officer_id, title_vi, narrative_vi, consequences_json)
+              VALUES (?, ?, ?, 'DIPLOMATIC_ALLIANCE', ?, ?, ?, ?, ?, ?);
+            `, [eventId, turnNumber, gameDate, fa.faction_id, fb.faction_id, instigatorOfficerId, titleVi, narrativeVi, JSON.stringify(consequences)]);
+
+            events.push({
+              eventId,
+              turnNumber,
+              gameDate,
+              eventType: 'DIPLOMATIC_ALLIANCE',
+              sourceFactionId: fa.faction_id,
+              targetFactionId: fb.faction_id,
+              instigatorOfficerId,
+              titleVi,
+              narrativeVi,
+              consequences
+            });
+          } else if (rel.relation_state === 'NEUTRAL' && rel.diplomatic_attitude < -40 && rel.truce_turns_remaining === 0) {
+            // Break into war
+            this.db.execute(`UPDATE faction_diplomacy SET relation_state = 'WAR', updated_turn = ? WHERE id = ?;`, [turnNumber, rel.id]);
+            const eventId = `EVT-DIPLO-WAR-${turnNumber}-${fa.faction_id}-${fb.faction_id}`;
+            const titleVi = `Binh Nhung Tương Kiến: ${fa.name_vi} Tuyên Chiến Với ${fb.name_vi}`;
+            const narrativeVi = `Mâu thuẫn tranh chấp lãnh thổ và lợi ích leo thang không thể điều đình, hai bên cắt đứt quan hệ ngoại giao, hạ chiến thư khai chiến!`;
+            const consequences = { relationState: 'WAR', factionA: fa.faction_id, factionB: fb.faction_id };
+            const instigatorOfficerId = fa.leader_id || 'OFFICER-LEADER';
+
+            this.db.execute(`
+              INSERT OR REPLACE INTO faction_political_events (event_id, turn_number, game_date, event_type, source_faction_id, target_faction_id, instigator_officer_id, title_vi, narrative_vi, consequences_json)
+              VALUES (?, ?, ?, 'WAR_DECLARATION', ?, ?, ?, ?, ?, ?);
+            `, [eventId, turnNumber, gameDate, fa.faction_id, fb.faction_id, instigatorOfficerId, titleVi, narrativeVi, JSON.stringify(consequences)]);
+
+            events.push({
+              eventId,
+              turnNumber,
+              gameDate,
+              eventType: 'WAR_DECLARATION',
+              sourceFactionId: fa.faction_id,
+              targetFactionId: fb.faction_id,
+              instigatorOfficerId,
+              titleVi,
+              narrativeVi,
+              consequences
+            });
+          }
+        }
+      }
+    }
+
+    return events;
+  }
+
+  /**
+   * Queries bilateral diplomatic treaties
+   */
+  public getDiplomacyRelations(): any[] {
+    return this.db.query(`
+      SELECT d.*, fa.name_vi as faction_name_a, fb.name_vi as faction_name_b
+      FROM faction_diplomacy d
+      LEFT JOIN session_factions fa ON d.faction_id_a = fa.faction_id
+      LEFT JOIN session_factions fb ON d.faction_id_b = fb.faction_id
+      ORDER BY d.relation_state ASC, d.diplomatic_attitude DESC;
+    `);
   }
 
   /**

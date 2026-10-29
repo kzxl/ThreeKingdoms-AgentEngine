@@ -170,10 +170,19 @@ export interface FactionPoliticalEvent {
   eventId: string;
   turnNumber: number;
   gameDate: string;
-  eventType: 'COUP_ATTEMPT' | 'SECESSION_WARLORD' | 'OFFICER_DEFECT' | 'GOVERNOR_APPOINTED' | 'TITLE_INVESTED' | 'ASSASSINATION_PLOT' | 'FACTION_FOUNDED';
+  eventType:
+    | 'COUP_ATTEMPT'
+    | 'SECESSION_WARLORD'
+    | 'OFFICER_DEFECT'
+    | 'GOVERNOR_APPOINTED'
+    | 'TITLE_INVESTED'
+    | 'ASSASSINATION_PLOT'
+    | 'FACTION_FOUNDED'
+    | 'DIPLOMATIC_ALLIANCE'
+    | 'WAR_DECLARATION';
   sourceFactionId: FactionId;
   targetFactionId?: FactionId | null;
-  instigatorOfficerId: CharacterId;
+  instigatorOfficerId?: CharacterId;
   titleVi: string;
   narrativeVi: string;
   consequences: Record<string, any>;

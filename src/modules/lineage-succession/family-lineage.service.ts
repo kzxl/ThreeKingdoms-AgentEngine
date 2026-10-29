@@ -1379,7 +1379,7 @@ export class FamilyLineageService implements IFamilyLineageService {
   public ageChild(childId: string, years: number = 1): void {
     this.db.transaction(() => {
       const child = this.db.queryOne<any>(
-        'SELECT age FROM family_children WHERE child_id = ?;',
+        'SELECT * FROM family_children WHERE child_id = ?;',
         [childId]
       );
       if (!child) throw new Error(`Hài nhi ${childId} không tồn tại.`);
@@ -1394,7 +1394,52 @@ export class FamilyLineageService implements IFamilyLineageService {
         'UPDATE family_children SET age = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE child_id = ?;',
         [newAge, status, childId]
       );
+
+      // Emergent Lineage Commission: Adult heirs enter active duty as commissioned faction officers
+      if (status === 'ADULT_OFFICER') {
+        const existingOfficer = this.db.queryOne<any>(
+          'SELECT officer_id FROM faction_officers WHERE officer_id = ?;',
+          [childId]
+        );
+        if (!existingOfficer) {
+          const fatherFaction = this.db.queryOne<any>(
+            'SELECT faction_id FROM faction_officers WHERE officer_id = ? LIMIT 1;',
+            [child.father_id || 'PLY-0001']
+          )?.faction_id || 'FAC-LIANG-CLAN';
+
+          this.db.execute(`
+            INSERT OR IGNORE INTO faction_officers 
+            (officer_id, faction_id, court_rank, loyalty, ambition, betrayal_risk)
+            VALUES (?, ?, 'OFFICER', 100, 45, 0.0);
+          `, [childId, fatherFaction]);
+
+          this.db.execute(`
+            INSERT OR REPLACE INTO npc_state 
+            (npc_id, name, war_attr, int_attr, cra_attr, com_attr, ldr_attr, loyalty, morale, fatigue)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 100, 100, 0);
+          `, [
+            childId,
+            child.name_vi || childId,
+            child.war_attr || 50,
+            child.int_attr || 50,
+            child.cra_attr || 50,
+            child.com_attr || 50,
+            child.ldr_attr || 50
+          ]);
+        }
+      }
     });
+  }
+
+  /**
+   * Advances the age and developmental stages of all living children across the campaign
+   */
+  public advanceAllChildrenAge(years = 1): number {
+    const children = this.db.query<any>('SELECT child_id FROM family_children;');
+    for (const c of children) {
+      this.ageChild(c.child_id, years);
+    }
+    return children.length;
   }
 
   public assignMasterMentor(params: AssignMentorParams): AssignMentorResult {
