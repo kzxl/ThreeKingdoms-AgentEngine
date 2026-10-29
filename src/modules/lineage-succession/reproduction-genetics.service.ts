@@ -242,7 +242,20 @@ export class ReproductionGeneticsService {
       'NPC-0097': { trait: 'TLT-POETIC-GENIUS', bonusStat: 'int', bonusVal: 2 },
       'NPC-0081': { trait: 'TLT-SILK-ACUMEN', bonusStat: 'com', bonusVal: 2 },
       'NPC-0088': { trait: 'TLT-MASTER-ARTISAN', bonusStat: 'cra', bonusVal: 2 },
-      'NPC-0089': { trait: 'TLT-HARMONIOUS-AESTHETIC', bonusStat: 'dip', bonusVal: 2 }
+      'NPC-0089': { trait: 'TLT-HARMONIOUS-AESTHETIC', bonusStat: 'dip', bonusVal: 2 },
+      'NPC-0071': { trait: 'TLT-TIGER-HERITAGE', bonusStat: 'war', bonusVal: 2 },
+      'NPC-0101': { trait: 'TLT-PEERLESS-BEAUTY', bonusStat: 'dip', bonusVal: 2 },
+      'NPC-0128': { trait: 'TLT-MASTER-INVENTOR', bonusStat: 'cra', bonusVal: 2 },
+      'NPC-0151': { trait: 'TLT-VIRTUOUS-FORESIGHT', bonusStat: 'pol', bonusVal: 2 },
+      'NPC-0152': { trait: 'TLT-WAR-HERITAGE', bonusStat: 'war', bonusVal: 2 },
+      'NPC-0153': { trait: 'TLT-SERENE-BENEVOLENCE', bonusStat: 'dip', bonusVal: 2 },
+      'NPC-0154': { trait: 'TLT-CAVALRY-PROWESS', bonusStat: 'ldr', bonusVal: 2 },
+      'NPC-0155': { trait: 'TLT-AZURE-WILL', bonusStat: 'war', bonusVal: 2 },
+      'NPC-0156': { trait: 'TLT-ASTUTE-PERCEPTION', bonusStat: 'int', bonusVal: 2 },
+      'NPC-0157': { trait: 'TLT-CAPTIVATING-GRACE', bonusStat: 'dip', bonusVal: 2 },
+      'NPC-0158': { trait: 'TLT-PURE-INTEGRITY', bonusStat: 'pol', bonusVal: 2 },
+      'NPC-0159': { trait: 'TLT-SACRIFICIAL-LOYALTY', bonusStat: 'com', bonusVal: 2 },
+      'NPC-0160': { trait: 'TLT-EMPRESS-GRACE', bonusStat: 'pol', bonusVal: 2 }
     };
 
     let traitConfig = maternalTraitMap[motherId];

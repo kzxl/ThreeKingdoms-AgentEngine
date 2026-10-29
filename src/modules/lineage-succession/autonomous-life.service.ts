@@ -44,12 +44,16 @@ export class AutonomousLifeService {
         this.db.query<any>("SELECT husband_id FROM family_spouses WHERE status = 'MARRIED';").map(r => r.husband_id)
       );
 
-      // Query eligible officers across factions who are not the player
+      // Query eligible officers across factions who are not the player, excluding all historical female heroines
       const candidateNpcs = this.db.query<any>(
         `SELECT DISTINCT mc.npc_id, mc.name_vi, mc.personality, mc.baseline_age
          FROM master_characters mc
          WHERE mc.npc_id NOT LIKE 'MDN-%'
-           AND mc.npc_id NOT IN ('NPC-0081', 'NPC-0087', 'NPC-0088', 'NPC-0089', 'NPC-0097');`
+           AND mc.npc_id NOT IN (
+             'NPC-0071', 'NPC-0081', 'NPC-0087', 'NPC-0088', 'NPC-0089', 'NPC-0097',
+             'NPC-0101', 'NPC-0128', 'NPC-0151', 'NPC-0152', 'NPC-0153', 'NPC-0154',
+             'NPC-0155', 'NPC-0156', 'NPC-0157', 'NPC-0158', 'NPC-0159', 'NPC-0160'
+           );`
       );
 
       for (const char of candidateNpcs) {

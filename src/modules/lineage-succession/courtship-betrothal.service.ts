@@ -248,6 +248,201 @@ export class CourtshipBetrothalService {
           traitNameVi: 'Hồ Gia Thi Vận',
           descriptionVi: '+25% EXP Mưu Lược / Điển Tịch cho con cái, +2 Base INT.'
         }
+      },
+      {
+        npcId: 'NPC-0071',
+        nameVi: 'Chúc Dung Phu Nhân',
+        nameEn: 'Lady Zhurong',
+        baselineLocation: 'LOC-0015',
+        dowryCash: 7000,
+        dowryItems: [{ itemCode: 'COM-HORSE-W', itemNameVi: 'Chiến Mã Phương Bắc', quantity: 2 }],
+        clueVi: 'Hậu duệ Hỏa Thần Chúc Dung thị, phi đao bách phát bách trúng, dũng mãnh thiện chiến nơi Nam Trung biên viễn.',
+        clueEn: 'Descendant of the God of Fire, fearless warrior wielding flying daggers in southern frontier.',
+        maternalTrait: {
+          traitCode: 'TLT-TIGER-HERITAGE',
+          traitNameVi: 'Hỏa Thần Liệt Diễm',
+          descriptionVi: '+25% EXP Võ Lực cho con cái, +2 Base WAR.'
+        }
+      },
+      {
+        npcId: 'NPC-0101',
+        nameVi: 'Điêu Thuyền (Bế Nguyệt)',
+        nameEn: 'Diaochan',
+        baselineLocation: 'LOC-0002',
+        dowryCash: 6000,
+        dowryItems: [{ itemCode: 'COM-SILK', itemNameVi: 'Tơ Lụa Thượng Phẩm', quantity: 5 }],
+        clueVi: 'Tứ đại mỹ nhân thiên cổ, bế nguyệt tu hoa, ca vũ tuyệt trần, thường xuất hiện tại hoa viên Tư Đồ phủ Lạc Dương.',
+        clueEn: 'Legendary beauty whose countenance outshines the moon, peerless in courtly dance at Luoyang.',
+        maternalTrait: {
+          traitCode: 'TLT-PEERLESS-BEAUTY',
+          traitNameVi: 'Bế Nguyệt Khuynh Quốc',
+          descriptionVi: '+25% Tăng tiến Hảo Cảm và Danh Vọng gia tộc, +2 Base DIP.'
+        }
+      },
+      {
+        npcId: 'NPC-0128',
+        nameVi: 'Hoàng Nguyệt Anh',
+        nameEn: 'Huang Yueying',
+        baselineLocation: 'LOC-0010',
+        dowryCash: 5500,
+        dowryItems: [{ itemCode: 'COM-IRON', itemNameVi: 'Sắt Thỏi Luyện Tinh', quantity: 5 }],
+        clueVi: 'Kỳ nữ Kinh Tương tại Ngọa Long Cương Tương Dương, thông tuệ kỳ tài, tinh thông cơ quan thuật và kỳ môn độn giáp.',
+        clueEn: 'Ingenious maiden of Jingzhou near Wolong Ridge, master of intricate automata and engineering.',
+        maternalTrait: {
+          traitCode: 'TLT-MASTER-INVENTOR',
+          traitNameVi: 'Cơ Quan Thần Xảo',
+          descriptionVi: '+25% EXP Kỹ Nghệ / Đồn Điền cho con cái, +2 Base CRA.'
+        }
+      },
+      {
+        npcId: 'NPC-0151',
+        nameVi: 'Vương Nguyên Cơ',
+        nameEn: 'Wang Yuanji',
+        baselineLocation: 'LOC-0005',
+        dowryCash: 7500,
+        dowryItems: [{ itemCode: 'COM-SILK', itemNameVi: 'Tơ Lụa Thượng Phẩm', quantity: 4 }],
+        clueVi: 'Danh môn khuê tú Vương thị tại Hứa Xương, thông tuệ đoan nghiêm, nhìn xa trông rộng, có tài thấu triệt lòng người.',
+        clueEn: 'Highborn lady of the Wang clan in Xuchang, possessing sharp political foresight and virtue.',
+        maternalTrait: {
+          traitCode: 'TLT-VIRTUOUS-FORESIGHT',
+          traitNameVi: 'Minh Tuệ Kiến Thức',
+          descriptionVi: '+25% EXP Trị Quốc / Chính Trị cho con cái, +2 Base POL.'
+        }
+      },
+      {
+        npcId: 'NPC-0152',
+        nameVi: 'Lữ Linh Khởi',
+        nameEn: 'Lu Lingqi',
+        baselineLocation: 'LOC-0012',
+        dowryCash: 8000,
+        dowryItems: [{ itemCode: 'COM-HORSE-W', itemNameVi: 'Chiến Mã Phương Bắc', quantity: 2 }],
+        clueVi: 'Chiến Thần ái nữ tại Hạ Bì, kế thừa dũng lực kinh người và tuyệt kỹ Phương Thiên Họa Kích, kiêu dũng sa trường.',
+        clueEn: 'Daughter of Lu Bu in Xiapi, wielding heavy halberds with immense martial valor.',
+        maternalTrait: {
+          traitCode: 'TLT-WAR-HERITAGE',
+          traitNameVi: 'Vô Song Hổ Huyết',
+          descriptionVi: '+25% EXP Võ Lực cho con cái, +2 Base WAR.'
+        }
+      },
+      {
+        npcId: 'NPC-0153',
+        nameVi: 'Bộ Luyện Sư',
+        nameEn: 'Bu Lianshi',
+        baselineLocation: 'LOC-0013',
+        dowryCash: 6500,
+        dowryItems: [{ itemCode: 'COM-SILK', itemNameVi: 'Tơ Lụa Thượng Phẩm', quantity: 4 }],
+        clueVi: 'Hiền thục mỹ nhân Giang Đông tại Kiến Nghiệp, tính tình khoan dung hòa nhã, giao đãi vạn người kính phục.',
+        clueEn: 'Virtuous noblewoman of Jiangdong in Jianye, celebrated for benevolence and serene diplomacy.',
+        maternalTrait: {
+          traitCode: 'TLT-SERENE-BENEVOLENCE',
+          traitNameVi: 'Hòa Hợp Từ Tâm',
+          descriptionVi: '+20% Hòa Khí Gia Tộc, +2 Base DIP.'
+        }
+      },
+      {
+        npcId: 'NPC-0154',
+        nameVi: 'Mã Vân Lục',
+        nameEn: 'Ma Yunlu',
+        baselineLocation: 'LOC-0023',
+        dowryCash: 7000,
+        dowryItems: [{ itemCode: 'COM-HORSE-W', itemNameVi: 'Chiến Mã Phương Bắc', quantity: 3 }],
+        clueVi: 'Tây Lương hổ nữ tại Vũ Uy, con gái Mã Đằng, cưỡi ngựa bắn cung bách bộ xuyên dương, tinh thông thương pháp.',
+        clueEn: 'Frontier warrior daughter of Ma Teng in Wuwei, peerless in mounted spear combat.',
+        maternalTrait: {
+          traitCode: 'TLT-CAVALRY-PROWESS',
+          traitNameVi: 'Thiết Kỵ Lương Phong',
+          descriptionVi: '+25% EXP Thống Soái / Quân Vụ cho con cái, +2 Base LDR.'
+        }
+      },
+      {
+        npcId: 'NPC-0155',
+        nameVi: 'Quan Ngân Bình',
+        nameEn: 'Guan Yinping',
+        baselineLocation: 'LOC-0014',
+        dowryCash: 6500,
+        dowryItems: [{ itemCode: 'COM-WINE', itemNameVi: 'Đỗ Khang Mỹ Tửu', quantity: 4 }],
+        clueVi: 'Quan gia tam muội tại Giang Lăng, kế thừa Thanh Long đao pháp và thần khí kiên định của Quan Vũ.',
+        clueEn: 'Third daughter of Guan Yu in Jiangling, inheriting resolute valor and blade mastery.',
+        maternalTrait: {
+          traitCode: 'TLT-AZURE-WILL',
+          traitNameVi: 'Thanh Long Nộ Khí',
+          descriptionVi: '+20% EXP Võ Lực & Thống Soái, +2 Base WAR.'
+        }
+      },
+      {
+        npcId: 'NPC-0156',
+        nameVi: 'Tân Hiến Anh',
+        nameEn: 'Xin Xianying',
+        baselineLocation: 'LOC-0005',
+        dowryCash: 6000,
+        dowryItems: [{ itemCode: 'COM-SILK', itemNameVi: 'Tơ Lụa Thượng Phẩm', quantity: 3 }],
+        clueVi: 'Đệ nhất nữ trí giả Tào Ngụy tại Hứa Xương, túc trí đa mưu, tài năng liệu sự như thần.',
+        clueEn: 'Foremost scholar strategist of Cao Wei in Xuchang, famous for acute foresight and discernment.',
+        maternalTrait: {
+          traitCode: 'TLT-ASTUTE-PERCEPTION',
+          traitNameVi: 'Tuệ Nhãn Quan Cục',
+          descriptionVi: '+25% EXP Mưu Trí / Điển Tịch cho con cái, +2 Base INT.'
+        }
+      },
+      {
+        npcId: 'NPC-0157',
+        nameVi: 'Trâu Thị',
+        nameEn: 'Lady Zou',
+        baselineLocation: 'LOC-0015',
+        dowryCash: 5000,
+        dowryItems: [{ itemCode: 'COM-WINE', itemNameVi: 'Đỗ Khang Mỹ Tửu', quantity: 3 }],
+        clueVi: 'Tuyệt sắc phu nhân tại Uyển Thành, dung mạo diễm lệ khuynh thành, am hiểu giao tế quyền quý.',
+        clueEn: 'Peerless widow in Wancheng, famed for captivating beauty and refined social grace.',
+        maternalTrait: {
+          traitCode: 'TLT-CAPTIVATING-GRACE',
+          traitNameVi: 'Mỵ Ảnh Khuynh Thành',
+          descriptionVi: '+20% Gia Tộc Sĩ Khí & Hảo Cảm, +2 Base DIP.'
+        }
+      },
+      {
+        npcId: 'NPC-0158',
+        nameVi: 'Phàn Thị',
+        nameEn: 'Lady Fan',
+        baselineLocation: 'LOC-0020',
+        dowryCash: 5200,
+        dowryItems: [{ itemCode: 'COM-SILK', itemNameVi: 'Tơ Lụa Thượng Phẩm', quantity: 3 }],
+        clueVi: 'Quế Dương quốc sắc tại Quế Dương, đoan trang trọng nghĩa khinh lợi, giữ trọn tiết tháo thanh cao.',
+        clueEn: 'Noble beauty of Guiyang, revered for unyielding virtue and ethical integrity.',
+        maternalTrait: {
+          traitCode: 'TLT-PURE-INTEGRITY',
+          traitNameVi: 'Băng Thanh Ngọc Khiết',
+          descriptionVi: '+20% EXP Chính Trị & Lễ Tiết, +2 Base POL.'
+        }
+      },
+      {
+        npcId: 'NPC-0159',
+        nameVi: 'Mi Phu Nhân',
+        nameEn: 'Lady Mi',
+        baselineLocation: 'LOC-0014',
+        dowryCash: 8500,
+        dowryItems: [{ itemCode: 'COM-SILK', itemNameVi: 'Tơ Lụa Thượng Phẩm', quantity: 6 }],
+        clueVi: 'Đại thương gia Mi thị ái muội tại Giang Lăng, phong tư hào sảng, sản nghiệp dồi dào, thâm minh đại nghĩa.',
+        clueEn: 'Sister of grand merchant Mi Zhu in Jiangling, possessing substantial wealth and resolute loyalty.',
+        maternalTrait: {
+          traitCode: 'TLT-SACRIFICIAL-LOYALTY',
+          traitNameVi: 'Mi Gia Hào Khí',
+          descriptionVi: '+25% EXP Thương Nghiệp & Hậu Cần, +2 Base COM.'
+        }
+      },
+      {
+        npcId: 'NPC-0160',
+        nameVi: 'Cam Phu Nhân',
+        nameEn: 'Lady Gan',
+        baselineLocation: 'LOC-0010',
+        dowryCash: 5000,
+        dowryItems: [{ itemCode: 'COM-TEA', itemNameVi: 'Trà Ngon Giang Nam', quantity: 4 }],
+        clueVi: 'Ngọc khiết phu nhân tại Tương Dương, da trắng như ngọc, tính tình dịu dàng từ ái, tề gia nội trị vẹn toàn.',
+        clueEn: 'Gentle consort in Xiangyang, celebrated for porcelain grace and harmonious domestic care.',
+        maternalTrait: {
+          traitCode: 'TLT-EMPRESS-GRACE',
+          traitNameVi: 'Bạch Ngọc Ôn Nhu',
+          descriptionVi: '+20% Hòa Khí & Tăng Phúc Con Cái, +2 Base POL.'
+        }
       }
     ];
 
