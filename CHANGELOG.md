@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.13.0] - 2026-10-31
+
+Scenario-specific starting map.
+
+### Added
+- `config/scenario-seeds.json` defines each scenario's player holdings and
+  opening war. 184/190 start with Zhuo only, 200 adds Pingyuan, 208 adds
+  Xuchang.
+- The instance bootstrap and the legacy `/api/game/new` path apply the seed:
+  player settlements are transferred, other former player cities revert to the
+  Han court, the faction capital moves to the first holding and the opening war
+  is written to `faction_diplomacy`.
+- `tests/verify-scenario-seed.ts` verifies the 208 calendar, three holdings,
+  capital and war with the Han court.
+
+### Verification
+`npm run verify` green: 38/38 suites, 28/28 contracts, 8/8 write smokes.
+
+---
+
 ## [1.12.0] - 2026-10-31
 
 Campaign legacy / NG+.

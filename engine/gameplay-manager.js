@@ -230,6 +230,13 @@ class GameplayManager {
       throw new Error(`Failed to start new game: ${res.error}`);
     }
 
+    // Scenario-specific map ownership and wars (shared with the instance path).
+    try {
+      require('./scenario-seed').applyScenarioSeed(this.dbPath, scenarioId);
+    } catch (scenarioError) {
+      console.warn('[GameplayManager] scenario seed failed:', scenarioError.message);
+    }
+
     return {
       success: true,
       campaignId,

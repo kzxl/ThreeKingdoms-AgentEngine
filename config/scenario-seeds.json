@@ -1,0 +1,18 @@
+{
+  "SCN-184-ZHOU": {
+    "playerSettlements": ["zhuo_xian"],
+    "wars": ["FAC-YELLOW-TURBAN"]
+  },
+  "SCN-190-DONG": {
+    "playerSettlements": ["zhuo_xian"],
+    "wars": ["FAC-YELLOW-TURBAN"]
+  },
+  "SCN-200-GUAN": {
+    "playerSettlements": ["zhuo_xian", "ping_yuan"],
+    "wars": ["FAC-YUAN-SHAO"]
+  },
+  "SCN-208-CHIB": {
+    "playerSettlements": ["zhuo_xian", "ping_yuan", "xu_chang"],
+    "wars": ["FAC-HAN"]
+  }
+}

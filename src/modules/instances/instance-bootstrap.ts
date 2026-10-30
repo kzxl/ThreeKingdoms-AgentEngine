@@ -18,6 +18,7 @@ import Database from 'better-sqlite3';
 import { ArchetypePreset } from './instances.constants';
 import { postCashflowEntryRaw } from '../../shared/ledger';
 import { ACCOUNT_CODES } from '../../shared/account-codes';
+import SCENARIO_SEEDS from '../../../config/scenario-seeds.json';
 
 export interface InstanceBootstrapOptions {
   preset: ArchetypePreset;
@@ -89,6 +90,52 @@ function tableExists(db: Database.Database, name: string): boolean {
 function columnExists(db: Database.Database, table: string, column: string): boolean {
   if (!tableExists(db, table)) return false;
   return db.prepare(`PRAGMA table_info(${table})`).all().some((c: any) => c.name === column);
+}
+
+/**
+ * Applies scenario-specific map ownership and wars. The seed data lives in
+ * config/scenario-seeds.json so the legacy new-game path can share it.
+ */
+function applyScenarioSeed(db: Database.Database, scenarioId?: string): void {
+  if (!scenarioId) return;
+  const seed = (SCENARIO_SEEDS as Record<string, { playerSettlements?: string[]; wars?: string[] }>)[scenarioId];
+  if (!seed) return;
+
+  const playerFaction = db.prepare(
+    `SELECT faction_id FROM session_factions WHERE leader_id = 'PLY-0001' AND is_active = 1 LIMIT 1;`
+  ).get() as { faction_id?: string } | undefined;
+  if (!playerFaction?.faction_id) return;
+
+  const owned = new Set(seed.playerSettlements || []);
+  const settlements = db.prepare(
+    'SELECT settlement_id, ruler_faction_id FROM session_settlements;'
+  ).all() as Array<{ settlement_id: string; ruler_faction_id: string }>;
+  const assign = db.prepare(
+    `UPDATE session_settlements SET ruler_faction_id = ?, governor_id = ? WHERE settlement_id = ?;`
+  );
+  for (const settlement of settlements) {
+    if (owned.has(settlement.settlement_id)) {
+      assign.run(playerFaction.faction_id, 'PLY-0001', settlement.settlement_id);
+    } else if (settlement.ruler_faction_id === playerFaction.faction_id) {
+      assign.run('FAC-HAN', null, settlement.settlement_id);
+    }
+  }
+
+  const capital = seed.playerSettlements?.[0];
+  if (capital) {
+    db.prepare('UPDATE session_factions SET capital_settlement_id = ? WHERE faction_id = ?;')
+      .run(capital, playerFaction.faction_id);
+  }
+
+  const war = db.prepare(`
+    INSERT OR REPLACE INTO faction_diplomacy
+      (id, faction_id_a, faction_id_b, relation_state, diplomatic_attitude, truce_turns_remaining, tribute_amount, updated_turn)
+    VALUES (?, ?, ?, 'WAR', -100, 0, 0, 1);
+  `);
+  for (const enemy of seed.wars || []) {
+    const exists = db.prepare('SELECT 1 AS ok FROM session_factions WHERE faction_id = ?;').get(enemy);
+    if (exists) war.run(`DIP-${playerFaction.faction_id}-${enemy}`, playerFaction.faction_id, enemy);
+  }
 }
 
 /**
@@ -350,6 +397,8 @@ export function initializeInstanceDatabase(
       startDate,
       `${playerName} (${playerStyle}), xuất thân ${preset.nameVi}, đặt chân tới Trác Huyện bắt đầu hành trình lập nghiệp giữa thời tao loạn.`
     );
+
+    applyScenarioSeed(db, options.scenarioId);
   });
 
   reset();
