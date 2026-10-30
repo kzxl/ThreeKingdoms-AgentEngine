@@ -12,6 +12,7 @@ import { fameRatio } from '../../shared/prestige';
 import { UnrestService } from './unrest.service';
 import { OfficerUnrestConsequence } from './unrest-consequence';
 import { isTurnModuleDone, markTurnModuleDone } from '../../shared/turn-ledger';
+import { nextId } from '../../shared/id-generator';
 import {
   IFeatureModule,
   ModuleContext,
@@ -666,7 +667,111 @@ export class FactionPoliticsModule implements IFeatureModule {
   }
 
   /**
-   * Action: Appoint Governor to a Settlement
+   * Player-diplomacy: declare war on another faction. War closes supply roads
+   * through that faction's settlements on the next supply check.
+   */
+  public declareWar(targetFactionId: string): any {
+    return this.setWarState(targetFactionId, 'WAR');
+  }
+
+  public makePeace(targetFactionId: string): any {
+    return this.setWarState(targetFactionId, 'TRUCE');
+  }
+
+  private setWarState(targetFactionId: string, state: 'WAR' | 'TRUCE'): any {
+    const player = this.getPlayerFactionId();
+    if (!player) throw new Error('Player faction not found.');
+    if (!targetFactionId || targetFactionId === player) {
+      throw new Error('Không thể thay đổi quan hệ với chính phe mình.');
+    }
+
+    const target = this.db.queryOne<{ faction_id: string; name_vi: string }>(
+      `SELECT faction_id, name_vi FROM session_factions WHERE faction_id = ?;`,
+      [targetFactionId]
+    );
+    if (!target) throw new Error(`Faction ${targetFactionId} not found.`);
+
+    const meta = this.db.queryOne<any>(
+      `SELECT active_turn, "current_date" AS current_date FROM campaign_meta LIMIT 1;`
+    );
+    const turnNumber = Number(meta?.active_turn || 1);
+    const gameDate = meta?.current_date || '184-02-15';
+
+    const existing = this.db.queryOne<any>(
+      `SELECT * FROM faction_diplomacy
+       WHERE (faction_id_a = ? AND faction_id_b = ?) OR (faction_id_a = ? AND faction_id_b = ?)
+       LIMIT 1;`,
+      [player, targetFactionId, targetFactionId, player]
+    );
+    if (state === 'TRUCE' && (!existing || String(existing.relation_state).toUpperCase() !== 'WAR')) {
+      throw new Error('Chỉ có thể cầu hòa khi đang chiến tranh.');
+    }
+
+    const attitude = state === 'WAR' ? -100 : Math.max(0, Number(existing?.diplomatic_attitude || 0));
+    const truceTurns = state === 'TRUCE' ? 12 : 0;
+
+    this.db.transaction(() => {
+      if (existing) {
+        this.db.execute(
+          `UPDATE faction_diplomacy
+           SET relation_state = ?, diplomatic_attitude = ?, truce_turns_remaining = ?,
+               updated_turn = ?, updated_at = CURRENT_TIMESTAMP
+           WHERE id = ?;`,
+          [state, attitude, truceTurns, turnNumber, existing.id]
+        );
+      } else {
+        this.db.execute(
+          `INSERT INTO faction_diplomacy
+             (id, faction_id_a, faction_id_b, relation_state, diplomatic_attitude, truce_turns_remaining, tribute_amount, updated_turn)
+           VALUES (?, ?, ?, ?, ?, ?, 0, ?);`,
+          [`DIP-${player}-${targetFactionId}`, player, targetFactionId, state, attitude, truceTurns, turnNumber]
+        );
+      }
+
+      this.db.execute(
+        `INSERT OR REPLACE INTO faction_political_events
+           (event_id, turn_number, game_date, event_type, source_faction_id, target_faction_id,
+            instigator_officer_id, title_vi, narrative_vi, consequences_json)
+         VALUES (?, ?, ?, ?, ?, ?, 'PLY-0001', ?, ?, ?);`,
+        [
+          nextId(this.db, 'faction-event', 'FPE', gameDate),
+          turnNumber,
+          gameDate,
+          state === 'WAR' ? 'WAR_DECLARED' : 'PEACE_SIGNED',
+          player,
+          targetFactionId,
+          state === 'WAR'
+            ? `Tuyên chiến với ${target.name_vi}`
+            : `Cầu hòa với ${target.name_vi}`,
+          state === 'WAR'
+            ? `Chúa công ban chiếu thảo phạt ${target.name_vi}; các tuyến tiếp vận qua lãnh thổ địch bị phong tỏa.`
+            : `Sứ giả hai bên ký minh ước đình chiến với ${target.name_vi}; tuyến tiếp vận sẽ mở lại.`,
+          JSON.stringify({ relationState: state, truceTurns })
+        ]
+      );
+    });
+
+    return {
+      success: true,
+      factionId: targetFactionId,
+      factionName: target.name_vi,
+      relationState: state,
+      truceTurnsRemaining: truceTurns,
+      message: state === 'WAR'
+        ? `Đã tuyên chiến với ${target.name_vi}.`
+        : `Đã ký hòa ước với ${target.name_vi} (12 lượt).`
+    };
+  }
+
+  private getPlayerFactionId(): string | null {
+    const row = this.db.queryOne<{ faction_id: string }>(
+      `SELECT faction_id FROM session_factions WHERE leader_id = 'PLY-0001' AND is_active = 1 LIMIT 1;`
+    );
+    return row?.faction_id || null;
+  }
+
+  /**
+   * Action: Appoint Governor
    */
   public appointGovernor(settlementId: string, officerId: string, factionId: string, turnNumber = 1, gameDate = '184-02-15'): any {
     // 1. Verify officer belongs to faction

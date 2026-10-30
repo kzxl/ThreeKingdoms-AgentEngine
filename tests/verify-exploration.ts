@@ -60,7 +60,7 @@ function run(): void {
     assert.strictEqual(result.discovered, true, 'pity must guarantee a find');
     assert(result.item, 'pity find must include an item');
     assert.strictEqual(result.item!.tier, 1, 'fame 0 can only find tier 1');
-    assert.strictEqual(result.gameDate, '184-05-03', 'exploration must cost one day');
+    assert.strictEqual(result.gameDate, '184-05-04', 'exploration must cost two days');
     assert.strictEqual(result.chance, 0.03, 'chance must match the fame formula');
 
     const after = db.queryOne<any>('SELECT strategic_grain, fatigue FROM player_state LIMIT 1;');
@@ -89,11 +89,13 @@ function run(): void {
     );
     assert(action, 'exploration must be recorded in action_log');
 
-    // Day 30 must block before any roll.
+    // Day 30 no longer blocks: the action rolls into the next month and the
+    // month close runs automatically before the exploration resolves.
     db.execute(`UPDATE campaign_meta SET "current_date" = '184-05-30';`);
-    const blocked = service.explore({ characterId: 'PLY-0001', location: 'LOC-0001' });
-    assert.strictEqual(blocked.success, false, 'day 30 must block exploration');
-    assert.strictEqual(blocked.code, 'MONTH_END', 'day 30 must return MONTH_END');
+    const rollover = service.explore({ characterId: 'PLY-0001', location: 'LOC-0001' });
+    assert.strictEqual(rollover.success, true, 'day 30 must roll over, not block');
+    assert.strictEqual(rollover.time.advancedDays, 2, 'exploration still costs exactly two days');
+    assert.strictEqual(rollover.time.monthsClosed.length, 1, 'crossing day 30 must close the month');
   } finally {
     db.close();
     try {

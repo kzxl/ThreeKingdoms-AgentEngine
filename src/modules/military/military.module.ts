@@ -16,8 +16,14 @@ import {
   TroopUnitComposition
 } from './tactical-battle';
 import { BattleDuelService, PreBattleResult } from './battle-duel.service';
+import { NODE_TO_LOC_MAP } from '../ecology-logistics/spatial-registry';
 
 export * from './tactical-battle';
+
+/** Graph nodes are canonical LOC ids so settlement nodes and LOC ids unify. */
+function canonicalNode(nodeOrLoc: SettlementId): SettlementId {
+  return NODE_TO_LOC_MAP[String(nodeOrLoc)] || nodeOrLoc;
+}
 
 export interface GraphEdge {
   fromNode: SettlementId;
@@ -32,20 +38,27 @@ export class SupplyGraphService {
   private readonly edges: Map<string, GraphEdge> = new Map();
 
   public addEdge(edge: GraphEdge): void {
-    const keyForward = `${edge.fromNode}->${edge.toNode}`;
-    const keyBackward = `${edge.toNode}->${edge.fromNode}`;
-    this.edges.set(keyForward, edge);
+    const from = canonicalNode(edge.fromNode);
+    const to = canonicalNode(edge.toNode);
+    if (from === to) return;
+    const normalized: GraphEdge = { ...edge, fromNode: from, toNode: to };
+    const keyForward = `${from}->${to}`;
+    const keyBackward = `${to}->${from}`;
+    this.edges.set(keyForward, normalized);
+    this.edges.set(keyBackward, normalized);
 
-    if (!this.adjacencyList.has(edge.fromNode)) this.adjacencyList.set(edge.fromNode, new Set());
-    if (!this.adjacencyList.has(edge.toNode)) this.adjacencyList.set(edge.toNode, new Set());
+    if (!this.adjacencyList.has(from)) this.adjacencyList.set(from, new Set());
+    if (!this.adjacencyList.has(to)) this.adjacencyList.set(to, new Set());
 
-    if (!edge.isBlockedByHostile) {
-      this.adjacencyList.get(edge.fromNode)!.add(edge.toNode);
-      this.adjacencyList.get(edge.toNode)!.add(edge.fromNode);
+    if (!normalized.isBlockedByHostile) {
+      this.adjacencyList.get(from)!.add(to);
+      this.adjacencyList.get(to)!.add(from);
     }
   }
 
-  public setEdgeBlocked(from: SettlementId, to: SettlementId, blocked: boolean): void {
+  public setEdgeBlocked(fromNode: SettlementId, toNode: SettlementId, blocked: boolean): void {
+    const from = canonicalNode(fromNode);
+    const to = canonicalNode(toNode);
     const key = `${from}->${to}`;
     const edge = this.edges.get(key);
     if (edge) {
@@ -60,20 +73,35 @@ export class SupplyGraphService {
     }
   }
 
+  /** One row per undirected edge; the internal map stores both directions. */
+  public listEdges(): GraphEdge[] {
+    const seen = new Set<string>();
+    const result: GraphEdge[] = [];
+    for (const edge of this.edges.values()) {
+      const key = [String(edge.fromNode), String(edge.toNode)].sort().join('|');
+      if (seen.has(key)) continue;
+      seen.add(key);
+      result.push(edge);
+    }
+    return result;
+  }
+
   /**
    * Breadth-First Search (BFS) to determine if an army can trace an unbroken
    * friendly logistical route back to its designated Supply Hub.
    */
   public hasUnbrokenSupplyPath(armyLocation: SettlementId, supplyHub: SettlementId, maxHops = 10): boolean {
-    if (armyLocation === supplyHub) return true;
+    const start = canonicalNode(armyLocation);
+    const hub = canonicalNode(supplyHub);
+    if (start === hub) return true;
 
     const visited = new Set<SettlementId>();
-    const queue: Array<{ node: SettlementId; hops: number }> = [{ node: armyLocation, hops: 0 }];
-    visited.add(armyLocation);
+    const queue: Array<{ node: SettlementId; hops: number }> = [{ node: start, hops: 0 }];
+    visited.add(start);
 
     while (queue.length > 0) {
       const current = queue.shift()!;
-      if (current.node === supplyHub) return true;
+      if (current.node === hub) return true;
       if (current.hops >= maxHops) continue;
 
       const neighbors = this.adjacencyList.get(current.node);
@@ -122,6 +150,7 @@ export class MilitaryModule implements IFeatureModule {
   private ctx!: ModuleContext;
   private db?: DatabaseService;
   public readonly graph: SupplyGraphService = new SupplyGraphService();
+  private warBlockedEdges = new Set<string>();
 
   public init(ctx: ModuleContext): void {
     this.ctx = ctx;
@@ -135,9 +164,15 @@ export class MilitaryModule implements IFeatureModule {
 
     // Initialize baseline Three Kingdoms routes (e.g., Zhuo -> Julu -> Luoyang)
     this.initializeBaselineRoutes();
+    // Then add the real road network. Baseline edges are kept so old callers
+    // and tests that depend on Zhuo -> Julu -> Luoyang keep working. Tests that
+    // assert a single-edge cut can pass `loadMasterRoutes: false`.
+    if (ctx.loadMasterRoutes !== false) {
+      this.loadRoutesFromMaster();
+    }
 
     this.ctx.eventBus.subscribe('WORLD_DAY_TICK', async () => {
-      // Daily check of supply status
+      // War blocking is refreshed lazily in hasUnbrokenSupplyPath.
     });
   }
 
@@ -158,11 +193,97 @@ export class MilitaryModule implements IFeatureModule {
     });
   }
 
+  private loadRoutesFromMaster(): void {
+    if (!this.db) return;
+    try {
+      const terrainMap: Record<string, GraphEdge['terrainType']> = {
+        PLAINS: 'PLAINS',
+        MOUNTAIN_PASS: 'MOUNTAINS',
+        RIVER_WATERWAY: 'RIVER_CROSSING',
+        PLANK_ROAD: 'HILLS'
+      };
+      const routes = this.db.query<any>(
+        `SELECT source_location_id, target_location_id, distance_li, terrain_type FROM master_routes;`
+      );
+      for (const route of routes) {
+        this.graph.addEdge({
+          fromNode: route.source_location_id,
+          toNode: route.target_location_id,
+          distanceKm: Number(route.distance_li || 0) * 0.5,
+          terrainType: terrainMap[String(route.terrain_type || 'PLAINS')] || 'PLAINS',
+          isBlockedByHostile: false
+        });
+      }
+    } catch (error) {
+      // A database without the master table keeps the baseline graph.
+    }
+  }
+
+  /**
+   * Blocks roads whose endpoint belongs to a faction at war with the player.
+   * Only edges blocked by this method are re-opened; manual `setEdgeBlocked`
+   * calls (tests, scripts) are left untouched.
+   */
+  private refreshWarBlocking(): void {
+    if (!this.db) return;
+
+    for (const key of this.warBlockedEdges) {
+      const [from, to] = key.split('->');
+      this.graph.setEdgeBlocked(from, to, false);
+    }
+    this.warBlockedEdges.clear();
+
+    try {
+      const player = this.db.queryOne<{ faction_id: string }>(
+        `SELECT faction_id FROM session_factions WHERE leader_id = 'PLY-0001' AND is_active = 1 LIMIT 1;`
+      );
+      if (!player) return;
+
+      const enemies = new Set(
+        this.db.query<{ faction_id: string }>(
+          `SELECT CASE WHEN faction_id_a = ? THEN faction_id_b ELSE faction_id_a END AS faction_id
+           FROM faction_diplomacy
+           WHERE relation_state = 'WAR' AND (faction_id_a = ? OR faction_id_b = ?);`,
+          [player.faction_id, player.faction_id, player.faction_id]
+        ).map(row => row.faction_id)
+      );
+      if (enemies.size === 0) return;
+
+      const ownerByLoc = new Map<string, string>();
+      for (const row of this.db.query<{ settlement_id: string; ruler_faction_id: string }>(
+        `SELECT settlement_id, ruler_faction_id FROM session_settlements;`
+      )) {
+        ownerByLoc.set(canonicalNode(row.settlement_id), row.ruler_faction_id);
+      }
+
+      for (const edge of this.graph.listEdges()) {
+        const fromOwner = ownerByLoc.get(canonicalNode(edge.fromNode));
+        const toOwner = ownerByLoc.get(canonicalNode(edge.toNode));
+        const hostile = (fromOwner && enemies.has(fromOwner)) || (toOwner && enemies.has(toOwner));
+        if (!hostile) continue;
+        this.graph.setEdgeBlocked(edge.fromNode, edge.toNode, true);
+        this.warBlockedEdges.add(`${canonicalNode(edge.fromNode)}->${canonicalNode(edge.toNode)}`);
+      }
+    } catch {
+      // Ownership/diplomacy tables may be absent in a fresh schema; keep the graph.
+    }
+  }
+
+  /**
+   * Supply check used by the HTTP layer: refreshes war-time road closures
+   * before running BFS. Pure graph callers (tests/scripts) can still use
+   * `graph.hasUnbrokenSupplyPath` directly.
+   */
+  public hasUnbrokenSupplyPath(armyLocation: SettlementId, supplyHub: SettlementId, maxHops = 10): boolean {
+    this.refreshWarBlocking();
+    return this.graph.hasUnbrokenSupplyPath(armyLocation, supplyHub, maxHops);
+  }
+
   /**
    * Evaluates army operational status and updates morale accordingly
    */
   public evaluateArmySupply(army: ArmyState): { isSupplied: boolean; moraleDelta: number } {
-    const isSupplied = this.graph.hasUnbrokenSupplyPath(army.currentLocationId, army.supplyHubId);
+    const isSupplied = this.hasUnbrokenSupplyPath(army.currentLocationId, army.supplyHubId);
     let moraleDelta = 0;
 
     if (!isSupplied) {

@@ -7,6 +7,200 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.11.0] - 2026-10-30
+
+Progression law, endgame and content depth.
+
+### Changed
+- **One stage ladder.** `/api/status` exposes the server-computed progression;
+  the header badge and journal consume it instead of their own 1,500 / 12,000 /
+  50,000 thresholds. The server ladder stays 2,000 / 10,000 / 50,000.
+- **Stage gates are enforced.** Stage 2 opens household roles, stage 3 opens
+  remote courier actions and interstate caravans plus expeditions/assaults, and
+  stage 4 opens declaring war. Gate errors keep their 403 status.
+- **Five career paths are server data.** `GET /api/progression/career-paths`
+  scores Võ / Thương / Sĩ / Công / Tông Tộc from stats, wealth, fame,
+  professions, duels and family, and names the leading path.
+- **Archetypes start differently.** Frontier officers begin with a spear and
+  military rations, Silk Caravan factors with silk/tea/horse stock and trade
+  licenses, Scholar-Artisans with silk/tea. `current_location` and
+  `permanent_base` now use the preset's starting location instead of LOC-0001.
+- **Scenarios reach the instance path.** `CreateInstanceDTO` accepts
+  `scenarioId`; the bootstrap reads its `start_date` and campaign name.
+- **Victory exists.** Holding 12 settlements + 5,000 fame + stage 4 sets
+  `campaign_meta.status='VICTORIOUS'` on month close or conquest. The end
+  overlay now renders victory and defeat with the realm summary.
+- **Generic POI scenes are location-aware.** The 133 sub-locations without a
+  bespoke script now use the local settlement, a resident notable, a local
+  gathering resource and its market quote instead of always Zhang Fei + grain.
+- **Historical events pay their rewards.** Type-aware choice templates for
+  battles, diplomacy and choice events; `required_stat` blocks participation;
+  `rep_gain` awards fame; `sentiment_all`, `exp_*` and item rewards are applied
+  (items write a stock movement). The banner only advertises due events.
+- **Discovery loot is regional.** Migration 028 adds `location_keyword` /
+  `poi_keyword` and 11 regional finds; exploration filters by location and POI.
+- **Unrest hurts the city.** A disgruntled governor reduces the appointed
+  settlement's public order in addition to the existing secession path.
+- Migration 029 adds the eight player attribute EXP columns to the schema.
+
+### Verification
+`npm run verify` green: 36/36 suites (new `verify-endgame.ts`,
+`verify-content-depth.ts`), 28/28 contracts, 8/8 write smokes; `npm run audit`
+1,374 invariants, 0 discrepancies. Migrations 028–029 apply cleanly.
+
+### Deferred
+- NG+ / legacy carry-over, hand-written scenes for all 133 POIs, and
+  scenario-specific faction ownership remain backlog.
+
+---
+
+## [1.10.0] - 2026-10-30
+
+The Hegemon Road: expedition-bound conquest, garrison ownership and faction war.
+
+### Changed
+- **An arrived expedition can invest a city.** `POST /api/assault` accepts
+  `expeditionId`; the siege then takes its troops from the `ARRIVED` expedition,
+  marks it `BESIEGING`, writes surviving strength back each day and ends it
+  `CONCLUDED` when the siege resolves. Without an id the old ad-hoc troop path
+  remains available.
+- **Victory changes ownership.** Migration 027 adds `session_sieges.expedition_id`.
+  A won siege sets `ruler_faction_id` to the player's faction,
+  `governor_id='PLY-0001'`, installs the surviving attackers as the garrison,
+  resets walls to 30 and writes a `SETTLEMENT_CONQUERED` chronicle event. Loot
+  still flows through the central ledger writer.
+- **Own cities cannot be besieged**, a `MARCHING` army cannot start a siege, and
+  an expedition cannot withdraw while `BESIEGING`.
+- **Garrisons belong to their owner.** `POST /api/garrisons[*]` now returns 403
+  when the settlement is not owned by the player's faction.
+- **The supply graph uses the real road network.** `MilitaryModule` loads all
+  `master_routes` (keeping the Zhuo → Julu → Luoyang baseline for compatibility),
+  canonicalizes settlement nodes to `LOC-*`, and blocks roads whose endpoint
+  belongs to a faction at `WAR` with the player. Expedition supply now measures
+  from the origin to the player capital instead of origin-to-origin.
+- **Player diplomacy.** `POST /api/factions/declare-war` and
+  `/api/factions/make-peace` write `faction_diplomacy` (`WAR` / `TRUCE` for 12
+  turns) and chronicle `WAR_DECLARED` / `PEACE_SIGNED`. The world-map intel panel
+  exposes both actions for foreign settlements.
+- The world map reuses an arrived expedition automatically when bombarding its
+  target city and shows the expedition troop count.
+
+### Verification
+`npm run verify` green: 34/34 suites (new `verify-conquest.ts`), 28/28
+contracts, 8/8 write smokes; `npm run audit` 1,374 invariants, 0 discrepancies.
+Tests cover expedition-bound siege, ownership/governor transfer, own-city and
+marching-army rejection, war-time road closure and peace restoration.
+
+### Fixed
+- `verify-holistic-enhancements` restores its famine fixture settlement so later
+  live-world suites do not inherit a zero granary.
+- Supply-graph tests can opt out of the master road network
+  (`loadMasterRoutes: false`) when asserting a single-edge cut.
+
+---
+
+## [1.9.0] - 2026-10-30
+
+ROTK-style day commitment, life cycle clock, living world and multi-day sieges.
+
+### Changed
+- **Action economy is now day-committed.** A market session costs 2 days,
+  social interaction 2, banquet/recruit 2, cultivation 5 and martial training 5
+  (`engine/action-policy.js` plus the `public/js/config.js` mirror). A 30-day
+  month therefore fits roughly 6–12 major actions; rest and bookkeeping stay
+  free.
+- **NPCs have an age.** Migration 024 adds `npc_state.age` and backfills it from
+  `master_characters.baseline_age`; instance bootstrap seeds it for the starting
+  retainers and commissioned heirs insert their own age.
+- **Yearly aging and monthly family clock.** `closeMonth` advances the
+  protagonist, named NPCs and children once per 12 closed months, and runs
+  pregnancy, autonomous NPC marriage and childbirth every month through a lazy
+  lineage bridge. A failed lineage step cannot undo the month's economy.
+- **Expeditions march over days.** Migration 025 adds `route_id`, `march_days`,
+  `days_remaining` and `arrival_date`; `POST /api/expeditions` resolves the route
+  ETA and charges grain for those days. The day clock moves `MARCHING` to
+  `ARRIVED` once, and `POST /api/expeditions/conclude` withdraws the army.
+- **Historical events are date-gated.** `getActiveEvents` now exposes `isDue`
+  (same year and season); `advance-day` returns the local due events and the UI
+  raises the event banner instead of waiting for the player to open it.
+- **Sieges take days.** Migration 026 adds `session_sieges`. `POST
+  /api/assault` defaults to a persistent siege (`mode: 'SIEGE'`), the day clock
+  grinds defense and garrison, and the city falls at the breach threshold.
+  `mode: 'INSTANT'` keeps the old one-roll resolution for scripts.
+
+### Verification
+`npm run verify` green: 33/33 suites (new `verify-lifecycle-clock.ts`,
+`verify-living-world.ts`, `verify-siege-clock.ts`), 28/28 contracts, 8/8 write
+smokes; `npm run audit` 1,370 invariants, 0 discrepancies. Migrations 024–026
+apply cleanly to the template database.
+
+### Fixed
+- Temporary/test databases no longer overwrite the live `game/PROGRESS.md`
+  projection; only the canonical campaign database owns it.
+- Player pregnancy ticks no longer advance NPC couples (autonomous NPC life owns
+  those), preventing a double stage per month.
+
+---
+
+## [1.8.0] - 2026-10-30
+
+Day is the only time unit; month close is now a boundary event.
+
+### Changed
+- `engine/time-manager.js` gained `advanceTime()`, the single time-advance
+  entry point. It walks whole days, applies daily grain/fatigue/task/caravan
+  progress and publishes one `WORLD_DAY_TICK` per day. Crossing into day 1 of a
+  new month calls `GameplayManager.closeMonth` before moving the clock, so a
+  failed close leaves the calendar untouched and the same days can be retried.
+- `GameplayManager.advanceTurn` is now a thin alias that runs the day clock to
+  the next month boundary. The monthly settlements moved into `closeMonth`,
+  which no longer touches grain, fatigue, tasks or caravans.
+- Every day-consuming action (`applyActionTime`), march arrival and caravan
+  tick now flows through `advanceTime`; a day 30 action rolls into the next
+  month and closes it automatically.
+- The header button is now **Ngày Tiếp** and advances exactly one day
+  (`POST /api/campaign/advance-day`); the report shows a daily dispatch and a
+  monthly dispatch only when the boundary was crossed.
+- Fatigue recovers 1/day (calendar constant) instead of a flat −35 per month;
+  morale (+10) and health (+15) remain monthly boundary effects.
+
+### Removed
+- `MONTH_END` blocking in `canSpendActionTime`, `completeMarch` and the caravan
+  tick endpoint.
+- The `31 − D` skipped-day accounting and the duplicate day-tick publication
+  inside the month close; days are now actually walked once.
+- The client-side "Qua Tháng" confirm flow (kept `advance-turn` as a legacy
+  server alias for tests and external callers).
+
+### Verification
+`npm run verify` green: 30/30 suites (new `verify-next-day-clock.ts`), 28/28
+contracts, 8/8 write smokes; `npm run audit` 1,368 invariants, 0 discrepancies.
+The new suite proves one-day math, automatic month boundary, a single close
+per month and idempotent retry.
+
+---
+
+## [1.7.1] - 2026-10-30
+
+Market sparkline and one-heir-per-asset validation.
+
+### Changed
+- The market-pulse modal now draws an inline SVG sparkline over the last 24
+  monthly stock-multiplier points instead of a text-only series.
+- `setWill` rejects assigning the same business/equipment instance to two
+  children (`Tài sản ... chỉ được trao cho một người thừa kế`), so last-write-wins
+  cannot silently disinherit one child.
+- Officer territory transfer intentionally remains in faction-politics; the
+  `OfficerUnrestConsequence` strategy only records the shared unrest signal and
+  returns `requiresFactionAction`.
+
+### Verification
+`npm run verify` green: 29/29 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,358 invariants, 0 discrepancies. Tests cover multi-month
+history points and duplicate-asset rejection.
+
+---
+
 ## [1.7.0] - 2026-10-30
 
 Node.js 26 LTS upgrade.

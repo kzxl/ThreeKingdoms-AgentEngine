@@ -329,8 +329,8 @@ export class CaravanLogisticsService {
    * Advances every EN_ROUTE caravan by `days` campaign days.
    *
    * This is the single caravan progression implementation: the day clock
-   * (`advanceCampaignDays`) and month closure both call it, so a caravan can
-   * never progress through two different rule sets.
+   * (`engine/time-manager.advanceTime`) calls it for every elapsed day span, so
+   * a caravan can never progress through two different rule sets.
    *
    * Player-dispatched caravans stop at ARRIVED and wait for the player to
    * claim them. Faction-owned caravans settle automatically to the owner's

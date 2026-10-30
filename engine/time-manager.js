@@ -1,11 +1,15 @@
 /**
- * Campaign clock helpers. Days advance through player actions; the month only
- * closes through the explicit month-close action in GameplayManager.
+ * Campaign clock helpers. The day is the only time unit: every action and every
+ * explicit pause advances whole calendar days through `advanceTime`, which is
+ * the single writer of `campaign_meta.current_date`.
  *
- * This module is the single writer of `campaign_meta.current_date` and the
- * single publisher of `WORLD_DAY_TICK`. Every caller (actions, travel, explicit
- * day advance) goes through `advanceCampaignDays` so the calendar, fatigue,
- * grain upkeep, tasks and daily ticks cannot drift apart.
+ * Crossing into day 1 of a new month is a boundary event: `advanceTime` closes
+ * the month that just ended (enterprise settlement, world simulation, fame,
+ * bankruptcy) before moving the clock, so there is no separate month-jump path.
+ *
+ * Every caller (actions, travel, explicit day advance) goes through
+ * `advanceTime` so the calendar, fatigue, grain upkeep, tasks, daily ticks and
+ * month boundaries cannot drift apart.
  */
 
 const { runSqlJson, runSqlExec } = require('./db-adapter');
@@ -122,15 +126,6 @@ function canSpendActionTime(dbPath, type, subType, daysOverride = null) {
     };
   }
 
-  if (cost.days > 0 && clock.dayOfMonth >= DAYS_PER_MONTH) {
-    return {
-      allowed: false,
-      code: 'MONTH_END',
-      error: 'Đã hết ngày 30. Hãy bấm Qua Tháng để chốt tháng trước khi làm hành động tốn ngày.',
-      clock,
-      cost
-    };
-  }
   if (cost.fatigue > 0 && clock.fatigue >= FATIGUE_MAX) {
     return {
       allowed: false,
@@ -216,6 +211,26 @@ function advanceCampaignDays(dbPath, rawDays, options = {}) {
     }
   }
 
+  let expeditionResult = null;
+  if (advancedDays > 0) {
+    try {
+      const { advanceExpeditionsByDays } = require('./expedition-bridge');
+      expeditionResult = advanceExpeditionsByDays(dbPath, advancedDays, nextDate);
+    } catch (error) {
+      expeditionResult = { advanced: 0, arrived: [], error: error.message };
+    }
+  }
+
+  let siegeResult = null;
+  if (advancedDays > 0) {
+    try {
+      const { advanceSiegesByDays } = require('./siege-bridge');
+      siegeResult = advanceSiegesByDays(dbPath, advancedDays, nextDate);
+    } catch (error) {
+      siegeResult = { active: 0, resolved: [], error: error.message };
+    }
+  }
+
   const tasks = advancedDays > 0 ? progressTasks(dbPath, advancedDays, nextDate) : [];
 
   // Publish after the write so subscribers observe the new calendar day.
@@ -238,16 +253,158 @@ function advanceCampaignDays(dbPath, rawDays, options = {}) {
     missingGrain,
     dayTicksPublished,
     caravans: caravanResult,
+    expeditions: expeditionResult,
+    sieges: siegeResult,
     activeTasks: tasks.filter(task => task.status === 'IN_PROGRESS')
+  };
+}
+
+/**
+ * Advances the calendar by N whole days and closes every month boundary it
+ * crosses. This is the only public time-advance entry point.
+ *
+ * A month is 30 days. Leaving day 30 lands on day 1 of the next month; that is
+ * the boundary where `GameplayManager.closeMonth` runs. The close happens
+ * before the clock write so a failed close leaves the clock untouched and the
+ * same days can be retried safely.
+ */
+function advanceTime(dbPath, rawDays, options = {}) {
+  const requestedDays = normalizeDays(rawDays);
+  const startClock = getClock(dbPath);
+  if (!startClock.campaignId) {
+    return { success: false, error: 'Campaign metadata missing.' };
+  }
+
+  const grainUpkeepPerDay = options.grainUpkeepPerDay === undefined
+    ? GRAIN_PER_DAY
+    : Number(options.grainUpkeepPerDay);
+  const fatigueRecoveryPerDay = options.fatigueRecoveryPerDay === undefined
+    ? DAILY_FATIGUE_RECOVERY
+    : Number(options.fatigueRecoveryPerDay);
+
+  const monthsClosed = [];
+  let remaining = requestedDays;
+  let advancedDays = 0;
+  let fatigueDelta = Number(options.fatigueDelta || 0);
+  let last = null;
+  let grainCost = 0;
+  let dailyRecovery = 0;
+  let dayTicksPublished = 0;
+
+  while (remaining > 0) {
+    const clock = getClock(dbPath);
+    const toBoundary = DAYS_PER_MONTH - clock.dayOfMonth + 1;
+    const segment = Math.min(remaining, toBoundary);
+    const crossesBoundary = segment === toBoundary;
+
+    if (crossesBoundary) {
+      const boundary = addDays(clock.year, clock.month, clock.dayOfMonth, segment);
+      const nextMonthDate = formatDate(boundary.year, boundary.month, boundary.day);
+      let GameplayManager = null;
+      try {
+        ({ GameplayManager } = require('./gameplay-manager'));
+      } catch {
+        GameplayManager = null;
+      }
+      if (GameplayManager && typeof GameplayManager.closeMonthFor === 'function') {
+        try {
+          const report = GameplayManager.closeMonthFor(dbPath, {
+            endedDate: clock.currentDate,
+            nextDate: nextMonthDate,
+            prevTurn: clock.activeTurn,
+            recoveredFatigue: segment * fatigueRecoveryPerDay
+          });
+          if (report) monthsClosed.push(report);
+        } catch (error) {
+          return {
+            success: false,
+            code: 'MONTH_CLOSE_FAILED',
+            error: error && error.message ? error.message : String(error),
+            requestedDays,
+            advancedDays,
+            prevDate: startClock.currentDate,
+            nextDate: getClock(dbPath).currentDate,
+            monthsClosed,
+            partial: true
+          };
+        }
+      }
+    }
+
+    const segmentResult = advanceCampaignDays(dbPath, segment, {
+      reason: options.reason || '',
+      clampToMonthEnd: false,
+      grainUpkeepPerDay,
+      fatigueDelta,
+      fatigueRecoveryPerDay,
+      publishTicks: options.publishTicks !== false
+    });
+    if (!segmentResult.success) {
+      // A close commits before the clock write. If the write then fails, roll
+      // the turn counter back so the retry hits the same close marker and
+      // skips the settlement instead of closing the next month.
+      if (crossesBoundary) {
+        try {
+          runSqlExec(
+            dbPath,
+            `UPDATE campaign_meta SET active_turn = ? WHERE campaign_id = ?;`,
+            [clock.activeTurn, clock.campaignId]
+          );
+        } catch {
+          // Leave the counter as-is; the marker still prevents a double close.
+        }
+      }
+      return {
+        ...segmentResult,
+        requestedDays,
+        advancedDays,
+        prevDate: startClock.currentDate,
+        nextDate: last ? last.nextDate : startClock.currentDate,
+        monthsClosed,
+        partial: true
+      };
+    }
+
+    fatigueDelta = 0;
+    last = segmentResult;
+    advancedDays += segment;
+    remaining -= segment;
+    grainCost += segmentResult.grainCost;
+    dailyRecovery += segmentResult.dailyRecovery;
+    dayTicksPublished += segmentResult.dayTicksPublished;
+
+    const meta = runSqlJson(dbPath, 'SELECT status FROM campaign_meta LIMIT 1;')[0];
+    if (meta && meta.status && meta.status !== 'ACTIVE') break;
+  }
+
+  return {
+    success: true,
+    requestedDays,
+    advancedDays,
+    partial: advancedDays < requestedDays,
+    prevDate: startClock.currentDate,
+    nextDate: last ? last.nextDate : startClock.currentDate,
+    monthsClosed,
+    grainCost: Number(grainCost.toFixed(2)),
+    grainAfter: last ? last.grainAfter : startClock.grain,
+    fatigueBefore: startClock.fatigue,
+    fatigueAfter: last ? last.fatigueAfter : startClock.fatigue,
+    dailyRecovery,
+    dayTicksPublished,
+    caravans: last ? last.caravans : null,
+    expeditions: last ? last.expeditions : null,
+    sieges: last ? last.sieges : null,
+    activeTasks: last ? last.activeTasks : []
   };
 }
 
 function applyActionTime(dbPath, type, subType, reason = '', daysOverride = null) {
   const cost = resolveActionCost(type, subType, daysOverride);
-  const result = advanceCampaignDays(dbPath, cost.days, {
+  const result = advanceTime(dbPath, cost.days, {
     reason,
     fatigueDelta: cost.fatigue,
-    clampToMonthEnd: true
+    grainUpkeepPerDay: GRAIN_PER_DAY,
+    fatigueRecoveryPerDay: DAILY_FATIGUE_RECOVERY
   });
   if (!result.success) return result;
   return { ...result, actionType: type, subType: subType || null };
@@ -263,5 +420,6 @@ module.exports = {
   canSpendActionTime,
   applyActionTime,
   advanceCampaignDays,
+  advanceTime,
   publishDayTicks
 };

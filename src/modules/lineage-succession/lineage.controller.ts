@@ -102,11 +102,19 @@ export function registerLineageRoutes(router: Router): void {
       const body = ctx.body || {};
       const marriageId = body.marriageId;
       const role = body.role as HouseholdRole;
+      const playerId = body.playerId || 'PLY-0001';
 
       if (!marriageId || !role) {
         sendJson(res, 400, { success: false, error: 'Thiếu marriageId hoặc role' });
         return;
       }
+
+      guard.assertStage(
+        playerId,
+        2,
+        'Bàn Giấy Gia Thất',
+        body.bypassProgressionGate || body.bypassSpatialGuard
+      );
 
       service.assignHouseholdRole(marriageId, role);
       sendJson(res, 200, {
@@ -114,7 +122,7 @@ export function registerLineageRoutes(router: Router): void {
         message: `Đã phân bổ chức vụ [${role}] cho hôn phối ${marriageId}.`
       });
     } catch (err: any) {
-      sendJson(res, 400, { success: false, error: err.message });
+      sendJson(res, err.statusCode || 400, { success: false, error: err.message });
     }
   };
 

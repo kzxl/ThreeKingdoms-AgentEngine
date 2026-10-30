@@ -1460,8 +1460,8 @@ var g = {
 			size: "md"
 		}), this.turnModal = i({
 			id: "turn-advance-modal",
-			title: "Quyết Toán Tháng • Luân Chuyển Chiến Cục",
-			subtitle: "Kết thúc tháng hiện tại, kết toán tài chính, sản nghiệp và mô phỏng thế giới sống động",
+			title: "Ngày Tiếp Theo • Dòng Thời Gian",
+			subtitle: "Tiến một ngày, chi dùng hằng ngày và tự động chốt tháng khi sang mùng 1",
 			seal: "歲",
 			size: "md"
 		});
@@ -1488,10 +1488,10 @@ var g = {
 		await this.travelModal.close();
 	}
 	async showTurnAdvance(e, t, n) {
-		this.turnModal.setTitle(`Quyết Toán Lượt Thứ ${e}`, `Thời gian: ${t} • Thiên thời địa lợi`), this.turnModal.setContent(`
+		this.turnModal.setTitle(`Ngày ${t}`, `Nhịp thời gian: ngày ${e} • Chi dùng và tiến trình tự động`), this.turnModal.setContent(`
       <div class="turn-advance-body p-2 space-y-3">
         <div class="p-3 bg-slate-950 rounded border border-slate-800 text-xs font-mono space-y-1">
-          ${n || "\n            <div class=\"text-green-400\">◆ Hoàn tất chu kỳ sản xuất hàng tháng của các xưởng.</div>\n            <div class=\"text-amber-300\">◆ Kết toán sổ cái kép thu chi tài chính.</div>\n            <div class=\"text-blue-300\">◆ Cập nhật tiến độ thai kỳ và bồi dưỡng thế hệ gia tộc.</div>\n          "}
+          ${n || "\n            <div class=\"text-green-400\">◆ Một ngày trôi qua: lương thảo tiêu hao, thể lực hồi phục.</div>\n            <div class=\"text-amber-300\">◆ Công việc dài ngày và thương đoàn tiếp tục tiến.</div>\n            <div class=\"text-blue-300\">◆ Sang mùng 1, tháng tự động kết toán sản nghiệp và thế giới.</div>\n          "}
         </div>
         <button class="ui-btn ui-btn--accent w-full py-2 font-bold" onclick="window.TurnAdvanceUI.close()">
           Tiếp Tục Mô Phỏng
@@ -1795,7 +1795,7 @@ var g = {
 				to: this.resolveMapNodeId(String(e.toSettlementId || "")),
 				progress: Number(e.routeProgress) || 0
 			})).filter((e) => e.from && e.to),
-			expeditions: this.state.expeditions.filter((e) => String(e.status).toUpperCase() === "MARCHING").map((e) => {
+			expeditions: this.state.expeditions.filter((e) => ["MARCHING", "ARRIVED"].includes(String(e.status).toUpperCase())).map((e) => {
 				let t = e;
 				return {
 					...e,

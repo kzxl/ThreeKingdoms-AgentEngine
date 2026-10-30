@@ -677,8 +677,9 @@ async function checkAndRenderActiveEventBanner() {
       return;
     }
 
-    // Find local event that has not yet been resolved
-    const localActive = data.events.find(e => e.isLocal && !e.isResolved);
+    // Find the local event that is due now; if none is due, keep the banner
+    // hidden rather than advertising events from other years.
+    const localActive = data.events.find(e => e.isLocal && !e.isResolved && e.isDue);
     if (localActive) {
       currentActiveLocalEvent = localActive;
       const titleEl = document.getElementById('event-banner-title');

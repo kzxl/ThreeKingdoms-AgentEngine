@@ -94,10 +94,10 @@ It exposes `getFame`, `getTier`, `award`, `penalize`, `decayInactive` and
 
 1. Guest auto-assignment needs an owned business and a met fame gate; otherwise
    the guest stays `GUEST` until the player hires them.
-2. The market-pulse screen shows stock/demand, multipliers and the last 12
-   textual points; a chart with longer history is still minimal.
-3. `UnrestConsequence` strategies now own retainer and officer bookkeeping, but
-   officer territory transfer deliberately stays in faction-politics.
+2. The market-pulse screen draws a 24-point SVG sparkline; longer history and
+   tooltips are still minimal.
+3. `UnrestConsequence` strategies own retainer and officer bookkeeping; officer
+   territory transfer deliberately stays in faction-politics.
 4. The will supports charity, per-child cash, businesses and equipment instance
-   ids; assigning the same equipment to two children is last-write-wins.
+   ids, and rejects the same asset going to two children.
 

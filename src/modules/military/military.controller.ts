@@ -14,6 +14,9 @@ import { getGameDate } from '../../shared/game-clock';
 import { ModuleRegistry } from '../../core/module-registry';
 import { MilitaryModule } from './military.module';
 import { EcologyLogisticsModule } from '../ecology-logistics/ecology-logistics.module';
+import { NODE_TO_LOC_MAP } from '../ecology-logistics/spatial-registry';
+import { SiegeService } from './siege.service';
+import { SpatialGuardService } from '../progression/spatial-guard.service';
 import { recordFinancialTransaction } from '../../shared/financial-transaction';
 
 function getMilitaryModule(): MilitaryModule | undefined {
@@ -40,7 +43,24 @@ function ensureMilitaryTables(db: DatabaseService): void {
       is_supplied INTEGER DEFAULT 1,
       status TEXT NOT NULL DEFAULT 'MARCHING',
       created_turn INTEGER NOT NULL,
-      game_date TEXT NOT NULL
+      game_date TEXT NOT NULL,
+      route_id TEXT,
+      march_days INTEGER NOT NULL DEFAULT 5,
+      days_remaining INTEGER NOT NULL DEFAULT 0,
+      arrival_date TEXT
+    );
+    CREATE TABLE IF NOT EXISTS session_sieges (
+      siege_id TEXT PRIMARY KEY,
+      settlement_id TEXT NOT NULL,
+      commander_id TEXT NOT NULL,
+      attacker_troops INTEGER NOT NULL,
+      daily_damage INTEGER NOT NULL,
+      started_date TEXT NOT NULL,
+      days_elapsed INTEGER NOT NULL DEFAULT 0,
+      status TEXT NOT NULL DEFAULT 'ACTIVE',
+      last_loot INTEGER NOT NULL DEFAULT 0,
+      expedition_id TEXT,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `);
 }
@@ -110,9 +130,11 @@ export function registerMilitaryRoutes(router: Router): void {
         WHERE player_id = 'PLY-0001';
       `);
 
-      // Active expeditions count
+      // Active expeditions (marching or waiting at the gates)
       const activeExpeditions = db.query<any>(`
-        SELECT * FROM military_expeditions WHERE status = 'MARCHING' ORDER BY expedition_id DESC;
+        SELECT * FROM military_expeditions
+        WHERE status IN ('MARCHING', 'ARRIVED')
+        ORDER BY expedition_id DESC;
       `);
 
       sendJson(res, 200, {
@@ -255,6 +277,20 @@ export function registerMilitaryRoutes(router: Router): void {
 
       const totalCost = delta > 0 ? Math.round(delta * Number(costPerTroop)) : 0;
 
+      const playerFaction = db.queryOne<{ faction_id: string }>(
+        `SELECT faction_id FROM session_factions WHERE leader_id = 'PLY-0001' AND is_active = 1 LIMIT 1;`
+      );
+      const settlementOwner = db.queryOne<{ ruler_faction_id: string }>(
+        'SELECT ruler_faction_id FROM session_settlements WHERE settlement_id = ?;', [settlementId]
+      );
+      if (playerFaction && settlementOwner && settlementOwner.ruler_faction_id !== playerFaction.faction_id) {
+        sendJson(res, 403, {
+          success: false,
+          error: `Chỉ có thể điều động đồn trú tại thành của phe mình (${playerFaction.faction_id}).`
+        });
+        return;
+      }
+
       const result = db.transaction(() => {
         const settlement = db.queryOne<any>('SELECT * FROM session_settlements WHERE settlement_id = ?', [settlementId]);
         if (!settlement) {
@@ -303,7 +339,7 @@ export function registerMilitaryRoutes(router: Router): void {
         message: `Đã điều chỉnh đồn trú tại ${result.settlementName}: ${delta > 0 ? '+' : ''}${delta} binh sĩ (Đồn trú: ${result.newTroops}, Phòng ngự: ${result.newDefense}).`
       });
     } catch (err: any) {
-      sendJson(res, 400, { success: false, error: err.message });
+      sendJson(res, err.statusCode || 400, { success: false, error: err.message });
     }
   };
 
@@ -338,12 +374,37 @@ export function registerMilitaryRoutes(router: Router): void {
         return;
       }
 
+      SpatialGuardService.getInstance().assertStage(
+        commanderId,
+        3,
+        'Viễn Chinh Liên Châu',
+        (ctx.body || {}).bypassProgressionGate || (ctx.body || {}).bypassSpatialGuard
+      );
+
       const military = getMilitaryModule();
-      const hub = supplyHubId || originSettlementId;
-      const isSupplied = military ? military.graph.hasUnbrokenSupplyPath(originSettlementId, hub) : true;
+      const playerFaction = db.queryOne<{ capital_settlement_id: string }>(
+        `SELECT capital_settlement_id FROM session_factions WHERE leader_id = 'PLY-0001' AND is_active = 1 LIMIT 1;`
+      );
+      const hub = supplyHubId || playerFaction?.capital_settlement_id || originSettlementId;
+      const isSupplied = military ? military.hasUnbrokenSupplyPath(originSettlementId, hub) : true;
 
       const meta = getCampaignMeta(db);
-      const grainRequirement = Math.round((Number(troopCount) * 0.02) * 5 * 10) / 10; // 5 days grain
+      const originLoc = NODE_TO_LOC_MAP[originSettlementId] || originSettlementId;
+      const targetLoc = NODE_TO_LOC_MAP[targetSettlementId] || targetSettlementId;
+      const route = db.queryOne<any>(
+        `SELECT route_id, standard_march_days
+         FROM master_routes
+         WHERE (source_location_id = ? AND target_location_id = ?)
+            OR (source_location_id = ? AND target_location_id = ?)
+         LIMIT 1;`,
+        [originLoc, targetLoc, targetLoc, originLoc]
+      );
+      const marchDays = Math.max(1, Math.round(Number(route?.standard_march_days) || 5));
+      const arrivalDate = (() => {
+        const { addDaysToDate } = require('../../../engine/date-utils');
+        return addDaysToDate(meta.currentDate, marchDays);
+      })();
+      const grainRequirement = Math.round((Number(troopCount) * 0.02) * marchDays * 10) / 10;
 
       const expResult = db.transaction(() => {
         const player = db.queryOne<any>('SELECT strategic_grain, fatigue FROM player_state WHERE player_id = ?', [commanderId]);
@@ -360,9 +421,16 @@ export function registerMilitaryRoutes(router: Router): void {
         ]);
 
         db.execute(
-          `INSERT INTO military_expeditions (expedition_id, commander_id, origin_settlement_id, target_settlement_id, troop_count, grain_supply_days, is_supplied, status, created_turn, game_date)
-           VALUES (?, ?, ?, ?, ?, 5.0, ?, 'MARCHING', ?, ?);`,
-          [expId, commanderId, originSettlementId, targetSettlementId, troopCount, isSupplied ? 1 : 0, meta.activeTurn, meta.currentDate]
+          `INSERT INTO military_expeditions (
+             expedition_id, commander_id, origin_settlement_id, target_settlement_id,
+             troop_count, grain_supply_days, is_supplied, status, created_turn, game_date,
+             route_id, march_days, days_remaining, arrival_date
+           ) VALUES (?, ?, ?, ?, ?, ?, ?, 'MARCHING', ?, ?, ?, ?, ?, ?);`,
+          [
+            expId, commanderId, originSettlementId, targetSettlementId,
+            troopCount, marchDays, isSupplied ? 1 : 0, meta.activeTurn, meta.currentDate,
+            route?.route_id || null, marchDays, marchDays, arrivalDate
+          ]
         );
 
         return {
@@ -371,6 +439,9 @@ export function registerMilitaryRoutes(router: Router): void {
           originSettlementId,
           targetSettlementId,
           troopCount,
+          marchDays,
+          daysRemaining: marchDays,
+          arrivalDate,
           grainCost: grainRequirement,
           isSupplied
         };
@@ -379,16 +450,60 @@ export function registerMilitaryRoutes(router: Router): void {
       sendJson(res, 200, {
         success: true,
         ...expResult,
-        message: `Phát động quân đoàn viễn chinh ${troopCount} binh sĩ từ ${originSettlementId} tới ${targetSettlementId} (Quân lương tiêu hao: ${grainRequirement} Thạch, Tuyến tiếp vận: ${isSupplied ? 'Thông suốt' : 'Bị đứt đoạn'}).`
+        message: `Phát động quân đoàn viễn chinh ${troopCount} binh sĩ từ ${originSettlementId} tới ${targetSettlementId} (${marchDays} ngày đường, dự kiến tới ${arrivalDate}; Quân lương tiêu hao: ${grainRequirement} Thạch, Tuyến tiếp vận: ${isSupplied ? 'Thông suốt' : 'Bị đứt đoạn'}).`
       });
     } catch (err: any) {
-      sendJson(res, 400, { success: false, error: err.message });
+      sendJson(res, err.statusCode || 400, { success: false, error: err.message });
     }
   };
 
   router.get('/api/expeditions', handleGetExpeditions);
   router.get('/api/military/expeditions', handleGetExpeditions);
   router.post('/api/expeditions', handlePostExpedition);
+
+  // Withdraw or disband an expedition that has arrived (or is still marching).
+  const handleConcludeExpedition = async (_req: any, res: any, ctx: RouteContext) => {
+    try {
+      const { expeditionId, commanderId = 'PLY-0001' } = ctx.body || {};
+      if (!expeditionId) {
+        sendJson(res, 400, { success: false, error: 'expeditionId is required.' });
+        return;
+      }
+      const current = db.queryOne<any>(
+        'SELECT status FROM military_expeditions WHERE expedition_id = ? AND commander_id = ?;',
+        [expeditionId, commanderId]
+      );
+      if (current?.status === 'BESIEGING') {
+        sendJson(res, 400, {
+          success: false,
+          error: 'Không thể thu quân khi đang bao vây; hãy hạ thành hoặc để bao vây kết thúc.'
+        });
+        return;
+      }
+      const result = db.execute(
+        `UPDATE military_expeditions
+         SET status = 'CONCLUDED'
+         WHERE expedition_id = ? AND commander_id = ? AND status IN ('MARCHING', 'ARRIVED');`,
+        [expeditionId, commanderId]
+      );
+      const changed = Number((result as any)?.changes || 0);
+      if (!changed) {
+        sendJson(res, 404, { success: false, error: 'No active expedition found for this commander.' });
+        return;
+      }
+      sendJson(res, 200, {
+        success: true,
+        expeditionId,
+        status: 'CONCLUDED',
+        message: `Đã thu quân viễn chinh ${expeditionId}.`
+      });
+    } catch (err: any) {
+      sendJson(res, err.statusCode || 400, { success: false, error: err.message });
+    }
+  };
+
+  router.post('/api/expeditions/conclude', handleConcludeExpedition);
+  router.post('/api/military/expeditions/conclude', handleConcludeExpedition);
   router.post('/api/military/expeditions', handlePostExpedition);
 
   // -------------------------------------------------------------
@@ -400,7 +515,9 @@ export function registerMilitaryRoutes(router: Router): void {
         targetSettlementId,
         strongholdId,
         attackerTroops = 250,
-        commanderId = 'PLY-0001'
+        commanderId = 'PLY-0001',
+        mode = 'INSTANT',
+        expeditionId
       } = ctx.body || {};
 
       // If attacking a bandit stronghold, leverage ecology logistics
@@ -416,6 +533,35 @@ export function registerMilitaryRoutes(router: Router): void {
 
       if (!targetSettlementId) {
         sendJson(res, 400, { success: false, error: 'targetSettlementId or strongholdId is required.' });
+        return;
+      }
+
+      SpatialGuardService.getInstance().assertStage(
+        commanderId,
+        3,
+        'Điều Binh Công Thành',
+        (ctx.body || {}).bypassProgressionGate || (ctx.body || {}).bypassSpatialGuard
+      );
+
+      // Multi-day siege: persist the investment and let the day clock grind the
+      // walls down. The instant resolution below stays available for old
+      // callers that explicitly pass mode: 'INSTANT'.
+      if (String(mode).toUpperCase() === 'SIEGE') {
+        const meta = getCampaignMeta(db);
+        const siege = SiegeService.forDatabase(db).startSiege({
+          settlementId: targetSettlementId,
+          commanderId,
+          attackerTroops,
+          gameDate: meta.currentDate,
+          expeditionId
+        });
+        sendJson(res, 200, {
+          success: true,
+          siege,
+          message: siege.status === 'ACTIVE'
+            ? `Đã bao vây ${targetSettlementId}: ${siege.attackerTroops} quân, mỗi ngày giảm phòng thủ. Hạ thành khi tường vỡ hoặc đồn trú tan rã.`
+            : `Công thành ${targetSettlementId} đã kết thúc.`
+        });
         return;
       }
 
@@ -503,12 +649,22 @@ export function registerMilitaryRoutes(router: Router): void {
 
       sendJson(res, 200, { success: true, ...siegeResult });
     } catch (err: any) {
-      sendJson(res, 400, { success: false, error: err.message });
+      sendJson(res, err.statusCode || 400, { success: false, error: err.message });
     }
   };
 
   router.post('/api/assault', handleAssault);
   router.post('/api/military/assault', handleAssault);
+
+  // Active sieges for the map/status surfaces.
+  router.get('/api/sieges', async (_req: any, res: any, _ctx: RouteContext) => {
+    try {
+      const sieges = SiegeService.forDatabase(db).listActive();
+      sendJson(res, 200, { success: true, count: sieges.length, sieges });
+    } catch (err: any) {
+      sendJson(res, 500, { success: false, error: err.message });
+    }
+  });
 
   // -------------------------------------------------------------
   // 6. POST /api/strategy/supply-check
@@ -522,10 +678,10 @@ export function registerMilitaryRoutes(router: Router): void {
         return;
       }
 
-      const hasSupply = military.graph.hasUnbrokenSupplyPath(fromNode, supplyHub, parseInt(maxHops, 10));
+      const hasSupply = military.hasUnbrokenSupplyPath(fromNode, supplyHub, parseInt(maxHops, 10));
       sendJson(res, 200, { success: true, fromNode, supplyHub, hasSupply });
     } catch (err: any) {
-      sendJson(res, 400, { success: false, error: err.message });
+      sendJson(res, err.statusCode || 400, { success: false, error: err.message });
     }
   });
 }

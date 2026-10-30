@@ -128,10 +128,10 @@ const I18N_DICT = {
     gmAlertNote: 'Bảo đảm toàn vẹn: Khởi tạo màn chơi mới sẽ tái lập sổ sách theo chuẩn mực kế toán kép SQLite (Dr = Cr).',
     gmBtnStartGame: 'Khởi Lập Điển Tích Mới',
     // Turn Advance & World Travel
-    btnAdvanceTurn: 'Tiến Lượt',
-    btnAdvanceTurnTitle: 'Tiến Lượt / Kết Thúc Lượt & Mô Phỏng Thế Giới',
-    btnTurnDock: 'Qua Tháng',
-    btnTurnDockTitle: 'Qua Tháng / Kết Thúc Tháng & Mô Phỏng Thế Giới',
+    btnAdvanceTurn: 'Ngày Tiếp',
+    btnAdvanceTurnTitle: 'Ngày Tiếp Theo / Tiến 1 Ngày & Tự Động Chốt Tháng',
+    btnTurnDock: 'Ngày Tiếp',
+    btnTurnDockTitle: 'Ngày Tiếp Theo / Tiến 1 Ngày & Tự Động Chốt Tháng',
     travelModalTitle: 'Lộ Trình Viễn Chinh • Dặm Trường Phong Vân',
     travelModalSub: 'Hành quân liên châu, khảo sát địa hình và ứng biến trước hiểm họa dọc đường'
   },
@@ -260,10 +260,10 @@ const I18N_DICT = {
     gmAlertNote: 'Integrity Guaranteed: Starting a new game safely resets session tables while strictly preserving 100% SQLite double-entry ledger balance.',
     gmBtnStartGame: 'Launch Historical Campaign',
     // Turn Advance & World Travel
-    btnAdvanceTurn: 'Next Turn',
-    btnAdvanceTurnTitle: 'Advance Turn / End Turn & Living World Simulation',
-    btnTurnDock: 'Next Month',
-    btnTurnDockTitle: 'Advance Month / End Month & Living World Simulation',
+    btnAdvanceTurn: 'Next Day',
+    btnAdvanceTurnTitle: 'Next Day / Advance One Day & Auto-Close the Month',
+    btnTurnDock: 'Next Day',
+    btnTurnDockTitle: 'Next Day / Advance One Day & Auto-Close the Month',
     travelModalTitle: 'Expedition March & Transit Station',
     travelModalSub: 'Regional highway transit, tactical patrols, and road encounter resolution'
   }
@@ -378,14 +378,14 @@ function applyLanguage() {
 
   // Turn Progression Buttons (Header & Dock)
   const txtAdvTurn = document.getElementById('txt-btn-advance-turn');
-  if (txtAdvTurn) txtAdvTurn.innerText = dict.btnAdvanceTurn || (currentLang === 'en' ? 'Next Turn' : 'Tiến Lượt');
+  if (txtAdvTurn) txtAdvTurn.innerText = dict.btnAdvanceTurn || (currentLang === 'en' ? 'Next Day' : 'Ngày Tiếp');
   const btnAdvTurn = document.getElementById('btn-advance-turn');
-  if (btnAdvTurn) btnAdvTurn.title = dict.btnAdvanceTurnTitle || (currentLang === 'en' ? 'Advance Turn / End Turn & Living World Simulation' : 'Tiến Lượt / Kết Thúc Lượt & Mô Phỏng Thế Giới');
+  if (btnAdvTurn) btnAdvTurn.title = dict.btnAdvanceTurnTitle || (currentLang === 'en' ? 'Next Day / Advance One Day & Auto-Close the Month' : 'Ngày Tiếp Theo / Tiến 1 Ngày & Tự Động Chốt Tháng');
 
   const txtTurnDock = document.getElementById('txt-btn-turn-dock');
-  if (txtTurnDock) txtTurnDock.innerText = dict.btnTurnDock || (currentLang === 'en' ? 'Advance Turn' : 'Qua Lượt');
+  if (txtTurnDock) txtTurnDock.innerText = dict.btnTurnDock || (currentLang === 'en' ? 'Next Day' : 'Ngày Tiếp');
   const btnTurnDock = document.getElementById('btn-turn-dock');
-  if (btnTurnDock) btnTurnDock.title = dict.btnTurnDockTitle || (currentLang === 'en' ? 'Advance Turn / End Turn & Living World Simulation' : 'Tiến Lượt / Kết Thúc Lượt & Mô Phỏng Thế Giới');
+  if (btnTurnDock) btnTurnDock.title = dict.btnTurnDockTitle || (currentLang === 'en' ? 'Next Day / Advance One Day & Auto-Close the Month' : 'Ngày Tiếp Theo / Tiến 1 Ngày & Tự Động Chốt Tháng');
 
   // Travel Transit Modal Header
   const trvModalTitle = document.getElementById('travel-modal-title');

@@ -126,11 +126,12 @@ export class HeirMentorshipService {
 
           this.db.execute(`
             INSERT OR REPLACE INTO npc_state 
-            (npc_id, name, war_attr, int_attr, cra_attr, com_attr, ldr_attr, loyalty, morale, fatigue)
-            VALUES (?, ?, ?, ?, ?, ?, ?, 100, 100, 0);
+            (npc_id, name, age, war_attr, int_attr, cra_attr, com_attr, ldr_attr, loyalty, morale, fatigue)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 100, 100, 0);
           `, [
             childId,
             child.name_vi || childId,
+            newAge,
             child.war_attr || 50,
             child.int_attr || 50,
             child.cra_attr || 50,

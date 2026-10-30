@@ -316,7 +316,8 @@
     }
 
     // Modal Title Header (clean, no duplicate tactical badge)
-    const modalTitle = `${primaryName}${styleName ? (isEn ? ' • Style: ' + styleName : ' • Tự: ' + styleName) : ''}`;
+    const ageLabel = dossier.age ? ` • ${dossier.age} ${isEn ? 'yrs' : 'tuổi'}` : '';
+    const modalTitle = `${primaryName}${styleName ? (isEn ? ' • Style: ' + styleName : ' • Tự: ' + styleName) : ''}${ageLabel}`;
 
     // 3. Tab 1: Octagonal Attributes & Stats HTML
     const renderStatRow = (key, nameVi, nameEn, color) => {

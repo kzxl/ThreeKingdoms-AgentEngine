@@ -53,6 +53,7 @@ export interface NpcProfile {
   locationEn?: string;
   positionVi?: string;
   positionEn?: string;
+  age?: number;
   war: number;
   int: number;
   ldr: number;
@@ -100,6 +101,7 @@ export interface NpcDossierView {
   styleNameEn: string;
   positionVi: string;
   positionEn: string;
+  age?: number;
   baselineLocation?: string;
   locationVi: string;
   locationEn: string;
@@ -383,6 +385,7 @@ export class DailyInteractionEngine {
     };
     const positionVi = char?.baseline_position_vi || state?.assigned_role || 'Hào Kiệt Bản Địa';
     const positionEn = POSITION_EN_MAP[positionVi] || char?.baseline_position_en || positionVi;
+    const age = Number(state?.age ?? char?.baseline_age ?? 30);
 
     return {
       npcId,
@@ -396,6 +399,7 @@ export class DailyInteractionEngine {
       locationEn: locInfo.en,
       positionVi,
       positionEn,
+      age,
       war,
       int,
       ldr,
@@ -649,6 +653,7 @@ export class DailyInteractionEngine {
       styleNameEn: profile.styleNameEn || profile.styleNameVi || 'Style unrecorded',
       positionVi: profile.positionVi || 'Hào Kiệt Bản Địa',
       positionEn: profile.positionEn || 'Local Champion',
+      age: profile.age,
       baselineLocation: profile.baselineLocation || 'LOC-0001',
       locationVi: profile.locationVi || 'LOC-0001',
       locationEn: profile.locationEn || profile.baselineLocation || 'LOC-0001',

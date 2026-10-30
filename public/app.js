@@ -192,14 +192,17 @@ function startStaminaRegenTicker() {
 function showDefeatOverlay(meta, reason) {
   if (document.getElementById('defeat-overlay')) return;
   const isEn = typeof currentLang !== 'undefined' && currentLang === 'en';
+  const isVictory = String(meta.status || '').toUpperCase() === 'VICTORIOUS';
   const overlay = document.createElement('div');
   overlay.id = 'defeat-overlay';
   overlay.className = 'defeat-overlay';
   overlay.setAttribute('role', 'alertdialog');
   overlay.innerHTML = `
     <div class="defeat-card">
-      <div class="defeat-seal" aria-hidden="true">終</div>
-      <h2>${isEn ? 'Campaign Ended' : 'Chiến Dịch Kết Thúc'}</h2>
+      <div class="defeat-seal" aria-hidden="true">${isVictory ? '勝' : '終'}</div>
+      <h2>${isVictory
+        ? (isEn ? 'Hegemony Achieved' : 'Bá Nghiệp Thành Công')
+        : (isEn ? 'Campaign Ended' : 'Chiến Dịch Kết Thúc')}</h2>
       <p>${reason}</p>
       <p class="defeat-meta">${isEn ? 'Status' : 'Trạng thái'}: ${meta.status}${meta.defeat_reason ? ` • ${meta.defeat_reason}` : ''}</p>
       <button class="ui-btn ui-btn--primary" onclick="window.location.reload()">
@@ -219,10 +222,16 @@ async function loadStatus() {  try {
 
     if (m.status && m.status !== 'ACTIVE' && !window.__defeatNoticeShown) {
       window.__defeatNoticeShown = true;
-      const reason = m.defeat_reason === 'BANKRUPTCY'
-        ? (currentLang === 'en' ? 'The dynasty is bankrupt.' : 'Gia nghiệp đã phá sản.')
-        : (currentLang === 'en' ? 'The protagonist has fallen.' : 'Chủ tướng đã tử trận.');
-      if (typeof showToast === 'function') showToast(`${reason} Chiến dịch kết thúc.`, true);
+      const isVictory = String(m.status).toUpperCase() === 'VICTORIOUS';
+      const parts = String(m.defeat_reason || '').split('|');
+      const reason = isVictory
+        ? (currentLang === 'en'
+          ? `The realm is united: ${parts[1] || '12'} settlements, ${parts[2] || '5,000'} fame. Your clan stands at the summit.`
+          : `Thiên hạ quy tâm: ${parts[1] || '12'} thành, ${parts[2] || '5.000'} danh vọng. Dòng họ Lương đã đứng trên đỉnh cao.`)
+        : m.defeat_reason === 'BANKRUPTCY'
+          ? (currentLang === 'en' ? 'The dynasty is bankrupt.' : 'Gia nghiệp đã phá sản.')
+          : (currentLang === 'en' ? 'The protagonist has fallen.' : 'Chủ tướng đã tử trận.');
+      if (typeof showToast === 'function') showToast(`${reason}`, true);
       showDefeatOverlay(m, reason);
     }
 
@@ -235,8 +244,8 @@ async function loadStatus() {  try {
         ? formatGameDateChip(currentDate)
         : currentDate;
       dateChip.title = currentLang === 'en'
-        ? 'Every action costs one day. Close the month at day 30 before continuing.'
-        : 'Mỗi thao tác tốn 1 ngày. Hết ngày 30 phải bấm Qua Tháng.';
+        ? 'Every action costs one day. The month closes automatically when the calendar reaches the 1st.'
+        : 'Mỗi thao tác tốn 1 ngày. Tháng tự động chốt khi lịch sang mùng 1.';
     }
 
     const locSub = document.getElementById('top-loc-sub');
@@ -290,7 +299,21 @@ async function loadStatus() {  try {
       let stageBadge = isEn ? `${uiIcon('sprout')} Stage 1: Penniless Commoner` : `${uiIcon('sprout')} Bố Y Khởi Thủy`;
       let stageClass = 'stage-pauper';
 
-      if (netWorthVal >= 50000) {
+      // The server owns the stage ladder; local thresholds are only an offline
+      // fallback for old sessions that predate /api/status.progression.
+      const serverProg = currentStatus && currentStatus.progression;
+      if (serverProg) {
+        stageNum = Math.max(1, Math.min(4, Number(serverProg.currentStage || 1)));
+        stageTitle = isEn
+          ? (serverProg.stageTitleEn || serverProg.stageTitleVi || stageTitle)
+          : (serverProg.stageTitleVi || stageTitle);
+        const icons = { 1: 'sprout', 2: 'house', 3: 'castle', 4: 'crown' };
+        const labels = isEn
+          ? { 1: 'Stage 1: Penniless Commoner', 2: 'Stage 2: Estate Master', 3: 'Stage 3: Magnate Commander', 4: 'Stage 4: Hegemon Warlord' }
+          : { 1: 'Bố Y Khởi Thủy', 2: 'Tiểu Chủ Trang Viên', 3: 'Đại Thương Gia / Hào Kiệt', 4: 'Phong Vân Hùng Chủ' };
+        stageBadge = `${uiIcon(icons[stageNum])} ${labels[stageNum]}`;
+        stageClass = { 1: 'stage-pauper', 2: 'stage-artisan', 3: 'stage-merchant', 4: 'stage-hegemon' }[stageNum];
+      } else if (netWorthVal >= 50000) {
         stageNum = 4;
         stageTitle = isEn ? 'Clan Patriarch • Regional Power' : 'Lương Thị Tông Chủ • Hùng Bá Một Phương';
         stageBadge = isEn ? `${uiIcon('crown')} Stage 4: Dynastic Patriarch` : `${uiIcon('crown')} Phong Vân Hùng Chủ`;

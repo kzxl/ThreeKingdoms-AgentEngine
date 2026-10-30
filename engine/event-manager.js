@@ -11,6 +11,7 @@
 const fs = require('fs');
 const path = require('path');
 const { runSqlJson, runSqlBatch, escapeSql } = require('./db-adapter');
+const { getPrestigeService } = require('./prestige-bridge');
 
 const ROOT_DIR = path.resolve(__dirname, '..');
 const SAVES_DIR = path.join(ROOT_DIR, 'saves');
@@ -124,7 +125,15 @@ class EventManager {
           isLocal = true;
         }
       }
-      const isCurrentYear = me.historical_year === currentYear;
+      const isCurrentYear = Number(me.historical_year) === currentYear;
+      const currentMonth = Number(String(gameDate).split('-')[1] || 1);
+      const currentSeason = currentMonth <= 3 ? 'SPRING'
+        : currentMonth <= 6 ? 'SUMMER'
+          : currentMonth <= 9 ? 'AUTUMN' : 'WINTER';
+      const eventSeason = String(me.season || '').toUpperCase();
+      // An event is "due" only in its own year and season; unresolved past
+      // years stay visible in the timeline but never trigger on their own.
+      const isDue = isCurrentYear && (!eventSeason || eventSeason === currentSeason);
 
       // Parse or generate choices
       const choices = this.resolveEventChoices(me);
@@ -133,6 +142,7 @@ class EventManager {
         ...me,
         isLocal,
         isCurrentYear,
+        isDue,
         isResolved,
         sessionStatus: sessionData ? sessionData.status : 'AVAILABLE',
         playerChoice: sessionData ? sessionData.player_choice : null,
@@ -232,6 +242,115 @@ class EventManager {
       ];
     }
 
+    // Type-aware fallback choices: battles offer command/duel/study, diplomacy
+    // offers alliance/mediation/trade, and generic choice events offer relief,
+    // opportunism or observation.
+    const triggerType = String(event.gameplay_trigger_type || 'STORY_MILESTONE').toUpperCase();
+
+    if (triggerType === 'BATTLE_DUEL') {
+      return [
+        {
+          choice_id: 'LEAD_VANGUARD',
+          title_vi: 'Đích Thân Dẫn Tiên Phong Xung Trận',
+          title_en: 'Lead the Vanguard in Person',
+          outcome_type: 'CANON',
+          required_stat: { war: 55 },
+          rewards: { rep_gain: 35, exp_war: 30, sentiment_all: 10 },
+          narrative_vi: `Bạn cầm cờ xông lên tuyến đầu trong "${event.name_vi}", quân sĩ thấy chủ tướng liền hò reo xung phong.`,
+          narrative_en: `You carry the banner at the front line of "${event.name_en}", and the troops surge forward behind you.`
+        },
+        {
+          choice_id: 'CHAMPION_DUEL',
+          title_vi: 'Thách Đấu Tướng Địch Trước Ba Quân',
+          title_en: 'Challenge the Enemy Champion',
+          outcome_type: 'ALTERNATE',
+          required_stat: { war: 70 },
+          rewards: { rep_gain: 55, exp_war: 45 },
+          narrative_vi: `Bạn đơn kỵ xuất trận khiêu chiến, đánh bại tướng địch giữa tiếng trống, danh chấn ba quân.`,
+          narrative_en: `You ride out alone, defeat the enemy champion amid the drums, and your name echoes across both armies.`
+        },
+        {
+          choice_id: 'STUDY_BATTLE',
+          title_vi: 'Quan Sát Trận Pháp & Ghi Chép Binh Thư',
+          title_en: 'Observe the Battle and Record Tactics',
+          outcome_type: 'CANON',
+          required_stat: { int: 50 },
+          rewards: { rep_gain: 10, exp_int: 35 },
+          narrative_vi: `Bạn đứng nơi cao quan sát diễn biến "${event.name_vi}", ghi chép bài học binh pháp quý giá.`,
+          narrative_en: `From high ground you study "${event.name_en}" and record its tactical lessons.`
+        }
+      ];
+    }
+
+    if (triggerType === 'DIPLOMACY') {
+      return [
+        {
+          choice_id: 'FORGE_ALLIANCE',
+          title_vi: 'Kết Đồng Minh & Trao Đổi Tin Tức',
+          title_en: 'Forge an Alliance and Share Intelligence',
+          outcome_type: 'CANON',
+          required_stat: { dip: 50 },
+          rewards: { rep_gain: 30, sentiment_all: 20 },
+          narrative_vi: `Bạn dùng lời lẽ khéo léo kết nối các bên trong "${event.name_vi}", mở ra một tuyến đồng minh mới.`,
+          narrative_en: `Your diplomacy connects the parties in "${event.name_en}", opening a new alliance channel.`
+        },
+        {
+          choice_id: 'MEDIATE_DISPUTE',
+          title_vi: 'Đứng Ra Hòa Giải Tranh Chấp',
+          title_en: 'Mediate the Dispute',
+          outcome_type: 'CANON',
+          required_stat: { pol: 55 },
+          rewards: { rep_gain: 25, exp_pol: 30 },
+          narrative_vi: `Bạn đứng giữa hai bên, phân tích lợi hại và dàn xếp một thỏa thuận tạm thời.`,
+          narrative_en: `You stand between the parties, weigh the costs, and broker a temporary settlement.`
+        },
+        {
+          choice_id: 'TRADE_CONCESSION',
+          title_vi: 'Đàm Phán Nhượng Quyền Thương Vận',
+          title_en: 'Negotiate a Trade Concession',
+          outcome_type: 'CANON',
+          required_stat: { com: 50 },
+          rewards: { cash_gain: 1200, rep_gain: 10 },
+          narrative_vi: `Bạn đổi nhượng bộ ngoại giao lấy quyền vận chuyển, thu về 1,200 Quan lợi nhuận.`,
+          narrative_en: `You trade a diplomatic concession for transit rights and net 1,200 quan.`
+        }
+      ];
+    }
+
+    if (triggerType === 'CHOICE_EVENT') {
+      return [
+        {
+          choice_id: 'RELIEVE_PEOPLE',
+          title_vi: 'Cứu Tế Dân Chúng Trong Biến Loạn',
+          title_en: 'Relieve the People in the Crisis',
+          outcome_type: 'CANON',
+          required_cost: { cash: 500 },
+          rewards: { cash_cost: 500, rep_gain: 40, sentiment_all: 15 },
+          narrative_vi: `Bạn mở kho cứu tế trong "${event.name_vi}", dân chúng đội ơn và danh vọng lan xa.`,
+          narrative_en: `You open the granary during "${event.name_en}"; the people remember your mercy.`
+        },
+        {
+          choice_id: 'SEIZE_OPPORTUNITY',
+          title_vi: 'Nắm Bắt Cơ Hội Thương Vụ',
+          title_en: 'Seize the Commercial Opening',
+          outcome_type: 'CANON',
+          required_stat: { com: 50 },
+          rewards: { cash_gain: 1200, rep_gain: 5 },
+          narrative_vi: `Bạn xoay chuyển nguồn hàng giữa cơn biến động, thu về 1,200 Quan.`,
+          narrative_en: `You reroute goods amid the upheaval and net 1,200 quan.`
+        },
+        {
+          choice_id: 'RECORD_THE_TIMES',
+          title_vi: 'Ghi Chép Diễn Biến & Rút Kinh Nghiệm',
+          title_en: 'Record the Events and Draw Lessons',
+          outcome_type: 'CANON',
+          rewards: { exp_int: 25, rep_gain: 10 },
+          narrative_vi: `Bạn ghi lại diễn biến "${event.name_vi}" để đời sau noi theo.`,
+          narrative_en: `You record "${event.name_en}" for future generations.`
+        }
+      ];
+    }
+
     // Universal Fallback Choices for any other historical event
     return [
       {
@@ -294,6 +413,13 @@ class EventManager {
     if (reqCost.cash && (player.liquid_cash || 0) < reqCost.cash) {
       throw new Error(`Không đủ ngân lượng mặt! Yêu cầu: ${reqCost.cash} Quan (Hiện có: ${player.liquid_cash || 0} Quan).`);
     }
+    const reqStat = choice.required_stat || {};
+    for (const [stat, minimum] of Object.entries(reqStat)) {
+      const column = `${String(stat).replace(/[^a-z]/gi, '')}_attr`;
+      if (Number(player[column] || 0) < Number(minimum)) {
+        throw new Error(`Chưa đủ điều kiện: yêu cầu ${String(stat).toUpperCase()} >= ${minimum} (hiện có ${player[column] || 0}).`);
+      }
+    }
 
     // 6. Build Atomic State Mutation Script
     const rewards = choice.rewards || {};
@@ -348,21 +474,57 @@ class EventManager {
       sql += `UPDATE player_state SET liquid_cash = ${newLiquidCash} WHERE player_id = '${player.player_id}';\n`;
     }
 
-    // B. Update NPC Sentiments
-    if (rewards.sentiment && typeof rewards.sentiment === 'object') {
-      for (const [npcId, delta] of Object.entries(rewards.sentiment)) {
+    // B. Update NPC Sentiments (explicit map or a blanket sentiment_all).
+    const sentimentRewards = { ...(rewards.sentiment || {}) };
+    if (rewards.sentiment_all) {
+      for (const npcId of [event.primary_character_id, event.secondary_character_id]) {
+        if (npcId && sentimentRewards[npcId] === undefined) {
+          sentimentRewards[npcId] = Number(rewards.sentiment_all);
+        }
+      }
+    }
+    if (Object.keys(sentimentRewards).length > 0) {
+      for (const [npcId, delta] of Object.entries(sentimentRewards)) {
         const lastDelta = runSqlJson(this.dbPath, `SELECT sentiment_total, relationship_type FROM npc_relationship_deltas WHERE npc_id = '${npcId}' ORDER BY rowid DESC LIMIT 1;`)[0];
         const prevTotal = lastDelta ? Number(lastDelta.sentiment_total) : 50;
-        const newTotal = prevTotal + delta;
+        const newTotal = prevTotal + Number(delta);
         const relType = (lastDelta && lastDelta.relationship_type) ? lastDelta.relationship_type : 'Nghĩa Khách';
 
         sql += `INSERT INTO npc_relationship_deltas
           (npc_id, game_date, sentiment_delta, sentiment_total, relationship_type, notes)
-          VALUES ('${npcId}', '${gameDate}', ${delta}, ${newTotal}, '${relType}', 'Tham gia sự kiện lịch sử: ${escapeSql(choice.title_vi)}');\n`;
+          VALUES ('${npcId}', '${gameDate}', ${Number(delta)}, ${newTotal}, '${relType}', 'Tham gia sự kiện lịch sử: ${escapeSql(choice.title_vi)}');\n`;
       }
     }
 
-    // C. Record into session_events
+    // C. Attribute EXP rewards (exp_int, exp_war, ...).
+    const expColumns = [];
+    for (const stat of ['int', 'war', 'ldr', 'pol', 'dip', 'com', 'log', 'cra']) {
+      const amount = Number(rewards[`exp_${stat}`] || 0);
+      if (amount > 0) expColumns.push(`${stat}_exp = COALESCE(${stat}_exp, 0) + ${Math.round(amount)}`);
+    }
+    if (expColumns.length > 0) {
+      // arch-guard:allow-sql-interpolation — column names come from the fixed stat allowlist.
+      sql += `UPDATE player_state SET ${expColumns.join(', ')} WHERE player_id = '${player.player_id}';\n`;
+    }
+
+    // D. Item rewards: physical stock plus a movement row for conservation.
+    if (Array.isArray(rewards.items)) {
+      for (const item of rewards.items) {
+        const code = String(item.code || '');
+        const qty = Math.max(1, Math.round(Number(item.qty || 1)));
+        if (!code) continue;
+        // arch-guard:allow-sql-interpolation — code/name are escaped master-data values.
+        sql += `INSERT INTO inventory_items (item_code, category, description, quantity, unit_cost_basis, location)
+          VALUES ('${escapeSql(code)}', 'FINISHED_GOOD', '${escapeSql(event.name_vi)} reward', ${qty}, 0, 'Vườn Đào')
+          ON CONFLICT(item_code) DO UPDATE SET quantity = quantity + excluded.quantity;\n`;
+        // arch-guard:allow-sql-interpolation — deterministic movement id from event and item.
+        sql += `INSERT INTO stock_movements (mov_id, game_date, item_code, movement_type, quantity, unit_cost, balance_after, ref_txn)
+          VALUES ('MOV-EVT-${eventId}-${escapeSql(code)}', '${gameDate}', '${escapeSql(code)}', 'EVENT_REWARD', ${qty}, 0,
+            (SELECT quantity FROM inventory_items WHERE item_code = '${escapeSql(code)}'), '${txnId}');\n`;
+      }
+    }
+
+    // E. Record into session_events
     sql += `INSERT OR REPLACE INTO session_events
       (event_id, triggered_turn, status, player_choice, outcome_type, choice_narrative, resolution_narrative, rewards_claimed, resolved_at)
       VALUES ('${eventId}', ${activeTurn}, 'RESOLVED', '${choiceId}', '${outcomeType}', '${escapeSql(choice.title_vi)}', '${escapeSql(resolutionNarrative)}', '${escapeSql(JSON.stringify(rewards))}', CURRENT_TIMESTAMP);\n`;
@@ -388,6 +550,25 @@ class EventManager {
       syncProgressLiquidCash(currentLiquid + safeCash + netCashDelta, newLiquid, safeCash);
     }
 
+    // Historical deeds now actually move fame (previously rep_gain was read
+    // but never applied).
+    let fameGained = 0;
+    if (repGain > 0) {
+      try {
+        const prestige = getPrestigeService(this.dbPath);
+        if (prestige) {
+          fameGained = prestige.award('PLY-0001', {
+            rawGain: repGain,
+            reason: 'HISTORICAL_EVENT',
+            sourceId: eventId,
+            gameDate
+          }).delta;
+        }
+      } catch (fameError) {
+        console.warn('[EventManager] fame award failed:', fameError.message);
+      }
+    }
+
     return {
       success: true,
       eventId,
@@ -397,7 +578,8 @@ class EventManager {
       outcomeType,
       resolutionNarrative,
       rewards,
-      netCashDelta
+      netCashDelta,
+      fameGained
     };
   }
 }

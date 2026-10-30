@@ -99,6 +99,15 @@ export class DynastySuccessionService {
       }))
       .filter(item => available.has(`${item.assetType}:${item.assetId}`));
 
+    const seenAssets = new Set<string>();
+    for (const item of assets) {
+      const key = `${item.assetType}:${item.assetId}`;
+      if (seenAssets.has(key)) {
+        throw new Error(`Tài sản ${item.assetId} chỉ được trao cho một người thừa kế.`);
+      }
+      seenAssets.add(key);
+    }
+
     const total = charityShareBps + allocations.reduce((sum, item) => sum + item.shareBps, 0);
     if (total > 10000) {
       throw new Error(`Tổng di chúc vượt 100% (${total / 100}%).`);

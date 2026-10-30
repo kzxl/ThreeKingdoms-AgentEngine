@@ -23,6 +23,7 @@ export interface InstanceBootstrapOptions {
   preset: ArchetypePreset;
   playerName: string;
   playerStyle: string;
+  scenarioId?: string;
 }
 
 const HISTORY_TABLES = [
@@ -65,6 +66,7 @@ const HISTORY_TABLES = [
   'session_duels',
   'session_events',
   'military_expeditions',
+  'session_sieges',
   'active_tasks',
   'turn_log',
   'action_log',
@@ -102,6 +104,21 @@ export function initializeInstanceDatabase(
   const isCommoner = preset.id === 'ARCH-COMMONER-YOUTH';
   const totalCash = Number(preset.initialCash) + Number(preset.initialSafeCash);
 
+  // A scenario changes the calendar start (and campaign title) when present.
+  let startDate = START_DATE;
+  let campaignName = preset.nameEn;
+  if (options.scenarioId && tableExists(db, 'master_scenarios')) {
+    try {
+      const scenario = db.prepare(
+        'SELECT name_vi, start_date FROM master_scenarios WHERE scenario_id = ? LIMIT 1;'
+      ).get(options.scenarioId) as { name_vi?: string; start_date?: string } | undefined;
+      if (scenario?.start_date) startDate = scenario.start_date;
+      if (scenario?.name_vi) campaignName = scenario.name_vi;
+    } catch {
+      // Keep the 184 fallback when the master table is incomplete.
+    }
+  }
+
   const reset = db.transaction(() => {
     // 1. Clear every history/runtime table. Missing tables are skipped so the
     //    bootstrap also works on older template databases.
@@ -133,7 +150,7 @@ export function initializeInstanceDatabase(
       INSERT INTO campaign_meta
         (campaign_id, campaign_name, start_date, "current_date", active_turn, rules_version, random_seed)
       VALUES (?, ?, ?, ?, 1, '1.1.0', 1840201)
-    `).run(`CMP-${START_DATE.replace(/-/g, '')}-INSTANCE`, preset.nameEn, START_DATE, START_DATE);
+    `).run(`CMP-${startDate.replace(/-/g, '')}-INSTANCE`, campaignName, startDate, startDate);
 
     db.prepare(`
       INSERT INTO player_state (
@@ -142,15 +159,17 @@ export function initializeInstanceDatabase(
         liquid_cash, safe_cash, strategic_grain, fixed_capital, special_licenses,
         health, fatigue, morale
       ) VALUES (
-        'PLY-0001', ?, ?, ?, 'LOC-0001', 'LOC-0001',
+        'PLY-0001', ?, ?, ?, ?, ?,
         ?, ?, ?, ?, ?, ?, ?, ?,
-        ?, ?, ?, 0, '[]',
+        ?, ?, ?, 0, ?,
         100, 0, 100
       )
     `).run(
       playerName,
       playerStyle,
       preset.startingAge,
+      preset.startingLocation,
+      preset.startingLocation,
       preset.attributes.int,
       preset.attributes.pol,
       preset.attributes.war,
@@ -161,7 +180,8 @@ export function initializeInstanceDatabase(
       preset.attributes.cra,
       preset.initialCash,
       preset.initialSafeCash,
-      isCommoner ? 1.0 : 5.0
+      isCommoner ? 1.0 : 5.0,
+      JSON.stringify(preset.startingLicenses || [])
     );
 
     // 3. Starting warehouse.
@@ -181,6 +201,25 @@ export function initializeInstanceDatabase(
       VALUES (?, ?, ?, ?, ?, ?)
     `);
     for (const row of startingStock) insertStock.run(...row);
+
+    // Archetype-specific starting goods (silk factor, frontier officer, etc.).
+    if (preset.startingItems && preset.startingItems.length > 0) {
+      const grantItem = db.prepare(`
+        INSERT INTO inventory_items (item_code, category, description, quantity, unit_cost_basis, location)
+        VALUES (?, ?, ?, ?, ?, ?)
+        ON CONFLICT(item_code) DO UPDATE SET quantity = quantity + excluded.quantity
+      `);
+      for (const item of preset.startingItems) {
+        grantItem.run(
+          item.itemCode,
+          item.category,
+          item.description,
+          item.quantity,
+          Number(item.unitCost || 0),
+          preset.startingLocation
+        );
+      }
+    }
 
     // 4. Starting workshop and NPC assignments. A commoner does not own it
     //    (the foreman does), matching the zero-to-hero archetype.
@@ -233,13 +272,25 @@ export function initializeInstanceDatabase(
         UPDATE npc_state SET assigned_business_id = ?, assigned_role = ?, monthly_wage = ?
         WHERE npc_id = 'NPC-0008'
       `).run(carpenter.business, carpenter.role, carpenter.wage);
+
+      // Seed ages from the immutable master roster when it is available.
+      if (tableExists(db, 'master_characters')) {
+        db.prepare(`
+          UPDATE npc_state
+          SET age = COALESCE(
+            (SELECT baseline_age FROM master_characters mc WHERE mc.npc_id = npc_state.npc_id),
+            age
+          )
+          WHERE npc_id IN ('NPC-0007', 'NPC-0008')
+        `).run();
+      }
     }
 
     // 5. Opening ledger: one balanced transaction for liquid + safe capital.
     const txnId = 'TXN-INIT-001';
     postCashflowEntryRaw(db, {
       txnId,
-      gameDate: START_DATE,
+      gameDate: startDate,
       counterparty: 'Bản Doanh Khởi Sự',
       category: 'CAPITAL_INJECTION',
       inflow: totalCash,
@@ -252,21 +303,21 @@ export function initializeInstanceDatabase(
       INSERT INTO account_journal (txn_id, campaign_id, game_date, account_code, debit, credit, memo)
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `);
-    const campaignId = `CMP-${START_DATE.replace(/-/g, '')}-INSTANCE`;
-    insertJournal.run(txnId, campaignId, START_DATE, ACCOUNT_CODES.cashMobile, preset.initialCash, 0, 'Vốn tiền mặt ban đầu');
+    const campaignId = `CMP-${startDate.replace(/-/g, '')}-INSTANCE`;
+    insertJournal.run(txnId, campaignId, startDate, ACCOUNT_CODES.cashMobile, preset.initialCash, 0, 'Vốn tiền mặt ban đầu');
     if (Number(preset.initialSafeCash) > 0) {
-      insertJournal.run(txnId, campaignId, START_DATE, ACCOUNT_CODES.cashSafe, preset.initialSafeCash, 0, 'Vốn két sản nghiệp ban đầu');
+      insertJournal.run(txnId, campaignId, startDate, ACCOUNT_CODES.cashSafe, preset.initialSafeCash, 0, 'Vốn két sản nghiệp ban đầu');
     }
-    insertJournal.run(txnId, campaignId, START_DATE, ACCOUNT_CODES.ownerEquity, 0, totalCash, 'Vốn chủ sở hữu ban đầu');
+    insertJournal.run(txnId, campaignId, startDate, ACCOUNT_CODES.ownerEquity, 0, totalCash, 'Vốn chủ sở hữu ban đầu');
 
     // 6. First turn and chronicle entry.
     db.prepare(`
       INSERT INTO turn_log (turn_number, game_date, turn_title, location, summary, dilemma_choice)
       VALUES (1, ?, ?, ?, ?, ?)
     `).run(
-      START_DATE,
+      startDate,
       isCommoner ? 'Bố Y Khởi Thủy Tại Huyện Trác' : 'Khởi Sự Nghiệp Lớn Tại Huyện Trác',
-      isCommoner ? 'Huyện Trác' : 'Trang Viên Vườn Đào',
+      isCommoner ? 'Huyện Trác' : preset.startingLocation,
       `${playerName} (${playerStyle}), xuất thân ${preset.nameVi}, đặt chân tới Trác Huyện bắt đầu hành trình lập nghiệp.`,
       isCommoner ? 'Đi làm thuê tích lũy vốn và năng lực' : 'Sản xuất thủ công kết hợp quân nhu bảo vệ quê hương'
     );
@@ -275,7 +326,7 @@ export function initializeInstanceDatabase(
       INSERT INTO chat_chronicle (id, turn_number, game_date, type, speaker, title, avatar, text, reasoning)
       VALUES ('chron_start', 1, ?, 'narrative', 'Sử Quan', 'Khởi Đầu Gian Nan', 'Sử', ?, 'Khởi tạo tân thủ')
     `).run(
-      START_DATE,
+      startDate,
       `${playerName} (${playerStyle}), xuất thân ${preset.nameVi}, đặt chân tới Trác Huyện bắt đầu hành trình lập nghiệp giữa thời tao loạn.`
     );
   });

@@ -1012,7 +1012,38 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // 5g-2. POST /api/campaign/advance-turn - End Active Turn & Advance Monthly Campaign Simulation
+  // 5g-2. POST /api/campaign/advance-day - Advance one day (month closes automatically at day 1)
+  if (req.method === 'POST' && pathname === '/api/campaign/advance-day') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        const requested = parseInt(payload.days, 10);
+        const days = Number.isFinite(requested) ? Math.max(1, Math.min(365, requested)) : 1;
+        const result = gameplayManager.advanceDays(days, payload);
+        // Date-triggered historical events: surface only events due in the new
+        // year/season at the player's location. Resolution still goes through
+        // /api/game/events/participate.
+        try {
+          const locRow = runSqlJson(DB_PATH, `SELECT current_location FROM player_state WHERE player_id = 'PLY-0001' LIMIT 1;`)[0];
+          const dueEvents = eventManager
+            .getActiveEvents(locRow ? locRow.current_location : 'LOC-0001', result.nextDate, result.nextTurn)
+            .filter(ev => ev.isDue && !ev.isResolved && ev.isLocal)
+            .map(ev => ({ eventId: ev.event_id, nameVi: ev.name_vi, nameEn: ev.name_en, summaryVi: ev.summary_vi }));
+          result.dueEvents = dueEvents;
+        } catch (eventError) {
+          result.dueEvents = [];
+        }
+        sendJson(res, 200, { success: true, result });
+      } catch (err) {
+        sendJson(res, 500, { success: false, error: err.message });
+      }
+    });
+    return;
+  }
+
+  // 5g-2b. POST /api/campaign/advance-turn - Legacy alias: run to the next month boundary
   if (req.method === 'POST' && pathname === '/api/campaign/advance-turn') {
     let body = '';
     req.on('data', chunk => { body += chunk; });

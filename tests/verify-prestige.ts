@@ -148,6 +148,8 @@ function run(): void {
     }
 
     // 8. Fame attracts people: at hero-tier fame three arrivals appear and are logged.
+    //    Clear earlier rows first: the live template carries history from prior runs.
+    db.execute('DELETE FROM fame_arrivals WHERE character_id = ?;', ['PLY-0001']);
     service.award('PLY-0001', { rawGain: 8000, reason: 'TEST_FAME_FOR_ARRIVALS', gameDate: '184-05-05' });
     const militiaBefore = Number(db.queryOne<any>('SELECT militia FROM player_state WHERE player_id = ?;', ['PLY-0001'])?.militia || 0);
     const arrivals = FameAttractionService.forDatabase(db).simulateMonthly('PLY-0001', '184-05-30');

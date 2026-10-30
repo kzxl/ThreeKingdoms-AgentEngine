@@ -79,7 +79,7 @@ export class ExplorationService {
       return this.failure(characterId, timeCheck.code, timeCheck.error);
     }
 
-    const time = applyActionTime(this.db.path, 'EXPLORE_POI', null, 'explore-poi', 1);
+    const time = applyActionTime(this.db.path, 'EXPLORE_POI', null, 'explore-poi');
     if (!time.success) {
       return this.failure(characterId, time.code || 'TIME_FAILED', time.error || 'Không thể tiêu tốn thời gian.');
     }
@@ -97,7 +97,7 @@ export class ExplorationService {
 
     let picked: DiscoveryRow | undefined;
     if (discovered) {
-      picked = this.pickItem(rng, fame);
+      picked = this.pickItem(rng, fame, location, poiName);
     }
 
     const exploreId = nextSequentialId(this.db, 'exploration_log', 'EXP', gameDate);
@@ -180,11 +180,29 @@ export class ExplorationService {
     return recent.length === 10 && recent.every(row => Number(row.success) === 0);
   }
 
-  private pickItem(rng: ReturnType<typeof RngService.forDomain>, fame: number): DiscoveryRow | undefined {
-    const rows = this.db.query<DiscoveryRow>(
-      'SELECT item_code, tier, min_fame, weight FROM discovery_items WHERE min_fame <= ? ORDER BY tier ASC, item_code ASC;',
-      [fame]
-    );
+  private pickItem(
+    rng: ReturnType<typeof RngService.forDomain>,
+    fame: number,
+    location = '',
+    poiName: string | null = null
+  ): DiscoveryRow | undefined {
+    let rows: DiscoveryRow[];
+    try {
+      rows = this.db.query<DiscoveryRow>(
+        `SELECT item_code, tier, min_fame, weight FROM discovery_items
+         WHERE min_fame <= ?
+           AND (location_keyword IS NULL OR location_keyword = '' OR ? LIKE '%' || location_keyword || '%')
+           AND (poi_keyword IS NULL OR poi_keyword = '' OR ? LIKE '%' || poi_keyword || '%')
+         ORDER BY tier ASC, item_code ASC;`,
+        [fame, location, poiName || '']
+      );
+    } catch {
+      // Pre-028 databases have no keyword columns.
+      rows = this.db.query<DiscoveryRow>(
+        'SELECT item_code, tier, min_fame, weight FROM discovery_items WHERE min_fame <= ? ORDER BY tier ASC, item_code ASC;',
+        [fame]
+      );
+    }
     if (rows.length === 0) return undefined;
     const total = rows.reduce((sum, row) => sum + Math.max(0, Number(row.weight)), 0);
     if (total <= 0) return rows[0];

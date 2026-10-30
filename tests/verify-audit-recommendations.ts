@@ -61,9 +61,10 @@ async function verifyAll(): Promise<void> {
   assert(advanceResult.success === true, 'advanceTurn must succeed atomically');
   assert(receivedTick !== null, 'WORLD_MONTH_TICK event must be published onto EventBus');
   assert(receivedTick.turn === advanceResult.nextTurn, 'WORLD_MONTH_TICK turn must match nextTurn');
-  const expectedSkipped = 31 - Number(String(preMeta.current_date).split('-')[2]);
-  assert(advanceResult.skippedDays === expectedSkipped, 'month close must count every skipped day');
-  assert(advanceResult.dayTicksPublished === Math.max(0, expectedSkipped - 1), 'skipped days must emit day ticks');
+  const expectedDays = 31 - Number(String(preMeta.current_date).split('-')[2]);
+  assert(advanceResult.daysAdvanced === expectedDays, 'month close must advance every remaining day');
+  assert(advanceResult.monthClosedCount === 1, 'the boundary must close exactly one month');
+  assert(advanceResult.dayTicksPublished === expectedDays, 'every advanced day must emit a day tick');
   const postGrain = Number(
     db.queryOne<any>(`SELECT strategic_grain FROM player_state LIMIT 1;`)?.strategic_grain || 0
   );
@@ -195,7 +196,7 @@ async function verifyAll(): Promise<void> {
   // ---------------------------------------------------------------
   console.log('[6/6] Verifying Logistical Supply Graph & Combat Morale Penalty...');
   const militaryMod = new MilitaryModule();
-  militaryMod.init({ dbPath, eventBus });
+  militaryMod.init({ dbPath, eventBus, loadMasterRoutes: false });
 
   // Test unbroken route
   const unbroken = militaryMod.graph.hasUnbrokenSupplyPath('LOC-0001', 'LOC-0002');

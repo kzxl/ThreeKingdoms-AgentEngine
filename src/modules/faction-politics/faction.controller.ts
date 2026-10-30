@@ -11,6 +11,7 @@
 import { Router, sendJson, RouteContext } from '../../server/router';
 import { ModuleRegistry } from '../../core/module-registry';
 import { FactionPoliticsModule } from './faction-politics.module';
+import { SpatialGuardService } from '../progression/spatial-guard.service';
 
 function getFactionModule(): FactionPoliticsModule | undefined {
   return ModuleRegistry.getInstance().get<FactionPoliticsModule>('module.faction-politics');
@@ -60,6 +61,35 @@ export function registerFactionReadRoutes(router: Router): void {
       sendJson(res, 200, { success: true, events: mod.getPoliticalEvents(Number.isFinite(limit) ? limit : 15) });
     } catch (err: any) {
       sendJson(res, 500, { success: false, error: err.message });
+    }
+  });
+
+  router.post('/api/factions/declare-war', async (_req: any, res: any, ctx: RouteContext) => {
+    try {
+      const mod = getFactionModule();
+      if (!mod) return unavailable(res);
+      const body = ctx.body || {};
+      SpatialGuardService.getInstance().assertStage(
+        body.playerId || 'PLY-0001',
+        4,
+        'Quân Cơ Xứ Tuyên Chiến',
+        body.bypassProgressionGate || body.bypassSpatialGuard
+      );
+      const factionId = String(body.factionId || '');
+      sendJson(res, 200, mod.declareWar(factionId));
+    } catch (err: any) {
+      sendJson(res, err.statusCode || 400, { success: false, error: err.message });
+    }
+  });
+
+  router.post('/api/factions/make-peace', async (_req: any, res: any, ctx: RouteContext) => {
+    try {
+      const mod = getFactionModule();
+      if (!mod) return unavailable(res);
+      const factionId = String((ctx.body || {}).factionId || '');
+      sendJson(res, 200, mod.makePeace(factionId));
+    } catch (err: any) {
+      sendJson(res, 400, { success: false, error: err.message });
     }
   });
 }

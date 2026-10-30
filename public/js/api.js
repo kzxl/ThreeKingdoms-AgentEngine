@@ -469,6 +469,17 @@ async function apiStartTravel(fromNodeId, toNodeId) {
   return data.transit;
 }
 
+async function apiAdvanceDays(days = 1, notes = '') {
+  const res = await fetch(`${API_BASE}/api/campaign/advance-day`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ days, notes })
+  });
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Failed to advance day');
+  return data.result || data;
+}
+
 async function apiAdvanceTurn(notes = '') {
   const res = await fetch(`${API_BASE}/api/campaign/advance-turn`, {
     method: 'POST',
@@ -560,6 +571,7 @@ async function apiCompleteTravelMarch(payload) {
 
 window.apiPlanTravel = apiPlanTravel;
 window.apiStartTravel = apiStartTravel;
+window.apiAdvanceDays = apiAdvanceDays;
 window.apiAdvanceTurn = apiAdvanceTurn;
 window.apiFetchClock = apiFetchClock;
 window.apiSpendActionTime = apiSpendActionTime;

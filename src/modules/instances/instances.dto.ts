@@ -28,6 +28,7 @@ export interface CreateInstanceDTO {
   name?: string;
   styleName?: string;
   archetypeId?: string; // defaults to 'ARCH-COMMONER-YOUTH'
+  scenarioId?: string; // defaults to the 184 calendar in the bootstrap
 }
 
 export interface CloneInstanceDTO {

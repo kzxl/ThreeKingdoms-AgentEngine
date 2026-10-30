@@ -19,6 +19,7 @@ import { ACCOUNT_CODES } from '../../shared/account-codes';
 import { getMarketItem } from '../../shared/market-price-book';
 import { quoteFromReference } from '../../shared/market-quote';
 import { worldPriceMultiplier } from '../../shared/world-price';
+import { SpatialGuardService } from '../progression/spatial-guard.service';
 
 function getEconomyModule(): EconomyModule | undefined {
   return ModuleRegistry.getInstance().get<EconomyModule>('module.economy');
@@ -740,6 +741,13 @@ export function registerEconomyRoutes(router: Router): void {
         return;
       }
 
+      SpatialGuardService.getInstance().assertStage(
+        playerId,
+        3,
+        'Thương Đoàn Liên Châu',
+        (ctx.body || {}).bypassProgressionGate || (ctx.body || {}).bypassSpatialGuard
+      );
+
       const logisticsService = CaravanLogisticsService.getInstance();
       const result = logisticsService.dispatchCaravan(
         {
@@ -757,7 +765,7 @@ export function registerEconomyRoutes(router: Router): void {
         ...result
       });
     } catch (err: any) {
-      sendJson(res, 400, { success: false, error: err.message });
+      sendJson(res, err.statusCode || 400, { success: false, error: err.message });
     }
   };
 
@@ -772,26 +780,14 @@ export function registerEconomyRoutes(router: Router): void {
   // can never move them for free.
   const handleTickCaravans = async (_req: any, res: any, _ctx: RouteContext) => {
     try {
-      const { advanceCampaignDays } = require('../../../engine/time-manager');
-      const time = advanceCampaignDays(getDb().path, 1, {
+      const { advanceTime } = require('../../../engine/time-manager');
+      const time = advanceTime(getDb().path, 1, {
         reason: 'Thương đoàn lên đường',
-        clampToMonthEnd: true,
         grainUpkeepPerDay: 0.02,
         fatigueRecoveryPerDay: 1
       });
       if (!time.success) {
         sendJson(res, 409, { success: false, error: time.error || 'Không thể cho thời gian trôi qua.' });
-        return;
-      }
-      if (!time.advancedDays) {
-        // Day 30: the month must be closed explicitly; do not report a day
-        // that never passed.
-        sendJson(res, 409, {
-          success: false,
-          code: 'MONTH_END',
-          error: 'Đã hết ngày 30. Hãy bấm Qua Tháng trước khi tiếp tục.',
-          clock: time
-        });
         return;
       }
       const caravans = time.caravans || {

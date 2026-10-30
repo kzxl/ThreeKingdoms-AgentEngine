@@ -79,6 +79,16 @@ function run(): void {
     db.execute("INSERT INTO character_equipment (character_id, slot_type, item_code, custom_name, stat_modifiers) VALUES ('PLY-0001', 'WEAPON', 'COM-SWORD', 'Test Sword', '{}');");
     const testEquipment = db.queryOne<any>("SELECT id FROM character_equipment WHERE character_id = 'PLY-0001' ORDER BY id DESC LIMIT 1;");
     const { DynastySuccessionService } = require('../src/modules/lineage-succession/dynasty-succession.service');
+    assert.throws(
+      () => new DynastySuccessionService(db).setWill({
+        assets: [
+          { assetType: 'BUSINESS', assetId: 'BIZ-0001', childId: 'CHILD-TEST-SIBLING' },
+          { assetType: 'BUSINESS', assetId: 'BIZ-0001', childId: 'CHILD-TEST-HEIR-01' }
+        ]
+      }),
+      /một người thừa kế/,
+      'the same asset must not be bequeathed to two children'
+    );
     new DynastySuccessionService(db).setWill({
       charityShareBps: 2500,
       allocations: [{ childId: 'CHILD-TEST-SIBLING', shareBps: 2500 }],

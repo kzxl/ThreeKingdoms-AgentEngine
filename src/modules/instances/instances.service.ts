@@ -149,7 +149,12 @@ export class InstanceManagerService {
       // transaction, then verify the final graph explicitly.
       db.pragma('foreign_keys = OFF');
 
-      initializeInstanceDatabase(db, { preset, playerName, playerStyle });
+      initializeInstanceDatabase(db, {
+        preset,
+        playerName,
+        playerStyle,
+        scenarioId: dto.scenarioId
+      });
 
       db.pragma('foreign_keys = ON');
       const violations = db.prepare('PRAGMA foreign_key_check').all();

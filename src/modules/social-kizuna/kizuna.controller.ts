@@ -13,10 +13,18 @@
 import { Router, sendJson, RouteContext } from '../../server/router';
 import { DailyInteractionEngine, EverydayActionType } from './daily-interaction.engine';
 import { DatabaseService } from '../../core/database';
+import { SpatialGuardService } from '../progression/spatial-guard.service';
+
+const REMOTE_COURIER_ACTIONS: ReadonlySet<string> = new Set([
+  'SEND_COURIER_LETTER',
+  'CARRIER_PIGEON_LETTER',
+  'DISPATCH_GIFT_CARAVAN'
+]);
 
 export function registerKizunaRoutes(router: Router): void {
   const engine = DailyInteractionEngine.getInstance();
   const db = DatabaseService.getInstance();
+  const guard = SpatialGuardService.getInstance();
 
   /**
    * 1. GET /api/kizuna/dossier/:npcId
@@ -107,10 +115,19 @@ export function registerKizunaRoutes(router: Router): void {
         return;
       }
 
+      if (REMOTE_COURIER_ACTIONS.has(String(actionType))) {
+        guard.assertStage(
+          body.playerId || 'PLY-0001',
+          3,
+          'Phi Thư Viễn Trình',
+          body.bypassProgressionGate || body.bypassSpatialGuard
+        );
+      }
+
       const result = engine.executeDailyInteraction(npcId, actionType, customPrompt, itemCode);
       sendJson(res, 200, { success: true, result });
     } catch (err: any) {
-      sendJson(res, 500, { success: false, error: err.message });
+      sendJson(res, err.statusCode || 500, { success: false, error: err.message });
     }
   };
 

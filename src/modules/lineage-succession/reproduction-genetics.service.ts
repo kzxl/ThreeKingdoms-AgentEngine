@@ -208,12 +208,17 @@ export class ReproductionGeneticsService {
   }
 
   /**
-   * Advances the pregnancy stages for all pregnant wives.
+   * Advances the pregnancy stages for the player's pregnant wives. NPC couples
+   * are advanced by AutonomousLifeService.simulateAutonomousNpcChildbirth, so
+   * this query must not touch them or a month close would advance them twice.
    */
   public advancePregnancyTick(turn?: number, gameDate?: string): void {
     this.db.transaction(() => {
       const pregnantSpouses = this.db.query<any>(
-        "SELECT marriage_id, pregnancy_stage FROM family_spouses WHERE status = 'MARRIED' AND pregnancy_stage > 0 AND pregnancy_stage < 3;"
+        `SELECT marriage_id, pregnancy_stage FROM family_spouses
+         WHERE status = 'MARRIED'
+           AND pregnancy_stage > 0 AND pregnancy_stage < 3
+           AND (husband_id = 'PLY-0001' OR wife_id = 'PLY-0001');`
       );
 
       for (const s of pregnantSpouses) {

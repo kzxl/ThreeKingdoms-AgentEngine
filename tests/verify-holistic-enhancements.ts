@@ -130,6 +130,12 @@ async function verifyHolisticEnhancements(): Promise<void> {
   `, [testSettlementId]);
 
   // Simulate monthly settlement cycle
+  // The direct call below must run even when a previous suite already marked
+  // this turn for the module; otherwise the ledger silently skips section 2.
+  db.execute(
+    `DELETE FROM world_turn_ledger WHERE turn_number = ? AND module_id = ?;`,
+    [activeTurn, 'module.faction-politics']
+  );
   politicsMod.simulatePoliticalCycle(activeTurn, activeDate);
 
   const testSettlementPost = db.queryOne<any>(`
@@ -143,6 +149,14 @@ async function verifyHolisticEnhancements(): Promise<void> {
   assert(testSettlementPost.garrison_troops < 300, 'Garrison troops must suffer desertion/starvation attrition');
 
   console.log(`      ✅ Passed: Granary depleted to 0, famine triggered: Public Order ${testSettlementPost.public_order}/100, Troops: ${testSettlementPost.garrison_troops}.`);
+
+  // Restore the fixture settlement so later suites that read the live world
+  // (strategic map grain/defense gates) do not inherit the famine.
+  db.execute(`
+    UPDATE session_settlements
+    SET granary_grain = 500.0, public_order = 80, garrison_troops = 300
+    WHERE settlement_id = ?;
+  `, [testSettlementId]);
 
   // -----------------------------------------------------------------
   // 3. EMERGENT COMPETITOR WORKSHOP FOUNDED BY WEALTHY NPC
@@ -217,6 +231,10 @@ async function verifyHolisticEnhancements(): Promise<void> {
 
   const collapseSettlementId = 'pu_yang';
   db.execute(`DELETE FROM bandit_strongholds WHERE stronghold_id = 'STRONGHOLD-EMERGENT-${collapseSettlementId}';`);
+  db.execute(
+    `DELETE FROM world_turn_ledger WHERE turn_number = ? AND module_id = ?;`,
+    [activeTurn, 'module.ecology-logistics']
+  );
   db.execute(`
     UPDATE session_settlements 
     SET public_order = 22 
@@ -328,9 +346,9 @@ async function verifyHolisticEnhancements(): Promise<void> {
   assert(dayTicksReceived === 7, 'WORLD_DAY_TICK event must be published exactly 7 times');
 
   const playerPostDays = db.queryOne<any>(`SELECT fatigue FROM player_state WHERE player_id = 'PLY-0001';`);
-  assert(playerPostDays.fatigue === 29, `Player fatigue must recover by 21 (50 - 21 = 29), got ${playerPostDays.fatigue}`);
+  assert(playerPostDays.fatigue === 43, `Player fatigue must recover by 7 (50 - 7 = 43), got ${playerPostDays.fatigue}`);
 
-  console.log(`      ✅ Passed: advanceDays(7) dispatched 7 WORLD_DAY_TICK events, advanced date to ${advanceDayRes.newDate}, restored fatigue 50 -> 29.`);
+  console.log(`      ✅ Passed: advanceDays(7) dispatched 7 WORLD_DAY_TICK events, advanced date to ${advanceDayRes.newDate}, restored fatigue 50 -> 43.`);
 
   // -----------------------------------------------------------------
   // FINAL INVARIANT AUDIT

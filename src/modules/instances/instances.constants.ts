@@ -16,6 +16,21 @@ export const INSTANCE_PATHS = {
 
 export const DEFAULT_ARCHETYPE_ID = 'ARCH-COMMONER-YOUTH';
 
+export interface StartingItemGrant {
+  itemCode: string;
+  category: string;
+  description: string;
+  quantity: number;
+  unitCost?: number;
+}
+
+export interface StartingEquipmentGrant {
+  slotType: 'WEAPON' | 'ARMOR' | 'STEED' | 'TREASURE';
+  itemCode: string;
+  customName: string;
+  statModifiers?: Record<string, number>;
+}
+
 export interface ArchetypePreset {
   id: string;
   nameVi: string;
@@ -29,6 +44,9 @@ export interface ArchetypePreset {
   seal: string;
   bioVi: string;
   startingAssetsVi: string[];
+  startingItems?: StartingItemGrant[];
+  startingEquipment?: StartingEquipmentGrant[];
+  startingLicenses?: string[];
   attributes: {
     war: number;
     ldr: number;
@@ -79,6 +97,11 @@ export const ARCHETYPE_PRESETS: Record<string, ArchetypePreset> = {
     seal: '士',
     bioVi: 'Hậu duệ gia tộc tiểu thương U Châu, học rộng biết sâu, kết hợp xưởng thủ công dệt gai và cung ứng hậu cần quân nhu.',
     startingAssetsVi: ['Xưởng Dệt Lương Gia', '3 Khung cửi dệt gai', 'Bộ đồ nghề thợ mộc'],
+    startingItems: [
+      { itemCode: 'COM-SILK', category: 'FINISHED_GOOD', description: 'Tơ lụa thượng phẩm Lương Gia', quantity: 5, unitCost: 120 },
+      { itemCode: 'COM-TEA-DRIED', category: 'FINISHED_GOOD', description: 'Trà khô thương hội', quantity: 3, unitCost: 60 }
+    ],
+    startingLicenses: ['Thương Hội U Châu'],
     attributes: {
       war: 48,
       ldr: 62,
@@ -103,6 +126,12 @@ export const ARCHETYPE_PRESETS: Record<string, ArchetypePreset> = {
     seal: '武',
     bioVi: 'Tướng lĩnh đồn trú biên viễn U Châu, thông thạo trận pháp binh nhung và rèn giũa hương binh dũng sĩ bảo vệ bách tính.',
     startingAssetsVi: ['Giáp da khâu đinh tán', 'Hán trực thương', 'Chiến mã phương bắc'],
+    startingItems: [
+      { itemCode: 'COM-GRAIN', category: 'FOOD_STUFF', description: 'Khẩu phần quân doanh', quantity: 3, unitCost: 100 },
+      { itemCode: 'COM-WINE-ZHUO', category: 'FOOD_STUFF', description: 'Rượu Trác Thành', quantity: 2, unitCost: 80 },
+      { itemCode: 'WPN-SERPENT-SPEAR', category: 'WEAPON', description: 'Hán Trực Thương', quantity: 1, unitCost: 0 }
+    ],
+    startingLicenses: ['Bắc Quân Tiền Doanh'],
     attributes: {
       war: 78,
       ldr: 76,
@@ -127,6 +156,12 @@ export const ARCHETYPE_PRESETS: Record<string, ArchetypePreset> = {
     seal: '商',
     bioVi: 'Tổng quản thương đoàn cự phú vận chuyển hàng hóa tơ lụa và trà muối giữa Ký Châu, Lạc Dương và Từ Châu.',
     startingAssetsVi: ['2 Cỗ xe ngựa gia cố', '4 Lừa thồ hàng', 'Giấy thông hành Thương hội'],
+    startingItems: [
+      { itemCode: 'COM-SILK', category: 'FINISHED_GOOD', description: 'Tơ lụa thương đoàn', quantity: 10, unitCost: 120 },
+      { itemCode: 'COM-TEA-DRIED', category: 'FINISHED_GOOD', description: 'Trà khô thương đoàn', quantity: 5, unitCost: 60 },
+      { itemCode: 'COM-HORSE-W', category: 'LIVESTOCK', description: 'Chiến mã thồ hàng', quantity: 1, unitCost: 800 }
+    ],
+    startingLicenses: ['Thương Hội U Châu', 'Giấy Thông Hành'],
     attributes: {
       war: 40,
       ldr: 52,

@@ -248,6 +248,22 @@
     }
   }
 
+  function marketSparkline(history) {
+    const values = (history || []).map(point => Number(point.stock_multiplier) || 1);
+    if (values.length < 2) return '<span class="market-pulse-history">—</span>';
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const span = max - min || 1;
+    const points = values.map((value, index) => {
+      const x = (index / (values.length - 1)) * 120;
+      const y = 26 - ((value - min) / span) * 22;
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    }).join(' ');
+    return `<svg class="market-pulse-chart" viewBox="0 0 120 28" preserveAspectRatio="none" aria-hidden="true">
+      <polyline points="${points}" fill="none" stroke="#38bdf8" stroke-width="1.5" vector-effect="non-scaling-stroke"></polyline>
+    </svg>`;
+  }
+
   async function openMarketPulse() {
     const modal = document.getElementById('market-pulse-modal');
     const body = document.getElementById('market-pulse-body');
@@ -268,7 +284,7 @@
                 <td>${Number(item.stock).toFixed(1)}</td>
                 <td>${Number(item.demand).toFixed(1)}</td>
                 <td><span class="market-shock ${item.pressure === 'SCARCE' ? 'market-shock--scarce' : item.pressure === 'SURPLUS' ? 'market-shock--surplus' : ''}">${Number(item.localMultiplier).toFixed(2)}×</span></td>
-                <td class="market-pulse-history">${(item.history || []).map(point => Number(point.stock_multiplier).toFixed(2)).join(' · ') || '—'}</td>
+                <td class="market-pulse-history">${marketSparkline(item.history)} <span>${(item.history || []).slice(-1).map(point => Number(point.stock_multiplier).toFixed(2)).join('') || '—'}</span></td>
               </tr>
             `).join('')}
           </tbody>

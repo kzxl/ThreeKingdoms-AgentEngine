@@ -1,5 +1,5 @@
 /**
- * Action economy verification: day clock, day-30 guard, multi-day task progress.
+ * Action economy verification: day clock, automatic month boundary, multi-day task progress.
  */
 
 import assert from 'assert';
@@ -52,7 +52,7 @@ function run() {
   seedDatabase();
   const core = new SimulationCore(TEST_DB);
 
-  // 1. A successful action consumes one day and adds fatigue.
+  // 1. A market action commits two days and adds fatigue.
   const trade = core.executeAction({
     type: 'TRADE_BUY',
     item_code: 'COM-BAMBOO',
@@ -63,17 +63,23 @@ function run() {
     idempotency_key: 'ECON-TRADE-1'
   });
   assert.strictEqual(trade.success, true);
-  assert.strictEqual(trade.time.advancedDays, 1);
-  assert.strictEqual(getClock(TEST_DB).currentDate, '184-02-02');
-  assert.strictEqual(getClock(TEST_DB).fatigue, 1); // +2 action cost, -1 daily recovery
+  assert.strictEqual(trade.time.advancedDays, 2);
+  assert.strictEqual(getClock(TEST_DB).currentDate, '184-02-03');
+  assert.strictEqual(getClock(TEST_DB).fatigue, 2); // +4 action cost, -2 daily recovery
 
-  // 2. Day 30 blocks day-consuming actions until the month is closed.
+  // 2. Day 30 no longer blocks: the action rolls into the next month and the
+  //    month close runs automatically at the boundary.
   const db = new Database(TEST_DB);
   db.prepare(`UPDATE campaign_meta SET "current_date" = ?`).run('184-02-30');
   db.close();
-  const blocked = canSpendActionTime(TEST_DB, 'TRADE_BUY');
-  assert.strictEqual(blocked.allowed, false);
-  assert.strictEqual(blocked.code, 'MONTH_END');
+  const allowed = canSpendActionTime(TEST_DB, 'TRADE_BUY');
+  assert.strictEqual(allowed.allowed, true, 'day 30 must allow day-consuming actions');
+  const crossed = applyActionTime(TEST_DB, 'TRADE_BUY', null, 'rollover');
+  assert.strictEqual(crossed.success, true);
+  assert.strictEqual(crossed.advancedDays, 2);
+  assert.strictEqual(crossed.monthsClosed.length, 1, 'crossing day 30 must close the month');
+  assert.strictEqual(getClock(TEST_DB).currentDate, '184-03-02');
+  assert.strictEqual(getClock(TEST_DB).activeTurn, 2, 'month close must advance active_turn');
 
   // 3. A multi-day task progresses with the clock and rewards EXP once.
   const task = startTask(TEST_DB, {
@@ -109,12 +115,15 @@ function run() {
   const replay = listTasks(TEST_DB).find((task: any) => task.task_id === replayTask.taskId);
   assert.strictEqual(replay.elapsed_days, 1, 'same-date replay must not double task progress');
 
-  // 4. Month close progresses tasks through the remaining days.
+  // 4. A zero-day action neither moves the clock nor closes a month.
   const clock = getClock(TEST_DB);
-  assert.strictEqual(clock.currentDate, '184-02-30');
-  assert.strictEqual(applyActionTime(TEST_DB, 'PAY_WAGES').advancedDays, 0);
+  assert.strictEqual(clock.currentDate, '184-03-02');
+  const noDay = applyActionTime(TEST_DB, 'PAY_WAGES');
+  assert.strictEqual(noDay.advancedDays, 0);
+  assert.strictEqual(noDay.monthsClosed.length, 0);
+  assert.strictEqual(getClock(TEST_DB).currentDate, clock.currentDate);
 
-  console.log('✅ Action economy: day clock, day-30 guard, task progress all verified.');
+  console.log('✅ Action economy: day clock, automatic month boundary, task progress all verified.');
 }
 
 run();

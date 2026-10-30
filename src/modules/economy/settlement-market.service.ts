@@ -121,7 +121,7 @@ export class SettlementMarketService {
     return states.map(state => {
       const stockMultiplier = Math.max(0.5, Math.min(2, Math.sqrt(Number(state.demand) / Math.max(1, Number(state.stock)))));
       const history = this.db.query<any>(
-        'SELECT game_date, stock, demand, stock_multiplier FROM settlement_market_history WHERE settlement_id = ? AND item_code = ? ORDER BY game_date DESC, rowid DESC LIMIT 12;',
+        'SELECT game_date, stock, demand, stock_multiplier FROM settlement_market_history WHERE settlement_id = ? AND item_code = ? ORDER BY game_date DESC, rowid DESC LIMIT 24;',
         [settlementId, state.item_code]
       ).reverse();
       return {

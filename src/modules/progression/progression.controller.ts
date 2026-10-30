@@ -13,6 +13,7 @@
 import { Router, sendJson, RouteContext } from '../../server/router';
 import { SpatialGuardService } from './spatial-guard.service';
 import { ExplorationService } from './exploration.service';
+import { DatabaseService } from '../../core/database';
 
 export function registerProgressionRoutes(router: Router): void {
   const guard = SpatialGuardService.getInstance();
@@ -33,6 +34,97 @@ export function registerProgressionRoutes(router: Router): void {
 
   router.get('/api/progression/status', handleGetStatus);
   router.get('/api/progression/state', handleGetStatus);
+
+  /**
+   * 5 career identities. Scores are derived from the 8-axis stats, wealth,
+   * fame, professions and duel record; the highest score is the leading path.
+   */
+  router.get('/api/progression/career-paths', (req: any, res: any, ctx: RouteContext) => {
+    try {
+      const playerId = (ctx.query.playerId as string) || 'PLY-0001';
+      const db = DatabaseService.getInstance();
+      const player = db.queryOne<any>(
+        `SELECT war_attr, int_attr, pol_attr, dip_attr, com_attr, cra_attr, liquid_cash, fame
+         FROM player_state WHERE player_id = ? LIMIT 1;`,
+        [playerId]
+      ) || {};
+      let duelWins = 0;
+      try {
+        duelWins = Number(db.queryOne<{ c: number }>(
+          `SELECT COUNT(*) AS c FROM session_duels WHERE player_id = ? AND winner_id = ?;`,
+          [playerId, playerId]
+        )?.c || 0);
+      } catch { /* older schema */ }
+
+      let craftTier = 1;
+      try {
+        const craft = db.queryOne<{ tier: number }>(
+          `SELECT MAX(tier) AS tier FROM character_professions
+           WHERE character_id = ? AND category IN ('CRAFTING', 'EMERGENCY');`,
+          [playerId]
+        );
+        craftTier = Number(craft?.tier || 1);
+      } catch { /* professions absent */ }
+
+      let familyScore = 0;
+      try {
+        const spouse = db.queryOne<{ c: number }>(
+          `SELECT COUNT(*) AS c FROM family_spouses WHERE husband_id = ? OR wife_id = ?;`,
+          [playerId, playerId]
+        );
+        const children = db.queryOne<{ c: number }>(
+          `SELECT COUNT(*) AS c FROM family_children WHERE father_id = ?;`,
+          [playerId]
+        );
+        familyScore = (Number(spouse?.c || 0) > 0 ? 30 : 0)
+          + Math.min(40, Number(children?.c || 0) * 10)
+          + Math.min(30, Number(player.fame || 0) / 200);
+      } catch { /* family tables absent */ }
+
+      const clamp = (value: number) => Math.max(0, Math.min(100, Math.round(value)));
+      const paths = [
+        {
+          code: 'MARTIAL',
+          nameVi: 'Võ Lộ', nameEn: 'Martial Path', seal: '武',
+          score: clamp(Number(player.war_attr || 50) * 0.75 + Math.min(30, duelWins * 8)),
+          effectVi: '+10% WAR EXP khi luyện võ và đơn đả', effectEn: '+10% WAR EXP from training and duels'
+        },
+        {
+          code: 'MERCHANT',
+          nameVi: 'Thương Lộ', nameEn: 'Merchant Path', seal: '商',
+          score: clamp(Number(player.com_attr || 50) * 0.65 + Math.min(40, Number(player.liquid_cash || 0) / 500)),
+          effectVi: '+5% lợi nhuận thương đoàn và giảm 5% giá thuê hộ vệ', effectEn: '+5% caravan profit, -5% guard cost'
+        },
+        {
+          code: 'SCHOLAR',
+          nameVi: 'Sĩ Lộ', nameEn: 'Scholar Path', seal: '士',
+          score: clamp((Number(player.int_attr || 50) + Number(player.pol_attr || 50)) / 2),
+          effectVi: '+10% INT/POL EXP khi nghiên cứu và triều đàm', effectEn: '+10% INT/POL EXP from study and court talks'
+        },
+        {
+          code: 'ARTISAN',
+          nameVi: 'Công Lộ', nameEn: 'Artisan Path', seal: '工',
+          score: clamp(Number(player.cra_attr || 50) * 0.7 + craftTier * 6),
+          effectVi: 'Giảm 2% tỷ lệ phế phẩm mỗi bậc nghề', effectEn: '-2% defect chance per profession tier'
+        },
+        {
+          code: 'LINEAGE',
+          nameVi: 'Tông Tộc Lộ', nameEn: 'Dynastic Clan Path', seal: '家',
+          score: clamp(familyScore),
+          effectVi: '+10% uy tín gia tộc và tốc độ trưởng thành của thế tử', effectEn: '+10% clan prestige and heir growth'
+        }
+      ].sort((a, b) => b.score - a.score);
+
+      sendJson(res, 200, {
+        success: true,
+        playerId,
+        activePath: paths[0].code,
+        paths
+      });
+    } catch (err: any) {
+      sendJson(res, 500, { success: false, error: err.message });
+    }
+  });
 
   /**
    * 2. POST /api/location/switch & /api/location/update

@@ -4010,6 +4010,29 @@ button.intel-npc-name {
   line-height: 1.2;
 }
 
+.intel-diplomacy-action {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: var(--radius-xs);
+  cursor: pointer;
+  line-height: 1.2;
+  background: rgba(148, 163, 184, 0.14);
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  color: #cbd5e1;
+}
+
+.intel-diplomacy-action:hover {
+  background: rgba(148, 163, 184, 0.28);
+  border-color: #94a3b8;
+  color: #ffffff;
+}
+
 .btn-intel-reinforce {
   background: rgba(59, 130, 246, 0.18);
   border: 1px solid rgba(59, 130, 246, 0.5);
@@ -9383,3 +9406,5 @@ textarea {
 .market-pulse-table th { color: #94a3b8; font-weight: 600; }
 .market-pulse-history { color: #94a3b8; white-space: nowrap; }
 .market-pulse-empty { padding: 20px; text-align: center; color: #94a3b8; font-size: 11px; }
+
+.market-pulse-chart { width: 120px; height: 28px; vertical-align: middle; }

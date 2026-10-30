@@ -39,3 +39,9 @@ tests/perf/fixture.db-*
 *.log
 .DS_Store
 Thumbs.db
+
+# 4. Local machine configuration (per-workstation agent bindings)
+.project-rule.md
+
+# 5. Agent tool state
+.zcode/

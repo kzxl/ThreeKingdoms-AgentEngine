@@ -58,6 +58,22 @@ async function openTurnAdvanceModal() {
   renderTurnAdvanceConfirm();
 }
 
+/**
+ * One-click day step: opens the report shell and advances immediately. The
+ * month close, if any, happens inside the same server call.
+ */
+async function advanceNextDayNow() {
+  const modal = document.getElementById('turn-advance-modal');
+  if (!modal) {
+    console.error('turn-advance-modal not found');
+    return;
+  }
+  activeTurnAdvanceResult = null;
+  openTurnAdvanceModalShell();
+  getTurnAdvanceContent();
+  await submitExecuteAdvanceTurn();
+}
+
 function closeTurnAdvanceModal() {
   closeTurnAdvanceModalShell();
 }
@@ -74,42 +90,42 @@ function renderTurnAdvanceConfirm() {
   container.innerHTML = `
     <div class="turn-adv-confirm-box">
       <div class="turn-adv-header-icon">${uiIcon('hourglass')}</div>
-      <h3 class="turn-adv-title">${isEn ? 'Close the Month & Advance the Calendar' : 'Kết Thúc Tháng & Chuyển Sang Tháng Mới'}</h3>
+      <h3 class="turn-adv-title">${isEn ? 'Advance One Day' : 'Tiến Sang Ngày Tiếp Theo'}</h3>
       <p class="turn-adv-subtitle">
-        ${isEn 
-          ? 'Advancing to the next strategic turn will simulate 1 full calendar month of living world events, enterprise cycles, and NPC actions across the realm.'
-          : 'Kết thúc tháng hiện tại sẽ thúc đẩy bánh xe thời gian tiến thêm 1 tháng, kích hoạt mô phỏng thế giới sống động, thu chi sản nghiệp và hoạt động tự chủ của quần hùng khắp các châu quận.'}
+        ${isEn
+          ? 'One calendar day passes automatically. Grain upkeep, fatigue recovery, tasks and caravans advance; if tomorrow is the 1st, the month closes by itself.'
+          : 'Một ngày lịch trôi qua tự động. Lương thảo, thể lực, công việc dài ngày và thương đoàn đều tiến; nếu mai là mùng 1 thì tháng tự động được chốt.'}
       </p>
 
       <div class="turn-adv-changes-grid">
         <div class="turn-adv-card">
           <div class="turn-adv-card-icon">${uiIcon('calendar')}</div>
-          <div class="turn-adv-card-title">${isEn ? 'Time Step (+1 Month)' : 'Thời Gian (+1 Tháng)'}</div>
-          <div class="turn-adv-card-desc">${isEn ? 'World advances to next calendar month; seasonal prices update.' : 'Tiến trình lịch pháp chuyển sang tháng tiếp theo, giá thị trường biến động theo mùa.'}</div>
+          <div class="turn-adv-card-title">${isEn ? 'Time (+1 Day)' : 'Thời Gian (+1 Ngày)'}</div>
+          <div class="turn-adv-card-desc">${isEn ? 'The calendar advances exactly one day; no days are skipped.' : 'Lịch pháp tiến đúng một ngày, không bỏ qua ngày nào.'}</div>
         </div>
         <div class="turn-adv-card">
           <div class="turn-adv-card-icon">${uiIcon('sprout')}</div>
-          <div class="turn-adv-card-title">${isEn ? 'Stamina Recovery' : 'Hồi Phục Sinh Lực'}</div>
-          <div class="turn-adv-card-desc">${isEn ? 'Recover +35 fatigue; morale stabilizes to optimal level.' : 'Hồi phục +35 điểm mệt mỏi; sĩ khí bản thân hồi phục trạng thái sung mãn.'}</div>
+          <div class="turn-adv-card-title">${isEn ? 'Daily Upkeep' : 'Chi Dùng Hằng Ngày'}</div>
+          <div class="turn-adv-card-desc">${isEn ? 'Grain is consumed and fatigue recovers day by day.' : 'Lương thảo tiêu hao và thể lực hồi phục theo từng ngày.'}</div>
         </div>
         <div class="turn-adv-card">
-          <div class="turn-adv-card-icon">${uiIcon('coin')}</div>
-          <div class="turn-adv-card-title">${isEn ? 'Enterprise Operations' : 'Vận Hành Sản Nghiệp'}</div>
-          <div class="turn-adv-card-desc">${isEn ? 'Workshops generate revenue; staff monthly wages disbursed from safe cash.' : 'Xưởng chức tác kết toán doanh thu, tự động thanh toán lương gia nhân từ két sắt.'}</div>
+          <div class="turn-adv-card-icon">${uiIcon('scroll')}</div>
+          <div class="turn-adv-card-title">${isEn ? 'Automatic Month Close' : 'Tự Động Chốt Tháng'}</div>
+          <div class="turn-adv-card-desc">${isEn ? 'Reaching the 1st runs enterprise settlement, the living world and fame changes automatically.' : 'Khi sang mùng 1, sản nghiệp, thế giới sống động và danh vọng tự động kết toán.'}</div>
         </div>
         <div class="turn-adv-card">
           <div class="turn-adv-card-icon">${uiIcon('users')}</div>
-          <div class="turn-adv-card-title">${isEn ? 'Living World Simulation' : 'Quần Hùng Tự Chủ'}</div>
-          <div class="turn-adv-card-desc">${isEn ? 'Autonomous NPC training, faction politics, and regional logistic shifts.' : 'Các danh tướng rèn luyện võ nghệ, triều đình bổ nhiệm quan viên, nghĩa quân cơ động.'}</div>
+          <div class="turn-adv-card-title">${isEn ? 'Long-Running Work' : 'Công Việc Dài Ngày'}</div>
+          <div class="turn-adv-card-desc">${isEn ? 'Tasks and caravans keep moving in the background.' : 'Công việc và thương đoàn tiếp tục chạy nền, không cần thao tác lại.'}</div>
         </div>
       </div>
 
       <div class="turn-adv-action-bar">
         <button class="btn btn-outline" onclick="closeTurnAdvanceModal()">
-          ${isEn ? 'Return to Current Turn' : 'Quay Lại'}
+          ${isEn ? 'Return' : 'Quay Lại'}
         </button>
         <button class="btn btn-primary font-bold turn-adv-btn-exec" onclick="submitExecuteAdvanceTurn()">
-          <span>${uiIcon('hourglass')} ${isEn ? 'Confirm Next Month' : 'Xác Nhận Qua Tháng'}</span>
+          <span>${uiIcon('hourglass')} ${isEn ? 'Advance 1 Day' : 'Tiến 1 Ngày'}</span>
         </button>
       </div>
     </div>
@@ -124,13 +140,13 @@ async function submitExecuteAdvanceTurn() {
   container.innerHTML = `
     <div class="turn-adv-loading">
       <div class="turn-adv-spinner"></div>
-      <h4>${isEn ? 'Simulating Living World Progression...' : 'Đang mô phỏng chuyển biến thế cuộc tháng mới...'}</h4>
-      <p>${isEn ? 'Calculating workshop dividends, NPC career shifts, and faction politics across the Three Kingdoms...' : 'Đang tính toán lợi nhuận sản nghiệp, lương bổng gia nhân và diễn biến chính trị các châu...'}</p>
+      <h4>${isEn ? 'Advancing the Calendar One Day...' : 'Đang tiến một ngày...'}</h4>
+      <p>${isEn ? 'Charging daily upkeep, moving caravans and tasks; closing the month automatically if the day rolls over.' : 'Đang trừ lương thảo, đẩy thương đoàn và công việc; tự động chốt tháng nếu bước sang mùng 1...'}</p>
     </div>
   `;
 
   try {
-    const result = await apiAdvanceTurn();
+    const result = await apiAdvanceDays(1);
     activeTurnAdvanceResult = result;
     renderTurnAdvanceReport(result);
 
@@ -148,7 +164,16 @@ async function submitExecuteAdvanceTurn() {
     // Let the map and other live surfaces refresh their campaign state.
     window.dispatchEvent(new CustomEvent('sim:turn-advanced', { detail: result }));
 
-    showToast(isEn ? `Welcome to Turn ${result.nextTurn} (${result.nextDate})!` : `Đã chuyển sang Lượt ${result.nextTurn} (Ngày ${result.nextDate})!`);
+    if (Array.isArray(result.dueEvents) && result.dueEvents.length > 0) {
+      const names = result.dueEvents.slice(0, 2).map(event => (isEn ? event.nameEn : event.nameVi)).join(', ');
+      showToast(isEn ? `Historical event due: ${names}` : `Sự kiện lịch sử đến hạn: ${names}`);
+      if (typeof checkAndRenderActiveEventBanner === 'function') checkAndRenderActiveEventBanner();
+    }
+
+    const closed = Number(result.monthClosedCount || 0) > 0;
+    showToast(isEn
+      ? `Now ${result.nextDate}${closed ? ' — the month closed automatically.' : '.'}`
+      : `Đã sang ngày ${result.nextDate}${closed ? ' — tháng đã tự động chốt.' : '.'}`);
 
   } catch (err) {
     console.error('Turn advance failed:', err);
@@ -164,24 +189,24 @@ function renderTurnAdvanceError(err) {
   if (!container) return;
   const message = String(err && err.message ? err.message : err || '');
   container.innerHTML = `
-    <div class="turn-adv-card" role="alert">
-      <div class="turn-adv-card-icon">${uiIcon('alert')}</div>
-      <div class="turn-adv-card-title">${isEn ? 'Month Close Failed' : 'Chốt Tháng Thất Bại'}</div>
-      <div class="turn-adv-card-desc">
-        ${isEn
-          ? 'The world simulation did not commit. No cash, stock or calendar change was saved; retrying is safe.'
-          : 'Mô phỏng thế cuộc chưa ghi nhận. Tiền, kho và lịch chưa đổi; thử lại là an toàn.'}
+      <div class="turn-adv-card" role="alert">
+        <div class="turn-adv-card-icon">${uiIcon('alert')}</div>
+        <div class="turn-adv-card-title">${isEn ? 'Could Not Advance the Day' : 'Không Thể Tiến Ngày'}</div>
+        <div class="turn-adv-card-desc">
+          ${isEn
+            ? 'The day or its month boundary did not commit. No cash, stock or calendar change was saved; retrying is safe.'
+            : 'Ngày hoặc nghiệp vụ chốt tháng chưa ghi nhận. Tiền, kho và lịch chưa đổi; thử lại là an toàn.'}
+        </div>
+        <pre class="turn-adv-error-detail">${message.replace(/</g, '&lt;')}</pre>
+        <div class="turn-adv-action-bar">
+          <button class="btn btn-outline" onclick="closeTurnAdvanceModal()">
+            ${isEn ? 'Close' : 'Đóng'}
+          </button>
+          <button class="btn btn-primary font-bold" onclick="submitExecuteAdvanceTurn()">
+            ${isEn ? 'Retry' : 'Thử Lại'}
+          </button>
+        </div>
       </div>
-      <pre class="turn-adv-error-detail">${message.replace(/</g, '&lt;')}</pre>
-      <div class="turn-adv-action-bar">
-        <button class="btn btn-outline" onclick="closeTurnAdvanceModal()">
-          ${isEn ? 'Close' : 'Đóng'}
-        </button>
-        <button class="btn btn-primary font-bold" onclick="submitExecuteAdvanceTurn()">
-          ${isEn ? 'Retry Month Close' : 'Thử Lại Chốt Tháng'}
-        </button>
-      </div>
-    </div>
   `;
 }
 
@@ -221,6 +246,8 @@ function renderTurnAdvanceReport(res) {
   const finance = res.financeSummary || { inflow: 0, outflow: 0, net: 0 };
   const status = res.playerStatus || {};
   const eco = res.ecologyResults || {};
+  const daysAdvanced = Number(res.daysAdvanced || 1);
+  const monthsClosed = Number(res.monthClosedCount || 0);
 
   const bizHtml = bizList.length > 0 ? bizList.map(b => {    const method = b.settlementMethod === 'WORKSHOP'
       ? (isEn ? 'Workshop cycle' : 'Xưởng tự vận hành')
@@ -332,12 +359,16 @@ function renderTurnAdvanceReport(res) {
     <div class="turn-adv-report-box">
       <div class="turn-rpt-header">
         <div>
-          <span class="turn-rpt-badge font-mono">${isEn ? 'MONTHLY WORLD DISPATCH' : 'BÁO CÁO THẾ CUỘC THÁNG MỚI'}</span>
-          <h3 class="turn-rpt-title">${res.turnTitle || `Lượt ${res.nextTurn}`}</h3>
-          <span class="turn-rpt-date font-mono">${res.prevDate} → <strong>${res.nextDate}</strong> (Lượt ${res.nextTurn})</span>
+          <span class="turn-rpt-badge font-mono">${monthsClosed > 0
+            ? (isEn ? 'MONTHLY WORLD DISPATCH' : 'BÁO CÁO THẾ CUỘC THÁNG MỚI')
+            : (isEn ? 'DAILY DISPATCH' : 'BÁO CÁO NGÀY')}</span>
+          <h3 class="turn-rpt-title">${res.turnTitle || (isEn ? `Day ${res.nextDate}` : `Ngày ${res.nextDate}`)}</h3>
+          <span class="turn-rpt-date font-mono">${res.prevDate} → <strong>${res.nextDate}</strong>${monthsClosed > 0 ? ` (Lượt ${res.nextTurn})` : ` (+${daysAdvanced} ${isEn ? 'day' : 'ngày'})`}</span>
         </div>
       </div>
-      <p class="turn-rpt-summary">${res.turnSummary || ''}</p>
+      <p class="turn-rpt-summary">${res.turnSummary || (isEn
+        ? `${daysAdvanced} day advanced. Grain -${Number(res.grainCost || 0).toFixed(2)} piculs; fatigue now ${status.fatigue ?? '—'}/100.${monthsClosed > 0 ? ' The month closed automatically.' : ' No month boundary yet, so monthly settlement sections stay empty.'}`
+        : `Đã tiến ${daysAdvanced} ngày. Hao lương -${Number(res.grainCost || 0).toFixed(2)} Thạch; thể lực còn ${status.fatigue ?? '—'}/100.${monthsClosed > 0 ? ' Tháng đã tự động chốt.' : ' Chưa tới mốc chốt tháng nên các mục kết toán tháng để trống.'}`)}</p>
       <div class="turn-rpt-kpi-grid">${kpiHtml}</div>
 
       <div class="turn-rpt-sections-grid">
@@ -364,8 +395,8 @@ function renderTurnAdvanceReport(res) {
               <strong class="gold-text">${Number(status.fame || 0).toLocaleString()}${res.fameDecay ? ` (${res.fameDecay.delta})` : ''}</strong>
             </div>
             <div class="turn-rpt-stat-row">
-              <span>${isEn ? 'Skipped days / grain upkeep:' : 'Ngày bỏ qua / hao lương:'}</span>
-              <strong class="${res.grainMissing ? 'danger-text' : 'amber-text'}">${res.skippedDays || 0} • -${Number(res.grainCost || 0).toFixed(2)} ${isEn ? 'piculs' : 'Thạch'}</strong>
+              <span>${isEn ? 'Days advanced / grain upkeep:' : 'Ngày đã tiến / hao lương:'}</span>
+              <strong class="${res.grainMissing ? 'danger-text' : 'amber-text'}">${daysAdvanced} • -${Number(res.grainCost || 0).toFixed(2)} ${isEn ? 'piculs' : 'Thạch'}</strong>
             </div>
             <div class="turn-rpt-stat-row">
               <span>${isEn ? 'Cash in / out:' : 'Thu / Chi:'}</span>
@@ -393,7 +424,7 @@ function renderTurnAdvanceReport(res) {
         <div class="turn-rpt-card full-width">
           <div class="turn-rpt-card-hdr">
             ${uiIcon('calendar')}
-            <span class="title">${isEn ? 'What You Did This Month' : 'Những Việc Bạn Đã Làm Trong Tháng'}</span>
+            <span class="title">${isEn ? 'What Happened This Period' : 'Diễn Biến Trong Kỳ'}</span>
           </div>
           <div class="turn-rpt-card-body turn-rpt-timeline">${actionHtml}</div>
         </div>
@@ -448,7 +479,7 @@ function renderTurnAdvanceReport(res) {
 
       <div class="turn-adv-action-bar">
         <button class="btn btn-primary font-bold turn-adv-btn-exec" onclick="finishTurnAdvance()">
-          <span>${uiIcon('hourglass')} ${isEn ? `Enter Turn ${res.nextTurn}` : `Bắt Đầu Lượt ${res.nextTurn}`} →</span>
+          <span>${uiIcon('hourglass')} ${isEn ? 'Continue' : 'Tiếp Tục'} →</span>
         </button>
       </div>
     </div>
@@ -604,7 +635,7 @@ async function renderTimePanel() {
           <div class="turn-rpt-card-hdr">${uiIcon('calendar')}<span class="title">${isEn ? 'Real-World Comparison' : 'Đối Chiếu Thực Tế'}</span></div>
           <div class="turn-rpt-card-body">
             <div class="time-real-date" id="time-real-clock">${formatRealDateTime()}</div>
-            <div class="turn-rpt-item-meta">${isEn ? '1 game day = 1 calendar day; a month is 30 game days. Only “Next Month” closes the month.' : '1 ngày game = 1 ngày lịch; tháng game 30 ngày. Chỉ “Qua Tháng” mới chốt tháng.'}</div>
+            <div class="turn-rpt-item-meta">${isEn ? '1 game day = 1 calendar day; a month is 30 game days. Moving to the 1st closes the month automatically.' : '1 ngày game = 1 ngày lịch; tháng game 30 ngày. Sang mùng 1 sẽ tự động chốt tháng.'}</div>
             <div class="turn-rpt-stat-row"><span>${isEn ? 'Timezone' : 'Múi giờ'}</span><strong>UTC${(data.real?.timezoneOffsetMinutes || 0) <= 0 ? '+' : '-'}${Math.abs((data.real?.timezoneOffsetMinutes || 0) / 60)}</strong></div>
           </div>
         </div>
@@ -626,8 +657,8 @@ async function renderTimePanel() {
 
       <div class="turn-adv-action-bar">
         <button class="btn btn-outline" onclick="closeTimePanel()">${isEn ? 'Close' : 'Đóng'}</button>
-        <button class="btn btn-primary font-bold" onclick="closeTimePanel(); openTurnAdvanceModal();">
-          ${uiIcon('hourglass')} ${isEn ? 'Next Month' : 'Qua Tháng'}
+        <button class="btn btn-primary font-bold" onclick="closeTimePanel(); advanceNextDayNow();">
+          ${uiIcon('hourglass')} ${isEn ? 'Next Day' : 'Ngày Tiếp'}
         </button>
       </div>
     `;
@@ -641,6 +672,7 @@ window.openTimePanel = openTimePanel;
 window.closeTimePanel = closeTimePanel;
 window.renderTimePanel = renderTimePanel;
 window.openTurnAdvanceModal = openTurnAdvanceModal;
+window.advanceNextDayNow = advanceNextDayNow;
 window.closeTurnAdvanceModal = closeTurnAdvanceModal;
 window.submitExecuteAdvanceTurn = submitExecuteAdvanceTurn;
 window.finishTurnAdvance = finishTurnAdvance;

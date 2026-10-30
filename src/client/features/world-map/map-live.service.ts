@@ -611,7 +611,9 @@ class MapLiveService {
       .filter(caravan => caravan.from && caravan.to);
 
     const expeditions = this.state.expeditions
-      .filter(expedition => String((expedition as { status?: string }).status).toUpperCase() === 'MARCHING')
+      .filter(expedition => ['MARCHING', 'ARRIVED'].includes(
+        String((expedition as { status?: string }).status).toUpperCase()
+      ))
       .map(expedition => {
         const raw = expedition as {
           origin_settlement_id?: string;
