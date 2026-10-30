@@ -748,6 +748,13 @@
                 <div style="font-size: 11px; color: #38bdf8;">
                   ${c.mentor_name_vi ? `Danh Sư: ${c.mentor_name_vi}` : 'Chưa Cầu Danh Sư'}
                 </div>
+                <div>
+                  ${c.is_heir
+                    ? `<span class="ui-badge">${isEn ? 'Heir' : 'Thế Tử'}</span>`
+                    : (Number(c.age || 0) >= 18
+                      ? `<button class="ui-btn ui-btn--ghost ui-btn--xs" onclick="PersonalJournalUI.designateHeir('${c.child_id}')">${isEn ? 'Designate Heir' : 'Lập Thế Tử'}</button>`
+                      : '')}
+                </div>
               </div>
             </div>
           `).join('')}
@@ -766,13 +773,29 @@
         </div>
       `;
     } else if (activeLineageSubTab === 'succession') {
+      const heirs = (overview.children || []).filter(c => Number(c.age || 0) >= 18 && c.status !== 'DECEASED');
       subview.innerHTML = `
-        <div class="tactical-card" style="padding: 16px;">
-          <div style="font-size: 13px; font-weight: 700; color: #f59e0b; margin-bottom: 8px;">
+        <div class="tactical-card lineage-succession-card">
+          <div class="lineage-succession-title">
             Tông Miếu Tiền Nhân & Kế Thừa Gia Nghiệp
           </div>
-          <div style="font-size: 11px; color: var(--text-muted); line-height: 1.5;">
-            Khi đương gia chủ niên cao lực kiệt (trên 55 tuổi) hoặc quy thiên, đại lễ kế thừa sẽ được cử hành tại Tông Miếu để chuyển giao toàn bộ cơ nghiệp cho thế tử trưởng thành (đủ 18 tuổi).
+          <div class="lineage-succession-desc">
+            Khi đương gia chủ niên cao lực kiệt hoặc quy thiên, đại lễ kế thừa sẽ chuyển giao toàn bộ cơ nghiệp cho thế tử trưởng thành (đủ 18 tuổi).
+          </div>
+          <div class="lineage-heir-list">
+            ${heirs.length === 0 ? `
+              <div class="lineage-heir-empty">Chưa có hậu duệ đủ 18 tuổi để kế vị.</div>
+            ` : heirs.map(c => `
+              <div class="lineage-heir-row">
+                <div>
+                  <strong class="lineage-heir-name">${c.name_vi || c.name}</strong>
+                  <span class="lineage-heir-meta"> • ${c.age} tuổi ${c.is_heir ? '• Thế Tử' : ''}</span>
+                </div>
+                <button class="ui-btn ui-btn--primary ui-btn--xs" onclick="PersonalJournalUI.executeSuccession('${c.child_id}')">
+                  ${isEn ? 'Hold Succession' : 'Cử Hành Kế Vị'}
+                </button>
+              </div>
+            `).join('')}
           </div>
         </div>
       `;
@@ -915,6 +938,56 @@
     `;
   }
 
+  async function refreshLineage() {
+    const res = await fetch('/api/lineage/status');
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error || 'Failed to load lineage');
+    cachedLineageOverview = data.overview;
+    renderLineageSubView();
+  }
+
+  async function designateHeir(childId) {
+    try {
+      const res = await fetch('/api/lineage/children/designate-heir', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ childId })
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || 'Designation failed');
+      if (typeof showToast === 'function') showToast(data.message || 'Đã lập Thế Tử.');
+      await refreshLineage();
+    } catch (err) {
+      if (typeof showToast === 'function') showToast(`[LỖI] ${err.message}`, true);
+    }
+  }
+
+  async function executeSuccession(heirId) {
+    const confirmed = window.UI && typeof window.UI['confirm'] === 'function'
+      ? await window.UI["confirm"]({
+          title: 'Cử Hành Kế Vị',
+          message: 'Chuyển giao toàn bộ cơ nghiệp cho thế tử này? Hành động không thể hoàn tác.',
+          confirmLabel: 'Kế Vị',
+          danger: true
+        })
+      : true;
+    if (!confirmed) return;
+    try {
+      const res = await fetch('/api/lineage/succession/execute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ heirId, reason: 'VOLUNTARY_RETIREMENT' })
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || 'Succession failed');
+      if (typeof showToast === 'function') showToast(data.narrativeVi || 'Kế vị thành công.');
+      if (typeof loadStatus === 'function') await loadStatus();
+      await refreshLineage();
+    } catch (err) {
+      if (typeof showToast === 'function') showToast(`[LỖI] ${err.message}`, true);
+    }
+  }
+
   // --------------------------------------------------------------------------
   // Public API Export (and Backward Compatibility Aliases)
   // --------------------------------------------------------------------------
@@ -928,6 +1001,8 @@
     executeEquip,
     executeUnequip,
     switchLineageSubTab,
+    designateHeir,
+    executeSuccession,
 
     // Legacy Fallback Handlers (Directing to local POIs if called)
     openCareer: () => openJournal('career'),

@@ -208,6 +208,7 @@ function renderTurnAdvanceReport(res) {
 
   const bizList = Array.isArray(res.bizReports) ? res.bizReports : [];
   const arrivalList = Array.isArray(res.fameArrivals?.arrivals) ? res.fameArrivals.arrivals : [];
+  const departureList = Array.isArray(res.retainerDepartures?.departures) ? res.retainerDepartures.departures : [];
   const polList = Array.isArray(res.politicalEvents) ? res.politicalEvents : [];
   const npcList = Array.isArray(res.npcLogs) ? res.npcLogs : [];
   const actionList = Array.isArray(res.recentActions) ? res.recentActions : [];
@@ -242,6 +243,10 @@ function renderTurnAdvanceReport(res) {
       <div class="turn-rpt-item-meta">${isEn ? a.narrativeEn : a.narrativeVi}</div>
     </div>
   `).join('') : turnReportEmpty(isEn, 'Danh vọng chưa đủ để người lạ tìm đến tháng này.', 'No one sought you out this month.');
+
+  const departureHtml = departureList.length > 0
+    ? departureList.map(d => `<div class="turn-rpt-item"><div class="turn-rpt-item-title danger-text">${uiIcon('alert')} ${d.name}</div><div class="turn-rpt-item-meta">${isEn ? 'Left the retinue (low fame)' : 'Rời bỏ gia nghiệp vì danh vọng thấp'}</div></div>`).join('')
+    : '';
 
   const actionHtml = actionList.length > 0 ? actionList.map(a => {
     const label = TURN_ACTION_LABELS[a.actionType] || { vi: a.actionType, en: a.actionType };
@@ -382,7 +387,7 @@ function renderTurnAdvanceReport(res) {
             ${uiIcon('users')}
             <span class="title">${isEn ? 'Fame Attracts People' : 'Danh Vọng Tụ Nhân Tâm'}</span>
           </div>
-          <div class="turn-rpt-card-body">${arrivalHtml}</div>
+          <div class="turn-rpt-card-body">${arrivalHtml}${departureHtml}</div>
         </div>
 
         <div class="turn-rpt-card full-width">

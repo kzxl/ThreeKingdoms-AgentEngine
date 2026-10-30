@@ -39,6 +39,8 @@ const HISTORY_TABLES = [
   'prestige_events',
   'exploration_log',
   'fame_arrivals',
+  'retainer_departures',
+  'settlement_market_state',
   'battle_duels',
   'npc_relationship_deltas',
   'npc_journey_logs',

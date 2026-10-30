@@ -19,6 +19,8 @@ const { progressTasks, projectTaskProgress, listTasks } = require('./task-manage
 const { getPrestigeService } = require('./prestige-bridge');
 const { getFameAttractionService } = require('./fame-attraction-bridge');
 const { getBattleDuelService } = require('./battle-duel-bridge');
+const { driftPlayerSettlement } = require('./settlement-market-bridge');
+const { getRetainerLoyaltyService } = require('./retainer-loyalty-bridge');
 
 const ROOT_DIR = path.resolve(__dirname, '..');
 const SAVES_DIR = path.join(ROOT_DIR, 'saves');
@@ -656,6 +658,22 @@ class GameplayManager {
       console.warn('[GameplayManager] bankruptcy check failed:', defeatError.message);
     }
 
+    // Local stock/demand drifts once per month for the player's settlement.
+    try {
+      driftPlayerSettlement(this.dbPath, player?.current_location || 'LOC-0001');
+    } catch (marketError) {
+      console.warn('[GameplayManager] settlement market drift failed:', marketError.message);
+    }
+
+    // Fame also pressures personal retainers; low fame can make them leave.
+    let retainerDepartures = null;
+    try {
+      const loyalty = getRetainerLoyaltyService(this.dbPath);
+      if (loyalty) retainerDepartures = loyalty.evaluateMonthly('PLY-0001', prevDate);
+    } catch (loyaltyError) {
+      console.warn('[GameplayManager] retainer loyalty failed:', loyaltyError.message);
+    }
+
     // Publish the skipped days (excluding the new month's first day, which the
     // month tick already represents) so daily subscribers see every elapsed day.
     let dayTicksPublished = 0;
@@ -721,6 +739,7 @@ class GameplayManager {
       dayTicksPublished,
       fameDecay,
       fameArrivals,
+      retainerDepartures,
       defeatStatus,
       playerStatus,
       playerLocationName: locationRow ? locationRow.name_vi : (playerLoc || ''),

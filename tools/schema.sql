@@ -295,8 +295,7 @@ CREATE TABLE IF NOT EXISTS fame_arrivals (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS battle_duels (
-    duel_id TEXT PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS battle_duels (    duel_id TEXT PRIMARY KEY,
     battle_id TEXT,
     game_date TEXT NOT NULL,
     context TEXT NOT NULL,
@@ -310,6 +309,29 @@ CREATE TABLE IF NOT EXISTS battle_duels (
     death_chance REAL,
     death_roll REAL,
     death_applied INTEGER NOT NULL DEFAULT 0,
+    narrative_vi TEXT,
+    narrative_en TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS settlement_market_state (
+    settlement_id TEXT NOT NULL,
+    item_code TEXT NOT NULL,
+    stock REAL NOT NULL DEFAULT 100,
+    demand REAL NOT NULL DEFAULT 100,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (settlement_id, item_code)
+);
+
+CREATE TABLE IF NOT EXISTS retainer_departures (
+    departure_id TEXT PRIMARY KEY,
+    character_id TEXT NOT NULL,
+    npc_id TEXT NOT NULL,
+    npc_name TEXT NOT NULL,
+    game_date TEXT NOT NULL,
+    fame_at_departure INTEGER NOT NULL,
+    loyalty_before INTEGER NOT NULL,
+    reason TEXT NOT NULL,
     narrative_vi TEXT,
     narrative_en TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

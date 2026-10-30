@@ -50,6 +50,8 @@ export interface HireSpecialistInput {
   businessId: string;
   role?: string;
   signingBonus?: number;
+  /** Internal fame-arrival perk: the guest joins without a signing bonus. */
+  waiveSigningBonus?: boolean;
 }
 
 export interface HireSpecialistResult {
@@ -279,7 +281,7 @@ export class SpecialistWorkforceService {
       );
     }
     const baseSigningBonus = profile.signingBonus;
-    const signingBonus = this.applyFameDiscount(baseSigningBonus, fameDiscount);
+    const signingBonus = input.waiveSigningBonus ? 0 : this.applyFameDiscount(baseSigningBonus, fameDiscount);
 
     // 4. Execute atomic transaction
     return this.db.transaction(() => {

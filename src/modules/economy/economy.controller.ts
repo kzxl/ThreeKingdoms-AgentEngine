@@ -12,6 +12,7 @@ import { ModuleRegistry } from '../../core/module-registry';
 import { EconomyModule } from './economy.module';
 import { RegionalMarketService, SETTLEMENT_PROFILES } from './regional-market.service';
 import { LOC_TO_NODE_MAP } from '../ecology-logistics/spatial-registry';
+import { SettlementMarketService } from './settlement-market.service';
 import { CaravanLogisticsService } from '../ecology-logistics/caravan-logistics.service';
 import { postCashflowEntry } from '../../shared/ledger';
 import { ACCOUNT_CODES } from '../../shared/account-codes';
@@ -253,7 +254,7 @@ export function registerEconomyRoutes(router: Router): void {
       const worldMultiplier = worldPriceMultiplier(db, itemCode, effectiveDate);
       const settlementNode = LOC_TO_NODE_MAP[fameRow?.current_location || ''] || (fameRow?.current_location || '');
       const localMultiplier = settlementNode
-        ? RegionalMarketService.getInstance().getSpecializationMultiplier(settlementNode, itemCode)
+        ? SettlementMarketService.forDatabase(db).getLocalMultiplier(settlementNode, itemCode)
         : 1;
       const quote = quoteFromReference(marketItem.price, Number(fameRow?.fame || 0), itemCode, worldMultiplier, localMultiplier);
       const effectiveUnitPrice = tradeAction === 'BUY' ? quote.buyPrice : quote.sellPrice;

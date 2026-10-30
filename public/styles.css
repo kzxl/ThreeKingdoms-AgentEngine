@@ -9335,3 +9335,13 @@ textarea {
   font-size: 11px;
   margin-bottom: 18px;
 }
+
+/* Lineage succession panel */
+.lineage-succession-card { padding: 16px; }
+.lineage-succession-title { font-size: 13px; font-weight: 700; color: #f59e0b; margin-bottom: 8px; }
+.lineage-succession-desc { font-size: 11px; color: var(--text-muted); line-height: 1.5; }
+.lineage-heir-list { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.lineage-heir-empty { font-size: 11px; color: var(--text-muted); }
+.lineage-heir-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid rgba(148, 163, 184, 0.2); border-radius: 8px; }
+.lineage-heir-name { color: #fde68a; }
+.lineage-heir-meta { font-size: 11px; color: var(--text-muted); }

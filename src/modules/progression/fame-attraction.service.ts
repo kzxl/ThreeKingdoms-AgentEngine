@@ -11,6 +11,7 @@ import { RngService } from '../../core/rng';
 import { nextId } from '../../shared/id-generator';
 import { getFameTier } from '../../shared/prestige';
 import { PrestigeService } from './prestige.service';
+import { SpecialistWorkforceService } from '../professions/features/workforce/specialist-workforce.service';
 
 export interface FameArrival {
   arrivalId: string;
@@ -18,6 +19,7 @@ export interface FameArrival {
   nameVi: string;
   nameEn: string;
   npcId?: string;
+  assignedBusinessId?: string;
   militia: number;
   grainGift: number;
   narrativeVi: string;
@@ -125,16 +127,43 @@ export class FameAttractionService {
         );
         const narrativeVi = `${candidate.name_vi} nghe danh ${fame} danh vọng, tìm đến xin theo phò tá.`;
         const narrativeEn = `${candidate.name_en || candidate.name_vi} heard of your ${fame} fame and came to serve.`;
+
+        // Fame guests join the retinue without a signing bonus. If a player
+        // business exists and the role gate is met, assign immediately.
+        let assignedBusinessId: string | undefined;
+        const business = this.db.queryOne<any>(
+          "SELECT business_id FROM businesses WHERE owner_character_id = ? OR owner_character_id IS NULL ORDER BY business_id LIMIT 1;",
+          [characterId]
+        );
+        if (business) {
+          try {
+            new SpecialistWorkforceService(this.db).hireSpecialist({
+              characterId,
+              npcId: candidate.npc_id,
+              businessId: business.business_id,
+              waiveSigningBonus: true
+            });
+            assignedBusinessId = business.business_id;
+          } catch (hireError) {
+            // Fame gate or duplicate assignment: keep the guest in the retinue.
+          }
+        }
+
         arrivals.push({
           arrivalId,
           kind: 'SPECIALIST',
           nameVi: candidate.name_vi,
           nameEn: candidate.name_en || candidate.name_vi,
           npcId: candidate.npc_id,
+          assignedBusinessId,
           militia: 0,
           grainGift: 0,
-          narrativeVi,
-          narrativeEn
+          narrativeVi: assignedBusinessId
+            ? `${narrativeVi} Được bổ nhiệm về ${assignedBusinessId}.`
+            : narrativeVi,
+          narrativeEn: assignedBusinessId
+            ? `${narrativeEn} Assigned to ${assignedBusinessId}.`
+            : narrativeEn
         });
         continue;
       }
