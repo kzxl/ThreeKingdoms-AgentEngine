@@ -9,6 +9,7 @@ import path from 'path';
 import { DatabaseService } from '../src/core/database';
 import { worldPriceMultiplier, seasonMultiplier } from '../src/shared/world-price';
 import { quoteFromReference } from '../src/shared/market-quote';
+import { RegionalMarketService } from '../src/modules/economy/regional-market.service';
 
 const ROOT = path.resolve(__dirname, '..');
 const LIVE_DB = process.env.SIM_DB_PATH || path.join(ROOT, 'saves', 'session.db');
@@ -48,6 +49,12 @@ function run(): void {
     const quote = quoteFromReference(reference, 500, 'COM-GRAIN', crisis);
     assert(quote.effectiveReference > reference, 'crisis must raise the effective reference');
     assert(quote.buyPrice > quote.sellPrice, 'crisis quote must keep buy above sell');
+
+    const regional = new RegionalMarketService(db);
+    assert.strictEqual(regional.getSpecializationMultiplier('zhuo_xian', 'COM-BAMBOO'), 0.7, 'Zhuo bamboo is a local surplus');
+    assert.strictEqual(regional.getSpecializationMultiplier('zhuo_xian', 'COM-SALT'), 1.5, 'Zhuo salt is a local deficit');
+    const localQuote = quoteFromReference(100, 500, 'COM-BAMBOO', 1, 0.7);
+    assert(localQuote.effectiveReference < 100, 'local surplus must lower the effective reference');
 
     db.execute(`UPDATE regional_ecological_crises SET is_active = 0;`);
   } finally {

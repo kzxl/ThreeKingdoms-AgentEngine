@@ -11,6 +11,7 @@ import { DatabaseService } from '../../core/database';
 import { ModuleRegistry } from '../../core/module-registry';
 import { EconomyModule } from './economy.module';
 import { RegionalMarketService, SETTLEMENT_PROFILES } from './regional-market.service';
+import { LOC_TO_NODE_MAP } from '../ecology-logistics/spatial-registry';
 import { CaravanLogisticsService } from '../ecology-logistics/caravan-logistics.service';
 import { postCashflowEntry } from '../../shared/ledger';
 import { ACCOUNT_CODES } from '../../shared/account-codes';
@@ -245,9 +246,16 @@ export function registerEconomyRoutes(router: Router): void {
 
       const meta = getCampaignMeta(db);
       const effectiveDate = meta.currentDate;
-      const fameRow = db.queryOne<{ fame: number }>('SELECT fame FROM player_state WHERE player_id = ?;', ['PLY-0001']);
+      const fameRow = db.queryOne<{ fame: number; current_location: string }>(
+        'SELECT fame, current_location FROM player_state WHERE player_id = ?;',
+        ['PLY-0001']
+      );
       const worldMultiplier = worldPriceMultiplier(db, itemCode, effectiveDate);
-      const quote = quoteFromReference(marketItem.price, Number(fameRow?.fame || 0), itemCode, worldMultiplier);
+      const settlementNode = LOC_TO_NODE_MAP[fameRow?.current_location || ''] || (fameRow?.current_location || '');
+      const localMultiplier = settlementNode
+        ? RegionalMarketService.getInstance().getSpecializationMultiplier(settlementNode, itemCode)
+        : 1;
+      const quote = quoteFromReference(marketItem.price, Number(fameRow?.fame || 0), itemCode, worldMultiplier, localMultiplier);
       const effectiveUnitPrice = tradeAction === 'BUY' ? quote.buyPrice : quote.sellPrice;
       const itemInfo = {
         item_code: marketItem.itemCode,

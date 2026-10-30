@@ -9287,3 +9287,51 @@ textarea {
 /* Utility gaps found by the UI audit */
 .pb-2 { padding-bottom: 8px; }
 .modal-tab-btn .tab-label { white-space: nowrap; }
+
+/* Defeat overlay (campaign ended by death or bankruptcy) */
+.defeat-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(2, 6, 23, 0.88);
+  backdrop-filter: blur(4px);
+}
+
+.defeat-card {
+  width: min(440px, 92vw);
+  padding: 28px;
+  border-radius: 14px;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  background: #111827;
+  text-align: center;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+}
+
+.defeat-seal {
+  font-size: 42px;
+  color: #f87171;
+  line-height: 1;
+  margin-bottom: 10px;
+}
+
+.defeat-card h2 {
+  margin: 0 0 8px;
+  color: #fecaca;
+  font-size: 20px;
+}
+
+.defeat-card p {
+  margin: 0 0 10px;
+  color: #cbd5e1;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.defeat-card .defeat-meta {
+  color: #94a3b8;
+  font-size: 11px;
+  margin-bottom: 18px;
+}

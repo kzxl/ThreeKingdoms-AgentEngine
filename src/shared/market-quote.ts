@@ -19,6 +19,7 @@ export interface MarketQuote {
   referencePrice: number;
   effectiveReference: number;
   worldMultiplier: number;
+  localMultiplier: number;
   buyPrice: number;
   sellPrice: number;
   fameRatio: number;
@@ -31,13 +32,15 @@ export function quoteFromReference(
   referencePrice: number,
   fame: number,
   itemCode = '',
-  worldMultiplier = 1
+  worldMultiplier = 1,
+  localMultiplier = 1
 ): MarketQuote {
   const reference = Math.max(1, Math.round(Number(referencePrice) || 0));
   const ratio = fameRatio(fame);
   const spread = MARKET_PRICING.merchantSpread;
   const world = Math.max(0.5, Math.min(3, Number(worldMultiplier) || 1));
-  const effectiveReference = Math.max(1, Math.round(reference * world));
+  const local = Math.max(0.5, Math.min(2, Number(localMultiplier) || 1));
+  const effectiveReference = Math.max(1, Math.round(reference * world * local));
 
   const rawBuy = effectiveReference * (1 + spread - ratio * MARKET_PRICING.fameBuyDiscountMax);
   const rawSell = effectiveReference * (1 - spread + ratio * MARKET_PRICING.fameSellBonusMax);
@@ -52,6 +55,7 @@ export function quoteFromReference(
     referencePrice: reference,
     effectiveReference,
     worldMultiplier: world,
+    localMultiplier: local,
     buyPrice,
     sellPrice,
     fameRatio: ratio,

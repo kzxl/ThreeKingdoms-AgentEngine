@@ -61,6 +61,20 @@ function run(): void {
     assert.strictEqual(blocked.allowed, false, 'a defeated campaign must block actions');
     assert.strictEqual(blocked.code, 'CAMPAIGN_OVER', 'defeat must return CAMPAIGN_OVER');
 
+    // With a designated heir, death hands the campaign to the successor.
+    db.execute("UPDATE campaign_meta SET status = 'ACTIVE', defeat_reason = NULL;");
+    db.execute("UPDATE player_state SET health = 100 WHERE player_id = 'PLY-0001';");
+    db.execute("UPDATE family_children SET is_heir = 1, status = 'HEIR' WHERE child_id = 'CHILD-TEST-HEIR-01';");
+    const succession = service.applyPlayerDeath('PLY-0001', 'TEST_DEATH_WITH_HEIR');
+    assert.strictEqual(succession.succession, true, 'death with an heir must run succession');
+    assert.strictEqual(succession.heirId, 'CHILD-TEST-HEIR-01', 'succession must name the heir');
+    const revived = db.queryOne<any>('SELECT status FROM campaign_meta LIMIT 1;');
+    assert.strictEqual(revived.status, 'ACTIVE', 'succession must keep the campaign active');
+    const heirName = db.queryOne<any>('SELECT name, health FROM player_state LIMIT 1;');
+    assert.strictEqual(heirName.name, 'Lương Anh Hào', 'player identity must transfer to the heir');
+    assert.strictEqual(Number(heirName.health), 100, 'heir must start at full health');
+    db.execute("UPDATE family_children SET is_heir = 0, status = 'ADULT_OFFICER' WHERE child_id = 'CHILD-TEST-HEIR-01';");
+
     // Bankruptcy path: two consecutive distressed closes end the campaign.
     db.execute("UPDATE campaign_meta SET status = 'ACTIVE', defeat_reason = NULL, distress_months = 0;");
     db.execute("UPDATE player_state SET health = 100, liquid_cash = 0, safe_cash = 0, strategic_grain = 0 WHERE player_id = 'PLY-0001';");

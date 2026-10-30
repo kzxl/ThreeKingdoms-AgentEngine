@@ -7,6 +7,8 @@
  */
 
 import { DatabaseService } from '../../core/database';
+import { PrestigeService } from '../progression/prestige.service';
+import { fameRatio } from '../../shared/prestige';
 import { isTurnModuleDone, markTurnModuleDone } from '../../shared/turn-ledger';
 import {
   IFeatureModule,
@@ -127,7 +129,8 @@ export class FactionPoliticsModule implements IFeatureModule {
     ambition: number,
     factionPrestige: number,
     isGovernor: boolean,
-    personalTroops = 0
+    personalTroops = 0,
+    famePressure = 0
   ): number {
     const governorBonus = isGovernor ? 25 : 0;
     const troopFactor = Math.min(30, Math.floor(personalTroops / 5));
@@ -135,7 +138,7 @@ export class FactionPoliticsModule implements IFeatureModule {
     const ambitionFactor = ambition * 1.4;
     const prestigeResistance = factionPrestige * 0.2;
 
-    const score = (ambitionFactor + loyaltyPenalty + governorBonus + troopFactor - prestigeResistance) / 200.0;
+    const score = (ambitionFactor + loyaltyPenalty + governorBonus + troopFactor - prestigeResistance - famePressure * 200) / 200.0;
     return Math.max(0.0, Math.min(1.0, Math.round(score * 1000) / 1000));
   }
 
@@ -158,6 +161,10 @@ export class FactionPoliticsModule implements IFeatureModule {
       LEFT JOIN npc_personal_progression np ON fo.officer_id = np.npc_id;
     `);
 
+    const playerFame = PrestigeService.forDatabase(this.db).getFame('PLY-0001');
+    // 500 fame is neutral; higher fame deters betrayal, low fame invites it.
+    const famePressure = (fameRatio(playerFame) - 0.2) * 0.2;
+
     this.db.transaction(() => {
       for (const off of officers) {
         if (off.court_rank === 'RULER') {
@@ -174,7 +181,8 @@ export class FactionPoliticsModule implements IFeatureModule {
           off.ambition,
           off.faction_prestige || 100,
           isGovernor,
-          off.personal_troops || 0
+          off.personal_troops || 0,
+          famePressure
         );
 
         this.db.execute(

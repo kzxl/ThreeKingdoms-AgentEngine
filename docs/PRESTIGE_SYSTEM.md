@@ -92,7 +92,12 @@ It exposes `getFame`, `getTier`, `award`, `penalize`, `decayInactive` and
 
 ## Still staged
 
-1. NPC self-arrival is report/login only; it does not yet auto-hire named NPCs.
-2. Local stock/specialisation is not yet part of the persisted price quote.
-3. Heir succession after player death, betrayal, and a full game-over screen.
+1. Named guests enter `npc_state` as `GUEST`; assigning them to a business is
+   still the player's deliberate hire action.
+2. Local specialization is in the quote; persisted local **stock** and demand
+   are not yet a table.
+3. Betrayal uses the existing faction-politics risk model plus a fame modifier;
+   a separate personal-retainer betrayal chain is not built.
+4. Succession runs on death when an heir is designated; the full ancestral
+   chronicle UI and will/inheritance choices are still minimal.
 

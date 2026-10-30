@@ -497,6 +497,22 @@ export class RegionalMarketService {
    * Calculates the effective trading price of an item in a specific settlement.
    * Considers baseline price, settlement surplus/deficit specialization, and active ecological crises.
    */
+  /**
+   * Local surplus/deficit multiplier for a settlement and item. This is the
+   * part of the regional price that is independent of the world season/crisis.
+   */
+  public getSpecializationMultiplier(settlementId: string, itemCode: string): number {
+    const profile = SETTLEMENT_PROFILES[settlementId];
+    if (!profile) return 1;
+    if (profile.specialization.surplusItems.includes(itemCode)) {
+      return profile.specialization.surplusMultiplier ?? 0.7;
+    }
+    if (profile.specialization.deficitItems.includes(itemCode)) {
+      return profile.specialization.deficitMultiplier ?? 1.5;
+    }
+    return 1;
+  }
+
   public calculateSettlementPrice(settlementId: string, itemCode: string): number {
     const item = this.db.queryOne<any>(
       'SELECT baseline_peace_price, current_market_price, category FROM master_items WHERE item_code = ?;',
@@ -508,16 +524,7 @@ export class RegionalMarketService {
     }
 
     const basePrice = Number(item.current_market_price || item.baseline_peace_price || 50);
-    const profile = SETTLEMENT_PROFILES[settlementId];
-    let specializationMultiplier = 1.0;
-
-    if (profile) {
-      if (profile.specialization.surplusItems.includes(itemCode)) {
-        specializationMultiplier = profile.specialization.surplusMultiplier ?? 0.70;
-      } else if (profile.specialization.deficitItems.includes(itemCode)) {
-        specializationMultiplier = profile.specialization.deficitMultiplier ?? 1.50;
-      }
-    }
+    const specializationMultiplier = this.getSpecializationMultiplier(settlementId, itemCode);
 
     const { multiplier: crisisMult, crisisActive } = this.getCrisisCommodityMultiplier(
       settlementId,

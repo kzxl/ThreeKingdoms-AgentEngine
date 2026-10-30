@@ -12,6 +12,7 @@ import { RngService } from '../../core/rng';
 import { nextId } from '../../shared/id-generator';
 import { getFameTier, fameRatio } from '../../shared/prestige';
 import { PrestigeService } from '../progression/prestige.service';
+import { DynastySuccessionService } from '../lineage-succession/dynasty-succession.service';
 import BATTLE_CONFIG from '../../../config/battle-duel.json';
 
 export interface PreBattleInput {
@@ -175,12 +176,31 @@ export class BattleDuelService {
     };
   }
 
-  public applyPlayerDeath(playerId: string, reason: string): void {
+  public applyPlayerDeath(playerId: string, reason: string): { succession: boolean; heirId?: string } {
+    const heir = this.db.queryOne<{ child_id: string }>(
+      "SELECT child_id FROM family_children WHERE is_heir = 1 AND status NOT IN ('DECEASED', 'SUCCESSOR_RULER') LIMIT 1;"
+    );
+    if (heir) {
+      try {
+        new DynastySuccessionService(this.db).executeSuccession({ heirChildId: heir.child_id });
+        this.db.execute(
+          "UPDATE campaign_meta SET status = 'ACTIVE', defeat_reason = 'SUCCEEDED_BY_HEIR' WHERE campaign_id = (SELECT campaign_id FROM campaign_meta LIMIT 1);"
+        );
+        // Personal fame belongs to the fallen protagonist; the heir starts at
+        // the commoner baseline while the family prestige carries over.
+        this.db.execute('UPDATE player_state SET fame = 500, militia = 0 WHERE player_id = ?;', [playerId]);
+        return { succession: true, heirId: heir.child_id };
+      } catch (error) {
+        console.warn('[BattleDuelService] succession failed:', (error as Error).message);
+      }
+    }
+
     this.db.execute(
       "UPDATE campaign_meta SET status = 'DEFEATED', defeat_reason = ? WHERE campaign_id = (SELECT campaign_id FROM campaign_meta LIMIT 1);",
       [reason]
     );
     this.db.execute('UPDATE player_state SET health = 0, fame = 0 WHERE player_id = ?;', [playerId]);
+    return { succession: false };
   }
 
   /**

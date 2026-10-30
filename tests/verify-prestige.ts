@@ -156,7 +156,12 @@ function run(): void {
     const militiaAfter = Number(db.queryOne<any>('SELECT militia FROM player_state WHERE player_id = ?;', ['PLY-0001'])?.militia || 0);
     assert.strictEqual(militiaAfter, militiaBefore + arrivals.totalMilitia, 'volunteer militia must be added to player state');
     const logged = db.queryOne<{ c: number }>('SELECT COUNT(*) AS c FROM fame_arrivals WHERE character_id = ?;', ['PLY-0001']);
-    assert.strictEqual(Number(logged?.c), 3, 'every arrival must be logged');
+    assert.strictEqual(logged?.c, 3, 'every arrival must be logged');
+    const specialist = arrivals.arrivals.find(arrival => arrival.kind === 'SPECIALIST');
+    assert(specialist, 'fame must attract at least one named specialist from the available pool');
+    const guest = db.queryOne<any>('SELECT assigned_role FROM npc_state WHERE npc_id = ?;', [specialist!.npcId]);
+    assert(guest, 'named guest must become an npc_state retainer');
+    assert.strictEqual(guest.assigned_role, 'GUEST', 'named guest must start in the GUEST role');
   } finally {
     db.close();
     try {

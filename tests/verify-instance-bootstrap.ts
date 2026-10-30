@@ -116,8 +116,10 @@ function run(): void {
       "SELECT 1 FROM sqlite_master WHERE type='table' AND name='battle_duels'"
     ).get();
     assert(duelTable, 'schema must declare battle_duels');
+    const npcIdColumn = fresh.prepare('PRAGMA table_info(fame_arrivals)').all().some((c: any) => c.name === 'npc_id');
+    assert(npcIdColumn, 'schema must declare fame_arrivals.npc_id');
     const migrations = (fresh.prepare('SELECT COUNT(*) AS c FROM schema_migrations').get() as any).c;
-    assert.strictEqual(Number(migrations), 15, 'initDb must apply all 15 versioned migrations');
+    assert.strictEqual(Number(migrations), 16, 'initDb must apply all 16 versioned migrations');
     fresh.close();
 
     // Bootstrap must also work on a schema-initialized database (no live-session

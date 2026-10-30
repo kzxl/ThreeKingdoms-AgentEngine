@@ -287,6 +287,7 @@ CREATE TABLE IF NOT EXISTS fame_arrivals (
     kind TEXT NOT NULL,
     name_vi TEXT NOT NULL,
     name_en TEXT NOT NULL,
+    npc_id TEXT,
     militia INTEGER NOT NULL DEFAULT 0,
     grain_gift REAL NOT NULL DEFAULT 0,
     narrative_vi TEXT,

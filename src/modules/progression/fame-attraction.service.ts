@@ -14,9 +14,10 @@ import { PrestigeService } from './prestige.service';
 
 export interface FameArrival {
   arrivalId: string;
-  kind: 'VOLUNTEER' | 'MERCHANT' | 'SCHOLAR' | 'WARRIOR';
+  kind: 'VOLUNTEER' | 'MERCHANT' | 'SCHOLAR' | 'WARRIOR' | 'SPECIALIST';
   nameVi: string;
   nameEn: string;
+  npcId?: string;
   militia: number;
   grainGift: number;
   narrativeVi: string;
@@ -87,7 +88,57 @@ export class FameAttractionService {
     let totalGrain = 0;
     let fameGain = 0;
 
+    // Named specialists who have no npc_state row yet can be recruited by fame.
+    const candidates = this.db.query<any>(
+      `SELECT mc.* FROM master_characters mc
+       LEFT JOIN npc_state ns ON ns.npc_id = mc.npc_id
+       WHERE mc.npc_id LIKE 'NPC-02%' AND ns.npc_id IS NULL
+       ORDER BY mc.npc_id ASC
+       LIMIT ?;`,
+      [count]
+    );
+
     for (let i = 0; i < count; i += 1) {
+      const candidate = candidates[i];
+      if (candidate) {
+        const arrivalId = nextId(this.db, 'fame_arrivals', 'ARR', date);
+        this.db.execute(
+          `INSERT OR REPLACE INTO npc_state
+            (npc_id, name, loyalty, morale, fatigue, int_attr, pol_attr, war_attr, ldr_attr, dip_attr, com_attr, log_attr, cra_attr,
+             assigned_role, monthly_wage, is_alive, talents, personality, motivation)
+           VALUES (?, ?, 70, 80, 0, ?, ?, ?, ?, ?, ?, ?, ?, 'GUEST', 0, 1, ?, ?, ?);`,
+          [
+            candidate.npc_id,
+            candidate.name_vi,
+            candidate.int_attr,
+            candidate.pol_attr,
+            candidate.war_attr,
+            candidate.ldr_attr,
+            candidate.dip_attr,
+            candidate.com_attr,
+            candidate.log_attr,
+            candidate.cra_attr,
+            candidate.talents,
+            candidate.personality,
+            candidate.motivation
+          ]
+        );
+        const narrativeVi = `${candidate.name_vi} nghe danh ${fame} danh vọng, tìm đến xin theo phò tá.`;
+        const narrativeEn = `${candidate.name_en || candidate.name_vi} heard of your ${fame} fame and came to serve.`;
+        arrivals.push({
+          arrivalId,
+          kind: 'SPECIALIST',
+          nameVi: candidate.name_vi,
+          nameEn: candidate.name_en || candidate.name_vi,
+          npcId: candidate.npc_id,
+          militia: 0,
+          grainGift: 0,
+          narrativeVi,
+          narrativeEn
+        });
+        continue;
+      }
+
       const kind = rng.pick(['VOLUNTEER', 'MERCHANT', 'SCHOLAR', 'WARRIOR'] as const);
       const name = rng.pick([...NAMES[kind]] as Array<{ vi: string; en: string }>);
       const militia = kind === 'VOLUNTEER' || kind === 'WARRIOR'
@@ -129,9 +180,9 @@ export class FameAttractionService {
       for (const arrival of arrivals) {
         this.db.execute(
           `INSERT INTO fame_arrivals
-            (arrival_id, character_id, game_date, fame_at_arrival, tier_code, kind, name_vi, name_en, militia, grain_gift, narrative_vi, narrative_en)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
-          [arrival.arrivalId, characterId, date, fame, tier.code, arrival.kind, arrival.nameVi, arrival.nameEn, arrival.militia, arrival.grainGift, arrival.narrativeVi, arrival.narrativeEn]
+            (arrival_id, character_id, game_date, fame_at_arrival, tier_code, kind, name_vi, name_en, npc_id, militia, grain_gift, narrative_vi, narrative_en)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+          [arrival.arrivalId, characterId, date, fame, tier.code, arrival.kind, arrival.nameVi, arrival.nameEn, arrival.npcId || null, arrival.militia, arrival.grainGift, arrival.narrativeVi, arrival.narrativeEn]
         );
       }
     });

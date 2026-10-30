@@ -189,8 +189,28 @@ function startStaminaRegenTicker() {
 }
 
 // 1.1 Load Telemetry & Player Status
-async function loadStatus() {
-  try {
+function showDefeatOverlay(meta, reason) {
+  if (document.getElementById('defeat-overlay')) return;
+  const isEn = typeof currentLang !== 'undefined' && currentLang === 'en';
+  const overlay = document.createElement('div');
+  overlay.id = 'defeat-overlay';
+  overlay.className = 'defeat-overlay';
+  overlay.setAttribute('role', 'alertdialog');
+  overlay.innerHTML = `
+    <div class="defeat-card">
+      <div class="defeat-seal" aria-hidden="true">終</div>
+      <h2>${isEn ? 'Campaign Ended' : 'Chiến Dịch Kết Thúc'}</h2>
+      <p>${reason}</p>
+      <p class="defeat-meta">${isEn ? 'Status' : 'Trạng thái'}: ${meta.status}${meta.defeat_reason ? ` • ${meta.defeat_reason}` : ''}</p>
+      <button class="ui-btn ui-btn--primary" onclick="window.location.reload()">
+        ${isEn ? 'Return to Title' : 'Về Màn Hình Chính'}
+      </button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+}
+
+async function loadStatus() {  try {
     const data = await apiFetchStatus();
     currentStatus = data;
     const m = data.meta;
@@ -203,6 +223,7 @@ async function loadStatus() {
         ? (currentLang === 'en' ? 'The dynasty is bankrupt.' : 'Gia nghiệp đã phá sản.')
         : (currentLang === 'en' ? 'The protagonist has fallen.' : 'Chủ tướng đã tử trận.');
       if (typeof showToast === 'function') showToast(`${reason} Chiến dịch kết thúc.`, true);
+      showDefeatOverlay(m, reason);
     }
 
     // Header Telemetry Chips

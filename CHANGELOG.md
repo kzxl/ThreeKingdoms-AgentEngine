@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.6.13] - 2026-10-30
+
+Named guests, heir succession, local prices and fame deterrence.
+
+### Changed
+- Migration `016-fame-arrival-npcs` links arrivals to `master_characters`.
+  Fame now pulls real specialists from the unhired NPC-02xx pool into
+  `npc_state` with role `GUEST`, so the normal workforce hire flow can assign
+  them to a business; generic volunteers/merchants/scholars remain for the rest.
+- Player death with a designated heir now runs
+  `DynastySuccessionService`, keeps the campaign `ACTIVE`, transfers identity
+  and resets personal fame to 500. Without an heir the campaign is `DEFEATED`.
+- A full-screen defeat overlay explains death/bankruptcy and returns to title.
+- `RegionalMarketService.getSpecializationMultiplier` feeds local surplus/deficit
+  (0.7×/1.5×) into `/api/trade` quotes using the player's settlement mapping;
+  season/crisis multipliers still apply on top.
+- Fame now deters betrayal: 500 fame is neutral, higher fame lowers officer
+  betrayal risk, lower fame raises it.
+
+### Verification
+`npm run verify` green: 29/29 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,358 invariants, 0 discrepancies. Tests cover named guests,
+heir succession, local specialization and the defeat overlay contract.
+
+---
+
 ## [1.6.12] - 2026-10-30
 
 Fame arrivals, world prices and defeat states.
