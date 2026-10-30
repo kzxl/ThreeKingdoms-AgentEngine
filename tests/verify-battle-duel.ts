@@ -65,9 +65,22 @@ function run(): void {
     db.execute("UPDATE campaign_meta SET status = 'ACTIVE', defeat_reason = NULL;");
     db.execute("UPDATE player_state SET health = 100 WHERE player_id = 'PLY-0001';");
     db.execute("UPDATE family_children SET is_heir = 1, status = 'HEIR' WHERE child_id = 'CHILD-TEST-HEIR-01';");
+    db.execute(`
+      INSERT OR REPLACE INTO family_children
+        (child_id, father_id, mother_id, mother_name_vi, name_vi, name_en, style_name, gender,
+         birth_date, birth_turn, age, war_attr, int_attr, com_attr, ldr_attr, pol_attr, dip_attr,
+         cra_attr, log_attr, is_heir, status)
+      SELECT 'CHILD-TEST-SIBLING', father_id, mother_id, mother_name_vi, 'Lương Thứ Tử', name_en,
+             style_name, gender, birth_date, birth_turn, 18, war_attr, int_attr, com_attr, ldr_attr,
+             pol_attr, dip_attr, cra_attr, log_attr, 0, 'ADULT_OFFICER'
+      FROM family_children WHERE child_id = 'CHILD-TEST-HEIR-01';
+    `);
     const beforeCash = db.queryOne<any>('SELECT liquid_cash + safe_cash AS total FROM player_state WHERE player_id = ?;', ['PLY-0001']);
     const { DynastySuccessionService } = require('../src/modules/lineage-succession/dynasty-succession.service');
-    new DynastySuccessionService(db).setWill({ charityShareBps: 2500 });
+    new DynastySuccessionService(db).setWill({
+      charityShareBps: 2500,
+      allocations: [{ childId: 'CHILD-TEST-SIBLING', shareBps: 2500 }]
+    });
     const succession = service.applyPlayerDeath('PLY-0001', 'TEST_DEATH_WITH_HEIR');
     assert.strictEqual(succession.succession, true, 'death with an heir must run succession');
     assert.strictEqual(succession.heirId, 'CHILD-TEST-HEIR-01', 'succession must name the heir');
@@ -77,8 +90,13 @@ function run(): void {
     assert.strictEqual(heirName.name, 'Lương Anh Hào', 'player identity must transfer to the heir');
     assert.strictEqual(Number(heirName.health), 100, 'heir must start at full health');
     assert(
-      Math.abs(Number(heirName.total) - Number(beforeCash.total) * 0.75) <= 1,
-      'a 25% will must leave exactly 75% of liquid capital to the heir'
+      Math.abs(Number(heirName.total) - Number(beforeCash.total) * 0.5) <= 1,
+      '25% charity + 25% sibling share must leave 50% for the heir'
+    );
+    const sibling = db.queryOne<any>('SELECT inheritance_cash FROM family_children WHERE child_id = ?;', ['CHILD-TEST-SIBLING']);
+    assert(
+      Math.abs(Number(sibling.inheritance_cash) - Number(beforeCash.total) * 0.25) <= 1,
+      'sibling must receive the allocated 25% share'
     );
     const charityLedger = db.queryOne<any>(
       "SELECT * FROM cashflow_ledger WHERE category = 'DYNASTY_SUCCESSION' ORDER BY rowid DESC LIMIT 1;"

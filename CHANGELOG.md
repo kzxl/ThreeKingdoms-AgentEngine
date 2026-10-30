@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.6.16] - 2026-10-30
+
+Per-child wills, ancestor chronicle and one unrest risk model.
+
+### Changed
+- Migration `021-will-allocations`: `family_will_allocations` plus
+  `family_children.inheritance_cash`. The will now assigns basis-point shares to
+  each child; non-heir shares are paid into their inheritance ledger and the
+  heir keeps the remainder. Charity and child payouts post one ledger outflow.
+- The Succession tab lists every child with a percentage input; Save Will
+  validates that charity + child shares do not exceed 100%.
+- The Gia Phả tab renders the full ancestor chronicle: posthumous title,
+  generation, reign dates/turns, age, final net worth and achievements.
+- `UnrestService.calculateRisk` is now the single loyalty/ambition/prestige/fame
+  formula used by both officer betrayal and retainer departure; the shared
+  `unrest_events` log records both consequences.
+
+### Verification
+`npm run verify` green: 29/29 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,358 invariants, 0 discrepancies. Tests cover a 25% charity +
+25% sibling will (50% heir), sibling inheritance cash, the ancestor schema and
+the unified unrest risk.
+
+---
+
 ## [1.6.15] - 2026-10-30
 
 Legacy local prices, inheritance will and a unified unrest stream.

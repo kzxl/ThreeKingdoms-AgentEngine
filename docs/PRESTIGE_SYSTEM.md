@@ -94,10 +94,10 @@ It exposes `getFame`, `getTier`, `award`, `penalize`, `decayInactive` and
 
 1. Guest auto-assignment needs an owned business and a met fame gate; otherwise
    the guest stays `GUEST` until the player hires them.
-2. Local stock/demand now feeds `/api/trade`, `SimulationCore` and contextual
-   actions; a per-item supply shock UI is still minimal.
-3. Retainer departures and officer coups share `unrest_events`, but their
-   mechanics remain separate (loyalty chain vs faction politics).
-4. The will supports a charity share (0–50%); sibling-by-sibling asset division
-   and a full ancestor chronicle screen are still minimal.
+2. Local stock/demand feeds all three price paths; a per-item supply-shock UI is
+   still minimal.
+3. Officer coups and retainer departures share one risk formula and one unrest
+   log, but their consequences still live in faction-politics vs progression.
+4. The will supports charity plus per-child shares; unallocated remainder goes
+   to the chosen heir, with no separate asset (enterprise/equipment) bequests.
 
