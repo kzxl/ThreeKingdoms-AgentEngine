@@ -36,6 +36,10 @@ export interface SpecialistCandidate {
   signingBonus: number;
   effectiveSigningBonus: number;
   fameDiscount: number;
+  minFame: number;
+  eligible: boolean;
+  lockedReasonVi?: string;
+  lockedReasonEn?: string;
   efficiencyBonus: number;
   recommendedRole: string;
 }
@@ -128,6 +132,7 @@ export class SpecialistWorkforceService {
       const recommendedRole = profile.recommendedRole;
       const monthlyWage = profile.monthlyWage;
       const efficiencyBonus = profile.efficiencyBonus;
+      const eligible = fame >= profile.minFame;
 
       return {
         npcId: r.npcId,
@@ -152,33 +157,38 @@ export class SpecialistWorkforceService {
         signingBonus,
         effectiveSigningBonus: this.applyFameDiscount(signingBonus, discount),
         fameDiscount: discount,
+        minFame: profile.minFame,
+        eligible,
+        lockedReasonVi: eligible ? undefined : `Danh vọng chưa đủ (${fame}/${profile.minFame}) để chiêu mộ nhân sự này.`,
+        lockedReasonEn: eligible ? undefined : `Requires ${profile.minFame} fame (current ${fame}).`,
         efficiencyBonus,
         recommendedRole
       };
     });
   }
 
-  /** Role tiers are derived in one place so hire pricing and listing cannot drift. */
+  /** Role tiers are derived in one place so listing, gates and pricing cannot drift. */
   private deriveRoleProfile(positionVi: string): {
     recommendedRole: string;
     signingBonus: number;
     monthlyWage: number;
     efficiencyBonus: number;
+    minFame: number;
   } {
     const position = String(positionVi || '');
     if (position.includes('Chưởng Quỹ') || position.includes('Quản Gia')) {
-      return { recommendedRole: 'ACCOUNTANT_MANAGER', signingBonus: 400, monthlyWage: 500, efficiencyBonus: 0.25 };
+      return { recommendedRole: 'ACCOUNTANT_MANAGER', signingBonus: 400, monthlyWage: 500, efficiencyBonus: 0.25, minFame: 1200 };
     }
     if (position.includes('Thợ Rèn') || position.includes('Đúc')) {
-      return { recommendedRole: 'MASTER_BLACKSMITH', signingBonus: 350, monthlyWage: 450, efficiencyBonus: 0.2 };
+      return { recommendedRole: 'MASTER_BLACKSMITH', signingBonus: 350, monthlyWage: 450, efficiencyBonus: 0.2, minFame: 800 };
     }
     if (position.includes('Tiêu Đầu') || position.includes('Hộ Vệ')) {
-      return { recommendedRole: 'CARAVAN_ESCORT_CHIEF', signingBonus: 300, monthlyWage: 400, efficiencyBonus: 0.18 };
+      return { recommendedRole: 'CARAVAN_ESCORT_CHIEF', signingBonus: 300, monthlyWage: 400, efficiencyBonus: 0.18, minFame: 500 };
     }
     if (position.includes('Dệt') || position.includes('Chức')) {
-      return { recommendedRole: 'MASTER_WEAVER', signingBonus: 250, monthlyWage: 380, efficiencyBonus: 0.18 };
+      return { recommendedRole: 'MASTER_WEAVER', signingBonus: 250, monthlyWage: 380, efficiencyBonus: 0.18, minFame: 300 };
     }
-    return { recommendedRole: 'ASSISTANT_WORKER', signingBonus: 200, monthlyWage: 350, efficiencyBonus: 0.15 };
+    return { recommendedRole: 'ASSISTANT_WORKER', signingBonus: 200, monthlyWage: 350, efficiencyBonus: 0.15, minFame: 0 };
   }
 
   private applyFameDiscount(base: number, discount: number): number {
@@ -262,7 +272,13 @@ export class SpecialistWorkforceService {
     const prestige = PrestigeService.forDatabase(this.db);
     const fame = prestige.getFame(characterId);
     const fameDiscount = fameEffects(fame).hireDiscount;
-    const baseSigningBonus = this.deriveRoleProfile(masterChar.baseline_position_vi).signingBonus;
+    const profile = this.deriveRoleProfile(masterChar.baseline_position_vi);
+    if (fame < profile.minFame) {
+      throw new Error(
+        `Danh vọng chưa đủ để chiêu mộ ${masterChar.name_vi}: cần ${profile.minFame}, hiện có ${fame}.`
+      );
+    }
+    const baseSigningBonus = profile.signingBonus;
     const signingBonus = this.applyFameDiscount(baseSigningBonus, fameDiscount);
 
     // 4. Execute atomic transaction

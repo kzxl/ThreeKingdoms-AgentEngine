@@ -348,6 +348,10 @@ function renderTurnAdvanceReport(res) {
               <span>${res.playerLocationName || activeSubLocation || '—'}</span>
             </div>
             <div class="turn-rpt-stat-row">
+              <span>${isEn ? 'Fame:' : 'Danh vọng:'}</span>
+              <strong class="gold-text">${Number(status.fame || 0).toLocaleString()}${res.fameDecay ? ` (${res.fameDecay.delta})` : ''}</strong>
+            </div>
+            <div class="turn-rpt-stat-row">
               <span>${isEn ? 'Skipped days / grain upkeep:' : 'Ngày bỏ qua / hao lương:'}</span>
               <strong class="${res.grainMissing ? 'danger-text' : 'amber-text'}">${res.skippedDays || 0} • -${Number(res.grainCost || 0).toFixed(2)} ${isEn ? 'piculs' : 'Thạch'}</strong>
             </div>

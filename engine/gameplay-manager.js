@@ -13,9 +13,10 @@
 const fs = require('fs');
 const path = require('path');
 const { runSqlJson, runSqlBatch, escapeSql } = require('./db-adapter');
-const { advanceCalendarMonth, parseGameDate, formatGameDate, getSeasonInfo } = require('./date-utils');
+const { advanceCalendarMonth, parseGameDate, formatGameDate, getSeasonInfo, calculateMonthDiff } = require('./date-utils');
 const { advanceCampaignDays, publishDayTicks, GRAIN_PER_DAY } = require('./time-manager');
 const { progressTasks, projectTaskProgress, listTasks } = require('./task-manager');
+const { getPrestigeService } = require('./prestige-bridge');
 
 const ROOT_DIR = path.resolve(__dirname, '..');
 const SAVES_DIR = path.join(ROOT_DIR, 'saves');
@@ -310,6 +311,7 @@ class GameplayManager {
         liquidCash: Number(player.liquid_cash || 0),
         safeCash: Number(player.safe_cash || 0),
         strategicGrain: grainAfter,
+        fame: Number(player.fame || 0),
         location: player.current_location || 'LOC-0001'
       };
       playerUpdateSql = `UPDATE player_state SET fatigue = ${newFatigue}, morale = ${newMorale}, health = ${newHealth}, strategic_grain = ${grainAfter} WHERE player_id = '${player.player_id}';`;
@@ -612,6 +614,27 @@ class GameplayManager {
       }
     }
 
+    // Fame decays after long inactivity. The prestige ledger is the inactivity
+    // clock: any award/loss resets it, and decay itself writes an event.
+    let fameDecay = null;
+    try {
+      const prestige = getPrestigeService(this.dbPath);
+      if (prestige) {
+        const lastFame = runSqlJson(
+          this.dbPath,
+          `SELECT game_date FROM prestige_events WHERE character_id = 'PLY-0001' ORDER BY rowid DESC LIMIT 1;`
+        )[0];
+        if (lastFame && lastFame.game_date) {
+          const inactiveMonths = calculateMonthDiff(lastFame.game_date, prevDate);
+          if (inactiveMonths >= 6) {
+            fameDecay = prestige.decayInactive('PLY-0001', inactiveMonths, prevDate);
+          }
+        }
+      }
+    } catch (fameError) {
+      console.warn('[GameplayManager] fame decay failed:', fameError.message);
+    }
+
     // Publish the skipped days (excluding the new month's first day, which the
     // month tick already represents) so daily subscribers see every elapsed day.
     let dayTicksPublished = 0;
@@ -675,6 +698,7 @@ class GameplayManager {
       grainAfter,
       grainMissing,
       dayTicksPublished,
+      fameDecay,
       playerStatus,
       playerLocationName: locationRow ? locationRow.name_vi : (playerLoc || ''),
       bizReports,
