@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.6.17] - 2026-10-30
+
+Asset bequests, supply-shock badges and a shared unrest decision model.
+
+### Changed
+- Migration `022-will-assets`: businesses and equipment can be assigned to a
+  child. A non-heir child takes ownership (business `owner_character_id`,
+  equipment `character_id`); the Succession tab lists available assets with a
+  child selector.
+- `/api/inventory` returns per-item `stockPressure` (`SCARCE`/`SURPLUS`/`NORMAL`)
+  and `stockMultiplier`; the inventory deck shows a **Khan/Dư** badge next to
+  the unit cost.
+- `UnrestService.calculateRisk` remains the single risk formula for officer
+  betrayal and retainer departure. Consequence handlers stay domain-specific
+  because a coup transfers territory while a departure only frees a post.
+
+### Verification
+`npm run verify` green: 29/29 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,358 invariants, 0 discrepancies. Tests cover the 25% sibling
+cash share plus business ownership transfer and the 22-migration schema.
+
+---
+
 ## [1.6.16] - 2026-10-30
 
 Per-child wills, ancestor chronicle and one unrest risk model.

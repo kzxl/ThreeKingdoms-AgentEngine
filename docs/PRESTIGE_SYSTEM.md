@@ -94,10 +94,12 @@ It exposes `getFame`, `getTier`, `award`, `penalize`, `decayInactive` and
 
 1. Guest auto-assignment needs an owned business and a met fame gate; otherwise
    the guest stays `GUEST` until the player hires them.
-2. Local stock/demand feeds all three price paths; a per-item supply-shock UI is
-   still minimal.
+2. Supply shocks are visible as per-item badges and drive prices; a dedicated
+   market-pulse screen with historical curves is still minimal.
 3. Officer coups and retainer departures share one risk formula and one unrest
-   log, but their consequences still live in faction-politics vs progression.
-4. The will supports charity plus per-child shares; unallocated remainder goes
-   to the chosen heir, with no separate asset (enterprise/equipment) bequests.
+   log, but their consequences remain domain-specific (territory transfer vs
+   post vacancy).
+4. The will supports charity, per-child cash shares, businesses and equipment;
+   equipment is assigned by item code, so duplicate items need a dedicated
+   instance id.
 

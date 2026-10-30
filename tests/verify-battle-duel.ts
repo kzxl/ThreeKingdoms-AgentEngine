@@ -79,7 +79,8 @@ function run(): void {
     const { DynastySuccessionService } = require('../src/modules/lineage-succession/dynasty-succession.service');
     new DynastySuccessionService(db).setWill({
       charityShareBps: 2500,
-      allocations: [{ childId: 'CHILD-TEST-SIBLING', shareBps: 2500 }]
+      allocations: [{ childId: 'CHILD-TEST-SIBLING', shareBps: 2500 }],
+      assets: [{ assetType: 'BUSINESS', assetId: 'BIZ-0001', childId: 'CHILD-TEST-SIBLING' }]
     });
     const succession = service.applyPlayerDeath('PLY-0001', 'TEST_DEATH_WITH_HEIR');
     assert.strictEqual(succession.succession, true, 'death with an heir must run succession');
@@ -98,6 +99,8 @@ function run(): void {
       Math.abs(Number(sibling.inheritance_cash) - Number(beforeCash.total) * 0.25) <= 1,
       'sibling must receive the allocated 25% share'
     );
+    const bequeathedBusiness = db.queryOne<any>('SELECT owner_character_id FROM businesses WHERE business_id = ?;', ['BIZ-0001']);
+    assert.strictEqual(bequeathedBusiness.owner_character_id, 'CHILD-TEST-SIBLING', 'business bequest must transfer ownership');
     const charityLedger = db.queryOne<any>(
       "SELECT * FROM cashflow_ledger WHERE category = 'DYNASTY_SUCCESSION' ORDER BY rowid DESC LIMIT 1;"
     );
