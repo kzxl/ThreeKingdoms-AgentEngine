@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.16.0] - 2026-10-31
+
+Field battles on hostile arrival.
+
+### Added
+- When a marching expedition reaches a settlement owned by a faction at war with
+  its commander, the garrison meets it in the field. `FieldBattleService` runs
+  the multi-round tactical engine, writes surviving attackers and defenders
+  back, and sends a victory to `ARRIVED` or a defeat to `CONCLUDED`.
+- The day clock resolves the battle synchronously through
+  `engine/field-battle-bridge.js`; friendly or neutral arrivals keep the old
+  `ARRIVED` path.
+- `tests/verify-field-battle.ts` covers attacker victory, defender victory, a
+  friendly-city bypass and the clock-driven bridge.
+
+### Verification
+`npm run verify` green: 41/41 suites, 28/28 contracts, 8/8 write smokes.
+
+---
+
 ## [1.15.0] - 2026-10-31
 
 POI scene coverage for Zhuo County and the five grand citadels.

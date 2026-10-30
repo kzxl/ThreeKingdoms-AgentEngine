@@ -31,6 +31,23 @@ function advanceExpeditionsByDays(dbPath, days, asOfDate) {
     for (const row of rows) {
       const remaining = Math.max(0, Number(row.days_remaining || 0) - advancedDays);
       if (remaining <= 0) {
+        // A hostile arrival is a field battle before the city can be invested.
+        let fieldOutcome = null;
+        try {
+          fieldOutcome = require('./field-battle-bridge').resolveArrival(
+            dbPath, row.expedition_id, asOfDate || null
+          );
+        } catch {
+          fieldOutcome = null;
+        }
+        if (fieldOutcome && fieldOutcome.battle) {
+          arrived.push({
+            expeditionId: row.expedition_id,
+            status: fieldOutcome.expeditionStatus,
+            battle: fieldOutcome.result ? fieldOutcome.result.outcome : 'UNKNOWN'
+          });
+          continue;
+        }
         runSqlExec(
           dbPath,
           `UPDATE military_expeditions
