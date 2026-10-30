@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.6.9] - 2026-10-30
+
+Prestige effects wired into recruitment, prices and duels.
+
+### Changed
+- `config/market-pricing.json` + `src/shared/market-quote.ts` (CJS mirror
+  `engine/market-quote.js`): 10% merchant spread, fame buy discount up to 5%,
+  fame sell bonus up to 4%; the buy price is always at least the sell price.
+- `SimulationCore` and `/api/trade` settle at the quote; client `unit_price`
+  remains ignored. `/api/inventory` returns `estimatedBuyPrice` /
+  `estimatedSellPrice` and the deck uses them.
+- Every contextual action quotes the side-specific buy/sell price.
+- Specialist hiring ignores the client signing bonus, derives the base price
+  from the candidate role and applies the fame discount; results expose
+  `baseSigningBonus`, `fameDiscount`, `fameTierCode`.
+- Duels award/penalize fame: sparring +5/+10, arena +60/-15, caravan +40/-10;
+  results expose `fameDelta`, `fameAfter`, `fameTierCode`.
+
+### Verification
+`npm run verify` green: 26/26 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,358 invariants, 0 discrepancies. `verify-market-price-book`
+now checks CJS/TS quote parity, buy > sell and side-specific action quotes;
+`verify-prestige` checks the hire discount and server-owned signing price.
+
+---
+
 ## [1.6.8] - 2026-10-30
 
 ROTK XIII-like prestige scale.

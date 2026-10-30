@@ -49,11 +49,24 @@ It exposes `getFame`, `getTier`, `award`, `penalize`, `decayInactive` and
   career milestones `90/190/250 → 900/1,900/2,500`, family gains `+15/+25/+50 →
   +150/+250/+500`, family default `100 → 1,000`.
 
-## Not wired yet
+## Wired systems (1.6.9)
 
-The scale, service and ledger are live. Effects that consume fame are staged:
+1. **Recruitment:** `getAvailableSpecialists` exposes `effectiveSigningBonus` and
+   `fameDiscount`; `hireSpecialist` ignores the client price and charges the
+   server quote. Fame lowers the signing bonus by up to 10%.
+2. **Market:** `quoteFromReference` applies a 10% merchant spread plus a fame
+   buy discount (max 5%) and sell bonus (max 4%). Buy stays above sell, so
+   same-settlement arbitrage is impossible. Used by `SimulationCore`, `/api/trade`,
+   `/api/inventory` price hints and contextual action descriptions.
+3. **Duels:** sparring never shames the loser (+5/+10); arena/caravan duels award
+   +60/+40 for a win and -15/-10 for a loss. Both characters change fame and the
+   result carries `fameDelta`, `fameAfter`, `fameTierCode`.
 
-1. Recruitment pool/cost and NPC self-arrival.
+## Still staged
+
+1. NPC self-arrival and a fame-gated recruitment pool.
 2. Rare item discovery (`discoveryChance = 3% + fameRatio × 20%`, tier gates).
-3. Merchant buy/sell spread via `MarketQuoteService`.
-4. Duel/battle fame rewards and civil-officer negotiation penalties.
+3. World/regional price multipliers (crisis, season, local stock) on top of the
+   reference quote.
+4. Battle duel trigger/death, civil-officer negotiation, bankruptcy.
+
