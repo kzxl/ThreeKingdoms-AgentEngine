@@ -233,7 +233,7 @@ Add to your MCP client configuration (e.g., `C:\Users\<user>\.gemini\antigravity
 ## Getting Started & Operational Commands
 
 ### Prerequisites
-- [Node.js](https://nodejs.org/) v20.13.0 or higher
+- [Node.js](https://nodejs.org/) v26.13.0 LTS or higher (`.nvmrc` pins 26)
 - [SQLite3](https://www.sqlite.org/) CLI
 
 ### Installation

@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.7.0] - 2026-10-30
+
+Node.js 26 LTS upgrade.
+
+### Changed
+- Runtime and CI moved from Node 20.13 to **Node 26.13.0 LTS**; `package.json`
+  requires `>=26` and `.nvmrc` pins `26`.
+- `better-sqlite3` 11.8.1 → **13.0.3** (requires Node >=22; SQLite 3.53.4).
+- `@types/node` 22 → **26.6.6**.
+- Vite 5.4.14 → **8.3.5**; `vite.config.ts` renamed to `vite.config.mts` for the
+  native ESM config loader. Production and dev dependency audits are clean.
+- Client bundle rebuilt on the new toolchain.
+
+### Verification
+Node 26.13.0, npm 11.20.0: `npm ci` clean, `npm run verify` green (29/29 suites,
+28/28 contracts, 8/8 write smokes), `npm run audit` 1,358 invariants / 0
+discrepancies, `npm run build:client` green, `npm audit` 0 vulnerabilities.
+
+---
+
 ## [1.6.18] - 2026-10-30
 
 Equipment instance bequests, market history and consequence strategies.

@@ -1,109 +1,90 @@
-var Qt = Object.defineProperty;
-var Wt = (i, t, e) => t in i ? Qt(i, t, { enumerable: !0, configurable: !0, writable: !0, value: e }) : i[t] = e;
-var r = (i, t, e) => Wt(i, typeof t != "symbol" ? t + "" : t, e);
-class zt {
-  constructor() {
-    r(this, "stack", []);
-    r(this, "isEscListenerAttached", !1);
-    r(this, "BASE_Z_INDEX", 1e3);
-    this.handleKeyDown = this.handleKeyDown.bind(this);
-  }
-  /**
-   * Pushes a newly opened modal onto the stack and manages focus/z-index.
-   */
-  push(t, e) {
-    const s = this.stack.indexOf(t);
-    s > -1 && this.stack.splice(s, 1), this.stack.push(t);
-    const a = this.BASE_Z_INDEX + this.stack.length * 10;
-    e.style.zIndex = a.toString(), this.ensureEscListener(), this.updateBodyScrollLock();
-  }
-  /**
-   * Removes a closed modal from the stack.
-   */
-  remove(t) {
-    const e = this.stack.indexOf(t);
-    e > -1 && this.stack.splice(e, 1), this.updateBodyScrollLock();
-  }
-  /**
-   * Returns the topmost active modal on the stack.
-   */
-  getTop() {
-    return this.stack.length === 0 ? null : this.stack[this.stack.length - 1];
-  }
-  /**
-   * Closes the topmost modal on Esc keypress.
-   */
-  handleKeyDown(t) {
-    if (t.key === "Escape" || t.keyCode === 27) {
-      const e = this.getTop();
-      e && (t.preventDefault(), t.stopPropagation(), e.close());
-    }
-  }
-  ensureEscListener() {
-    typeof window > "u" || this.isEscListenerAttached || (window.addEventListener("keydown", this.handleKeyDown, !0), this.isEscListenerAttached = !0);
-  }
-  updateBodyScrollLock() {
-    typeof document > "u" || (this.stack.length > 0 ? document.body.classList.add("modal-open") : document.body.classList.remove("modal-open"));
-  }
-}
-const lt = new zt(), Yt = /* @__PURE__ */ new Set([
-  "spatial-tavern-modal",
-  "spatial-arena-modal",
-  "spatial-residence-modal",
-  "grand-command-hub-modal",
-  "personal-journal-modal",
-  "caravan-modal"
+var e = new class {
+	stack = [];
+	isEscListenerAttached = !1;
+	BASE_Z_INDEX = 1e3;
+	constructor() {
+		this.handleKeyDown = this.handleKeyDown.bind(this);
+	}
+	push(e, t) {
+		let n = this.stack.indexOf(e);
+		n > -1 && this.stack.splice(n, 1), this.stack.push(e);
+		let r = this.BASE_Z_INDEX + this.stack.length * 10;
+		t.style.zIndex = r.toString(), this.ensureEscListener(), this.updateBodyScrollLock();
+	}
+	remove(e) {
+		let t = this.stack.indexOf(e);
+		t > -1 && this.stack.splice(t, 1), this.updateBodyScrollLock();
+	}
+	getTop() {
+		return this.stack.length === 0 ? null : this.stack[this.stack.length - 1];
+	}
+	handleKeyDown(e) {
+		if (e.key === "Escape" || e.keyCode === 27) {
+			let t = this.getTop();
+			t && (e.preventDefault(), e.stopPropagation(), t.close());
+		}
+	}
+	ensureEscListener() {
+		typeof window < "u" && (this.isEscListenerAttached ||= (window.addEventListener("keydown", this.handleKeyDown, !0), !0));
+	}
+	updateBodyScrollLock() {
+		typeof document < "u" && (this.stack.length > 0 ? document.body.classList.add("modal-open") : document.body.classList.remove("modal-open"));
+	}
+}(), t = /* @__PURE__ */ new Set([
+	"spatial-tavern-modal",
+	"spatial-arena-modal",
+	"spatial-residence-modal",
+	"grand-command-hub-modal",
+	"personal-journal-modal",
+	"caravan-modal"
 ]);
-function Xt(i) {
-  return Yt.has(i);
+function n(e) {
+	return t.has(e);
 }
-class Jt {
-  constructor(t) {
-    r(this, "id");
-    r(this, "options");
-    r(this, "backdropEl", null);
-    r(this, "dialogEl", null);
-    r(this, "titleEl", null);
-    r(this, "subtitleEl", null);
-    r(this, "sealEl", null);
-    r(this, "tabBarEl", null);
-    r(this, "bodyEl", null);
-    r(this, "footerEl", null);
-    r(this, "_isOpen", !1);
-    r(this, "_activeTab", null);
-    this.id = t.id, this.options = {
-      closeOnEsc: !0,
-      closeOnBackdrop: !0,
-      size: "lg",
-      ...t
-    }, this._activeTab = t.activeTabId || (t.tabs && t.tabs.length > 0 ? t.tabs[0].id : null), this.mountDom();
-  }
-  get isOpen() {
-    return this._isOpen;
-  }
-  get activeTab() {
-    return this._activeTab;
-  }
-  /**
-   * Mounts or reuses modal DOM elements in the document.
-   */
-  mountDom() {
-    if (typeof document > "u") return;
-    if (Xt(this.id)) {
-      typeof console < "u" && console.warn(`[ModalShell] "${this.id}" is owned by a legacy renderer; shell not mounted.`);
-      return;
-    }
-    let t = document.getElementById(this.id);
-    t || (t = document.createElement("div"), t.id = this.id, document.body.appendChild(t)), this.backdropEl = t, this.backdropEl.className = `modal-backdrop hidden ${this.options.customClass || ""}`.trim();
-    const s = {
-      sm: "modal-sm",
-      md: "modal-md",
-      lg: "modal-lg spatial-poi-dialog",
-      xl: "modal-box--large spatial-poi-dialog",
-      full: "modal-full spatial-poi-dialog"
-    }[this.options.size || "lg"] || "modal-lg";
-    this.backdropEl.innerHTML = `
-      <div class="modal-dialog ${s} ${this.options.dialogClass || ""}" role="dialog" aria-modal="true" aria-labelledby="${this.id}-title">
+var r = class {
+	id;
+	options;
+	backdropEl = null;
+	dialogEl = null;
+	titleEl = null;
+	subtitleEl = null;
+	sealEl = null;
+	tabBarEl = null;
+	bodyEl = null;
+	footerEl = null;
+	_isOpen = !1;
+	_activeTab = null;
+	constructor(e) {
+		this.id = e.id, this.options = {
+			closeOnEsc: !0,
+			closeOnBackdrop: !0,
+			size: "lg",
+			...e
+		}, this._activeTab = e.activeTabId || (e.tabs && e.tabs.length > 0 ? e.tabs[0].id : null), this.mountDom();
+	}
+	get isOpen() {
+		return this._isOpen;
+	}
+	get activeTab() {
+		return this._activeTab;
+	}
+	mountDom() {
+		if (typeof document > "u") return;
+		if (n(this.id)) {
+			typeof console < "u" && console.warn(`[ModalShell] "${this.id}" is owned by a legacy renderer; shell not mounted.`);
+			return;
+		}
+		let e = document.getElementById(this.id);
+		e || (e = document.createElement("div"), e.id = this.id, document.body.appendChild(e)), this.backdropEl = e, this.backdropEl.className = `modal-backdrop hidden ${this.options.customClass || ""}`.trim();
+		let t = {
+			sm: "modal-sm",
+			md: "modal-md",
+			lg: "modal-lg spatial-poi-dialog",
+			xl: "modal-box--large spatial-poi-dialog",
+			full: "modal-full spatial-poi-dialog"
+		}[this.options.size || "lg"] || "modal-lg";
+		this.backdropEl.innerHTML = `
+      <div class="modal-dialog ${t} ${this.options.dialogClass || ""}" role="dialog" aria-modal="true" aria-labelledby="${this.id}-title">
         <div class="modal-header">
           <div class="modal-title-group">
             <span class="modal-title-seal" id="${this.id}-seal">${this.options.seal || "◈"}</span>
@@ -119,340 +100,354 @@ class Jt {
         <div class="modal-footer hidden" id="${this.id}-footer"></div>
       </div>
     `, this.dialogEl = this.backdropEl.querySelector(".modal-dialog"), this.titleEl = this.backdropEl.querySelector(`#${this.id}-title`), this.subtitleEl = this.backdropEl.querySelector(`#${this.id}-subtitle`), this.sealEl = this.backdropEl.querySelector(`#${this.id}-seal`), this.tabBarEl = this.backdropEl.querySelector(`#${this.id}-tab-bar`), this.bodyEl = this.backdropEl.querySelector(`#${this.id}-body`), this.footerEl = this.backdropEl.querySelector(`#${this.id}-footer`);
-    const a = this.backdropEl.querySelector(`#${this.id}-btn-close`);
-    a && a.addEventListener("click", (n) => {
-      n.preventDefault(), this.close();
-    }), this.options.closeOnBackdrop && this.backdropEl.addEventListener("click", (n) => {
-      n.target === this.backdropEl && this.close();
-    }), this.options.tabs && this.options.tabs.length > 0 && this.renderTabs(this.options.tabs), this.options.actions && this.options.actions.length > 0 && this.setFooter(this.options.actions);
-  }
-  /**
-   * Renders the tab buttons into the modal-tab-bar container.
-   */
-  renderTabs(t) {
-    this.tabBarEl && (this.tabBarEl.innerHTML = t.map(
-      (e) => `
+		let r = this.backdropEl.querySelector(`#${this.id}-btn-close`);
+		r && r.addEventListener("click", (e) => {
+			e.preventDefault(), this.close();
+		}), this.options.closeOnBackdrop && this.backdropEl.addEventListener("click", (e) => {
+			e.target === this.backdropEl && this.close();
+		}), this.options.tabs && this.options.tabs.length > 0 && this.renderTabs(this.options.tabs), this.options.actions && this.options.actions.length > 0 && this.setFooter(this.options.actions);
+	}
+	renderTabs(e) {
+		this.tabBarEl && (this.tabBarEl.innerHTML = e.map((e) => `
         <button class="modal-tab-btn ${e.id === this._activeTab ? "active" : ""} ${e.disabled ? "disabled" : ""}" 
                 data-tab-id="${e.id}" 
                 ${e.disabled ? "disabled" : ""}>
           ${e.seal ? `<span class="tab-seal">${e.seal}</span>` : ""}
           <span class="tab-label">${e.label}</span>
-          ${e.badge !== void 0 ? `<span class="tab-badge">${e.badge}</span>` : ""}
+          ${e.badge === void 0 ? "" : `<span class="tab-badge">${e.badge}</span>`}
         </button>
-      `
-    ).join(""), this.tabBarEl.querySelectorAll(".modal-tab-btn").forEach((e) => {
-      e.addEventListener("click", (s) => {
-        s.preventDefault();
-        const a = e.getAttribute("data-tab-id");
-        a && a !== this._activeTab && this.switchTab(a);
-      });
-    }));
-  }
-  async open(t) {
-    this.backdropEl || this.mountDom(), this.backdropEl && (t && t !== this._activeTab && (this._activeTab = t, this.updateActiveTabButton()), this.backdropEl.classList.remove("hidden"), this._isOpen = !0, lt.push(this, this.backdropEl), this.options.onOpen && await this.options.onOpen(this));
-  }
-  async close() {
-    !this._isOpen || !this.backdropEl || (this.backdropEl.classList.add("hidden"), this._isOpen = !1, lt.remove(this), this.options.onClose && await this.options.onClose(this));
-  }
-  async toggle() {
-    this._isOpen ? await this.close() : await this.open();
-  }
-  setContent(t) {
-    this.bodyEl && (typeof t == "string" ? this.bodyEl.innerHTML = t : (this.bodyEl.innerHTML = "", this.bodyEl.appendChild(t)));
-  }
-  setTitle(t, e, s) {
-    this.titleEl && (this.titleEl.textContent = t), e !== void 0 && this.subtitleEl && (this.subtitleEl.textContent = e), s !== void 0 && this.sealEl && (this.sealEl.textContent = s);
-  }
-  async switchTab(t) {
-    this._activeTab = t, this.updateActiveTabButton(), this.options.onTabChange && await this.options.onTabChange(t, this);
-  }
-  updateActiveTabButton() {
-    this.tabBarEl && this.tabBarEl.querySelectorAll(".modal-tab-btn").forEach((t) => {
-      const e = t.getAttribute("data-tab-id");
-      t.classList.toggle("active", e === this._activeTab);
-    });
-  }
-  updateTabBadge(t, e) {
-    if (!this.tabBarEl) return;
-    const s = this.tabBarEl.querySelector(`[data-tab-id="${t}"]`);
-    if (!s) return;
-    let a = s.querySelector(".tab-badge");
-    e == null || e === "" ? a && a.remove() : (a || (a = document.createElement("span"), a.className = "tab-badge", s.appendChild(a)), a.textContent = String(e));
-  }
-  setFooter(t) {
-    if (this.footerEl)
-      if (Array.isArray(t)) {
-        this.footerEl.innerHTML = "", this.footerEl.className = "modal-footer flex items-center justify-end gap-3";
-        for (const e of t) {
-          const s = document.createElement("button"), a = e.variant === "ghost" ? "ui-btn--ghost" : e.variant === "danger" ? "ui-btn--danger" : e.variant === "gold" ? "ui-btn--accent" : "ui-btn--primary";
-          s.className = `ui-btn ${a}`, s.textContent = e.label, e.disabled && (s.disabled = !0), s.addEventListener("click", async (n) => {
-            n.preventDefault(), await e.onClick(this);
-          }), this.footerEl.appendChild(s);
-        }
-        this.footerEl.classList.remove("hidden");
-      } else typeof t == "string" ? (this.footerEl.innerHTML = t, this.footerEl.classList.remove("hidden")) : (this.footerEl.innerHTML = "", this.footerEl.appendChild(t), this.footerEl.classList.remove("hidden"));
-  }
-  getBodyElement() {
-    return this.bodyEl;
-  }
-  getDialogElement() {
-    return this.dialogEl;
-  }
-  destroy() {
-    this._isOpen && this.close(), this.options.onDestroy && this.options.onDestroy(this), this.backdropEl && this.backdropEl.parentNode && this.backdropEl.parentNode.removeChild(this.backdropEl), this.backdropEl = null, this.dialogEl = null, this.bodyEl = null, this.tabBarEl = null, this.footerEl = null;
-  }
+      `).join(""), this.tabBarEl.querySelectorAll(".modal-tab-btn").forEach((e) => {
+			e.addEventListener("click", (t) => {
+				t.preventDefault();
+				let n = e.getAttribute("data-tab-id");
+				n && n !== this._activeTab && this.switchTab(n);
+			});
+		}));
+	}
+	async open(t) {
+		this.backdropEl || this.mountDom(), this.backdropEl && (t && t !== this._activeTab && (this._activeTab = t, this.updateActiveTabButton()), this.backdropEl.classList.remove("hidden"), this._isOpen = !0, e.push(this, this.backdropEl), this.options.onOpen && await this.options.onOpen(this));
+	}
+	async close() {
+		this._isOpen && this.backdropEl && (this.backdropEl.classList.add("hidden"), this._isOpen = !1, e.remove(this), this.options.onClose && await this.options.onClose(this));
+	}
+	async toggle() {
+		this._isOpen ? await this.close() : await this.open();
+	}
+	setContent(e) {
+		this.bodyEl && (typeof e == "string" ? this.bodyEl.innerHTML = e : (this.bodyEl.innerHTML = "", this.bodyEl.appendChild(e)));
+	}
+	setTitle(e, t, n) {
+		this.titleEl && (this.titleEl.textContent = e), t !== void 0 && this.subtitleEl && (this.subtitleEl.textContent = t), n !== void 0 && this.sealEl && (this.sealEl.textContent = n);
+	}
+	async switchTab(e) {
+		this._activeTab = e, this.updateActiveTabButton(), this.options.onTabChange && await this.options.onTabChange(e, this);
+	}
+	updateActiveTabButton() {
+		this.tabBarEl && this.tabBarEl.querySelectorAll(".modal-tab-btn").forEach((e) => {
+			let t = e.getAttribute("data-tab-id");
+			e.classList.toggle("active", t === this._activeTab);
+		});
+	}
+	updateTabBadge(e, t) {
+		if (!this.tabBarEl) return;
+		let n = this.tabBarEl.querySelector(`[data-tab-id="${e}"]`);
+		if (!n) return;
+		let r = n.querySelector(".tab-badge");
+		t == null || t === "" ? r && r.remove() : (r || (r = document.createElement("span"), r.className = "tab-badge", n.appendChild(r)), r.textContent = String(t));
+	}
+	setFooter(e) {
+		if (this.footerEl) {
+			if (Array.isArray(e)) {
+				this.footerEl.innerHTML = "", this.footerEl.className = "modal-footer flex items-center justify-end gap-3";
+				for (let t of e) {
+					let e = document.createElement("button");
+					e.className = `ui-btn ${t.variant === "ghost" ? "ui-btn--ghost" : t.variant === "danger" ? "ui-btn--danger" : t.variant === "gold" ? "ui-btn--accent" : "ui-btn--primary"}`, e.textContent = t.label, t.disabled && (e.disabled = !0), e.addEventListener("click", async (e) => {
+						e.preventDefault(), await t.onClick(this);
+					}), this.footerEl.appendChild(e);
+				}
+				this.footerEl.classList.remove("hidden");
+			} else typeof e == "string" ? (this.footerEl.innerHTML = e, this.footerEl.classList.remove("hidden")) : (this.footerEl.innerHTML = "", this.footerEl.appendChild(e), this.footerEl.classList.remove("hidden"));
+		}
+	}
+	getBodyElement() {
+		return this.bodyEl;
+	}
+	getDialogElement() {
+		return this.dialogEl;
+	}
+	destroy() {
+		this._isOpen && this.close(), this.options.onDestroy && this.options.onDestroy(this), this.backdropEl && this.backdropEl.parentNode && this.backdropEl.parentNode.removeChild(this.backdropEl), this.backdropEl = null, this.dialogEl = null, this.bodyEl = null, this.tabBarEl = null, this.footerEl = null;
+	}
+};
+function i(e) {
+	return new r(e);
 }
-function m(i) {
-  return new Jt(i);
+// src/client/core/ui/button.ts
+function a(e) {
+	return String(e).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
-function N(i) {
-  return String(i).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+function o(e = {}) {
+	let t = ["ui-btn", `ui-btn--${e.variant || "secondary"}`];
+	return e.size === "sm" && t.push("ui-btn--sm"), e.size === "lg" && t.push("ui-btn--lg"), e.className && t.push(e.className), t.join(" ");
 }
-function Ht(i = {}) {
-  const e = ["ui-btn", `ui-btn--${i.variant || "secondary"}`];
-  return i.size === "sm" && e.push("ui-btn--sm"), i.size === "lg" && e.push("ui-btn--lg"), i.className && e.push(i.className), e.join(" ");
+function s(e) {
+	let t = a(e.label), n = e.icon ? `<span class="ui-btn__icon" aria-hidden="true">${a(e.icon)}</span>` : "";
+	return `<button ${[
+		`class="${a(o(e))}"`,
+		e.id ? `id="${a(e.id)}"` : "",
+		e.title ? `title="${a(e.title)}"` : "",
+		e.disabled ? "disabled" : "",
+		`type="${e.type || "button"}"`,
+		e.onClick ? `onclick="${a(e.onClick)}"` : ""
+	].filter(Boolean).join(" ")}>${n}<span class="ui-btn__label">${t}</span></button>`;
 }
-function ct(i) {
-  const t = N(i.label), e = i.icon ? `<span class="ui-btn__icon" aria-hidden="true">${N(i.icon)}</span>` : "";
-  return `<button ${[
-    `class="${N(Ht(i))}"`,
-    i.id ? `id="${N(i.id)}"` : "",
-    i.title ? `title="${N(i.title)}"` : "",
-    i.disabled ? "disabled" : "",
-    `type="${i.type || "button"}"`,
-    i.onClick ? `onclick="${N(i.onClick)}"` : ""
-  ].filter(Boolean).join(" ")}>${e}<span class="ui-btn__label">${t}</span></button>`;
+function c(e) {
+	let t = document.createElement("button");
+	return t.className = o(e), t.type = e.type || "button", e.id && (t.id = e.id), e.title && (t.title = e.title), t.disabled = !!e.disabled, t.innerHTML = `${e.icon ? `<span class="ui-btn__icon" aria-hidden="true">${a(e.icon)}</span>` : ""}<span class="ui-btn__label">${a(e.label)}</span>`, t;
 }
-function Zt(i) {
-  const t = document.createElement("button");
-  return t.className = Ht(i), t.type = i.type || "button", i.id && (t.id = i.id), i.title && (t.title = i.title), t.disabled = !!i.disabled, t.innerHTML = `${i.icon ? `<span class="ui-btn__icon" aria-hidden="true">${N(i.icon)}</span>` : ""}<span class="ui-btn__label">${N(i.label)}</span>`, t;
+// src/client/core/ui/badge.ts
+function l(e) {
+	return String(e).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
-function nt(i) {
-  return String(i).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+function u(e) {
+	let t = [
+		"ui-badge",
+		`ui-badge--${e.tone || "neutral"}`,
+		e.className || ""
+	].filter(Boolean).join(" "), n = e.title ? ` title="${l(e.title)}"` : "";
+	return `<span class="${l(t)}"${n}>${l(e.label)}</span>`;
 }
-function te(i) {
-  const e = ["ui-badge", `ui-badge--${i.tone || "neutral"}`, i.className || ""].filter(Boolean).join(" "), s = i.title ? ` title="${nt(i.title)}"` : "";
-  return `<span class="${nt(e)}"${s}>${nt(i.label)}</span>`;
+function d(e) {
+	let t = document.createElement("span");
+	return t.className = [
+		"ui-badge",
+		`ui-badge--${e.tone || "neutral"}`,
+		e.className || ""
+	].filter(Boolean).join(" "), e.title && (t.title = e.title), t.textContent = e.label, t;
 }
-function ee(i) {
-  const t = document.createElement("span");
-  return t.className = ["ui-badge", `ui-badge--${i.tone || "neutral"}`, i.className || ""].filter(Boolean).join(" "), i.title && (t.title = i.title), t.textContent = i.label, t;
+// src/client/core/ui/feedback.ts
+function f(e) {
+	return String(e).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
-function se(i) {
-  return String(i).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+function p(e, t = "info") {
+	let n = window;
+	if (typeof n.showToast == "function") try {
+		n.showToast(e, t === "danger");
+		return;
+	} catch {}
+	let r = document.getElementById("toast");
+	r ? (r.textContent = e, r.dataset.tone = t, r.classList.remove("hidden"), window.setTimeout(() => r.classList.add("hidden"), 2800)) : console.log(`[toast:${t}] ${e}`);
 }
-function ae(i, t = "info") {
-  const e = window;
-  if (typeof e.showToast == "function")
-    try {
-      e.showToast(i, t === "danger");
-      return;
-    } catch {
-    }
-  const s = document.getElementById("toast");
-  if (!s) {
-    console.log(`[toast:${t}] ${i}`);
-    return;
-  }
-  s.textContent = i, s.dataset.tone = t, s.classList.remove("hidden"), window.setTimeout(() => s.classList.add("hidden"), 2800);
-}
-let ie = 0;
-function ne(i) {
-  return new Promise((t) => {
-    var l;
-    let e = !1;
-    const s = (h) => {
-      e || (e = !0, t(h));
-    }, a = m({
-      id: `ui-confirm-${++ie}`,
-      title: i.title || "Xác nhận",
-      seal: "問",
-      size: "sm",
-      onClose: () => {
-        s(!1), window.setTimeout(() => a.destroy(), 0);
-      }
-    });
-    a.setContent(
-      `<div class="ui-confirm">
-         <div class="ui-confirm__message">${se(i.message)}</div>
+var m = 0;
+function h(e) {
+	return new Promise((t) => {
+		let n = !1, r = (e) => {
+			n || (n = !0, t(e));
+		}, a = i({
+			id: `ui-confirm-${++m}`,
+			title: e.title || "Xác nhận",
+			seal: "問",
+			size: "sm",
+			onClose: () => {
+				r(!1), window.setTimeout(() => a.destroy(), 0);
+			}
+		});
+		a.setContent(`<div class="ui-confirm">
+         <div class="ui-confirm__message">${f(e.message)}</div>
          <div class="ui-toolbar ui-confirm__actions">
-           ${ct({ label: i.cancelLabel || "Hủy", variant: "ghost", size: "sm" })}
-           ${ct({
-        label: i.confirmLabel || "Xác nhận",
-        variant: i.danger ? "danger" : "primary",
-        size: "sm"
-      })}
+           ${s({
+			label: e.cancelLabel || "Hủy",
+			variant: "ghost",
+			size: "sm"
+		})}
+           ${s({
+			label: e.confirmLabel || "Xác nhận",
+			variant: e.danger ? "danger" : "primary",
+			size: "sm"
+		})}
          </div>
-       </div>`
-    );
-    const n = (l = a.getBodyElement()) == null ? void 0 : l.querySelectorAll(".ui-confirm__actions .ui-btn");
-    n && n.length === 2 && (n[0].addEventListener("click", () => void a.close()), n[1].addEventListener("click", () => {
-      s(!0), a.close();
-    })), a.open();
-  });
+       </div>`);
+		let o = a.getBodyElement()?.querySelectorAll(".ui-confirm__actions .ui-btn");
+		o && o.length === 2 && (o[0].addEventListener("click", () => void a.close()), o[1].addEventListener("click", () => {
+			r(!0), a.close();
+		})), a.open();
+	});
 }
-const oe = {
-  version: "1.0.0",
-  button: { html: ct, create: Zt },
-  badge: { html: te, create: ee },
-  toast: ae,
-  confirm: ne
-}, I = class I {
-  static getInstance() {
-    return I.instance || (I.instance = new I()), I.instance;
-  }
-  async get(t, e) {
-    let s = t;
-    if (e) {
-      const n = new URLSearchParams();
-      for (const [h, b] of Object.entries(e))
-        b != null && n.append(h, String(b));
-      const l = n.toString();
-      l && (s += (s.includes("?") ? "&" : "?") + l);
-    }
-    const a = await fetch(s);
-    if (!a.ok) {
-      const n = await a.json().catch(() => ({}));
-      throw new Error(n.error || `HTTP error ${a.status}: ${a.statusText}`);
-    }
-    return a.json();
-  }
-  async post(t, e) {
-    const s = await fetch(t, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: e ? JSON.stringify(e) : void 0
-    }), a = await s.json().catch(() => ({}));
-    if (!s.ok || a && a.success === !1)
-      throw new Error(a.error || `HTTP error ${s.status}: ${s.statusText}`);
-    return a;
-  }
-};
-r(I, "instance");
-let dt = I;
-const u = dt.getInstance(), L = class L {
-  static getInstance() {
-    return L.instance || (L.instance = new L()), L.instance;
-  }
-  async getOverview() {
-    const t = await u.get("/api/lineage/status");
-    return t.overview || t;
-  }
-  async getCourtshipCandidates() {
-    return (await u.get("/api/lineage/courtship-candidates")).candidates || [];
-  }
-  async proposeMarriage(t) {
-    return u.post("/api/lineage/courtship/propose", { spouseNpcId: t });
-  }
-  async restAndCohabit(t) {
-    return u.post("/api/lineage/household/rest", { marriageId: t });
-  }
-  async assignHouseholdRole(t, e) {
-    return u.post("/api/lineage/household/set-role", { marriageId: t, role: e });
-  }
-  async assignMentor(t, e) {
-    return u.post("/api/lineage/children/assign-mentor", { childId: t, mentorNpcId: e });
-  }
-  async designateHeir(t) {
-    return u.post("/api/lineage/children/designate-heir", { childId: t });
-  }
-  async executeSuccession(t) {
-    return u.post("/api/lineage/succession/execute", { heirChildId: t });
-  }
-};
-r(L, "instance");
-let ht = L;
-const T = ht.getInstance();
-class re {
-  constructor() {
-    r(this, "modal");
-    r(this, "overview", null);
-    r(this, "candidates", []);
-    r(this, "selectedStratumFilter", "ALL");
-    this.modal = m({
-      id: "standard-lineage-family-modal",
-      title: "Gia Thất & Thế Gia Vọng Tộc",
-      subtitle: "Cầu hôn giai nhân, bồi dưỡng thế tử kế nghiệp, kiến lập gia tộc ngàn đời",
-      seal: "家",
-      size: "xl",
-      tabs: [
-        { id: "courtship", label: "Cầu Hôn & Thê Thiếp", seal: "姻" },
-        { id: "heirs", label: "Hậu Duệ & Thụ Giáo", seal: "嗣" },
-        { id: "tree", label: "Gia Phả Dòng Họ", seal: "譜" },
-        { id: "succession", label: "Tông Miếu & Thừa Kế", seal: "繼" }
-      ],
-      activeTabId: "courtship",
-      onOpen: async () => {
-        await this.refreshData(), await this.renderActiveTab();
-      },
-      onTabChange: async (t) => {
-        await this.renderActiveTab();
-      }
-    });
-  }
-  async open(t = "courtship") {
-    await this.modal.open(t);
-  }
-  async close() {
-    await this.modal.close();
-  }
-  async refreshData() {
-    var t, e;
-    try {
-      const [s, a] = await Promise.all([
-        T.getOverview().catch(() => null),
-        T.getCourtshipCandidates().catch(() => [])
-      ]);
-      this.overview = s, this.candidates = a;
-      const n = ((t = s == null ? void 0 : s.spouses) == null ? void 0 : t.length) || 0, l = ((e = s == null ? void 0 : s.children) == null ? void 0 : e.length) || 0;
-      this.modal.updateTabBadge("courtship", n > 0 ? n : void 0), this.modal.updateTabBadge("heirs", l > 0 ? l : void 0);
-    } catch (s) {
-      console.error("[LineageFamilyModal] Error refreshing data:", s);
-    }
-  }
-  async renderActiveTab() {
-    switch (this.modal.activeTab || "courtship") {
-      case "courtship":
-        this.renderCourtshipTab();
-        break;
-      case "heirs":
-        this.renderHeirsTab();
-        break;
-      case "tree":
-        this.renderTreeTab();
-        break;
-      case "succession":
-        this.renderSuccessionTab();
-        break;
-      default:
-        this.renderCourtshipTab();
-    }
-  }
-  renderCourtshipTab() {
-    var n, l, h;
-    const t = ((n = this.overview) == null ? void 0 : n.spouses) || [], e = t.length > 0;
-    let s = this.candidates;
-    this.selectedStratumFilter !== "ALL" && (s = this.candidates.filter((b) => b.socialStratum === this.selectedStratumFilter));
-    const a = `
+// src/client/core/ui/index.ts
+var g = {
+	version: "1.0.0",
+	button: {
+		html: s,
+		create: c
+	},
+	badge: {
+		html: u,
+		create: d
+	},
+	toast: p,
+	confirm: h
+}, _ = class e {
+	static instance;
+	static getInstance() {
+		return e.instance ||= new e(), e.instance;
+	}
+	async get(e, t) {
+		let n = e;
+		if (t) {
+			let e = new URLSearchParams();
+			for (let [n, r] of Object.entries(t)) r != null && e.append(n, String(r));
+			let r = e.toString();
+			r && (n += (n.includes("?") ? "&" : "?") + r);
+		}
+		let r = await fetch(n);
+		if (!r.ok) {
+			let e = await r.json().catch(() => ({}));
+			throw Error(e.error || `HTTP error ${r.status}: ${r.statusText}`);
+		}
+		return r.json();
+	}
+	async post(e, t) {
+		let n = await fetch(e, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: t ? JSON.stringify(t) : void 0
+		}), r = await n.json().catch(() => ({}));
+		if (!n.ok || r && r.success === !1) throw Error(r.error || `HTTP error ${n.status}: ${n.statusText}`);
+		return r;
+	}
+}, v = _.getInstance(), y = class e {
+	static instance;
+	static getInstance() {
+		return e.instance ||= new e(), e.instance;
+	}
+	async getOverview() {
+		let e = await v.get("/api/lineage/status");
+		return e.overview || e;
+	}
+	async getCourtshipCandidates() {
+		return (await v.get("/api/lineage/courtship-candidates")).candidates || [];
+	}
+	async proposeMarriage(e) {
+		return v.post("/api/lineage/courtship/propose", { spouseNpcId: e });
+	}
+	async restAndCohabit(e) {
+		return v.post("/api/lineage/household/rest", { marriageId: e });
+	}
+	async assignHouseholdRole(e, t) {
+		return v.post("/api/lineage/household/set-role", {
+			marriageId: e,
+			role: t
+		});
+	}
+	async assignMentor(e, t) {
+		return v.post("/api/lineage/children/assign-mentor", {
+			childId: e,
+			mentorNpcId: t
+		});
+	}
+	async designateHeir(e) {
+		return v.post("/api/lineage/children/designate-heir", { childId: e });
+	}
+	async executeSuccession(e) {
+		return v.post("/api/lineage/succession/execute", { heirChildId: e });
+	}
+}, b = y.getInstance(), x = class {
+	modal;
+	overview = null;
+	candidates = [];
+	selectedStratumFilter = "ALL";
+	constructor() {
+		this.modal = i({
+			id: "standard-lineage-family-modal",
+			title: "Gia Thất & Thế Gia Vọng Tộc",
+			subtitle: "Cầu hôn giai nhân, bồi dưỡng thế tử kế nghiệp, kiến lập gia tộc ngàn đời",
+			seal: "家",
+			size: "xl",
+			tabs: [
+				{
+					id: "courtship",
+					label: "Cầu Hôn & Thê Thiếp",
+					seal: "姻"
+				},
+				{
+					id: "heirs",
+					label: "Hậu Duệ & Thụ Giáo",
+					seal: "嗣"
+				},
+				{
+					id: "tree",
+					label: "Gia Phả Dòng Họ",
+					seal: "譜"
+				},
+				{
+					id: "succession",
+					label: "Tông Miếu & Thừa Kế",
+					seal: "繼"
+				}
+			],
+			activeTabId: "courtship",
+			onOpen: async () => {
+				await this.refreshData(), await this.renderActiveTab();
+			},
+			onTabChange: async (e) => {
+				await this.renderActiveTab();
+			}
+		});
+	}
+	async open(e = "courtship") {
+		await this.modal.open(e);
+	}
+	async close() {
+		await this.modal.close();
+	}
+	async refreshData() {
+		try {
+			let [e, t] = await Promise.all([b.getOverview().catch(() => null), b.getCourtshipCandidates().catch(() => [])]);
+			this.overview = e, this.candidates = t;
+			let n = e?.spouses?.length || 0, r = e?.children?.length || 0;
+			this.modal.updateTabBadge("courtship", n > 0 ? n : void 0), this.modal.updateTabBadge("heirs", r > 0 ? r : void 0);
+		} catch (e) {
+			console.error("[LineageFamilyModal] Error refreshing data:", e);
+		}
+	}
+	async renderActiveTab() {
+		switch (this.modal.activeTab || "courtship") {
+			case "courtship":
+				this.renderCourtshipTab();
+				break;
+			case "heirs":
+				this.renderHeirsTab();
+				break;
+			case "tree":
+				this.renderTreeTab();
+				break;
+			case "succession":
+				this.renderSuccessionTab();
+				break;
+			default: this.renderCourtshipTab();
+		}
+	}
+	renderCourtshipTab() {
+		let e = this.overview?.spouses || [], t = e.length > 0, n = this.candidates;
+		this.selectedStratumFilter !== "ALL" && (n = this.candidates.filter((e) => e.socialStratum === this.selectedStratumFilter));
+		let r = `
       <div class="lineage-modal-content">
         <!-- Clan Banner -->
         <div class="spatial-banner-lead">
           <div class="lead-seal">家</div>
           <div class="lead-text">
-            <h3>Gia Tộc Thế Hệ Thứ ${((l = this.overview) == null ? void 0 : l.generation) || 1} • Danh Vọng Gia Tộc: ${((h = this.overview) == null ? void 0 : h.clanPrestige) || 100}</h3>
+            <h3>Gia Tộc Thế Hệ Thứ ${this.overview?.generation || 1} • Danh Vọng Gia Tộc: ${this.overview?.clanPrestige || 100}</h3>
             <div class="text-muted text-sm">
-              ${e ? `Đã thành gia lập thất với ${t.length} phu nhân. Gia đạo hòa thuận, con cháu hưng vượng.` : "Chưa lập gia thất. Hãy tìm kiếm giai nhân phù hợp từ thường dân hoặc danh môn để kết tóc se duyên."}
+              ${t ? `Đã thành gia lập thất với ${e.length} phu nhân. Gia đạo hòa thuận, con cháu hưng vượng.` : "Chưa lập gia thất. Hãy tìm kiếm giai nhân phù hợp từ thường dân hoặc danh môn để kết tóc se duyên."}
             </div>
           </div>
         </div>
 
         <!-- Current Spouses Section -->
-        ${e ? `
+        ${t ? `
           <div class="section-title text-gold font-bold mb-3">Chính Thê & Thê Thiếp Đang Chung Sống:</div>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
-            ${t.map((b) => this.renderSpouseCard(b)).join("")}
+            ${e.map((e) => this.renderSpouseCard(e)).join("")}
           </div>
         ` : ""}
 
@@ -469,88 +464,114 @@ class re {
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          ${s.length > 0 ? s.map((b) => this.renderCandidateCard(b)).join("") : '<div class="text-muted col-span-full py-6 text-center">Không có giai nhân nào trong danh mục này.</div>'}
+          ${n.length > 0 ? n.map((e) => this.renderCandidateCard(e)).join("") : "<div class=\"text-muted col-span-full py-6 text-center\">Không có giai nhân nào trong danh mục này.</div>"}
         </div>
       </div>
     `;
-    this.modal.setContent(a);
-  }
-  renderSpouseCard(t) {
-    const e = [
-      { id: "HOUSEKEEPER", name: "Quản Gia Tề Nội" },
-      { id: "ENTERPRISE_SUPERVISOR", name: "Giám Sát Sản Nghiệp" },
-      { id: "STRATEGIC_ADVISOR", name: "Mưu Lược Tham Mưu" },
-      { id: "MILITARY_DEFENDER", name: "Thống Soái Hộ Vệ" }
-    ], s = Number(t.pregnancy_stage) > 0, a = Number(t.pregnancy_stage) === 1 ? "Thai Nghén Sơ Kỳ (Tháng 1)" : Number(t.pregnancy_stage) === 2 ? "Thai Kỳ Trung Kỳ (Tháng 2)" : Number(t.pregnancy_stage) === 3 ? "Sắp Đến Ngày Lâm Bồn!" : "Bình thường";
-    return `
+		this.modal.setContent(r);
+	}
+	renderSpouseCard(e) {
+		let t = [
+			{
+				id: "HOUSEKEEPER",
+				name: "Quản Gia Tề Nội"
+			},
+			{
+				id: "ENTERPRISE_SUPERVISOR",
+				name: "Giám Sát Sản Nghiệp"
+			},
+			{
+				id: "STRATEGIC_ADVISOR",
+				name: "Mưu Lược Tham Mưu"
+			},
+			{
+				id: "MILITARY_DEFENDER",
+				name: "Thống Soái Hộ Vệ"
+			}
+		], n = Number(e.pregnancy_stage) > 0, r = Number(e.pregnancy_stage) === 1 ? "Thai Nghén Sơ Kỳ (Tháng 1)" : Number(e.pregnancy_stage) === 2 ? "Thai Kỳ Trung Kỳ (Tháng 2)" : Number(e.pregnancy_stage) === 3 ? "Sắp Đến Ngày Lâm Bồn!" : "Bình thường";
+		return `
       <div class="tactical-card border-l-4 border-pink-500 p-3 bg-slate-900/80 rounded">
         <div class="flex justify-between items-start mb-2">
           <div>
-            <h4 class="text-amber-200 font-bold text-base m-0">${t.wife_name_vi}</h4>
-            <div class="text-xs text-muted">Hôn Lễ: Ngày ${t.marriage_date} (Lượt ${t.marriage_turn})</div>
+            <h4 class="text-amber-200 font-bold text-base m-0">${e.wife_name_vi}</h4>
+            <div class="text-xs text-muted">Hôn Lễ: Ngày ${e.marriage_date} (Lượt ${e.marriage_turn})</div>
           </div>
-          <div class="badge ${s ? "badge-danger animate-pulse" : "badge-neutral"} text-xs">
-            ${s ? "育 " + a : "Hảo Cảm: " + t.intimacy}
+          <div class="badge ${n ? "badge-danger animate-pulse" : "badge-neutral"} text-xs">
+            ${n ? "育 " + r : "Hảo Cảm: " + e.intimacy}
           </div>
         </div>
 
         <div class="text-xs text-slate-300 mb-3 bg-slate-950/60 p-2 rounded border border-amber-900/30">
           <div class="font-semibold text-amber-300/90 mb-1">Trọng Trách Nội Trạch:</div>
           <select class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-amber-100" 
-                  onchange="window.LineageFamilyUI.assignRole('${t.marriage_id}', this.value)">
-            ${e.map((n) => `<option value="${n.id}" ${t.household_role === n.id ? "selected" : ""}>${n.name}</option>`).join("")}
+                  onchange="window.LineageFamilyUI.assignRole('${e.marriage_id}', this.value)">
+            ${t.map((t) => `<option value="${t.id}" ${e.household_role === t.id ? "selected" : ""}>${t.name}</option>`).join("")}
           </select>
-          <div class="text-muted mt-1 italic">${t.role_effect_desc_vi || ""}</div>
+          <div class="text-muted mt-1 italic">${e.role_effect_desc_vi || ""}</div>
         </div>
 
         <div class="flex gap-2">
-          <button class="ui-btn ui-btn--primary ui-btn--sm flex-1" onclick="window.LineageFamilyUI.restCohabit('${t.marriage_id}')">
+          <button class="ui-btn ui-btn--primary ui-btn--sm flex-1" onclick="window.LineageFamilyUI.restCohabit('${e.marriage_id}')">
             心 Nghỉ Ngơi & Đồng Tẩm
           </button>
         </div>
       </div>
     `;
-  }
-  renderCandidateCard(t) {
-    const s = {
-      PEASANT: { label: "Nông Thôn", color: "badge-success" },
-      ARTISAN_SHOP: { label: "Thợ Xưởng", color: "badge-info" },
-      GENTRY_CLAN: { label: "Sĩ Tộc", color: "badge-warning" },
-      HISTORICAL_HEROINE: { label: "Danh Viện", color: "badge-danger" }
-    }[t.socialStratum || "HISTORICAL_HEROINE"] || { label: "Danh Viện", color: "badge-danger" };
-    return `
+	}
+	renderCandidateCard(e) {
+		let t = {
+			PEASANT: {
+				label: "Nông Thôn",
+				color: "badge-success"
+			},
+			ARTISAN_SHOP: {
+				label: "Thợ Xưởng",
+				color: "badge-info"
+			},
+			GENTRY_CLAN: {
+				label: "Sĩ Tộc",
+				color: "badge-warning"
+			},
+			HISTORICAL_HEROINE: {
+				label: "Danh Viện",
+				color: "badge-danger"
+			}
+		}[e.socialStratum || "HISTORICAL_HEROINE"] || {
+			label: "Danh Viện",
+			color: "badge-danger"
+		};
+		return `
       <div class="tactical-card p-3 bg-slate-900/70 border border-slate-800 rounded flex flex-col justify-between">
         <div>
           <div class="flex justify-between items-start mb-2">
-            <h4 class="text-amber-100 font-bold m-0 text-sm">${t.nameVi}</h4>
-            <span class="badge ${s.color} text-xs">${s.label}</span>
+            <h4 class="text-amber-100 font-bold m-0 text-sm">${e.nameVi}</h4>
+            <span class="badge ${t.color} text-xs">${t.label}</span>
           </div>
 
-          <div class="text-xs text-muted mb-2 line-clamp-2">${t.clueVi}</div>
+          <div class="text-xs text-muted mb-2 line-clamp-2">${e.clueVi}</div>
 
-          ${t.maternalTrait ? `
+          ${e.maternalTrait ? `
             <div class="bg-amber-950/30 border border-amber-900/40 rounded p-1.5 text-xs text-amber-300 mb-2">
-              <span class="font-bold">Huyết Mạch:</span> ${t.maternalTrait.traitNameVi}
-              <div class="text-muted text-[11px]">${t.maternalTrait.descriptionVi}</div>
+              <span class="font-bold">Huyết Mạch:</span> ${e.maternalTrait.traitNameVi}
+              <div class="text-muted text-[11px]">${e.maternalTrait.descriptionVi}</div>
             </div>
           ` : ""}
 
           <div class="text-xs text-slate-300 mb-3 flex items-center justify-between">
             <span>Sính Lễ Yêu Cầu:</span>
-            <span class="text-amber-400 font-mono font-bold">${(t.recommendedDowryCash ?? 0).toLocaleString()} Quan</span>
+            <span class="text-amber-400 font-mono font-bold">${(e.recommendedDowryCash ?? 0).toLocaleString()} Quan</span>
           </div>
         </div>
 
         <button class="ui-btn ui-btn--accent ui-btn--sm w-full" 
-                onclick="window.LineageFamilyUI.proposeMarriage('${t.npcId}')">
+                onclick="window.LineageFamilyUI.proposeMarriage('${e.npcId}')">
           Cầu Hôn Nạp Sính Lễ
         </button>
       </div>
     `;
-  }
-  renderHeirsTab() {
-    var s;
-    const t = ((s = this.overview) == null ? void 0 : s.children) || [], e = `
+	}
+	renderHeirsTab() {
+		let e = this.overview?.children || [], t = `
       <div class="lineage-modal-content">
         <div class="spatial-banner-lead">
           <div class="lead-seal">嗣</div>
@@ -562,98 +583,91 @@ class re {
           </div>
         </div>
 
-        ${t.length === 0 ? `
-          <div class="text-center py-12 text-muted">
-            <div class="text-4xl mb-3">子</div>
-            <div>Hiện tại gia tộc chưa có hậu duệ sinh hạ. Hãy nghỉ ngơi đồng tẩm cùng phu nhân để thụ thai dưỡng dục.</div>
-          </div>
-        ` : `
+        ${e.length === 0 ? "\n          <div class=\"text-center py-12 text-muted\">\n            <div class=\"text-4xl mb-3\">子</div>\n            <div>Hiện tại gia tộc chưa có hậu duệ sinh hạ. Hãy nghỉ ngơi đồng tẩm cùng phu nhân để thụ thai dưỡng dục.</div>\n          </div>\n        " : `
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            ${t.map((a) => this.renderChildCard(a)).join("")}
+            ${e.map((e) => this.renderChildCard(e)).join("")}
           </div>
         `}
       </div>
     `;
-    this.modal.setContent(e);
-  }
-  renderChildCard(t) {
-    const e = t.is_heir === 1;
-    return `
-      <div class="tactical-card p-4 bg-slate-900/80 border ${e ? "border-amber-400 shadow-amber-900/20" : "border-slate-800"} rounded">
+		this.modal.setContent(t);
+	}
+	renderChildCard(e) {
+		let t = e.is_heir === 1;
+		return `
+      <div class="tactical-card p-4 bg-slate-900/80 border ${t ? "border-amber-400 shadow-amber-900/20" : "border-slate-800"} rounded">
         <div class="flex justify-between items-start mb-2">
           <div>
-            <h4 class="text-amber-200 font-bold text-base m-0">${t.name_vi} ${t.style_name ? `(${t.style_name})` : ""}</h4>
-            <div class="text-xs text-muted">${t.gender === "MALE" ? "Nam Tử" : "Nữ Nhi"} • Tuổi: ${t.age} • Mẫu thân: ${t.mother_name_vi || "Nội thất"}</div>
+            <h4 class="text-amber-200 font-bold text-base m-0">${e.name_vi} ${e.style_name ? `(${e.style_name})` : ""}</h4>
+            <div class="text-xs text-muted">${e.gender === "MALE" ? "Nam Tử" : "Nữ Nhi"} • Tuổi: ${e.age} • Mẫu thân: ${e.mother_name_vi || "Nội thất"}</div>
           </div>
-          <span class="badge ${e ? "badge-primary" : "badge-neutral"} text-xs">
-            ${e ? "王 ĐÍCH TỬ KẾ VỊ" : "Thứ Tử"}
+          <span class="badge ${t ? "badge-primary" : "badge-neutral"} text-xs">
+            ${t ? "王 ĐÍCH TỬ KẾ VỊ" : "Thứ Tử"}
           </span>
         </div>
 
         <!-- Genetic Stats Radar / Grid -->
         <div class="grid grid-cols-4 gap-1 text-center font-mono text-xs bg-slate-950/70 p-2 rounded mb-3">
-          <div><span class="text-muted">VÕ:</span> <span class="text-red-400 font-bold">${t.stats.war}</span></div>
-          <div><span class="text-muted">TRÍ:</span> <span class="text-blue-400 font-bold">${t.stats.int}</span></div>
-          <div><span class="text-muted">THỐNG:</span> <span class="text-amber-400 font-bold">${t.stats.ldr}</span></div>
-          <div><span class="text-muted">CHÍNH:</span> <span class="text-purple-400 font-bold">${t.stats.pol}</span></div>
-          <div><span class="text-muted">THƯƠNG:</span> <span class="text-yellow-400 font-bold">${t.stats.com}</span></div>
-          <div><span class="text-muted">GIAO:</span> <span class="text-green-400 font-bold">${t.stats.dip}</span></div>
-          <div><span class="text-muted">XẢO:</span> <span class="text-cyan-400 font-bold">${t.stats.cra}</span></div>
-          <div><span class="text-muted">HẬU:</span> <span class="text-orange-400 font-bold">${t.stats.log}</span></div>
+          <div><span class="text-muted">VÕ:</span> <span class="text-red-400 font-bold">${e.stats.war}</span></div>
+          <div><span class="text-muted">TRÍ:</span> <span class="text-blue-400 font-bold">${e.stats.int}</span></div>
+          <div><span class="text-muted">THỐNG:</span> <span class="text-amber-400 font-bold">${e.stats.ldr}</span></div>
+          <div><span class="text-muted">CHÍNH:</span> <span class="text-purple-400 font-bold">${e.stats.pol}</span></div>
+          <div><span class="text-muted">THƯƠNG:</span> <span class="text-yellow-400 font-bold">${e.stats.com}</span></div>
+          <div><span class="text-muted">GIAO:</span> <span class="text-green-400 font-bold">${e.stats.dip}</span></div>
+          <div><span class="text-muted">XẢO:</span> <span class="text-cyan-400 font-bold">${e.stats.cra}</span></div>
+          <div><span class="text-muted">HẬU:</span> <span class="text-orange-400 font-bold">${e.stats.log}</span></div>
         </div>
 
         <div class="text-xs text-slate-300 mb-3">
           <span class="font-bold text-amber-300/80">Danh Sư Hướng Dẫn:</span> 
-          ${t.assigned_mentor_name_vi || '<span class="text-muted">Chưa bái sư</span>'}
+          ${e.assigned_mentor_name_vi || "<span class=\"text-muted\">Chưa bái sư</span>"}
         </div>
 
         <div class="flex gap-2">
-          ${e ? "" : `
-            <button class="ui-btn ui-btn--accent ui-btn--sm flex-1" onclick="window.LineageFamilyUI.designateHeir('${t.child_id}')">
+          ${t ? "" : `
+            <button class="ui-btn ui-btn--accent ui-btn--sm flex-1" onclick="window.LineageFamilyUI.designateHeir('${e.child_id}')">
               Lập Làm Thế Tử
             </button>
           `}
-          <button class="ui-btn ui-btn--ghost ui-btn--sm flex-1" onclick="window.LineageFamilyUI.assignMentorDialog('${t.child_id}')">
+          <button class="ui-btn ui-btn--ghost ui-btn--sm flex-1" onclick="window.LineageFamilyUI.assignMentorDialog('${e.child_id}')">
             Chỉ Định Danh Sư
           </button>
         </div>
       </div>
     `;
-  }
-  renderTreeTab() {
-    var e, s, a, n;
-    const t = `
+	}
+	renderTreeTab() {
+		let e = `
       <div class="lineage-modal-content">
         <div class="spatial-banner-lead">
           <div class="lead-seal">譜</div>
           <div class="lead-text">
-            <h3>Gia Phả Tông Tộc • Thế Hệ ${((e = this.overview) == null ? void 0 : e.generation) || 1}</h3>
+            <h3>Gia Phả Tông Tộc • Thế Hệ ${this.overview?.generation || 1}</h3>
             <div class="text-muted text-sm">Ghi chép công đức tiên tổ và thứ bậc con cháu dòng dõi.</div>
           </div>
         </div>
 
         <div class="p-6 bg-slate-950/60 rounded border border-amber-900/30 text-center">
           <div class="inline-block p-4 border-2 border-amber-500 rounded bg-slate-900 text-amber-200 font-bold text-lg mb-4">
-            Đời Thứ ${((s = this.overview) == null ? void 0 : s.generation) || 1}: ${((a = this.overview) == null ? void 0 : a.clanName) || "Lương Gia Tộc"}
+            Đời Thứ ${this.overview?.generation || 1}: ${this.overview?.clanName || "Lương Gia Tộc"}
           </div>
           <div class="text-xs text-muted mb-6">↓ Các chi phu nhân & thế tử tiếp nối ↓</div>
           
           <div class="flex flex-wrap justify-center gap-4">
-            ${(((n = this.overview) == null ? void 0 : n.children) || []).map((l) => `
+            ${(this.overview?.children || []).map((e) => `
               <div class="p-3 bg-slate-900 rounded border border-slate-700 min-w-[140px] text-xs">
-                <div class="font-bold text-amber-300">${l.name_vi}</div>
-                <div class="text-muted">${l.is_heir === 1 ? "王 Thế Tử" : "Chi tộc"}</div>
+                <div class="font-bold text-amber-300">${e.name_vi}</div>
+                <div class="text-muted">${e.is_heir === 1 ? "王 Thế Tử" : "Chi tộc"}</div>
               </div>
             `).join("")}
           </div>
         </div>
       </div>
     `;
-    this.modal.setContent(t);
-  }
-  renderSuccessionTab() {
-    var s, a;
-    const t = (s = this.overview) == null ? void 0 : s.activeHeir, e = `
+		this.modal.setContent(e);
+	}
+	renderSuccessionTab() {
+		let e = this.overview?.activeHeir, t = `
       <div class="lineage-modal-content">
         <div class="spatial-banner-lead">
           <div class="lead-seal">繼</div>
@@ -665,14 +679,14 @@ class re {
           </div>
         </div>
 
-        ${t ? `
+        ${e ? `
           <div class="tactical-card p-6 bg-slate-900/90 border border-amber-500/50 rounded mb-4">
-            <h4 class="text-amber-300 font-bold text-lg mb-2">Thế Tử Kế Thừa: ${t.name_vi} (${t.age} Tuổi)</h4>
+            <h4 class="text-amber-300 font-bold text-lg mb-2">Thế Tử Kế Thừa: ${e.name_vi} (${e.age} Tuổi)</h4>
             <div class="text-sm text-slate-300 mb-4">
               Khi thực hiện chuyển giao:
               <ul class="list-disc list-inside mt-2 space-y-1 text-slate-400">
-                <li>Nhân vật người chơi sẽ chuyển sang điều khiển <strong class="text-amber-200">${t.name_vi}</strong>.</li>
-                <li>Thế hệ gia tộc tăng lên <strong>Thế Hệ Thứ ${(((a = this.overview) == null ? void 0 : a.generation) || 1) + 1}</strong>.</li>
+                <li>Nhân vật người chơi sẽ chuyển sang điều khiển <strong class="text-amber-200">${e.name_vi}</strong>.</li>
+                <li>Thế hệ gia tộc tăng lên <strong>Thế Hệ Thứ ${(this.overview?.generation || 1) + 1}</strong>.</li>
                 <li>100% Tiền mặt, Sản nghiệp và Binh khí truyền quốc được bảo lưu toàn vẹn.</li>
               </ul>
             </div>
@@ -682,145 +696,151 @@ class re {
               Khởi Sự Kế Thừa Gia Tộc
             </button>
           </div>
-        ` : `
-          <div class="text-center py-10 text-muted">
-            Chưa chỉ định Thế tử kế vị. Vui lòng vào mục "Hậu Duệ" và chọn một người con trưởng thành làm thế tử.
-          </div>
-        `}
+        ` : "\n          <div class=\"text-center py-10 text-muted\">\n            Chưa chỉ định Thế tử kế vị. Vui lòng vào mục \"Hậu Duệ\" và chọn một người con trưởng thành làm thế tử.\n          </div>\n        "}
       </div>
     `;
-    this.modal.setContent(e);
-  }
-  setFilter(t) {
-    this.selectedStratumFilter = t, this.renderCourtshipTab();
-  }
-  async proposeMarriage(t) {
-    try {
-      const e = await T.proposeMarriage(t);
-      typeof window.showToast == "function" && window.showToast(e.narrativeVi || "Kết tóc se duyên thành công!"), await this.refreshData(), await this.renderActiveTab();
-    } catch (e) {
-      typeof window.showToast == "function" && window.showToast(e.message || "Cầu hôn thất bại!", !0);
-    }
-  }
-  async restCohabit(t) {
-    try {
-      const e = await T.restAndCohabit(t);
-      typeof window.showToast == "function" && window.showToast(e.narrativeVi || "Đồng tẩm nghỉ ngơi tĩnh dưỡng thành công!"), await this.refreshData(), await this.renderActiveTab();
-    } catch (e) {
-      typeof window.showToast == "function" && window.showToast(e.message || "Không thể nghỉ ngơi lúc này!", !0);
-    }
-  }
-  async assignRole(t, e) {
-    try {
-      await T.assignHouseholdRole(t, e), typeof window.showToast == "function" && window.showToast("Đã phân công trọng trách nội trạch thành công!"), await this.refreshData();
-    } catch (s) {
-      typeof window.showToast == "function" && window.showToast(s.message || "Lỗi phân công trọng trách!", !0);
-    }
-  }
-  async designateHeir(t) {
-    try {
-      await T.designateHeir(t), typeof window.showToast == "function" && window.showToast("Đã chỉ định đích tử kế vị gia tộc!"), await this.refreshData(), await this.renderActiveTab();
-    } catch (e) {
-      typeof window.showToast == "function" && window.showToast(e.message || "Không thể lập thế tử!", !0);
-    }
-  }
-  async assignMentorDialog(t) {
-    const e = prompt("Nhập ID danh sư thụ giáo (ví dụ: NPC-0003 cho Quan Vũ, NPC-0001 cho Lư Thực):", "NPC-0003");
-    if (e)
-      try {
-        await T.assignMentor(t, e), typeof window.showToast == "function" && window.showToast("Đã bái kiến danh sư thụ giáo thành công!"), await this.refreshData(), await this.renderActiveTab();
-      } catch (s) {
-        typeof window.showToast == "function" && window.showToast(s.message || "Lỗi chỉ định danh sư!", !0);
-      }
-  }
-  async executeSuccession() {
-    var t, e;
-    if (confirm("Bạn có chắc chắn muốn chuyển giao quyền lực sang Thế tử kế thừa không?"))
-      try {
-        const s = (e = (t = this.overview) == null ? void 0 : t.activeHeir) == null ? void 0 : e.child_id;
-        if (!s) throw new Error("Chưa chỉ định Thế tử kế vị.");
-        const a = await T.executeSuccession(s);
-        typeof window.showToast == "function" && window.showToast(a.narrativeVi || "Đại điển kế thừa tông miếu hoàn tất!"), await this.refreshData(), await this.renderActiveTab();
-      } catch (s) {
-        typeof window.showToast == "function" && window.showToast(s.message || "Kế thừa thất bại!", !0);
-      }
-  }
-}
-const w = new re(), k = class k {
-  static getInstance() {
-    return k.instance || (k.instance = new k()), k.instance;
-  }
-  async getOverview(t = "PLY-0001") {
-    const e = await u.get("/api/equipment", { characterId: t });
-    return e.overview || e;
-  }
-  async equipItem(t, e, s) {
-    return u.post("/api/equipment/equip", { characterId: t, slot: e, itemCode: s });
-  }
-  async unequipItem(t, e) {
-    return u.post("/api/equipment/unequip", { characterId: t, slot: e });
-  }
-  async forgeBespokeWeapon(t) {
-    return u.post("/api/professions/forge/bespoke", t);
-  }
-};
-r(k, "instance");
-let ut = k;
-const X = ut.getInstance();
-class le {
-  constructor() {
-    r(this, "modal");
-    r(this, "currentCharacterId", "PLY-0001");
-    r(this, "overview", null);
-    this.modal = m({
-      id: "equipment-forge-modal",
-      title: "Vũ Khố & Lò Rèn Thiết Điếm",
-      subtitle: "Quản lý 4 ô chiến bị truyền quốc và đúc rèn thần binh độc bản",
-      seal: "武",
-      size: "xl",
-      tabs: [
-        { id: "gear", label: "Binh Khí & Giáp Trụ", seal: "武" },
-        { id: "forge_bespoke", label: "Đúc Rèn Thần Binh", seal: "鍛" },
-        { id: "inventory", label: "Kho Binh Khí", seal: "貨" }
-      ],
-      activeTabId: "gear",
-      onOpen: async () => {
-        await this.refreshData(), await this.renderActiveTab();
-      },
-      onTabChange: async () => {
-        await this.renderActiveTab();
-      }
-    });
-  }
-  async open(t = "PLY-0001", e = "gear") {
-    this.currentCharacterId = t, await this.modal.open(e);
-  }
-  async close() {
-    await this.modal.close();
-  }
-  async refreshData() {
-    try {
-      this.overview = await X.getOverview(this.currentCharacterId);
-    } catch (t) {
-      console.error("[EquipmentForgeModal] Error refreshing data:", t);
-    }
-  }
-  async renderActiveTab() {
-    switch (this.modal.activeTab || "gear") {
-      case "gear":
-        this.renderGearTab();
-        break;
-      case "forge_bespoke":
-        this.renderForgeBespokeTab();
-        break;
-      case "inventory":
-        this.renderInventoryTab();
-        break;
-    }
-  }
-  renderGearTab() {
-    if (!this.overview) return;
-    const t = this.overview.slots, e = this.overview.effectiveStats || {}, s = this.overview.baseStats || {}, a = `
+		this.modal.setContent(t);
+	}
+	setFilter(e) {
+		this.selectedStratumFilter = e, this.renderCourtshipTab();
+	}
+	async proposeMarriage(e) {
+		try {
+			let t = await b.proposeMarriage(e);
+			typeof window.showToast == "function" && window.showToast(t.narrativeVi || "Kết tóc se duyên thành công!"), await this.refreshData(), await this.renderActiveTab();
+		} catch (e) {
+			typeof window.showToast == "function" && window.showToast(e.message || "Cầu hôn thất bại!", !0);
+		}
+	}
+	async restCohabit(e) {
+		try {
+			let t = await b.restAndCohabit(e);
+			typeof window.showToast == "function" && window.showToast(t.narrativeVi || "Đồng tẩm nghỉ ngơi tĩnh dưỡng thành công!"), await this.refreshData(), await this.renderActiveTab();
+		} catch (e) {
+			typeof window.showToast == "function" && window.showToast(e.message || "Không thể nghỉ ngơi lúc này!", !0);
+		}
+	}
+	async assignRole(e, t) {
+		try {
+			await b.assignHouseholdRole(e, t), typeof window.showToast == "function" && window.showToast("Đã phân công trọng trách nội trạch thành công!"), await this.refreshData();
+		} catch (e) {
+			typeof window.showToast == "function" && window.showToast(e.message || "Lỗi phân công trọng trách!", !0);
+		}
+	}
+	async designateHeir(e) {
+		try {
+			await b.designateHeir(e), typeof window.showToast == "function" && window.showToast("Đã chỉ định đích tử kế vị gia tộc!"), await this.refreshData(), await this.renderActiveTab();
+		} catch (e) {
+			typeof window.showToast == "function" && window.showToast(e.message || "Không thể lập thế tử!", !0);
+		}
+	}
+	async assignMentorDialog(e) {
+		let t = prompt("Nhập ID danh sư thụ giáo (ví dụ: NPC-0003 cho Quan Vũ, NPC-0001 cho Lư Thực):", "NPC-0003");
+		if (t) try {
+			await b.assignMentor(e, t), typeof window.showToast == "function" && window.showToast("Đã bái kiến danh sư thụ giáo thành công!"), await this.refreshData(), await this.renderActiveTab();
+		} catch (e) {
+			typeof window.showToast == "function" && window.showToast(e.message || "Lỗi chỉ định danh sư!", !0);
+		}
+	}
+	async executeSuccession() {
+		if (confirm("Bạn có chắc chắn muốn chuyển giao quyền lực sang Thế tử kế thừa không?")) try {
+			let e = this.overview?.activeHeir?.child_id;
+			if (!e) throw Error("Chưa chỉ định Thế tử kế vị.");
+			let t = await b.executeSuccession(e);
+			typeof window.showToast == "function" && window.showToast(t.narrativeVi || "Đại điển kế thừa tông miếu hoàn tất!"), await this.refreshData(), await this.renderActiveTab();
+		} catch (e) {
+			typeof window.showToast == "function" && window.showToast(e.message || "Kế thừa thất bại!", !0);
+		}
+	}
+}, S = new x(), C = class e {
+	static instance;
+	static getInstance() {
+		return e.instance ||= new e(), e.instance;
+	}
+	async getOverview(e = "PLY-0001") {
+		let t = await v.get("/api/equipment", { characterId: e });
+		return t.overview || t;
+	}
+	async equipItem(e, t, n) {
+		return v.post("/api/equipment/equip", {
+			characterId: e,
+			slot: t,
+			itemCode: n
+		});
+	}
+	async unequipItem(e, t) {
+		return v.post("/api/equipment/unequip", {
+			characterId: e,
+			slot: t
+		});
+	}
+	async forgeBespokeWeapon(e) {
+		return v.post("/api/professions/forge/bespoke", e);
+	}
+}, w = C.getInstance(), T = class {
+	modal;
+	currentCharacterId = "PLY-0001";
+	overview = null;
+	constructor() {
+		this.modal = i({
+			id: "equipment-forge-modal",
+			title: "Vũ Khố & Lò Rèn Thiết Điếm",
+			subtitle: "Quản lý 4 ô chiến bị truyền quốc và đúc rèn thần binh độc bản",
+			seal: "武",
+			size: "xl",
+			tabs: [
+				{
+					id: "gear",
+					label: "Binh Khí & Giáp Trụ",
+					seal: "武"
+				},
+				{
+					id: "forge_bespoke",
+					label: "Đúc Rèn Thần Binh",
+					seal: "鍛"
+				},
+				{
+					id: "inventory",
+					label: "Kho Binh Khí",
+					seal: "貨"
+				}
+			],
+			activeTabId: "gear",
+			onOpen: async () => {
+				await this.refreshData(), await this.renderActiveTab();
+			},
+			onTabChange: async () => {
+				await this.renderActiveTab();
+			}
+		});
+	}
+	async open(e = "PLY-0001", t = "gear") {
+		this.currentCharacterId = e, await this.modal.open(t);
+	}
+	async close() {
+		await this.modal.close();
+	}
+	async refreshData() {
+		try {
+			this.overview = await w.getOverview(this.currentCharacterId);
+		} catch (e) {
+			console.error("[EquipmentForgeModal] Error refreshing data:", e);
+		}
+	}
+	async renderActiveTab() {
+		switch (this.modal.activeTab || "gear") {
+			case "gear":
+				this.renderGearTab();
+				break;
+			case "forge_bespoke":
+				this.renderForgeBespokeTab();
+				break;
+			case "inventory": this.renderInventoryTab();
+		}
+	}
+	renderGearTab() {
+		if (!this.overview) return;
+		let e = this.overview.slots, t = this.overview.effectiveStats || {}, n = this.overview.baseStats || {}, r = `
       <div class="equipment-modal-content">
         <!-- Lead Banner -->
         <div class="spatial-banner-lead">
@@ -833,51 +853,48 @@ class le {
 
         <!-- Effective Attributes Bar -->
         <div class="grid grid-cols-4 gap-2 mb-4 font-mono text-xs text-center bg-slate-950/80 p-2.5 rounded border border-amber-900/40">
-          <div>VÕ: <strong class="${(e.war || 0) >= 100 ? "text-amber-400 font-bold" : "text-red-400"}">${e.war || s.war || 50}</strong> <span class="text-muted text-[10px]">(${s.war || 50})</span></div>
-          <div>THỐNG: <strong class="${(e.ldr || 0) >= 100 ? "text-amber-400 font-bold" : "text-amber-300"}">${e.ldr || s.ldr || 50}</strong> <span class="text-muted text-[10px]">(${s.ldr || 50})</span></div>
-          <div>TRÍ: <strong class="${(e.int || 0) >= 100 ? "text-amber-400 font-bold" : "text-blue-400"}">${e.int || s.int || 50}</strong> <span class="text-muted text-[10px]">(${s.int || 50})</span></div>
-          <div>XẢO: <strong class="${(e.cra || 0) >= 100 ? "text-amber-400 font-bold" : "text-cyan-400"}">${e.cra || s.cra || 50}</strong> <span class="text-muted text-[10px]">(${s.cra || 50})</span></div>
+          <div>VÕ: <strong class="${(t.war || 0) >= 100 ? "text-amber-400 font-bold" : "text-red-400"}">${t.war || n.war || 50}</strong> <span class="text-muted text-[10px]">(${n.war || 50})</span></div>
+          <div>THỐNG: <strong class="${(t.ldr || 0) >= 100 ? "text-amber-400 font-bold" : "text-amber-300"}">${t.ldr || n.ldr || 50}</strong> <span class="text-muted text-[10px]">(${n.ldr || 50})</span></div>
+          <div>TRÍ: <strong class="${(t.int || 0) >= 100 ? "text-amber-400 font-bold" : "text-blue-400"}">${t.int || n.int || 50}</strong> <span class="text-muted text-[10px]">(${n.int || 50})</span></div>
+          <div>XẢO: <strong class="${(t.cra || 0) >= 100 ? "text-amber-400 font-bold" : "text-cyan-400"}">${t.cra || n.cra || 50}</strong> <span class="text-muted text-[10px]">(${n.cra || 50})</span></div>
         </div>
 
         <!-- 4 Equipment Slots Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-          ${this.renderSlotCard("WEAPON", "Binh Khí Tấn Công", "武", t.WEAPON)}
-          ${this.renderSlotCard("ARMOR", "Khôi Giáp Phòng Hộ", "盾", t.ARMOR)}
-          ${this.renderSlotCard("STEED", "Chiến Mã Tọa Kỵ", "馬", t.STEED)}
-          ${this.renderSlotCard("TREASURE", "Bảo Vật & Binh Thư", "卷", t.TREASURE)}
+          ${this.renderSlotCard("WEAPON", "Binh Khí Tấn Công", "武", e.WEAPON)}
+          ${this.renderSlotCard("ARMOR", "Khôi Giáp Phòng Hộ", "盾", e.ARMOR)}
+          ${this.renderSlotCard("STEED", "Chiến Mã Tọa Kỵ", "馬", e.STEED)}
+          ${this.renderSlotCard("TREASURE", "Bảo Vật & Binh Thư", "卷", e.TREASURE)}
         </div>
       </div>
     `;
-    this.modal.setContent(a);
-  }
-  renderSlotCard(t, e, s, a) {
-    const n = a && a.itemCode;
-    return `
-      <div class="tactical-card p-3 bg-slate-900/80 rounded border ${n ? "border-amber-500/50" : "border-slate-800"} flex justify-between items-center">
+		this.modal.setContent(r);
+	}
+	renderSlotCard(e, t, n, r) {
+		let i = r && r.itemCode;
+		return `
+      <div class="tactical-card p-3 bg-slate-900/80 rounded border ${i ? "border-amber-500/50" : "border-slate-800"} flex justify-between items-center">
         <div>
           <div class="text-xs text-muted font-bold flex items-center gap-1">
-            <span>${s}</span> ${e}
+            <span>${n}</span> ${t}
           </div>
-          <div class="font-bold text-sm ${n ? "text-amber-200" : "text-slate-500"} mt-1">
-            ${n ? a.nameVi : "Trống (Chưa Trang Bị)"}
+          <div class="font-bold text-sm ${i ? "text-amber-200" : "text-slate-500"} mt-1">
+            ${i ? r.nameVi : "Trống (Chưa Trang Bị)"}
           </div>
-          ${n && a.statModifierDesc ? `
-            <div class="text-[11px] text-green-400 font-mono mt-0.5">${a.statModifierDesc}</div>
+          ${i && r.statModifierDesc ? `
+            <div class="text-[11px] text-green-400 font-mono mt-0.5">${r.statModifierDesc}</div>
           ` : ""}
         </div>
         <div>
-          ${n ? `
-            <button class="ui-btn ui-btn--ghost ui-btn--sm" onclick="window.EquipmentUI.unequip('${this.currentCharacterId}', '${t}')">Tháo Ra</button>
-          ` : `
-            <button class="ui-btn ui-btn--primary ui-btn--sm" onclick="window.EquipmentUI.switchTab('inventory')">Trang Bị</button>
-          `}
+          ${i ? `
+            <button class="ui-btn ui-btn--ghost ui-btn--sm" onclick="window.EquipmentUI.unequip('${this.currentCharacterId}', '${e}')">Tháo Ra</button>
+          ` : "\n            <button class=\"ui-btn ui-btn--primary ui-btn--sm\" onclick=\"window.EquipmentUI.switchTab('inventory')\">Trang Bị</button>\n          "}
         </div>
       </div>
     `;
-  }
-  renderForgeBespokeTab() {
-    var a, n;
-    const t = ((n = (a = this.overview) == null ? void 0 : a.baseStats) == null ? void 0 : n.cra) || 50, s = `
+	}
+	renderForgeBespokeTab() {
+		let e = this.overview?.baseStats?.cra || 50, t = `
       <div class="equipment-modal-content">
         <div class="spatial-banner-lead">
           <div class="lead-seal">鍛</div>
@@ -887,60 +904,17 @@ class le {
           </div>
         </div>
 
-        ${t >= 50 ? `
-          <div class="tactical-card p-4 bg-slate-900 rounded border border-slate-800">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-              <div>
-                <label class="block text-xs font-bold text-slate-300 mb-1">Tên Thần Binh Độc Bản:</label>
-                <input type="text" id="forge-weapon-name" class="modal-input w-full" placeholder="Thanh Long Uyển Nguyệt Đao" />
-              </div>
-              <div>
-                <label class="block text-xs font-bold text-slate-300 mb-1">Phân Loại Binh Khí:</label>
-                <select id="forge-weapon-cat" class="modal-input w-full">
-                  <option value="BLADE">Đao / Trực Đao (WAR +1..+5)</option>
-                  <option value="SPEAR">Thương / Xà Mâu (WAR/LDR +1..+5)</option>
-                  <option value="HALBERD">Kích / Phương Thiên (WAR/LDR +1..+5)</option>
-                  <option value="SWORD">Kiếm / Bảo Kiếm (LDR/POL +1..+5)</option>
-                  <option value="BOW">Cung / Cương Nỏ (WAR/CRA +1..+5)</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-              <div>
-                <label class="block text-xs font-bold text-slate-300 mb-1">Cấp Phẩm Nguyên Liệu:</label>
-                <select id="forge-material-tier" class="modal-input w-full">
-                  <option value="STANDARD">Nguyên Liệu Tiêu Chuẩn (Sắt Thỏi + Than)</option>
-                  <option value="FINE">Bách Luyện Tinh Cương (Thép Tinh Luyện + Da Thú)</option>
-                  <option value="LEGENDARY">Huyền Thiết Thiên Thạch (Huyền Thiết + Thiên Thạch)</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-xs font-bold text-slate-300 mb-1">Nơi Tiếp Nhận Sau Đúc:</label>
-                <select id="forge-destination" class="modal-input w-full">
-                  <option value="EQUIP">Tự Động Trang Bị Luôn</option>
-                  <option value="WAREHOUSE">Chuyển Vào Kho Huyện Trác</option>
-                  <option value="GIFT">Tặng Cho Quan Vũ / Trương Phi</option>
-                </select>
-              </div>
-            </div>
-
-            <button class="ui-btn ui-btn--accent w-full py-2.5 font-bold" onclick="window.EquipmentUI.executeForge()">
-              Khai Lò Đúc Thần Binh
-            </button>
-          </div>
-        ` : `
+        ${e >= 50 ? "\n          <div class=\"tactical-card p-4 bg-slate-900 rounded border border-slate-800\">\n            <div class=\"grid grid-cols-1 md:grid-cols-2 gap-3 mb-4\">\n              <div>\n                <label class=\"block text-xs font-bold text-slate-300 mb-1\">Tên Thần Binh Độc Bản:</label>\n                <input type=\"text\" id=\"forge-weapon-name\" class=\"modal-input w-full\" placeholder=\"Thanh Long Uyển Nguyệt Đao\" />\n              </div>\n              <div>\n                <label class=\"block text-xs font-bold text-slate-300 mb-1\">Phân Loại Binh Khí:</label>\n                <select id=\"forge-weapon-cat\" class=\"modal-input w-full\">\n                  <option value=\"BLADE\">Đao / Trực Đao (WAR +1..+5)</option>\n                  <option value=\"SPEAR\">Thương / Xà Mâu (WAR/LDR +1..+5)</option>\n                  <option value=\"HALBERD\">Kích / Phương Thiên (WAR/LDR +1..+5)</option>\n                  <option value=\"SWORD\">Kiếm / Bảo Kiếm (LDR/POL +1..+5)</option>\n                  <option value=\"BOW\">Cung / Cương Nỏ (WAR/CRA +1..+5)</option>\n                </select>\n              </div>\n            </div>\n\n            <div class=\"grid grid-cols-1 md:grid-cols-2 gap-3 mb-4\">\n              <div>\n                <label class=\"block text-xs font-bold text-slate-300 mb-1\">Cấp Phẩm Nguyên Liệu:</label>\n                <select id=\"forge-material-tier\" class=\"modal-input w-full\">\n                  <option value=\"STANDARD\">Nguyên Liệu Tiêu Chuẩn (Sắt Thỏi + Than)</option>\n                  <option value=\"FINE\">Bách Luyện Tinh Cương (Thép Tinh Luyện + Da Thú)</option>\n                  <option value=\"LEGENDARY\">Huyền Thiết Thiên Thạch (Huyền Thiết + Thiên Thạch)</option>\n                </select>\n              </div>\n              <div>\n                <label class=\"block text-xs font-bold text-slate-300 mb-1\">Nơi Tiếp Nhận Sau Đúc:</label>\n                <select id=\"forge-destination\" class=\"modal-input w-full\">\n                  <option value=\"EQUIP\">Tự Động Trang Bị Luôn</option>\n                  <option value=\"WAREHOUSE\">Chuyển Vào Kho Huyện Trác</option>\n                  <option value=\"GIFT\">Tặng Cho Quan Vũ / Trương Phi</option>\n                </select>\n              </div>\n            </div>\n\n            <button class=\"ui-btn ui-btn--accent w-full py-2.5 font-bold\" onclick=\"window.EquipmentUI.executeForge()\">\n              Khai Lò Đúc Thần Binh\n            </button>\n          </div>\n        " : `
           <div class="text-center py-8 text-muted">
-            Cần chỉ số Kỹ Nghệ (CRA) đạt tối thiểu 50 để mở lò rèn thần binh. Hiện tại CRA của bạn: ${t}.
+            Cần chỉ số Kỹ Nghệ (CRA) đạt tối thiểu 50 để mở lò rèn thần binh. Hiện tại CRA của bạn: ${e}.
           </div>
         `}
       </div>
     `;
-    this.modal.setContent(s);
-  }
-  renderInventoryTab() {
-    var s;
-    const t = ((s = this.overview) == null ? void 0 : s.inventoryGear) || [], e = `
+		this.modal.setContent(t);
+	}
+	renderInventoryTab() {
+		let e = this.overview?.inventoryGear || [], t = `
       <div class="equipment-modal-content">
         <div class="spatial-banner-lead">
           <div class="lead-seal">貨</div>
@@ -950,19 +924,15 @@ class le {
           </div>
         </div>
 
-        ${t.length === 0 ? `
-          <div class="text-center py-8 text-muted">
-            Kho vũ khí hiện không có trang bị nào. Hãy mua từ chợ phiên hoặc chế tác tại Lò Rèn.
-          </div>
-        ` : `
+        ${e.length === 0 ? "\n          <div class=\"text-center py-8 text-muted\">\n            Kho vũ khí hiện không có trang bị nào. Hãy mua từ chợ phiên hoặc chế tác tại Lò Rèn.\n          </div>\n        " : `
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            ${t.map((a) => `
+            ${e.map((e) => `
               <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800 flex justify-between items-center">
                 <div>
-                  <div class="font-bold text-amber-200 text-sm">${a.nameVi}</div>
-                  <div class="text-xs text-muted">Vị trí: ${a.slot} • SL: ${a.quantity}</div>
+                  <div class="font-bold text-amber-200 text-sm">${e.nameVi}</div>
+                  <div class="text-xs text-muted">Vị trí: ${e.slot} • SL: ${e.quantity}</div>
                 </div>
-                <button class="ui-btn ui-btn--primary ui-btn--sm" onclick="window.EquipmentUI.equip('${this.currentCharacterId}', '${a.slot}', '${a.itemCode}')">
+                <button class="ui-btn ui-btn--primary ui-btn--sm" onclick="window.EquipmentUI.equip('${this.currentCharacterId}', '${e.slot}', '${e.itemCode}')">
                   Mặc Vào
                 </button>
               </div>
@@ -971,100 +941,105 @@ class le {
         `}
       </div>
     `;
-    this.modal.setContent(e);
-  }
-  async equip(t, e, s) {
-    try {
-      await X.equipItem(t, e, s), typeof window.showToast == "function" && window.showToast("Đã trang bị thành công!"), await this.refreshData(), await this.renderActiveTab();
-    } catch (a) {
-      typeof window.showToast == "function" && window.showToast(a.message || "Lỗi trang bị!", !0);
-    }
-  }
-  async unequip(t, e) {
-    try {
-      await X.unequipItem(t, e), typeof window.showToast == "function" && window.showToast("Đã tháo trang bị về kho!"), await this.refreshData(), await this.renderActiveTab();
-    } catch (s) {
-      typeof window.showToast == "function" && window.showToast(s.message || "Lỗi tháo trang bị!", !0);
-    }
-  }
-  async executeForge() {
-    const t = document.getElementById("forge-weapon-name"), e = document.getElementById("forge-weapon-cat"), s = document.getElementById("forge-material-tier"), a = document.getElementById("forge-destination"), n = {
-      characterId: this.currentCharacterId,
-      weaponNameVi: (t == null ? void 0 : t.value) || "Thần Binh Trác Huyện",
-      weaponCategory: (e == null ? void 0 : e.value) || "BLADE",
-      targetAttr: "war",
-      materialTier: (s == null ? void 0 : s.value) || "STANDARD",
-      destination: (a == null ? void 0 : a.value) || "EQUIP"
-    };
-    try {
-      const l = await X.forgeBespokeWeapon(n);
-      typeof window.showToast == "function" && window.showToast(l.narrativeVi || "Đúc rèn thần binh thành công!"), await this.refreshData(), await this.modal.switchTab("gear");
-    } catch (l) {
-      typeof window.showToast == "function" && window.showToast(l.message || "Đúc rèn thất bại!", !0);
-    }
-  }
-}
-const V = new le(), M = class M {
-  static getInstance() {
-    return M.instance || (M.instance = new M()), M.instance;
-  }
-  async getStatus(t = "PLY-0001") {
-    const e = await u.get("/api/enterprise/status", { characterId: t });
-    return e.status || e;
-  }
-  async manageSafeCash(t, e, s) {
-    return u.post("/api/enterprise/manage-safe-cash", { enterpriseId: t, action: e, amount: s });
-  }
-  async executeLaborShift(t, e) {
-    return u.post("/api/enterprise/work", { shiftId: t });
-  }
-};
-r(M, "instance");
-let pt = M;
-const J = pt.getInstance();
-class ce {
-  constructor() {
-    r(this, "modal");
-    r(this, "enterprises", []);
-    r(this, "laborOptions", []);
-    this.modal = m({
-      id: "enterprise-modal",
-      title: "Sản Nghiệp & Phường Xưởng Bách Nghệ",
-      subtitle: "Quản lý xưởng dệt, xưởng rèn, đi làm thuê công nhật tích lũy ngân lượng",
-      seal: "業",
-      size: "xl",
-      tabs: [
-        { id: "owner", label: "Sản Nghiệp Gia Tộc", seal: "坊" },
-        { id: "work", label: "Đi Làm Thuê Thời Vụ", seal: "工" }
-      ],
-      activeTabId: "owner",
-      onOpen: async () => {
-        await this.refreshData(), await this.renderActiveTab();
-      },
-      onTabChange: async () => {
-        await this.renderActiveTab();
-      }
-    });
-  }
-  async open(t = "owner") {
-    await this.modal.open(t);
-  }
-  async close() {
-    await this.modal.close();
-  }
-  async refreshData() {
-    try {
-      const t = await J.getStatus("PLY-0001");
-      this.enterprises = (t == null ? void 0 : t.ownedBusinesses) || (t == null ? void 0 : t.activeEnterprises) || [], this.laborOptions = (t == null ? void 0 : t.laborOptions) || [];
-    } catch (t) {
-      console.error("[EnterpriseWorkshopModal] Error refreshing data:", t);
-    }
-  }
-  async renderActiveTab() {
-    (this.modal.activeTab || "owner") === "owner" ? this.renderOwnerTab() : this.renderWorkTab();
-  }
-  renderOwnerTab() {
-    const t = `
+		this.modal.setContent(t);
+	}
+	async equip(e, t, n) {
+		try {
+			await w.equipItem(e, t, n), typeof window.showToast == "function" && window.showToast("Đã trang bị thành công!"), await this.refreshData(), await this.renderActiveTab();
+		} catch (e) {
+			typeof window.showToast == "function" && window.showToast(e.message || "Lỗi trang bị!", !0);
+		}
+	}
+	async unequip(e, t) {
+		try {
+			await w.unequipItem(e, t), typeof window.showToast == "function" && window.showToast("Đã tháo trang bị về kho!"), await this.refreshData(), await this.renderActiveTab();
+		} catch (e) {
+			typeof window.showToast == "function" && window.showToast(e.message || "Lỗi tháo trang bị!", !0);
+		}
+	}
+	async executeForge() {
+		let e = document.getElementById("forge-weapon-name"), t = document.getElementById("forge-weapon-cat"), n = document.getElementById("forge-material-tier"), r = document.getElementById("forge-destination"), i = {
+			characterId: this.currentCharacterId,
+			weaponNameVi: e?.value || "Thần Binh Trác Huyện",
+			weaponCategory: t?.value || "BLADE",
+			targetAttr: "war",
+			materialTier: n?.value || "STANDARD",
+			destination: r?.value || "EQUIP"
+		};
+		try {
+			let e = await w.forgeBespokeWeapon(i);
+			typeof window.showToast == "function" && window.showToast(e.narrativeVi || "Đúc rèn thần binh thành công!"), await this.refreshData(), await this.modal.switchTab("gear");
+		} catch (e) {
+			typeof window.showToast == "function" && window.showToast(e.message || "Đúc rèn thất bại!", !0);
+		}
+	}
+}, E = new T(), D = class e {
+	static instance;
+	static getInstance() {
+		return e.instance ||= new e(), e.instance;
+	}
+	async getStatus(e = "PLY-0001") {
+		let t = await v.get("/api/enterprise/status", { characterId: e });
+		return t.status || t;
+	}
+	async manageSafeCash(e, t, n) {
+		return v.post("/api/enterprise/manage-safe-cash", {
+			enterpriseId: e,
+			action: t,
+			amount: n
+		});
+	}
+	async executeLaborShift(e, t) {
+		return v.post("/api/enterprise/work", { shiftId: e });
+	}
+}, O = D.getInstance(), k = class {
+	modal;
+	enterprises = [];
+	laborOptions = [];
+	constructor() {
+		this.modal = i({
+			id: "enterprise-modal",
+			title: "Sản Nghiệp & Phường Xưởng Bách Nghệ",
+			subtitle: "Quản lý xưởng dệt, xưởng rèn, đi làm thuê công nhật tích lũy ngân lượng",
+			seal: "業",
+			size: "xl",
+			tabs: [{
+				id: "owner",
+				label: "Sản Nghiệp Gia Tộc",
+				seal: "坊"
+			}, {
+				id: "work",
+				label: "Đi Làm Thuê Thời Vụ",
+				seal: "工"
+			}],
+			activeTabId: "owner",
+			onOpen: async () => {
+				await this.refreshData(), await this.renderActiveTab();
+			},
+			onTabChange: async () => {
+				await this.renderActiveTab();
+			}
+		});
+	}
+	async open(e = "owner") {
+		await this.modal.open(e);
+	}
+	async close() {
+		await this.modal.close();
+	}
+	async refreshData() {
+		try {
+			let e = await O.getStatus("PLY-0001");
+			this.enterprises = e?.ownedBusinesses || e?.activeEnterprises || [], this.laborOptions = e?.laborOptions || [];
+		} catch (e) {
+			console.error("[EnterpriseWorkshopModal] Error refreshing data:", e);
+		}
+	}
+	async renderActiveTab() {
+		(this.modal.activeTab || "owner") === "owner" ? this.renderOwnerTab() : this.renderWorkTab();
+	}
+	renderOwnerTab() {
+		let e = `
       <div class="enterprise-modal-content">
         <div class="spatial-banner-lead">
           <div class="lead-seal">業</div>
@@ -1074,11 +1049,7 @@ class ce {
           </div>
         </div>
 
-        ${this.enterprises.length === 0 ? `
-          <div class="text-center py-10 text-muted">
-            Hiện tại bạn chưa sở hữu sản nghiệp nào. Hãy tích lũy tiền tệ hoặc làm thuê để mua lại xưởng mộc, xưởng rèn tại Trác Huyện.
-          </div>
-        ` : `
+        ${this.enterprises.length === 0 ? "\n          <div class=\"text-center py-10 text-muted\">\n            Hiện tại bạn chưa sở hữu sản nghiệp nào. Hãy tích lũy tiền tệ hoặc làm thuê để mua lại xưởng mộc, xưởng rèn tại Trác Huyện.\n          </div>\n        " : `
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             ${this.enterprises.map((e) => `
               <div class="tactical-card p-4 bg-slate-900 rounded border border-slate-800">
@@ -1109,252 +1080,217 @@ class ce {
         `}
       </div>
     `;
-    this.modal.setContent(t);
-  }
-  renderWorkTab() {
-    this.modal.setContent(`
-      <div class="enterprise-modal-content">
-        <div class="spatial-banner-lead">
-          <div class="lead-seal">工</div>
-          <div class="lead-text">
-            <h3>Lao Động Làm Thuê Thời Vụ</h3>
-            <div class="text-muted text-sm">Đi làm thuê tại các xưởng nghề, đồn điền nông nghiệp để kiếm tiền trang trải và rèn luyện kỹ năng.</div>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800 text-center">
-            <h4 class="text-amber-300 font-bold text-sm mb-1">Đốn Củi & Tiêu Xa</h4>
-            <div class="text-xs text-muted mb-2">Tiêu hao 15 Thể lực • Kiếm 40 Quan • Tăng EXP Võ/Thống</div>
-            <button class="ui-btn ui-btn--primary ui-btn--sm w-full" onclick="window.EnterpriseUI.executeWork('WOODCUT')">Nhận Việc</button>
-          </div>
-          <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800 text-center">
-            <h4 class="text-amber-300 font-bold text-sm mb-1">Đan Lát Chiếu Trúc</h4>
-            <div class="text-xs text-muted mb-2">Tiêu hao 12 Thể lực • Kiếm 50 Quan • Tăng EXP Kỹ Nghệ</div>
-            <button class="ui-btn ui-btn--primary ui-btn--sm w-full" onclick="window.EnterpriseUI.executeWork('WEAVE_MAT')">Nhận Việc</button>
-          </div>
-          <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800 text-center">
-            <h4 class="text-amber-300 font-bold text-sm mb-1">Phụ Lò Rèn Thiết Điếm</h4>
-            <div class="text-xs text-muted mb-2">Tiêu hao 20 Thể lực • Kiếm 65 Quan • Tăng EXP Kỹ Nghệ/Võ</div>
-            <button class="ui-btn ui-btn--accent ui-btn--sm w-full" onclick="window.EnterpriseUI.executeWork('SMITH_ASSIST')">Nhận Việc</button>
-          </div>
-        </div>
-      </div>
-    `);
-  }
-  async depositSafeCash(t) {
-    const e = prompt("Nhập số tiền muốn nạp vào quỹ an toàn:", "500");
-    if (!e) return;
-    const s = parseInt(e, 10);
-    if (!(isNaN(s) || s <= 0))
-      try {
-        await J.manageSafeCash(t, "DEPOSIT", s), typeof window.showToast == "function" && window.showToast("Đã nạp tiền vào Quỹ an toàn!"), await this.refreshData(), await this.renderActiveTab();
-      } catch (a) {
-        typeof window.showToast == "function" && window.showToast(a.message || "Lỗi nạp tiền!", !0);
-      }
-  }
-  async withdrawSafeCash(t) {
-    const e = prompt("Nhập số tiền muốn rút từ quỹ an toàn:", "500");
-    if (!e) return;
-    const s = parseInt(e, 10);
-    if (!(isNaN(s) || s <= 0))
-      try {
-        await J.manageSafeCash(t, "WITHDRAW", s), typeof window.showToast == "function" && window.showToast("Đã rút tiền từ Quỹ an toàn về ngân khố!"), await this.refreshData(), await this.renderActiveTab();
-      } catch (a) {
-        typeof window.showToast == "function" && window.showToast(a.message || "Lỗi rút tiền!", !0);
-      }
-  }
-  async executeWork(t) {
-    try {
-      const e = await J.executeLaborShift(t);
-      typeof window.showToast == "function" && window.showToast(e.narrativeVi || "Lao động hoàn tất, nhận tiền công!"), await this.refreshData(), await this.renderActiveTab();
-    } catch (e) {
-      typeof window.showToast == "function" && window.showToast(e.message || "Không thể làm việc lúc này!", !0);
-    }
-  }
-}
-const K = new ce(), A = class A {
-  static getInstance() {
-    return A.instance || (A.instance = new A()), A.instance;
-  }
-  async getProtagonistDossier() {
-    var s;
-    const t = await u.get("/api/status"), e = t.player || {};
-    return {
-      characterId: e.character_id || "PLY-0001",
-      nameVi: e.name_vi || "Lương Diễn",
-      nameEn: e.name_en || "Liang Yan",
-      styleName: e.style_name || "Chí Viễn",
-      age: e.age || 20,
-      locationVi: ((s = t.settlement) == null ? void 0 : s.nameVi) || "Trác Huyện",
-      positionVi: e.position_vi || "Thương Gia Tự Do",
-      personality: "PRAGMATIC",
-      motivation: "HEGEMONY",
-      bioVi: "Hậu nhân Lương thị U Châu, thông tuệ thương đạo, ôm chí lớn bình định loạn thế Tam Quốc.",
-      stats: {
-        war: e.war_attr || 50,
-        int: e.int_attr || 50,
-        ldr: e.ldr_attr || 50,
-        pol: e.pol_attr || 50,
-        com: e.com_attr || 60,
-        dip: e.dip_attr || 50,
-        cra: e.cra_attr || 55,
-        log: e.log_attr || 50
-      },
-      talents: e.talents ? typeof e.talents == "string" ? JSON.parse(e.talents) : e.talents : ["THƯƠNG_TRÍ", "KỸ_XẢO"]
-    };
-  }
-  async getNpcDossier(t) {
-    const e = await u.get("/api/npcs/dossier", { npcId: t });
-    return e.dossier || e;
-  }
-};
-r(A, "instance");
-let bt = A;
-const kt = bt.getInstance();
-class de {
-  constructor() {
-    r(this, "protagonistModal");
-    r(this, "npcModal");
-    r(this, "currentProtagonist", null);
-    r(this, "currentNpc", null);
-    this.protagonistModal = m({
-      id: "protagonist-dossier-modal",
-      title: "Hồ Sơ Nhân Vật Chính • Lương Diễn (Chí Viễn)",
-      subtitle: "Toàn bộ chỉ số năng lực 8 chiều, danh hiệu và thiên phú bản mệnh",
-      seal: "主",
-      size: "lg",
-      onOpen: async () => {
-        await this.loadProtagonist();
-      }
-    }), this.npcModal = m({
-      id: "npc-dossier-modal",
-      title: "Hồ Sơ Nhân Vật • Danh Tướng Tam Quốc",
-      subtitle: "Tình báo nhân vật, mức độ thân thiện và bí mật sương mù chiến tranh",
-      seal: "将",
-      size: "lg"
-    });
-  }
-  async openProtagonist() {
-    await this.protagonistModal.open();
-  }
-  async closeProtagonist() {
-    await this.protagonistModal.close();
-  }
-  async openNpc(t) {
-    try {
-      this.currentNpc = await kt.getNpcDossier(t), this.npcModal.setTitle(
-        `Hồ Sơ Nhân Vật • ${this.currentNpc.nameVi}`,
-        `Địa điểm: ${this.currentNpc.locationVi || "U Châu"} • Thân phận: ${this.currentNpc.positionVi || "Võ Tướng"}`
-      ), this.renderNpcContent(), await this.npcModal.open();
-    } catch (e) {
-      console.error("[DossiersModal] Error loading NPC:", e);
-    }
-  }
-  async closeNpc() {
-    await this.npcModal.close();
-  }
-  async loadProtagonist() {
-    try {
-      this.currentProtagonist = await kt.getProtagonistDossier(), this.renderProtagonistContent();
-    } catch (t) {
-      console.error("[DossiersModal] Error loading protagonist:", t);
-    }
-  }
-  renderProtagonistContent() {
-    const t = this.currentProtagonist;
-    if (!t) return;
-    const e = t.stats, s = `
+		this.modal.setContent(e);
+	}
+	renderWorkTab() {
+		this.modal.setContent("\n      <div class=\"enterprise-modal-content\">\n        <div class=\"spatial-banner-lead\">\n          <div class=\"lead-seal\">工</div>\n          <div class=\"lead-text\">\n            <h3>Lao Động Làm Thuê Thời Vụ</h3>\n            <div class=\"text-muted text-sm\">Đi làm thuê tại các xưởng nghề, đồn điền nông nghiệp để kiếm tiền trang trải và rèn luyện kỹ năng.</div>\n          </div>\n        </div>\n\n        <div class=\"grid grid-cols-1 md:grid-cols-3 gap-3\">\n          <div class=\"tactical-card p-3 bg-slate-900 rounded border border-slate-800 text-center\">\n            <h4 class=\"text-amber-300 font-bold text-sm mb-1\">Đốn Củi & Tiêu Xa</h4>\n            <div class=\"text-xs text-muted mb-2\">Tiêu hao 15 Thể lực • Kiếm 40 Quan • Tăng EXP Võ/Thống</div>\n            <button class=\"ui-btn ui-btn--primary ui-btn--sm w-full\" onclick=\"window.EnterpriseUI.executeWork('WOODCUT')\">Nhận Việc</button>\n          </div>\n          <div class=\"tactical-card p-3 bg-slate-900 rounded border border-slate-800 text-center\">\n            <h4 class=\"text-amber-300 font-bold text-sm mb-1\">Đan Lát Chiếu Trúc</h4>\n            <div class=\"text-xs text-muted mb-2\">Tiêu hao 12 Thể lực • Kiếm 50 Quan • Tăng EXP Kỹ Nghệ</div>\n            <button class=\"ui-btn ui-btn--primary ui-btn--sm w-full\" onclick=\"window.EnterpriseUI.executeWork('WEAVE_MAT')\">Nhận Việc</button>\n          </div>\n          <div class=\"tactical-card p-3 bg-slate-900 rounded border border-slate-800 text-center\">\n            <h4 class=\"text-amber-300 font-bold text-sm mb-1\">Phụ Lò Rèn Thiết Điếm</h4>\n            <div class=\"text-xs text-muted mb-2\">Tiêu hao 20 Thể lực • Kiếm 65 Quan • Tăng EXP Kỹ Nghệ/Võ</div>\n            <button class=\"ui-btn ui-btn--accent ui-btn--sm w-full\" onclick=\"window.EnterpriseUI.executeWork('SMITH_ASSIST')\">Nhận Việc</button>\n          </div>\n        </div>\n      </div>\n    ");
+	}
+	async depositSafeCash(e) {
+		let t = prompt("Nhập số tiền muốn nạp vào quỹ an toàn:", "500");
+		if (!t) return;
+		let n = parseInt(t, 10);
+		if (!(isNaN(n) || n <= 0)) try {
+			await O.manageSafeCash(e, "DEPOSIT", n), typeof window.showToast == "function" && window.showToast("Đã nạp tiền vào Quỹ an toàn!"), await this.refreshData(), await this.renderActiveTab();
+		} catch (e) {
+			typeof window.showToast == "function" && window.showToast(e.message || "Lỗi nạp tiền!", !0);
+		}
+	}
+	async withdrawSafeCash(e) {
+		let t = prompt("Nhập số tiền muốn rút từ quỹ an toàn:", "500");
+		if (!t) return;
+		let n = parseInt(t, 10);
+		if (!(isNaN(n) || n <= 0)) try {
+			await O.manageSafeCash(e, "WITHDRAW", n), typeof window.showToast == "function" && window.showToast("Đã rút tiền từ Quỹ an toàn về ngân khố!"), await this.refreshData(), await this.renderActiveTab();
+		} catch (e) {
+			typeof window.showToast == "function" && window.showToast(e.message || "Lỗi rút tiền!", !0);
+		}
+	}
+	async executeWork(e) {
+		try {
+			let t = await O.executeLaborShift(e);
+			typeof window.showToast == "function" && window.showToast(t.narrativeVi || "Lao động hoàn tất, nhận tiền công!"), await this.refreshData(), await this.renderActiveTab();
+		} catch (e) {
+			typeof window.showToast == "function" && window.showToast(e.message || "Không thể làm việc lúc này!", !0);
+		}
+	}
+}, A = new k(), j = class e {
+	static instance;
+	static getInstance() {
+		return e.instance ||= new e(), e.instance;
+	}
+	async getProtagonistDossier() {
+		let e = await v.get("/api/status"), t = e.player || {};
+		return {
+			characterId: t.character_id || "PLY-0001",
+			nameVi: t.name_vi || "Lương Diễn",
+			nameEn: t.name_en || "Liang Yan",
+			styleName: t.style_name || "Chí Viễn",
+			age: t.age || 20,
+			locationVi: e.settlement?.nameVi || "Trác Huyện",
+			positionVi: t.position_vi || "Thương Gia Tự Do",
+			personality: "PRAGMATIC",
+			motivation: "HEGEMONY",
+			bioVi: "Hậu nhân Lương thị U Châu, thông tuệ thương đạo, ôm chí lớn bình định loạn thế Tam Quốc.",
+			stats: {
+				war: t.war_attr || 50,
+				int: t.int_attr || 50,
+				ldr: t.ldr_attr || 50,
+				pol: t.pol_attr || 50,
+				com: t.com_attr || 60,
+				dip: t.dip_attr || 50,
+				cra: t.cra_attr || 55,
+				log: t.log_attr || 50
+			},
+			talents: t.talents ? typeof t.talents == "string" ? JSON.parse(t.talents) : t.talents : ["THƯƠNG_TRÍ", "KỸ_XẢO"]
+		};
+	}
+	async getNpcDossier(e) {
+		let t = await v.get("/api/npcs/dossier", { npcId: e });
+		return t.dossier || t;
+	}
+}, M = j.getInstance(), N = class {
+	protagonistModal;
+	npcModal;
+	currentProtagonist = null;
+	currentNpc = null;
+	constructor() {
+		this.protagonistModal = i({
+			id: "protagonist-dossier-modal",
+			title: "Hồ Sơ Nhân Vật Chính • Lương Diễn (Chí Viễn)",
+			subtitle: "Toàn bộ chỉ số năng lực 8 chiều, danh hiệu và thiên phú bản mệnh",
+			seal: "主",
+			size: "lg",
+			onOpen: async () => {
+				await this.loadProtagonist();
+			}
+		}), this.npcModal = i({
+			id: "npc-dossier-modal",
+			title: "Hồ Sơ Nhân Vật • Danh Tướng Tam Quốc",
+			subtitle: "Tình báo nhân vật, mức độ thân thiện và bí mật sương mù chiến tranh",
+			seal: "将",
+			size: "lg"
+		});
+	}
+	async openProtagonist() {
+		await this.protagonistModal.open();
+	}
+	async closeProtagonist() {
+		await this.protagonistModal.close();
+	}
+	async openNpc(e) {
+		try {
+			this.currentNpc = await M.getNpcDossier(e), this.npcModal.setTitle(`Hồ Sơ Nhân Vật • ${this.currentNpc.nameVi}`, `Địa điểm: ${this.currentNpc.locationVi || "U Châu"} • Thân phận: ${this.currentNpc.positionVi || "Võ Tướng"}`), this.renderNpcContent(), await this.npcModal.open();
+		} catch (e) {
+			console.error("[DossiersModal] Error loading NPC:", e);
+		}
+	}
+	async closeNpc() {
+		await this.npcModal.close();
+	}
+	async loadProtagonist() {
+		try {
+			this.currentProtagonist = await M.getProtagonistDossier(), this.renderProtagonistContent();
+		} catch (e) {
+			console.error("[DossiersModal] Error loading protagonist:", e);
+		}
+	}
+	renderProtagonistContent() {
+		let e = this.currentProtagonist;
+		if (!e) return;
+		let t = e.stats, n = `
       <div class="dossier-content">
         <div class="spatial-banner-lead">
           <div class="lead-seal">主</div>
           <div class="lead-text">
-            <h3>${t.nameVi} (${t.styleName || "Chí Viễn"}) • Tuổi: ${t.age}</h3>
-            <div class="text-muted text-sm">${t.positionVi} • Cư ngụ tại ${t.locationVi}</div>
+            <h3>${e.nameVi} (${e.styleName || "Chí Viễn"}) • Tuổi: ${e.age}</h3>
+            <div class="text-muted text-sm">${e.positionVi} • Cư ngụ tại ${e.locationVi}</div>
           </div>
         </div>
 
         <div class="tactical-card p-4 bg-slate-900 rounded border border-slate-800 mb-3">
           <h4 class="text-amber-300 font-bold text-xs uppercase mb-2">Bát Diện Năng Lực (Thuộc Tính Bản Thể):</h4>
           <div class="grid grid-cols-4 gap-2 font-mono text-xs text-center bg-slate-950 p-3 rounded">
-            <div>VÕ LỰC: <strong class="text-red-400 font-bold">${e.war}</strong></div>
-            <div>MƯU TRÍ: <strong class="text-blue-400 font-bold">${e.int}</strong></div>
-            <div>THỐNG SOÁI: <strong class="text-amber-400 font-bold">${e.ldr}</strong></div>
-            <div>CHÍNH TRỊ: <strong class="text-purple-400 font-bold">${e.pol}</strong></div>
-            <div>THƯƠNG NGHIỆP: <strong class="text-yellow-400 font-bold">${e.com}</strong></div>
-            <div>NGOẠI GIAO: <strong class="text-green-400 font-bold">${e.dip}</strong></div>
-            <div>KỸ NGHỆ: <strong class="text-cyan-400 font-bold">${e.cra}</strong></div>
-            <div>HẬU CẦN: <strong class="text-orange-400 font-bold">${e.log}</strong></div>
+            <div>VÕ LỰC: <strong class="text-red-400 font-bold">${t.war}</strong></div>
+            <div>MƯU TRÍ: <strong class="text-blue-400 font-bold">${t.int}</strong></div>
+            <div>THỐNG SOÁI: <strong class="text-amber-400 font-bold">${t.ldr}</strong></div>
+            <div>CHÍNH TRỊ: <strong class="text-purple-400 font-bold">${t.pol}</strong></div>
+            <div>THƯƠNG NGHIỆP: <strong class="text-yellow-400 font-bold">${t.com}</strong></div>
+            <div>NGOẠI GIAO: <strong class="text-green-400 font-bold">${t.dip}</strong></div>
+            <div>KỸ NGHỆ: <strong class="text-cyan-400 font-bold">${t.cra}</strong></div>
+            <div>HẬU CẦN: <strong class="text-orange-400 font-bold">${t.log}</strong></div>
           </div>
         </div>
 
         <div class="tactical-card p-4 bg-slate-900 rounded border border-slate-800">
           <h4 class="text-amber-300 font-bold text-xs uppercase mb-1">Tiểu Sử & Chí Hướng:</h4>
-          <p class="text-xs text-slate-300 leading-relaxed">${t.bioVi}</p>
+          <p class="text-xs text-slate-300 leading-relaxed">${e.bioVi}</p>
         </div>
       </div>
     `;
-    this.protagonistModal.setContent(s);
-  }
-  renderNpcContent() {
-    const t = this.currentNpc;
-    if (!t) return;
-    const e = t.stats || { war: 50, int: 50, ldr: 50, pol: 50 }, s = `
+		this.protagonistModal.setContent(n);
+	}
+	renderNpcContent() {
+		let e = this.currentNpc;
+		if (!e) return;
+		let t = e.stats || {
+			war: 50,
+			int: 50,
+			ldr: 50,
+			pol: 50,
+			com: 50,
+			dip: 50,
+			cra: 50,
+			log: 50
+		}, n = `
       <div class="dossier-content">
         <div class="spatial-banner-lead">
           <div class="lead-seal">将</div>
           <div class="lead-text">
-            <h3>${t.nameVi} • Tính Cách: ${t.personality}</h3>
-            <div class="text-muted text-sm">Động cơ: ${t.motivation} • Thân phận: ${t.positionVi}</div>
+            <h3>${e.nameVi} • Tính Cách: ${e.personality}</h3>
+            <div class="text-muted text-sm">Động cơ: ${e.motivation} • Thân phận: ${e.positionVi}</div>
           </div>
         </div>
 
         <div class="tactical-card p-4 bg-slate-900 rounded border border-slate-800 mb-3">
           <h4 class="text-amber-300 font-bold text-xs uppercase mb-2">Chỉ Số Năng Lực Nổi Trội:</h4>
           <div class="grid grid-cols-4 gap-2 font-mono text-xs text-center bg-slate-950 p-3 rounded">
-            <div>VÕ: <strong class="text-red-400 font-bold">${e.war}</strong></div>
-            <div>TRÍ: <strong class="text-blue-400 font-bold">${e.int}</strong></div>
-            <div>SOÁI: <strong class="text-amber-400 font-bold">${e.ldr}</strong></div>
-            <div>CHÍNH: <strong class="text-purple-400 font-bold">${e.pol}</strong></div>
+            <div>VÕ: <strong class="text-red-400 font-bold">${t.war}</strong></div>
+            <div>TRÍ: <strong class="text-blue-400 font-bold">${t.int}</strong></div>
+            <div>SOÁI: <strong class="text-amber-400 font-bold">${t.ldr}</strong></div>
+            <div>CHÍNH: <strong class="text-purple-400 font-bold">${t.pol}</strong></div>
           </div>
         </div>
 
         <div class="tactical-card p-4 bg-slate-900 rounded border border-slate-800">
           <h4 class="text-amber-300 font-bold text-xs uppercase mb-1">Hành Trạng Lịch Sử:</h4>
-          <p class="text-xs text-slate-300 leading-relaxed">${t.bioVi || "Nhân tài hào kiệt uy chấn phương bắc."}</p>
+          <p class="text-xs text-slate-300 leading-relaxed">${e.bioVi || "Nhân tài hào kiệt uy chấn phương bắc."}</p>
         </div>
       </div>
     `;
-    this.npcModal.setContent(s);
-  }
-}
-const Z = new de();
-class he {
-  constructor() {
-    r(this, "modal");
-    r(this, "currentMode", "BUY");
-    r(this, "currentItemCode", "COM-GRAIN");
-    r(this, "currentPrice", 50);
-    this.modal = m({
-      id: "standard-trade-modal",
-      title: "Giao Dịch Hàng Hóa Chợ Phiên",
-      subtitle: "Thực thi giao thương hàng hóa, cân bằng sổ cái kép kế toán ACID",
-      seal: "貿",
-      size: "sm"
-    });
-  }
-  async open(t, e, s = 1, a = 50) {
-    this.currentMode = t, this.currentItemCode = e, this.currentPrice = a, this.modal.setTitle(
-      t === "BUY" ? "Thu Mua Vật Phẩm" : "Xuất Bán Hàng Hóa",
-      `Mã vật phẩm: ${e} • Đơn giá hiện tại: ${a} Quan`,
-      t === "BUY" ? "買" : "賣"
-    ), this.renderForm(s), await this.modal.open();
-  }
-  async close() {
-    await this.modal.close();
-  }
-  renderForm(t) {
-    const e = `
+		this.npcModal.setContent(n);
+	}
+}, P = new N(), F = class {
+	modal;
+	currentMode = "BUY";
+	currentItemCode = "COM-GRAIN";
+	currentPrice = 50;
+	constructor() {
+		this.modal = i({
+			id: "standard-trade-modal",
+			title: "Giao Dịch Hàng Hóa Chợ Phiên",
+			subtitle: "Thực thi giao thương hàng hóa, cân bằng sổ cái kép kế toán ACID",
+			seal: "貿",
+			size: "sm"
+		});
+	}
+	async open(e, t, n = 1, r = 50) {
+		this.currentMode = e, this.currentItemCode = t, this.currentPrice = r, this.modal.setTitle(e === "BUY" ? "Thu Mua Vật Phẩm" : "Xuất Bán Hàng Hóa", `Mã vật phẩm: ${t} • Đơn giá hiện tại: ${r} Quan`, e === "BUY" ? "買" : "賣"), this.renderForm(n), await this.modal.open();
+	}
+	async close() {
+		await this.modal.close();
+	}
+	renderForm(e) {
+		let t = `
       <div class="space-y-3 p-1">
         <div>
           <label class="block text-xs font-bold text-slate-300 mb-1">Mã Vật Phẩm:</label>
@@ -1362,7 +1298,7 @@ class he {
         </div>
         <div>
           <label class="block text-xs font-bold text-slate-300 mb-1">Số Lượng Giao Dịch:</label>
-          <input type="number" id="quick-trade-qty" class="modal-input w-full" min="1" value="${t}" oninput="window.QuickTradeModal.updateTotal()" />
+          <input type="number" id="quick-trade-qty" class="modal-input w-full" min="1" value="${e}" oninput="window.QuickTradeModal.updateTotal()" />
         </div>
         <div>
           <label class="block text-xs font-bold text-slate-300 mb-1">Đơn Giá Đơn Vị (Quan):</label>
@@ -1370,766 +1306,778 @@ class he {
         </div>
         <div class="bg-slate-950 p-2.5 rounded flex justify-between items-center text-xs font-mono">
           <span class="text-muted">Tổng Giá Trị:</span>
-          <span class="text-amber-400 font-bold text-sm" id="quick-trade-total">${(t * this.currentPrice).toLocaleString()} Quan</span>
+          <span class="text-amber-400 font-bold text-sm" id="quick-trade-total">${(e * this.currentPrice).toLocaleString()} Quan</span>
         </div>
         <button class="ui-btn ui-btn--accent w-full py-2 font-bold mt-2" onclick="window.QuickTradeModal.submit()">
           Xác Nhận ${this.currentMode === "BUY" ? "Thu Mua" : "Bán Hàng"}
         </button>
       </div>
     `;
-    this.modal.setContent(e);
-  }
-  updateTotal() {
-    const t = document.getElementById("quick-trade-qty"), e = document.getElementById("quick-trade-total");
-    if (!t || !e) return;
-    const s = parseFloat(t.value) || 0;
-    e.textContent = `${(s * this.currentPrice).toLocaleString()} Quan`;
-  }
-  async submit() {
-    const t = document.getElementById("quick-trade-qty"), e = parseFloat((t == null ? void 0 : t.value) || "1");
-    if (isNaN(e) || e <= 0) return;
-    const s = {
-      type: this.currentMode === "BUY" ? "TRADE_BUY" : "TRADE_SELL",
-      item_code: this.currentItemCode,
-      quantity: e,
-      unit_price: this.currentPrice,
-      counterparty: "Thương Khách Chợ Phiên",
-      idempotency_key: `TSQUICK_${this.currentMode}_${this.currentItemCode}_${Date.now()}`
-    };
-    try {
-      const a = window.dispatchDirectAction, n = a ? await a(s) : await u.post("/api/action", s);
-      if (n && n.success === !1) {
-        typeof window.showToast == "function" && window.showToast(`Bị từ chối: ${n.error || "Giao dịch thất bại"}`, !0);
-        return;
-      }
-      await this.modal.close(), typeof window.loadStatus == "function" && await window.loadStatus(), typeof window.loadDeckInventory == "function" && await window.loadDeckInventory();
-    } catch (a) {
-      typeof window.showToast == "function" && window.showToast(a.message || "Giao dịch thất bại!", !0);
-    }
-  }
-}
-const tt = new he(), B = class B {
-  static getInstance() {
-    return B.instance || (B.instance = new B()), B.instance;
-  }
-  // --- Tavern Endpoints ---
-  async getBanquetStatus() {
-    return u.get("/api/banquet/status");
-  }
-  async drinkWine() {
-    return u.post("/api/banquet/drink", {});
-  }
-  async hostBanquet(t) {
-    return u.post("/api/banquet/host", { tierId: t });
-  }
-  async swearBrotherhood(t) {
-    return u.post("/api/banquet/brotherhood", { targetNpcId: t });
-  }
-  // --- Arena Endpoints ---
-  async getArenaRoster() {
-    return u.get("/api/arena/roster");
-  }
-  async startDuel(t) {
-    return u.post("/api/arena/duel/start", { opponentId: t });
-  }
-  async executeDuelRound(t, e) {
-    return u.post("/api/arena/duel/round", { duelId: t, action: e });
-  }
-  // --- Residence Endpoints ---
-  async restAtResidence(t = 1) {
-    return u.post("/api/character/rest", { days: t });
-  }
-};
-r(B, "instance");
-let gt = B;
-const Mt = gt.getInstance();
-class ue {
-  constructor() {
-    r(this, "modal");
-    r(this, "currentDuelId", null);
-    r(this, "duelState", null);
-    this.modal = m({
-      id: "tactical-battle-modal",
-      title: "Quyết Đấu Sa Trường • Đơn Đả Độc Đấu 1v1",
-      subtitle: "Tương tác chiến thuật 4 lệnh (Công Kích, Phòng Ngự, Tuyệt Kỹ, Tụ Khí)",
-      seal: "斗",
-      size: "lg"
-    });
-  }
-  async startDuel(t) {
-    try {
-      const e = await Mt.startDuel(t);
-      this.currentDuelId = e.duelId, this.duelState = e.state, this.renderDuel(), await this.modal.open();
-    } catch (e) {
-      typeof window.showToast == "function" && window.showToast(e.message || "Lỗi khởi động giao đấu!", !0);
-    }
-  }
-  async close() {
-    await this.modal.close();
-  }
-  renderDuel() {
-    const t = this.duelState;
-    if (!t) return;
-    const e = `
+		this.modal.setContent(t);
+	}
+	updateTotal() {
+		let e = document.getElementById("quick-trade-qty"), t = document.getElementById("quick-trade-total");
+		e && t && (t.textContent = `${((parseFloat(e.value) || 0) * this.currentPrice).toLocaleString()} Quan`);
+	}
+	async submit() {
+		let e = document.getElementById("quick-trade-qty"), t = parseFloat(e?.value || "1");
+		if (isNaN(t) || t <= 0) return;
+		let n = {
+			type: this.currentMode === "BUY" ? "TRADE_BUY" : "TRADE_SELL",
+			item_code: this.currentItemCode,
+			quantity: t,
+			unit_price: this.currentPrice,
+			counterparty: "Thương Khách Chợ Phiên",
+			idempotency_key: `TSQUICK_${this.currentMode}_${this.currentItemCode}_${Date.now()}`
+		};
+		try {
+			let e = window.dispatchDirectAction, t = e ? await e(n) : await v.post("/api/action", n);
+			if (t && t.success === !1) {
+				typeof window.showToast == "function" && window.showToast(`Bị từ chối: ${t.error || "Giao dịch thất bại"}`, !0);
+				return;
+			}
+			await this.modal.close(), typeof window.loadStatus == "function" && await window.loadStatus(), typeof window.loadDeckInventory == "function" && await window.loadDeckInventory();
+		} catch (e) {
+			typeof window.showToast == "function" && window.showToast(e.message || "Giao dịch thất bại!", !0);
+		}
+	}
+}, I = new F(), L = class e {
+	static instance;
+	static getInstance() {
+		return e.instance ||= new e(), e.instance;
+	}
+	async getBanquetStatus() {
+		return v.get("/api/banquet/status");
+	}
+	async drinkWine() {
+		return v.post("/api/banquet/drink", {});
+	}
+	async hostBanquet(e) {
+		return v.post("/api/banquet/host", { tierId: e });
+	}
+	async swearBrotherhood(e) {
+		return v.post("/api/banquet/brotherhood", { targetNpcId: e });
+	}
+	async getArenaRoster() {
+		return v.get("/api/arena/roster");
+	}
+	async startDuel(e) {
+		return v.post("/api/arena/duel/start", { opponentId: e });
+	}
+	async executeDuelRound(e, t) {
+		return v.post("/api/arena/duel/round", {
+			duelId: e,
+			action: t
+		});
+	}
+	async restAtResidence(e = 1) {
+		return v.post("/api/character/rest", { days: e });
+	}
+}.getInstance(), R = class {
+	modal;
+	currentDuelId = null;
+	duelState = null;
+	constructor() {
+		this.modal = i({
+			id: "tactical-battle-modal",
+			title: "Quyết Đấu Sa Trường • Đơn Đả Độc Đấu 1v1",
+			subtitle: "Tương tác chiến thuật 4 lệnh (Công Kích, Phòng Ngự, Tuyệt Kỹ, Tụ Khí)",
+			seal: "斗",
+			size: "lg"
+		});
+	}
+	async startDuel(e) {
+		try {
+			let t = await L.startDuel(e);
+			this.currentDuelId = t.duelId, this.duelState = t.state, this.renderDuel(), await this.modal.open();
+		} catch (e) {
+			typeof window.showToast == "function" && window.showToast(e.message || "Lỗi khởi động giao đấu!", !0);
+		}
+	}
+	async close() {
+		await this.modal.close();
+	}
+	renderDuel() {
+		let e = this.duelState;
+		if (!e) return;
+		let t = `
       <div class="tactical-battle-content">
         <div class="p-3 bg-slate-950/80 rounded border border-amber-900/40 mb-3">
           <div class="flex justify-between items-center mb-3">
-            <span class="font-bold text-amber-200">Hiệp Đấu Thứ ${t.round}</span>
-            <span class="badge ${t.isConcluded ? "badge-danger" : "badge-primary"}">${t.isConcluded ? "TRẬN ĐẤU KẾT THÚC" : "ĐANG ĐỐI ĐẦU"}</span>
+            <span class="font-bold text-amber-200">Hiệp Đấu Thứ ${e.round}</span>
+            <span class="badge ${e.isConcluded ? "badge-danger" : "badge-primary"}">${e.isConcluded ? "TRẬN ĐẤU KẾT THÚC" : "ĐANG ĐỐI ĐẦU"}</span>
           </div>
 
           <div class="grid grid-cols-2 gap-3 mb-3">
             <div class="p-3 bg-slate-900 rounded border border-slate-800">
               <div class="text-xs font-bold text-amber-300 mb-1">Người Chơi</div>
               <div class="text-xs space-y-0.5 font-mono">
-                <div>Sinh Lực: <strong class="text-green-400">${t.playerHp}</strong></div>
-                <div>Khí Lực: <strong class="text-blue-400">${t.playerSpirit}</strong></div>
-                <div>Sĩ Khí: <strong class="text-amber-400">${t.playerMorale}</strong></div>
+                <div>Sinh Lực: <strong class="text-green-400">${e.playerHp}</strong></div>
+                <div>Khí Lực: <strong class="text-blue-400">${e.playerSpirit}</strong></div>
+                <div>Sĩ Khí: <strong class="text-amber-400">${e.playerMorale}</strong></div>
               </div>
             </div>
             <div class="p-3 bg-slate-900 rounded border border-slate-800">
               <div class="text-xs font-bold text-red-300 mb-1">Đối Thủ</div>
               <div class="text-xs space-y-0.5 font-mono">
-                <div>Sinh Lực: <strong class="text-red-400">${t.oppHp}</strong></div>
-                <div>Khí Lực: <strong class="text-blue-400">${t.oppSpirit}</strong></div>
-                <div>Sĩ Khí: <strong class="text-amber-400">${t.oppMorale}</strong></div>
+                <div>Sinh Lực: <strong class="text-red-400">${e.oppHp}</strong></div>
+                <div>Khí Lực: <strong class="text-blue-400">${e.oppSpirit}</strong></div>
+                <div>Sĩ Khí: <strong class="text-amber-400">${e.oppMorale}</strong></div>
               </div>
             </div>
           </div>
 
-          ${t.isConcluded ? `
+          ${e.isConcluded ? `
             <div class="text-center font-bold text-amber-300 py-2">
-              ${t.outcome || "Quyết đấu hoàn tất!"}
+              ${e.outcome || "Quyết đấu hoàn tất!"}
             </div>
-          ` : `
-            <div class="grid grid-cols-4 gap-2">
-              <button class="ui-btn ui-btn--primary ui-btn--sm" onclick="window.TacticalBattleUI.executeAction('ATTACK')">Công Kích</button>
-              <button class="ui-btn ui-btn--ghost ui-btn--sm" onclick="window.TacticalBattleUI.executeAction('DEFEND')">Phòng Ngự</button>
-              <button class="ui-btn ui-btn--accent ui-btn--sm" onclick="window.TacticalBattleUI.executeAction('SPECIAL_STRIKE')">Tuyệt Kỹ</button>
-              <button class="ui-btn ui-btn--ghost ui-btn--sm" onclick="window.TacticalBattleUI.executeAction('FOCUS_SPIRIT')">Tụ Khí</button>
-            </div>
-          `}
+          ` : "\n            <div class=\"grid grid-cols-4 gap-2\">\n              <button class=\"ui-btn ui-btn--primary ui-btn--sm\" onclick=\"window.TacticalBattleUI.executeAction('ATTACK')\">Công Kích</button>\n              <button class=\"ui-btn ui-btn--ghost ui-btn--sm\" onclick=\"window.TacticalBattleUI.executeAction('DEFEND')\">Phòng Ngự</button>\n              <button class=\"ui-btn ui-btn--accent ui-btn--sm\" onclick=\"window.TacticalBattleUI.executeAction('SPECIAL_STRIKE')\">Tuyệt Kỹ</button>\n              <button class=\"ui-btn ui-btn--ghost ui-btn--sm\" onclick=\"window.TacticalBattleUI.executeAction('FOCUS_SPIRIT')\">Tụ Khí</button>\n            </div>\n          "}
         </div>
 
         <div class="bg-black/60 p-3 rounded text-xs font-mono max-h-48 overflow-y-auto space-y-1">
-          ${t.combatLogs.map((s) => `<div>${s}</div>`).join("")}
+          ${e.combatLogs.map((e) => `<div>${e}</div>`).join("")}
         </div>
       </div>
     `;
-    this.modal.setContent(e);
-  }
-  async executeAction(t) {
-    if (this.currentDuelId)
-      try {
-        this.duelState = await Mt.executeDuelRound(this.currentDuelId, t), this.renderDuel();
-      } catch (e) {
-        typeof window.showToast == "function" && window.showToast(e.message || "Lỗi hiệp đấu!", !0);
-      }
-  }
-}
-const ot = new ue();
-class pe {
-  constructor() {
-    r(this, "travelModal");
-    r(this, "turnModal");
-    this.travelModal = m({
-      id: "travel-transit-modal",
-      title: "Lộ Trình Viễn Chinh • Dặm Trường Phong Vân",
-      subtitle: "Hành quân liên châu, khảo sát địa hình và ứng biến trước hiểm họa dọc đường",
-      seal: "行",
-      size: "md"
-    }), this.turnModal = m({
-      id: "turn-advance-modal",
-      title: "Quyết Toán Tháng • Luân Chuyển Chiến Cục",
-      subtitle: "Kết thúc tháng hiện tại, kết toán tài chính, sản nghiệp và mô phỏng thế giới sống động",
-      seal: "歲",
-      size: "md"
-    });
-  }
-  async showTravelTransit(t, e, s, a) {
-    this.travelModal.setTitle(
-      "Hành Trình Viễn Chinh",
-      `Từ ${t} → Đến ${e} (${s} ngày đường)`
-    ), this.travelModal.setContent(`
+		this.modal.setContent(t);
+	}
+	async executeAction(e) {
+		if (this.currentDuelId) try {
+			this.duelState = await L.executeDuelRound(this.currentDuelId, e), this.renderDuel();
+		} catch (e) {
+			typeof window.showToast == "function" && window.showToast(e.message || "Lỗi hiệp đấu!", !0);
+		}
+	}
+}, z = new R(), B = class {
+	travelModal;
+	turnModal;
+	constructor() {
+		this.travelModal = i({
+			id: "travel-transit-modal",
+			title: "Lộ Trình Viễn Chinh • Dặm Trường Phong Vân",
+			subtitle: "Hành quân liên châu, khảo sát địa hình và ứng biến trước hiểm họa dọc đường",
+			seal: "行",
+			size: "md"
+		}), this.turnModal = i({
+			id: "turn-advance-modal",
+			title: "Quyết Toán Tháng • Luân Chuyển Chiến Cục",
+			subtitle: "Kết thúc tháng hiện tại, kết toán tài chính, sản nghiệp và mô phỏng thế giới sống động",
+			seal: "歲",
+			size: "md"
+		});
+	}
+	async showTravelTransit(e, t, n, r) {
+		this.travelModal.setTitle("Hành Trình Viễn Chinh", `Từ ${e} → Đến ${t} (${n} ngày đường)`), this.travelModal.setContent(`
       <div class="travel-transit-body p-2 space-y-3">
         <div class="p-3 bg-slate-950 rounded border border-slate-800 text-xs font-mono">
-          ${a || "<div>Xe ngựa lăn bánh trên quan đạo phương bắc... An toàn đến nơi!</div>"}
+          ${r || "<div>Xe ngựa lăn bánh trên quan đạo phương bắc... An toàn đến nơi!</div>"}
         </div>
         <button class="ui-btn ui-btn--primary w-full py-2 font-bold" onclick="window.TravelTransitUI.close()">
           Nhập Thành
         </button>
       </div>
     `), await this.travelModal.open();
-  }
-  async openTravelTransitModal() {
-    await this.travelModal.open();
-  }
-  async closeTravelTransitModal() {
-    await this.travelModal.close();
-  }
-  async closeTravel() {
-    await this.travelModal.close();
-  }
-  async showTurnAdvance(t, e, s) {
-    this.turnModal.setTitle(
-      `Quyết Toán Lượt Thứ ${t}`,
-      `Thời gian: ${e} • Thiên thời địa lợi`
-    ), this.turnModal.setContent(`
+	}
+	async openTravelTransitModal() {
+		await this.travelModal.open();
+	}
+	async closeTravelTransitModal() {
+		await this.travelModal.close();
+	}
+	async closeTravel() {
+		await this.travelModal.close();
+	}
+	async showTurnAdvance(e, t, n) {
+		this.turnModal.setTitle(`Quyết Toán Lượt Thứ ${e}`, `Thời gian: ${t} • Thiên thời địa lợi`), this.turnModal.setContent(`
       <div class="turn-advance-body p-2 space-y-3">
         <div class="p-3 bg-slate-950 rounded border border-slate-800 text-xs font-mono space-y-1">
-          ${s || `
-            <div class="text-green-400">◆ Hoàn tất chu kỳ sản xuất hàng tháng của các xưởng.</div>
-            <div class="text-amber-300">◆ Kết toán sổ cái kép thu chi tài chính.</div>
-            <div class="text-blue-300">◆ Cập nhật tiến độ thai kỳ và bồi dưỡng thế hệ gia tộc.</div>
-          `}
+          ${n || "\n            <div class=\"text-green-400\">◆ Hoàn tất chu kỳ sản xuất hàng tháng của các xưởng.</div>\n            <div class=\"text-amber-300\">◆ Kết toán sổ cái kép thu chi tài chính.</div>\n            <div class=\"text-blue-300\">◆ Cập nhật tiến độ thai kỳ và bồi dưỡng thế hệ gia tộc.</div>\n          "}
         </div>
         <button class="ui-btn ui-btn--accent w-full py-2 font-bold" onclick="window.TurnAdvanceUI.close()">
           Tiếp Tục Mô Phỏng
         </button>
       </div>
     `), await this.turnModal.open();
-  }
-  async closeTurn() {
-    await this.turnModal.close();
-  }
-  async openTurnAdvanceModal() {
-    await this.turnModal.open();
-  }
-  async closeTurnAdvanceModal() {
-    await this.turnModal.close();
-  }
+	}
+	async closeTurn() {
+		await this.turnModal.close();
+	}
+	async openTurnAdvanceModal() {
+		await this.turnModal.open();
+	}
+	async closeTurnAdvanceModal() {
+		await this.turnModal.close();
+	}
+}, V = new B(), H = class {
+	modal;
+	constructor() {
+		this.modal = i({
+			id: "world-map-modal",
+			title: "Dư Đồ Tam Quốc • Khởi Nghĩa Khăn Vàng (184 SCN)",
+			subtitle: "Khảo sát 24 châu quận, phân bố thế lực chư hầu và dịch trạm liên thành",
+			seal: "圖",
+			size: "xl",
+			dialogClass: "world-map-dialog"
+		});
+	}
+	async open() {
+		await this.modal.open();
+		let e = window.refreshWorldMapView;
+		typeof e == "function" ? e() : typeof window.renderWorldMapSvg == "function" && window.renderWorldMapSvg();
+	}
+	async close() {
+		await this.modal.close();
+	}
+}, U = new H(), W = {
+	wu_wei: "xi_liang",
+	he_fei: "shou_chun",
+	pu_yang: "ye_cheng",
+	wu_ling: "jiang_ling"
+}, G = new class {
+	ALIASES = W;
+	state = {
+		status: "idle",
+		fetchedAt: 0,
+		bySettlement: {},
+		byMapNode: {},
+		activeExpeditions: [],
+		player: null,
+		playerFaction: null,
+		factionsById: {},
+		banditsByNode: {},
+		crisesByNode: {},
+		npcsByName: {},
+		npcsById: {},
+		playerCash: 0,
+		inventory: {},
+		specialistsByName: {},
+		specialistsByMapNode: {},
+		businesses: [],
+		guardTiers: [],
+		routesByKey: {},
+		locationsById: {},
+		locToMapNode: {},
+		caravans: [],
+		expeditions: [],
+		resourcesByNode: {},
+		resourceTotals: {},
+		errors: []
+	};
+	resolveMapNodeId(e) {
+		return W[e] || e;
+	}
+	mergeRecord(e, t) {
+		return Object.assign({}, e || {}, t || {});
+	}
+	async readJson(e) {
+		let t = await fetch(e, { headers: { Accept: "application/json" } });
+		if (!t.ok) throw Error(`${e} returned ${t.status}`);
+		return t.json();
+	}
+	async load(e = !1) {
+		if (!e && this.state.status === "ready" && Date.now() - this.state.fetchedAt < 1e4) return this.state;
+		this.state.status = "loading", this.state.errors = [];
+		let [t, n, r, i, a, o, s, c, l, u, d, f, p, m, h, g, _] = await Promise.allSettled([
+			this.readJson("/api/garrisons"),
+			this.readJson("/api/factions/settlements"),
+			this.readJson("/api/factions"),
+			this.readJson("/api/military/status"),
+			this.readJson("/api/logistics/strongholds"),
+			this.readJson("/api/ecology/crises"),
+			this.readJson("/api/npcs"),
+			this.readJson("/api/status"),
+			this.readJson("/api/inventory"),
+			this.readJson("/api/workforce/specialists"),
+			this.readJson("/api/workforce/businesses"),
+			this.readJson("/api/caravans/guard-tiers"),
+			this.readJson("/api/military/routes"),
+			this.readJson("/api/locations"),
+			this.readJson("/api/logistics/caravans"),
+			this.readJson("/api/expeditions"),
+			this.readJson("/api/professions/nodes")
+		]), v = t.status === "fulfilled" && t.value.success && t.value.garrisons || [], y = n.status === "fulfilled" && n.value.success && n.value.settlements || [], b = r.status === "fulfilled" && r.value.success && r.value.factions || [], x = i.status === "fulfilled" && i.value.success ? i.value : null, S = a.status === "fulfilled" && a.value.success && a.value.strongholds || [], C = o.status === "fulfilled" && o.value.success && o.value.crises || [], w = s.status === "fulfilled" && s.value.success && s.value.npcs || [], T = c.status === "fulfilled" && c.value.success ? c.value : null, E = l.status === "fulfilled" && l.value.success && l.value.items || [], D = u.status === "fulfilled" && u.value.success && u.value.specialists || [], O = d.status === "fulfilled" && d.value.success && d.value.businesses || [], k = f.status === "fulfilled" && f.value.success && f.value.tiers || [], A = p.status === "fulfilled" && p.value.success && p.value.routes || [], j = m.status === "fulfilled" && m.value.success && m.value.locations || [], M = h.status === "fulfilled" && h.value.success && h.value.caravans || [], N = g.status === "fulfilled" && g.value.success && g.value.expeditions || [], P = _.status === "fulfilled" && _.value.success && _.value.nodes || [];
+		t.status === "rejected" && this.state.errors.push("garrisons"), n.status === "rejected" && this.state.errors.push("factions/settlements"), r.status === "rejected" && this.state.errors.push("factions"), i.status === "rejected" && this.state.errors.push("military"), a.status === "rejected" && this.state.errors.push("strongholds"), o.status === "rejected" && this.state.errors.push("crises"), s.status === "rejected" && this.state.errors.push("npcs"), c.status === "rejected" && this.state.errors.push("status"), l.status === "rejected" && this.state.errors.push("inventory"), u.status === "rejected" && this.state.errors.push("workforce"), d.status === "rejected" && this.state.errors.push("businesses"), f.status === "rejected" && this.state.errors.push("guard-tiers"), p.status === "rejected" && this.state.errors.push("routes"), m.status === "rejected" && this.state.errors.push("locations"), h.status === "rejected" && this.state.errors.push("caravans"), g.status === "rejected" && this.state.errors.push("expeditions"), _.status === "rejected" && this.state.errors.push("resources");
+		let F = {};
+		b.forEach((e) => {
+			let t = e && e.factionId;
+			t && (F[t] = e);
+		});
+		let I = {};
+		v.forEach((e) => {
+			e && e.settlementId && (I[e.settlementId] = this.mergeRecord(I[e.settlementId], e));
+		}), y.forEach((e) => {
+			e && e.settlementId && (I[e.settlementId] = this.mergeRecord(I[e.settlementId], e));
+		}), Object.keys(I).forEach((e) => {
+			let t = I[e], n = t.rulerFactionId ? F[t.rulerFactionId] : null;
+			if (!n) return;
+			let r = n;
+			t.factionNameVi = r.nameVi, t.factionNameEn = r.nameEn, t.factionColor = r.colorHex, t.factionMilitaryPower = r.militaryPower;
+		});
+		let L = {};
+		Object.keys(I).forEach((e) => {
+			this.resolveMapNodeId(e) === e && (L[e] = this.mergeRecord(L[e], {
+				...I[e],
+				sourceSettlementId: e
+			}));
+		}), Object.keys(I).forEach((e) => {
+			let t = this.resolveMapNodeId(e);
+			L[t] || (L[t] = this.mergeRecord(L[t], {
+				...I[e],
+				sourceSettlementId: e
+			}));
+		}), this.state.bySettlement = I, this.state.byMapNode = L, this.state.activeExpeditions = x && x.activeExpeditions || [], this.state.player = x && x.commander || null, this.state.playerFaction = b.find((e) => e.leaderId === "PLY-0001") || null, this.state.factionsById = F;
+		let R = {};
+		S.forEach((e) => {
+			let t = e.status, n = e.locationNear;
+			if (t !== "ACTIVE" || !n) return;
+			let r = this.resolveMapNodeId(n);
+			(R[r] ||= []).push(e);
+		});
+		let z = {};
+		C.forEach((e) => {
+			let t = e.settlementId;
+			if (!t) return;
+			let n = this.resolveMapNodeId(t);
+			(z[n] ||= []).push(e);
+		}), this.state.banditsByNode = R, this.state.crisesByNode = z;
+		let B = {}, V = {};
+		w.forEach((e) => {
+			let t = e.name, n = e.npc_id || e.npcId;
+			n && (V[n] = e), t && (B[this.normalizeName(t)] = e);
+		}), this.state.npcsByName = B, this.state.npcsById = V;
+		let H = Number(T?.player?.liquid_cash) || 0, U = {};
+		E.forEach((e) => {
+			let t = e.item_code || e.itemCode, n = Number(e.quantity) || 0;
+			t && (U[t] = n);
+		}), this.state.playerCash = H, this.state.inventory = U, this.state.guardTiers = k;
+		let W = {};
+		D.forEach((e) => {
+			let t = e.nameVi;
+			t && (W[this.normalizeName(t)] = e);
+		}), this.state.specialistsByName = W, this.state.caravans = M, this.state.expeditions = N;
+		let G = {}, K = {};
+		P.forEach((e) => {
+			let t = String(e.settlementId || ""), n = this.resolveMapNodeId(t), r = String(e.resourceType || "");
+			n && r && (G[n] || (G[n] = {
+				types: {},
+				nodes: []
+			}), G[n].types[r] = (G[n].types[r] || 0) + 1, G[n].nodes.push(e), K[r] = (K[r] || 0) + 1);
+		}), this.state.resourcesByNode = G, this.state.resourceTotals = K;
+		let q = {};
+		j.forEach((e) => {
+			let t = e.locationId;
+			t && (q[t] = e);
+		}), this.state.locationsById = q;
+		let J = {};
+		if (typeof window < "u") {
+			let e = window.SETTLEMENT_LABELS || {};
+			Object.keys(e).forEach((t) => {
+				if (t === "wu_wei") return;
+				let n = e[t] && e[t].vi;
+				n && (J[this.normalizeLocationLabel(n)] = t);
+			});
+		}
+		let Y = {};
+		j.forEach((e) => {
+			let t = e.locationId, n = e.nameVi;
+			if (!t || !n) return;
+			let r = J[this.normalizeLocationLabel(n)];
+			r && (Y[t] = r);
+		}), this.state.locToMapNode = Y;
+		let X = {};
+		O.forEach((e) => {
+			let t = e.businessId, n = e.locationId;
+			t && n && (X[t] = n);
+		});
+		let Z = {};
+		D.forEach((e) => {
+			let t = !!e.isHired, n = e.assignedBusinessId, r = n ? X[n] : null, i = e.baselineLocation, a = t && r ? r : i, o = a ? Y[a] : null;
+			o && (Z[o] ||= []).push(e);
+		}), this.state.businesses = O, this.state.specialistsByMapNode = Z;
+		let Q = {};
+		return A.forEach((e) => {
+			let t = Y[e.sourceLocationId || ""], n = Y[e.targetLocationId || ""];
+			if (!t || !n) return;
+			let r = e.descriptionEn ? e.descriptionEn.trim() : "", i = r && !/^RT-/i.test(r) && /^[\x20-\x7E]+$/.test(r) ? r : void 0, a = {
+				from: t,
+				to: n,
+				distanceLi: e.distanceLi,
+				terrainType: e.terrainType,
+				marchDays: e.standardMarchDays,
+				grainCost: e.grainProvisionCost,
+				ambushRisk: e.ambushRiskLevel,
+				descVi: e.descriptionVi,
+				descEn: i
+			}, o = `${t}|${n}`, s = `${n}|${t}`;
+			Q[o] || (Q[o] = a), Q[s] || (Q[s] = {
+				...a,
+				from: n,
+				to: t
+			});
+		}), this.state.routesByKey = Q, this.state.status = this.state.errors.length === 17 ? "error" : "ready", this.state.fetchedAt = Date.now(), this.state;
+	}
+	getForMapNode(e) {
+		return e && (this.state.byMapNode[e] || this.state.bySettlement[e]) || null;
+	}
+	normalizeName(e) {
+		return e.normalize("NFC").trim().toLowerCase();
+	}
+	normalizeLocationLabel(e) {
+		return e.replace(/\s*\(.*?\)/g, "").replace(/\s*&.*/g, "").replace(/Kinh Đô\s*/g, "").replace(/Tây Đô\s*/g, "").replace(/Imperial Capital\s*/gi, "").trim().toLowerCase();
+	}
+	findNpcByName(e) {
+		return e && this.state.npcsByName[this.normalizeName(e)] || null;
+	}
+	findSpecialistByName(e) {
+		return e && this.state.specialistsByName[this.normalizeName(e)] || null;
+	}
+	getLocIdForNode(e) {
+		let t = Object.entries(this.state.locToMapNode).find(([, t]) => t === e);
+		return t ? t[0] : null;
+	}
+	getSpecialistsForMapNode(e) {
+		return [...this.state.specialistsByMapNode[e] || []].sort((e, t) => {
+			let n = !!e.isHired;
+			if (n !== !!t.isHired) return n ? 1 : -1;
+			let r = String(e.nameVi || ""), i = String(t.nameVi || "");
+			return r.localeCompare(i);
+		});
+	}
+	getRecruitRequirement(e) {
+		let t = this.findSpecialistByName(e);
+		if (!t) return {
+			canRecruit: !0,
+			signingBonus: null,
+			isHired: !1,
+			reasonVi: "",
+			reasonEn: ""
+		};
+		let n = !!t.isHired, r = Number(t.signingBonus) || 0;
+		return n ? {
+			canRecruit: !1,
+			signingBonus: r,
+			isHired: n,
+			reasonVi: "Đã được chiêu mộ",
+			reasonEn: "Already recruited"
+		} : this.state.playerCash < r ? {
+			canRecruit: !1,
+			signingBonus: r,
+			isHired: n,
+			reasonVi: `Cần ${r} quan chiêu mộ`,
+			reasonEn: `Need ${r} cash to recruit`
+		} : {
+			canRecruit: !0,
+			signingBonus: r,
+			isHired: n,
+			reasonVi: "",
+			reasonEn: ""
+		};
+	}
+	getActionRequirements() {
+		let e = this.state.playerCash, t = Object.values(this.state.inventory).filter((e) => e > 0).length, n = this.state.guardTiers.length ? Math.min(...this.state.guardTiers.map((e) => Number(e.costQian) || 0)) : null, r = !0, i = "", a = "";
+		return n == null ? (r = !1, i = "Chưa tải được bảng giá hộ vệ", a = "Guard prices are unavailable") : t === 0 ? (r = !1, i = "Kho không có hàng để xuất", a = "No cargo in the warehouse") : e < n && (r = !1, i = `Cần tối thiểu ${n} quan thuê hộ vệ`, a = `Need at least ${n} cash for guards`), {
+			cash: e,
+			cargoKinds: t,
+			minGuardCost: n,
+			canDispatchCaravan: r,
+			reasonVi: i,
+			reasonEn: a
+		};
+	}
+	getRoute(e, t) {
+		return this.state.routesByKey[`${e}|${t}`] || null;
+	}
+	getLivingEntities() {
+		return {
+			caravans: this.state.caravans.filter((e) => String(e.status).toUpperCase() === "EN_ROUTE").map((e) => ({
+				...e,
+				from: this.resolveMapNodeId(String(e.fromSettlementId || "")),
+				to: this.resolveMapNodeId(String(e.toSettlementId || "")),
+				progress: Number(e.routeProgress) || 0
+			})).filter((e) => e.from && e.to),
+			expeditions: this.state.expeditions.filter((e) => String(e.status).toUpperCase() === "MARCHING").map((e) => {
+				let t = e;
+				return {
+					...e,
+					from: this.resolveMapNodeId(String(t.origin_settlement_id || t.originSettlementId || "")),
+					to: this.resolveMapNodeId(String(t.target_settlement_id || t.targetSettlementId || ""))
+				};
+			}).filter((e) => e.from && e.to),
+			bandits: Object.entries(this.state.banditsByNode).flatMap(([e, t]) => t.map((t) => ({
+				...t,
+				nodeId: e
+			}))),
+			crises: Object.entries(this.state.crisesByNode).flatMap(([e, t]) => t.map((t) => ({
+				...t,
+				nodeId: e
+			})))
+		};
+	}
+	getStatusForMapNode(e) {
+		let t = this.getForMapNode(e);
+		if (!t) return {
+			key: "unknown",
+			labelVi: "Chưa rõ",
+			labelEn: "Unknown",
+			className: "capital"
+		};
+		let n = this.state.playerFaction?.factionId, r = !!(t.rulerFactionId && n && t.rulerFactionId === n), i = Number(t.garrisonTroops ?? 0), a = Number(t.granaryGrain ?? 0), o = Number(t.publicOrder ?? 100);
+		return r ? i < 200 || a <= 0 || o < 30 ? {
+			key: "strained",
+			labelVi: "Suy Yếu",
+			labelEn: "Strained",
+			className: "battle"
+		} : {
+			key: "stable",
+			labelVi: "An Định",
+			labelEn: "Stable",
+			className: "safe"
+		} : {
+			key: "foreign",
+			labelVi: "Ngoại Bang",
+			labelEn: "Foreign Holding",
+			className: "capital"
+		};
+	}
+	getThreatForMapNode(e) {
+		let t = this.getForMapNode(e), n = this.state.banditsByNode[e] || [], r = this.state.crisesByNode[e] || [], i = [], a = [], o = 0;
+		if (n.length > 0) {
+			let e = Math.max(...n.map((e) => Number(e.banditPower) || 0));
+			o += Math.min(3, e / 150), i.push(`${n.length} ổ phỉ`), a.push(`${n.length} bandit lair${n.length > 1 ? "s" : ""}`);
+		}
+		r.forEach((e) => {
+			let t = Number(e.severityLevel) || 1;
+			o += Math.min(3, t);
+			let n = e.titleVi || "Khủng hoảng";
+			i.push(n), a.push(n);
+		});
+		let s = t && Number.isFinite(t.garrisonTroops) ? Number(t.garrisonTroops) : null, c = t && Number.isFinite(t.publicOrder) ? Number(t.publicOrder) : null;
+		s != null && s < 500 && (o += 1, i.push("Đồn trú mỏng"), a.push("Thin garrison")), c != null && c < 40 && (o += 1, i.push("Trật tự thấp"), a.push("Low public order"));
+		let l = o >= 3 ? "HIGH" : o >= 1.5 ? "MODERATE" : "LOW";
+		return {
+			level: l,
+			...{
+				LOW: {
+					labelVi: "Thấp",
+					labelEn: "Low",
+					color: "#34d399"
+				},
+				MODERATE: {
+					labelVi: "Vừa",
+					labelEn: "Moderate",
+					color: "#fbbf24"
+				},
+				HIGH: {
+					labelVi: "Cao",
+					labelEn: "High",
+					color: "#f87171"
+				}
+			}[l],
+			reasonsVi: i,
+			reasonsEn: a
+		};
+	}
+	getResourceDistribution() {
+		return {
+			byNode: this.state.resourcesByNode,
+			totals: this.state.resourceTotals,
+			types: Object.keys(this.state.resourceTotals).sort()
+		};
+	}
+	getResourceNodesForMapNode(e) {
+		return this.state.resourcesByNode[e]?.nodes || [];
+	}
+	hasArmy() {
+		return Array.isArray(this.state.activeExpeditions) && this.state.activeExpeditions.length > 0;
+	}
+	getState() {
+		return this.state;
+	}
+}();
+// src/client/features/legacy-bridge.ts
+function K() {
+	if (typeof window > "u") return;
+	let t = window;
+	t.ModalShellCore = {
+		createModalShell: i,
+		modalStack: e
+	}, t.UI = g, t.LineageFamilyUI = {
+		open: (e) => S.open(e),
+		close: () => S.close(),
+		setFilter: (e) => S.setFilter(e),
+		proposeMarriage: (e) => S.proposeMarriage(e),
+		restCohabit: (e) => S.restCohabit(e),
+		assignRole: (e, t) => S.assignRole(e, t),
+		designateHeir: (e) => S.designateHeir(e),
+		assignMentorDialog: (e) => S.assignMentorDialog(e),
+		executeSuccession: () => S.executeSuccession()
+	}, t.EquipmentUI = {
+		openEquipmentModal: (e, t) => E.open(e, t),
+		closeEquipmentModal: () => E.close(),
+		switchTab: (e) => E.modal.switchTab(e),
+		equip: (e, t, n) => E.equip(e, t, n),
+		unequip: (e, t) => E.unequip(e, t),
+		executeForge: () => E.executeForge()
+	}, t.EnterpriseUI = {
+		openEnterpriseModal: (e) => A.open(e),
+		closeEnterpriseModal: () => A.close(),
+		depositSafeCash: (e) => A.depositSafeCash(e),
+		withdrawSafeCash: (e) => A.withdrawSafeCash(e),
+		executeWork: (e) => A.executeWork(e)
+	}, t.ProtagonistDossierModal = {
+		open: () => P.openProtagonist(),
+		close: () => P.closeProtagonist()
+	}, t.NpcDossierModal = {
+		open: (e) => P.openNpc(e),
+		close: () => P.closeNpc()
+	}, t.QuickTradeModal = {
+		open: (e, t, n, r) => I.open(e, t, n, r),
+		close: () => I.close(),
+		updateTotal: () => I.updateTotal(),
+		submit: () => I.submit()
+	}, t.TacticalBattleUI = {
+		startDuel: (e) => z.startDuel(e),
+		close: () => z.close(),
+		executeAction: (e) => z.executeAction(e)
+	}, t.TravelTransitUI = {
+		show: (e, t, n, r) => V.showTravelTransit(e, t, n, r),
+		close: () => V.closeTravel(),
+		openLegacy: () => V.openTravelTransitModal(),
+		closeLegacy: () => V.closeTravelTransitModal()
+	}, t.TurnAdvanceUI = {
+		show: (e, t, n) => V.showTurnAdvance(e, t, n),
+		close: () => V.closeTurn(),
+		openLegacy: () => V.openTurnAdvanceModal(),
+		closeLegacy: () => V.closeTurnAdvanceModal()
+	}, t.WorldMapUI = {
+		open: () => U.open(),
+		close: () => U.close()
+	}, t.MapLiveService = {
+		load: (e = !1) => G.load(e),
+		getForMapNode: (e) => G.getForMapNode(e),
+		getStatusForMapNode: (e) => G.getStatusForMapNode(e),
+		getThreatForMapNode: (e) => G.getThreatForMapNode(e),
+		findNpcByName: (e) => G.findNpcByName(e),
+		findSpecialistByName: (e) => G.findSpecialistByName(e),
+		getSpecialistsForMapNode: (e) => G.getSpecialistsForMapNode(e),
+		getLocIdForNode: (e) => G.getLocIdForNode(e),
+		getRecruitRequirement: (e) => G.getRecruitRequirement(e),
+		getActionRequirements: () => G.getActionRequirements(),
+		getRoute: (e, t) => G.getRoute(e, t),
+		getLivingEntities: () => G.getLivingEntities(),
+		getResourceDistribution: () => G.getResourceDistribution(),
+		getResourceNodesForMapNode: (e) => G.getResourceNodesForMapNode(e),
+		resolveMapNodeId: (e) => G.resolveMapNodeId(e),
+		hasArmy: () => G.hasArmy(),
+		getState: () => G.getState(),
+		ALIASES: G.ALIASES
+	}, console.log("[ThreeKingdoms-AgentEngine] All 14 client feature slices successfully bridged to window.*");
 }
-const x = new pe();
-class be {
-  constructor() {
-    r(this, "modal");
-    this.modal = m({
-      id: "world-map-modal",
-      title: "Dư Đồ Tam Quốc • Khởi Nghĩa Khăn Vàng (184 SCN)",
-      subtitle: "Khảo sát 24 châu quận, phân bố thế lực chư hầu và dịch trạm liên thành",
-      seal: "圖",
-      size: "xl",
-      dialogClass: "world-map-dialog"
-    });
-  }
-  async open() {
-    await this.modal.open();
-    const t = window.refreshWorldMapView;
-    typeof t == "function" ? t() : typeof window.renderWorldMapSvg == "function" && window.renderWorldMapSvg();
-  }
-  async close() {
-    await this.modal.close();
-  }
-}
-const At = new be(), Bt = {
-  wu_wei: "xi_liang",
-  he_fei: "shou_chun",
-  pu_yang: "ye_cheng",
-  wu_ling: "jiang_ling"
-};
-class ge {
-  constructor() {
-    r(this, "ALIASES", Bt);
-    r(this, "state", {
-      status: "idle",
-      fetchedAt: 0,
-      bySettlement: {},
-      byMapNode: {},
-      activeExpeditions: [],
-      player: null,
-      playerFaction: null,
-      factionsById: {},
-      banditsByNode: {},
-      crisesByNode: {},
-      npcsByName: {},
-      npcsById: {},
-      playerCash: 0,
-      inventory: {},
-      specialistsByName: {},
-      specialistsByMapNode: {},
-      businesses: [],
-      guardTiers: [],
-      routesByKey: {},
-      locationsById: {},
-      locToMapNode: {},
-      caravans: [],
-      expeditions: [],
-      resourcesByNode: {},
-      resourceTotals: {},
-      errors: []
-    });
-  }
-  resolveMapNodeId(t) {
-    return Bt[t] || t;
-  }
-  mergeRecord(t, e) {
-    return Object.assign({}, t || {}, e || {});
-  }
-  async readJson(t) {
-    const e = await fetch(t, { headers: { Accept: "application/json" } });
-    if (!e.ok) throw new Error(`${t} returned ${e.status}`);
-    return e.json();
-  }
-  async load(t = !1) {
-    var It;
-    if (!t && this.state.status === "ready" && Date.now() - this.state.fetchedAt < 1e4)
-      return this.state;
-    this.state.status = "loading", this.state.errors = [];
-    const [
-      e,
-      s,
-      a,
-      n,
-      l,
-      h,
-      b,
-      C,
-      $,
-      D,
-      f,
-      y,
-      E,
-      F,
-      U,
-      G,
-      j
-    ] = await Promise.allSettled([
-      this.readJson("/api/garrisons"),
-      this.readJson("/api/factions/settlements"),
-      this.readJson("/api/factions"),
-      this.readJson("/api/military/status"),
-      this.readJson("/api/logistics/strongholds"),
-      this.readJson("/api/ecology/crises"),
-      this.readJson("/api/npcs"),
-      this.readJson("/api/status"),
-      this.readJson("/api/inventory"),
-      this.readJson("/api/workforce/specialists"),
-      this.readJson("/api/workforce/businesses"),
-      this.readJson("/api/caravans/guard-tiers"),
-      this.readJson("/api/military/routes"),
-      this.readJson("/api/locations"),
-      this.readJson("/api/logistics/caravans"),
-      this.readJson("/api/expeditions"),
-      this.readJson("/api/professions/nodes")
-    ]), Dt = e.status === "fulfilled" && e.value.success ? e.value.garrisons || [] : [], Rt = s.status === "fulfilled" && s.value.success ? s.value.settlements || [] : [], vt = a.status === "fulfilled" && a.value.success ? a.value.factions || [] : [], Q = n.status === "fulfilled" && n.value.success ? n.value : null, _t = l.status === "fulfilled" && l.value.success ? l.value.strongholds || [] : [], Vt = h.status === "fulfilled" && h.value.success ? h.value.crises || [] : [], Ot = b.status === "fulfilled" && b.value.success ? b.value.npcs || [] : [], et = C.status === "fulfilled" && C.value.success ? C.value : null, Pt = $.status === "fulfilled" && $.value.success ? $.value.items || [] : [], ft = D.status === "fulfilled" && D.value.success ? D.value.specialists || [] : [], wt = f.status === "fulfilled" && f.value.success ? f.value.businesses || [] : [], qt = y.status === "fulfilled" && y.value.success ? y.value.tiers || [] : [], Kt = E.status === "fulfilled" && E.value.success ? E.value.routes || [] : [], yt = F.status === "fulfilled" && F.value.success ? F.value.locations || [] : [], Ft = U.status === "fulfilled" && U.value.success ? U.value.caravans || [] : [], Ut = G.status === "fulfilled" && G.value.success ? G.value.expeditions || [] : [], Gt = j.status === "fulfilled" && j.value.success ? j.value.nodes || [] : [];
-    e.status === "rejected" && this.state.errors.push("garrisons"), s.status === "rejected" && this.state.errors.push("factions/settlements"), a.status === "rejected" && this.state.errors.push("factions"), n.status === "rejected" && this.state.errors.push("military"), l.status === "rejected" && this.state.errors.push("strongholds"), h.status === "rejected" && this.state.errors.push("crises"), b.status === "rejected" && this.state.errors.push("npcs"), C.status === "rejected" && this.state.errors.push("status"), $.status === "rejected" && this.state.errors.push("inventory"), D.status === "rejected" && this.state.errors.push("workforce"), f.status === "rejected" && this.state.errors.push("businesses"), y.status === "rejected" && this.state.errors.push("guard-tiers"), E.status === "rejected" && this.state.errors.push("routes"), F.status === "rejected" && this.state.errors.push("locations"), U.status === "rejected" && this.state.errors.push("caravans"), G.status === "rejected" && this.state.errors.push("expeditions"), j.status === "rejected" && this.state.errors.push("resources");
-    const st = {};
-    vt.forEach((o) => {
-      const c = o && o.factionId;
-      c && (st[c] = o);
-    });
-    const v = {};
-    Dt.forEach((o) => {
-      !o || !o.settlementId || (v[o.settlementId] = this.mergeRecord(v[o.settlementId], o));
-    }), Rt.forEach((o) => {
-      !o || !o.settlementId || (v[o.settlementId] = this.mergeRecord(v[o.settlementId], o));
-    }), Object.keys(v).forEach((o) => {
-      const c = v[o], d = c.rulerFactionId ? st[c.rulerFactionId] : null;
-      if (!d) return;
-      const p = d;
-      c.factionNameVi = p.nameVi, c.factionNameEn = p.nameEn, c.factionColor = p.colorHex, c.factionMilitaryPower = p.militaryPower;
-    });
-    const R = {};
-    Object.keys(v).forEach((o) => {
-      this.resolveMapNodeId(o) === o && (R[o] = this.mergeRecord(R[o], {
-        ...v[o],
-        sourceSettlementId: o
-      }));
-    }), Object.keys(v).forEach((o) => {
-      const c = this.resolveMapNodeId(o);
-      R[c] || (R[c] = this.mergeRecord(R[c], {
-        ...v[o],
-        sourceSettlementId: o
-      }));
-    }), this.state.bySettlement = v, this.state.byMapNode = R, this.state.activeExpeditions = Q && Q.activeExpeditions || [], this.state.player = Q && Q.commander || null, this.state.playerFaction = vt.find(
-      (o) => o.leaderId === "PLY-0001"
-    ) || null, this.state.factionsById = st;
-    const W = {};
-    _t.forEach((o) => {
-      const c = o.status, d = o.locationNear;
-      if (c !== "ACTIVE" || !d) return;
-      const p = this.resolveMapNodeId(d);
-      (W[p] || (W[p] = [])).push(o);
-    });
-    const z = {};
-    Vt.forEach((o) => {
-      const c = o.settlementId;
-      if (!c) return;
-      const d = this.resolveMapNodeId(c);
-      (z[d] || (z[d] = [])).push(o);
-    }), this.state.banditsByNode = W, this.state.crisesByNode = z;
-    const Tt = {}, xt = {};
-    Ot.forEach((o) => {
-      const c = o.name, d = o.npc_id || o.npcId;
-      d && (xt[d] = o), c && (Tt[this.normalizeName(c)] = o);
-    }), this.state.npcsByName = Tt, this.state.npcsById = xt;
-    const jt = Number(
-      (It = et == null ? void 0 : et.player) == null ? void 0 : It.liquid_cash
-    ) || 0, Nt = {};
-    Pt.forEach((o) => {
-      const c = o.item_code || o.itemCode, d = Number(o.quantity) || 0;
-      c && (Nt[c] = d);
-    }), this.state.playerCash = jt, this.state.inventory = Nt, this.state.guardTiers = qt;
-    const Ct = {};
-    ft.forEach((o) => {
-      const c = o.nameVi;
-      c && (Ct[this.normalizeName(c)] = o);
-    }), this.state.specialistsByName = Ct, this.state.caravans = Ft, this.state.expeditions = Ut;
-    const _ = {}, at = {};
-    Gt.forEach((o) => {
-      const c = String(o.settlementId || ""), d = this.resolveMapNodeId(c), p = String(o.resourceType || "");
-      !d || !p || (_[d] || (_[d] = { types: {}, nodes: [] }), _[d].types[p] = (_[d].types[p] || 0) + 1, _[d].nodes.push(o), at[p] = (at[p] || 0) + 1);
-    }), this.state.resourcesByNode = _, this.state.resourceTotals = at;
-    const $t = {};
-    yt.forEach((o) => {
-      const c = o.locationId;
-      c && ($t[c] = o);
-    }), this.state.locationsById = $t;
-    const Et = {};
-    if (typeof window < "u") {
-      const o = window.SETTLEMENT_LABELS || {};
-      Object.keys(o).forEach((c) => {
-        if (c === "wu_wei") return;
-        const d = o[c] && o[c].vi;
-        d && (Et[this.normalizeLocationLabel(d)] = c);
-      });
-    }
-    const O = {};
-    yt.forEach((o) => {
-      const c = o.locationId, d = o.nameVi;
-      if (!c || !d) return;
-      const p = Et[this.normalizeLocationLabel(d)];
-      p && (O[c] = p);
-    }), this.state.locToMapNode = O;
-    const St = {};
-    wt.forEach((o) => {
-      const c = o.businessId, d = o.locationId;
-      c && d && (St[c] = d);
-    });
-    const Y = {};
-    ft.forEach((o) => {
-      const c = !!o.isHired, d = o.assignedBusinessId, p = d ? St[d] : null, it = o.baselineLocation, q = c && p ? p : it, S = q ? O[q] : null;
-      S && (Y[S] || (Y[S] = [])).push(o);
-    }), this.state.businesses = wt, this.state.specialistsByMapNode = Y;
-    const P = {};
-    return Kt.forEach((o) => {
-      const c = O[o.sourceLocationId || ""], d = O[o.targetLocationId || ""];
-      if (!c || !d) return;
-      const p = o.descriptionEn ? o.descriptionEn.trim() : "", it = p && !/^RT-/i.test(p) && /^[\x20-\x7E]+$/.test(p) ? p : void 0, q = {
-        from: c,
-        to: d,
-        distanceLi: o.distanceLi,
-        terrainType: o.terrainType,
-        marchDays: o.standardMarchDays,
-        grainCost: o.grainProvisionCost,
-        ambushRisk: o.ambushRiskLevel,
-        descVi: o.descriptionVi,
-        descEn: it
-      }, S = `${c}|${d}`, Lt = `${d}|${c}`;
-      P[S] || (P[S] = q), P[Lt] || (P[Lt] = { ...q, from: d, to: c });
-    }), this.state.routesByKey = P, this.state.status = this.state.errors.length === 17 ? "error" : "ready", this.state.fetchedAt = Date.now(), this.state;
-  }
-  getForMapNode(t) {
-    return t && (this.state.byMapNode[t] || this.state.bySettlement[t]) || null;
-  }
-  normalizeName(t) {
-    return t.normalize("NFC").trim().toLowerCase();
-  }
-  normalizeLocationLabel(t) {
-    return t.replace(/\s*\(.*?\)/g, "").replace(/\s*&.*/g, "").replace(/Kinh Đô\s*/g, "").replace(/Tây Đô\s*/g, "").replace(/Imperial Capital\s*/gi, "").trim().toLowerCase();
-  }
-  findNpcByName(t) {
-    return t && this.state.npcsByName[this.normalizeName(t)] || null;
-  }
-  findSpecialistByName(t) {
-    return t && this.state.specialistsByName[this.normalizeName(t)] || null;
-  }
-  getLocIdForNode(t) {
-    const e = Object.entries(this.state.locToMapNode).find(([, s]) => s === t);
-    return e ? e[0] : null;
-  }
-  getSpecialistsForMapNode(t) {
-    return [...this.state.specialistsByMapNode[t] || []].sort((s, a) => {
-      const n = !!s.isHired, l = !!a.isHired;
-      if (n !== l) return n ? 1 : -1;
-      const h = String(s.nameVi || ""), b = String(a.nameVi || "");
-      return h.localeCompare(b);
-    });
-  }
-  getRecruitRequirement(t) {
-    const e = this.findSpecialistByName(t);
-    if (!e)
-      return { canRecruit: !0, signingBonus: null, isHired: !1, reasonVi: "", reasonEn: "" };
-    const s = !!e.isHired, a = Number(e.signingBonus) || 0;
-    return s ? { canRecruit: !1, signingBonus: a, isHired: s, reasonVi: "Đã được chiêu mộ", reasonEn: "Already recruited" } : this.state.playerCash < a ? {
-      canRecruit: !1,
-      signingBonus: a,
-      isHired: s,
-      reasonVi: `Cần ${a} quan chiêu mộ`,
-      reasonEn: `Need ${a} cash to recruit`
-    } : { canRecruit: !0, signingBonus: a, isHired: s, reasonVi: "", reasonEn: "" };
-  }
-  getActionRequirements() {
-    const t = this.state.playerCash, e = Object.values(this.state.inventory).filter((h) => h > 0).length, s = this.state.guardTiers.length ? Math.min(...this.state.guardTiers.map((h) => Number(h.costQian) || 0)) : null;
-    let a = !0, n = "", l = "";
-    return s == null ? (a = !1, n = "Chưa tải được bảng giá hộ vệ", l = "Guard prices are unavailable") : e === 0 ? (a = !1, n = "Kho không có hàng để xuất", l = "No cargo in the warehouse") : t < s && (a = !1, n = `Cần tối thiểu ${s} quan thuê hộ vệ`, l = `Need at least ${s} cash for guards`), { cash: t, cargoKinds: e, minGuardCost: s, canDispatchCaravan: a, reasonVi: n, reasonEn: l };
-  }
-  getRoute(t, e) {
-    return this.state.routesByKey[`${t}|${e}`] || null;
-  }
-  getLivingEntities() {
-    const t = this.state.caravans.filter((n) => String(n.status).toUpperCase() === "EN_ROUTE").map((n) => ({
-      ...n,
-      from: this.resolveMapNodeId(String(n.fromSettlementId || "")),
-      to: this.resolveMapNodeId(String(n.toSettlementId || "")),
-      progress: Number(n.routeProgress) || 0
-    })).filter((n) => n.from && n.to), e = this.state.expeditions.filter((n) => String(n.status).toUpperCase() === "MARCHING").map((n) => {
-      const l = n;
-      return {
-        ...n,
-        from: this.resolveMapNodeId(String(l.origin_settlement_id || l.originSettlementId || "")),
-        to: this.resolveMapNodeId(String(l.target_settlement_id || l.targetSettlementId || ""))
-      };
-    }).filter((n) => n.from && n.to), s = Object.entries(this.state.banditsByNode).flatMap(
-      ([n, l]) => l.map((h) => ({ ...h, nodeId: n }))
-    ), a = Object.entries(this.state.crisesByNode).flatMap(
-      ([n, l]) => l.map((h) => ({ ...h, nodeId: n }))
-    );
-    return { caravans: t, expeditions: e, bandits: s, crises: a };
-  }
-  getStatusForMapNode(t) {
-    var b;
-    const e = this.getForMapNode(t);
-    if (!e)
-      return { key: "unknown", labelVi: "Chưa rõ", labelEn: "Unknown", className: "capital" };
-    const s = (b = this.state.playerFaction) == null ? void 0 : b.factionId, a = !!(e.rulerFactionId && s && e.rulerFactionId === s), n = Number(e.garrisonTroops ?? 0), l = Number(e.granaryGrain ?? 0), h = Number(e.publicOrder ?? 100);
-    return a ? n < 200 || l <= 0 || h < 30 ? { key: "strained", labelVi: "Suy Yếu", labelEn: "Strained", className: "battle" } : { key: "stable", labelVi: "An Định", labelEn: "Stable", className: "safe" } : { key: "foreign", labelVi: "Ngoại Bang", labelEn: "Foreign Holding", className: "capital" };
-  }
-  getThreatForMapNode(t) {
-    const e = this.getForMapNode(t), s = this.state.banditsByNode[t] || [], a = this.state.crisesByNode[t] || [], n = [], l = [];
-    let h = 0;
-    if (s.length > 0) {
-      const f = Math.max(
-        ...s.map((y) => Number(y.banditPower) || 0)
-      );
-      h += Math.min(3, f / 150), n.push(`${s.length} ổ phỉ`), l.push(`${s.length} bandit lair${s.length > 1 ? "s" : ""}`);
-    }
-    a.forEach((f) => {
-      const y = Number(f.severityLevel) || 1;
-      h += Math.min(3, y);
-      const E = f.titleVi || "Khủng hoảng";
-      n.push(E), l.push(E);
-    });
-    const b = e && Number.isFinite(e.garrisonTroops) ? Number(e.garrisonTroops) : null, C = e && Number.isFinite(e.publicOrder) ? Number(e.publicOrder) : null;
-    b != null && b < 500 && (h += 1, n.push("Đồn trú mỏng"), l.push("Thin garrison")), C != null && C < 40 && (h += 1, n.push("Trật tự thấp"), l.push("Low public order"));
-    const $ = h >= 3 ? "HIGH" : h >= 1.5 ? "MODERATE" : "LOW", D = {
-      LOW: { labelVi: "Thấp", labelEn: "Low", color: "#34d399" },
-      MODERATE: { labelVi: "Vừa", labelEn: "Moderate", color: "#fbbf24" },
-      HIGH: { labelVi: "Cao", labelEn: "High", color: "#f87171" }
-    }[$];
-    return { level: $, ...D, reasonsVi: n, reasonsEn: l };
-  }
-  getResourceDistribution() {
-    return {
-      byNode: this.state.resourcesByNode,
-      totals: this.state.resourceTotals,
-      types: Object.keys(this.state.resourceTotals).sort()
-    };
-  }
-  getResourceNodesForMapNode(t) {
-    var e;
-    return ((e = this.state.resourcesByNode[t]) == null ? void 0 : e.nodes) || [];
-  }
-  hasArmy() {
-    return Array.isArray(this.state.activeExpeditions) && this.state.activeExpeditions.length > 0;
-  }
-  getState() {
-    return this.state;
-  }
-}
-const g = new ge();
-function me() {
-  if (typeof window > "u") return;
-  const i = window;
-  i.ModalShellCore = {
-    createModalShell: m,
-    modalStack: lt
-  }, i.UI = oe, i.LineageFamilyUI = {
-    open: (t) => w.open(t),
-    close: () => w.close(),
-    setFilter: (t) => w.setFilter(t),
-    proposeMarriage: (t) => w.proposeMarriage(t),
-    restCohabit: (t) => w.restCohabit(t),
-    assignRole: (t, e) => w.assignRole(t, e),
-    designateHeir: (t) => w.designateHeir(t),
-    assignMentorDialog: (t) => w.assignMentorDialog(t),
-    executeSuccession: () => w.executeSuccession()
-  }, i.EquipmentUI = {
-    openEquipmentModal: (t, e) => V.open(t, e),
-    closeEquipmentModal: () => V.close(),
-    switchTab: (t) => V.modal.switchTab(t),
-    equip: (t, e, s) => V.equip(t, e, s),
-    unequip: (t, e) => V.unequip(t, e),
-    executeForge: () => V.executeForge()
-  }, i.EnterpriseUI = {
-    openEnterpriseModal: (t) => K.open(t),
-    closeEnterpriseModal: () => K.close(),
-    depositSafeCash: (t) => K.depositSafeCash(t),
-    withdrawSafeCash: (t) => K.withdrawSafeCash(t),
-    executeWork: (t) => K.executeWork(t)
-  }, i.ProtagonistDossierModal = {
-    open: () => Z.openProtagonist(),
-    close: () => Z.closeProtagonist()
-  }, i.NpcDossierModal = {
-    open: (t) => Z.openNpc(t),
-    close: () => Z.closeNpc()
-  }, i.QuickTradeModal = {
-    open: (t, e, s, a) => tt.open(t, e, s, a),
-    close: () => tt.close(),
-    updateTotal: () => tt.updateTotal(),
-    submit: () => tt.submit()
-  }, i.TacticalBattleUI = {
-    startDuel: (t) => ot.startDuel(t),
-    close: () => ot.close(),
-    executeAction: (t) => ot.executeAction(t)
-  }, i.TravelTransitUI = {
-    show: (t, e, s, a) => x.showTravelTransit(t, e, s, a),
-    close: () => x.closeTravel(),
-    openLegacy: () => x.openTravelTransitModal(),
-    closeLegacy: () => x.closeTravelTransitModal()
-  }, i.TurnAdvanceUI = {
-    show: (t, e, s) => x.showTurnAdvance(t, e, s),
-    close: () => x.closeTurn(),
-    openLegacy: () => x.openTurnAdvanceModal(),
-    closeLegacy: () => x.closeTurnAdvanceModal()
-  }, i.WorldMapUI = {
-    open: () => At.open(),
-    close: () => At.close()
-  }, i.MapLiveService = {
-    load: (t = !1) => g.load(t),
-    getForMapNode: (t) => g.getForMapNode(t),
-    getStatusForMapNode: (t) => g.getStatusForMapNode(t),
-    getThreatForMapNode: (t) => g.getThreatForMapNode(t),
-    findNpcByName: (t) => g.findNpcByName(t),
-    findSpecialistByName: (t) => g.findSpecialistByName(t),
-    getSpecialistsForMapNode: (t) => g.getSpecialistsForMapNode(t),
-    getLocIdForNode: (t) => g.getLocIdForNode(t),
-    getRecruitRequirement: (t) => g.getRecruitRequirement(t),
-    getActionRequirements: () => g.getActionRequirements(),
-    getRoute: (t, e) => g.getRoute(t, e),
-    getLivingEntities: () => g.getLivingEntities(),
-    getResourceDistribution: () => g.getResourceDistribution(),
-    getResourceNodesForMapNode: (t) => g.getResourceNodesForMapNode(t),
-    resolveMapNodeId: (t) => g.resolveMapNodeId(t),
-    hasArmy: () => g.hasArmy(),
-    getState: () => g.getState(),
-    ALIASES: g.ALIASES
-  }, console.log("[ThreeKingdoms-AgentEngine] All 14 client feature slices successfully bridged to window.*");
-}
-class ve {
-  constructor() {
-    r(this, "handlers", /* @__PURE__ */ new Map());
-  }
-  on(t, e) {
-    return this.handlers.has(t) || this.handlers.set(t, /* @__PURE__ */ new Set()), this.handlers.get(t).add(e), () => {
-      this.off(t, e);
-    };
-  }
-  off(t, e) {
-    const s = this.handlers.get(t);
-    s && (s.delete(e), s.size === 0 && this.handlers.delete(t));
-  }
-  emit(t, e) {
-    const s = this.handlers.get(t);
-    s && s.forEach((a) => {
-      try {
-        a(e);
-      } catch (n) {
-        console.error(`[EventBus] Error handling event ${t}:`, n);
-      }
-    });
-  }
-}
-const Te = new ve(), H = class H {
-  static getInstance() {
-    return H.instance || (H.instance = new H()), H.instance;
-  }
-  async getCaravans() {
-    return (await u.get("/api/logistics/caravans")).caravans || [];
-  }
-  async getArbitrageOpportunities() {
-    return (await u.get("/api/economy/arbitrage")).routes || [];
-  }
-  async dispatchCaravan(t) {
-    return u.post("/api/caravans/dispatch", {
-      cargoItemCode: t.commodityCode,
-      cargoQuantity: t.quantity,
-      fromSettlementId: t.originSettlementId,
-      toSettlementId: t.destSettlementId,
-      guardTier: t.escortLevel
-    });
-  }
-};
-r(H, "instance");
-let mt = H;
-const rt = mt.getInstance();
-class fe {
-  constructor() {
-    r(this, "modal");
-    r(this, "caravans", []);
-    r(this, "routes", []);
-    this.modal = m({
-      id: "caravan-modal",
-      title: "Thương Đoàn Viễn Chinh & Trục Vận Chuyển",
-      subtitle: "Thiết lập tuyến buôn liên châu, kinh doanh chênh lệch giá và thuê hộ tiêu áp tải",
-      seal: "商",
-      size: "xl",
-      tabs: [
-        { id: "active", label: "Thương Đoàn Đang Chạy", seal: "運" },
-        { id: "arbitrage", label: "Thương Cơ & Chênh Lệch Giá", seal: "漲" },
-        { id: "dispatch", label: "Xuất Tiêu Khai Tuyến", seal: "旗" }
-      ],
-      activeTabId: "active",
-      onOpen: async () => {
-        await this.refreshData(), await this.renderActiveTab();
-      },
-      onTabChange: async () => {
-        await this.renderActiveTab();
-      }
-    });
-  }
-  async open(t = "active") {
-    await this.modal.open(t);
-  }
-  async close() {
-    await this.modal.close();
-  }
-  async refreshData() {
-    try {
-      const [t, e] = await Promise.all([
-        rt.getCaravans().catch(() => []),
-        rt.getArbitrageOpportunities().catch(() => [])
-      ]);
-      this.caravans = t, this.routes = e, this.modal.updateTabBadge("active", t.length > 0 ? t.length : void 0);
-    } catch (t) {
-      console.error("[CaravanLogisticsModal] Error refreshing data:", t);
-    }
-  }
-  async renderActiveTab() {
-    switch (this.modal.activeTab || "active") {
-      case "active":
-        this.renderActiveTabContent();
-        break;
-      case "arbitrage":
-        this.renderArbitrageTabContent();
-        break;
-      case "dispatch":
-        this.renderDispatchTabContent();
-        break;
-    }
-  }
-  renderActiveTabContent() {
-    const t = `
+var q = new class {
+	handlers = /* @__PURE__ */ new Map();
+	on(e, t) {
+		return this.handlers.has(e) || this.handlers.set(e, /* @__PURE__ */ new Set()), this.handlers.get(e).add(t), () => {
+			this.off(e, t);
+		};
+	}
+	off(e, t) {
+		let n = this.handlers.get(e);
+		n && (n.delete(t), n.size === 0 && this.handlers.delete(e));
+	}
+	emit(e, t) {
+		let n = this.handlers.get(e);
+		n && n.forEach((n) => {
+			try {
+				n(t);
+			} catch (t) {
+				console.error(`[EventBus] Error handling event ${e}:`, t);
+			}
+		});
+	}
+}(), J = class e {
+	static instance;
+	static getInstance() {
+		return e.instance ||= new e(), e.instance;
+	}
+	async getCaravans() {
+		return (await v.get("/api/logistics/caravans")).caravans || [];
+	}
+	async getArbitrageOpportunities() {
+		return (await v.get("/api/economy/arbitrage")).routes || [];
+	}
+	async dispatchCaravan(e) {
+		return v.post("/api/caravans/dispatch", {
+			cargoItemCode: e.commodityCode,
+			cargoQuantity: e.quantity,
+			fromSettlementId: e.originSettlementId,
+			toSettlementId: e.destSettlementId,
+			guardTier: e.escortLevel
+		});
+	}
+}, Y = J.getInstance(), X = class {
+	modal;
+	caravans = [];
+	routes = [];
+	constructor() {
+		this.modal = i({
+			id: "caravan-modal",
+			title: "Thương Đoàn Viễn Chinh & Trục Vận Chuyển",
+			subtitle: "Thiết lập tuyến buôn liên châu, kinh doanh chênh lệch giá và thuê hộ tiêu áp tải",
+			seal: "商",
+			size: "xl",
+			tabs: [
+				{
+					id: "active",
+					label: "Thương Đoàn Đang Chạy",
+					seal: "運"
+				},
+				{
+					id: "arbitrage",
+					label: "Thương Cơ & Chênh Lệch Giá",
+					seal: "漲"
+				},
+				{
+					id: "dispatch",
+					label: "Xuất Tiêu Khai Tuyến",
+					seal: "旗"
+				}
+			],
+			activeTabId: "active",
+			onOpen: async () => {
+				await this.refreshData(), await this.renderActiveTab();
+			},
+			onTabChange: async () => {
+				await this.renderActiveTab();
+			}
+		});
+	}
+	async open(e = "active") {
+		await this.modal.open(e);
+	}
+	async close() {
+		await this.modal.close();
+	}
+	async refreshData() {
+		try {
+			let [e, t] = await Promise.all([Y.getCaravans().catch(() => []), Y.getArbitrageOpportunities().catch(() => [])]);
+			this.caravans = e, this.routes = t, this.modal.updateTabBadge("active", e.length > 0 ? e.length : void 0);
+		} catch (e) {
+			console.error("[CaravanLogisticsModal] Error refreshing data:", e);
+		}
+	}
+	async renderActiveTab() {
+		switch (this.modal.activeTab || "active") {
+			case "active":
+				this.renderActiveTabContent();
+				break;
+			case "arbitrage":
+				this.renderArbitrageTabContent();
+				break;
+			case "dispatch": this.renderDispatchTabContent();
+		}
+	}
+	renderActiveTabContent() {
+		let e = `
       <div class="caravan-modal-content">
         <div class="spatial-banner-lead">
           <div class="lead-seal">運</div>
@@ -2139,11 +2087,7 @@ class fe {
           </div>
         </div>
 
-        ${this.caravans.length === 0 ? `
-          <div class="text-center py-10 text-muted">
-            Hiện không có thương đoàn nào trên đường. Hãy vào mục "Xuất Tiêu Khai Tuyến" để phái chuyến buôn đầu tiên.
-          </div>
-        ` : `
+        ${this.caravans.length === 0 ? "\n          <div class=\"text-center py-10 text-muted\">\n            Hiện không có thương đoàn nào trên đường. Hãy vào mục \"Xuất Tiêu Khai Tuyến\" để phái chuyến buôn đầu tiên.\n          </div>\n        " : `
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             ${this.caravans.map((e) => `
               <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800">
@@ -2159,10 +2103,10 @@ class fe {
         `}
       </div>
     `;
-    this.modal.setContent(t);
-  }
-  renderArbitrageTabContent() {
-    const t = `
+		this.modal.setContent(e);
+	}
+	renderArbitrageTabContent() {
+		let e = `
       <div class="caravan-modal-content">
         <div class="spatial-banner-lead">
           <div class="lead-seal">漲</div>
@@ -2172,9 +2116,7 @@ class fe {
           </div>
         </div>
 
-        ${this.routes.length === 0 ? `
-          <div class="text-center py-8 text-muted">Đang cập nhật tỷ giá liên thành...</div>
-        ` : `
+        ${this.routes.length === 0 ? "\n          <div class=\"text-center py-8 text-muted\">Đang cập nhật tỷ giá liên thành...</div>\n        " : `
           <div class="grid grid-cols-1 gap-2">
             ${this.routes.map((e) => `
               <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800 flex justify-between items-center text-xs">
@@ -2192,105 +2134,49 @@ class fe {
         `}
       </div>
     `;
-    this.modal.setContent(t);
-  }
-  renderDispatchTabContent() {
-    this.modal.setContent(`
-      <div class="caravan-modal-content">
-        <div class="spatial-banner-lead">
-          <div class="lead-seal">旗</div>
-          <div class="lead-text">
-            <h3>Khởi Hành Tiêu Xa Thương Đoàn</h3>
-            <div class="text-muted text-sm">Chọn điểm đến, loại hàng hóa trong kho và cấp bậc thuê tiêu sư bảo an.</div>
-          </div>
-        </div>
-
-        <div class="tactical-card p-4 bg-slate-900 rounded border border-slate-800">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-            <div>
-              <label class="block text-xs font-bold text-slate-300 mb-1">Thành Thị Đích:</label>
-              <select id="caravan-dest-id" class="modal-input w-full">
-                <option value="ye_cheng">Nghiệp Thành (Hà Bắc - 5 ngày)</option>
-                <option value="luo_yang">Lạc Dương (Kinh Đô - 12 ngày)</option>
-                <option value="xu_chang">Hứa Xương (Trung Nguyên - 10 ngày)</option>
-                <option value="jian_ye">Kiến Nghiệp (Giang Đông - 18 ngày)</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-slate-300 mb-1">Hàng Hóa Vận Chuyển:</label>
-              <select id="caravan-commodity" class="modal-input w-full">
-                <option value="PROD-MAT">Chiếu Trúc Lương Gia</option>
-                <option value="PROD-BASK">Giỏ Thùng Đan Vận Chuyển</option>
-                <option value="COM-SILK">Tơ Lụa Nguyên Tấm</option>
-                <option value="COM-IRON">Sắt Thỏi Luyện Tinh</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-            <div>
-              <label class="block text-xs font-bold text-slate-300 mb-1">Số Lượng Xuất Kho:</label>
-              <input type="number" id="caravan-qty" class="modal-input w-full" value="20" min="5" max="100" />
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-slate-300 mb-1">Cấp Hộ Tiêu Bảo An:</label>
-              <select id="caravan-escort" class="modal-input w-full">
-                <option value="NONE">Không Thuê (Rủi ro thổ phỉ cao)</option>
-                <option value="MILITIA">Dân Binh Địa Phương (+100 Quan)</option>
-                <option value="MERCENARY">Tiêu Sư Giang Hồ (+300 Quan, An Toàn 95%)</option>
-              </select>
-            </div>
-          </div>
-
-          <button class="ui-btn ui-btn--accent w-full py-2.5 font-bold" onclick="window.CaravanUI.executeDispatch()">
-            Xuất Phát Thương Đoàn
-          </button>
-        </div>
-      </div>
-    `);
-  }
-  async executeDispatch() {
-    const t = document.getElementById("caravan-dest-id"), e = document.getElementById("caravan-commodity"), s = document.getElementById("caravan-qty"), a = document.getElementById("caravan-escort"), n = {
-      originSettlementId: "zhuo_xian",
-      destSettlementId: (t == null ? void 0 : t.value) || "ye_cheng",
-      commodityCode: (e == null ? void 0 : e.value) || "PROD-MAT",
-      quantity: parseInt((s == null ? void 0 : s.value) || "20", 10),
-      escortLevel: (a == null ? void 0 : a.value) || "MILITIA"
-    };
-    try {
-      const l = await rt.dispatchCaravan(n);
-      typeof window.showToast == "function" && window.showToast(l.narrativeVi || "Thương đoàn đã xuất phát!"), await this.refreshData(), await this.modal.switchTab("active");
-    } catch (l) {
-      typeof window.showToast == "function" && window.showToast(l.message || "Lỗi xuất thương đoàn!", !0);
-    }
-  }
-}
-const xe = new fe();
-class we {
-  constructor() {
-    r(this, "modal");
-    r(this, "selectedScenario", "184_YELLOW_TURBAN");
-    this.modal = m({
-      // Distinct from the legacy instance-manager modal (#title-screen-modal):
-      // two shells sharing an id made the legacy gate render into an empty body.
-      id: "title-screen-scenario-modal",
-      title: "Tam Quốc Diễn Nghĩa • Khởi Tạo Niên Đại & Nhân Vật",
-      subtitle: "Chọn niên đại lịch sử và thiết lập danh tính nhân vật chính",
-      seal: "國",
-      size: "lg",
-      onOpen: async () => {
-        this.renderContent();
-      }
-    });
-  }
-  async open() {
-    await this.modal.open();
-  }
-  async close() {
-    await this.modal.close();
-  }
-  renderContent() {
-    const t = `
+		this.modal.setContent(e);
+	}
+	renderDispatchTabContent() {
+		this.modal.setContent("\n      <div class=\"caravan-modal-content\">\n        <div class=\"spatial-banner-lead\">\n          <div class=\"lead-seal\">旗</div>\n          <div class=\"lead-text\">\n            <h3>Khởi Hành Tiêu Xa Thương Đoàn</h3>\n            <div class=\"text-muted text-sm\">Chọn điểm đến, loại hàng hóa trong kho và cấp bậc thuê tiêu sư bảo an.</div>\n          </div>\n        </div>\n\n        <div class=\"tactical-card p-4 bg-slate-900 rounded border border-slate-800\">\n          <div class=\"grid grid-cols-1 md:grid-cols-2 gap-3 mb-3\">\n            <div>\n              <label class=\"block text-xs font-bold text-slate-300 mb-1\">Thành Thị Đích:</label>\n              <select id=\"caravan-dest-id\" class=\"modal-input w-full\">\n                <option value=\"ye_cheng\">Nghiệp Thành (Hà Bắc - 5 ngày)</option>\n                <option value=\"luo_yang\">Lạc Dương (Kinh Đô - 12 ngày)</option>\n                <option value=\"xu_chang\">Hứa Xương (Trung Nguyên - 10 ngày)</option>\n                <option value=\"jian_ye\">Kiến Nghiệp (Giang Đông - 18 ngày)</option>\n              </select>\n            </div>\n            <div>\n              <label class=\"block text-xs font-bold text-slate-300 mb-1\">Hàng Hóa Vận Chuyển:</label>\n              <select id=\"caravan-commodity\" class=\"modal-input w-full\">\n                <option value=\"PROD-MAT\">Chiếu Trúc Lương Gia</option>\n                <option value=\"PROD-BASK\">Giỏ Thùng Đan Vận Chuyển</option>\n                <option value=\"COM-SILK\">Tơ Lụa Nguyên Tấm</option>\n                <option value=\"COM-IRON\">Sắt Thỏi Luyện Tinh</option>\n              </select>\n            </div>\n          </div>\n\n          <div class=\"grid grid-cols-1 md:grid-cols-2 gap-3 mb-4\">\n            <div>\n              <label class=\"block text-xs font-bold text-slate-300 mb-1\">Số Lượng Xuất Kho:</label>\n              <input type=\"number\" id=\"caravan-qty\" class=\"modal-input w-full\" value=\"20\" min=\"5\" max=\"100\" />\n            </div>\n            <div>\n              <label class=\"block text-xs font-bold text-slate-300 mb-1\">Cấp Hộ Tiêu Bảo An:</label>\n              <select id=\"caravan-escort\" class=\"modal-input w-full\">\n                <option value=\"NONE\">Không Thuê (Rủi ro thổ phỉ cao)</option>\n                <option value=\"MILITIA\">Dân Binh Địa Phương (+100 Quan)</option>\n                <option value=\"MERCENARY\">Tiêu Sư Giang Hồ (+300 Quan, An Toàn 95%)</option>\n              </select>\n            </div>\n          </div>\n\n          <button class=\"ui-btn ui-btn--accent w-full py-2.5 font-bold\" onclick=\"window.CaravanUI.executeDispatch()\">\n            Xuất Phát Thương Đoàn\n          </button>\n        </div>\n      </div>\n    ");
+	}
+	async executeDispatch() {
+		let e = document.getElementById("caravan-dest-id"), t = document.getElementById("caravan-commodity"), n = document.getElementById("caravan-qty"), r = document.getElementById("caravan-escort"), i = {
+			originSettlementId: "zhuo_xian",
+			destSettlementId: e?.value || "ye_cheng",
+			commodityCode: t?.value || "PROD-MAT",
+			quantity: parseInt(n?.value || "20", 10),
+			escortLevel: r?.value || "MILITIA"
+		};
+		try {
+			let e = await Y.dispatchCaravan(i);
+			typeof window.showToast == "function" && window.showToast(e.narrativeVi || "Thương đoàn đã xuất phát!"), await this.refreshData(), await this.modal.switchTab("active");
+		} catch (e) {
+			typeof window.showToast == "function" && window.showToast(e.message || "Lỗi xuất thương đoàn!", !0);
+		}
+	}
+}, Z = new X(), Q = class {
+	modal;
+	selectedScenario = "184_YELLOW_TURBAN";
+	constructor() {
+		this.modal = i({
+			id: "title-screen-scenario-modal",
+			title: "Tam Quốc Diễn Nghĩa • Khởi Tạo Niên Đại & Nhân Vật",
+			subtitle: "Chọn niên đại lịch sử và thiết lập danh tính nhân vật chính",
+			seal: "國",
+			size: "lg",
+			onOpen: async () => {
+				this.renderContent();
+			}
+		});
+	}
+	async open() {
+		await this.modal.open();
+	}
+	async close() {
+		await this.modal.close();
+	}
+	renderContent() {
+		let e = `
       <div class="title-screen-content">
         <div class="spatial-banner-lead">
           <div class="lead-seal">國</div>
@@ -2344,64 +2230,26 @@ class we {
         </div>
       </div>
     `;
-    this.modal.setContent(t);
-  }
-  selectScenario(t) {
-    this.selectedScenario = t, this.renderContent();
-  }
-  async startCampaign() {
-    const t = document.getElementById("ts-player-name"), e = document.getElementById("ts-player-style");
-    try {
-      await u.post("/api/session/new-game", {
-        scenario: this.selectedScenario,
-        playerName: (t == null ? void 0 : t.value) || "Lương Diễn",
-        playerStyle: (e == null ? void 0 : e.value) || "Chí Viễn"
-      }), typeof window.showToast == "function" && window.showToast("Khởi tạo chiến dịch thành công!"), await this.modal.close(), window.location.reload();
-    } catch (s) {
-      typeof window.showToast == "function" && window.showToast(s.message || "Lỗi khởi tạo chiến dịch!", !0);
-    }
-  }
-}
-const Ne = new we();
-me();
-export {
-  fe as CaravanLogisticsModal,
-  mt as CaravanLogisticsService,
-  dt as ClientApiClient,
-  de as DossiersModal,
-  bt as DossiersService,
-  ce as EnterpriseWorkshopModal,
-  pt as EnterpriseWorkshopService,
-  le as EquipmentForgeModal,
-  ut as EquipmentForgeService,
-  Yt as LEGACY_OWNED_MODAL_IDS,
-  re as LineageFamilyModal,
-  ht as LineageFamilyService,
-  Jt as ModalShell,
-  he as QuickTradeModal,
-  ue as TacticalBattleModal,
-  we as TitleScreenModal,
-  pe as TransitTurnModals,
-  be as WorldMapModal,
-  u as apiClient,
-  xe as caravanLogisticsModal,
-  rt as caravanLogisticsService,
-  m as createModalShell,
-  Z as dossiersModal,
-  kt as dossiersService,
-  K as enterpriseWorkshopModal,
-  J as enterpriseWorkshopService,
-  V as equipmentForgeModal,
-  X as equipmentForgeService,
-  Te as eventBus,
-  Xt as isLegacyOwnedModalId,
-  w as lineageFamilyModal,
-  T as lineageFamilyService,
-  lt as modalStack,
-  tt as quickTradeModal,
-  ot as tacticalBattleModal,
-  Ne as titleScreenModal,
-  x as transitTurnModals,
-  At as worldMapModal
-};
+		this.modal.setContent(e);
+	}
+	selectScenario(e) {
+		this.selectedScenario = e, this.renderContent();
+	}
+	async startCampaign() {
+		let e = document.getElementById("ts-player-name"), t = document.getElementById("ts-player-style");
+		try {
+			await v.post("/api/session/new-game", {
+				scenario: this.selectedScenario,
+				playerName: e?.value || "Lương Diễn",
+				playerStyle: t?.value || "Chí Viễn"
+			}), typeof window.showToast == "function" && window.showToast("Khởi tạo chiến dịch thành công!"), await this.modal.close(), window.location.reload();
+		} catch (e) {
+			typeof window.showToast == "function" && window.showToast(e.message || "Lỗi khởi tạo chiến dịch!", !0);
+		}
+	}
+}, $ = new Q();
+// src/client/main.ts
+K();
+export { X as CaravanLogisticsModal, J as CaravanLogisticsService, _ as ClientApiClient, N as DossiersModal, j as DossiersService, k as EnterpriseWorkshopModal, D as EnterpriseWorkshopService, T as EquipmentForgeModal, C as EquipmentForgeService, t as LEGACY_OWNED_MODAL_IDS, x as LineageFamilyModal, y as LineageFamilyService, r as ModalShell, F as QuickTradeModal, R as TacticalBattleModal, Q as TitleScreenModal, B as TransitTurnModals, H as WorldMapModal, v as apiClient, Z as caravanLogisticsModal, Y as caravanLogisticsService, i as createModalShell, P as dossiersModal, M as dossiersService, A as enterpriseWorkshopModal, O as enterpriseWorkshopService, E as equipmentForgeModal, w as equipmentForgeService, q as eventBus, n as isLegacyOwnedModalId, S as lineageFamilyModal, b as lineageFamilyService, e as modalStack, I as quickTradeModal, z as tacticalBattleModal, $ as titleScreenModal, V as transitTurnModals, U as worldMapModal };
+
 //# sourceMappingURL=client-bundle.es.js.map
