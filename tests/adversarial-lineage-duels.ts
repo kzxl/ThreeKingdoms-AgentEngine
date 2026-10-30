@@ -77,7 +77,7 @@ async function runAdversarialStressSuite() {
   const initialPlayer = db.queryOne<any>('SELECT * FROM player_state WHERE player_id = ?;', ['PLY-0001'])!;
   const initialLineage = db.queryOne<any>('SELECT * FROM family_lineage WHERE family_id = ?;', ['FAM-LIANG']) || {
     current_generation: 1,
-    family_prestige: 100
+    family_prestige: 1000
   };
   const initialCashflowCount = Number(db.queryOne<any>('SELECT COUNT(*) as c FROM cashflow_ledger;').c);
   const initialJournalCount = Number(db.queryOne<any>('SELECT COUNT(*) as c FROM account_journal;').c);

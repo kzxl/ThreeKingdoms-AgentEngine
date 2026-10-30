@@ -130,7 +130,7 @@ function initializeLineageSchema(db: DatabaseService): void {
         family_name_en TEXT NOT NULL DEFAULT 'Liang Clan Dynasty',
         founding_year INTEGER NOT NULL DEFAULT 184,
         current_generation INTEGER NOT NULL DEFAULT 1,
-        family_prestige INTEGER NOT NULL DEFAULT 100 CHECK (family_prestige >= 0),
+        family_prestige INTEGER NOT NULL DEFAULT 1000 CHECK (family_prestige >= 0),
         family_motto_vi TEXT DEFAULT 'Đôn Bản Khởi Gia • Trạch Bị Thiên Hạ',
         family_motto_en TEXT DEFAULT 'Cultivate Foundations • Extend Prosperity Under Heaven',
         residence_location TEXT NOT NULL DEFAULT 'LOC-0001',
