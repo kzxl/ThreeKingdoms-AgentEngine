@@ -15,6 +15,7 @@ import {
   TerrainType,
   TroopUnitComposition
 } from './tactical-battle';
+import { BattleDuelService, PreBattleResult } from './battle-duel.service';
 
 export * from './tactical-battle';
 
@@ -108,6 +109,8 @@ export interface TacticalAssaultResponse {
   lootCash: number;
   bounty: number;
   totalReward: number;
+  duel?: PreBattleResult;
+  playerDefeated?: boolean;
   message: string;
 }
 
@@ -251,6 +254,20 @@ export class MilitaryModule implements IFeatureModule {
     const isSupplied = this.graph.hasUnbrokenSupplyPath(playerLoc, 'LOC-0002');
     const attackerInitialMorale = isSupplied ? 95 : 70; // 25 morale penalty when supply lines are broken
 
+    const preBattle = BattleDuelService.forDatabase(this.db!).resolvePreBattle({
+      battleId: `${strongholdId}-${gameDate}-${turnNumber}`,
+      gameDate,
+      context: 'STRONGHOLD',
+      playerId: characterId,
+      playerName: player.name || 'Lương Diễn',
+      playerWar: player.war_attr || 75,
+      playerLeadership: player.ldr_attr || 70,
+      playerDiplomacy: player.dip_attr || 50,
+      enemyName: stronghold.bandit_chief_name || 'Đạo Tặc Thống Lãnh',
+      enemyWar: Math.min(90, Math.round(stronghold.bandit_power * 0.22) + 20),
+      enemyLeadership: Math.min(85, Math.round(stronghold.bandit_power * 0.18) + 20)
+    });
+
     // Determine battlefield terrain based on stronghold location
     let battlefieldTerrain: TerrainType = options.terrain || 'MOUNTAINS';
     if (!options.terrain) {
@@ -284,7 +301,7 @@ export class MilitaryModule implements IFeatureModule {
         vanguardTroops: typeof totalAtkTroops === 'number' ? Math.round(totalAtkTroops * 0.35) : totalAtkTroops,
         centerTroops: typeof totalAtkTroops === 'number' ? Math.round(totalAtkTroops * 0.45) : undefined,
         rearguardTroops: typeof totalAtkTroops === 'number' ? Math.round(totalAtkTroops * 0.20) : undefined,
-        initialMorale: attackerInitialMorale
+        initialMorale: Math.max(20, Math.min(100, attackerInitialMorale + preBattle.playerMoraleDelta))
       },
       defender: {
         commander: {
@@ -297,7 +314,7 @@ export class MilitaryModule implements IFeatureModule {
         vanguardTroops: Math.round(totalDefTroops * 0.35),
         centerTroops: Math.round(totalDefTroops * 0.45),
         rearguardTroops: Math.round(totalDefTroops * 0.20),
-        initialMorale: 85,
+        initialMorale: Math.max(20, Math.min(100, 85 + preBattle.enemyMoraleDelta)),
         strongholdPlunderedWealth: stronghold.plundered_wealth || 0,
         strongholdBounty: stronghold.bounty_reward || 0
       },
@@ -305,9 +322,10 @@ export class MilitaryModule implements IFeatureModule {
     };
 
     const battleResult = TacticalBattleEngine.simulate(simInput);
-    const isVictory = battleResult.winner === 'ATTACKER';
-    const lootCash = battleResult.spoils.lootCash;
-    const bounty = battleResult.spoils.bountyReward;
+    const playerDied = preBattle.death === 'PLAYER';
+    const isVictory = !playerDied && battleResult.winner === 'ATTACKER';
+    const lootCash = playerDied ? 0 : battleResult.spoils.lootCash;
+    const bounty = playerDied ? 0 : battleResult.spoils.bountyReward;
     const totalReward = lootCash + bounty;
 
     // Preserve Database Invariants if victory and DB connected
@@ -398,7 +416,9 @@ export class MilitaryModule implements IFeatureModule {
       lootCash,
       bounty,
       totalReward,
-      message: battleResult.narrativeSummaryVi
+      duel: preBattle,
+      playerDefeated: playerDied,
+      message: playerDied ? 'Chủ tướng tử trận; chiến dịch kết thúc.' : battleResult.narrativeSummaryVi
     };
   }
 

@@ -8,6 +8,7 @@ const fs = require('fs');
 const path = require('path');
 const { getMarketItem, resolveMarketPrice } = require('./market-price-book');
 const { quoteFromReference } = require('./market-quote');
+const { worldPriceMultiplier } = require('./world-price');
 const { BILL_OF_MATERIALS, calculateDefectRate } = require('./rules');
 const { renderProgressMarkdown } = require('./projector');
 
@@ -214,7 +215,8 @@ class SimulationCore {
       return { success: false, code: 'ITEM_NOT_FOUND', error: `Item ${item_code} is not in the market catalog.` };
     }
     const fameRow = runSqlJson(this.dbPath, `SELECT fame FROM player_state LIMIT 1;`)[0];
-    const quote = quoteFromReference(marketItem.price, Number(fameRow?.fame || 0), item_code);
+    const worldMultiplier = worldPriceMultiplier(this.dbPath, item_code, game_date);
+    const quote = quoteFromReference(marketItem.price, Number(fameRow?.fame || 0), item_code, worldMultiplier);
     const unit_price = quote.buyPrice;
     const totalCost = Math.round(quantity * unit_price);
 
@@ -318,7 +320,8 @@ class SimulationCore {
       return { success: false, code: 'ITEM_NOT_FOUND', error: `Item ${item_code} is not in the market catalog.` };
     }
     const fameRow = runSqlJson(this.dbPath, `SELECT fame FROM player_state LIMIT 1;`)[0];
-    const quote = quoteFromReference(marketItem.price, Number(fameRow?.fame || 0), item_code);
+    const worldMultiplier = worldPriceMultiplier(this.dbPath, item_code, game_date);
+    const quote = quoteFromReference(marketItem.price, Number(fameRow?.fame || 0), item_code, worldMultiplier);
     const unit_price = quote.sellPrice;
 
     // Condition check: inventory availability

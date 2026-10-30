@@ -1,0 +1,25 @@
+{
+  "enabled": true,
+  "duelTriggerChance": 0.2,
+  "negotiation": {
+    "leadershipMax": 60,
+    "diplomacyMin": 70,
+    "successChance": 0.4,
+    "fameBonus": 0.25,
+    "successPrestige": 5,
+    "failurePrestige": 8,
+    "failureMorale": 8
+  },
+  "death": {
+    "playerBase": 0.01,
+    "enemyBase": 0.02,
+    "marginBonus": 0.01,
+    "strongholdBonus": 0.01,
+    "cap": 0.08
+  },
+  "bankruptcy": {
+    "cashThreshold": 100,
+    "grainThreshold": 1,
+    "monthsToDefeat": 2
+  }
+}

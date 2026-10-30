@@ -197,6 +197,14 @@ async function loadStatus() {
     const p = data.player;
     const f = data.financials;
 
+    if (m.status && m.status !== 'ACTIVE' && !window.__defeatNoticeShown) {
+      window.__defeatNoticeShown = true;
+      const reason = m.defeat_reason === 'BANKRUPTCY'
+        ? (currentLang === 'en' ? 'The dynasty is bankrupt.' : 'Gia nghiệp đã phá sản.')
+        : (currentLang === 'en' ? 'The protagonist has fallen.' : 'Chủ tướng đã tử trận.');
+      if (typeof showToast === 'function') showToast(`${reason} Chiến dịch kết thúc.`, true);
+    }
+
     // Header Telemetry Chips
     if (typeof refreshActiveTaskStrip === 'function') refreshActiveTaskStrip();
     const dateChip = document.getElementById('top-date-chip');

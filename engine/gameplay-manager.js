@@ -17,6 +17,8 @@ const { advanceCalendarMonth, parseGameDate, formatGameDate, getSeasonInfo, calc
 const { advanceCampaignDays, publishDayTicks, GRAIN_PER_DAY } = require('./time-manager');
 const { progressTasks, projectTaskProgress, listTasks } = require('./task-manager');
 const { getPrestigeService } = require('./prestige-bridge');
+const { getFameAttractionService } = require('./fame-attraction-bridge');
+const { getBattleDuelService } = require('./battle-duel-bridge');
 
 const ROOT_DIR = path.resolve(__dirname, '..');
 const SAVES_DIR = path.join(ROOT_DIR, 'saves');
@@ -312,6 +314,7 @@ class GameplayManager {
         safeCash: Number(player.safe_cash || 0),
         strategicGrain: grainAfter,
         fame: Number(player.fame || 0),
+        militia: Number(player.militia || 0),
         location: player.current_location || 'LOC-0001'
       };
       playerUpdateSql = `UPDATE player_state SET fatigue = ${newFatigue}, morale = ${newMorale}, health = ${newHealth}, strategic_grain = ${grainAfter} WHERE player_id = '${player.player_id}';`;
@@ -635,6 +638,24 @@ class GameplayManager {
       console.warn('[GameplayManager] fame decay failed:', fameError.message);
     }
 
+    // Fame attracts volunteers, merchants and scholars each month.
+    let fameArrivals = null;
+    try {
+      const attraction = getFameAttractionService(this.dbPath);
+      if (attraction) fameArrivals = attraction.simulateMonthly('PLY-0001', prevDate);
+    } catch (arrivalError) {
+      console.warn('[GameplayManager] fame arrivals failed:', arrivalError.message);
+    }
+
+    // Bankruptcy is a slow defeat: two consecutive closes below the cash/grain floor.
+    let defeatStatus = null;
+    try {
+      const battleService = getBattleDuelService(this.dbPath);
+      if (battleService) defeatStatus = battleService.checkBankruptcy('PLY-0001');
+    } catch (defeatError) {
+      console.warn('[GameplayManager] bankruptcy check failed:', defeatError.message);
+    }
+
     // Publish the skipped days (excluding the new month's first day, which the
     // month tick already represents) so daily subscribers see every elapsed day.
     let dayTicksPublished = 0;
@@ -699,6 +720,8 @@ class GameplayManager {
       grainMissing,
       dayTicksPublished,
       fameDecay,
+      fameArrivals,
+      defeatStatus,
       playerStatus,
       playerLocationName: locationRow ? locationRow.name_vi : (playerLoc || ''),
       bizReports,

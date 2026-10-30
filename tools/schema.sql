@@ -12,6 +12,9 @@ CREATE TABLE IF NOT EXISTS campaign_meta (
     active_turn INTEGER NOT NULL DEFAULT 0,
     rules_version TEXT NOT NULL DEFAULT '1.1.0',
     random_seed INTEGER NOT NULL DEFAULT 1840201,
+    status TEXT NOT NULL DEFAULT 'ACTIVE',
+    defeat_reason TEXT,
+    distress_months INTEGER NOT NULL DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -48,7 +51,8 @@ CREATE TABLE IF NOT EXISTS player_state (
     morale INTEGER NOT NULL DEFAULT 100 CHECK (morale >= 0 AND morale <= 100),
     fame INTEGER NOT NULL DEFAULT 500 CHECK (fame >= 0),
     credibility INTEGER NOT NULL DEFAULT 50 CHECK (credibility >= 0 AND credibility <= 100),
-    virtue INTEGER NOT NULL DEFAULT 50 CHECK (virtue >= 0 AND virtue <= 100)
+    virtue INTEGER NOT NULL DEFAULT 50 CHECK (virtue >= 0 AND virtue <= 100),
+    militia INTEGER NOT NULL DEFAULT 0 CHECK (militia >= 0)
 );
 
 -- 3. Player Skills Ladder
@@ -172,6 +176,7 @@ CREATE TABLE IF NOT EXISTS npc_state (
     monthly_wage INTEGER NOT NULL DEFAULT 750 CHECK (monthly_wage >= 0),
     management_exp INTEGER NOT NULL DEFAULT 0,
     craft_exp INTEGER NOT NULL DEFAULT 0,
+    is_alive INTEGER NOT NULL DEFAULT 1,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -270,6 +275,42 @@ CREATE TABLE IF NOT EXISTS exploration_log (
     item_code TEXT,
     item_tier INTEGER,
     pity_triggered INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS fame_arrivals (
+    arrival_id TEXT PRIMARY KEY,
+    character_id TEXT NOT NULL,
+    game_date TEXT NOT NULL,
+    fame_at_arrival INTEGER NOT NULL,
+    tier_code TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    name_vi TEXT NOT NULL,
+    name_en TEXT NOT NULL,
+    militia INTEGER NOT NULL DEFAULT 0,
+    grain_gift REAL NOT NULL DEFAULT 0,
+    narrative_vi TEXT,
+    narrative_en TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS battle_duels (
+    duel_id TEXT PRIMARY KEY,
+    battle_id TEXT,
+    game_date TEXT NOT NULL,
+    context TEXT NOT NULL,
+    player_id TEXT NOT NULL,
+    player_name TEXT,
+    enemy_name TEXT,
+    negotiation_result TEXT,
+    negotiation_roll REAL,
+    duel_triggered INTEGER NOT NULL DEFAULT 0,
+    duel_winner TEXT,
+    death_chance REAL,
+    death_roll REAL,
+    death_applied INTEGER NOT NULL DEFAULT 0,
+    narrative_vi TEXT,
+    narrative_en TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

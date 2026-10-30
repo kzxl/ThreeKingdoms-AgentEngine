@@ -15,13 +15,15 @@ function fameRatio(fame) {
   return value / (value + FAME_NORMALIZER);
 }
 
-function quoteFromReference(referencePrice, fame, itemCode = '') {
+function quoteFromReference(referencePrice, fame, itemCode = '', worldMultiplier = 1) {
   const reference = Math.max(1, Math.round(Number(referencePrice) || 0));
   const ratio = fameRatio(fame);
   const spread = Number(PRICING.merchantSpread);
+  const world = Math.max(0.5, Math.min(3, Number(worldMultiplier) || 1));
+  const effectiveReference = Math.max(1, Math.round(reference * world));
 
-  const rawBuy = reference * (1 + spread - ratio * Number(PRICING.fameBuyDiscountMax));
-  const rawSell = reference * (1 - spread + ratio * Number(PRICING.fameSellBonusMax));
+  const rawBuy = effectiveReference * (1 + spread - ratio * Number(PRICING.fameBuyDiscountMax));
+  const rawSell = effectiveReference * (1 - spread + ratio * Number(PRICING.fameSellBonusMax));
   const buyPrice = Math.max(Number(PRICING.minPrice), Math.round(rawBuy));
   const sellPrice = Math.max(
     Number(PRICING.minPrice),
@@ -31,6 +33,8 @@ function quoteFromReference(referencePrice, fame, itemCode = '') {
   return {
     itemCode,
     referencePrice: reference,
+    effectiveReference,
+    worldMultiplier: world,
     buyPrice,
     sellPrice,
     fameRatio: ratio,

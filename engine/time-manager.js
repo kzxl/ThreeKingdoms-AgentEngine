@@ -111,6 +111,16 @@ function resolveActionCost(type, subType, daysOverride) {
 function canSpendActionTime(dbPath, type, subType, daysOverride = null) {
   const clock = getClock(dbPath);
   const cost = resolveActionCost(type, subType, daysOverride);
+  const campaign = runSqlJson(dbPath, 'SELECT status FROM campaign_meta LIMIT 1;')[0];
+  if (campaign && campaign.status && campaign.status !== 'ACTIVE') {
+    return {
+      allowed: false,
+      code: 'CAMPAIGN_OVER',
+      error: `Chiến dịch đã kết thúc (${campaign.status}). Không thể thực hiện thêm hành động.`,
+      clock,
+      cost
+    };
+  }
 
   if (cost.days > 0 && clock.dayOfMonth >= DAYS_PER_MONTH) {
     return {

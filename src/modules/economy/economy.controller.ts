@@ -16,6 +16,7 @@ import { postCashflowEntry } from '../../shared/ledger';
 import { ACCOUNT_CODES } from '../../shared/account-codes';
 import { getMarketItem } from '../../shared/market-price-book';
 import { quoteFromReference } from '../../shared/market-quote';
+import { worldPriceMultiplier } from '../../shared/world-price';
 
 function getEconomyModule(): EconomyModule | undefined {
   return ModuleRegistry.getInstance().get<EconomyModule>('module.economy');
@@ -242,8 +243,11 @@ export function registerEconomyRoutes(router: Router): void {
         return;
       }
 
+      const meta = getCampaignMeta(db);
+      const effectiveDate = meta.currentDate;
       const fameRow = db.queryOne<{ fame: number }>('SELECT fame FROM player_state WHERE player_id = ?;', ['PLY-0001']);
-      const quote = quoteFromReference(marketItem.price, Number(fameRow?.fame || 0), itemCode);
+      const worldMultiplier = worldPriceMultiplier(db, itemCode, effectiveDate);
+      const quote = quoteFromReference(marketItem.price, Number(fameRow?.fame || 0), itemCode, worldMultiplier);
       const effectiveUnitPrice = tradeAction === 'BUY' ? quote.buyPrice : quote.sellPrice;
       const itemInfo = {
         item_code: marketItem.itemCode,
@@ -251,10 +255,6 @@ export function registerEconomyRoutes(router: Router): void {
         category: marketItem.category
       };
       const totalAmount = Math.round(qty * effectiveUnitPrice);
-      const meta = getCampaignMeta(db);
-      // The server clock is authoritative; a client-supplied date could back-date
-      // the ledger and desync it from campaign_meta.
-      const effectiveDate = meta.currentDate;
 
       const tradeResult = db.transaction(() => {
         const player = db.queryOne<{ liquid_cash: number; safe_cash: number }>(

@@ -207,6 +207,7 @@ function renderTurnAdvanceReport(res) {
   if (!container) return;
 
   const bizList = Array.isArray(res.bizReports) ? res.bizReports : [];
+  const arrivalList = Array.isArray(res.fameArrivals?.arrivals) ? res.fameArrivals.arrivals : [];
   const polList = Array.isArray(res.politicalEvents) ? res.politicalEvents : [];
   const npcList = Array.isArray(res.npcLogs) ? res.npcLogs : [];
   const actionList = Array.isArray(res.recentActions) ? res.recentActions : [];
@@ -220,8 +221,7 @@ function renderTurnAdvanceReport(res) {
   const status = res.playerStatus || {};
   const eco = res.ecologyResults || {};
 
-  const bizHtml = bizList.length > 0 ? bizList.map(b => {
-    const method = b.settlementMethod === 'WORKSHOP'
+  const bizHtml = bizList.length > 0 ? bizList.map(b => {    const method = b.settlementMethod === 'WORKSHOP'
       ? (isEn ? 'Workshop cycle' : 'Xưởng tự vận hành')
       : (isEn ? 'Passive accrual' : 'Doanh thu thụ động');
     return `
@@ -235,6 +235,13 @@ function renderTurnAdvanceReport(res) {
     </div>
   `;
   }).join('') : turnReportEmpty(isEn, 'Chưa có sản nghiệp xưởng thợ trực thuộc.', 'No family workshops established yet.');
+
+  const arrivalHtml = arrivalList.length > 0 ? arrivalList.map(a => `
+    <div class="turn-rpt-item">
+      <div class="turn-rpt-item-title">${uiIcon('users')} ${isEn ? a.nameEn : a.nameVi}</div>
+      <div class="turn-rpt-item-meta">${isEn ? a.narrativeEn : a.narrativeVi}</div>
+    </div>
+  `).join('') : turnReportEmpty(isEn, 'Danh vọng chưa đủ để người lạ tìm đến tháng này.', 'No one sought you out this month.');
 
   const actionHtml = actionList.length > 0 ? actionList.map(a => {
     const label = TURN_ACTION_LABELS[a.actionType] || { vi: a.actionType, en: a.actionType };
@@ -368,6 +375,14 @@ function renderTurnAdvanceReport(res) {
             <span class="title">${isEn ? 'Commercial & Workshop Ledger' : 'Vận Hành Sản Nghiệp & Xưởng Thợ'}</span>
           </div>
           <div class="turn-rpt-card-body">${bizHtml}</div>
+        </div>
+
+        <div class="turn-rpt-card">
+          <div class="turn-rpt-card-hdr">
+            ${uiIcon('users')}
+            <span class="title">${isEn ? 'Fame Attracts People' : 'Danh Vọng Tụ Nhân Tâm'}</span>
+          </div>
+          <div class="turn-rpt-card-body">${arrivalHtml}</div>
         </div>
 
         <div class="turn-rpt-card full-width">
