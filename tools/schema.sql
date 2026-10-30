@@ -249,6 +249,30 @@ CREATE VIEW IF NOT EXISTS character_prestige AS
   UNION ALL
   SELECT npc_id AS character_id, prestige AS fame, 'NPC' AS kind FROM npc_personal_progression;
 
+-- 15c. Rare item discovery table and audit log
+CREATE TABLE IF NOT EXISTS discovery_items (
+    item_code TEXT PRIMARY KEY,
+    tier INTEGER NOT NULL,
+    min_fame INTEGER NOT NULL DEFAULT 0,
+    weight REAL NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS exploration_log (
+    explore_id TEXT PRIMARY KEY,
+    character_id TEXT NOT NULL,
+    location TEXT NOT NULL,
+    poi_name TEXT,
+    game_date TEXT NOT NULL,
+    fame_at_roll INTEGER NOT NULL,
+    chance REAL NOT NULL,
+    roll REAL NOT NULL,
+    success INTEGER NOT NULL,
+    item_code TEXT,
+    item_tier INTEGER,
+    pity_triggered INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- 16. NPC Autonomous Journey Chronicle & Life Events
 CREATE TABLE IF NOT EXISTS npc_journey_logs (
     id TEXT PRIMARY KEY,

@@ -47,7 +47,8 @@ const ACTION_DAY_COSTS = {
   START_TASK: 1,
   CANCEL_TASK: 0,
   REST_RECOVERY: 1,
-  TRAIN_MARTIAL: 1
+  TRAIN_MARTIAL: 1,
+  EXPLORE_POI: 1
 };
 
 function setActionPolicy(policy) {

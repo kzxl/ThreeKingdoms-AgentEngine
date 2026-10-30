@@ -12,9 +12,11 @@
 
 import { Router, sendJson, RouteContext } from '../../server/router';
 import { SpatialGuardService } from './spatial-guard.service';
+import { ExplorationService } from './exploration.service';
 
 export function registerProgressionRoutes(router: Router): void {
   const guard = SpatialGuardService.getInstance();
+  const exploration = ExplorationService.getInstance();
 
   /**
    * 1. GET /api/progression/status & /api/progression/state
@@ -71,6 +73,23 @@ export function registerProgressionRoutes(router: Router): void {
       const playerId = (ctx.query.playerId as string) || 'PLY-0001';
       const location = guard.getPlayerCurrentLocation(playerId);
       sendJson(res, 200, { success: true, playerId, currentLocation: location });
+    } catch (err: any) {
+      sendJson(res, 500, { success: false, error: err.message });
+    }
+  });
+
+  /**
+   * 4. POST /api/explore — spend one day searching the current POI.
+   */
+  router.post('/api/explore', (req: any, res: any, ctx: RouteContext) => {
+    try {
+      const body = ctx.body || {};
+      const result = exploration.explore({
+        characterId: body.characterId || body.playerId || 'PLY-0001',
+        location: body.location,
+        poiName: body.poiName
+      });
+      sendJson(res, result.success ? 200 : 400, result);
     } catch (err: any) {
       sendJson(res, 500, { success: false, error: err.message });
     }

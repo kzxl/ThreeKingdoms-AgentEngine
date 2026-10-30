@@ -225,6 +225,29 @@
     return true;
   }
 
+  async function exploreCurrentPoi() {
+    try {
+      const res = await fetch('/api/explore', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          location: currentSubLocation || window.activeSubLocation,
+          poiName: currentSubLocation || window.activeSubLocation
+        })
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || 'Khảo sát thất bại');
+      const text = data.discovered
+        ? `Khám phá: ${data.item.nameVi} (cấp ${data.item.tier})`
+        : `Không tìm thấy gì. Danh vọng ${data.fame}.`;
+      if (typeof showToast === 'function') showToast(text, !data.discovered);
+      if (typeof loadStatus === 'function') await loadStatus();
+      if (typeof loadDeckInventory === 'function') await loadDeckInventory();
+    } catch (err) {
+      if (typeof showToast === 'function') showToast(`[LỖI] ${err.message}`, true);
+    }
+  }
+
   return {
     init,
     updateActionDock,
@@ -232,6 +255,7 @@
     openMarketAction,
     resolvePoiType,
     assertPresence,
+    exploreCurrentPoi,
     getCurrentSubLocation: () => currentSubLocation
   };
 });

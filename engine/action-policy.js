@@ -30,7 +30,8 @@ const ACTION_TIME_POLICY = {
   START_TASK: { days: 1, fatigue: 5, labelVi: 'Khởi công', labelEn: 'Start task' },
   CANCEL_TASK: { days: 0, fatigue: 0, labelVi: 'Hủy task', labelEn: 'Cancel task' },
   REST_RECOVERY: { days: 1, fatigue: 0, labelVi: 'Nghỉ ngơi', labelEn: 'Rest' },
-  TRAIN_MARTIAL: { days: 1, fatigue: 0, labelVi: 'Luyện võ', labelEn: 'Training' }
+  TRAIN_MARTIAL: { days: 1, fatigue: 0, labelVi: 'Luyện võ', labelEn: 'Training' },
+  EXPLORE_POI: { days: 1, fatigue: 5, labelVi: 'Khảo sát', labelEn: 'Explore' }
 };
 
 function getActionTimeCost(type, subType) {

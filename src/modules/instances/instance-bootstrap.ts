@@ -37,6 +37,7 @@ const HISTORY_TABLES = [
   'npc_skills',
   'npc_personal_progression',
   'prestige_events',
+  'exploration_log',
   'npc_relationship_deltas',
   'npc_journey_logs',
   'npc_episodic_memories',
