@@ -254,7 +254,7 @@ npm install
 # Master schema + lore into saves/session.db and saves/master.db (needs the sqlite3 CLI)
 node tools/ingest-markdown-master.js
 
-# Session schema, seed, and migrations 001–011
+# Session schema, seed, and migrations 001–020
 node tools/sim-db.js init
 
 npm start

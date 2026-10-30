@@ -149,12 +149,12 @@ function testTradeSellSuccess() {
   });
 
   assert.strictEqual(res.success, true, 'Trade sell should succeed');
-  assert.strictEqual(res.data.totalRevenue, 219, 'Revenue should be 219');
-  assert.strictEqual(res.data.newCashBalance, 9779, 'New balance should be 9779');
+  assert.strictEqual(res.data.totalRevenue, 435, 'Revenue should be 435');
+  assert.strictEqual(res.data.newCashBalance, 9995, 'New balance should be 9995');
   assert.strictEqual(res.data.newQuantity, 2, 'Remaining salt should be 2');
 
   const player = runSqlJson(`SELECT liquid_cash FROM player_state;`)[0];
-  assert.strictEqual(player.liquid_cash, 9779, 'Player cash must be 9779');
+  assert.strictEqual(player.liquid_cash, 9995, 'Player cash must be 9995');
 
   const salt = runSqlJson(`SELECT quantity FROM inventory_items WHERE item_code = 'COM-SALT';`)[0];
   assert.strictEqual(salt.quantity, 2, 'Salt stock must be 2');
@@ -180,7 +180,7 @@ function testTradeSellInsufficientStock() {
   assert.strictEqual(res.code, 'INSUFFICIENT_STOCK', 'Error code must be INSUFFICIENT_STOCK');
 
   const player = runSqlJson(`SELECT liquid_cash FROM player_state;`)[0];
-  assert.strictEqual(player.liquid_cash, 9779, 'Cash must not change on failed sell');
+  assert.strictEqual(player.liquid_cash, 9995, 'Cash must not change on failed sell');
 
   console.log('  ✅ PASSED: Insufficient stock rejected cleanly.');
 }

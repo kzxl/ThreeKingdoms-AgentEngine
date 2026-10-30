@@ -15,6 +15,7 @@ import { DatabaseService } from '../src/core/database';
 import { loadMarketCatalog, requireMarketPrice } from '../src/shared/market-price-book';
 import { quoteFromReference } from '../src/shared/market-quote';
 import { worldPriceMultiplier } from '../src/shared/world-price';
+import { SettlementMarketService } from '../src/modules/economy/settlement-market.service';
 
 const { SimulationCore } = require('../engine/sim-core');
 const cjsBook = require('../engine/market-price-book');
@@ -158,7 +159,8 @@ function run(): void {
             catalogPrice,
             fame,
             choice.action.item_code,
-            worldPriceMultiplier(db, choice.action.item_code, '184-05-02')
+            worldPriceMultiplier(db, choice.action.item_code, '184-05-02'),
+            SettlementMarketService.forDatabase(db).getLocalMultiplier('zhuo_xian', choice.action.item_code)
           )[choice.action.type === 'TRADE_BUY' ? 'buyPrice' : 'sellPrice'];
           assert.strictEqual(choice.action.unit_price, expected, `${location} quotes a stale price`);
         }

@@ -183,6 +183,11 @@ function run(): void {
     assert.strictEqual(departedNpc.assigned_role, 'DEPARTED', 'departing retainer must lose the assignment');
     const departureLog = db.queryOne<any>('SELECT * FROM retainer_departures WHERE npc_id = ?;', [retainer.npc_id]);
     assert(departureLog, 'departure must be logged');
+    const unrest = db.queryOne<any>(
+      "SELECT * FROM unrest_events WHERE npc_id = ? AND source = 'RETAINER' AND event_type = 'DEPARTURE';",
+      [retainer.npc_id]
+    );
+    assert(unrest, 'retainer departure must feed the unified unrest log');
   } finally {
     db.close();
     try {

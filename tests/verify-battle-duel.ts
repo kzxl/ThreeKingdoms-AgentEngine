@@ -65,14 +65,25 @@ function run(): void {
     db.execute("UPDATE campaign_meta SET status = 'ACTIVE', defeat_reason = NULL;");
     db.execute("UPDATE player_state SET health = 100 WHERE player_id = 'PLY-0001';");
     db.execute("UPDATE family_children SET is_heir = 1, status = 'HEIR' WHERE child_id = 'CHILD-TEST-HEIR-01';");
+    const beforeCash = db.queryOne<any>('SELECT liquid_cash + safe_cash AS total FROM player_state WHERE player_id = ?;', ['PLY-0001']);
+    const { DynastySuccessionService } = require('../src/modules/lineage-succession/dynasty-succession.service');
+    new DynastySuccessionService(db).setWill({ charityShareBps: 2500 });
     const succession = service.applyPlayerDeath('PLY-0001', 'TEST_DEATH_WITH_HEIR');
     assert.strictEqual(succession.succession, true, 'death with an heir must run succession');
     assert.strictEqual(succession.heirId, 'CHILD-TEST-HEIR-01', 'succession must name the heir');
     const revived = db.queryOne<any>('SELECT status FROM campaign_meta LIMIT 1;');
     assert.strictEqual(revived.status, 'ACTIVE', 'succession must keep the campaign active');
-    const heirName = db.queryOne<any>('SELECT name, health FROM player_state LIMIT 1;');
+    const heirName = db.queryOne<any>('SELECT name, health, liquid_cash + safe_cash AS total FROM player_state LIMIT 1;');
     assert.strictEqual(heirName.name, 'Lương Anh Hào', 'player identity must transfer to the heir');
     assert.strictEqual(Number(heirName.health), 100, 'heir must start at full health');
+    assert(
+      Math.abs(Number(heirName.total) - Number(beforeCash.total) * 0.75) <= 1,
+      'a 25% will must leave exactly 75% of liquid capital to the heir'
+    );
+    const charityLedger = db.queryOne<any>(
+      "SELECT * FROM cashflow_ledger WHERE category = 'DYNASTY_SUCCESSION' ORDER BY rowid DESC LIMIT 1;"
+    );
+    assert(charityLedger && Number(charityLedger.outflow) > 0, 'charity share must be posted as a ledger outflow');
     db.execute("UPDATE family_children SET is_heir = 0, status = 'ADULT_OFFICER' WHERE child_id = 'CHILD-TEST-HEIR-01';");
 
     // Bankruptcy path: two consecutive distressed closes end the campaign.

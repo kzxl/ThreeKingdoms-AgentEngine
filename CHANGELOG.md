@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.6.15] - 2026-10-30
+
+Legacy local prices, inheritance will and a unified unrest stream.
+
+### Changed
+- `SimulationCore` and contextual action quotes now include the settlement
+  specialisation × stock multiplier, matching `/api/trade`; the legacy action
+  test expectations moved accordingly.
+- Migration `019-family-will`: the player can leave 0–50% of liquid capital to
+  charity. Succession posts the charity as a ledger outflow, keeps the rest for
+  the heir, adds family prestige and exposes the will in the Succession tab.
+- Migration `020-unrest-events`: retainer departures and officer coups/defections
+  feed one append-only unrest stream for report/audit.
+- Legacy schema, instance reset and bootstrap tests cover migrations 019–020.
+
+### Verification
+`npm run verify` green: 29/29 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,358 invariants, 0 discrepancies. Tests cover the 25% will
+transfer, the charity ledger outflow, retainer unrest logging and the 20-migration
+fresh schema.
+
+---
+
 ## [1.6.14] - 2026-10-30
 
 Guest assignment, persisted local stock, retainer departures and succession UI.

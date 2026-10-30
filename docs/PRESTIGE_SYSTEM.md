@@ -94,10 +94,10 @@ It exposes `getFame`, `getTier`, `award`, `penalize`, `decayInactive` and
 
 1. Guest auto-assignment needs an owned business and a met fame gate; otherwise
    the guest stays `GUEST` until the player hires them.
-2. Local stock/demand is persisted and used by `/api/trade`; the CommonJS
-   `SimulationCore` path still quotes with world × fame only (legacy gateway).
-3. Personal retainer departures are live; faction officer coups remain in
-   `faction-politics`.
-4. Succession UI lists adult heirs and executes the audited transfer; a full
-   will/inheritance split and ancestor chronicle screen are still minimal.
+2. Local stock/demand now feeds `/api/trade`, `SimulationCore` and contextual
+   actions; a per-item supply shock UI is still minimal.
+3. Retainer departures and officer coups share `unrest_events`, but their
+   mechanics remain separate (loyalty chain vs faction politics).
+4. The will supports a charity share (0–50%); sibling-by-sibling asset division
+   and a full ancestor chronicle screen are still minimal.
 
