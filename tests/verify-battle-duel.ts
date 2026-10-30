@@ -76,11 +76,16 @@ function run(): void {
       FROM family_children WHERE child_id = 'CHILD-TEST-HEIR-01';
     `);
     const beforeCash = db.queryOne<any>('SELECT liquid_cash + safe_cash AS total FROM player_state WHERE player_id = ?;', ['PLY-0001']);
+    db.execute("INSERT INTO character_equipment (character_id, slot_type, item_code, custom_name, stat_modifiers) VALUES ('PLY-0001', 'WEAPON', 'COM-SWORD', 'Test Sword', '{}');");
+    const testEquipment = db.queryOne<any>("SELECT id FROM character_equipment WHERE character_id = 'PLY-0001' ORDER BY id DESC LIMIT 1;");
     const { DynastySuccessionService } = require('../src/modules/lineage-succession/dynasty-succession.service');
     new DynastySuccessionService(db).setWill({
       charityShareBps: 2500,
       allocations: [{ childId: 'CHILD-TEST-SIBLING', shareBps: 2500 }],
-      assets: [{ assetType: 'BUSINESS', assetId: 'BIZ-0001', childId: 'CHILD-TEST-SIBLING' }]
+      assets: [
+        { assetType: 'BUSINESS', assetId: 'BIZ-0001', childId: 'CHILD-TEST-SIBLING' },
+        { assetType: 'EQUIPMENT', assetId: String(testEquipment.id), childId: 'CHILD-TEST-SIBLING' }
+      ]
     });
     const succession = service.applyPlayerDeath('PLY-0001', 'TEST_DEATH_WITH_HEIR');
     assert.strictEqual(succession.succession, true, 'death with an heir must run succession');
@@ -101,6 +106,8 @@ function run(): void {
     );
     const bequeathedBusiness = db.queryOne<any>('SELECT owner_character_id FROM businesses WHERE business_id = ?;', ['BIZ-0001']);
     assert.strictEqual(bequeathedBusiness.owner_character_id, 'CHILD-TEST-SIBLING', 'business bequest must transfer ownership');
+    const bequeathedEquipment = db.queryOne<any>('SELECT character_id FROM character_equipment WHERE id = ?;', [testEquipment.id]);
+    assert.strictEqual(bequeathedEquipment.character_id, 'CHILD-TEST-SIBLING', 'equipment bequest must transfer by instance id');
     const charityLedger = db.queryOne<any>(
       "SELECT * FROM cashflow_ledger WHERE category = 'DYNASTY_SUCCESSION' ORDER BY rowid DESC LIMIT 1;"
     );

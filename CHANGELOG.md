@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.6.18] - 2026-10-30
+
+Equipment instance bequests, market history and consequence strategies.
+
+### Changed
+- Equipment bequests now use `character_equipment.id` (instance id) instead of
+  `item_code`, so duplicate weapons are transferred individually.
+- Migration `023-settlement-market-history`: every monthly stock drift appends a
+  history point. `GET /api/economy/settlement-market` returns current stock,
+  demand, multipliers and the last 12 points; the **Chợ & Giá** button opens a
+  market-pulse table.
+- `UnrestConsequence` strategy interface with `RetainerDepartureConsequence`
+  (retainer SQL) and `OfficerUnrestConsequence` (shared log + faction action
+  signal). Faction and retainer paths no longer duplicate their consequence
+  bookkeeping; territory SQL remains in faction-politics by design.
+
+### Verification
+`npm run verify` green: 29/29 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,358 invariants, 0 discrepancies. Tests cover equipment
+instance transfer, market history points/pulse and the 23-migration schema.
+
+---
+
 ## [1.6.17] - 2026-10-30
 
 Asset bequests, supply-shock badges and a shared unrest decision model.

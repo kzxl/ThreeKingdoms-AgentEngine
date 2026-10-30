@@ -72,6 +72,13 @@ function run(): void {
     settlement.driftSettlement('zhuo_xian');
     const afterDrift = settlement.getState('zhuo_xian', 'COM-BAMBOO');
     assert(afterDrift.stock !== beforeDrift.stock || afterDrift.demand !== beforeDrift.demand, 'monthly drift must change stock/demand');
+    const history = db.queryOne<{ c: number }>(
+      "SELECT COUNT(*) AS c FROM settlement_market_history WHERE settlement_id = 'zhuo_xian' AND item_code = 'COM-BAMBOO';"
+    );
+    assert(Number(history?.c) >= 1, 'monthly drift must append a history point');
+    const pulse = settlement.getMarketPulse('zhuo_xian', 10);
+    const bambooPulse = pulse.find(item => item.itemCode === 'COM-BAMBOO');
+    assert(bambooPulse && bambooPulse.history.length >= 1, 'market pulse must expose the history series');
 
     db.execute(`UPDATE regional_ecological_crises SET is_active = 0;`);
   } finally {

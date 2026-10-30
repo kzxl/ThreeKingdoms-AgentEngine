@@ -94,12 +94,10 @@ It exposes `getFame`, `getTier`, `award`, `penalize`, `decayInactive` and
 
 1. Guest auto-assignment needs an owned business and a met fame gate; otherwise
    the guest stays `GUEST` until the player hires them.
-2. Supply shocks are visible as per-item badges and drive prices; a dedicated
-   market-pulse screen with historical curves is still minimal.
-3. Officer coups and retainer departures share one risk formula and one unrest
-   log, but their consequences remain domain-specific (territory transfer vs
-   post vacancy).
-4. The will supports charity, per-child cash shares, businesses and equipment;
-   equipment is assigned by item code, so duplicate items need a dedicated
-   instance id.
+2. The market-pulse screen shows stock/demand, multipliers and the last 12
+   textual points; a chart with longer history is still minimal.
+3. `UnrestConsequence` strategies now own retainer and officer bookkeeping, but
+   officer territory transfer deliberately stays in faction-politics.
+4. The will supports charity, per-child cash, businesses and equipment instance
+   ids; assigning the same equipment to two children is last-write-wins.
 
