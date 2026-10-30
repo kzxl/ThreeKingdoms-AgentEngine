@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.15.0] - 2026-10-31
+
+POI scene coverage for Zhuo County and the five grand citadels.
+
+### Added
+- The five Zhuo POIs (residence, smithy, tavern, caravan depot, arena) now
+  route to their bespoke generators instead of the generic fallback.
+- The five citadels (Wancheng, Huainan, Shangdang, Xiliang, Jiaozhi) have
+  scene-normalizer branches and themed generators (court, military camp, or
+  Jiangdong administration).
+- `tests/verify-poi-coverage.ts` guards the ten scene mappings.
+
+### Verification
+`npm run verify` green: 40/40 suites, 28/28 contracts, 8/8 write smokes.
+
+---
+
 ## [1.14.0] - 2026-10-31
 
 Pre-battle layer for city sieges.

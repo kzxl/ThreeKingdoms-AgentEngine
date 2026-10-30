@@ -1578,6 +1578,16 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
     currentLocKey = 'Hán Trung Thiên Sư Phủ';
   } else if (subLower.includes('thành đô') || subLower.includes('chengdu') || subLower.includes('thục')) {
     currentLocKey = 'Thành Đô Ích Châu Phủ';
+  } else if (subLower.includes('uyển thành') || subLower.includes('wancheng')) {
+    currentLocKey = 'Uyển Thành Nha Môn';
+  } else if (subLower.includes('hoài nam') || subLower.includes('huainan') || subLower.includes('thọ xuân')) {
+    currentLocKey = 'Hoài Nam Ngụy Đế Cung';
+  } else if (subLower.includes('thượng đảng') || subLower.includes('shangdang')) {
+    currentLocKey = 'Thượng Đảng Trọng Trấn';
+  } else if (subLower.includes('tây lương') || subLower.includes('xiliang') || subLower.includes('vũ uy')) {
+    currentLocKey = 'Tây Lương Tướng Phủ';
+  } else if (subLower.includes('giao châu') || subLower.includes('jiaozhi') || subLower.includes('giao chỉ')) {
+    currentLocKey = 'Giao Châu Thái Thú Phủ';
   } else {
     currentLocKey = 'Vườn Đào';
   }

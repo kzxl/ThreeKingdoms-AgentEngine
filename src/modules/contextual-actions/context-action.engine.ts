@@ -133,13 +133,24 @@ export class ContextActionEngine {
 
     switch (subLocation) {
       case 'Vườn Đào':
+      case 'Tư Trạch Vườn Đào':
         return this.generatePeachGardenChoices(liquidCash, fatigue, leathQty, bamQty, gameDate);
 
       case 'Chợ Đông Môn':
         return this.generateMarketplaceChoices(liquidCash, fatigue, saltQty, grainQty, matQty, gameDate);
 
       case 'Xưởng Lương Thị':
+      case 'Thiết Điếm Trác Huyện':
         return this.generateWorkshopChoices(liquidCash, fatigue, bamQty, leathQty, matQty, shieldQty, gameDate);
+
+      case 'Tửu Quán Trác Huyện':
+        return this.generateMarketplaceChoices(liquidCash, fatigue, saltQty, grainQty, matQty, gameDate);
+
+      case 'Mã Xa Dịch Trạm':
+        return this.generateMarketplaceChoices(liquidCash, fatigue, saltQty, grainQty, matQty, gameDate);
+
+      case 'Lôi Đài Giáo Trường':
+        return this.generateMilitaryCampChoices(liquidCash, fatigue, grainQty, shieldQty, gameDate);
 
       case 'Quảng Tông Quân Doanh':
         return this.generateMilitaryCampChoices(liquidCash, fatigue, grainQty, shieldQty, gameDate);
@@ -181,6 +192,18 @@ export class ContextActionEngine {
 
       case 'Thành Đô Ích Châu Phủ':
         return this.generateChengduChoices(liquidCash, fatigue, gameDate);
+
+      // Three Kingdoms citadels that previously collapsed into the Zhuo generic.
+      case 'Uyển Thành Nha Môn':
+      case 'Hoài Nam Ngụy Đế Cung':
+        return this.generateXuchangChoices(liquidCash, fatigue, gameDate);
+
+      case 'Thượng Đảng Trọng Trấn':
+      case 'Tây Lương Tướng Phủ':
+        return this.generateMilitaryCampChoices(liquidCash, fatigue, grainQty, shieldQty, gameDate);
+
+      case 'Giao Châu Thái Thú Phủ':
+        return this.generateJianyeChoices(liquidCash, fatigue, gameDate);
 
       default:
         return this.generateGenericChoices(subLocation, liquidCash, fatigue, gameDate);
