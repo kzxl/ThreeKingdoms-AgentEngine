@@ -13,6 +13,7 @@ import path from 'path';
 import Database from 'better-sqlite3';
 import { DatabaseService } from '../src/core/database';
 import { loadMarketCatalog, requireMarketPrice } from '../src/shared/market-price-book';
+import { quoteFromReference } from '../src/shared/market-quote';
 
 const { SimulationCore } = require('../engine/sim-core');
 const cjsBook = require('../engine/market-price-book');
@@ -58,6 +59,8 @@ function run(): void {
     // 3. The trade executor settles at the catalog price, not the payload price.
     const core = new SimulationCore(TEST_DB);
     const grainPrice = requireMarketPrice(db, 'COM-GRAIN');
+    const fame = Number(db.queryOne<any>('SELECT fame FROM player_state WHERE player_id = ?;', ['PLY-0001'])?.fame || 0);
+    const grainQuote = quoteFromReference(grainPrice, fame, 'COM-GRAIN');
     const buy = core.executeAction({
       type: 'TRADE_BUY',
       item_code: 'COM-GRAIN',
@@ -67,7 +70,7 @@ function run(): void {
       game_date: '184-05-02'
     });
     assert.strictEqual(buy.success, true, `buy failed: ${buy.error}`);
-    assert.strictEqual(buy.data.totalCost, grainPrice, 'TRADE_BUY must charge the catalog price');
+    assert.strictEqual(buy.data.totalCost, grainQuote.buyPrice, 'TRADE_BUY must charge the buy quote');
 
     const sell = core.executeAction({
       type: 'TRADE_SELL',
@@ -78,7 +81,18 @@ function run(): void {
       game_date: '184-05-02'
     });
     assert.strictEqual(sell.success, true, `sell failed: ${sell.error}`);
-    assert.strictEqual(sell.data.totalRevenue, grainPrice, 'TRADE_SELL must pay the catalog price');
+    assert.strictEqual(sell.data.totalRevenue, grainQuote.sellPrice, 'TRADE_SELL must pay the sell quote');
+    assert(buy.data.totalCost > sell.data.totalRevenue, 'buy price must stay above the sell price');
+
+    // 3b. The CommonJS and TypeScript quote implementations must agree.
+    const cjsQuote = require('../engine/market-quote');
+    for (const sampleFame of [0, 500, 5000, 10000]) {
+      assert.deepStrictEqual(
+        cjsQuote.quoteFromReference(175, sampleFame, 'COM-GRAIN'),
+        quoteFromReference(175, sampleFame, 'COM-GRAIN'),
+        `quote drift at fame ${sampleFame}`
+      );
+    }
 
     // 4. An unpriced item is rejected instead of falling back to a local number.
     const unknown = core.executeAction({
@@ -118,7 +132,7 @@ function run(): void {
       for (const location of locations) {
         const choices = engine.generateChoices(
           location,
-          { liquid_cash: 200000, fatigue: 10, morale: 80 },
+          { liquid_cash: 200000, fatigue: 10, morale: 80, fame },
           [],
           { current_date: '184-05-02' }
         );
@@ -127,7 +141,10 @@ function run(): void {
           if (!String(choice.action?.type || '').startsWith('TRADE_')) continue;
           const catalogPrice = tsCatalog.get(choice.action.item_code)?.price;
           assert(catalogPrice, `${location} quotes unpriced ${choice.action.item_code}`);
-          assert.strictEqual(choice.action.unit_price, catalogPrice, `${location} quotes a stale price`);
+          const expected = quoteFromReference(catalogPrice, fame, choice.action.item_code)[
+            choice.action.type === 'TRADE_BUY' ? 'buyPrice' : 'sellPrice'
+          ];
+          assert.strictEqual(choice.action.unit_price, expected, `${location} quotes a stale price`);
         }
       }
     } finally {

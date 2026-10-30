@@ -17,6 +17,7 @@
 import { DatabaseService } from '../../core/database';
 import { DailyInteractionEngine, EverydayActionType } from '../social-kizuna/daily-interaction.engine';
 import { MarketCatalog, loadMarketCatalog } from '../../shared/market-price-book';
+import { quoteFromReference } from '../../shared/market-quote';
 
 export type ActionPillar =
   | 'KIZUNA_SOCIAL'
@@ -75,6 +76,7 @@ export class ContextActionEngine {
   private db: DatabaseService;
   private kizunaEngine: DailyInteractionEngine;
   private market: MarketCatalog = new Map();
+  private fame = 0;
 
   private constructor() {
     this.db = DatabaseService.getInstance();
@@ -106,6 +108,7 @@ export class ContextActionEngine {
     // Quote from the same catalog the trade executor settles against, so the
     // displayed price and the charged price cannot drift apart.
     this.market = loadMarketCatalog(this.db);
+    this.fame = Number(playerState?.fame || 0);
 
     // Helper map for inventory lookup
     const invMap = new Map<string, number>();
@@ -177,12 +180,20 @@ export class ContextActionEngine {
     }
   }
 
-  private quote(itemCode: string): number {
+  private quoteFor(itemCode: string, side: 'buyPrice' | 'sellPrice'): number {
     const item = this.market.get(itemCode);
     if (!item || item.price <= 0) {
       throw new Error(`No market price for ${itemCode}; add it to master_items.`);
     }
-    return item.price;
+    return quoteFromReference(item.price, this.fame, itemCode)[side];
+  }
+
+  private buyPrice(itemCode: string): number {
+    return this.quoteFor(itemCode, 'buyPrice');
+  }
+
+  private sellPrice(itemCode: string): number {
+    return this.quoteFor(itemCode, 'sellPrice');
   }
 
   // =========================================================================
@@ -200,7 +211,7 @@ export class ContextActionEngine {
     bamQty: number,
     gameDate: string
   ): ContextualChoice[] {
-    const leathPrice = this.quote('COM-LEATH');
+    const leathPrice = this.buyPrice('COM-LEATH');
     const buyLeathBatch = liquidCash >= leathPrice * 8 ? 8 : (liquidCash >= leathPrice * 4 ? 4 : (liquidCash >= leathPrice ? 1 : 0));
     const buyLeathCost = buyLeathBatch * leathPrice;
     const canBuyLeath = buyLeathBatch > 0;
@@ -364,9 +375,9 @@ export class ContextActionEngine {
     matQty: number,
     gameDate: string
   ): ContextualChoice[] {
-    const matPrice = this.quote('PROD-MAT');
-    const saltPrice = this.quote('COM-SALT');
-    const grainPrice = this.quote('COM-GRAIN');
+    const matPrice = this.sellPrice('PROD-MAT');
+    const saltPrice = this.sellPrice('COM-SALT');
+    const grainPrice = this.buyPrice('COM-GRAIN');
     const hasMatsToSell = matQty >= 5;
     const sellMatBatch = Math.min(matQty, 10);
     const hasSaltToSell = saltQty >= 5;
@@ -688,7 +699,7 @@ export class ContextActionEngine {
     gameDate: string
   ): ContextualChoice[] {
     const hasGrainToSupply = grainQty >= 5;
-    const grainPrice = this.quote('COM-GRAIN');
+    const grainPrice = this.sellPrice('COM-GRAIN');
 
     return [
       // Pillar 1: Kizuna Social (Lu Zhi)
@@ -803,8 +814,8 @@ export class ContextActionEngine {
    * Pingyuan Town (Bình Nguyên Trọng Trấn)
    */
   private generatePingyuanChoices(liquidCash: number, fatigue: number, grainQty: number, shieldQty: number, gameDate: string): ContextualChoice[] {
-    const shieldPrice = this.quote('PROD-SHIELD-BAM');
-    const grainPrice = this.quote('COM-GRAIN');
+    const shieldPrice = this.sellPrice('PROD-SHIELD-BAM');
+    const grainPrice = this.buyPrice('COM-GRAIN');
     return [
       {
         id: 'OPT_1',
@@ -897,7 +908,7 @@ export class ContextActionEngine {
    * Host: Cao Cao (NPC-0009 / NPC-0061)
    */
   private generateXuchangChoices(liquidCash: number, fatigue: number, gameDate: string): ContextualChoice[] {
-    const horsePrice = this.quote('COM-HORSE-W');
+    const horsePrice = this.buyPrice('COM-HORSE-W');
     return [
       {
         id: 'OPT_1',
@@ -992,7 +1003,7 @@ export class ContextActionEngine {
    * Host: He Jin (NPC-0010) / Imperial Court
    */
   private generateLuoyangChoices(liquidCash: number, fatigue: number, gameDate: string): ContextualChoice[] {
-    const licensePrice = this.quote('LIC-LUOYANG');
+    const licensePrice = this.buyPrice('LIC-LUOYANG');
     return [
       {
         id: 'OPT_1',
@@ -1084,7 +1095,7 @@ export class ContextActionEngine {
    * Host: Gongsun Zan (NPC-0060)
    */
   private generateBeipingChoices(liquidCash: number, fatigue: number, gameDate: string): ContextualChoice[] {
-    const shieldPrice = this.quote('PROD-SHIELD-BAM');
+    const shieldPrice = this.sellPrice('PROD-SHIELD-BAM');
     return [
       {
         id: 'OPT_1',
@@ -1180,7 +1191,7 @@ export class ContextActionEngine {
     fatigue: number,
     gameDate: string
   ): ContextualChoice[] {
-    const grainPrice = this.quote('COM-GRAIN');
+    const grainPrice = this.buyPrice('COM-GRAIN');
     return [
       {
         id: 'OPT_1',
@@ -1270,8 +1281,8 @@ export class ContextActionEngine {
    * Host: Yuan Shao (NPC-0018)
    */
   private generateYechengChoices(liquidCash: number, fatigue: number, gameDate: string): ContextualChoice[] {
-    const matPrice = this.quote('PROD-MAT');
-    const grainPrice = this.quote('COM-GRAIN');
+    const matPrice = this.sellPrice('PROD-MAT');
+    const grainPrice = this.buyPrice('COM-GRAIN');
     return [
       {
         id: 'OPT_1',
@@ -1364,7 +1375,7 @@ export class ContextActionEngine {
    * Host: Lu Bu (NPC-0057) / Chen Gong (NPC-0058)
    */
   private generateXiapiChoices(liquidCash: number, fatigue: number, gameDate: string): ContextualChoice[] {
-    const shieldPrice = this.quote('PROD-SHIELD-BAM');
+    const shieldPrice = this.sellPrice('PROD-SHIELD-BAM');
     return [
       {
         id: 'OPT_1',
@@ -1453,7 +1464,7 @@ export class ContextActionEngine {
    * Host: Dong Zhuo (NPC-0023) / Wang Yun (NPC-0015)
    */
   private generateChanganChoices(liquidCash: number, fatigue: number, gameDate: string): ContextualChoice[] {
-    const leathPrice = this.quote('COM-LEATH');
+    const leathPrice = this.buyPrice('COM-LEATH');
     return [
       {
         id: 'OPT_1',
@@ -1545,7 +1556,7 @@ export class ContextActionEngine {
    * Host: Liu Biao (NPC-0016)
    */
   private generateXiangyangChoices(liquidCash: number, fatigue: number, gameDate: string): ContextualChoice[] {
-    const grainPrice = this.quote('COM-GRAIN');
+    const grainPrice = this.buyPrice('COM-GRAIN');
     return [
       {
         id: 'OPT_1',
@@ -1639,7 +1650,7 @@ export class ContextActionEngine {
    * Host: Zhou Yu (NPC-0017) / Huang Gai (NPC-0052)
    */
   private generateNavalCampChoices(liquidCash: number, fatigue: number, gameDate: string): ContextualChoice[] {
-    const shieldPrice = this.quote('PROD-SHIELD-BAM');
+    const shieldPrice = this.sellPrice('PROD-SHIELD-BAM');
     return [
       {
         id: 'OPT_1',
@@ -1730,8 +1741,8 @@ export class ContextActionEngine {
    * Host: Sun Quan (NPC-0019)
    */
   private generateJianyeChoices(liquidCash: number, fatigue: number, gameDate: string): ContextualChoice[] {
-    const matPrice = this.quote('PROD-MAT');
-    const licensePrice = this.quote('LIC-JIANYE');
+    const matPrice = this.sellPrice('PROD-MAT');
+    const licensePrice = this.buyPrice('LIC-JIANYE');
     return [
       {
         id: 'OPT_1',
@@ -1824,8 +1835,8 @@ export class ContextActionEngine {
    * Host: Zhang Lu (NPC-0020)
    */
   private generateHanzhongChoices(liquidCash: number, fatigue: number, gameDate: string): ContextualChoice[] {
-    const herbPrice = this.quote('COM-HERB');
-    const passPrice = this.quote('LIC-JIANGE');
+    const herbPrice = this.buyPrice('COM-HERB');
+    const passPrice = this.buyPrice('LIC-JIANGE');
     return [
       {
         id: 'OPT_1',
@@ -1920,7 +1931,7 @@ export class ContextActionEngine {
    * Host: Liu Zhang (NPC-0021) / Fa Zheng (NPC-0027)
    */
   private generateChengduChoices(liquidCash: number, fatigue: number, gameDate: string): ContextualChoice[] {
-    const matPrice = this.quote('PROD-MAT');
+    const matPrice = this.sellPrice('PROD-MAT');
     return [
       {
         id: 'OPT_1',

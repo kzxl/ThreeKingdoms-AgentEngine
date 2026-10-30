@@ -87,24 +87,24 @@ function testTradeBuySuccess() {
   });
 
   assert.strictEqual(res.success, true, 'Trade buy should succeed');
-  assert.strictEqual(res.data.totalCost, 400, 'Total cost should be 400');
-  assert.strictEqual(res.data.newCashBalance, 9600, 'New balance should be 9600');
+  assert.strictEqual(res.data.totalCost, 440, 'Total cost should be 440');
+  assert.strictEqual(res.data.newCashBalance, 9560, 'New balance should be 9560');
 
   // Verify in SQLite
   const player = runSqlJson(`SELECT liquid_cash FROM player_state;`)[0];
-  assert.strictEqual(player.liquid_cash, 9600, 'Player cash in DB must be 9600');
+  assert.strictEqual(player.liquid_cash, 9560, 'Player cash in DB must be 9560');
 
   const timber = runSqlJson(`SELECT quantity, unit_cost_basis FROM inventory_items WHERE item_code = 'COM-TIMBER';`)[0];
   assert.strictEqual(timber.quantity, 10, 'Timber quantity must be 10');
-  assert.strictEqual(timber.unit_cost_basis, 40, 'Timber cost basis must be 40');
+  assert.strictEqual(timber.unit_cost_basis, 44, 'Timber cost basis must be 44');
 
   // Verify Double-Entry Journal
   const journal = runSqlJson(`SELECT * FROM account_journal WHERE txn_id = '${res.data.txnId}';`);
   assert.strictEqual(journal.length, 2, 'Should create 2 journal lines');
   const dr = journal.find(j => j.account_code === '1201_INVENTORY');
   const cr = journal.find(j => j.account_code === '1001_CASH_MOBILE');
-  assert.strictEqual(dr.debit, 400, 'Inventory debit must equal 400');
-  assert.strictEqual(cr.credit, 400, 'Cash credit must equal 400');
+  assert.strictEqual(dr.debit, 440, 'Inventory debit must equal 440');
+  assert.strictEqual(cr.credit, 440, 'Cash credit must equal 440');
 
   console.log('  ✅ PASSED: Buy trade succeeded with balanced double-entry accounting.');
 }
@@ -128,7 +128,7 @@ function testTradeBuyInsufficientFunds() {
 
   // Verify that cash was NOT altered
   const player = runSqlJson(`SELECT liquid_cash FROM player_state;`)[0];
-  assert.strictEqual(player.liquid_cash, 9600, 'Player cash must remain intact at 9600');
+  assert.strictEqual(player.liquid_cash, 9560, 'Player cash must remain intact at 9560');
 
   console.log('  ✅ PASSED: Insufficient funds rejected cleanly with zero state mutation.');
 }
@@ -149,12 +149,12 @@ function testTradeSellSuccess() {
   });
 
   assert.strictEqual(res.success, true, 'Trade sell should succeed');
-  assert.strictEqual(res.data.totalRevenue, 240, 'Revenue should be 240');
-  assert.strictEqual(res.data.newCashBalance, 9840, 'New balance should be 9840');
+  assert.strictEqual(res.data.totalRevenue, 219, 'Revenue should be 219');
+  assert.strictEqual(res.data.newCashBalance, 9779, 'New balance should be 9779');
   assert.strictEqual(res.data.newQuantity, 2, 'Remaining salt should be 2');
 
   const player = runSqlJson(`SELECT liquid_cash FROM player_state;`)[0];
-  assert.strictEqual(player.liquid_cash, 9840, 'Player cash must be 9840');
+  assert.strictEqual(player.liquid_cash, 9779, 'Player cash must be 9779');
 
   const salt = runSqlJson(`SELECT quantity FROM inventory_items WHERE item_code = 'COM-SALT';`)[0];
   assert.strictEqual(salt.quantity, 2, 'Salt stock must be 2');
@@ -180,7 +180,7 @@ function testTradeSellInsufficientStock() {
   assert.strictEqual(res.code, 'INSUFFICIENT_STOCK', 'Error code must be INSUFFICIENT_STOCK');
 
   const player = runSqlJson(`SELECT liquid_cash FROM player_state;`)[0];
-  assert.strictEqual(player.liquid_cash, 9840, 'Cash must not change on failed sell');
+  assert.strictEqual(player.liquid_cash, 9779, 'Cash must not change on failed sell');
 
   console.log('  ✅ PASSED: Insufficient stock rejected cleanly.');
 }
@@ -241,7 +241,7 @@ function testIdempotencyPreventsDuplicateExecution() {
   const firstCall = core.executeAction(action);
   assert.strictEqual(firstCall.success, true, 'First execution should succeed');
   const cashAfterFirst = runSqlJson(`SELECT liquid_cash FROM player_state;`)[0].liquid_cash;
-  assert.strictEqual(cashAfterFirst, initialCash - 40, 'Cash should be deducted by 40');
+  assert.strictEqual(cashAfterFirst, initialCash - 44, 'Cash should be deducted by the buy quote (44)');
 
   // Retry the EXACT same action with the same idempotency_key
   const secondCall = core.executeAction(action);

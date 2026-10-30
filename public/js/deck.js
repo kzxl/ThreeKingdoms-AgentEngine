@@ -20,17 +20,17 @@ async function loadDeckInventory() {
 
     tbody.innerHTML = currentInventory.map(item => {
       const itemCodeEsc = item.item_code.replace(/'/g, "\\'");
-      const estSellPrice = Math.max(1, Math.round(item.unit_cost_basis * 1.25));
+      const estSellPrice = item.estimatedSellPrice || Math.max(1, Math.round(item.unit_cost_basis * 1.25));
       const desc = isEn ? (item.description_en || item.description) : item.description;
       return `
         <tr>
-          <td><code class="mono" style="font-size: 10px; color: #cbd5e1;">${item.item_code}</code></td>
+          <td><code class="mono" style="font-size: 11px; color: #cbd5e1;">${item.item_code}</code></td>
           <td><span title="${desc}" style="font-weight: 500;">${desc}</span></td>
           <td class="num-col font-bold">${item.quantity.toLocaleString()}</td>
           <td class="num-col">${item.unit_cost_basis.toLocaleString()}</td>
           <td style="text-align: center; white-space: nowrap;">
             <button class="btn btn-sm btn-gold" onclick="openQuickTrade('SELL', '${itemCodeEsc}', ${Math.min(10, item.quantity)}, ${estSellPrice})">${dict.btnSell || 'Bán'}</button>
-            <button class="btn btn-sm btn-outline" onclick="openQuickTrade('BUY', '${itemCodeEsc}', 10, ${item.unit_cost_basis || 50})">${dict.btnBuy || 'Mua'}</button>
+            <button class="btn btn-sm btn-outline" onclick="openQuickTrade('BUY', '${itemCodeEsc}', 10, ${item.estimatedBuyPrice || item.unit_cost_basis || 50})">${dict.btnBuy || 'Mua'}</button>
           </td>
         </tr>
       `;
@@ -84,7 +84,7 @@ async function loadDeckNpcs() {
           </div>
 
           <div class="deck-npc-footer">
-            <span style="color: var(--text-muted); font-size: 10px;">${dict.deckPersonality || 'Tính cách:'} <strong>${npc.personality || 'Chăm chỉ'}</strong></span>
+            <span style="color: var(--text-muted); font-size: 11px;">${dict.deckPersonality || 'Tính cách:'} <strong>${npc.personality || 'Chăm chỉ'}</strong></span>
             <button class="btn btn-sm btn-gold" onclick="rewardNpc('${npc.npc_id}', 100)">
               ${dict.btnReward || 'Thưởng 100 Quan'}
             </button>

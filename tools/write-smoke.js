@@ -136,7 +136,8 @@ async function main() {
       const res = await post('/api/trade', { action: 'BUY', itemCode: 'COM-BAMBOO', quantity: 5, unitPrice: 1 });
       assert(res.status === 200, `HTTP ${res.status}: ${JSON.stringify(res.body).slice(0, 160)}`);
       assert(res.body.success === true, `success=false: ${res.body.error}`);
-      assert(res.body.totalAmount === 75, `expected totalAmount 75, got ${res.body.totalAmount}`);
+      // 5 bamboo × 16 quan buy quote (reference 15 + spread − fame discount).
+      assert(res.body.totalAmount === 80, `expected totalAmount 80, got ${res.body.totalAmount}`);
       assert(String(res.body.txnId).startsWith('TXN-'), `bad txnId ${res.body.txnId}`);
 
       const invAfter = await httpJson(PORT, '/api/inventory');

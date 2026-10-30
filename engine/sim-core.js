@@ -7,6 +7,7 @@
 const fs = require('fs');
 const path = require('path');
 const { getMarketItem, resolveMarketPrice } = require('./market-price-book');
+const { quoteFromReference } = require('./market-quote');
 const { BILL_OF_MATERIALS, calculateDefectRate } = require('./rules');
 const { renderProgressMarkdown } = require('./projector');
 
@@ -212,7 +213,9 @@ class SimulationCore {
     if (!marketItem || marketItem.price <= 0) {
       return { success: false, code: 'ITEM_NOT_FOUND', error: `Item ${item_code} is not in the market catalog.` };
     }
-    const unit_price = marketItem.price;
+    const fameRow = runSqlJson(this.dbPath, `SELECT fame FROM player_state LIMIT 1;`)[0];
+    const quote = quoteFromReference(marketItem.price, Number(fameRow?.fame || 0), item_code);
+    const unit_price = quote.buyPrice;
     const totalCost = Math.round(quantity * unit_price);
 
     // Condition check: cash availability
@@ -314,7 +317,9 @@ class SimulationCore {
     if (!marketItem || marketItem.price <= 0) {
       return { success: false, code: 'ITEM_NOT_FOUND', error: `Item ${item_code} is not in the market catalog.` };
     }
-    const unit_price = marketItem.price;
+    const fameRow = runSqlJson(this.dbPath, `SELECT fame FROM player_state LIMIT 1;`)[0];
+    const quote = quoteFromReference(marketItem.price, Number(fameRow?.fame || 0), item_code);
+    const unit_price = quote.sellPrice;
 
     // Condition check: inventory availability
     const itemRow = runSqlJson(this.dbPath, `SELECT quantity, unit_cost_basis FROM inventory_items WHERE item_code = '${item_code}' LIMIT 1;`)[0];

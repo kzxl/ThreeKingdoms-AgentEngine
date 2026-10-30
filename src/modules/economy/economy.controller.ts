@@ -15,6 +15,7 @@ import { CaravanLogisticsService } from '../ecology-logistics/caravan-logistics.
 import { postCashflowEntry } from '../../shared/ledger';
 import { ACCOUNT_CODES } from '../../shared/account-codes';
 import { getMarketItem } from '../../shared/market-price-book';
+import { quoteFromReference } from '../../shared/market-quote';
 
 function getEconomyModule(): EconomyModule | undefined {
   return ModuleRegistry.getInstance().get<EconomyModule>('module.economy');
@@ -241,7 +242,9 @@ export function registerEconomyRoutes(router: Router): void {
         return;
       }
 
-      const effectiveUnitPrice = marketItem.price;
+      const fameRow = db.queryOne<{ fame: number }>('SELECT fame FROM player_state WHERE player_id = ?;', ['PLY-0001']);
+      const quote = quoteFromReference(marketItem.price, Number(fameRow?.fame || 0), itemCode);
+      const effectiveUnitPrice = tradeAction === 'BUY' ? quote.buyPrice : quote.sellPrice;
       const itemInfo = {
         item_code: marketItem.itemCode,
         name_vi: marketItem.nameVi,

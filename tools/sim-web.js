@@ -14,6 +14,8 @@ const path = require('path');
 const { runSqlJson: querySqlJson, execSql } = require('../engine/db-adapter');
 const { SimulationCore } = require('../engine/sim-core');
 const { WorkshopEngine } = require('../engine/workshop-engine');
+const { getMarketItem } = require('../engine/market-price-book');
+const { quoteFromReference } = require('../engine/market-quote');
 const { GameplayManager } = require('../engine/gameplay-manager');
 const { EventManager } = require('../engine/event-manager');
 const { TravelManager } = require('../engine/travel-manager');
@@ -564,7 +566,19 @@ const server = http.createServer(async (req, res) => {
     try {
       const items = runSqlJson(`SELECT * FROM inventory_items ORDER BY category ASC, quantity DESC;`);
       const movements = runSqlJson(`SELECT * FROM stock_movements ORDER BY rowid DESC LIMIT 30;`);
-      sendJson(res, 200, { success: true, items, movements });
+      const fame = Number(runSqlJson(`SELECT fame FROM player_state LIMIT 1;`)[0]?.fame || 0);
+      const pricedItems = items.map(item => {
+        const market = getMarketItem(currentActiveDbPath || DB_PATH, item.item_code);
+        if (!market) return item;
+        const quote = quoteFromReference(market.price, fame, item.item_code);
+        return {
+          ...item,
+          marketPrice: quote.referencePrice,
+          estimatedBuyPrice: quote.buyPrice,
+          estimatedSellPrice: quote.sellPrice
+        };
+      });
+      sendJson(res, 200, { success: true, items: pricedItems, movements });
     } catch (err) {
       sendJson(res, 500, { success: false, error: err.message });
     }

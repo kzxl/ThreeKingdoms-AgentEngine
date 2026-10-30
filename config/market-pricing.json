@@ -1,0 +1,7 @@
+{
+  "version": "1.0.0",
+  "merchantSpread": 0.1,
+  "fameBuyDiscountMax": 0.05,
+  "fameSellBonusMax": 0.04,
+  "minPrice": 1
+}
