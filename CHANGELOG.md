@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.6.11] - 2026-10-30
+
+Fame-driven rare item discovery.
+
+### Added
+- Migration `013-item-discovery`: `discovery_items` (weighted, fame-gated) and
+  `exploration_log` (every roll, chance, fame and pity flag).
+- `ExplorationService` + `POST /api/explore`: one day per search, chance
+  `3% + fameRatio × 20%` (cap 35%), weighted item pick, ten-failure pity floor,
+  inventory/stock movement and action log.
+- Local header button **Khảo Sát** calls the endpoint and refreshes status/inventory.
+
+### Verification
+`npm run verify` green: 27/27 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,358 invariants, 0 discrepancies. New `verify-exploration.ts`
+covers the 3% fame-0 chance, pity find, one-day cost, grain upkeep, stock
+movement, action log and the day-30 block.
+
+---
+
 ## [1.6.10] - 2026-10-30
 
 Fame gates and inactivity decay.

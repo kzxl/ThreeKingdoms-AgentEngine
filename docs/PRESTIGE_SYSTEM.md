@@ -67,11 +67,17 @@ It exposes `getFame`, `getTier`, `award`, `penalize`, `decayInactive` and
    the player and applies `decayInactive` when six or more months passed. The
    monthly report shows fame and the decay delta.
 
+4. **Item discovery (1.6.11):** `POST /api/explore` spends one day at the current
+   POI. Success chance is `3% + fameRatio × 20%` (cap 35%); the item comes from
+   `discovery_items`, weighted and gated by `min_fame` (tier 1 at 0, tier 2 at
+   1,000, tier 3 at 3,000, tier 4 at 5,000/9,000). Ten consecutive failures
+   guarantee a tier-1 find. Every roll lands in `exploration_log`; a find adds
+   a `Discovery` stock movement and an `EXPLORE_POI` action log.
+
 ## Still staged
 
 1. NPC self-arrival events and a monthly volunteer pool.
-2. Rare item discovery (`discoveryChance = 3% + fameRatio × 20%`, tier gates).
-3. World/regional price multipliers (crisis, season, local stock) on top of the
+2. World/regional price multipliers (crisis, season, local stock) on top of the
    reference quote.
-4. Battle duel trigger/death, civil-officer negotiation, bankruptcy.
+3. Battle duel trigger/death, civil-officer negotiation, bankruptcy.
 

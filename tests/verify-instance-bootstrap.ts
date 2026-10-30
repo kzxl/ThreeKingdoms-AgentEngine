@@ -96,8 +96,16 @@ function run(): void {
       "SELECT 1 FROM sqlite_master WHERE type='view' AND name='character_prestige'"
     ).get();
     assert(fameView, 'schema must expose the character_prestige view');
+    const discoveryTable = fresh.prepare(
+      "SELECT 1 FROM sqlite_master WHERE type='table' AND name='discovery_items'"
+    ).get();
+    assert(discoveryTable, 'schema must declare discovery_items');
+    const explorationTable = fresh.prepare(
+      "SELECT 1 FROM sqlite_master WHERE type='table' AND name='exploration_log'"
+    ).get();
+    assert(explorationTable, 'schema must declare exploration_log');
     const migrations = (fresh.prepare('SELECT COUNT(*) AS c FROM schema_migrations').get() as any).c;
-    assert.strictEqual(Number(migrations), 12, 'initDb must apply all 12 versioned migrations');
+    assert.strictEqual(Number(migrations), 13, 'initDb must apply all 13 versioned migrations');
     fresh.close();
 
     // Bootstrap must also work on a schema-initialized database (no live-session
