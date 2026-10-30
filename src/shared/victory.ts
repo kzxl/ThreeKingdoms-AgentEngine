@@ -71,5 +71,57 @@ export function applyVictoryIfEligible(db: DatabaseService, playerId = 'PLY-0001
      WHERE status = 'ACTIVE';`,
     [`UNIFIED_THE_REALM|${check.settlements}|${check.fame}`]
   );
+  recordLegacy(db, 'VICTORIOUS', 'Thiên hạ quy tâm');
   return check;
+}
+
+/**
+ * Stores one legacy row for NG+. Called on victory, and on a final defeat with
+ * no heir; called again for the same campaign it replaces the same row.
+ */
+export function recordLegacy(
+  db: DatabaseService,
+  outcome: 'VICTORIOUS' | 'DEFEATED',
+  titleVi = ''
+): void {
+  try {
+    const meta = db.queryOne<any>('SELECT campaign_id, active_turn FROM campaign_meta LIMIT 1;') || {};
+    const player = db.queryOne<any>(
+      `SELECT liquid_cash, safe_cash, fame FROM player_state WHERE player_id = 'PLY-0001' LIMIT 1;`
+    ) || {};
+    const faction = db.queryOne<{ faction_id: string }>(
+      `SELECT faction_id FROM session_factions WHERE leader_id = 'PLY-0001' AND is_active = 1 LIMIT 1;`
+    );
+    const settlements = faction
+      ? Number(db.queryOne<{ c: number }>(
+        `SELECT COUNT(*) AS c FROM session_settlements WHERE ruler_faction_id = ?;`,
+        [faction.faction_id]
+      )?.c || 0)
+      : 0;
+    let generation = 1;
+    try {
+      generation = Number(db.queryOne<{ current_generation: number }>(
+        'SELECT current_generation FROM family_lineage LIMIT 1;'
+      )?.current_generation || 1);
+    } catch { /* family tables absent */ }
+
+    const campaignId = String(meta.campaign_id || 'CMP-UNKNOWN');
+    db.execute(
+      `INSERT OR REPLACE INTO campaign_legacy
+         (legacy_id, campaign_id, generation, fame, net_worth, settlements, outcome, title_vi)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?);`,
+      [
+        `LEG-${campaignId}`,
+        campaignId,
+        generation,
+        Number(player.fame || 0),
+        Number(player.liquid_cash || 0) + Number(player.safe_cash || 0),
+        settlements,
+        outcome,
+        titleVi || (outcome === 'VICTORIOUS' ? 'Bá Nghiệp' : 'Tử Chiến')
+      ]
+    );
+  } catch (error) {
+    console.warn('[victory] legacy record failed:', (error as Error).message);
+  }
 }

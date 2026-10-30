@@ -10,6 +10,7 @@
 import { DatabaseService } from '../../core/database';
 import { RngService } from '../../core/rng';
 import { nextId } from '../../shared/id-generator';
+import { recordLegacy } from '../../shared/victory';
 import { getFameTier, fameRatio } from '../../shared/prestige';
 import { PrestigeService } from '../progression/prestige.service';
 import { DynastySuccessionService } from '../lineage-succession/dynasty-succession.service';
@@ -200,6 +201,7 @@ export class BattleDuelService {
       [reason]
     );
     this.db.execute('UPDATE player_state SET health = 0, fame = 0 WHERE player_id = ?;', [playerId]);
+    recordLegacy(this.db, 'DEFEATED', 'Tử Chiến');
     return { succession: false };
   }
 

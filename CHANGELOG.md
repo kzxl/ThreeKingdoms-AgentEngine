@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.12.0] - 2026-10-31
+
+Campaign legacy / NG+.
+
+### Added
+- Migration 030 adds `campaign_legacy`. A victory or a final defeat (no heir)
+  writes one row with generation, fame, net worth, settlement count and outcome.
+- The next campaign bootstrapped in the same database line receives 10% of the
+  legacy net worth as starting cash (capped at 20,000 quan) and the
+  `Di Sản Tổ Tiên` license. The bonus is included in the opening cashflow and
+  journal, so the double-entry audit stays balanced.
+- `tests/verify-legacy.ts` covers victory/defeat records, the capped bonus and
+  the license grant.
+
+### Verification
+`npm run verify` green: 37/37 suites, 28/28 contracts, 8/8 write smokes.
+
+---
+
 ## [1.11.0] - 2026-10-30
 
 Progression law, endgame and content depth.

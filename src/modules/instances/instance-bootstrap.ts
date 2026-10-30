@@ -102,7 +102,9 @@ export function initializeInstanceDatabase(
 ): void {
   const { preset, playerName, playerStyle } = options;
   const isCommoner = preset.id === 'ARCH-COMMONER-YOUTH';
-  const totalCash = Number(preset.initialCash) + Number(preset.initialSafeCash);
+  let totalCash = Number(preset.initialCash) + Number(preset.initialSafeCash);
+  let legacyBonus = 0;
+  const startingLicenses = [...(preset.startingLicenses || [])];
 
   // A scenario changes the calendar start (and campaign title) when present.
   let startDate = START_DATE;
@@ -152,6 +154,23 @@ export function initializeInstanceDatabase(
       VALUES (?, ?, ?, ?, 1, '1.1.0', 1840201)
     `).run(`CMP-${startDate.replace(/-/g, '')}-INSTANCE`, campaignName, startDate, startDate);
 
+    // NG+ legacy: the previous campaign's record gives the next one a small
+    // head start. The legacy table is deliberately not cleared above.
+    if (tableExists(db, 'campaign_legacy')) {
+      try {
+        const legacy = db.prepare(
+          'SELECT net_worth FROM campaign_legacy ORDER BY rowid DESC LIMIT 1;'
+        ).get() as { net_worth?: number } | undefined;
+        if (legacy) {
+          legacyBonus = Math.min(20000, Math.floor(Number(legacy.net_worth || 0) * 0.1));
+          totalCash += legacyBonus;
+          if (!startingLicenses.includes('Di Sản Tổ Tiên')) startingLicenses.push('Di Sản Tổ Tiên');
+        }
+      } catch {
+        legacyBonus = 0;
+      }
+    }
+
     db.prepare(`
       INSERT INTO player_state (
         player_id, name, style_name, age, current_location, permanent_base,
@@ -178,10 +197,10 @@ export function initializeInstanceDatabase(
       preset.attributes.com,
       preset.attributes.log,
       preset.attributes.cra,
-      preset.initialCash,
+      preset.initialCash + legacyBonus,
       preset.initialSafeCash,
       isCommoner ? 1.0 : 5.0,
-      JSON.stringify(preset.startingLicenses || [])
+      JSON.stringify(startingLicenses)
     );
 
     // 3. Starting warehouse.
@@ -295,7 +314,9 @@ export function initializeInstanceDatabase(
       category: 'CAPITAL_INJECTION',
       inflow: totalCash,
       balance: totalCash,
-      memo: `Số vốn khởi nghiệp của thân phận ${preset.nameVi}.`,
+      memo: legacyBonus > 0
+        ? `Vốn khởi nghiệp ${preset.nameVi} + di sản tổ tiên ${legacyBonus} Quan.`
+        : `Số vốn khởi nghiệp của thân phận ${preset.nameVi}.`,
       status: 'Confirmed'
     });
 
@@ -304,7 +325,7 @@ export function initializeInstanceDatabase(
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `);
     const campaignId = `CMP-${startDate.replace(/-/g, '')}-INSTANCE`;
-    insertJournal.run(txnId, campaignId, startDate, ACCOUNT_CODES.cashMobile, preset.initialCash, 0, 'Vốn tiền mặt ban đầu');
+    insertJournal.run(txnId, campaignId, startDate, ACCOUNT_CODES.cashMobile, preset.initialCash + legacyBonus, 0, 'Vốn tiền mặt ban đầu');
     if (Number(preset.initialSafeCash) > 0) {
       insertJournal.run(txnId, campaignId, startDate, ACCOUNT_CODES.cashSafe, preset.initialSafeCash, 0, 'Vốn két sản nghiệp ban đầu');
     }

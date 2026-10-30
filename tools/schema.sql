@@ -19,6 +19,19 @@ CREATE TABLE IF NOT EXISTS campaign_meta (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 1a. Campaign Legacy (NG+ carry-over)
+CREATE TABLE IF NOT EXISTS campaign_legacy (
+    legacy_id TEXT PRIMARY KEY,
+    campaign_id TEXT NOT NULL,
+    generation INTEGER NOT NULL DEFAULT 1,
+    fame INTEGER NOT NULL DEFAULT 0,
+    net_worth INTEGER NOT NULL DEFAULT 0,
+    settlements INTEGER NOT NULL DEFAULT 0,
+    outcome TEXT NOT NULL DEFAULT 'VICTORIOUS',
+    title_vi TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- 1b. Deterministic Identifier Sequences (per id scope)
 CREATE TABLE IF NOT EXISTS id_sequence (
     scope      TEXT PRIMARY KEY,
