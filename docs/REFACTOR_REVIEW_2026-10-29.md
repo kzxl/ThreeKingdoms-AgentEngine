@@ -19,7 +19,7 @@ legacy JS).
 | Correctness / ownership | 9/10 | One writer for the date, caravans, business month, world turn, balance, modal ids, hub |
 | Data integrity | 9/10 | Ledger matches `liquid + safe`; chronicle 15 rows / 14 texts; 1,358 invariants green |
 | Architecture / maintainability | 7.5/10 | God services and gateway still large; legacy client not migrated; cashflow writers unified |
-| Tests & observability | 9/10 | 25 suites, 28 contracts, 8 write smokes, 10 arch rules + UI + API + route ratchets |
+| Tests & observability | 9/10 | 26 suites, 28 contracts, 8 write smokes, 10 arch rules + UI + API + route ratchets |
 | Game design | 4/10 | Cannot lose; world frozen unless the player clicks; NPC economy not conserved |
 | UI/UX | 6.5/10 | Dev telemetry, dual clocks and duplicate chronicle gone; typography and right panel still heavy |
 
@@ -27,7 +27,7 @@ legacy JS).
 
 **Gates**
 
-- `npm run verify`: 25/25 suites (4 legacy + 21 `verify-*.ts`), 28/28 contracts, 8/8 write smokes.
+- `npm run verify`: 26/26 suites (4 legacy + 22 `verify-*.ts`), 28/28 contracts, 8/8 write smokes.
 - `npm run audit`: **1,358 invariants, 0 discrepancies**; `GET /api/audit` reports the same.
 - `tsc --noEmit`: 0 errors.
 
@@ -233,7 +233,7 @@ Still open, measured:
 ## 8. How to re-verify
 
 ```bash
-npm run verify        # 25 suites, 28 contracts, 8 write smokes
+npm run verify        # 26 suites, 28 contracts, 8 write smokes
 npm run audit         # 1,358 invariants
 npm run perf:compare  # p95 + fingerprint
 node tools/sim-audit.js
@@ -278,5 +278,5 @@ A second pass over the data flows (not covered by the first gate) found and fixe
   is empty and adapts to optional columns, so it also works on a `sim-db init` schema. README now
   documents `ingest-markdown-master.js` + `sim-db init`.
 - **Small fixes.** `startNewGame` uses a deterministic campaign id; the caravan wait button surfaces
-  the day-30 409; suite breakdown corrected to 4 legacy + 21 modern.
+  the day-30 409; suite breakdown corrected to 4 legacy + 22 modern.
 

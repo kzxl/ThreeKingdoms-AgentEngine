@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.6.8] - 2026-10-30
+
+ROTK XIII-like prestige scale.
+
+### Changed
+- `config/prestige.json` defines a 0–10,000 soft-capped fame scale (hard ceiling
+  99,999), nine tiers from `NOBODY` to `HEARTS_OF_THE_REALM`, diminishing gains,
+  inactivity decay and effect coefficients.
+- Migration `012-prestige-scale` adds `player_state.fame/credibility/virtue`,
+  rescales legacy NPC and family prestige by 10 once, and creates
+  `prestige_events` plus the `character_prestige` view.
+- `PrestigeService` is the only fame writer: player fame lives in
+  `player_state.fame`, NPC fame stays in `npc_personal_progression.prestige`;
+  every change appends an audit event.
+- Legacy thresholds moved with the data: courtship 150→1,500, NPC career
+  milestones 90/190/250→900/1,900/2,500, family gains +15/+25/+50→+150/+250/+500,
+  family default 100→1,000.
+- Fame 0 is the `NOBODY` tier, not a defeat.
+
+### Verification
+`npm run verify` green: 26/26 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,358 invariants, 0 discrepancies. New `verify-prestige.ts`
+covers tier boundaries, diminishing returns, decay, the audit ledger and the
+unified view.
+
+---
+
 ## [1.6.7] - 2026-10-30
 
 Month-close correctness, UI readability floor and CI.
