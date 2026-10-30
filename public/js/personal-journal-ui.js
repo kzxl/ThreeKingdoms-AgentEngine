@@ -769,19 +769,40 @@
         </div>
       `;
     } else if (activeLineageSubTab === 'tree') {
+      const ancestors = overview.ancestors || [];
       subview.innerHTML = `
-        <div class="tactical-card" style="padding: 16px;">
-          <div style="font-size: 13px; font-weight: 700; color: #fbbf24; margin-bottom: 8px;">
+        <div class="tactical-card lineage-tree-card">
+          <div class="lineage-tree-title">
             ${overview.clan?.family_name_vi || 'Lương Thị Gia Tộc'} • Đời Thứ ${overview.clan?.current_generation || 1}
           </div>
-          <div style="font-size: 11px; color: var(--text-muted); line-height: 1.6;">
+          <div class="lineage-tree-motto">
             Gia Huấn: <em>"${overview.clan?.family_motto_vi || 'Đôn Bản Khởi Gia • Trạch Bị Thiên Hạ'}"</em><br>
             Khởi thủy niên hiệu: Trung Bình nguyên niên (184 SCN) • Trác Huyện.
+          </div>
+          <div class="lineage-ancestor-list">
+            ${ancestors.length === 0 ? `
+              <div class="lineage-heir-empty">${isEn ? 'No ancestor has been enshrined yet.' : 'Chưa có tiên tổ nào được tôn thờ trong tông miếu.'}</div>
+            ` : ancestors.map(a => {
+              let achievements = [];
+              try { achievements = JSON.parse(a.achievements_json || '[]'); } catch (e) { achievements = []; }
+              return `
+                <div class="lineage-ancestor-card">
+                  <div class="lineage-ancestor-head">
+                    <strong class="lineage-ancestor-name">${a.name}</strong>
+                    <span class="lineage-heir-meta">${a.posthumous_title || ''} • Đời ${a.generation}</span>
+                  </div>
+                  <div class="lineage-ancestor-meta">${a.reign_start_date} → ${a.reign_end_date} • ${a.reign_turns} tháng • Thọ ${a.retirement_age}</div>
+                  <div class="lineage-ancestor-meta">Gia sản cuối: ${Number(a.final_net_worth || 0).toLocaleString()} Quan</div>
+                  ${achievements.length > 0 ? `<ul class="lineage-ancestor-achievements">${achievements.map(x => `<li>${x}</li>`).join('')}</ul>` : ''}
+                </div>
+              `;
+            }).join('')}
           </div>
         </div>
       `;
     } else if (activeLineageSubTab === 'succession') {
-      const heirs = (overview.children || []).filter(c => Number(c.age || 0) >= 18 && c.status !== 'DECEASED');
+      const children = overview.children || [];
+      const heirs = children.filter(c => Number(c.age || 0) >= 18 && c.status !== 'DECEASED');
       subview.innerHTML = `
         <div class="tactical-card lineage-succession-card">
           <div class="lineage-succession-title">
@@ -796,6 +817,18 @@
               ${[0, 10, 25, 50].map(pct => `<option value="${pct * 100}" ${Number(cachedWill.charityShareBps) === pct * 100 ? 'selected' : ''}>${pct}%</option>`).join('')}
             </select>
             <button class="ui-btn ui-btn--ghost ui-btn--xs" onclick="PersonalJournalUI.saveWill()">Lưu Di Chúc</button>
+          </div>
+          <div class="lineage-will-children">
+            ${children.length === 0 ? '' : children.map(c => {
+              const allocation = (cachedWill.allocations || []).find(item => item.childId === c.child_id);
+              const pct = Math.round(Number(allocation?.shareBps || 0) / 100);
+              return `
+                <label class="lineage-will-child">
+                  <span>${c.name_vi || c.name}</span>
+                  <input class="lineage-will-child-input" data-child-id="${c.child_id}" type="number" min="0" max="100" value="${pct}">%
+                </label>
+              `;
+            }).join('')}
           </div>
           <div class="lineage-heir-list">
             ${heirs.length === 0 ? `
@@ -971,11 +1004,22 @@
   async function saveWill() {
     const select = document.getElementById('lineage-will-share');
     const charityShareBps = Number(select?.value || 0);
+    const allocations = Array.from(document.querySelectorAll('.lineage-will-child-input'))
+      .map(input => ({
+        childId: input.getAttribute('data-child-id'),
+        shareBps: Math.round(Number(input.value || 0) * 100)
+      }))
+      .filter(item => item.childId && item.shareBps > 0);
+    const totalBps = charityShareBps + allocations.reduce((sum, item) => sum + item.shareBps, 0);
+    if (totalBps > 10000) {
+      if (typeof showToast === 'function') showToast('Tổng di chúc vượt quá 100%.', true);
+      return;
+    }
     try {
       const res = await fetch('/api/lineage/will', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ charityShareBps })
+        body: JSON.stringify({ charityShareBps, allocations })
       });
       const data = await res.json();
       if (!data.success) throw new Error(data.error || 'Will save failed');

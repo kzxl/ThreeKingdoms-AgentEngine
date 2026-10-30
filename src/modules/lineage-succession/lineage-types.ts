@@ -185,6 +185,7 @@ export interface SuccessionResult {
   inheritedInventoryValuation: number;
   inheritedGearCount: number;
   charityAmount?: number;
+  childPayouts?: Array<{ childId: string; amount: number }>;
   narrativeVi: string;
 }
 

@@ -9349,3 +9349,19 @@ textarea {
 /* Lineage will controls */
 .lineage-will-row { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 11px; color: var(--text-muted); }
 .lineage-will-select { background: #0f172a; color: #e2e8f0; border: 1px solid rgba(148, 163, 184, 0.3); border-radius: 6px; padding: 3px 6px; font-size: 11px; }
+
+/* Ancestor chronicle */
+.lineage-tree-card { padding: 16px; }
+.lineage-tree-title { font-size: 13px; font-weight: 700; color: #fbbf24; margin-bottom: 8px; }
+.lineage-tree-motto { font-size: 11px; color: var(--text-muted); line-height: 1.6; }
+.lineage-ancestor-list { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+.lineage-ancestor-card { padding: 10px 12px; border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 8px; background: rgba(15, 23, 42, 0.55); }
+.lineage-ancestor-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.lineage-ancestor-name { color: #fde68a; }
+.lineage-ancestor-meta { font-size: 11px; color: #94a3b8; margin-top: 4px; }
+.lineage-ancestor-achievements { margin: 6px 0 0 16px; padding: 0; font-size: 11px; color: #cbd5e1; }
+
+/* Will allocation rows */
+.lineage-will-children { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+.lineage-will-child { display: flex; align-items: center; gap: 8px; font-size: 11px; color: #cbd5e1; }
+.lineage-will-child input { width: 64px; background: #0f172a; color: #e2e8f0; border: 1px solid rgba(148, 163, 184, 0.3); border-radius: 6px; padding: 3px 6px; font-size: 11px; }

@@ -129,18 +129,18 @@ export class FactionPoliticsModule implements IFeatureModule {
     loyalty: number,
     ambition: number,
     factionPrestige: number,
-    isGovernor: boolean,
+    isGovernor = false,
     personalTroops = 0,
     famePressure = 0
   ): number {
-    const governorBonus = isGovernor ? 25 : 0;
-    const troopFactor = Math.min(30, Math.floor(personalTroops / 5));
-    const loyaltyPenalty = (100 - loyalty) * 1.8;
-    const ambitionFactor = ambition * 1.4;
-    const prestigeResistance = factionPrestige * 0.2;
-
-    const score = (ambitionFactor + loyaltyPenalty + governorBonus + troopFactor - prestigeResistance - famePressure * 200) / 200.0;
-    return Math.max(0.0, Math.min(1.0, Math.round(score * 1000) / 1000));
+    return UnrestService.forDatabase(this.db).calculateRisk({
+      loyalty,
+      ambition,
+      prestige: factionPrestige,
+      isGovernor,
+      personalTroops,
+      famePressure
+    });
   }
 
   /**

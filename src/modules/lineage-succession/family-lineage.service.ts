@@ -159,6 +159,7 @@ export class FamilyLineageService implements IFamilyLineageService {
             mentorship_turns_completed INTEGER NOT NULL DEFAULT 0 CHECK (mentorship_turns_completed >= 0),
             is_heir INTEGER NOT NULL DEFAULT 0 CHECK (is_heir IN (0, 1)),
             status TEXT NOT NULL DEFAULT 'INFANT',
+            inheritance_cash INTEGER NOT NULL DEFAULT 0,
             notes TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -535,11 +536,19 @@ export class FamilyLineageService implements IFamilyLineageService {
     return this.successionService.executeSuccession(params);
   }
 
-  public getWill(): { heirId: string | null; charityShareBps: number } {
+  public getWill(): {
+    heirId: string | null;
+    charityShareBps: number;
+    allocations: Array<{ childId: string; shareBps: number }>;
+  } {
     return this.successionService.getWill();
   }
 
-  public setWill(input: { heirId?: string; charityShareBps?: number }): { heirId: string | null; charityShareBps: number } {
+  public setWill(input: {
+    heirId?: string;
+    charityShareBps?: number;
+    allocations?: Array<{ childId: string; shareBps: number }>;
+  }): { heirId: string | null; charityShareBps: number; allocations: Array<{ childId: string; shareBps: number }> } {
     return this.successionService.setWill(input);
   }
 

@@ -21,6 +21,15 @@ export interface UnrestEventInput {
   detailEn: string;
 }
 
+export interface UnrestRiskInput {
+  loyalty: number;
+  ambition: number;
+  prestige: number;
+  personalTroops?: number;
+  famePressure?: number;
+  isGovernor?: boolean;
+}
+
 export class UnrestService {
   private static instance: UnrestService | null = null;
 
@@ -35,6 +44,21 @@ export class UnrestService {
 
   public static forDatabase(db: DatabaseService): UnrestService {
     return new UnrestService(db);
+  }
+
+  /**
+   * One risk formula for retainers and officers. Context supplies the inputs;
+   * the social pressure of the player's fame is the shared term.
+   */
+  public calculateRisk(input: UnrestRiskInput): number {
+    const governorBonus = input.isGovernor ? 25 : 0;
+    const troopFactor = Math.min(30, Math.floor(Number(input.personalTroops || 0) / 5));
+    const loyaltyPenalty = (100 - Number(input.loyalty || 0)) * 1.8;
+    const ambitionFactor = Number(input.ambition || 0) * 1.4;
+    const prestigeResistance = Number(input.prestige || 0) * 0.2;
+    const famePressure = Number(input.famePressure || 0);
+    const score = (ambitionFactor + loyaltyPenalty + governorBonus + troopFactor - prestigeResistance - famePressure * 200) / 200;
+    return Math.max(0, Math.min(1, Math.round(score * 1000) / 1000));
   }
 
   public record(input: UnrestEventInput): string {

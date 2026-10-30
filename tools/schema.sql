@@ -344,6 +344,13 @@ CREATE TABLE IF NOT EXISTS family_will (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS family_will_allocations (
+    character_id TEXT NOT NULL,
+    child_id TEXT NOT NULL,
+    share_bps INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (character_id, child_id)
+);
+
 CREATE TABLE IF NOT EXISTS unrest_events (
     unrest_id TEXT PRIMARY KEY,
     character_id TEXT NOT NULL,

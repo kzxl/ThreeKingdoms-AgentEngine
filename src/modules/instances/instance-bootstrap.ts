@@ -42,6 +42,7 @@ const HISTORY_TABLES = [
   'retainer_departures',
   'unrest_events',
   'family_will',
+  'family_will_allocations',
   'settlement_market_state',
   'battle_duels',
   'npc_relationship_deltas',

@@ -52,12 +52,21 @@ export class RetainerLoyaltyService {
     );
     const rng = RngService.forDomain(this.db, 'retainer-loyalty');
     const departures: RetainerDeparture[] = [];
-    const desertionChance = 0.15 + (1 - fameRatio(fame)) * 0.25;
+    const famePressure = (fameRatio(fame) - 0.2) * 0.2;
+    const unrest = UnrestService.forDatabase(this.db);
 
     this.db.transaction(() => {
       for (const retainer of retainers) {
         const loyaltyBefore = Number(retainer.loyalty || 0);
         const loyalty = Math.max(0, Math.min(100, loyaltyBefore + drift));
+        const risk = unrest.calculateRisk({
+          loyalty: loyaltyBefore,
+          ambition: 50,
+          prestige: 100,
+          personalTroops: 0,
+          famePressure
+        });
+        const desertionChance = Math.min(0.85, 0.1 + risk * 0.5);
         if (loyalty < 30 && rng.chance(desertionChance)) {
           this.db.execute(
             "UPDATE npc_state SET loyalty = 0, assigned_business_id = NULL, assigned_role = 'DEPARTED', monthly_wage = 0 WHERE npc_id = ?;",
