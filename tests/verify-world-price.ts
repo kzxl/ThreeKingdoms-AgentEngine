@@ -10,6 +10,7 @@ import { DatabaseService } from '../src/core/database';
 import { worldPriceMultiplier, seasonMultiplier } from '../src/shared/world-price';
 import { quoteFromReference } from '../src/shared/market-quote';
 import { RegionalMarketService } from '../src/modules/economy/regional-market.service';
+import { SettlementMarketService } from '../src/modules/economy/settlement-market.service';
 
 const ROOT = path.resolve(__dirname, '..');
 const LIVE_DB = process.env.SIM_DB_PATH || path.join(ROOT, 'saves', 'session.db');
@@ -55,6 +56,22 @@ function run(): void {
     assert.strictEqual(regional.getSpecializationMultiplier('zhuo_xian', 'COM-SALT'), 1.5, 'Zhuo salt is a local deficit');
     const localQuote = quoteFromReference(100, 500, 'COM-BAMBOO', 1, 0.7);
     assert(localQuote.effectiveReference < 100, 'local surplus must lower the effective reference');
+
+    const settlement = SettlementMarketService.forDatabase(db);
+    const initial = settlement.getState('zhuo_xian', 'COM-BAMBOO');
+    assert.strictEqual(initial.stock, 150, 'Zhuo bamboo starts with surplus stock');
+    assert.strictEqual(initial.demand, 100, 'Zhuo bamboo starts with baseline demand');
+    const scarceMultiplier = settlement.getStockMultiplier('zhuo_xian', 'COM-BAMBOO');
+    assert(scarceMultiplier < 1, 'surplus stock must lower the local stock multiplier');
+    db.execute(
+      `UPDATE settlement_market_state SET stock = 20, demand = 120 WHERE settlement_id = 'zhuo_xian' AND item_code = 'COM-BAMBOO';`
+    );
+    const shortageMultiplier = settlement.getStockMultiplier('zhuo_xian', 'COM-BAMBOO');
+    assert(shortageMultiplier > 1, 'scarce stock must raise the local stock multiplier');
+    const beforeDrift = settlement.getState('zhuo_xian', 'COM-BAMBOO');
+    settlement.driftSettlement('zhuo_xian');
+    const afterDrift = settlement.getState('zhuo_xian', 'COM-BAMBOO');
+    assert(afterDrift.stock !== beforeDrift.stock || afterDrift.demand !== beforeDrift.demand, 'monthly drift must change stock/demand');
 
     db.execute(`UPDATE regional_ecological_crises SET is_active = 0;`);
   } finally {

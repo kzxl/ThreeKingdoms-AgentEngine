@@ -14,6 +14,7 @@ import { DatabaseService } from '../src/core/database';
 import { PrestigeService } from '../src/modules/progression/prestige.service';
 import { SpecialistWorkforceService } from '../src/modules/professions/features/workforce/specialist-workforce.service';
 import { FameAttractionService } from '../src/modules/progression/fame-attraction.service';
+import { RetainerLoyaltyService } from '../src/modules/progression/retainer-loyalty.service';
 import {
   applyFameDecay,
   effectiveFameGain,
@@ -159,9 +160,29 @@ function run(): void {
     assert.strictEqual(logged?.c, 3, 'every arrival must be logged');
     const specialist = arrivals.arrivals.find(arrival => arrival.kind === 'SPECIALIST');
     assert(specialist, 'fame must attract at least one named specialist from the available pool');
-    const guest = db.queryOne<any>('SELECT assigned_role FROM npc_state WHERE npc_id = ?;', [specialist!.npcId]);
+    assert(specialist!.assignedBusinessId, 'a named guest must be auto-assigned when a business exists');
+    const guest = db.queryOne<any>('SELECT assigned_role, assigned_business_id FROM npc_state WHERE npc_id = ?;', [specialist!.npcId]);
     assert(guest, 'named guest must become an npc_state retainer');
-    assert.strictEqual(guest.assigned_role, 'GUEST', 'named guest must start in the GUEST role');
+    assert.strictEqual(guest.assigned_business_id, specialist!.assignedBusinessId, 'guest must be assigned to the business');
+
+    // 9. Low fame can drive an assigned retainer away; every departure is logged.
+    const retainer = db.queryOne<any>(
+      "SELECT npc_id, name FROM npc_state WHERE assigned_business_id IS NOT NULL AND assigned_role != 'DEPARTED' LIMIT 1;"
+    );
+    assert(retainer, 'test database must have at least one assigned retainer');
+    db.execute('UPDATE player_state SET fame = 0 WHERE player_id = ?;', ['PLY-0001']);
+    db.execute('UPDATE npc_state SET loyalty = 20 WHERE npc_id = ?;', [retainer.npc_id]);
+    const loyalty = RetainerLoyaltyService.forDatabase(db);
+    let departed = false;
+    for (let month = 0; month < 60 && !departed; month += 1) {
+      const report = loyalty.evaluateMonthly('PLY-0001', '184-05-30');
+      departed = report.departures.some(item => item.npcId === retainer.npc_id);
+    }
+    assert(departed, 'low fame must be able to drive a retainer away');
+    const departedNpc = db.queryOne<any>('SELECT assigned_role FROM npc_state WHERE npc_id = ?;', [retainer.npc_id]);
+    assert.strictEqual(departedNpc.assigned_role, 'DEPARTED', 'departing retainer must lose the assignment');
+    const departureLog = db.queryOne<any>('SELECT * FROM retainer_departures WHERE npc_id = ?;', [retainer.npc_id]);
+    assert(departureLog, 'departure must be logged');
   } finally {
     db.close();
     try {

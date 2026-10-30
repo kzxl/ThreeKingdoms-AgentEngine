@@ -92,12 +92,12 @@ It exposes `getFame`, `getTier`, `award`, `penalize`, `decayInactive` and
 
 ## Still staged
 
-1. Named guests enter `npc_state` as `GUEST`; assigning them to a business is
-   still the player's deliberate hire action.
-2. Local specialization is in the quote; persisted local **stock** and demand
-   are not yet a table.
-3. Betrayal uses the existing faction-politics risk model plus a fame modifier;
-   a separate personal-retainer betrayal chain is not built.
-4. Succession runs on death when an heir is designated; the full ancestral
-   chronicle UI and will/inheritance choices are still minimal.
+1. Guest auto-assignment needs an owned business and a met fame gate; otherwise
+   the guest stays `GUEST` until the player hires them.
+2. Local stock/demand is persisted and used by `/api/trade`; the CommonJS
+   `SimulationCore` path still quotes with world × fame only (legacy gateway).
+3. Personal retainer departures are live; faction officer coups remain in
+   `faction-politics`.
+4. Succession UI lists adult heirs and executes the audited transfer; a full
+   will/inheritance split and ancestor chronicle screen are still minimal.
 

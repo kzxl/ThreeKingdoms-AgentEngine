@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.6.14] - 2026-10-30
+
+Guest assignment, persisted local stock, retainer departures and succession UI.
+
+### Changed
+- Named fame guests are auto-assigned to the first player business with a waived
+  signing bonus when their fame gate is met; otherwise they remain `GUEST`.
+- Migration `017-settlement-market-state` persists stock/demand per settlement
+  and item. `SettlementMarketService` lazily seeds surplus/deficit profiles,
+  applies a stock multiplier and drifts monthly; `/api/trade` uses the combined
+  specialisation × stock multiplier.
+- Migration `018-retainer-departures`: low fame erodes retainer loyalty; below
+  30 loyalty a retainer can leave, losing the assignment and writing
+  `retainer_departures`. The monthly report lists departures.
+- The lineage Succession tab now lists adult children, lets the player designate
+  an heir and execute succession through the existing audited service.
+
+### Verification
+`npm run verify` green: 29/29 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,358 invariants, 0 discrepancies. Tests cover auto-assigned
+guests, stock/demand multipliers and drift, and retainer departure logging.
+
+---
+
 ## [1.6.13] - 2026-10-30
 
 Named guests, heir succession, local prices and fame deterrence.
