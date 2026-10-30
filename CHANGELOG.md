@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.6.12] - 2026-10-30
+
+Fame arrivals, world prices and defeat states.
+
+### Added
+- Migration `014-fame-arrivals`: `player_state.militia` and `fame_arrivals`.
+  Month close attracts 0–3 visitors by fame tier; volunteers add militia,
+  merchants add grain, scholars add fame. The monthly report lists arrivals.
+- Migration `015-defeat-states`: `campaign_meta.status/defeat_reason/distress_months`,
+  `npc_state.is_alive` and `battle_duels`.
+- `BattleDuelService`: civil-officer negotiation, 20% champion-duel trigger,
+  1–3% (cap 8%) death roll, morale shifts, fame changes and an audit log.
+  Stronghold battles call it before `TacticalBattleEngine`; a player death sets
+  `DEFEATED` and blocks all day-consuming actions with `CAMPAIGN_OVER`.
+- Bankruptcy: two consecutive months below 100 cash and 1 grain set `BANKRUPT`;
+  recovery resets the counter.
+- `world-price` season/crisis multipliers (grain cheap at harvest, expensive in
+  lean months; active droughts/locusts/floods/plague raise the effective
+  reference) layered into the fame-aware quote in both TS and the engine.
+- A client toast announces a defeated or bankrupt campaign.
+
+### Verification
+`npm run verify` green: 29/29 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,358 invariants, 0 discrepancies. New `verify-battle-duel.ts`
+and `verify-world-price.ts` cover death/defeat/action gates, bankruptcy,
+season/crisis multipliers and TS/CJS parity.
+
+---
+
 ## [1.6.11] - 2026-10-30
 
 Fame-driven rare item discovery.

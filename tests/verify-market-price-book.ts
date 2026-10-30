@@ -14,6 +14,7 @@ import Database from 'better-sqlite3';
 import { DatabaseService } from '../src/core/database';
 import { loadMarketCatalog, requireMarketPrice } from '../src/shared/market-price-book';
 import { quoteFromReference } from '../src/shared/market-quote';
+import { worldPriceMultiplier } from '../src/shared/world-price';
 
 const { SimulationCore } = require('../engine/sim-core');
 const cjsBook = require('../engine/market-price-book');
@@ -60,7 +61,11 @@ function run(): void {
     const core = new SimulationCore(TEST_DB);
     const grainPrice = requireMarketPrice(db, 'COM-GRAIN');
     const fame = Number(db.queryOne<any>('SELECT fame FROM player_state WHERE player_id = ?;', ['PLY-0001'])?.fame || 0);
-    const grainQuote = quoteFromReference(grainPrice, fame, 'COM-GRAIN');
+    const campaignDate = db.queryOne<{ current_date: string }>(
+      'SELECT "current_date" AS current_date FROM campaign_meta LIMIT 1;'
+    )?.current_date || '184-05-02';
+    const grainWorld = worldPriceMultiplier(db, 'COM-GRAIN', campaignDate);
+    const grainQuote = quoteFromReference(grainPrice, fame, 'COM-GRAIN', grainWorld);
     const buy = core.executeAction({
       type: 'TRADE_BUY',
       item_code: 'COM-GRAIN',
@@ -91,6 +96,14 @@ function run(): void {
         cjsQuote.quoteFromReference(175, sampleFame, 'COM-GRAIN'),
         quoteFromReference(175, sampleFame, 'COM-GRAIN'),
         `quote drift at fame ${sampleFame}`
+      );
+    }
+    const cjsWorld = require('../engine/world-price');
+    for (const date of ['184-02-01', '184-05-02', '184-09-01']) {
+      assert.strictEqual(
+        cjsWorld.worldPriceMultiplier(TEST_DB, 'COM-GRAIN', date),
+        worldPriceMultiplier(db, 'COM-GRAIN', date),
+        `world multiplier drift on ${date}`
       );
     }
 
@@ -141,9 +154,12 @@ function run(): void {
           if (!String(choice.action?.type || '').startsWith('TRADE_')) continue;
           const catalogPrice = tsCatalog.get(choice.action.item_code)?.price;
           assert(catalogPrice, `${location} quotes unpriced ${choice.action.item_code}`);
-          const expected = quoteFromReference(catalogPrice, fame, choice.action.item_code)[
-            choice.action.type === 'TRADE_BUY' ? 'buyPrice' : 'sellPrice'
-          ];
+          const expected = quoteFromReference(
+            catalogPrice,
+            fame,
+            choice.action.item_code,
+            worldPriceMultiplier(db, choice.action.item_code, '184-05-02')
+          )[choice.action.type === 'TRADE_BUY' ? 'buyPrice' : 'sellPrice'];
           assert.strictEqual(choice.action.unit_price, expected, `${location} quotes a stale price`);
         }
       }

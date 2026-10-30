@@ -74,10 +74,25 @@ It exposes `getFame`, `getTier`, `award`, `penalize`, `decayInactive` and
    guarantee a tier-1 find. Every roll lands in `exploration_log`; a find adds
    a `Discovery` stock movement and an `EXPLORE_POI` action log.
 
+5. **Fame arrivals (1.6.12):** month close invites 0–3 visitors by tier. Volunteers
+   add `player_state.militia`, merchants add grain, scholars add fame; every
+   arrival is logged in `fame_arrivals` and shown in the report.
+6. **World prices (1.6.12):** `world-price` applies the grain season (0.85 at
+   harvest, 1.15 in lean months) and active crises (drought/locust/flood/plague,
+   cap 3×) to the reference before the fame spread.
+
+## Defeat states (1.6.12)
+
+- Battle: civil officers negotiate before combat; a duel can trigger at 20%;
+  death is 1% for the player, 2% for an enemy, capped at 8%, and is logged.
+- Player death sets `campaign_meta.status = 'DEFEATED'`; all day-consuming
+  actions then return `CAMPAIGN_OVER`.
+- Bankruptcy: two consecutive closes below 100 cash and 1 grain set `BANKRUPT`.
+- Fame 0 is still *not* a defeat.
+
 ## Still staged
 
-1. NPC self-arrival events and a monthly volunteer pool.
-2. World/regional price multipliers (crisis, season, local stock) on top of the
-   reference quote.
-3. Battle duel trigger/death, civil-officer negotiation, bankruptcy.
+1. NPC self-arrival is report/login only; it does not yet auto-hire named NPCs.
+2. Local stock/specialisation is not yet part of the persisted price quote.
+3. Heir succession after player death, betrayal, and a full game-over screen.
 

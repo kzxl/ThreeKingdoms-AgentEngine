@@ -13,6 +13,7 @@ import path from 'path';
 import { DatabaseService } from '../src/core/database';
 import { PrestigeService } from '../src/modules/progression/prestige.service';
 import { SpecialistWorkforceService } from '../src/modules/professions/features/workforce/specialist-workforce.service';
+import { FameAttractionService } from '../src/modules/progression/fame-attraction.service';
 import {
   applyFameDecay,
   effectiveFameGain,
@@ -144,6 +145,18 @@ function run(): void {
       assert.strictEqual(hired.signingBonusPaid, hireable.effectiveSigningBonus, 'hire must charge the server quote');
       assert.strictEqual(hired.fameTierCode, getFameTier(service.getFame('PLY-0001')).code, 'hire result must expose the fame tier');
     }
+
+    // 8. Fame attracts people: at hero-tier fame three arrivals appear and are logged.
+    service.award('PLY-0001', { rawGain: 8000, reason: 'TEST_FAME_FOR_ARRIVALS', gameDate: '184-05-05' });
+    const militiaBefore = Number(db.queryOne<any>('SELECT militia FROM player_state WHERE player_id = ?;', ['PLY-0001'])?.militia || 0);
+    const arrivals = FameAttractionService.forDatabase(db).simulateMonthly('PLY-0001', '184-05-30');
+    assert.strictEqual(arrivals.arrivals.length, 3, 'hero-tier fame must attract three arrivals');
+    assert(arrivals.totalMilitia >= 0, 'arrivals may bring militia');
+    assert(arrivals.totalGrain >= 0, 'arrivals may bring grain');
+    const militiaAfter = Number(db.queryOne<any>('SELECT militia FROM player_state WHERE player_id = ?;', ['PLY-0001'])?.militia || 0);
+    assert.strictEqual(militiaAfter, militiaBefore + arrivals.totalMilitia, 'volunteer militia must be added to player state');
+    const logged = db.queryOne<{ c: number }>('SELECT COUNT(*) AS c FROM fame_arrivals WHERE character_id = ?;', ['PLY-0001']);
+    assert.strictEqual(Number(logged?.c), 3, 'every arrival must be logged');
   } finally {
     db.close();
     try {
