@@ -60,6 +60,7 @@ function ensureMilitaryTables(db: DatabaseService): void {
       status TEXT NOT NULL DEFAULT 'ACTIVE',
       last_loot INTEGER NOT NULL DEFAULT 0,
       expedition_id TEXT,
+      prebattle_json TEXT,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `);
@@ -558,9 +559,11 @@ export function registerMilitaryRoutes(router: Router): void {
         sendJson(res, 200, {
           success: true,
           siege,
-          message: siege.status === 'ACTIVE'
-            ? `Đã bao vây ${targetSettlementId}: ${siege.attackerTroops} quân, mỗi ngày giảm phòng thủ. Hạ thành khi tường vỡ hoặc đồn trú tan rã.`
-            : `Công thành ${targetSettlementId} đã kết thúc.`
+          message: siege.aborted
+            ? 'Tiền trận bất lợi: chủ tướng tử trận, bao vây bị hủy.'
+            : siege.status === 'ACTIVE'
+              ? `Đã bao vây ${targetSettlementId}: ${siege.attackerTroops} quân, mỗi ngày giảm phòng thủ. Hạ thành khi tường vỡ hoặc đồn trú tan rã.`
+              : `Công thành ${targetSettlementId} đã kết thúc.`
         });
         return;
       }

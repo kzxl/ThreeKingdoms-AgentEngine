@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.14.0] - 2026-10-31
+
+Pre-battle layer for city sieges.
+
+### Added
+- Opening a siege now runs `resolvePreBattle`: low-LDR/high-DIP commanders may
+  negotiate, both martial commanders may fight a champion duel, and a player
+  death aborts the investment. Negotiation/duel wins reduce the wall by 10 and
+  add 2 daily damage; a lost duel costs 10% of the attackers.
+- Migration 031 stores the pre-battle result on `session_sieges.prebattle_json`.
+- The world map reports an aborted siege instead of claiming it started.
+- `tests/verify-siege-prebattle.ts` covers negotiation, champion duels and the
+  persisted log; existing siege tests pass `preBattle: false` for deterministic
+  math.
+
+### Verification
+`npm run verify` green: 39/39 suites, 28/28 contracts, 8/8 write smokes.
+
+---
+
 ## [1.13.0] - 2026-10-31
 
 Scenario-specific starting map.

@@ -2023,6 +2023,17 @@ async function promptSiegeAssault(settlementId) {
 
     if (data.siege) {
       const siege = data.siege;
+      if (siege.aborted) {
+        if (typeof showToast === 'function') {
+          showToast(isEn
+            ? `The siege of ${settlementName} was aborted: the commander fell in the pre-battle duel.`
+            : `Bao vây ${settlementName} bị hủy: chủ tướng tử trận trong trận đấu tướng trước cửa thành.`, true);
+        }
+        if (typeof renderWorldMapIntel === 'function') renderWorldMapIntel(settlementId);
+        if (typeof renderWorldMapSvg === 'function') renderWorldMapSvg();
+        if (typeof loadStatus === 'function') loadStatus();
+        return;
+      }
       if (typeof appendStoryTurn === 'function') {
         appendStoryTurn({
           type: 'player',

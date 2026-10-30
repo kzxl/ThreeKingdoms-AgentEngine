@@ -62,7 +62,8 @@ function run() {
     settlementId: 'test_city',
     commanderId: 'PLY-0001',
     attackerTroops: 250,
-    gameDate: '184-06-10'
+    gameDate: '184-06-10',
+    preBattle: false
   });
   assert.strictEqual(started.status, 'ACTIVE');
   assert.strictEqual(started.defense, 30);
@@ -72,7 +73,8 @@ function run() {
     settlementId: 'test_city',
     commanderId: 'PLY-0001',
     attackerTroops: 250,
-    gameDate: '184-06-10'
+    gameDate: '184-06-10',
+    preBattle: false
   });
   assert.strictEqual(joined.siegeId, started.siegeId, 'a second order must join the active siege');
 

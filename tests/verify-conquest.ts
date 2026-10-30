@@ -157,7 +157,8 @@ function run() {
     commanderId: 'PLY-0001',
     attackerTroops: 999,
     gameDate: '184-06-10',
-    expeditionId: 'EXP-CONQUEST-1'
+    expeditionId: 'EXP-CONQUEST-1',
+    preBattle: false
   });
   assert.strictEqual(started.attackerTroops, 250, 'siege troops must come from the expedition');
   db = new Database(TEST_DB);

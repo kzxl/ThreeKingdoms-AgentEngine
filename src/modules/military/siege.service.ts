@@ -14,6 +14,7 @@ import { nextId } from '../../shared/id-generator';
 import { getGameDate } from '../../shared/game-clock';
 import { recordFinancialTransaction } from '../../shared/financial-transaction';
 import { applyVictoryIfEligible } from '../../shared/victory';
+import { BattleDuelService } from './battle-duel.service';
 
 export interface StartSiegeInput {
   settlementId: string;
@@ -21,16 +22,20 @@ export interface StartSiegeInput {
   attackerTroops: number;
   gameDate?: string;
   expeditionId?: string;
+  /** Tests pass false to keep siege math deterministic. */
+  preBattle?: boolean;
 }
 
 export interface SiegeResolution {
   siegeId: string;
   settlementId: string;
-  status: 'ACTIVE' | 'WON' | 'LOST';
+  status: 'ACTIVE' | 'WON' | 'LOST' | 'ABORTED';
   lootQian: number;
   defense: number;
   garrison: number;
   attackerTroops: number;
+  aborted?: boolean;
+  preBattle?: any;
 }
 
 export class SiegeService {
@@ -55,6 +60,7 @@ export class SiegeService {
         status TEXT NOT NULL DEFAULT 'ACTIVE',
         last_loot INTEGER NOT NULL DEFAULT 0,
         expedition_id TEXT,
+        prebattle_json TEXT,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
@@ -78,7 +84,7 @@ export class SiegeService {
     }
 
     const commander = this.db.queryOne<any>(
-      'SELECT war_attr, ldr_attr, fatigue, health FROM player_state WHERE player_id = ?;',
+      'SELECT name, war_attr, ldr_attr, dip_attr, fatigue, health FROM player_state WHERE player_id = ?;',
       [commanderId]
     );
     if (commander && Number(commander.fatigue) > 85) {
@@ -121,18 +127,86 @@ export class SiegeService {
     }
 
     const gameDate = input.gameDate || getGameDate(this.db);
+
+    // Pre-battle layer: negotiation and a champion duel can change the siege
+    // before the first day, and a player death aborts the investment entirely.
+    let preBattle: any = null;
+    let defenseAdjustment = 0;
+    let damageBonus = 0;
+    let troopMultiplier = 1;
+    if (input.preBattle !== false) {
+      const defender = this.resolveDefender(settlement);
+      preBattle = BattleDuelService.forDatabase(this.db).resolvePreBattle({
+        battleId: `SIEGE-${settlementId}-${gameDate}-${commanderId}`,
+        gameDate,
+        context: 'STRONGHOLD',
+        playerId: commanderId,
+        playerName: String(commander?.name || 'Lương Diễn'),
+        playerWar: Number(commander?.war_attr || 60),
+        playerLeadership: Number(commander?.ldr_attr || 60),
+        playerDiplomacy: Number(commander?.dip_attr || 50),
+        enemyName: defender.name,
+        enemyWar: defender.war,
+        enemyLeadership: defender.ldr
+      });
+
+      if (preBattle.death === 'PLAYER') {
+        return {
+          siegeId: 'ABORTED',
+          settlementId,
+          status: 'ABORTED',
+          aborted: true,
+          lootQian: 0,
+          defense: Number(settlement.defense || 0),
+          garrison: Number(settlement.garrison_troops || 0),
+          attackerTroops: 0,
+          preBattle
+        };
+      }
+
+      if (preBattle.playerMoraleDelta) {
+        this.db.execute(
+          `UPDATE player_state SET morale = MAX(0, MIN(100, morale + ?)) WHERE player_id = ?;`,
+          [Number(preBattle.playerMoraleDelta), commanderId]
+        );
+      }
+      if (preBattle.negotiationSuccess) {
+        defenseAdjustment -= 10;
+        damageBonus += 2;
+      }
+      if (preBattle.duelWinner === 'PLAYER') {
+        defenseAdjustment -= 10;
+        damageBonus += 2;
+      } else if (preBattle.duelWinner === 'ENEMY') {
+        troopMultiplier = 0.9;
+      }
+      if (preBattle.death === 'ENEMY') damageBonus += 3;
+
+      attackerTroops = Math.max(1, Math.round(attackerTroops * troopMultiplier));
+      if (defenseAdjustment !== 0) {
+        this.db.execute(
+          `UPDATE session_settlements SET defense = MAX(10, MIN(100, defense + ?)) WHERE settlement_id = ?;`,
+          [defenseAdjustment, settlementId]
+        );
+      }
+    }
+
     const dailyDamage = Math.max(
       2,
-      Math.round(attackerTroops / 40 + Number(commander?.war_attr || 60) / 20)
+      Math.round(attackerTroops / 40 + Number(commander?.war_attr || 60) / 20) + damageBonus
     );
     const siegeId = nextId(this.db, 'siege', 'SIEGE', gameDate);
 
     this.db.transaction(() => {
       this.db.execute(
         `INSERT INTO session_sieges
-           (siege_id, settlement_id, commander_id, attacker_troops, daily_damage, started_date, days_elapsed, status, expedition_id)
-         VALUES (?, ?, ?, ?, ?, ?, 0, 'ACTIVE', ?);`,
-        [siegeId, settlementId, commanderId, attackerTroops, dailyDamage, gameDate, expedition?.expedition_id || null]
+           (siege_id, settlement_id, commander_id, attacker_troops, daily_damage, started_date, days_elapsed, status, expedition_id, prebattle_json)
+         VALUES (?, ?, ?, ?, ?, ?, 0, 'ACTIVE', ?, ?);`,
+        [
+          siegeId, settlementId, commanderId, attackerTroops, dailyDamage, gameDate,
+          expedition?.expedition_id || null,
+          preBattle ? JSON.stringify(preBattle) : null
+        ]
       );
       if (expedition) {
         this.db.execute(
@@ -149,8 +223,31 @@ export class SiegeService {
       lootQian: 0,
       defense: Number(settlement.defense || 0),
       garrison: Number(settlement.garrison_troops || 0),
-      attackerTroops
+      attackerTroops,
+      preBattle
     };
+  }
+
+  private resolveDefender(settlement: any): { name: string; war: number; ldr: number } {
+    try {
+      const faction = this.db.queryOne<any>(
+        'SELECT leader_id, name_vi FROM session_factions WHERE faction_id = ? LIMIT 1;',
+        [settlement.ruler_faction_id]
+      );
+      const leader = faction?.leader_id
+        ? this.db.queryOne<any>(
+          'SELECT name_vi, war_attr, ldr_attr FROM master_characters WHERE npc_id = ? LIMIT 1;',
+          [faction.leader_id]
+        )
+        : null;
+      return {
+        name: leader?.name_vi || faction?.name_vi || 'Thủ Tướng Địch',
+        war: Number(leader?.war_attr || 65),
+        ldr: Number(leader?.ldr_attr || 65)
+      };
+    } catch {
+      return { name: 'Thủ Tướng Địch', war: 65, ldr: 65 };
+    }
   }
 
   private getPlayerFaction(): string | null {
