@@ -1,0 +1,43 @@
+{
+  "version": "1.0.0",
+  "scale": {
+    "softCap": 10000,
+    "hardCeiling": 99999,
+    "legacyMultiplier": 10,
+    "startingFame": 500
+  },
+  "tiers": [
+    { "code": "NOBODY", "minFame": 0, "nameVi": "Vô danh", "nameEn": "Unknown" },
+    { "code": "VILLAGER_RESPECT", "minFame": 200, "nameVi": "Hương dân kính trọng", "nameEn": "Village Esteem" },
+    { "code": "RIGHTEOUS", "minFame": 500, "nameVi": "Nghĩa sĩ", "nameEn": "Righteous Warrior" },
+    { "code": "CHAMPION", "minFame": 1000, "nameVi": "Hào kiệt", "nameEn": "Champion" },
+    { "code": "RENOWNED_SCHOLAR", "minFame": 2000, "nameVi": "Danh sĩ", "nameEn": "Renowned Scholar" },
+    { "code": "FAMOUS_GENERAL", "minFame": 3000, "nameVi": "Danh tướng", "nameEn": "Famous General" },
+    { "code": "HERO", "minFame": 5000, "nameVi": "Anh hùng", "nameEn": "Hero" },
+    { "code": "GRAND_CHAMPION", "minFame": 7000, "nameVi": "Quán quân", "nameEn": "Grand Champion" },
+    { "code": "HEARTS_OF_THE_REALM", "minFame": 9000, "nameVi": "Thiên hạ quy tâm", "nameEn": "Hearts of the Realm" }
+  ],
+  "gains": {
+    "civicSmall": 15,
+    "charity": 40,
+    "releaseCaptives": 35,
+    "duelVictory": 60,
+    "battleVictory": 200,
+    "campaignVictory": 600
+  },
+  "decay": {
+    "inactiveMonths": 6,
+    "thresholdHigh": 2000,
+    "rateHigh": 0.005,
+    "thresholdTop": 5000,
+    "rateTop": 0.01
+  },
+  "effects": {
+    "fameNormalizer": 2000,
+    "gainNormalizer": 4000,
+    "discoveryBaseBasisPoints": 300,
+    "discoveryFameBasisPoints": 2000,
+    "hireDiscountBasisPoints": 1000,
+    "sellBonusBasisPoints": 800
+  }
+}

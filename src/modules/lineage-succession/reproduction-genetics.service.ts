@@ -490,7 +490,7 @@ export class ReproductionGeneticsService {
       // 8. Increase Family Prestige (only for Liang protagonist dynasty)
       if (spouse.husband_id === 'PLY-0001') {
         this.db.execute(
-          'UPDATE family_lineage SET family_prestige = family_prestige + 15 WHERE family_id = ?;',
+          'UPDATE family_lineage SET family_prestige = family_prestige + 150 WHERE family_id = ?;',
           ['FAM-LIANG']
         );
       }

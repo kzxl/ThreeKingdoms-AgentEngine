@@ -143,12 +143,12 @@ export class CourtshipBetrothalService {
     const courtRank = officer?.court_rank || 'OFFICER';
 
     const prog = this.db.queryOne<any>('SELECT prestige FROM npc_personal_progression WHERE npc_id = ?;', [npcId]);
-    const prestige = prog ? Number(prog.prestige) : 50;
+    const prestige = prog ? Number(prog.prestige) : 500;
 
     const martialPersonalities = ['VALIANT', 'FIERCE', 'AMBITIOUS'];
     if (martialPersonalities.includes(personality)) {
       const hasHighRank = ['RULER', 'CHIEF_COMMANDER', 'GENERAL', 'GOVERNOR'].includes(courtRank);
-      if (age < 30 && !hasHighRank && prestige < 150) {
+      if (age < 30 && !hasHighRank && prestige < 1500) {
         return {
           ready: false,
           reasonVi: 'Chí lớn chưa thành, giặc loạn chưa yên, há có thể bận lòng chuyện nhi nữ thường tình!'
@@ -635,13 +635,13 @@ export class CourtshipBetrothalService {
     // 2. Prestige Check
     const minPrestige = Number(rateRow.min_player_prestige || 0);
     if (minPrestige > 0) {
-      let currentPrestige = 100;
+      let currentPrestige = 1000;
       if (characterId === 'PLY-0001') {
         const fam = this.db.queryOne<any>('SELECT family_prestige FROM family_lineage LIMIT 1;');
-        currentPrestige = Number(fam?.family_prestige || 100);
+        currentPrestige = Number(fam?.family_prestige || 1000);
       } else {
         const prog = this.db.queryOne<any>('SELECT prestige FROM npc_personal_progression WHERE npc_id = ?;', [characterId]);
-        currentPrestige = Number(prog?.prestige || 50);
+        currentPrestige = Number(prog?.prestige || 500);
       }
       if (currentPrestige < minPrestige) {
         return {
@@ -996,7 +996,7 @@ export class CourtshipBetrothalService {
 
       // 12. Increase Family Prestige & NPC devotion
       this.db.execute(
-        'UPDATE family_lineage SET family_prestige = family_prestige + 25 WHERE family_id = ?;',
+        'UPDATE family_lineage SET family_prestige = family_prestige + 250 WHERE family_id = ?;',
         ['FAM-LIANG']
       );
 

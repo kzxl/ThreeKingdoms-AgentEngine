@@ -98,13 +98,13 @@ export class NpcLifecycleModule implements IFeatureModule {
       troops: number;
       title: string;
     }> = [
-      { npcId: 'NPC-0001', ambition: 'HEGEMON_UNIFIER', focus: 'Chiêu tập nghĩa dũng', cash: 2500, prestige: 250, troops: 120, title: 'Hán Thất Tông Thân' },
-      { npcId: 'NPC-0002', ambition: 'RIGHTEOUS_VANGUARD', focus: 'Luyện đao & Nghiên cứu Xuân Thu', cash: 1200, prestige: 210, troops: 50, title: 'Uy Chấn U Châu' },
-      { npcId: 'NPC-0003', ambition: 'LOYAL_BROTHERHOOD', focus: 'Rèn đúc xà mâu & Tiễu phỉ', cash: 3000, prestige: 190, troops: 80, title: 'Vạn Nhân Địch' },
-      { npcId: 'NPC-0007', ambition: 'MASTER_ARTISAN', focus: 'Quy chuẩn hóa dây chuyền rèn', cash: 1800, prestige: 85, troops: 0, title: 'Lương Gia Chưởng Sự' },
-      { npcId: 'NPC-0008', ambition: 'MASTER_ARTISAN', focus: 'Nghiên cứu nhiệt luyện lưỡi kiếm', cash: 900, prestige: 60, troops: 0, title: 'Đại Tượng Sư Rèn' },
-      { npcId: 'NPC-0009', ambition: 'DEVOTED_RETAINER', focus: 'Tích lũy lương bạc gia đình', cash: 450, prestige: 35, troops: 0, title: 'Thợ Dệt Chăm Chỉ' },
-      { npcId: 'NPC-0010', ambition: 'DEVOTED_RETAINER', focus: 'Luyện tập côn bổng phòng vệ', cash: 520, prestige: 40, troops: 0, title: 'Dũng Lực Mộc Tượng' }
+      { npcId: 'NPC-0001', ambition: 'HEGEMON_UNIFIER', focus: 'Chiêu tập nghĩa dũng', cash: 2500, prestige: 2500, troops: 120, title: 'Hán Thất Tông Thân' },
+      { npcId: 'NPC-0002', ambition: 'RIGHTEOUS_VANGUARD', focus: 'Luyện đao & Nghiên cứu Xuân Thu', cash: 1200, prestige: 2100, troops: 50, title: 'Uy Chấn U Châu' },
+      { npcId: 'NPC-0003', ambition: 'LOYAL_BROTHERHOOD', focus: 'Rèn đúc xà mâu & Tiễu phỉ', cash: 3000, prestige: 1900, troops: 80, title: 'Vạn Nhân Địch' },
+      { npcId: 'NPC-0007', ambition: 'MASTER_ARTISAN', focus: 'Quy chuẩn hóa dây chuyền rèn', cash: 1800, prestige: 850, troops: 0, title: 'Lương Gia Chưởng Sự' },
+      { npcId: 'NPC-0008', ambition: 'MASTER_ARTISAN', focus: 'Nghiên cứu nhiệt luyện lưỡi kiếm', cash: 900, prestige: 600, troops: 0, title: 'Đại Tượng Sư Rèn' },
+      { npcId: 'NPC-0009', ambition: 'DEVOTED_RETAINER', focus: 'Tích lũy lương bạc gia đình', cash: 450, prestige: 350, troops: 0, title: 'Thợ Dệt Chăm Chỉ' },
+      { npcId: 'NPC-0010', ambition: 'DEVOTED_RETAINER', focus: 'Luyện tập côn bổng phòng vệ', cash: 520, prestige: 400, troops: 0, title: 'Dũng Lực Mộc Tượng' }
     ];
 
     this.db.transaction(() => {
@@ -268,10 +268,10 @@ export class NpcLifecycleModule implements IFeatureModule {
         narrativeVi = `${npc.name} tự dẫn bộ hạ đột kích sào huyệt sơn tặc, trảm tướng cướp, thu được ${bounty} Quan chiến lợi phẩm và thu phục ${recruited} tráng đinh tình nguyện gia nhập.`;
         statChanges['personal_cash'] = `+${bounty} Quan`;
         statChanges['personal_troops'] = `+${recruited} Dũng sĩ`;
-        statChanges['prestige'] = '+15 Danh vọng';
+        statChanges['prestige'] = '+150 Danh vọng';
         prog.personal_cash += bounty;
         prog.personal_troops += recruited;
-        prog.prestige += 15;
+        prog.prestige += 150;
         break;
       }
 
@@ -279,8 +279,8 @@ export class NpcLifecycleModule implements IFeatureModule {
         titleVi = `${npc.name} cải tiến kỹ nghệ chế tác`;
         narrativeVi = `Sau nhiều đêm thử nghiệm, ${npc.name} tinh chỉnh thành công phương pháp trui rèn vật liệu, giúp nâng cao độ bền và giảm hao mòn sản phẩm.`;
         statChanges['craft_exp'] = '+20 EXP';
-        statChanges['prestige'] = '+10 Danh vọng';
-        prog.prestige += 10;
+        statChanges['prestige'] = '+100 Danh vọng';
+        prog.prestige += 100;
         break;
       }
 
@@ -288,8 +288,8 @@ export class NpcLifecycleModule implements IFeatureModule {
         titleVi = `${npc.name} luận bàn thế cục & nghiên cứu binh pháp`;
         narrativeVi = `${npc.name} tiếp kiến các danh sĩ địa phương, phân tích cục diện khởi nghĩa Khăn Vàng, hoạch định phương lược cứu dân giúp nước.`;
         statChanges['int_exp'] = '+15 EXP';
-        statChanges['prestige'] = '+20 Danh vọng';
-        prog.prestige += 20;
+        statChanges['prestige'] = '+200 Danh vọng';
+        prog.prestige += 200;
         break;
       }
 
@@ -404,7 +404,7 @@ export class NpcLifecycleModule implements IFeatureModule {
     let newMilestoneTitle = '';
     let wageUpdate = 0;
 
-    if (npcId === 'NPC-0007' && prog.prestige >= 90 && prog.personal_cash >= 1800 && prog.milestone_title !== 'U Châu Thần Tượng Sư') {
+    if (npcId === 'NPC-0007' && prog.prestige >= 900 && prog.personal_cash >= 1800 && prog.milestone_title !== 'U Châu Thần Tượng Sư') {
       shiftCategory = 'MASTERWORK_ELEVATION';
       oldRole = 'FOREMAN';
       newRole = 'CHIEF_ARTISAN_PARTNER';
@@ -414,7 +414,7 @@ export class NpcLifecycleModule implements IFeatureModule {
       titleVi = 'Trần Bảo đột phá thân phận: Thăng tọa Đại Tượng Sư U Châu';
       narrativeVi = 'Tích lũy đủ 1,800 Quan riêng và danh tiếng vang dội, Trần Bảo hoàn thiện phương pháp rèn bí truyền, chính thức được tôn vinh là Đại Tượng Sư bậc thầy của xưởng Lương Gia.';
       wageUpdate = 1000;
-    } else if (npcId === 'NPC-0003' && prog.personal_troops >= 80 && prog.prestige >= 190 && prog.milestone_title !== 'Biệt Đội Tư Mã') {
+    } else if (npcId === 'NPC-0003' && prog.personal_troops >= 80 && prog.prestige >= 1900 && prog.milestone_title !== 'Biệt Đội Tư Mã') {
       shiftCategory = 'WARLORD_COMMISSION';
       oldRole = 'HISTORICAL';
       newRole = 'FRONTIER_MAJOR';
@@ -433,7 +433,7 @@ export class NpcLifecycleModule implements IFeatureModule {
       titleVi = 'Triệu An thăng tọa Chưởng Quản Lò Luyện Thép Lương Gia';
       narrativeVi = 'Nhờ làm chủ kỹ thuật tôi nguội và tích lũy uy tín vững vàng, Triệu An chính thức đảm nhiệm chức vụ Chưởng Quản phụ trách chất lượng phôi thép toàn xưởng.';
       wageUpdate = 850;
-    } else if (npcId === 'NPC-0001' && prog.personal_troops >= 120 && prog.prestige >= 250 && prog.milestone_title !== 'Nghĩa Quân Thống Soái') {
+    } else if (npcId === 'NPC-0001' && prog.personal_troops >= 120 && prog.prestige >= 2500 && prog.milestone_title !== 'Nghĩa Quân Thống Soái') {
       shiftCategory = 'WARLORD_COMMISSION';
       oldRole = 'HISTORICAL';
       newRole = 'HEGEMON_COMMANDER';

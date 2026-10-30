@@ -45,7 +45,10 @@ CREATE TABLE IF NOT EXISTS player_state (
     special_licenses TEXT DEFAULT '[]',
     health INTEGER NOT NULL DEFAULT 100 CHECK (health >= 0 AND health <= 100),
     fatigue INTEGER NOT NULL DEFAULT 0 CHECK (fatigue >= 0 AND fatigue <= 100),
-    morale INTEGER NOT NULL DEFAULT 100 CHECK (morale >= 0 AND morale <= 100)
+    morale INTEGER NOT NULL DEFAULT 100 CHECK (morale >= 0 AND morale <= 100),
+    fame INTEGER NOT NULL DEFAULT 500 CHECK (fame >= 0),
+    credibility INTEGER NOT NULL DEFAULT 50 CHECK (credibility >= 0 AND credibility <= 100),
+    virtue INTEGER NOT NULL DEFAULT 50 CHECK (virtue >= 0 AND virtue <= 100)
 );
 
 -- 3. Player Skills Ladder
@@ -221,12 +224,30 @@ CREATE TABLE IF NOT EXISTS npc_personal_progression (
     life_ambition TEXT NOT NULL DEFAULT 'VANGUARD_HERO',
     current_focus TEXT NOT NULL DEFAULT 'MARTIAL_TRAINING',
     personal_cash INTEGER NOT NULL DEFAULT 500,
-    prestige INTEGER NOT NULL DEFAULT 50,
+    prestige INTEGER NOT NULL DEFAULT 500,
     personal_troops INTEGER NOT NULL DEFAULT 0,
     milestone_title TEXT DEFAULT 'Trác Huyện Hào Hiệp',
     growth_stats_json TEXT DEFAULT '{}',
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- 15b. Unified fame view (player + NPC) and append-only fame ledger
+CREATE TABLE IF NOT EXISTS prestige_events (
+    event_id TEXT PRIMARY KEY,
+    character_id TEXT NOT NULL,
+    game_date TEXT NOT NULL,
+    delta INTEGER NOT NULL,
+    before_fame INTEGER NOT NULL,
+    after_fame INTEGER NOT NULL,
+    reason TEXT NOT NULL,
+    source_id TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE VIEW IF NOT EXISTS character_prestige AS
+  SELECT player_id AS character_id, fame, 'PLAYER' AS kind FROM player_state
+  UNION ALL
+  SELECT npc_id AS character_id, prestige AS fame, 'NPC' AS kind FROM npc_personal_progression;
 
 -- 16. NPC Autonomous Journey Chronicle & Life Events
 CREATE TABLE IF NOT EXISTS npc_journey_logs (

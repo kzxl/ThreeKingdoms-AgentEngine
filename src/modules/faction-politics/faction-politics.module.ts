@@ -239,7 +239,7 @@ export class FactionPoliticsModule implements IFeatureModule {
           WHEN fo.officer_id = 'PLY-0001' THEN 'Lương Diễn (Người Chơi)'
           ELSE COALESCE(mc.name_vi, ns.name, fo.officer_id)
         END as officerName,
-        COALESCE(np.prestige, 50) as personalPrestige,
+        COALESCE(np.prestige, 500) as personalPrestige,
         COALESCE(np.personal_troops, 0) as personalTroops
       FROM faction_officers fo
       JOIN session_factions sf ON fo.faction_id = sf.faction_id

@@ -185,7 +185,7 @@ export class DynastySuccessionService {
 
       // 7. Advance Generation & Update Lineage Records
       this.db.execute(
-        'UPDATE family_lineage SET current_generation = current_generation + 1, family_prestige = family_prestige + 50 WHERE family_id = ?;',
+        'UPDATE family_lineage SET current_generation = current_generation + 1, family_prestige = family_prestige + 500 WHERE family_id = ?;',
         ['FAM-LIANG']
       );
 
