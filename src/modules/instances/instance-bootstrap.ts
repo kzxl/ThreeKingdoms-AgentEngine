@@ -40,6 +40,8 @@ const HISTORY_TABLES = [
   'exploration_log',
   'fame_arrivals',
   'retainer_departures',
+  'unrest_events',
+  'family_will',
   'settlement_market_state',
   'battle_duels',
   'npc_relationship_deltas',

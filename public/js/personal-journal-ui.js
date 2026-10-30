@@ -19,6 +19,7 @@
   let activeTabKey = 'career';
   let activeLineageSubTab = 'courtship';
   let cachedLineageOverview = null;
+  let cachedWill = { charityShareBps: 0, heirId: null };
   let cachedProgressionState = null;
   let isSubmitting = false;
 
@@ -626,6 +627,13 @@
     if (!data.success) throw new Error(data.error || 'Failed to load lineage status');
 
     cachedLineageOverview = data.overview;
+    try {
+      const willRes = await fetch('/api/lineage/will');
+      const willData = await willRes.json();
+      if (willData.success) cachedWill = willData;
+    } catch (willError) {
+      cachedWill = { charityShareBps: 0, heirId: null };
+    }
     const overview = cachedLineageOverview;
     const isMarried = overview.spouses && overview.spouses.length > 0;
 
@@ -781,6 +789,13 @@
           </div>
           <div class="lineage-succession-desc">
             Khi đương gia chủ niên cao lực kiệt hoặc quy thiên, đại lễ kế thừa sẽ chuyển giao toàn bộ cơ nghiệp cho thế tử trưởng thành (đủ 18 tuổi).
+          </div>
+          <div class="lineage-will-row">
+            <span>Di chúc thiện sự:</span>
+            <select id="lineage-will-share" class="lineage-will-select">
+              ${[0, 10, 25, 50].map(pct => `<option value="${pct * 100}" ${Number(cachedWill.charityShareBps) === pct * 100 ? 'selected' : ''}>${pct}%</option>`).join('')}
+            </select>
+            <button class="ui-btn ui-btn--ghost ui-btn--xs" onclick="PersonalJournalUI.saveWill()">Lưu Di Chúc</button>
           </div>
           <div class="lineage-heir-list">
             ${heirs.length === 0 ? `
@@ -943,7 +958,32 @@
     const data = await res.json();
     if (!data.success) throw new Error(data.error || 'Failed to load lineage');
     cachedLineageOverview = data.overview;
+    try {
+      const willRes = await fetch('/api/lineage/will');
+      const willData = await willRes.json();
+      if (willData.success) cachedWill = willData;
+    } catch (willError) {
+      // keep the current will on transient failure
+    }
     renderLineageSubView();
+  }
+
+  async function saveWill() {
+    const select = document.getElementById('lineage-will-share');
+    const charityShareBps = Number(select?.value || 0);
+    try {
+      const res = await fetch('/api/lineage/will', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ charityShareBps })
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || 'Will save failed');
+      cachedWill = data;
+      if (typeof showToast === 'function') showToast(`Di chúc: trích ${charityShareBps / 100}% ngân khố làm thiện sự.`);
+    } catch (err) {
+      if (typeof showToast === 'function') showToast(`[LỖI] ${err.message}`, true);
+    }
   }
 
   async function designateHeir(childId) {
@@ -1003,6 +1043,7 @@
     switchLineageSubTab,
     designateHeir,
     executeSuccession,
+    saveWill,
 
     // Legacy Fallback Handlers (Directing to local POIs if called)
     openCareer: () => openJournal('career'),

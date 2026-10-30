@@ -3,6 +3,7 @@
  */
 
 let cached = null;
+let cachedPath = null;
 
 function getSettlementMarketContext(dbPath) {
   if (cached) return cached;
@@ -15,10 +16,25 @@ function getSettlementMarketContext(dbPath) {
       service: SettlementMarketService.forDatabase(DatabaseService.getInstance(dbPath)),
       locToNode: LOC_TO_NODE_MAP
     };
+    cachedPath = dbPath;
     return cached;
   } catch (error) {
     return null;
   }
+}
+
+/** Releases the TypeScript DatabaseService connection opened by this bridge. */
+function close() {
+  if (!cached) return;
+  try {
+    require('tsx/cjs');
+    const { DatabaseService } = require('../src/core/database.ts');
+    DatabaseService.closePath(cachedPath);
+  } catch (error) {
+    // bridge may not have loaded tsx
+  }
+  cached = null;
+  cachedPath = null;
 }
 
 function driftPlayerSettlement(dbPath, location) {
@@ -28,4 +44,15 @@ function driftPlayerSettlement(dbPath, location) {
   return ctx.service.driftSettlement(node);
 }
 
-module.exports = { driftPlayerSettlement };
+function getLocalMultiplier(dbPath, location, itemCode) {
+  const ctx = getSettlementMarketContext(dbPath);
+  if (!ctx) return 1;
+  try {
+    const node = ctx.locToNode[location] || location;
+    return ctx.service.getLocalMultiplier(node, itemCode);
+  } catch (error) {
+    return 1;
+  }
+}
+
+module.exports = { driftPlayerSettlement, getLocalMultiplier, close };

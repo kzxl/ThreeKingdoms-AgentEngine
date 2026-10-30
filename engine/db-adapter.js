@@ -150,6 +150,11 @@ function closeConnections(dbPath) {
     } catch {}
   }
   connections.clear();
+  try {
+    require('./settlement-market-bridge').close();
+  } catch (error) {
+    // The bridge is optional for plain-node tools that never load tsx.
+  }
 }
 
 module.exports = {

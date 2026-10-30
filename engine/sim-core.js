@@ -9,6 +9,7 @@ const path = require('path');
 const { getMarketItem, resolveMarketPrice } = require('./market-price-book');
 const { quoteFromReference } = require('./market-quote');
 const { worldPriceMultiplier } = require('./world-price');
+const { getLocalMultiplier } = require('./settlement-market-bridge');
 const { BILL_OF_MATERIALS, calculateDefectRate } = require('./rules');
 const { renderProgressMarkdown } = require('./projector');
 
@@ -214,9 +215,10 @@ class SimulationCore {
     if (!marketItem || marketItem.price <= 0) {
       return { success: false, code: 'ITEM_NOT_FOUND', error: `Item ${item_code} is not in the market catalog.` };
     }
-    const fameRow = runSqlJson(this.dbPath, `SELECT fame FROM player_state LIMIT 1;`)[0];
+    const fameRow = runSqlJson(this.dbPath, `SELECT fame, current_location FROM player_state LIMIT 1;`)[0];
     const worldMultiplier = worldPriceMultiplier(this.dbPath, item_code, game_date);
-    const quote = quoteFromReference(marketItem.price, Number(fameRow?.fame || 0), item_code, worldMultiplier);
+    const localMultiplier = getLocalMultiplier(this.dbPath, fameRow?.current_location || 'LOC-0001', item_code);
+    const quote = quoteFromReference(marketItem.price, Number(fameRow?.fame || 0), item_code, worldMultiplier, localMultiplier);
     const unit_price = quote.buyPrice;
     const totalCost = Math.round(quantity * unit_price);
 
@@ -319,9 +321,10 @@ class SimulationCore {
     if (!marketItem || marketItem.price <= 0) {
       return { success: false, code: 'ITEM_NOT_FOUND', error: `Item ${item_code} is not in the market catalog.` };
     }
-    const fameRow = runSqlJson(this.dbPath, `SELECT fame FROM player_state LIMIT 1;`)[0];
+    const fameRow = runSqlJson(this.dbPath, `SELECT fame, current_location FROM player_state LIMIT 1;`)[0];
     const worldMultiplier = worldPriceMultiplier(this.dbPath, item_code, game_date);
-    const quote = quoteFromReference(marketItem.price, Number(fameRow?.fame || 0), item_code, worldMultiplier);
+    const localMultiplier = getLocalMultiplier(this.dbPath, fameRow?.current_location || 'LOC-0001', item_code);
+    const quote = quoteFromReference(marketItem.price, Number(fameRow?.fame || 0), item_code, worldMultiplier, localMultiplier);
     const unit_price = quote.sellPrice;
 
     // Condition check: inventory availability

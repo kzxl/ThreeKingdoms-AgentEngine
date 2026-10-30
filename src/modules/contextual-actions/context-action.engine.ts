@@ -19,6 +19,8 @@ import { DailyInteractionEngine, EverydayActionType } from '../social-kizuna/dai
 import { MarketCatalog, loadMarketCatalog } from '../../shared/market-price-book';
 import { quoteFromReference } from '../../shared/market-quote';
 import { worldPriceMultiplier } from '../../shared/world-price';
+import { SettlementMarketService } from '../economy/settlement-market.service';
+import { LOC_TO_NODE_MAP } from '../ecology-logistics/spatial-registry';
 
 export type ActionPillar =
   | 'KIZUNA_SOCIAL'
@@ -79,6 +81,7 @@ export class ContextActionEngine {
   private market: MarketCatalog = new Map();
   private fame = 0;
   private gameDate = '184-05-02';
+  private location = 'LOC-0001';
 
   private constructor() {
     this.db = DatabaseService.getInstance();
@@ -112,6 +115,7 @@ export class ContextActionEngine {
     this.market = loadMarketCatalog(this.db);
     this.fame = Number(playerState?.fame || 0);
     this.gameDate = gameDate;
+    this.location = playerState?.current_location || 'LOC-0001';
 
     // Helper map for inventory lookup
     const invMap = new Map<string, number>();
@@ -188,7 +192,15 @@ export class ContextActionEngine {
     if (!item || item.price <= 0) {
       throw new Error(`No market price for ${itemCode}; add it to master_items.`);
     }
-    return quoteFromReference(item.price, this.fame, itemCode, worldPriceMultiplier(this.db, itemCode, this.gameDate))[side];
+    const node = LOC_TO_NODE_MAP[this.location] || this.location;
+    const localMultiplier = SettlementMarketService.forDatabase(this.db).getLocalMultiplier(node, itemCode);
+    return quoteFromReference(
+      item.price,
+      this.fame,
+      itemCode,
+      worldPriceMultiplier(this.db, itemCode, this.gameDate),
+      localMultiplier
+    )[side];
   }
 
   private buyPrice(itemCode: string): number {

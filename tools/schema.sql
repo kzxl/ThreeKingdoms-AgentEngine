@@ -337,6 +337,27 @@ CREATE TABLE IF NOT EXISTS retainer_departures (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS family_will (
+    character_id TEXT PRIMARY KEY,
+    heir_id TEXT,
+    charity_share_bps INTEGER NOT NULL DEFAULT 0,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS unrest_events (
+    unrest_id TEXT PRIMARY KEY,
+    character_id TEXT NOT NULL,
+    source TEXT NOT NULL,
+    npc_id TEXT NOT NULL,
+    npc_name TEXT,
+    event_type TEXT NOT NULL,
+    severity REAL NOT NULL DEFAULT 0,
+    game_date TEXT NOT NULL,
+    detail_vi TEXT,
+    detail_en TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- 16. NPC Autonomous Journey Chronicle & Life Events
 CREATE TABLE IF NOT EXISTS npc_journey_logs (
     id TEXT PRIMARY KEY,

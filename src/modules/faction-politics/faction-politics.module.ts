@@ -9,6 +9,7 @@
 import { DatabaseService } from '../../core/database';
 import { PrestigeService } from '../progression/prestige.service';
 import { fameRatio } from '../../shared/prestige';
+import { UnrestService } from './unrest.service';
 import { isTurnModuleDone, markTurnModuleDone } from '../../shared/turn-ledger';
 import {
   IFeatureModule,
@@ -407,6 +408,16 @@ export class FactionPoliticsModule implements IFeatureModule {
           narrativeVi,
           consequences
         });
+        UnrestService.forDatabase(this.db).record({
+          source: 'OFFICER',
+          npcId: off.officer_id,
+          npcName: off.officer_name,
+          eventType: 'COUP',
+          severity: 1,
+          gameDate,
+          detailVi: narrativeVi,
+          detailEn: `${off.officer_name} seceded with ${off.settlement_name}.`
+        });
       } else {
         // Dissatisfied Officer Defection Plot
         const eventId = `EVT-DEF-${turnNumber}-${off.officer_id}`;
@@ -435,6 +446,16 @@ export class FactionPoliticsModule implements IFeatureModule {
           titleVi,
           narrativeVi,
           consequences
+        });
+        UnrestService.forDatabase(this.db).record({
+          source: 'OFFICER',
+          npcId: off.officer_id,
+          npcName: off.officer_name,
+          eventType: 'COUP',
+          severity: 0.6,
+          gameDate,
+          detailVi: narrativeVi,
+          detailEn: `${off.officer_name} is secretly courting defection.`
         });
       }
     }

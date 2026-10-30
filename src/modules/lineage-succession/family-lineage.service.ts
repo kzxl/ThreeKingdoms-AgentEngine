@@ -535,6 +535,14 @@ export class FamilyLineageService implements IFamilyLineageService {
     return this.successionService.executeSuccession(params);
   }
 
+  public getWill(): { heirId: string | null; charityShareBps: number } {
+    return this.successionService.getWill();
+  }
+
+  public setWill(input: { heirId?: string; charityShareBps?: number }): { heirId: string | null; charityShareBps: number } {
+    return this.successionService.setWill(input);
+  }
+
   // =========================================================================
   // 6. AUTONOMOUS LIFE SIMULATION (Delegated to AutonomousLifeService)
   // =========================================================================

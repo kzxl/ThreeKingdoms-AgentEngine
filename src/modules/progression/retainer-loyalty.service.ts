@@ -12,6 +12,7 @@ import { RngService } from '../../core/rng';
 import { nextId } from '../../shared/id-generator';
 import { fameRatio } from '../../shared/prestige';
 import { PrestigeService } from './prestige.service';
+import { UnrestService } from '../faction-politics/unrest.service';
 
 export interface RetainerDeparture {
   npcId: string;
@@ -71,6 +72,17 @@ export class RetainerLoyaltyService {
             [nextId(this.db, 'retainer_departures', 'DEP', date), characterId, retainer.npc_id, retainer.name, date, fame, loyaltyBefore, narrativeVi, narrativeEn]
           );
           departures.push({ npcId: retainer.npc_id, name: retainer.name, loyaltyBefore, reason: 'LOW_FAME' });
+          UnrestService.forDatabase(this.db).record({
+            characterId,
+            source: 'RETAINER',
+            npcId: retainer.npc_id,
+            npcName: retainer.name,
+            eventType: 'DEPARTURE',
+            severity: Math.min(1, (30 - loyalty) / 30 + 0.2),
+            gameDate: date,
+            detailVi: narrativeVi,
+            detailEn: narrativeEn
+          });
         } else {
           this.db.execute('UPDATE npc_state SET loyalty = ? WHERE npc_id = ?;', [loyalty, retainer.npc_id]);
         }

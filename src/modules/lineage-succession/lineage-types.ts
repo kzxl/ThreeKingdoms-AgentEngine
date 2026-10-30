@@ -184,6 +184,7 @@ export interface SuccessionResult {
   inheritedEnterprisesCount: number;
   inheritedInventoryValuation: number;
   inheritedGearCount: number;
+  charityAmount?: number;
   narrativeVi: string;
 }
 

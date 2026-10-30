@@ -9345,3 +9345,7 @@ textarea {
 .lineage-heir-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid rgba(148, 163, 184, 0.2); border-radius: 8px; }
 .lineage-heir-name { color: #fde68a; }
 .lineage-heir-meta { font-size: 11px; color: var(--text-muted); }
+
+/* Lineage will controls */
+.lineage-will-row { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 11px; color: var(--text-muted); }
+.lineage-will-select { background: #0f172a; color: #e2e8f0; border: 1px solid rgba(148, 163, 184, 0.3); border-radius: 6px; padding: 3px 6px; font-size: 11px; }

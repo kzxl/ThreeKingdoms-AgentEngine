@@ -364,4 +364,28 @@ export function registerLineageRoutes(router: Router): void {
 
   router.post('/api/lineage/succeed', handleSuccession);
   router.post('/api/lineage/succession/execute', handleSuccession);
+
+  /**
+   * 14. GET/POST /api/lineage/will — charity share of the inheritance.
+   */
+  router.get('/api/lineage/will', (_req: any, res: any) => {
+    try {
+      sendJson(res, 200, { success: true, ...service.getWill() });
+    } catch (err: any) {
+      sendJson(res, 500, { success: false, error: err.message });
+    }
+  });
+
+  router.post('/api/lineage/will', (req: any, res: any, ctx: RouteContext) => {
+    try {
+      const body = ctx.body || {};
+      const will = service.setWill({
+        heirId: body.heirId,
+        charityShareBps: body.charityShareBps
+      });
+      sendJson(res, 200, { success: true, ...will });
+    } catch (err: any) {
+      sendJson(res, 400, { success: false, error: err.message });
+    }
+  });
 }

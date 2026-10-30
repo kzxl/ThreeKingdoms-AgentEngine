@@ -27,6 +27,30 @@ export class DynastySuccessionService {
     this.db = db || DatabaseService.getInstance();
   }
 
+  public getWill(): { heirId: string | null; charityShareBps: number } {
+    const row = this.db.queryOne<any>(
+      'SELECT heir_id, charity_share_bps FROM family_will WHERE character_id = ?;',
+      ['PLY-0001']
+    );
+    return {
+      heirId: row?.heir_id || null,
+      charityShareBps: Math.max(0, Math.min(5000, Number(row?.charity_share_bps || 0)))
+    };
+  }
+
+  public setWill(input: { heirId?: string; charityShareBps?: number }): { heirId: string | null; charityShareBps: number } {
+    const current = this.getWill();
+    const heirId = input.heirId || current.heirId;
+    const charityShareBps = Math.max(0, Math.min(5000, Math.round(Number(input.charityShareBps ?? current.charityShareBps) || 0)));
+    this.db.execute(
+      `INSERT INTO family_will (character_id, heir_id, charity_share_bps, updated_at)
+       VALUES ('PLY-0001', ?, ?, CURRENT_TIMESTAMP)
+       ON CONFLICT(character_id) DO UPDATE SET heir_id = excluded.heir_id, charity_share_bps = excluded.charity_share_bps, updated_at = CURRENT_TIMESTAMP;`,
+      [heirId, charityShareBps]
+    );
+    return { heirId, charityShareBps };
+  }
+
   private getCampaignMeta(): { activeTurn: number; currentDate: string; campaignId: string } {
     try {
       const row = this.db.queryOne<any>(
@@ -81,13 +105,16 @@ export class DynastySuccessionService {
       const liquidCash = Number(predecessor.liquid_cash || 0);
       const safeCash = Number(predecessor.safe_cash || 0);
       const totalCash = liquidCash + safeCash;
+      const will = this.getWill();
+      const charityAmount = Math.min(totalCash, Math.round((totalCash * will.charityShareBps) / 10000));
+      const netCash = totalCash - charityAmount;
 
       const invRow = this.db.queryOne<any>(
         'SELECT SUM(quantity * unit_cost_basis) as total_val FROM inventory_items;'
       );
       const inventoryValuation = Number(invRow?.total_val || 0);
       const fixedCapital = Number(predecessor.fixed_capital || 0);
-      const finalNetWorth = Math.round(totalCash + inventoryValuation + fixedCapital);
+      const finalNetWorth = Math.round(netCash + inventoryValuation + fixedCapital);
 
       const lineage = this.db.queryOne<any>(
         'SELECT current_generation FROM family_lineage LIMIT 1;'
@@ -127,6 +154,10 @@ export class DynastySuccessionService {
 
       // 5. Transfer Identity in player_state (Zero FK breakage!)
       const heirAdultAge = Math.max(18, Number(heir.age || 18));
+      const liquidAfter = totalCash > 0
+        ? Math.max(0, liquidCash - Math.round((charityAmount * liquidCash) / totalCash))
+        : 0;
+      const safeAfter = Math.max(0, netCash - liquidAfter);
       this.db.execute(
         `UPDATE player_state
          SET name = ?,
@@ -140,6 +171,8 @@ export class DynastySuccessionService {
              dip_attr = ?,
              cra_attr = ?,
              log_attr = ?,
+             liquid_cash = ?,
+             safe_cash = ?,
              health = 100,
              fatigue = 0,
              morale = 100
@@ -155,7 +188,9 @@ export class DynastySuccessionService {
           Math.min(120, Number(heir.pol_attr)),
           Math.min(120, Number(heir.dip_attr)),
           Math.min(120, Number(heir.cra_attr)),
-          Math.min(120, Number(heir.log_attr))
+          Math.min(120, Number(heir.log_attr)),
+          liquidAfter,
+          safeAfter
         ]
       );
 
@@ -167,8 +202,11 @@ export class DynastySuccessionService {
         gameDate: meta.currentDate,
         counterparty: `Thế Tử Kế Vị (${heir.name_vi})`,
         category: 'DYNASTY_SUCCESSION',
-        balance: totalCash,
-        memo: `Truyền thừa gia nghiệp ngân khố thế hệ ${currentGen + 1}`
+        outflow: charityAmount,
+        balance: netCash,
+        memo: charityAmount > 0
+          ? `Truyền thừa gia nghiệp; trích ${charityAmount.toLocaleString()} Quan làm thiện sự`
+          : `Truyền thừa gia nghiệp ngân khố thế hệ ${currentGen + 1}`
       });
 
       this.db.execute(
@@ -188,6 +226,12 @@ export class DynastySuccessionService {
         'UPDATE family_lineage SET current_generation = current_generation + 1, family_prestige = family_prestige + 500 WHERE family_id = ?;',
         ['FAM-LIANG']
       );
+      if (charityAmount > 0) {
+        this.db.execute(
+          'UPDATE family_lineage SET family_prestige = family_prestige + ? WHERE family_id = ?;',
+          [Math.max(1, Math.round(charityAmount / 500)), 'FAM-LIANG']
+        );
+      }
 
       this.db.execute(
         "UPDATE family_children SET status = 'SUCCESSOR_RULER', is_heir = 1 WHERE child_id = ?;",
@@ -205,17 +249,18 @@ export class DynastySuccessionService {
       );
       const gearCount = Number(gear[0]?.count || 0);
 
-      const narrativeVi = `Đại lễ truyền thừa gia nghiệp hoàn tất! ${predecessor.name} cáo lão thoái ẩn, thụ phong [${posthumousTitle}]. Thế tử ${heir.name_vi} tiếp nhận gia chủ đời thứ ${currentGen + 1}! Toàn bộ ngân khố ${totalCash.toLocaleString()} Quan, ${enterpriseCount} sản nghiệp và thần binh được bảo tồn vẹn nguyên!`;
+      const narrativeVi = `Đại lễ truyền thừa gia nghiệp hoàn tất! ${predecessor.name} cáo lão thoái ẩn, thụ phong [${posthumousTitle}]. Thế tử ${heir.name_vi} tiếp nhận gia chủ đời thứ ${currentGen + 1}! Ngân khố kế thừa ${netCash.toLocaleString()} Quan${charityAmount > 0 ? `, trích ${charityAmount.toLocaleString()} Quan làm thiện sự` : ''}, ${enterpriseCount} sản nghiệp và thần binh được bảo tồn vẹn nguyên!`;
 
       return {
         success: true,
         predecessorName: predecessor.name,
         newProtagonistName: heir.name_vi,
         generation: currentGen + 1,
-        inheritedCash: totalCash,
+        inheritedCash: netCash,
         inheritedEnterprisesCount: enterpriseCount,
         inheritedInventoryValuation: inventoryValuation,
         inheritedGearCount: gearCount,
+        charityAmount,
         narrativeVi
       };
     });
