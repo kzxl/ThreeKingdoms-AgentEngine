@@ -186,6 +186,7 @@ export interface SuccessionResult {
   inheritedGearCount: number;
   charityAmount?: number;
   childPayouts?: Array<{ childId: string; amount: number }>;
+  assetBequests?: Array<{ assetType: string; assetId: string; childId: string }>;
   narrativeVi: string;
 }
 

@@ -31,6 +31,8 @@ export class DynastySuccessionService {
     heirId: string | null;
     charityShareBps: number;
     allocations: Array<{ childId: string; shareBps: number }>;
+    assets: Array<{ assetType: 'BUSINESS' | 'EQUIPMENT'; assetId: string; childId: string }>;
+    availableAssets: Array<{ assetType: 'BUSINESS' | 'EQUIPMENT'; assetId: string; name: string }>;
   } {
     const row = this.db.queryOne<any>(
       'SELECT heir_id, charity_share_bps FROM family_will WHERE character_id = ?;',
@@ -40,10 +42,29 @@ export class DynastySuccessionService {
       'SELECT child_id, share_bps FROM family_will_allocations WHERE character_id = ? ORDER BY child_id;',
       ['PLY-0001']
     );
+    const assets = this.db.query<any>(
+      'SELECT asset_type, asset_id, child_id FROM family_will_assets WHERE character_id = ? ORDER BY asset_type, asset_id;',
+      ['PLY-0001']
+    );
+    const businesses = this.db.query<any>(
+      "SELECT business_id, name FROM businesses WHERE owner_character_id = 'PLY-0001' ORDER BY business_id;"
+    );
+    const equipment = this.db.query<any>(
+      "SELECT item_code, slot_type, custom_name FROM character_equipment WHERE character_id = 'PLY-0001' ORDER BY slot_type;"
+    );
     return {
       heirId: row?.heir_id || null,
       charityShareBps: Math.max(0, Math.min(5000, Number(row?.charity_share_bps || 0))),
-      allocations: allocations.map(item => ({ childId: item.child_id, shareBps: Number(item.share_bps) }))
+      allocations: allocations.map(item => ({ childId: item.child_id, shareBps: Number(item.share_bps) })),
+      assets: assets.map(item => ({ assetType: item.asset_type, assetId: item.asset_id, childId: item.child_id })),
+      availableAssets: [
+        ...businesses.map(item => ({ assetType: 'BUSINESS' as const, assetId: item.business_id, name: item.name })),
+        ...equipment.map(item => ({
+          assetType: 'EQUIPMENT' as const,
+          assetId: item.item_code,
+          name: item.custom_name || `${item.slot_type} • ${item.item_code}`
+        }))
+      ]
     };
   }
 
@@ -51,7 +72,13 @@ export class DynastySuccessionService {
     heirId?: string;
     charityShareBps?: number;
     allocations?: Array<{ childId: string; shareBps: number }>;
-  }): { heirId: string | null; charityShareBps: number; allocations: Array<{ childId: string; shareBps: number }> } {
+    assets?: Array<{ assetType: 'BUSINESS' | 'EQUIPMENT'; assetId: string; childId: string }>;
+  }): {
+    heirId: string | null;
+    charityShareBps: number;
+    allocations: Array<{ childId: string; shareBps: number }>;
+    assets: Array<{ assetType: 'BUSINESS' | 'EQUIPMENT'; assetId: string; childId: string }>;
+  } {
     const current = this.getWill();
     const heirId = input.heirId || current.heirId;
     const charityShareBps = Math.max(0, Math.min(5000, Math.round(Number(input.charityShareBps ?? current.charityShareBps) || 0)));
@@ -62,12 +89,25 @@ export class DynastySuccessionService {
         shareBps: Math.max(0, Math.min(10000, Math.round(Number(item.shareBps) || 0)))
       }))
       .filter(item => item.shareBps > 0);
+    const requestedAssets = Array.isArray(input.assets) ? input.assets : current.assets;
+    const available = new Map(current.availableAssets.map(item => [`${item.assetType}:${item.assetId}`, item]));
+    const assets = requestedAssets
+      .map(item => ({
+        assetType: item.assetType,
+        assetId: String(item.assetId),
+        childId: String(item.childId)
+      }))
+      .filter(item => available.has(`${item.assetType}:${item.assetId}`));
 
     const total = charityShareBps + allocations.reduce((sum, item) => sum + item.shareBps, 0);
     if (total > 10000) {
       throw new Error(`Tổng di chúc vượt 100% (${total / 100}%).`);
     }
     for (const item of allocations) {
+      const child = this.db.queryOne<any>('SELECT child_id FROM family_children WHERE child_id = ?;', [item.childId]);
+      if (!child) throw new Error(`Không tìm thấy hậu duệ ${item.childId}.`);
+    }
+    for (const item of assets) {
       const child = this.db.queryOne<any>('SELECT child_id FROM family_children WHERE child_id = ?;', [item.childId]);
       if (!child) throw new Error(`Không tìm thấy hậu duệ ${item.childId}.`);
     }
@@ -86,8 +126,15 @@ export class DynastySuccessionService {
           ['PLY-0001', item.childId, item.shareBps]
         );
       }
+      this.db.execute('DELETE FROM family_will_assets WHERE character_id = ?;', ['PLY-0001']);
+      for (const item of assets) {
+        this.db.execute(
+          'INSERT INTO family_will_assets (character_id, asset_type, asset_id, child_id) VALUES (?, ?, ?, ?);',
+          ['PLY-0001', item.assetType, item.assetId, item.childId]
+        );
+      }
     });
-    return { heirId, charityShareBps, allocations };
+    return { heirId, charityShareBps, allocations, assets };
   }
 
   private getCampaignMeta(): { activeTurn: number; currentDate: string; campaignId: string } {
@@ -284,6 +331,20 @@ export class DynastySuccessionService {
           [payout.amount, payout.childId]
         );
       }
+      for (const asset of will.assets) {
+        if (asset.childId === heirChildId) continue;
+        if (asset.assetType === 'BUSINESS') {
+          this.db.execute(
+            'UPDATE businesses SET owner_character_id = ? WHERE business_id = ?;',
+            [asset.childId, asset.assetId]
+          );
+        } else {
+          this.db.execute(
+            'UPDATE character_equipment SET character_id = ? WHERE character_id = ? AND item_code = ?;',
+            [asset.childId, 'PLY-0001', asset.assetId]
+          );
+        }
+      }
 
       this.db.execute(
         "UPDATE family_children SET status = 'SUCCESSOR_RULER', is_heir = 1 WHERE child_id = ?;",
@@ -314,6 +375,7 @@ export class DynastySuccessionService {
         inheritedGearCount: gearCount,
         charityAmount,
         childPayouts,
+        assetBequests: will.assets,
         narrativeVi
       };
     });

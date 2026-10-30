@@ -540,6 +540,8 @@ export class FamilyLineageService implements IFamilyLineageService {
     heirId: string | null;
     charityShareBps: number;
     allocations: Array<{ childId: string; shareBps: number }>;
+    assets: Array<{ assetType: 'BUSINESS' | 'EQUIPMENT'; assetId: string; childId: string }>;
+    availableAssets: Array<{ assetType: 'BUSINESS' | 'EQUIPMENT'; assetId: string; name: string }>;
   } {
     return this.successionService.getWill();
   }
@@ -548,7 +550,13 @@ export class FamilyLineageService implements IFamilyLineageService {
     heirId?: string;
     charityShareBps?: number;
     allocations?: Array<{ childId: string; shareBps: number }>;
-  }): { heirId: string | null; charityShareBps: number; allocations: Array<{ childId: string; shareBps: number }> } {
+    assets?: Array<{ assetType: 'BUSINESS' | 'EQUIPMENT'; assetId: string; childId: string }>;
+  }): {
+    heirId: string | null;
+    charityShareBps: number;
+    allocations: Array<{ childId: string; shareBps: number }>;
+    assets: Array<{ assetType: 'BUSINESS' | 'EQUIPMENT'; assetId: string; childId: string }>;
+  } {
     return this.successionService.setWill(input);
   }
 

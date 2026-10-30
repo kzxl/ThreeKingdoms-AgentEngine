@@ -9365,3 +9365,13 @@ textarea {
 .lineage-will-children { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
 .lineage-will-child { display: flex; align-items: center; gap: 8px; font-size: 11px; color: #cbd5e1; }
 .lineage-will-child input { width: 64px; background: #0f172a; color: #e2e8f0; border: 1px solid rgba(148, 163, 184, 0.3); border-radius: 6px; padding: 3px 6px; font-size: 11px; }
+
+/* Will asset bequests */
+.lineage-will-assets { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+.lineage-will-assets .lineage-will-child span { flex: 1; }
+.lineage-will-assets select { background: #0f172a; color: #e2e8f0; border: 1px solid rgba(148, 163, 184, 0.3); border-radius: 6px; padding: 3px 6px; font-size: 11px; max-width: 180px; }
+
+/* Per-item supply shock badge */
+.market-shock { display: inline-block; margin-left: 4px; padding: 0 4px; border-radius: 4px; font-size: 11px; line-height: 1.4; }
+.market-shock--scarce { color: #fca5a5; background: rgba(239, 68, 68, 0.15); }
+.market-shock--surplus { color: #86efac; background: rgba(34, 197, 94, 0.15); }

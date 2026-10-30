@@ -27,7 +27,7 @@ async function loadDeckInventory() {
           <td><code class="mono" style="font-size: 11px; color: #cbd5e1;">${item.item_code}</code></td>
           <td><span title="${desc}" style="font-weight: 500;">${desc}</span></td>
           <td class="num-col font-bold">${item.quantity.toLocaleString()}</td>
-          <td class="num-col">${item.unit_cost_basis.toLocaleString()}</td>
+          <td class="num-col">${item.unit_cost_basis.toLocaleString()} ${item.stockPressure === 'SCARCE' ? '<span class="market-shock market-shock--scarce">Khan</span>' : item.stockPressure === 'SURPLUS' ? '<span class="market-shock market-shock--surplus">Dư</span>' : ''}</td>
           <td style="text-align: center; white-space: nowrap;">
             <button class="btn btn-sm btn-gold" onclick="openQuickTrade('SELL', '${itemCodeEsc}', ${Math.min(10, item.quantity)}, ${estSellPrice})">${dict.btnSell || 'Bán'}</button>
             <button class="btn btn-sm btn-outline" onclick="openQuickTrade('BUY', '${itemCodeEsc}', 10, ${item.estimatedBuyPrice || item.unit_cost_basis || 50})">${dict.btnBuy || 'Mua'}</button>

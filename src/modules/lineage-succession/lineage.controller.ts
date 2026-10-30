@@ -382,7 +382,8 @@ export function registerLineageRoutes(router: Router): void {
       const will = service.setWill({
         heirId: body.heirId,
         charityShareBps: body.charityShareBps,
-        allocations: body.allocations
+        allocations: body.allocations,
+        assets: body.assets
       });
       sendJson(res, 200, { success: true, ...will });
     } catch (err: any) {

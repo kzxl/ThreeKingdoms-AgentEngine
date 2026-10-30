@@ -43,6 +43,7 @@ const HISTORY_TABLES = [
   'unrest_events',
   'family_will',
   'family_will_allocations',
+  'family_will_assets',
   'settlement_market_state',
   'battle_duels',
   'npc_relationship_deltas',

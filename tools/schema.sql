@@ -351,6 +351,14 @@ CREATE TABLE IF NOT EXISTS family_will_allocations (
     PRIMARY KEY (character_id, child_id)
 );
 
+CREATE TABLE IF NOT EXISTS family_will_assets (
+    character_id TEXT NOT NULL,
+    asset_type TEXT NOT NULL CHECK (asset_type IN ('BUSINESS', 'EQUIPMENT')),
+    asset_id TEXT NOT NULL,
+    child_id TEXT NOT NULL,
+    PRIMARY KEY (character_id, asset_type, asset_id)
+);
+
 CREATE TABLE IF NOT EXISTS unrest_events (
     unrest_id TEXT PRIMARY KEY,
     character_id TEXT NOT NULL,

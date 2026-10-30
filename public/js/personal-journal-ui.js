@@ -830,6 +830,20 @@
               `;
             }).join('')}
           </div>
+          <div class="lineage-will-assets">
+            ${(cachedWill.availableAssets || []).map(asset => {
+              const current = (cachedWill.assets || []).find(item => item.assetType === asset.assetType && item.assetId === asset.assetId);
+              return `
+                <label class="lineage-will-child">
+                  <span>${asset.assetType === 'BUSINESS' ? 'Sản nghiệp' : 'Trang bị'}: ${asset.name}</span>
+                  <select class="lineage-will-asset-select" data-asset-type="${asset.assetType}" data-asset-id="${asset.assetId}">
+                    <option value="">— Giữ cho Thế Tử —</option>
+                    ${children.map(c => `<option value="${c.child_id}" ${current?.childId === c.child_id ? 'selected' : ''}>${c.name_vi || c.name}</option>`).join('')}
+                  </select>
+                </label>
+              `;
+            }).join('')}
+          </div>
           <div class="lineage-heir-list">
             ${heirs.length === 0 ? `
               <div class="lineage-heir-empty">Chưa có hậu duệ đủ 18 tuổi để kế vị.</div>
@@ -1010,6 +1024,13 @@
         shareBps: Math.round(Number(input.value || 0) * 100)
       }))
       .filter(item => item.childId && item.shareBps > 0);
+    const assets = Array.from(document.querySelectorAll('.lineage-will-asset-select'))
+      .map(select => ({
+        assetType: select.getAttribute('data-asset-type'),
+        assetId: select.getAttribute('data-asset-id'),
+        childId: select.value
+      }))
+      .filter(item => item.assetType && item.assetId && item.childId);
     const totalBps = charityShareBps + allocations.reduce((sum, item) => sum + item.shareBps, 0);
     if (totalBps > 10000) {
       if (typeof showToast === 'function') showToast('Tổng di chúc vượt quá 100%.', true);
@@ -1019,7 +1040,7 @@
       const res = await fetch('/api/lineage/will', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ charityShareBps, allocations })
+        body: JSON.stringify({ charityShareBps, allocations, assets })
       });
       const data = await res.json();
       if (!data.success) throw new Error(data.error || 'Will save failed');
