@@ -133,6 +133,11 @@
             Khảo Sát
           </button>
 
+          <button class="ui-btn ui-btn--ghost ui-btn--sm" id="btn-market-pulse" onclick="openMarketPulse()"
+                  title="Xem tồn kho, nhu cầu và 12 mốc giá gần nhất của chợ địa phương">
+            Chợ &amp; Giá
+          </button>
+
           <!-- World Map / Dư Đồ Tam Quốc Button -->
           <button class="btn-world-map" id="btn-open-worldmap" onclick="openWorldMap()" title="Mở Dư Đồ Tam Quốc / Open Strategic Campaign Map">
             <span id="txt-btn-worldmap">Dư Đồ Tam Quốc</span>
@@ -468,9 +473,21 @@
     </aside>
   </div>
 
+  <!-- Market pulse: local stock/demand and recent price points -->
+  <div id="market-pulse-modal" class="modal-backdrop hidden">
+    <div class="modal-card market-pulse-card">
+      <div class="modal-header">
+        <h3 class="modal-title">Chợ &amp; Giá Địa Phương</h3>
+        <button class="ui-btn ui-btn--ghost ui-btn--icon" onclick="closeMarketPulse()">&times;</button>
+      </div>
+      <div class="modal-body" id="market-pulse-body">
+        <div class="market-pulse-empty">Đang tải dữ liệu chợ…</div>
+      </div>
+    </div>
+  </div>
+
   <!-- Interactive Quick Trade Modal -->
-  <div id="trade-modal" class="modal-backdrop hidden">
-    <div class="modal-card">
+  <div id="trade-modal" class="modal-backdrop hidden">    <div class="modal-card">
       <div class="modal-header">
         <h3 class="modal-title" id="trade-modal-title">Giao Dịch Vật Phẩm</h3>
         <button class="ui-btn ui-btn--ghost ui-btn--icon" onclick="closeTradeModal()">&times;</button>

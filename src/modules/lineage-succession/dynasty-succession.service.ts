@@ -50,7 +50,7 @@ export class DynastySuccessionService {
       "SELECT business_id, name FROM businesses WHERE owner_character_id = 'PLY-0001' ORDER BY business_id;"
     );
     const equipment = this.db.query<any>(
-      "SELECT item_code, slot_type, custom_name FROM character_equipment WHERE character_id = 'PLY-0001' ORDER BY slot_type;"
+      "SELECT id, item_code, slot_type, custom_name FROM character_equipment WHERE character_id = 'PLY-0001' ORDER BY slot_type, id;"
     );
     return {
       heirId: row?.heir_id || null,
@@ -61,7 +61,7 @@ export class DynastySuccessionService {
         ...businesses.map(item => ({ assetType: 'BUSINESS' as const, assetId: item.business_id, name: item.name })),
         ...equipment.map(item => ({
           assetType: 'EQUIPMENT' as const,
-          assetId: item.item_code,
+          assetId: String(item.id),
           name: item.custom_name || `${item.slot_type} • ${item.item_code}`
         }))
       ]
@@ -340,8 +340,8 @@ export class DynastySuccessionService {
           );
         } else {
           this.db.execute(
-            'UPDATE character_equipment SET character_id = ? WHERE character_id = ? AND item_code = ?;',
-            [asset.childId, 'PLY-0001', asset.assetId]
+            'UPDATE character_equipment SET character_id = ? WHERE id = ? AND character_id = ?;',
+            [asset.childId, asset.assetId, 'PLY-0001']
           );
         }
       }

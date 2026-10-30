@@ -9,10 +9,10 @@
 
 import { DatabaseService } from '../../core/database';
 import { RngService } from '../../core/rng';
-import { nextId } from '../../shared/id-generator';
 import { fameRatio } from '../../shared/prestige';
 import { PrestigeService } from './prestige.service';
 import { UnrestService } from '../faction-politics/unrest.service';
+import { RetainerDepartureConsequence } from '../faction-politics/unrest-consequence';
 
 export interface RetainerDeparture {
   npcId: string;
@@ -68,30 +68,21 @@ export class RetainerLoyaltyService {
         });
         const desertionChance = Math.min(0.85, 0.1 + risk * 0.5);
         if (loyalty < 30 && rng.chance(desertionChance)) {
-          this.db.execute(
-            "UPDATE npc_state SET loyalty = 0, assigned_business_id = NULL, assigned_role = 'DEPARTED', monthly_wage = 0 WHERE npc_id = ?;",
-            [retainer.npc_id]
-          );
           const narrativeVi = `${retainer.name} thất vọng vì chủ công chỉ có ${fame} danh vọng, xin rời đi.`;
           const narrativeEn = `${retainer.name} lost faith in a lord with only ${fame} fame and left.`;
-          this.db.execute(
-            `INSERT INTO retainer_departures
-              (departure_id, character_id, npc_id, npc_name, game_date, fame_at_departure, loyalty_before, reason, narrative_vi, narrative_en)
-             VALUES (?, ?, ?, ?, ?, ?, ?, 'LOW_FAME', ?, ?);`,
-            [nextId(this.db, 'retainer_departures', 'DEP', date), characterId, retainer.npc_id, retainer.name, date, fame, loyaltyBefore, narrativeVi, narrativeEn]
-          );
-          departures.push({ npcId: retainer.npc_id, name: retainer.name, loyaltyBefore, reason: 'LOW_FAME' });
-          UnrestService.forDatabase(this.db).record({
+          new RetainerDepartureConsequence(this.db, {
             characterId,
             source: 'RETAINER',
             npcId: retainer.npc_id,
             npcName: retainer.name,
             eventType: 'DEPARTURE',
             severity: Math.min(1, (30 - loyalty) / 30 + 0.2),
+            fame,
             gameDate: date,
             detailVi: narrativeVi,
             detailEn: narrativeEn
-          });
+          }, loyaltyBefore).execute();
+          departures.push({ npcId: retainer.npc_id, name: retainer.name, loyaltyBefore, reason: 'LOW_FAME' });
         } else {
           this.db.execute('UPDATE npc_state SET loyalty = ? WHERE npc_id = ?;', [loyalty, retainer.npc_id]);
         }

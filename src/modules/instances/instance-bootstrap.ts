@@ -45,6 +45,7 @@ const HISTORY_TABLES = [
   'family_will_allocations',
   'family_will_assets',
   'settlement_market_state',
+  'settlement_market_history',
   'battle_duels',
   'npc_relationship_deltas',
   'npc_journey_logs',

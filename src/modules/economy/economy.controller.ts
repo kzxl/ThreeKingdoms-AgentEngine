@@ -177,6 +177,32 @@ export function registerEconomyRoutes(router: Router): void {
   router.get('/api/market', handleGetMarket);
   router.get('/api/economy/market', handleGetMarket);
 
+  // Market pulse: local stock/demand and the last 12 monthly points.
+  router.get('/api/economy/settlement-market', (_req: any, res: any, ctx: RouteContext) => {
+    try {
+      const player = db.queryOne<{ current_location: string }>(
+        'SELECT current_location FROM player_state WHERE player_id = ?;',
+        ['PLY-0001']
+      );
+      const requested = (ctx.query.settlementId as string) || player?.current_location || 'LOC-0001';
+      const settlementId = LOC_TO_NODE_MAP[requested] || requested;
+      const market = SettlementMarketService.forDatabase(db);
+      const rows = market.getMarketPulse(settlementId, Number(ctx.query.limit));
+      const names = new Map(
+        db.query<{ item_code: string; name_vi: string }>(
+          'SELECT item_code, name_vi FROM master_items;'
+        ).map(item => [item.item_code, item.name_vi])
+      );
+      sendJson(res, 200, {
+        success: true,
+        settlementId,
+        items: rows.map(row => ({ ...row, nameVi: names.get(row.itemCode) || row.itemCode }))
+      });
+    } catch (err: any) {
+      sendJson(res, 500, { success: false, error: err.message });
+    }
+  });
+
   // -------------------------------------------------------------
   // 2. POST /api/market/quote & /api/strategy/price-check
   // -------------------------------------------------------------

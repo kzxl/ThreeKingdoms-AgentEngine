@@ -323,6 +323,18 @@ CREATE TABLE IF NOT EXISTS settlement_market_state (
     PRIMARY KEY (settlement_id, item_code)
 );
 
+CREATE TABLE IF NOT EXISTS settlement_market_history (
+    history_id TEXT PRIMARY KEY,
+    settlement_id TEXT NOT NULL,
+    item_code TEXT NOT NULL,
+    game_date TEXT NOT NULL,
+    stock REAL NOT NULL,
+    demand REAL NOT NULL,
+    stock_multiplier REAL NOT NULL,
+    local_multiplier REAL NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS retainer_departures (
     departure_id TEXT PRIMARY KEY,
     character_id TEXT NOT NULL,

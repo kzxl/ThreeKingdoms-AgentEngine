@@ -9375,3 +9375,11 @@ textarea {
 .market-shock { display: inline-block; margin-left: 4px; padding: 0 4px; border-radius: 4px; font-size: 11px; line-height: 1.4; }
 .market-shock--scarce { color: #fca5a5; background: rgba(239, 68, 68, 0.15); }
 .market-shock--surplus { color: #86efac; background: rgba(34, 197, 94, 0.15); }
+
+/* Market pulse modal */
+.market-pulse-card { width: min(820px, 94vw); }
+.market-pulse-table { width: 100%; border-collapse: collapse; font-size: 11px; color: #cbd5e1; }
+.market-pulse-table th, .market-pulse-table td { padding: 6px 8px; border-bottom: 1px solid rgba(148, 163, 184, 0.15); text-align: left; }
+.market-pulse-table th { color: #94a3b8; font-weight: 600; }
+.market-pulse-history { color: #94a3b8; white-space: nowrap; }
+.market-pulse-empty { padding: 20px; text-align: center; color: #94a3b8; font-size: 11px; }

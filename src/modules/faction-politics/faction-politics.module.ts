@@ -10,6 +10,7 @@ import { DatabaseService } from '../../core/database';
 import { PrestigeService } from '../progression/prestige.service';
 import { fameRatio } from '../../shared/prestige';
 import { UnrestService } from './unrest.service';
+import { OfficerUnrestConsequence } from './unrest-consequence';
 import { isTurnModuleDone, markTurnModuleDone } from '../../shared/turn-ledger';
 import {
   IFeatureModule,
@@ -408,7 +409,8 @@ export class FactionPoliticsModule implements IFeatureModule {
           narrativeVi,
           consequences
         });
-        UnrestService.forDatabase(this.db).record({
+        new OfficerUnrestConsequence(this.db, {
+          characterId: 'PLY-0001',
           source: 'OFFICER',
           npcId: off.officer_id,
           npcName: off.officer_name,
@@ -417,7 +419,7 @@ export class FactionPoliticsModule implements IFeatureModule {
           gameDate,
           detailVi: narrativeVi,
           detailEn: `${off.officer_name} seceded with ${off.settlement_name}.`
-        });
+        }).execute();
       } else {
         // Dissatisfied Officer Defection Plot
         const eventId = `EVT-DEF-${turnNumber}-${off.officer_id}`;
@@ -447,7 +449,8 @@ export class FactionPoliticsModule implements IFeatureModule {
           narrativeVi,
           consequences
         });
-        UnrestService.forDatabase(this.db).record({
+        new OfficerUnrestConsequence(this.db, {
+          characterId: 'PLY-0001',
           source: 'OFFICER',
           npcId: off.officer_id,
           npcName: off.officer_name,
@@ -456,7 +459,7 @@ export class FactionPoliticsModule implements IFeatureModule {
           gameDate,
           detailVi: narrativeVi,
           detailEn: `${off.officer_name} is secretly courting defection.`
-        });
+        }).execute();
       }
     }
 

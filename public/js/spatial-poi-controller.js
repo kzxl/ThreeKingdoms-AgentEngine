@@ -248,6 +248,42 @@
     }
   }
 
+  async function openMarketPulse() {
+    const modal = document.getElementById('market-pulse-modal');
+    const body = document.getElementById('market-pulse-body');
+    if (!modal || !body) return;
+    modal.classList.remove('hidden');
+    body.innerHTML = '<div class="market-pulse-empty">Đang tải dữ liệu chợ…</div>';
+    try {
+      const res = await fetch('/api/economy/settlement-market?limit=40');
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || 'Không tải được chợ');
+      body.innerHTML = `
+        <table class="market-pulse-table">
+          <thead><tr><th>Mặt hàng</th><th>Tồn</th><th>Nhu cầu</th><th>Hệ số</th><th>12 mốc gần nhất</th></tr></thead>
+          <tbody>
+            ${(data.items || []).map(item => `
+              <tr>
+                <td>${item.nameVi}</td>
+                <td>${Number(item.stock).toFixed(1)}</td>
+                <td>${Number(item.demand).toFixed(1)}</td>
+                <td><span class="market-shock ${item.pressure === 'SCARCE' ? 'market-shock--scarce' : item.pressure === 'SURPLUS' ? 'market-shock--surplus' : ''}">${Number(item.localMultiplier).toFixed(2)}×</span></td>
+                <td class="market-pulse-history">${(item.history || []).map(point => Number(point.stock_multiplier).toFixed(2)).join(' · ') || '—'}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    } catch (err) {
+      body.innerHTML = `<div class="market-pulse-empty danger-text">${err.message}</div>`;
+    }
+  }
+
+  function closeMarketPulse() {
+    const modal = document.getElementById('market-pulse-modal');
+    if (modal) modal.classList.add('hidden');
+  }
+
   return {
     init,
     updateActionDock,
@@ -256,6 +292,8 @@
     resolvePoiType,
     assertPresence,
     exploreCurrentPoi,
+    openMarketPulse,
+    closeMarketPulse,
     getCurrentSubLocation: () => currentSubLocation
   };
 });
