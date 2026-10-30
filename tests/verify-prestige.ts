@@ -12,6 +12,7 @@ import os from 'os';
 import path from 'path';
 import { DatabaseService } from '../src/core/database';
 import { PrestigeService } from '../src/modules/progression/prestige.service';
+import { SpecialistWorkforceService } from '../src/modules/professions/features/workforce/specialist-workforce.service';
 import {
   applyFameDecay,
   effectiveFameGain,
@@ -99,6 +100,27 @@ function run(): void {
     const npcAward = service.award(npcId, { rawGain: 100, reason: 'TEST_NPC_DEED', gameDate: '184-05-04' });
     assert.strictEqual(service.getFame(npcId), npcAward.after, 'NPC fame must persist in the progression row');
     assert(npcAward.after >= npcBefore, 'NPC fame must not decrease on an award');
+
+    // 7. Fame lowers the hiring price; the client cannot set it.
+    const workforce = new SpecialistWorkforceService(db);
+    const candidates = workforce.getAvailableSpecialists(undefined, 'PLY-0001');
+    assert(candidates.length > 0, 'workforce catalog must have candidates');
+    for (const candidate of candidates) {
+      assert(candidate.effectiveSigningBonus <= candidate.signingBonus, 'fame discount must not raise the price');
+      assert(candidate.effectiveSigningBonus >= 1, 'fame discount must not make hiring free');
+    }
+    const hireable = candidates.find(candidate => !candidate.isHired);
+    if (hireable) {
+      const hired = workforce.hireSpecialist({
+        characterId: 'PLY-0001',
+        npcId: hireable.npcId,
+        businessId: 'BIZ-0001',
+        role: hireable.recommendedRole,
+        signingBonus: 1
+      });
+      assert.strictEqual(hired.signingBonusPaid, hireable.effectiveSigningBonus, 'hire must charge the server quote');
+      assert.strictEqual(hired.fameTierCode, getFameTier(service.getFame('PLY-0001')).code, 'hire result must expose the fame tier');
+    }
   } finally {
     db.close();
     try {

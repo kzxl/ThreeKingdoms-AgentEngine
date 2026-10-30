@@ -28,6 +28,7 @@ import { ProgressionExpService } from '../progression/attribute-progression.serv
 import { RngService } from '../../core/rng';
 import { nextSequentialId } from '../../shared/id-generator';
 import { postCashflowEntry } from '../../shared/ledger';
+import { PrestigeService } from '../progression/prestige.service';
 
 // ---------------------------------------------------------------------------
 // 1. Data Contracts & Types
@@ -102,6 +103,9 @@ export interface DuelRewards {
   prizeCash?: number;
   caravanSaved?: boolean;
   fatigueDelta?: number;
+  fameDelta?: number;
+  fameAfter?: number;
+  fameTierCode?: string;
 }
 
 export interface DuelResult {
@@ -1102,6 +1106,38 @@ export class SingleCombatDuelService {
       summaryNarrativeVi,
       summaryNarrativeEn
     };
+
+    // Fame follows the same public/private distinction as the duel itself:
+    // sparring never shames the loser, while arena and caravan duels do.
+    if (duel.metadata?.commitDb !== false) {
+      const prestige = PrestigeService.forDatabase(this.db);
+      const playerGain = isDraw
+        ? 5
+        : duel.context === 'FRIENDLY_SPARRING'
+          ? (isVictory ? 10 : 5)
+          : duel.context === 'TOURNAMENT_ARENA'
+            ? (isVictory ? 60 : -15)
+            : (isVictory ? 40 : -10);
+      const opponentGain = isDraw
+        ? 5
+        : duel.context === 'FRIENDLY_SPARRING'
+          ? (isVictory ? 5 : 10)
+          : duel.context === 'TOURNAMENT_ARENA'
+            ? (isVictory ? -15 : 60)
+            : (isVictory ? -10 : 40);
+
+      const playerChange = playerGain >= 0
+        ? prestige.award(player.characterId, { rawGain: playerGain, reason: `DUEL_${duel.context}`, sourceId: duel.duelId, gameDate: this.getGameDate() })
+        : prestige.penalize(player.characterId, { rawGain: playerGain, reason: `DUEL_${duel.context}`, sourceId: duel.duelId, gameDate: this.getGameDate() });
+      if (opponentGain >= 0) {
+        prestige.award(opponent.characterId, { rawGain: opponentGain, reason: `DUEL_${duel.context}`, sourceId: duel.duelId, gameDate: this.getGameDate() });
+      } else {
+        prestige.penalize(opponent.characterId, { rawGain: opponentGain, reason: `DUEL_${duel.context}`, sourceId: duel.duelId, gameDate: this.getGameDate() });
+      }
+      rewards.fameDelta = playerChange.delta;
+      rewards.fameAfter = playerChange.after;
+      rewards.fameTierCode = playerChange.tier.code;
+    }
 
     // Record chronicle row in session_duels
     try {

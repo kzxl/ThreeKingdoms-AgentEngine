@@ -16,7 +16,8 @@ export function registerSpecialistWorkforceRoutes(router: Router): void {
   router.get('/api/workforce/specialists', async (_req: any, res: any, ctx: RouteContext) => {
     try {
       const locationId = ctx.query.locationId as string | undefined;
-      const specialists = service.getAvailableSpecialists(locationId);
+      const characterId = (ctx.query.characterId as string) || 'PLY-0001';
+      const specialists = service.getAvailableSpecialists(locationId, characterId);
       sendJson(res, 200, {
         success: true,
         count: specialists.length,
@@ -45,7 +46,7 @@ export function registerSpecialistWorkforceRoutes(router: Router): void {
   // 2. POST /api/workforce/hire
   router.post('/api/workforce/hire', async (_req: any, res: any, ctx: RouteContext) => {
     try {
-      let { npcId, candidateName, businessId, role, signingBonus = 250, characterId = 'PLY-0001' } = ctx.body || {};
+      let { npcId, candidateName, businessId, role, characterId = 'PLY-0001' } = ctx.body || {};
 
       if (!npcId && candidateName) {
         // Resolve npcId by candidateName from master_characters
@@ -74,8 +75,7 @@ export function registerSpecialistWorkforceRoutes(router: Router): void {
         characterId,
         npcId,
         businessId,
-        role,
-        signingBonus: parseInt(signingBonus, 10)
+        role
       });
 
       sendJson(res, 200, result);

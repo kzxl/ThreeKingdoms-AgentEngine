@@ -10,6 +10,8 @@
 
 import { DatabaseService } from '../../../../core/database';
 import { recordFinancialTransaction } from '../../../../shared/financial-transaction';
+import { PrestigeService } from '../../../progression/prestige.service';
+import { fameEffects } from '../../../../shared/prestige';
 
 export interface SpecialistCandidate {
   npcId: string;
@@ -32,6 +34,8 @@ export interface SpecialistCandidate {
   assignedRole?: string | null;
   monthlyWage: number;
   signingBonus: number;
+  effectiveSigningBonus: number;
+  fameDiscount: number;
   efficiencyBonus: number;
   recommendedRole: string;
 }
@@ -53,6 +57,9 @@ export interface HireSpecialistResult {
   assignedRole: string;
   monthlyWage: number;
   signingBonusPaid: number;
+  baseSigningBonus: number;
+  fameDiscount: number;
+  fameTierCode: string;
   newEfficiencyMultiplier: number;
   newWorkforceCount: number;
   messageVi: string;
@@ -76,7 +83,10 @@ export class SpecialistWorkforceService {
   /**
    * Retrieves all auxiliary specialist candidates across settlements.
    */
-  public getAvailableSpecialists(locationId?: string): SpecialistCandidate[] {
+  public getAvailableSpecialists(locationId?: string, characterId = 'PLY-0001'): SpecialistCandidate[] {
+    const prestige = PrestigeService.forDatabase(this.db);
+    const fame = prestige.getFame(characterId);
+    const discount = fameEffects(fame).hireDiscount;
     let sql = `
       SELECT 
         mc.npc_id as npcId,
@@ -113,37 +123,11 @@ export class SpecialistWorkforceService {
 
     return rows.map((r) => {
       const isHired = !!r.assignedBusinessId;
-      const isManager = r.baselinePositionVi.includes('Chưởng Quỹ') || r.baselinePositionVi.includes('Quản Gia');
-      const isSmith = r.baselinePositionVi.includes('Thợ Rèn') || r.baselinePositionVi.includes('Đúc');
-      const isEscort = r.baselinePositionVi.includes('Tiêu Đầu') || r.baselinePositionVi.includes('Hộ Vệ');
-      const isWeaver = r.baselinePositionVi.includes('Dệt') || r.baselinePositionVi.includes('Chức');
-
-      let recommendedRole = 'ASSISTANT_WORKER';
-      let signingBonus = 200;
-      let monthlyWage = 350;
-      let efficiencyBonus = 0.15;
-
-      if (isManager) {
-        recommendedRole = 'ACCOUNTANT_MANAGER';
-        signingBonus = 400;
-        monthlyWage = 500;
-        efficiencyBonus = 0.25;
-      } else if (isSmith) {
-        recommendedRole = 'MASTER_BLACKSMITH';
-        signingBonus = 350;
-        monthlyWage = 450;
-        efficiencyBonus = 0.20;
-      } else if (isEscort) {
-        recommendedRole = 'CARAVAN_ESCORT_CHIEF';
-        signingBonus = 300;
-        monthlyWage = 400;
-        efficiencyBonus = 0.18;
-      } else if (isWeaver) {
-        recommendedRole = 'MASTER_WEAVER';
-        signingBonus = 250;
-        monthlyWage = 380;
-        efficiencyBonus = 0.18;
-      }
+      const profile = this.deriveRoleProfile(r.baselinePositionVi);
+      const signingBonus = profile.signingBonus;
+      const recommendedRole = profile.recommendedRole;
+      const monthlyWage = profile.monthlyWage;
+      const efficiencyBonus = profile.efficiencyBonus;
 
       return {
         npcId: r.npcId,
@@ -166,10 +150,39 @@ export class SpecialistWorkforceService {
         assignedRole: r.assignedRole,
         monthlyWage: r.currentWage || monthlyWage,
         signingBonus,
+        effectiveSigningBonus: this.applyFameDiscount(signingBonus, discount),
+        fameDiscount: discount,
         efficiencyBonus,
         recommendedRole
       };
     });
+  }
+
+  /** Role tiers are derived in one place so hire pricing and listing cannot drift. */
+  private deriveRoleProfile(positionVi: string): {
+    recommendedRole: string;
+    signingBonus: number;
+    monthlyWage: number;
+    efficiencyBonus: number;
+  } {
+    const position = String(positionVi || '');
+    if (position.includes('Chưởng Quỹ') || position.includes('Quản Gia')) {
+      return { recommendedRole: 'ACCOUNTANT_MANAGER', signingBonus: 400, monthlyWage: 500, efficiencyBonus: 0.25 };
+    }
+    if (position.includes('Thợ Rèn') || position.includes('Đúc')) {
+      return { recommendedRole: 'MASTER_BLACKSMITH', signingBonus: 350, monthlyWage: 450, efficiencyBonus: 0.2 };
+    }
+    if (position.includes('Tiêu Đầu') || position.includes('Hộ Vệ')) {
+      return { recommendedRole: 'CARAVAN_ESCORT_CHIEF', signingBonus: 300, monthlyWage: 400, efficiencyBonus: 0.18 };
+    }
+    if (position.includes('Dệt') || position.includes('Chức')) {
+      return { recommendedRole: 'MASTER_WEAVER', signingBonus: 250, monthlyWage: 380, efficiencyBonus: 0.18 };
+    }
+    return { recommendedRole: 'ASSISTANT_WORKER', signingBonus: 200, monthlyWage: 350, efficiencyBonus: 0.15 };
+  }
+
+  private applyFameDiscount(base: number, discount: number): number {
+    return Math.max(1, Math.round(base * (1 - Math.max(0, Math.min(0.5, discount)))));
   }
 
   /**
@@ -210,7 +223,7 @@ export class SpecialistWorkforceService {
    * Executes hiring agreement with ACID transaction and double-entry accounting.
    */
   public hireSpecialist(input: HireSpecialistInput): HireSpecialistResult {
-    const { characterId = 'PLY-0001', npcId, businessId, role, signingBonus = 250 } = input;
+    const { characterId = 'PLY-0001', npcId, businessId, role } = input;
 
     // 1. Validate master character
     const masterChar = this.db.queryOne<any>(
@@ -243,6 +256,14 @@ export class SpecialistWorkforceService {
     const isManager = assignedRole.includes('MANAGER') || masterChar.baseline_position_vi.includes('Chưởng Quỹ');
     const monthlyWage = isManager ? 500 : 380;
     const efficiencyIncrease = isManager ? 0.25 : 0.15;
+
+    // The server owns the signing price; a client-supplied value is ignored.
+    // Fame lowers it by up to 10%, never to zero.
+    const prestige = PrestigeService.forDatabase(this.db);
+    const fame = prestige.getFame(characterId);
+    const fameDiscount = fameEffects(fame).hireDiscount;
+    const baseSigningBonus = this.deriveRoleProfile(masterChar.baseline_position_vi).signingBonus;
+    const signingBonus = this.applyFameDiscount(baseSigningBonus, fameDiscount);
 
     // 4. Execute atomic transaction
     return this.db.transaction(() => {
@@ -318,6 +339,9 @@ export class SpecialistWorkforceService {
         assignedRole,
         monthlyWage,
         signingBonusPaid: costPaid,
+        baseSigningBonus,
+        fameDiscount,
+        fameTierCode: prestige.getTier(characterId).code,
         newEfficiencyMultiplier: newEfficiency,
         newWorkforceCount: newWorkforce,
         messageVi: `Đã ký kết hợp đồng chiêu mộ ${masterChar.name_vi} thành công! Đảm nhiệm: ${assignedRole} tại ${business.name}. Hiệu suất vận hành tăng lên ${(newEfficiency * 100).toFixed(0)}%.`
