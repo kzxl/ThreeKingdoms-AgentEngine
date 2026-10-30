@@ -49,11 +49,13 @@ It exposes `getFame`, `getTier`, `award`, `penalize`, `decayInactive` and
   career milestones `90/190/250 → 900/1,900/2,500`, family gains `+15/+25/+50 →
   +150/+250/+500`, family default `100 → 1,000`.
 
-## Wired systems (1.6.9)
+## Wired systems (1.6.10)
 
-1. **Recruitment:** `getAvailableSpecialists` exposes `effectiveSigningBonus` and
-   `fameDiscount`; `hireSpecialist` ignores the client price and charges the
-   server quote. Fame lowers the signing bonus by up to 10%.
+1. **Recruitment:** `getAvailableSpecialists` exposes `effectiveSigningBonus`,
+   `fameDiscount`, `minFame`, `eligible` and a locked reason; `hireSpecialist`
+   ignores the client price, charges the server quote and rejects a candidate
+   below the fame gate. Gates: worker 0, weaver 300, escort 500, smith 800,
+   manager 1,200.
 2. **Market:** `quoteFromReference` applies a 10% merchant spread plus a fame
    buy discount (max 5%) and sell bonus (max 4%). Buy stays above sell, so
    same-settlement arbitrage is impossible. Used by `SimulationCore`, `/api/trade`,
@@ -61,10 +63,13 @@ It exposes `getFame`, `getTier`, `award`, `penalize`, `decayInactive` and
 3. **Duels:** sparring never shames the loser (+5/+10); arena/caravan duels award
    +60/+40 for a win and -15/-10 for a loss. Both characters change fame and the
    result carries `fameDelta`, `fameAfter`, `fameTierCode`.
+4. **Inactivity decay:** month close reads the last `prestige_events` date for
+   the player and applies `decayInactive` when six or more months passed. The
+   monthly report shows fame and the decay delta.
 
 ## Still staged
 
-1. NPC self-arrival and a fame-gated recruitment pool.
+1. NPC self-arrival events and a monthly volunteer pool.
 2. Rare item discovery (`discoveryChance = 3% + fameRatio × 20%`, tier gates).
 3. World/regional price multipliers (crisis, season, local stock) on top of the
    reference quote.

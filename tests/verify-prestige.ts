@@ -66,6 +66,26 @@ function run(): void {
     const playerBefore = service.getFame('PLY-0001');
     assert(playerBefore >= 500, 'player starts at the 500 fame baseline');
 
+    // A top-tier manager is visible but locked until fame 1,200.
+    const gateWorkforce = new SpecialistWorkforceService(db);
+    const lockedManager = gateWorkforce
+      .getAvailableSpecialists(undefined, 'PLY-0001')
+      .find(candidate => candidate.recommendedRole === 'ACCOUNTANT_MANAGER' && !candidate.isHired);
+    if (lockedManager) {
+      assert.strictEqual(lockedManager.eligible, false, 'manager must be fame-gated at 500 fame');
+      assert(lockedManager.minFame > playerBefore, 'locked reason must name a higher threshold');
+      assert.throws(
+        () => gateWorkforce.hireSpecialist({
+          characterId: 'PLY-0001',
+          npcId: lockedManager.npcId,
+          businessId: 'BIZ-0001',
+          role: lockedManager.recommendedRole
+        }),
+        /Danh vọng chưa đủ/,
+        'hiring below the fame gate must fail'
+      );
+    }
+
     const award = service.award('PLY-0001', {
       rawGain: 600,
       reason: 'TEST_CIVIC_DEED',
@@ -92,6 +112,9 @@ function run(): void {
     assert.strictEqual(drop.after, 0, 'fame floors at zero');
     assert.strictEqual(service.getFame('PLY-0001'), 0, 'zero fame persists');
     assert.strictEqual(getFameTier(0).code, 'NOBODY', 'zero fame is the Unknown tier, not a defeat');
+
+    // Rebuild fame so the hiring gate can be exercised after the zero test.
+    service.award('PLY-0001', { rawGain: 2000, reason: 'TEST_RECOVERY', gameDate: '184-05-03' });
 
     // 6. NPC fame is written to the existing progression table.
     const npcId = db.queryOne<any>('SELECT npc_id FROM npc_personal_progression LIMIT 1;')?.npc_id;

@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.6.10] - 2026-10-30
+
+Fame gates and inactivity decay.
+
+### Changed
+- Specialist candidates expose `minFame`, `eligible` and a locked reason; role
+  gates are worker 0, weaver 300, escort 500, smith 800, manager 1,200.
+- `hireSpecialist` rejects a candidate below the gate before any cash moves.
+- Month close reads the player's last `prestige_events` date and applies
+  `decayInactive` after six inactive months; the report shows the delta.
+- The monthly report adds a Danh vọng row.
+
+### Verification
+`npm run verify` green: 26/26 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,358 invariants, 0 discrepancies. `verify-prestige` covers the
+locked manager at 500 fame and the eligible hire after recovery.
+
+---
+
 ## [1.6.9] - 2026-10-30
 
 Prestige effects wired into recruitment, prices and duels.
