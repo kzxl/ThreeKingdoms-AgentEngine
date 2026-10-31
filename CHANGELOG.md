@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.28.0] - 2026-10-31
+
+Settlement treasuries now have a double-entry ledger too.
+
+### Added
+- Migration 052 creates `settlement_ledger` with an `OPENING` row per settlement.
+- `postSettlementEntry` updates `session_settlements.treasury_cash` and appends
+  one ledger row in a transaction; outflow is clamped to the available treasury.
+- Siege loot now goes through the ledger instead of a direct treasury update.
+- The auditor proves `opening + inflow − outflow = treasury_cash` for every
+  settlement and reports drift. Invariants: 1,546.
+- `tests/verify-settlement-ledger.ts` covers opening, a loot flow and drift.
+
+### Verification
+`npm run verify` green: 62/62 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,546 invariants, 0 discrepancies.
+
+---
+
 ## [1.27.1] - 2026-10-31
 
 Idempotency extended to the remaining player mutations.

@@ -20,6 +20,7 @@ import { SpatialGuardService } from '../progression/spatial-guard.service';
 import { recordFinancialTransaction } from '../../shared/financial-transaction';
 import { chargePlayerAction } from '../../shared/action-time';
 import { requestIdempotencyKey, findIdempotentResult, recordAction } from '../../shared/action-journal';
+import { postSettlementEntry } from '../../shared/settlement-ledger';
 
 function getMilitaryModule(): MilitaryModule | undefined {
   return ModuleRegistry.getInstance().get<MilitaryModule>('module.military');
@@ -684,12 +685,20 @@ export function registerMilitaryRoutes(router: Router): void {
         let lootQian = 0;
         if (isVictory) {
           lootQian = Math.round(target.treasury_cash * 0.3);
-          db.execute('UPDATE session_settlements SET garrison_troops = ?, defense = ?, treasury_cash = treasury_cash - ? WHERE settlement_id = ?', [
+          db.execute('UPDATE session_settlements SET garrison_troops = ?, defense = ? WHERE settlement_id = ?', [
             remainingGarrison,
             newDefense,
-            lootQian,
             targetSettlementId
           ]);
+          if (lootQian > 0) {
+            postSettlementEntry(db, {
+              settlementId: targetSettlementId,
+              category: 'WAR_LOOT',
+              counterparty: 'Chiến lợi phẩm',
+              outflow: lootQian,
+              memo: `Cướp phá thành trì ${targetSettlementId}`
+            });
+          }
           if (lootQian > 0) {
             recordFinancialTransaction(db, {
               category: 'WAR_LOOT',

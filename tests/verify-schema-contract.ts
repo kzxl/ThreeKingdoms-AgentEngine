@@ -33,7 +33,8 @@ const REQUIRED_TABLES = [
   'intel_reports',
   'master_crops',
   'land_parcels',
-  'faction_ledger'
+  'faction_ledger',
+  'settlement_ledger'
 ];
 
 const REQUIRED_COLUMNS: Record<string, string[]> = {

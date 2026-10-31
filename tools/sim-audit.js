@@ -293,7 +293,7 @@ function auditSqliteFactionsAndSettlements() {
   // Check if session_factions and session_settlements exist in sqlite_master
   let tableCheck = [];
   try {
-    tableCheck = runSqlJson(`SELECT name FROM sqlite_master WHERE type='table' AND name IN ('session_factions', 'session_settlements', 'npc_personal_progression', 'merchant_promissory_notes', 'faction_diplomacy', 'faction_ledger');`);
+    tableCheck = runSqlJson(`SELECT name FROM sqlite_master WHERE type='table' AND name IN ('session_factions', 'session_settlements', 'npc_personal_progression', 'merchant_promissory_notes', 'faction_diplomacy', 'faction_ledger', 'settlement_ledger');`);
   } catch (e) {
     return { passed: true, checksCount: 0, errors: [], installed: false, factionCount: 0, settlementCount: 0, progCount: 0, noteCount: 0, diploCount: 0 };
   }
@@ -345,7 +345,25 @@ function auditSqliteFactionsAndSettlements() {
   }
 
   // 2. Audit Settlements
-  const settlements = runSqlJson(`SELECT settlement_id, garrison_troops, defense, granary_grain FROM session_settlements;`);
+  const hasSettlementLedger = existingTables.has('settlement_ledger');
+  if (!hasSettlementLedger) {
+    checksCount++;
+    errors.push('settlement_ledger table is missing; settlement treasury changes are not auditable');
+  }
+  const settlementLedgerBySettlement = new Map();
+  if (hasSettlementLedger) {
+    for (const row of runSqlJson(`SELECT settlement_id, category, inflow, outflow FROM settlement_ledger;`)) {
+      const current = settlementLedgerBySettlement.get(row.settlement_id)
+        || { opening: 0, inflow: 0, outflow: 0, entries: 0 };
+      if (row.category === 'OPENING') current.opening += Number(row.inflow || 0);
+      else current.inflow += Number(row.inflow || 0);
+      current.outflow += Number(row.outflow || 0);
+      current.entries += 1;
+      settlementLedgerBySettlement.set(row.settlement_id, current);
+    }
+  }
+
+  const settlements = runSqlJson(`SELECT settlement_id, garrison_troops, defense, granary_grain, treasury_cash FROM session_settlements;`);
   for (const s of settlements) {
     checksCount++;
     if (s.garrison_troops < 0) {
@@ -358,6 +376,19 @@ function auditSqliteFactionsAndSettlements() {
     checksCount++;
     if (Number(s.granary_grain) < 0) {
       errors.push(`Settlement ${s.settlement_id} has negative granary grain: ${s.granary_grain}`);
+    }
+    if (hasSettlementLedger) {
+      checksCount++;
+      const ledger = settlementLedgerBySettlement.get(s.settlement_id)
+        || { opening: 0, inflow: 0, outflow: 0, entries: 0 };
+      const expected = ledger.opening + ledger.inflow - ledger.outflow;
+      if (ledger.entries === 0) {
+        errors.push(`Settlement ${s.settlement_id} has no settlement_ledger opening row`);
+      } else if (Math.abs(expected - Number(s.treasury_cash)) > 0.01) {
+        errors.push(
+          `Settlement ${s.settlement_id} treasury ${s.treasury_cash} != ledger expected ${expected} (opening ${ledger.opening}, in ${ledger.inflow}, out ${ledger.outflow})`
+        );
+      }
     }
   }
 
@@ -739,6 +770,7 @@ function runAudit() {
       console.log(`    Factions Verified     : ${factionResult.factionCount}`);
       console.log(`    World Treasury Ledger : ${factionResult.passed ? 'opening + flows match' : 'drift detected'}`);
       console.log(`    Settlements Verified  : ${factionResult.settlementCount}`);
+      console.log(`    Settlement Ledger     : ${factionResult.passed ? 'opening + flows match' : 'drift detected'}`);
       if (factionResult.progCount > 0) {
         console.log(`    Personal Assets Checked: ${factionResult.progCount}`);
       }
