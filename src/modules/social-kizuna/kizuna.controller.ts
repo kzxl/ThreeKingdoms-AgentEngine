@@ -15,6 +15,7 @@ import { DailyInteractionEngine, EverydayActionType } from './daily-interaction.
 import { DatabaseService } from '../../core/database';
 import { SpatialGuardService } from '../progression/spatial-guard.service';
 import { chargePlayerAction } from '../../shared/action-time';
+import { requestIdempotencyKey, findIdempotentResult, recordAction } from '../../shared/action-journal';
 
 const REMOTE_COURIER_ACTIONS: ReadonlySet<string> = new Set([
   'SEND_COURIER_LETTER',
@@ -125,6 +126,13 @@ export function registerKizunaRoutes(router: Router): void {
         );
       }
 
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
+
       const time = chargePlayerAction(
         db.path,
         'KIZUNA_INTERACT',
@@ -133,7 +141,14 @@ export function registerKizunaRoutes(router: Router): void {
       );
 
       const result = engine.executeDailyInteraction(npcId, actionType, customPrompt, itemCode);
-      sendJson(res, 200, { success: true, result, time });
+      const response = { result, time };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'KIZUNA_INTERACT',
+        payload: { npcId, actionType, prompt: customPrompt, itemCode },
+        result: response
+      });
+      sendJson(res, 200, { success: true, ...response, idempotent: false });
     } catch (err: any) {
       sendJson(res, err.statusCode || 500, { success: false, error: err.message, code: err.code });
     }
@@ -198,6 +213,13 @@ export function registerKizunaRoutes(router: Router): void {
         actionType = 'HEART_CONFESSION';
       }
 
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
+
       const time = chargePlayerAction(
         db.path,
         'KIZUNA_INTERACT',
@@ -206,7 +228,14 @@ export function registerKizunaRoutes(router: Router): void {
       );
 
       const result = engine.executeDailyInteraction(npcId, actionType, prompt);
-      sendJson(res, 200, { success: true, actionType, result, time });
+      const response = { actionType, result, time };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'KIZUNA_NATURAL_CHAT',
+        payload: { npcId, prompt, actionType },
+        result: response
+      });
+      sendJson(res, 200, { success: true, ...response, idempotent: false });
     } catch (err: any) {
       sendJson(res, err.statusCode || 500, { success: false, error: err.message, code: err.code });
     }
