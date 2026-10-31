@@ -24,6 +24,8 @@ import { SkillService } from '../progression/skill.service';
 import { getCareerModifiers } from '../../../engine/career-paths';
 import { ObligationService } from './obligation.service';
 import { ContractBoardService } from './contract-board.service';
+import { IntelService } from './intel.service';
+import { chargePlayerAction } from '../../shared/action-time';
 
 function getEconomyModule(): EconomyModule | undefined {
   return ModuleRegistry.getInstance().get<EconomyModule>('module.economy');
@@ -537,6 +539,48 @@ export function registerEconomyRoutes(router: Router): void {
   };
   router.post('/api/contracts/deliver', handleDeliverContract);
   router.post('/api/economy/contracts/deliver', handleDeliverContract);
+
+  // -------------------------------------------------------------
+  // 3d. Intel board: list rumors and verify one (costs days)
+  // -------------------------------------------------------------
+  const handleGetIntel = (req: any, res: any, ctx: RouteContext) => {
+    try {
+      const settlementId = ctx.query.settlementId as string | undefined;
+      const service = IntelService.forDatabase(db);
+      const settlement = service.resolveSettlement(settlementId);
+      sendJson(res, 200, {
+        success: true,
+        settlementId: settlement,
+        reports: service.list(settlementId)
+      });
+    } catch (err: any) {
+      sendJson(res, 500, { success: false, error: err.message });
+    }
+  };
+  router.get('/api/intel', handleGetIntel);
+  router.get('/api/economy/intel', handleGetIntel);
+
+  const handleVerifyIntel = (req: any, res: any, ctx: RouteContext) => {
+    try {
+      const { reportId } = ctx.body || {};
+      if (!reportId) {
+        sendJson(res, 400, { success: false, error: 'reportId is required.' });
+        return;
+      }
+      const time = chargePlayerAction(
+        db.path,
+        'EXPLORE_POI',
+        null,
+        `Verify intel ${reportId}`
+      );
+      const result = IntelService.forDatabase(db).verify(reportId);
+      sendJson(res, 200, { success: true, ...result, time });
+    } catch (err: any) {
+      sendJson(res, err.statusCode || 400, { success: false, error: err.message, code: err.code });
+    }
+  };
+  router.post('/api/intel/verify', handleVerifyIntel);
+  router.post('/api/economy/intel/verify', handleVerifyIntel);
 
   // -------------------------------------------------------------
   // 4. GET /api/ledger & /api/economy/ledger

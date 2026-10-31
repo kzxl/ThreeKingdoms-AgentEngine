@@ -87,6 +87,18 @@ interface ContractBoard {
   summary: { active: number; overdue: number; rewardAtRisk: number };
 }
 
+interface IntelReport {
+  reportId: string;
+  subjectType: string;
+  subjectName: string;
+  claim: { price?: number; troops?: number };
+  confidence: number;
+  confidenceLabel: 'LOW' | 'MEDIUM' | 'HIGH';
+  source: string;
+  expiresDate: string;
+  verificationDays: number;
+}
+
 function isEn(): boolean {
   return (window as any).currentLang === 'en';
 }
@@ -144,6 +156,13 @@ class QuestModal {
     return data.quests || [];
   }
 
+  private async loadIntel(): Promise<IntelReport[]> {
+    const res = await fetch('/api/intel');
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error || 'Intel board failed');
+    return data.reports || [];
+  }
+
   private async loadContracts(): Promise<ContractBoard> {
     const res = await fetch('/api/contracts');
     const data = await res.json();
@@ -168,7 +187,7 @@ class QuestModal {
 
   public async refresh(result: any): Promise<void> {
     try {
-      const [quests, dues, board] = await Promise.all([
+      const [quests, dues, board, intel] = await Promise.all([
         this.load(),
         this.loadObligations().catch(() => ({
           obligations: [] as ObligationView[],
@@ -179,9 +198,10 @@ class QuestModal {
           offers: [] as ContractOffer[],
           contracts: [] as PlayerContract[],
           summary: { active: 0, overdue: 0, rewardAtRisk: 0 }
-        }))
+        })),
+        this.loadIntel().catch(() => [] as IntelReport[])
       ]);
-      this.modal.setContent(this.render(quests, dues.obligations, dues.summary, board, result));
+      this.modal.setContent(this.render(quests, dues.obligations, dues.summary, board, intel, result));
     } catch (error: any) {
       this.modal.setContent(`<div class="quest-empty">${esc(error.message)}</div>`);
     }
@@ -249,6 +269,22 @@ class QuestModal {
     }
   }
 
+  public async verifyIntel(reportId: string): Promise<void> {
+    try {
+      const res = await fetch('/api/intel/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reportId })
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || 'Verify intel failed');
+      await this.refresh(null);
+      (window as any).loadStatus?.();
+    } catch (error: any) {
+      (window as any).showToast?.(error.message, true);
+    }
+  }
+
   public async deliverContract(contractId: string): Promise<void> {
     try {
       const res = await fetch('/api/contracts/deliver', {
@@ -309,6 +345,35 @@ class QuestModal {
     `;
   }
 
+  private renderIntel(reports: IntelReport[], en: boolean): string {
+    if (!reports || reports.length === 0) {
+      return `<div class="quest-empty">${en ? 'No reports this month.' : 'Không có tin đồn tháng này.'}</div>`;
+    }
+    const items = reports.map(report => {
+      const claim = report.subjectType === 'PRICE'
+        ? (en ? `${report.claim.price} quan` : `${report.claim.price} Quan`)
+        : (en ? `${report.claim.troops} troops` : `${report.claim.troops} binh`);
+      return `
+        <div class="quest-item">
+          <div class="quest-head">
+            <div>
+              <div class="quest-title">${esc(report.subjectName)}</div>
+              <div class="quest-path">${esc(report.subjectType)} • ${esc(claim)} • ${esc(report.source)} • ${esc(report.confidenceLabel)}</div>
+            </div>
+            <button class="quest-action" onclick="QuestUI.verifyIntel('${esc(report.reportId)}')">${en ? `Verify (${report.verificationDays}d)` : `Xác minh (${report.verificationDays} ngày)`}</button>
+          </div>
+          <div class="quest-path">${en ? 'Expires' : 'Hết hạn'} ${esc(report.expiresDate)}</div>
+        </div>
+      `;
+    }).join('');
+    return `
+      <div class="quest-section">
+        <div class="quest-section-title">${en ? `Intel • ${reports.length} reports` : `Tin đồn • ${reports.length} báo cáo`}</div>
+        ${items}
+      </div>
+    `;
+  }
+
   private renderObligations(
     obligations: ObligationView[],
     summary: ObligationSummary,
@@ -359,6 +424,7 @@ class QuestModal {
     obligations: ObligationView[],
     summary: ObligationSummary,
     board: ContractBoard,
+    intel: IntelReport[],
     result: any
   ): string {
     const en = isEn();
@@ -406,7 +472,8 @@ class QuestModal {
 
     const obligationsHtml = this.renderObligations(obligations, summary, en);
     const contractsHtml = this.renderContracts(board, en);
-    return `<div class="quest-body">${resultHtml}${obligationsHtml}${contractsHtml}${items || `<div class="quest-empty">${en ? 'No quests available.' : 'Chưa có nhiệm vụ.'}</div>`}</div>`;
+    const intelHtml = this.renderIntel(intel, en);
+    return `<div class="quest-body">${resultHtml}${obligationsHtml}${contractsHtml}${intelHtml}${items || `<div class="quest-empty">${en ? 'No quests available.' : 'Chưa có nhiệm vụ.'}</div>`}</div>`;
   }
 }
 

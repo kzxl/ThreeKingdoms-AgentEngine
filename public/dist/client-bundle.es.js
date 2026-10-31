@@ -1545,6 +1545,11 @@ var G = new class {
 		if (!e.success) throw Error(e.error || "Quest log failed");
 		return e.quests || [];
 	}
+	async loadIntel() {
+		let e = await (await fetch("/api/intel")).json();
+		if (!e.success) throw Error(e.error || "Intel board failed");
+		return e.reports || [];
+	}
 	async loadContracts() {
 		let e = await (await fetch("/api/contracts")).json();
 		if (!e.success) throw Error(e.error || "Contract board failed");
@@ -1575,7 +1580,7 @@ var G = new class {
 	}
 	async refresh(e) {
 		try {
-			let [t, n, r] = await Promise.all([
+			let [t, n, r, i] = await Promise.all([
 				this.load(),
 				this.loadObligations().catch(() => ({
 					obligations: [],
@@ -1596,9 +1601,10 @@ var G = new class {
 						overdue: 0,
 						rewardAtRisk: 0
 					}
-				}))
+				})),
+				this.loadIntel().catch(() => [])
 			]);
-			this.modal.setContent(this.render(t, n.obligations, n.summary, r, e));
+			this.modal.setContent(this.render(t, n.obligations, n.summary, r, i, e));
 		} catch (e) {
 			this.modal.setContent(`<div class="quest-empty">${U(e.message)}</div>`);
 		}
@@ -1655,6 +1661,19 @@ var G = new class {
 			window.showToast?.(e.message, !0);
 		}
 	}
+	async verifyIntel(e) {
+		try {
+			let t = await (await fetch("/api/intel/verify", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ reportId: e })
+			})).json();
+			if (!t.success) throw Error(t.error || "Verify intel failed");
+			await this.refresh(null), window.loadStatus?.();
+		} catch (e) {
+			window.showToast?.(e.message, !0);
+		}
+	}
 	async deliverContract(e) {
 		try {
 			let t = await (await fetch("/api/contracts/deliver", {
@@ -1703,6 +1722,30 @@ var G = new class {
       </div>
     `;
 	}
+	renderIntel(e, t) {
+		if (!e || e.length === 0) return `<div class="quest-empty">${t ? "No reports this month." : "Không có tin đồn tháng này."}</div>`;
+		let n = e.map((e) => {
+			let n = e.subjectType === "PRICE" ? t ? `${e.claim.price} quan` : `${e.claim.price} Quan` : t ? `${e.claim.troops} troops` : `${e.claim.troops} binh`;
+			return `
+        <div class="quest-item">
+          <div class="quest-head">
+            <div>
+              <div class="quest-title">${U(e.subjectName)}</div>
+              <div class="quest-path">${U(e.subjectType)} • ${U(n)} • ${U(e.source)} • ${U(e.confidenceLabel)}</div>
+            </div>
+            <button class="quest-action" onclick="QuestUI.verifyIntel('${U(e.reportId)}')">${t ? `Verify (${e.verificationDays}d)` : `Xác minh (${e.verificationDays} ngày)`}</button>
+          </div>
+          <div class="quest-path">${t ? "Expires" : "Hết hạn"} ${U(e.expiresDate)}</div>
+        </div>
+      `;
+		}).join("");
+		return `
+      <div class="quest-section">
+        <div class="quest-section-title">${t ? `Intel • ${e.length} reports` : `Tin đồn • ${e.length} báo cáo`}</div>
+        ${n}
+      </div>
+    `;
+	}
 	renderObligations(e, t, n) {
 		let r = e.filter((e) => e.status === "DUE" || e.status === "OVERDUE");
 		if (r.length === 0) return `<div class="quest-empty">${n ? "No obligations due." : "Không có nghĩa vụ đến hạn."}</div>`;
@@ -1729,37 +1772,37 @@ var G = new class {
       </div>
     `;
 	}
-	render(e, t, n, r, i) {
-		let a = H(), o = i ? `
-      <div class="quest-result ${i.success ? "is-success" : "is-failure"}">
-        <strong>${i.success ? a ? "Step succeeded" : "Bước thành công" : a ? "Step failed" : "Bước thất bại"}</strong>
-        <div>${U(a ? i.narrativeEn : i.narrative)}</div>
-        <div class="quest-meta">D20 ${i.roll} + ${i.mod} = ${i.total} / DC ${i.dc}</div>
-        <div class="quest-meta">${U(W(i.rewards || {}))}</div>
+	render(e, t, n, r, i, a) {
+		let o = H(), s = a ? `
+      <div class="quest-result ${a.success ? "is-success" : "is-failure"}">
+        <strong>${a.success ? o ? "Step succeeded" : "Bước thành công" : o ? "Step failed" : "Bước thất bại"}</strong>
+        <div>${U(o ? a.narrativeEn : a.narrative)}</div>
+        <div class="quest-meta">D20 ${a.roll} + ${a.mod} = ${a.total} / DC ${a.dc}</div>
+        <div class="quest-meta">${U(W(a.rewards || {}))}</div>
       </div>
-    ` : "", s = e.map((e) => {
-			let t = e.status === "COMPLETED" ? a ? "Completed" : "Đã hoàn thành" : e.status === "ACTIVE" ? a ? "Active" : "Đang làm" : a ? "Available" : "Có thể nhận", n = e.steps.map((t) => `
+    ` : "", c = e.map((e) => {
+			let t = e.status === "COMPLETED" ? o ? "Completed" : "Đã hoàn thành" : e.status === "ACTIVE" ? o ? "Active" : "Đang làm" : o ? "Available" : "Có thể nhận", n = e.steps.map((t) => `
         <div class="quest-step ${t.index < e.currentStep ? "is-done" : t.index === e.currentStep && e.status === "ACTIVE" ? "is-current" : ""}">
           <span class="quest-step-index">${t.index + 1}</span>
-          <span class="quest-step-title">${U(a ? t.titleEn : t.titleVi)}</span>
-          <span class="quest-step-check">${U(String(t.stat).toUpperCase())} DC ${t.dc} • ${t.daysCost}${a ? "d" : " ngày"}</span>
+          <span class="quest-step-title">${U(o ? t.titleEn : t.titleVi)}</span>
+          <span class="quest-step-check">${U(String(t.stat).toUpperCase())} DC ${t.dc} • ${t.daysCost}${o ? "d" : " ngày"}</span>
         </div>
-      `).join(""), r = e.status === "AVAILABLE" ? `<button class="quest-action" onclick="QuestUI.accept('${U(e.questId)}')">${a ? "Accept" : "Nhận nhiệm vụ"}</button>` : e.status === "ACTIVE" ? `<button class="quest-action is-primary" onclick="QuestUI.advance('${U(e.questId)}')">${a ? `Advance step ${e.currentStep + 1}` : `Thực hiện bước ${e.currentStep + 1}`}</button>` : `<span class="quest-badge">${a ? "Completed" : "Hoàn thành"}</span>`;
+      `).join(""), r = e.status === "AVAILABLE" ? `<button class="quest-action" onclick="QuestUI.accept('${U(e.questId)}')">${o ? "Accept" : "Nhận nhiệm vụ"}</button>` : e.status === "ACTIVE" ? `<button class="quest-action is-primary" onclick="QuestUI.advance('${U(e.questId)}')">${o ? `Advance step ${e.currentStep + 1}` : `Thực hiện bước ${e.currentStep + 1}`}</button>` : `<span class="quest-badge">${o ? "Completed" : "Hoàn thành"}</span>`;
 			return `
         <div class="quest-item">
           <div class="quest-head">
             <div>
-              <div class="quest-title">${U(a ? e.titleEn : e.titleVi)}</div>
+              <div class="quest-title">${U(o ? e.titleEn : e.titleVi)}</div>
               <div class="quest-path">${U(e.pathCode)} • ${t}</div>
             </div>
             ${r}
           </div>
-          <div class="quest-desc">${U(a ? e.descriptionEn : e.descriptionVi)}</div>
+          <div class="quest-desc">${U(o ? e.descriptionEn : e.descriptionVi)}</div>
           <div class="quest-steps">${n}</div>
         </div>
       `;
 		}).join("");
-		return `<div class="quest-body">${o}${this.renderObligations(t, n, a)}${this.renderContracts(r, a)}${s || `<div class="quest-empty">${a ? "No quests available." : "Chưa có nhiệm vụ."}</div>`}</div>`;
+		return `<div class="quest-body">${s}${this.renderObligations(t, n, o)}${this.renderContracts(r, o)}${this.renderIntel(i, o)}${c || `<div class="quest-empty">${o ? "No quests available." : "Chưa có nhiệm vụ."}</div>`}</div>`;
 	}
 }(), K = class {
 	modal;
@@ -2209,7 +2252,8 @@ function X() {
 		advance: (e) => G.advance(e),
 		payObligation: (e) => G.payObligation(e),
 		acceptContract: (e) => G.acceptContract(e),
-		deliverContract: (e) => G.deliverContract(e)
+		deliverContract: (e) => G.deliverContract(e),
+		verifyIntel: (e) => G.verifyIntel(e)
 	}, t.WorldMapUI = {
 		open: () => q.open(),
 		close: () => q.close()

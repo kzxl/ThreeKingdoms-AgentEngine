@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.25.2] - 2026-10-31
+
+RPG information layer: monthly intel reports with confidence and verification.
+
+### Added
+- Migration 047 creates `intel_reports` with a claim, confidence, expiry,
+  source and verification result.
+- `IntelService` posts three monthly reports per settlement (two price claims,
+  one garrison claim) with ±25–30% error and a confidence of 0.4–0.9.
+  `POST /api/intel/verify` charges two exploration days and reveals the actual
+  value; a claim more than 20% off is flagged `isFalse`.
+- The quest modal now shows an **Intel** section with a Verify button
+  (`QuestUI.verifyIntel`); the client bundle was rebuilt.
+- `tests/verify-intel.ts` covers deterministic monthly reports, verification,
+  double-verify rejection, false-claim detection and month rotation.
+
+### Verification
+`npm run verify` green: 55/55 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,493 invariants, 0 discrepancies.
+
+---
+
 ## [1.25.1] - 2026-10-31
 
 ROTK scenario identity: each start date now has its own war and alliance.
