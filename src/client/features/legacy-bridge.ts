@@ -128,7 +128,9 @@ export function setupLegacyBridge(): void {
     close: () => questModal.close(),
     accept: (questId: string) => questModal.accept(questId),
     advance: (questId: string) => questModal.advance(questId),
-    payObligation: (obligationId: string) => questModal.payObligation(obligationId)
+    payObligation: (obligationId: string) => questModal.payObligation(obligationId),
+    acceptContract: (offerId: string) => questModal.acceptContract(offerId),
+    deliverContract: (contractId: string) => questModal.deliverContract(contractId)
   };
 
   // 14. World Map Modal & Live Settlement State

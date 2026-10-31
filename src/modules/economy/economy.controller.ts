@@ -23,6 +23,7 @@ import { SpatialGuardService } from '../progression/spatial-guard.service';
 import { SkillService } from '../progression/skill.service';
 import { getCareerModifiers } from '../../../engine/career-paths';
 import { ObligationService } from './obligation.service';
+import { ContractBoardService } from './contract-board.service';
 
 function getEconomyModule(): EconomyModule | undefined {
   return ModuleRegistry.getInstance().get<EconomyModule>('module.economy');
@@ -481,6 +482,61 @@ export function registerEconomyRoutes(router: Router): void {
   };
   router.post('/api/obligations/pay', handlePayObligation);
   router.post('/api/economy/obligations/pay', handlePayObligation);
+
+  // -------------------------------------------------------------
+  // 3c. Contract board: list, accept, deliver
+  // -------------------------------------------------------------
+  const handleGetContracts = (req: any, res: any, ctx: RouteContext) => {
+    try {
+      const playerId = (ctx.query.playerId as string) || 'PLY-0001';
+      const settlementId = ctx.query.settlementId as string | undefined;
+      const board = ContractBoardService.forDatabase(db).list(playerId, settlementId);
+      sendJson(res, 200, { success: true, playerId, ...board });
+    } catch (err: any) {
+      sendJson(res, 500, { success: false, error: err.message });
+    }
+  };
+  router.get('/api/contracts', handleGetContracts);
+  router.get('/api/economy/contracts', handleGetContracts);
+
+  const handleAcceptContract = (req: any, res: any, ctx: RouteContext) => {
+    try {
+      const { offerId, playerId = 'PLY-0001' } = ctx.body || {};
+      if (!offerId) {
+        sendJson(res, 400, { success: false, error: 'offerId is required.' });
+        return;
+      }
+      const service = ContractBoardService.forDatabase(db);
+      const contract = service.accept(offerId, playerId);
+      sendJson(res, 200, { success: true, contract });
+    } catch (err: any) {
+      sendJson(res, 400, { success: false, error: err.message, code: err.code });
+    }
+  };
+  router.post('/api/contracts/accept', handleAcceptContract);
+  router.post('/api/economy/contracts/accept', handleAcceptContract);
+
+  const handleDeliverContract = (req: any, res: any, ctx: RouteContext) => {
+    try {
+      const { contractId, playerId = 'PLY-0001' } = ctx.body || {};
+      if (!contractId) {
+        sendJson(res, 400, { success: false, error: 'contractId is required.' });
+        return;
+      }
+      const service = ContractBoardService.forDatabase(db);
+      const contract = service.deliver(contractId, playerId);
+      sendJson(res, 200, {
+        success: true,
+        contract,
+        summary: service.list(playerId).summary
+      });
+    } catch (err: any) {
+      const status = err.message?.includes('không còn trong kho') ? 409 : 400;
+      sendJson(res, status, { success: false, error: err.message, code: err.code });
+    }
+  };
+  router.post('/api/contracts/deliver', handleDeliverContract);
+  router.post('/api/economy/contracts/deliver', handleDeliverContract);
 
   // -------------------------------------------------------------
   // 4. GET /api/ledger & /api/economy/ledger

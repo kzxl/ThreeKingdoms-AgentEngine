@@ -812,6 +812,17 @@ class GameplayManager {
       console.warn('[GameplayManager] obligation processing failed:', obligationError.message);
     }
 
+    // Repeatable contract board: expire missed deliveries and post next month's
+    // offers for the player's settlement.
+    let contracts = null;
+    try {
+      contracts = require('./contract-board-bridge').processMonthClose(
+        this.dbPath, 'PLY-0001', prevDate, nextDate
+      );
+    } catch (contractError) {
+      console.warn('[GameplayManager] contract board processing failed:', contractError.message);
+    }
+
     // Day ticks were already published by the day loop for every elapsed day.
     // Cascade only after the core turn is committed. Subscribers re-entering
     // the world modules are safe: world_turn_ledger already marks this turn.
@@ -865,6 +876,7 @@ class GameplayManager {
       defeatStatus,
       victoryStatus,
       obligations,
+      contracts,
       aiWar,
       playerStatus,
       playerLocationName: locationRow ? locationRow.name_vi : (playerLoc || ''),

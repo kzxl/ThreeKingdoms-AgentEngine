@@ -52,6 +52,41 @@ interface ObligationSummary {
   nextDueDate: string | null;
 }
 
+interface ContractOffer {
+  offerId: string;
+  itemCode: string;
+  itemNameVi: string;
+  itemNameEn: string;
+  quantity: number;
+  rewardCash: number;
+  rewardFame: number;
+  expiresDate: string;
+  deadlineDays: number;
+  narrativeVi: string;
+  narrativeEn: string;
+}
+
+interface PlayerContract {
+  contractId: string;
+  itemCode: string;
+  itemNameVi: string;
+  itemNameEn: string;
+  quantity: number;
+  haveQuantity: number;
+  rewardCash: number;
+  rewardFame: number;
+  dueDate: string;
+  status: string;
+  daysRemaining: number;
+}
+
+interface ContractBoard {
+  settlementId: string;
+  offers: ContractOffer[];
+  contracts: PlayerContract[];
+  summary: { active: number; overdue: number; rewardAtRisk: number };
+}
+
 function isEn(): boolean {
   return (window as any).currentLang === 'en';
 }
@@ -109,6 +144,18 @@ class QuestModal {
     return data.quests || [];
   }
 
+  private async loadContracts(): Promise<ContractBoard> {
+    const res = await fetch('/api/contracts');
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error || 'Contract board failed');
+    return {
+      settlementId: data.settlementId || '',
+      offers: data.offers || [],
+      contracts: data.contracts || [],
+      summary: data.summary || { active: 0, overdue: 0, rewardAtRisk: 0 }
+    };
+  }
+
   private async loadObligations(): Promise<{ obligations: ObligationView[]; summary: ObligationSummary }> {
     const res = await fetch('/api/obligations');
     const data = await res.json();
@@ -121,11 +168,20 @@ class QuestModal {
 
   public async refresh(result: any): Promise<void> {
     try {
-      const [quests, dues] = await Promise.all([this.load(), this.loadObligations().catch(() => ({
-        obligations: [] as ObligationView[],
-        summary: { dueCount: 0, overdueCount: 0, totalCashDue: 0, totalGrainDue: 0, nextDueDate: null }
-      }))]);
-      this.modal.setContent(this.render(quests, dues.obligations, dues.summary, result));
+      const [quests, dues, board] = await Promise.all([
+        this.load(),
+        this.loadObligations().catch(() => ({
+          obligations: [] as ObligationView[],
+          summary: { dueCount: 0, overdueCount: 0, totalCashDue: 0, totalGrainDue: 0, nextDueDate: null }
+        })),
+        this.loadContracts().catch(() => ({
+          settlementId: '',
+          offers: [] as ContractOffer[],
+          contracts: [] as PlayerContract[],
+          summary: { active: 0, overdue: 0, rewardAtRisk: 0 }
+        }))
+      ]);
+      this.modal.setContent(this.render(quests, dues.obligations, dues.summary, board, result));
     } catch (error: any) {
       this.modal.setContent(`<div class="quest-empty">${esc(error.message)}</div>`);
     }
@@ -178,6 +234,81 @@ class QuestModal {
     }
   }
 
+  public async acceptContract(offerId: string): Promise<void> {
+    try {
+      const res = await fetch('/api/contracts/accept', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ offerId })
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || 'Accept contract failed');
+      await this.refresh(null);
+    } catch (error: any) {
+      (window as any).showToast?.(error.message, true);
+    }
+  }
+
+  public async deliverContract(contractId: string): Promise<void> {
+    try {
+      const res = await fetch('/api/contracts/deliver', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contractId })
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || 'Deliver contract failed');
+      await this.refresh(null);
+      (window as any).loadStatus?.();
+    } catch (error: any) {
+      (window as any).showToast?.(error.message, true);
+    }
+  }
+
+  private renderContracts(board: ContractBoard, en: boolean): string {
+    const offers = board.offers || [];
+    const active = (board.contracts || []).filter(contract => contract.status === 'ACTIVE');
+    if (offers.length === 0 && active.length === 0) {
+      return `<div class="quest-empty">${en ? 'No contracts posted.' : 'Chưa có hợp đồng.'}</div>`;
+    }
+    const header = en
+      ? `Contracts • ${board.settlementId} • ${active.length} active`
+      : `Hợp đồng • ${board.settlementId} • ${active.length} đang chạy`;
+    const offerHtml = offers.map(offer => `
+      <div class="quest-item">
+        <div class="quest-head">
+          <div>
+            <div class="quest-title">${esc(en ? offer.itemNameEn : offer.itemNameVi)} × ${offer.quantity}</div>
+            <div class="quest-path">${esc(offer.rewardCash)} Quan • +${offer.rewardFame} ${en ? 'fame' : 'danh vọng'} • ${en ? 'by' : 'hạn'} ${esc(offer.expiresDate)}</div>
+          </div>
+          <button class="quest-action" onclick="QuestUI.acceptContract('${esc(offer.offerId)}')">${en ? 'Accept' : 'Nhận'}</button>
+        </div>
+        <div class="quest-desc">${esc(en ? offer.narrativeEn : offer.narrativeVi)}</div>
+      </div>
+    `).join('');
+    const activeHtml = active.map(contract => {
+      const ready = contract.haveQuantity >= contract.quantity;
+      const late = contract.daysRemaining < 0;
+      return `
+        <div class="quest-item">
+          <div class="quest-head">
+            <div>
+              <div class="quest-title">${esc(en ? contract.itemNameEn : contract.itemNameVi)} ${contract.haveQuantity}/${contract.quantity}</div>
+              <div class="quest-path">${esc(contract.rewardCash)} Quan • ${en ? 'due' : 'hạn'} ${esc(contract.dueDate)}${late ? ` • ${en ? 'late' : 'quá hạn'}` : ''}</div>
+            </div>
+            <button class="quest-action ${ready ? 'is-primary' : ''}" onclick="QuestUI.deliverContract('${esc(contract.contractId)}')">${en ? 'Deliver' : 'Giao'}</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+    return `
+      <div class="quest-section">
+        <div class="quest-section-title">${esc(header)}</div>
+        ${activeHtml}${offerHtml}
+      </div>
+    `;
+  }
+
   private renderObligations(
     obligations: ObligationView[],
     summary: ObligationSummary,
@@ -223,7 +354,13 @@ class QuestModal {
     `;
   }
 
-  private render(quests: QuestView[], obligations: ObligationView[], summary: ObligationSummary, result: any): string {
+  private render(
+    quests: QuestView[],
+    obligations: ObligationView[],
+    summary: ObligationSummary,
+    board: ContractBoard,
+    result: any
+  ): string {
     const en = isEn();
     const resultHtml = result ? `
       <div class="quest-result ${result.success ? 'is-success' : 'is-failure'}">
@@ -268,7 +405,8 @@ class QuestModal {
     }).join('');
 
     const obligationsHtml = this.renderObligations(obligations, summary, en);
-    return `<div class="quest-body">${resultHtml}${obligationsHtml}${items || `<div class="quest-empty">${en ? 'No quests available.' : 'Chưa có nhiệm vụ.'}</div>`}</div>`;
+    const contractsHtml = this.renderContracts(board, en);
+    return `<div class="quest-body">${resultHtml}${obligationsHtml}${contractsHtml}${items || `<div class="quest-empty">${en ? 'No quests available.' : 'Chưa có nhiệm vụ.'}</div>`}</div>`;
   }
 }
 

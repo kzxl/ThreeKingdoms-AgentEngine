@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.24.2] - 2026-10-31
+
+P1-c: repeatable local contract board.
+
+### Added
+- Migration 045 creates `contract_offers` and `player_contracts`.
+- `ContractBoardService` posts three deterministic delivery offers per
+  settlement per month (from the settlement's surplus/deficit pool), accepts an
+  offer with a deadline, consumes the real inventory on delivery, pays the
+  reward through the ledger and awards fame. An expired contract becomes a
+  `CONTRACT_PENALTY` obligation.
+- `GameplayManager.closeMonth` expires missed deliveries and posts the next
+  month's offers; the monthly report carries `contracts`.
+- Routes: `GET /api/contracts`, `POST /api/contracts/accept`,
+  `POST /api/contracts/deliver` (and the `/api/economy/*` aliases).
+- The quest modal now shows an **Contracts** section with accept/deliver
+  actions (`QuestUI.acceptContract`, `QuestUI.deliverContract`); the client
+  bundle was rebuilt.
+- `tests/verify-contract-board.ts` covers rotation/idempotency, accept, delivery
+  with stock consumption, expiry penalty, insufficient stock and the month-close
+  rotation.
+
+### Verification
+`npm run verify` green: 53/53 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,493 invariants, 0 discrepancies.
+
+---
+
 ## [1.24.1] - 2026-10-31
 
 P1-b: periodic obligations with a due date and real consequences.
