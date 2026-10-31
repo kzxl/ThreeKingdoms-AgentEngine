@@ -13,6 +13,7 @@ import { nextId } from '../../shared/id-generator';
 import { ModuleRegistry } from '../../core/module-registry';
 import { ProfessionsModule } from './professions.module';
 import { SkillService } from '../progression/skill.service';
+import { chargePlayerAction } from '../../shared/action-time';
 
 import { WageLaborController } from './features/wage-labor/wage-labor.controller';
 import { registerBespokeForgeRoutes } from './features/bespoke-forge/bespoke-forge.controller';
@@ -152,11 +153,17 @@ export function registerProfessionsRoutes(router: Router): void {
       }
 
       const meta = getCampaignMeta(db);
+      const time = chargePlayerAction(
+        db.path,
+        'GATHER_NODE',
+        null,
+        `Gather at ${nodeId}`
+      );
       const result = professionsMod.gatherResource(characterId, nodeId, meta.activeTurn, meta.currentDate);
 
-      sendJson(res, 200, { success: true, result });
+      sendJson(res, 200, { success: true, result, time });
     } catch (err: any) {
-      sendJson(res, 400, { success: false, error: err.message });
+      sendJson(res, err.statusCode || 400, { success: false, error: err.message, code: err.code });
     }
   };
 
@@ -175,6 +182,13 @@ export function registerProfessionsRoutes(router: Router): void {
       }
 
       const craftQty = Math.max(1, parseInt(quantity, 10));
+
+      const time = chargePlayerAction(
+        db.path,
+        'PRODUCTION_BATCH',
+        null,
+        `Craft ${recipeCode} x${craftQty}`
+      );
       const meta = getCampaignMeta(db);
 
       const craftResult = db.transaction(() => {
@@ -282,10 +296,11 @@ export function registerProfessionsRoutes(router: Router): void {
         success: true,
         ...craftResult,
         breakthrough,
+        time,
         message: `Chế tác thành công ${craftResult.yieldQuantity} ${craftResult.productNameVi} (+${craftResult.expGained} EXP Nghề rèn dệt)!`
       });
     } catch (err: any) {
-      sendJson(res, 400, { success: false, error: err.message });
+      sendJson(res, err.statusCode || 400, { success: false, error: err.message, code: err.code });
     }
   };
 

@@ -500,15 +500,21 @@ async function apiFetchClock() {
   return data;
 }
 
+/**
+ * Deprecated compatibility shim.
+ *
+ * The API endpoint that resolved the player's action already charged its days
+ * on the server (`src/shared/action-time.ts`). Call sites keep their old shape,
+ * but this function now only refreshes the clock so a second POST cannot
+ * double-charge or advance the calendar.
+ */
 async function apiSpendActionTime(actionType, subType = null, reason = '', daysOverride = null) {
-  const res = await fetch(`${API_BASE}/api/time/spend`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ actionType, subType, reason, daysOverride })
-  });
-  const data = await res.json();
-  if (!data.success) throw new Error(data.error || 'Action time rejected');
-  return data.time;
+  void actionType;
+  void subType;
+  void reason;
+  void daysOverride;
+  const data = await apiFetchClock();
+  return data.clock;
 }
 
 async function apiFetchTasks() {

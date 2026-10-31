@@ -14,6 +14,8 @@ import {
   ARENA_ROSTER
 } from './single-combat-duel.service';
 import { SpatialGuardService } from '../progression/spatial-guard.service';
+import { DatabaseService } from '../../core/database';
+import { chargePlayerAction } from '../../shared/action-time';
 
 /**
  * Registers all Single Combat Duel routes into the provided Router instance.
@@ -46,6 +48,13 @@ export function registerDuelRoutes(router: Router): void {
         return;
       }
 
+      const time = chargePlayerAction(
+        DatabaseService.getInstance().path,
+        'COMBAT_ENCOUNTER',
+        null,
+        `Duel initiate: ${opponentId}`
+      );
+
       const activeDuel = duelService.initiateDuel({
         playerId,
         opponentId,
@@ -59,10 +68,11 @@ export function registerDuelRoutes(router: Router): void {
       sendJson(res, 200, {
         success: true,
         message: `Trận đấu võ 1v1 đã khởi tranh! Đối thủ: ${activeDuel.opponent.nameVi} (${activeDuel.opponent.effectiveWar} WAR).`,
-        duel: activeDuel
+        duel: activeDuel,
+        time
       });
     } catch (err: any) {
-      sendJson(res, 400, { success: false, error: err.message });
+      sendJson(res, err.statusCode || 400, { success: false, error: err.message, code: err.code });
     }
   };
 
@@ -178,6 +188,13 @@ export function registerDuelRoutes(router: Router): void {
 
       const targetHero = heroNpcId || npcId || 'NPC-0002'; // Default Zhang Fei
 
+      const time = chargePlayerAction(
+        DatabaseService.getInstance().path,
+        'DUEL_SPAR',
+        null,
+        `Spar with ${targetHero}`
+      );
+
       const result = duelService.sparWithHero(
         playerId,
         targetHero,
@@ -188,10 +205,11 @@ export function registerDuelRoutes(router: Router): void {
       sendJson(res, 200, {
         success: true,
         message: result.summaryNarrativeVi,
-        result
+        result,
+        time
       });
     } catch (err: any) {
-      sendJson(res, 400, { success: false, error: err.message });
+      sendJson(res, err.statusCode || 400, { success: false, error: err.message, code: err.code });
     }
   };
 
@@ -240,6 +258,13 @@ export function registerDuelRoutes(router: Router): void {
         bypassSpatialGuard
       );
 
+      const time = chargePlayerAction(
+        DatabaseService.getInstance().path,
+        'ARENA_CHALLENGE',
+        null,
+        `Arena challenge tier ${tier}`
+      );
+
       const result = duelService.challengeArena(
         playerId,
         tier,
@@ -250,10 +275,11 @@ export function registerDuelRoutes(router: Router): void {
       sendJson(res, 200, {
         success: true,
         message: result.summaryNarrativeVi,
-        result
+        result,
+        time
       });
     } catch (err: any) {
-      sendJson(res, 400, { success: false, error: err.message });
+      sendJson(res, err.statusCode || 400, { success: false, error: err.message, code: err.code });
     }
   };
 
@@ -279,6 +305,13 @@ export function registerDuelRoutes(router: Router): void {
         return;
       }
 
+      const time = chargePlayerAction(
+        DatabaseService.getInstance().path,
+        'COMBAT_ENCOUNTER',
+        null,
+        `Caravan ambush defense ${caravanId}`
+      );
+
       const result = duelService.defendCaravanAmbush(
         playerId,
         caravanId,
@@ -290,10 +323,11 @@ export function registerDuelRoutes(router: Router): void {
       sendJson(res, 200, {
         success: true,
         message: result.summaryNarrativeVi,
-        result
+        result,
+        time
       });
     } catch (err: any) {
-      sendJson(res, 400, { success: false, error: err.message });
+      sendJson(res, err.statusCode || 400, { success: false, error: err.message, code: err.code });
     }
   };
 

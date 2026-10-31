@@ -5,8 +5,12 @@
  *
  * Fatigue ownership: when a feature service already applies the activity's
  * stamina effect (production batches, social interactions, work shifts), this
- * table must declare `fatigue: 0` for that action. Otherwise the client's
- * `/api/time/spend` call charges stamina a second time on top of the service.
+ * table must declare `fatigue: 0` for that action. Otherwise the server charge
+ * adds stamina a second time on top of the service.
+ *
+ * Day ownership: the HTTP layer charges these costs once per player action via
+ * `src/shared/action-time.ts`. The client `/api/time/spend` endpoint is now a
+ * clock-refresh shim; it never advances the calendar.
  */
 
 const DEFAULT_ACTION_COST = { days: 1, fatigue: 3, labelVi: 'Hành động', labelEn: 'Action' };
@@ -32,7 +36,14 @@ const ACTION_TIME_POLICY = {
   REST_RECOVERY: { days: 1, fatigue: 0, labelVi: 'Nghỉ ngơi', labelEn: 'Rest' },
   TRAIN_MARTIAL: { days: 5, fatigue: 8, labelVi: 'Luyện võ', labelEn: 'Training' },
   EXPLORE_POI: { days: 2, fatigue: 5, labelVi: 'Khảo sát', labelEn: 'Explore' },
-  QUEST_STEP: { days: 2, fatigue: 5, labelVi: 'Nhiệm vụ', labelEn: 'Quest step' }
+  QUEST_STEP: { days: 2, fatigue: 5, labelVi: 'Nhiệm vụ', labelEn: 'Quest step' },
+  // Combat services own their stamina cost (`fatigueDelta`), so these policy
+  // rows charge calendar days only. Charging fatigue here would double it.
+  DUEL_SPAR: { days: 5, fatigue: 0, labelVi: 'Tỉ thí võ nghệ', labelEn: 'Sparring' },
+  ARENA_CHALLENGE: { days: 5, fatigue: 0, labelVi: 'Khiêu chiến lôi đài', labelEn: 'Arena challenge' },
+  COMBAT_ENCOUNTER: { days: 1, fatigue: 0, labelVi: 'Giao chiến', labelEn: 'Combat encounter' },
+  // Gathering services already charge fatigue per node.
+  GATHER_NODE: { days: 1, fatigue: 0, labelVi: 'Khai thác', labelEn: 'Gather' }
 };
 
 function getActionTimeCost(type, subType) {

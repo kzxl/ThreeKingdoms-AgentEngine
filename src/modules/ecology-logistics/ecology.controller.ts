@@ -14,6 +14,7 @@ import { ModuleRegistry } from '../../core/module-registry';
 import { EcologyLogisticsModule } from './ecology-logistics.module';
 import { EconomyModule } from '../economy/economy.module';
 import { GUARD_TIER_CONFIGS } from './caravan-logistics.service';
+import { chargePlayerAction } from '../../shared/action-time';
 
 function getEcologyModule(): EcologyLogisticsModule | undefined {
   return ModuleRegistry.getInstance().get<EcologyLogisticsModule>('module.ecology-logistics');
@@ -164,6 +165,14 @@ export function registerEcologyRoutes(router: Router): void {
       }
 
       const cargoValue = Math.round(qty * item.baseline_peace_price);
+
+      const time = chargePlayerAction(
+        db.path,
+        'ENTERPRISE_MANAGE',
+        null,
+        `Dispatch caravan ${fromSettlementId} -> ${toSettlementId}`
+      );
+
       const generatedCaravanId = nextId(db, 'caravan', 'CARAVAN', getGameDate(db));
       const name = caravanName || `Trù Vận Đội (${fromSettlementId} -> ${toSettlementId})`;
       const meta = getCampaignMeta(db);
@@ -202,10 +211,11 @@ export function registerEcologyRoutes(router: Router): void {
         cargoValueQian: cargoValue,
         estimatedDeliveredValue: estimatedDecay.deliveredCash,
         estimatedLossRate: `${Math.round((estimatedDecay.lostInTransit / cargoValue) * 100)}%`,
-        message: `Đã xuất phát ${name} vận tải ${qty} ${item.name_vi} (Tổng giá trị ${cargoValue} quan).`
+        message: `Đã xuất phát ${name} vận tải ${qty} ${item.name_vi} (Tổng giá trị ${cargoValue} quan).`,
+        time
       });
     } catch (err: any) {
-      sendJson(res, 400, { success: false, error: err.message });
+      sendJson(res, err.statusCode || 400, { success: false, error: err.message, code: err.code });
     }
   };
 

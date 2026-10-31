@@ -28,6 +28,7 @@ import { recordStockMovement, consumeInventoryItem, restoreInventoryItem } from 
 import { syncProgressProjection } from '../../shared/projection-sync';
 import { RngService } from '../../core/rng';
 import { nextSequentialId } from '../../shared/id-generator';
+import { chargePlayerAction } from '../../shared/action-time';
 
 export type EquipmentSlotType = 'WEAPON' | 'ARMOR' | 'STEED' | 'TREASURE';
 export const VALID_EQUIPMENT_SLOTS: readonly EquipmentSlotType[] = ['WEAPON', 'ARMOR', 'STEED', 'TREASURE'];
@@ -1393,10 +1394,16 @@ export function registerBlacksmithForgeRoutes(router: Router): void {
   router.post('/api/professions/forge/bespoke', async (_req: any, res: any, ctx: RouteContext) => {
     try {
       const payload: BespokeWeaponForgeParams = ctx.body || {};
+      const time = chargePlayerAction(
+        DatabaseService.getInstance().path,
+        'PRODUCTION_BATCH',
+        null,
+        `Forge bespoke weapon ${payload.customName || ''}`.trim()
+      );
       const result = service.forgeBespokeGodWeapon(payload);
-      sendJson(res, 200, result);
+      sendJson(res, 200, { ...result, time });
     } catch (err: any) {
-      sendJson(res, 400, { success: false, error: err.message });
+      sendJson(res, err.statusCode || 400, { success: false, error: err.message, code: err.code });
     }
   });
 
@@ -1420,10 +1427,16 @@ export function registerBlacksmithForgeRoutes(router: Router): void {
   router.post('/api/professions/forge/standard', async (_req: any, res: any, ctx: RouteContext) => {
     try {
       const payload: StandardArmamentForgeParams = ctx.body || {};
+      const time = chargePlayerAction(
+        DatabaseService.getInstance().path,
+        'PRODUCTION_BATCH',
+        null,
+        'Forge standard armament'
+      );
       const result = service.forgeStandardArmament(payload);
-      sendJson(res, 200, result);
+      sendJson(res, 200, { ...result, time });
     } catch (err: any) {
-      sendJson(res, 400, { success: false, error: err.message });
+      sendJson(res, err.statusCode || 400, { success: false, error: err.message, code: err.code });
     }
   });
 
@@ -1446,10 +1459,16 @@ export function registerBlacksmithForgeRoutes(router: Router): void {
         sendJson(res, 400, { success: false, error: 'shiftId is required.' });
         return;
       }
+      const time = chargePlayerAction(
+        DatabaseService.getInstance().path,
+        'WORK_SHIFT',
+        null,
+        `Work shift ${shiftId}`
+      );
       const result = service.performLaborShift(characterId, shiftId);
-      sendJson(res, 200, result);
+      sendJson(res, 200, { ...result, time });
     } catch (err: any) {
-      sendJson(res, 400, { success: false, error: err.message });
+      sendJson(res, err.statusCode || 400, { success: false, error: err.message, code: err.code });
     }
   });
 
@@ -1461,10 +1480,16 @@ export function registerBlacksmithForgeRoutes(router: Router): void {
         sendJson(res, 400, { success: false, error: 'businessType is required.' });
         return;
       }
+      const time = chargePlayerAction(
+        DatabaseService.getInstance().path,
+        'ENTERPRISE_MANAGE',
+        null,
+        `Open enterprise ${businessType}`
+      );
       const result = service.openBusiness(characterId, businessType, customName, Boolean(turnkey));
-      sendJson(res, 200, result);
+      sendJson(res, 200, { ...result, time });
     } catch (err: any) {
-      sendJson(res, 400, { success: false, error: err.message });
+      sendJson(res, err.statusCode || 400, { success: false, error: err.message, code: err.code });
     }
   });
 

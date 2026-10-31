@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.23.1] - 2026-10-31
+
+Server-side action time authority for player mutations.
+
+### Changed
+- `src/shared/action-time.ts` charges calendar days at the HTTP boundary for
+  duels (spar, arena, caravan ambush, initiate), kizuna interactions, banquets,
+  brotherhood oaths, retainer/workforce recruitment, caravan dispatch,
+  gathering, crafting, both forge paths, work shifts and enterprise opening.
+  A rejected charge (fatigue, ended campaign) throws `ActionTimeError` before
+  the service runs, so the clock and game state stay untouched.
+- New policy rows: `DUEL_SPAR`, `ARENA_CHALLENGE`, `COMBAT_ENCOUNTER`,
+  `GATHER_NODE`. Combat and gathering services own their stamina cost, so these
+  rows charge days only; a day-consuming action still requires fatigue
+  headroom below the cap.
+- `POST /api/time/spend` is now a deprecated clock refresh and the legacy
+  `apiSpendActionTime` client helper no longer advances time. Actions can no
+  longer be played for free by skipping or double-calling the client helper.
+- `tests/verify-action-time-authority.ts` proves a spar costs five days, a
+  social interaction costs two, and a fatigued action is rejected without
+  moving the clock.
+
+### Verification
+`npm run verify` green: 47/47 suites, 28/28 contracts, 8/8 write smokes.
+
+---
+
 ## [1.23.0] - 2026-10-30
 
 Skill extension: shared EXP curve, NPC combat skills and talent-specific effects.

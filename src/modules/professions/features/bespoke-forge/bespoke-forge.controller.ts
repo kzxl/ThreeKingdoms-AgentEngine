@@ -6,6 +6,8 @@
 import { Router, sendJson, RouteContext } from '../../../../server/router';
 import { BespokeForgeService } from './bespoke-forge.service';
 import { SpatialGuardService } from '../../../progression/spatial-guard.service';
+import { DatabaseService } from '../../../../core/database';
+import { chargePlayerAction } from '../../../../shared/action-time';
 
 export function registerBespokeForgeRoutes(router: Router): void {
   const service = BespokeForgeService.getInstance();
@@ -43,10 +45,17 @@ export function registerBespokeForgeRoutes(router: Router): void {
         body.bypassSpatialGuard
       );
 
+      const time = chargePlayerAction(
+        DatabaseService.getInstance().path,
+        'PRODUCTION_BATCH',
+        null,
+        `Bespoke forge ${body.customName || ''}`.trim()
+      );
+
       const result = service.forgeWeapon(body);
-      sendJson(res, 200, result);
+      sendJson(res, 200, { ...result, time });
     } catch (err: any) {
-      sendJson(res, 400, { success: false, error: err.message });
+      sendJson(res, err.statusCode || 400, { success: false, error: err.message, code: err.code });
     }
   });
 }

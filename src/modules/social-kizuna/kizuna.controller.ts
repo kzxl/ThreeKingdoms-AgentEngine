@@ -14,6 +14,7 @@ import { Router, sendJson, RouteContext } from '../../server/router';
 import { DailyInteractionEngine, EverydayActionType } from './daily-interaction.engine';
 import { DatabaseService } from '../../core/database';
 import { SpatialGuardService } from '../progression/spatial-guard.service';
+import { chargePlayerAction } from '../../shared/action-time';
 
 const REMOTE_COURIER_ACTIONS: ReadonlySet<string> = new Set([
   'SEND_COURIER_LETTER',
@@ -124,10 +125,17 @@ export function registerKizunaRoutes(router: Router): void {
         );
       }
 
+      const time = chargePlayerAction(
+        db.path,
+        'KIZUNA_INTERACT',
+        null,
+        `Kizuna ${actionType} with ${npcId}`
+      );
+
       const result = engine.executeDailyInteraction(npcId, actionType, customPrompt, itemCode);
-      sendJson(res, 200, { success: true, result });
+      sendJson(res, 200, { success: true, result, time });
     } catch (err: any) {
-      sendJson(res, err.statusCode || 500, { success: false, error: err.message });
+      sendJson(res, err.statusCode || 500, { success: false, error: err.message, code: err.code });
     }
   };
 
@@ -190,10 +198,17 @@ export function registerKizunaRoutes(router: Router): void {
         actionType = 'HEART_CONFESSION';
       }
 
+      const time = chargePlayerAction(
+        db.path,
+        'KIZUNA_INTERACT',
+        null,
+        `Natural chat ${actionType} with ${npcId}`
+      );
+
       const result = engine.executeDailyInteraction(npcId, actionType, prompt);
-      sendJson(res, 200, { success: true, actionType, result });
+      sendJson(res, 200, { success: true, actionType, result, time });
     } catch (err: any) {
-      sendJson(res, 500, { success: false, error: err.message });
+      sendJson(res, err.statusCode || 500, { success: false, error: err.message, code: err.code });
     }
   };
 

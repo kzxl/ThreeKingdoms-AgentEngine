@@ -21,6 +21,8 @@ import {
   RecruitRetainerParams
 } from './tavern-banquet.service';
 import { SpatialGuardService } from '../progression/spatial-guard.service';
+import { DatabaseService } from '../../core/database';
+import { chargePlayerAction } from '../../shared/action-time';
 
 export function registerBanquetRoutes(router: Router): void {
   const banquetService = TavernBanquetService.getInstance();
@@ -56,10 +58,17 @@ export function registerBanquetRoutes(router: Router): void {
         allowAutoProcure
       };
 
+      const time = chargePlayerAction(
+        DatabaseService.getInstance().path,
+        'KIZUNA_INTERACT',
+        null,
+        `Host banquet ${tier} (${guestNpcIds.join(',')})`
+      );
+
       const result = banquetService.hostBanquet(params);
-      sendJson(res, 200, { success: true, result });
+      sendJson(res, 200, { success: true, result, time });
     } catch (err: any) {
-      sendJson(res, 400, { success: false, error: err.message });
+      sendJson(res, err.statusCode || 400, { success: false, error: err.message, code: err.code });
     }
   };
 
@@ -90,10 +99,17 @@ export function registerBanquetRoutes(router: Router): void {
         body.bypassSpatialGuard
       );
 
+      const time = chargePlayerAction(
+        DatabaseService.getInstance().path,
+        'KIZUNA_INTERACT',
+        null,
+        `Swear brotherhood with ${npcId}`
+      );
+
       const result = banquetService.swearBrotherhood(npcId, playerId);
-      sendJson(res, 200, { success: true, result });
+      sendJson(res, 200, { success: true, result, time });
     } catch (err: any) {
-      sendJson(res, 400, { success: false, error: err.message });
+      sendJson(res, err.statusCode || 400, { success: false, error: err.message, code: err.code });
     }
   };
 
@@ -132,10 +148,17 @@ export function registerBanquetRoutes(router: Router): void {
         assignedRole
       };
 
+      const time = chargePlayerAction(
+        DatabaseService.getInstance().path,
+        'WORKFORCE_HIRE',
+        null,
+        `Recruit retainer ${heroNpcId}`
+      );
+
       const result = banquetService.recruitRetainer(params);
-      sendJson(res, 200, { success: true, result });
+      sendJson(res, 200, { success: true, result, time });
     } catch (err: any) {
-      sendJson(res, 400, { success: false, error: err.message });
+      sendJson(res, err.statusCode || 400, { success: false, error: err.message, code: err.code });
     }
   };
 

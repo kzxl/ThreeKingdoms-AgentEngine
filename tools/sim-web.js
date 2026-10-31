@@ -1102,28 +1102,19 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // Deprecated: action time is charged by the endpoint that resolves the
+  // action (src/shared/action-time.ts). This route stays for old clients but
+  // only reports the clock, so it cannot double-charge or farm month closes.
   if (req.method === 'POST' && pathname === '/api/time/spend') {
     let body = '';
     req.on('data', chunk => { body += chunk; });
     req.on('end', () => {
-      try {
-        const payload = JSON.parse(body || '{}');
-        const check = canSpendActionTime(DB_PATH, payload.actionType, payload.subType, payload.daysOverride);
-        if (!check.allowed) {
-          sendJson(res, 409, { success: false, code: check.code, error: check.error, clock: check.clock });
-          return;
-        }
-        const time = applyActionTime(
-          DB_PATH,
-          payload.actionType,
-          payload.subType,
-          payload.reason || payload.actionType,
-          payload.daysOverride
-        );
-        sendJson(res, 200, { success: true, time });
-      } catch (err) {
-        sendJson(res, 400, { success: false, error: err.message });
-      }
+      sendJson(res, 200, {
+        success: true,
+        deprecated: true,
+        time: getClock(DB_PATH),
+        message: 'Action time is now charged by the action endpoint itself.'
+      });
     });
     return;
   }

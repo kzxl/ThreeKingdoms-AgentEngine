@@ -8,6 +8,8 @@
 
 import { Router, sendJson, RouteContext } from '../../../../server/router';
 import { SpecialistWorkforceService } from './specialist-workforce.service';
+import { DatabaseService } from '../../../../core/database';
+import { chargePlayerAction } from '../../../../shared/action-time';
 
 export function registerSpecialistWorkforceRoutes(router: Router): void {
   const service = SpecialistWorkforceService.getInstance();
@@ -71,6 +73,13 @@ export function registerSpecialistWorkforceRoutes(router: Router): void {
         }
       }
 
+      const time = chargePlayerAction(
+        DatabaseService.getInstance().path,
+        'WORKFORCE_HIRE',
+        null,
+        `Hire specialist ${npcId} for ${businessId}`
+      );
+
       const result = service.hireSpecialist({
         characterId,
         npcId,
@@ -78,9 +87,9 @@ export function registerSpecialistWorkforceRoutes(router: Router): void {
         role
       });
 
-      sendJson(res, 200, result);
+      sendJson(res, 200, { ...result, time });
     } catch (err: any) {
-      sendJson(res, 400, { success: false, error: err.message });
+      sendJson(res, err.statusCode || 400, { success: false, error: err.message, code: err.code });
     }
   });
 }
