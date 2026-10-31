@@ -133,3 +133,33 @@ This document records the architectural choices, rationale, and alternatives con
 - **Consequences**:
   - Positive: Existing saves are repaired without a manual SQL session, and the repair is replayable.
   - Negative: A new content defect needs a new numbered migration; editing the database by hand remains out of policy.
+
+---
+
+## ADR-011: Local Market Has a Write Side (2026-10-31)
+
+- **Context**: `settlement_market_state` was read by trade quotes and drifted monthly, but no trade wrote to it. Buying 100 grain left the local price unchanged, so arbitrage and scarcity were decorative.
+- **Decision**: `SettlementMarketService.applyTrade` books every fill (buy = negative stock delta, sell = positive). `SimulationCore`, `/api/trade` and caravan claim call it; the monthly drift remains the slow mean-reversion layer. The CJS bridge caches one context per database path.
+- **Consequences**:
+  - Positive: Player trades move the next quote and create real local scarcity/glut; cross-settlement arbitrage has a cost on both ends.
+  - Negative: A large single trade can move a price sharply; content must seed enough stock to keep small trades sane.
+
+---
+
+## ADR-012: Obligations Are Player Decisions, Not Hidden Deductions (2026-10-31)
+
+- **Context**: Enterprise rent and wages were automatic, but the player had no recurring personal cost. Hiding a tax deduction in month close would add a number without adding a decision.
+- **Decision**: Migration 044 adds `obligations`. Month close issues the next month's tax bill (due day 15); the player pays explicitly through the API/UI. An unpaid bill becomes `OVERDUE` with a 10% late fee and a 5-point credibility loss.
+- **Consequences**:
+  - Positive: Every month has a "pay, defer or raise cash" decision with a visible consequence; payments go through the single ledger writer.
+  - Negative: A player who ignores the modal accumulates overdue bills and credibility loss; the UI must surface the section prominently.
+
+---
+
+## ADR-013: Contract Board for Repeatable Content (2026-10-31)
+
+- **Context**: Five questlines × three steps exhausted all authored quest content. The game needed a repeatable loop that consumed real inventory and paid real rewards without hand-authoring every month.
+- **Decision**: Migration 045 adds rotating `contract_offers` and `player_contracts`. Each settlement posts three deterministic offers per month; delivery consumes stock through `consumeInventoryItem`, pays through the ledger and awards fame. Expiry creates a `CONTRACT_PENALTY` obligation.
+- **Consequences**:
+  - Positive: The game has infinite low-authoring content tied to the local economy; delivery and expiry both have real consequences.
+  - Negative: Offers are generated, not hand-written, so narrative variety is limited until a content pass adds templates.

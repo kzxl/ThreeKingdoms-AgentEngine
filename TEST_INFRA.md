@@ -55,6 +55,9 @@ The **ThreeKingdoms-AgentEngine** test infrastructure provides an autonomous, mu
 - **Workshop Economy (`tests/verify-workshop-economy.ts`)**: Staffing scales output, rent/wages are charged, losses become debt, profit repays debt first.
 - **Career Paths (`tests/verify-career-paths.ts`)**: Five scores, `outcome_type` duel wins, modifiers, and a real WAR EXP award.
 - **Data Cleanup (`tests/verify-data-cleanup.ts`)**: Skill/item text is repaired, numeric legacy currency labels become Quan, prose is preserved, migration is idempotent.
+- **Local Market (`tests/verify-local-market.ts`)**: Buying drains stock and raises the next quote, selling adds stock and lowers it, drift/history work, the bridge is keyed per database.
+- **Obligations (`tests/verify-obligations.ts`)**: Monthly tax is issued once, payment goes through the ledger, an unpaid bill becomes overdue with a late fee and credibility loss, insufficient funds change nothing.
+- **Contract Board (`tests/verify-contract-board.ts`)**: Three deterministic offers per month, accept/deliver consumes real stock and pays the reward, expiry creates a penalty obligation, month close rotates offers.
 
 ### Tier 4: Invariant & State Conservation Auditor (`tools/sim-audit.js`)
 The auditor verifies **1,493 invariants across eight blocks** against SQLite as the
@@ -84,6 +87,9 @@ primary truth:
 | `tests/verify-workshop-economy.ts` | P0: Enterprise monthly P&L | — | Staffing, wages, rent, debt, debt-first repayment, zero-staff closure |
 | `tests/verify-career-paths.ts` | P0: Career-path resolver | — | Five scores, `outcome_type` duel count, modifiers, WAR EXP application |
 | `tests/verify-data-cleanup.ts` | P0: Text and currency repair | — | Skill/item repair, Quan labels, prose preservation, idempotency |
+| `tests/verify-local-market.ts` | P1: Local settlement market | — | Buy/sell stock movement, price direction, drift/history, per-DB bridge cache |
+| `tests/verify-obligations.ts` | P1: Periodic obligations | — | Issue/idempotency, payment, late fee/credibility, insufficiency, month close |
+| `tests/verify-contract-board.ts` | P1: Contract board | — | Rotation, accept, delivery with stock, expiry penalty, month-close rotation |
 | `tools/sim-audit.js` | System: Autonomous Invariant Auditor | 1,493 | Eight blocks: accounting, inventory, journal, projection, enterprise, strategy, life-sim, clock |
 
 ---
@@ -101,7 +107,7 @@ npx tsx tests/verify-rotk-duels.ts
 
 ### Full Verification Pipeline
 ```bash
-# Single gate: typecheck → arch ratchet → 50 suites → API contract → write smoke
+# Single gate: typecheck → arch ratchet → 53 suites → API contract → write smoke
 npm run verify
 
 # Individually:
@@ -112,7 +118,7 @@ npm run lint:ui        # UI debt ratchet (button classes, inline styles, native 
 npm run lint:slop      # anti-slop laws: emoji, gradients, glow shadows, font families
 npm run lint:api       # client /api/* paths must exist or be allowlisted with a reason
 npm run routes:shadow  # fails if a legacy route is already served by the Router
-npm test               # 4 legacy + 46 verify-*.ts suites, isolated DB per suite
+npm test               # 4 legacy + 49 verify-*.ts suites, isolated DB per suite
 npm run golden:verify  # 28 read-only endpoint contracts
 npm run smoke:write    # 8 HTTP write paths + post-write audit
 npm run audit          # 1,493 SQLite invariants in eight blocks

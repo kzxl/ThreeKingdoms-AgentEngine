@@ -70,6 +70,8 @@ All dynamic campaign state is maintained in `saves/session.db` using the schema 
 9. **`npc_relationship_deltas`**: Stores relational shifts (Affinity, Respect) relative to master character seed dossiers.
 10. **`session_duels`**: Duel chronicle; `winner_id` and `outcome_type` are the contract used by career scoring and spatial gates.
 11. **`player_skills`, `npc_skills` & `master_skills`**: Progression ladders. Player skill display names are resynced from the master catalog by migration 043.
+12. **`obligations`**: Periodic tax/fee bills with a due date, status, breakdown and penalty (migration 044).
+13. **`contract_offers` & `player_contracts`**: Rotating delivery board and accepted contracts (migration 045).
 
 ---
 
@@ -133,7 +135,7 @@ millisecond.
 ### 6.3 Versioned data migrations
 
 `tools/migrations/` holds idempotent migrations applied inside a transaction and
-recorded in `schema_migrations` (43 migrations, through `043-text-cleanup`). New playthrough instances
+recorded in `schema_migrations` (45 migrations, through `045-contract-board`). New playthrough instances
 are brought to a known data state with `npm run migrate`; `npm run migrate:status` lists
 pending work. Migrations also own data repairs that SQL cannot express safely at the
 read path: 042 adds `businesses.tier/debt`, 043 repairs legacy text and currency labels.
@@ -148,7 +150,7 @@ not require editing that test.
 | :--- | :--- | :--- |
 | Types | `npm run typecheck` | `strict` TypeScript across `src/`, `tests/`, `vite.config.ts`. |
 | Architecture | `npm run lint` | Ratchet over `tools/arch-baseline.json`; debt may only shrink. |
-| Behaviour | `npm test` | 50 suites (4 legacy + 46 modern); each modern suite runs on an isolated DB copy and projections are restored afterwards. |
+| Behaviour | `npm test` | 53 suites (4 legacy + 49 modern); each modern suite runs on an isolated DB copy and projections are restored afterwards. |
 | API contract | `npm run golden:verify` | 28 read-only endpoints: status code, response shape, behavioural assertions. |
 | Write paths | `npm run smoke:write` | 8 HTTP write paths plus a post-write audit on a sandbox database. |
 | Invariants | `npm run audit` | 1,493 SQLite invariants (ledger parity, inventory conservation, projection sync, world/life-sim/clock blocks). |
@@ -254,4 +256,62 @@ by an idempotent migration rather than an ad-hoc script:
   prose such as "nộp tiền mặt" is preserved.
 - New data repairs follow the same rule: a numbered migration, safe to run twice,
   with a verification suite (`tests/verify-data-cleanup.ts` for 043).
+
+---
+
+## 11. P1 Local Economy Loop (1.24.0–1.24.2)
+
+The P1 vertical slice adds three interlocking systems so a month contains real
+decisions instead of a passive timer.
+
+### 11.1 Local market write side
+
+`SettlementMarketService.applyTrade(settlementId, itemCode, stockDelta)` books
+every physical fill into `settlement_market_state`:
+
+- Buying passes a negative delta and drains local stock, so the next quote is
+  higher; selling passes a positive delta and lowers it.
+- Writers: `SimulationCore` TRADE_BUY/TRADE_SELL, `POST /api/trade`, and caravan
+  claim settlement. The monthly drift stays as the slow mean-reversion layer.
+- `driftSettlement` accepts `{ recordHistory: false }`; only the monthly call
+  writes `settlement_market_history`.
+- The CommonJS bridge keeps one context **per database path**, so an instance or
+  sandbox cannot read another campaign's market.
+
+### 11.2 Periodic obligations
+
+Migration 044 creates `obligations`. `ObligationService` issues one monthly tax
+for the month being entered: 5% of estimated enterprise gross plus a household
+poll tax (10 + 2 per retainer), minimum 20 quan, due on day 15.
+
+- The player pays through `POST /api/obligations/pay`; payment deducts cash or
+  grain, writes a `TAX_PAYMENT` ledger entry and a balanced journal pair.
+- Month close processes every DUE bill whose due date passed: status `OVERDUE`,
+  +10% late fee, −5 credibility. The bill is never silently deducted.
+- The quest modal renders an **Obligations** section with a Pay button.
+
+### 11.3 Repeatable contract board
+
+Migration 045 creates `contract_offers` and `player_contracts`.
+`ContractBoardService` posts three deterministic delivery offers per settlement
+per month from the settlement's surplus/deficit pool.
+
+- Accepting records a deadline (15–25 days); the offer becomes `ACCEPTED`.
+- Delivering consumes the real inventory through `consumeInventoryItem`, pays the
+  reward through the ledger (`CONTRACT_REWARD`) and awards fame. Insufficient
+  stock is rejected.
+- Month close expires missed contracts and creates a `CONTRACT_PENALTY`
+  obligation; the next month's offers are posted at the same time.
+- The quest modal renders a **Contracts** section with accept/deliver actions.
+
+### 11.4 Month-close order
+
+1. Player recovery and enterprise P&L (existing).
+2. World modules (NPC, politics, ecology, caravans).
+3. `processDue` + next-month tax (044 bridge).
+4. Contract expiry + next-month offers (045 bridge).
+5. Fame decay, arrivals, bankruptcy, retainer loyalty, victory check.
+
+The report returned by `GameplayManager.closeMonth` carries `obligations` and
+`contracts`, so the UI and tests read the same summary the player sees.
 
