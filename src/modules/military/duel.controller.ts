@@ -16,6 +16,7 @@ import {
 import { SpatialGuardService } from '../progression/spatial-guard.service';
 import { DatabaseService } from '../../core/database';
 import { chargePlayerAction } from '../../shared/action-time';
+import { requestIdempotencyKey, findIdempotentResult, recordAction } from '../../shared/action-journal';
 
 /**
  * Registers all Single Combat Duel routes into the provided Router instance.
@@ -48,8 +49,16 @@ export function registerDuelRoutes(router: Router): void {
         return;
       }
 
+      const db = DatabaseService.getInstance();
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
+
       const time = chargePlayerAction(
-        DatabaseService.getInstance().path,
+        db.path,
         'COMBAT_ENCOUNTER',
         null,
         `Duel initiate: ${opponentId}`
@@ -65,12 +74,18 @@ export function registerDuelRoutes(router: Router): void {
         metadata
       });
 
-      sendJson(res, 200, {
-        success: true,
+      const response = {
         message: `Trận đấu võ 1v1 đã khởi tranh! Đối thủ: ${activeDuel.opponent.nameVi} (${activeDuel.opponent.effectiveWar} WAR).`,
         duel: activeDuel,
         time
+      };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'DUEL_INITIATE',
+        payload: { playerId, opponentId, context, maxRounds: Number(maxRounds) || 5 },
+        result: response
       });
+      sendJson(res, 200, { success: true, ...response, idempotent: false });
     } catch (err: any) {
       sendJson(res, err.statusCode || 400, { success: false, error: err.message, code: err.code });
     }
@@ -110,6 +125,14 @@ export function registerDuelRoutes(router: Router): void {
         return;
       }
 
+      const db = DatabaseService.getInstance();
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
+
       const clash = duelService.resolveRound(
         targetDuelId,
         rawCommand as TacticalCommand,
@@ -118,13 +141,19 @@ export function registerDuelRoutes(router: Router): void {
 
       const activeDuel = duelService.getActiveDuel(targetDuelId);
 
-      sendJson(res, 200, {
-        success: true,
+      const response = {
         round: clash,
         duel: activeDuel,
         isConcluded: clash.isDuelConcluded || false,
         result: activeDuel?.result
+      };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'DUEL_ROUND',
+        payload: { duelId: targetDuelId, command: rawCommand, forcedOpponentCommand: forcedOpponentCommand || null },
+        result: response
       });
+      sendJson(res, 200, { success: true, ...response, idempotent: false });
     } catch (err: any) {
       sendJson(res, 400, { success: false, error: err.message });
     }
@@ -188,8 +217,16 @@ export function registerDuelRoutes(router: Router): void {
 
       const targetHero = heroNpcId || npcId || 'NPC-0002'; // Default Zhang Fei
 
+      const db = DatabaseService.getInstance();
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
+
       const time = chargePlayerAction(
-        DatabaseService.getInstance().path,
+        db.path,
         'DUEL_SPAR',
         null,
         `Spar with ${targetHero}`
@@ -202,12 +239,14 @@ export function registerDuelRoutes(router: Router): void {
         playerCommands
       );
 
-      sendJson(res, 200, {
-        success: true,
-        message: result.summaryNarrativeVi,
-        result,
-        time
+      const response = { message: result.summaryNarrativeVi, result, time };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'DUEL_SPAR',
+        payload: { playerId, targetHero, autoResolve: autoResolve !== false },
+        result: response
       });
+      sendJson(res, 200, { success: true, ...response, idempotent: false });
     } catch (err: any) {
       sendJson(res, err.statusCode || 400, { success: false, error: err.message, code: err.code });
     }
@@ -258,8 +297,16 @@ export function registerDuelRoutes(router: Router): void {
         bypassSpatialGuard
       );
 
+      const db = DatabaseService.getInstance();
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
+
       const time = chargePlayerAction(
-        DatabaseService.getInstance().path,
+        db.path,
         'ARENA_CHALLENGE',
         null,
         `Arena challenge tier ${tier}`
@@ -272,12 +319,14 @@ export function registerDuelRoutes(router: Router): void {
         playerCommands
       );
 
-      sendJson(res, 200, {
-        success: true,
-        message: result.summaryNarrativeVi,
-        result,
-        time
+      const response = { message: result.summaryNarrativeVi, result, time };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'DUEL_ARENA',
+        payload: { playerId, tier, autoResolve: autoResolve !== false },
+        result: response
       });
+      sendJson(res, 200, { success: true, ...response, idempotent: false });
     } catch (err: any) {
       sendJson(res, err.statusCode || 400, { success: false, error: err.message, code: err.code });
     }
@@ -305,8 +354,16 @@ export function registerDuelRoutes(router: Router): void {
         return;
       }
 
+      const db = DatabaseService.getInstance();
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
+
       const time = chargePlayerAction(
-        DatabaseService.getInstance().path,
+        db.path,
         'COMBAT_ENCOUNTER',
         null,
         `Caravan ambush defense ${caravanId}`
@@ -320,12 +377,14 @@ export function registerDuelRoutes(router: Router): void {
         playerCommands
       );
 
-      sendJson(res, 200, {
-        success: true,
-        message: result.summaryNarrativeVi,
-        result,
-        time
+      const response = { message: result.summaryNarrativeVi, result, time };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'DUEL_CARAVAN_AMBUSH',
+        payload: { playerId, caravanId, strongholdId, autoResolve: autoResolve !== false },
+        result: response
       });
+      sendJson(res, 200, { success: true, ...response, idempotent: false });
     } catch (err: any) {
       sendJson(res, err.statusCode || 400, { success: false, error: err.message, code: err.code });
     }
