@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.26.1] - 2026-10-31
+
+Core accounting: every cashflow row now has a balanced journal pair.
+
+### Changed
+- `src/shared/ledger.ts` adds `postDoubleEntry`, which writes the cashflow row
+  and the matching Dr/Cr journal pair under the same `txn_id` in one
+  transaction.
+- `enterprise-labor.service.ts` (capital, dividend, two wage paths, business
+  opening) and `wage-labor.service.ts` moved from `postCashflowEntry` to
+  `postDoubleEntry`. Wages credit `4003_LABOR_INCOME`, dividends credit
+  `4002_FINANCIAL_INCOME`, capital investments debit `1501_FIXED_ASSETS`.
+- Migration 049 backfills a balanced pair for every historical cashflow row
+  without one (11 rows in the live save).
+- `tools/sim-audit.js` now fails when the journal table is missing, when a
+  cashflow row has no journal pair, or when a journal row has no cashflow.
+  Audit invariants: 1,506.
+- `tests/verify-ledger-completeness.ts` covers the backfill and the helper.
+
+### Verification
+`npm run verify` green: 57/57 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,506 invariants, 0 discrepancies.
+
+---
+
 ## [1.26.0] - 2026-10-31
 
 RPG farming: rent a parcel, plant a seasonal crop, harvest grain.

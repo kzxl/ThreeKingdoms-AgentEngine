@@ -12,7 +12,8 @@
 import { DatabaseService } from '../../core/database';
 import { seedMasterRecipes } from './recipes-seed';
 import { nextSequentialId } from '../../shared/id-generator';
-import { getPlayerCapital, postCashflowEntry } from '../../shared/ledger';
+import { getPlayerCapital, postDoubleEntry } from '../../shared/ledger';
+import { ACCOUNT_CODES } from '../../shared/account-codes';
 import { CANONICAL_LABOR_SHIFTS } from './features/wage-labor/wage-labor.constants';
 
 export type EnterpriseType = 'WORKSHOP' | 'TAVERN' | 'APOTHECARY' | 'BLACKSMITH';
@@ -456,14 +457,16 @@ export class EnterpriseLaborService {
 
       // 2. Record cashflow ledger entry
       const txnId = nextSequentialId(this.db, 'cashflow_ledger', 'TXN-CAPITAL', currentDate);
-      postCashflowEntry(this.db, {
+      postDoubleEntry(this.db, {
         txnId,
         gameDate: currentDate,
         counterparty: `Khai trương ${name}`,
         category: 'CAPITAL_INVESTMENT',
         outflow: initialCapital,
         balance: remainingCash,
-        memo: `Đầu tư mở cơ sở kinh doanh ${name}`
+        memo: `Đầu tư mở cơ sở kinh doanh ${name}`,
+        debitAccount: ACCOUNT_CODES.fixedAssets,
+        creditAccount: ACCOUNT_CODES.cashMobile
       });
 
       // 3. Register business in businesses table
@@ -644,14 +647,16 @@ export class EnterpriseLaborService {
       // 3. Log cashflow ledger entry. Balance is total player capital
       //    (liquid + personal vault), not liquid cash alone.
       const txnId = nextSequentialId(this.db, 'cashflow_ledger', 'TXN-DIVIDEND', currentDate);
-      postCashflowEntry(this.db, {
+      postDoubleEntry(this.db, {
         txnId,
         gameDate: currentDate,
         counterparty: biz.name,
         category: 'ENTERPRISE_DIVIDEND',
         inflow: toWithdraw,
         balance: ownerCapital.total,
-        memo: `Rút lợi nhuận kinh doanh từ ${biz.name}`
+        memo: `Rút lợi nhuận kinh doanh từ ${biz.name}`,
+        debitAccount: ACCOUNT_CODES.cashMobile,
+        creditAccount: ACCOUNT_CODES.financialIncome
       });
 
       const updated = this.getEnterpriseDetails(businessId);
@@ -746,14 +751,16 @@ export class EnterpriseLaborService {
 
       // 3. Log cashflow wage transaction
       const txnId = nextSequentialId(this.db, 'cashflow_ledger', 'TXN-WAGE', currentDate);
-      postCashflowEntry(this.db, {
+      postDoubleEntry(this.db, {
         txnId,
         gameDate: currentDate,
         counterparty: `Chủ quản cơ sở (${job.businessType})`,
         category: 'LABOR_WAGE',
         inflow: job.dailyWage,
         balance: newLiquidCash,
-        memo: `Tiền công làm thuê: ${job.titleVi}`
+        memo: `Tiền công làm thuê: ${job.titleVi}`,
+        debitAccount: ACCOUNT_CODES.cashMobile,
+        creditAccount: ACCOUNT_CODES.laborIncome
       });
 
       // 4. Award Profession EXP
@@ -1083,14 +1090,16 @@ export class EnterpriseLaborService {
 
       // Correct Cashflow Ledger insertion
       const txnId = nextSequentialId(this.db, 'cashflow_ledger', 'TXN-WAGE', currentDate);
-      postCashflowEntry(this.db, {
+      postDoubleEntry(this.db, {
         txnId,
         gameDate: currentDate,
         counterparty: shift.workplaceVi,
         category: 'LABOR_WAGE',
         inflow: shift.wage,
         balance: totalBalance,
-        memo: `Tiền công lao động ca: ${shift.titleVi}`
+        memo: `Tiền công lao động ca: ${shift.titleVi}`,
+        debitAccount: ACCOUNT_CODES.cashMobile,
+        creditAccount: ACCOUNT_CODES.laborIncome
       });
 
       // Award Profession EXP cleanly
@@ -1235,14 +1244,16 @@ export class EnterpriseLaborService {
 
       // 3. Record cashflow ledger entry with CORRECT columns
       const txnId = nextSequentialId(this.db, 'cashflow_ledger', 'TXN-BIZ', currentDate);
-      postCashflowEntry(this.db, {
+      postDoubleEntry(this.db, {
         txnId,
         gameDate: currentDate,
         counterparty: 'Quan Phủ Trác Quận',
         category: 'CAPITAL_INVESTMENT',
         outflow: totalCashNeeded,
         balance: remainingCash,
-        memo: `Đầu tư khai trương sản nghiệp: ${finalName} (${totalTurnkeyDeduction > 0 ? 'kèm bù vật liệu' : 'vật liệu tự túc'})`
+        memo: `Đầu tư khai trương sản nghiệp: ${finalName} (${totalTurnkeyDeduction > 0 ? 'kèm bù vật liệu' : 'vật liệu tự túc'})`,
+        debitAccount: ACCOUNT_CODES.fixedAssets,
+        creditAccount: ACCOUNT_CODES.cashMobile
       });
 
       // 4. Insert into businesses table

@@ -161,8 +161,17 @@ function auditDoubleEntryJournal() {
   // Check if account_journal table exists
   const tableCheck = runSqlJson(`SELECT name FROM sqlite_master WHERE type='table' AND name='account_journal';`);
   if (!tableCheck || tableCheck.length === 0) {
-    // Journal table not yet installed (optional during P0, required in P1)
-    return { passed: true, checksCount: 0, errors: [], entriesCount: 0, installed: false };
+    // The journal is no longer optional: a cashflow row without a journal pair
+    // cannot be explained or audited.
+    return {
+      passed: false,
+      checksCount: 1,
+      errors: ['account_journal table is missing; every cashflow row must carry a balanced journal pair'],
+      entriesCount: 0,
+      installed: false,
+      orphanCashflow: 0,
+      orphanJournal: 0
+    };
   }
 
   const entries = runSqlJson(`
@@ -180,12 +189,35 @@ function auditDoubleEntryJournal() {
     }
   }
 
+  // Completeness both ways: every cashflow has a journal, every journal has a cashflow.
+  const orphanCashflow = Number(runSqlJson(`
+    SELECT COUNT(*) AS c FROM cashflow_ledger c
+    LEFT JOIN account_journal j ON c.txn_id = j.txn_id
+    WHERE j.txn_id IS NULL;
+  `)[0]?.c || 0);
+  checksCount++;
+  if (orphanCashflow > 0) {
+    errors.push(`${orphanCashflow} cashflow row(s) have no account_journal pair`);
+  }
+
+  const orphanJournal = Number(runSqlJson(`
+    SELECT COUNT(*) AS c FROM account_journal j
+    LEFT JOIN cashflow_ledger c ON c.txn_id = j.txn_id
+    WHERE c.txn_id IS NULL;
+  `)[0]?.c || 0);
+  checksCount++;
+  if (orphanJournal > 0) {
+    errors.push(`${orphanJournal} journal row(s) have no cashflow transaction`);
+  }
+
   return {
     passed: errors.length === 0,
     checksCount,
     errors,
     entriesCount: entries.length,
-    installed: true
+    installed: true,
+    orphanCashflow,
+    orphanJournal
   };
 }
 
@@ -629,18 +661,20 @@ function runAudit() {
       console.log(`    ✅ Passed: Quantity non-negativity and movement balances verified.`);
     }
 
-    // 3. Double-Entry Journal Audit (if installed)
+    // 3. Double-Entry Journal Audit (required)
     const journalResult = auditDoubleEntryJournal();
     totalChecks += journalResult.checksCount;
+    console.log(`\n[3] DOUBLE-ENTRY JOURNAL (Dr/Cr Parity & Completeness):`);
+    console.log(`    Journal Sets Checked  : ${journalResult.entriesCount}`);
     if (journalResult.installed) {
-      console.log(`\n[3] DOUBLE-ENTRY JOURNAL (Dr/Cr Parity):`);
-      console.log(`    Journal Sets Checked  : ${journalResult.entriesCount}`);
-      if (!journalResult.passed) {
-        allPassed = false;
-        journalResult.errors.forEach(e => { console.error(`    ❌ ${e}`); allErrors.push(e); });
-      } else {
-        console.log(`    ✅ Passed: Every transaction debits == credits exactly.`);
-      }
+      console.log(`    Cashflow Without Pair : ${journalResult.orphanCashflow}`);
+      console.log(`    Journal Without Cash  : ${journalResult.orphanJournal}`);
+    }
+    if (!journalResult.passed) {
+      allPassed = false;
+      journalResult.errors.forEach(e => { console.error(`    ❌ ${e}`); allErrors.push(e); });
+    } else {
+      console.log(`    ✅ Passed: Every cashflow row has a balanced Dr/Cr journal pair.`);
     }
 
     // 4. Projection Synchronization Audit

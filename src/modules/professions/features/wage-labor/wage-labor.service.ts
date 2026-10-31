@@ -22,7 +22,8 @@ import {
 import { calculatePlayerStamina as canonicalCalculatePlayerStamina } from '../../../../shared/character-stats';
 import { nextId } from '../../../../shared/id-generator';
 import { getGameDate } from '../../../../shared/game-clock';
-import { postCashflowEntry } from '../../../../shared/ledger';
+import { postDoubleEntry } from '../../../../shared/ledger';
+import { ACCOUNT_CODES } from '../../../../shared/account-codes';
 
 /**
  * Re-exports canonical stamina profile calculation from shared character-stats domain.
@@ -176,14 +177,16 @@ export class WageLaborService {
 
       // 3. Double-entry Cashflow Ledger
       const txnId = nextId(this.db, 'cashflow', 'TXN-WAGE', getGameDate(this.db));
-      postCashflowEntry(this.db, {
+      postDoubleEntry(this.db, {
         txnId,
         gameDate: currentDate,
         counterparty: shift.workplaceVi,
         category: 'LABOR_WAGE',
         inflow: shift.wage,
         balance: totalBalance,
-        memo: `Tiền công lao động: ${shift.titleVi}`
+        memo: `Tiền công lao động: ${shift.titleVi}`,
+        debitAccount: ACCOUNT_CODES.cashMobile,
+        creditAccount: ACCOUNT_CODES.laborIncome
       });
 
       // 4. Profession EXP upsert

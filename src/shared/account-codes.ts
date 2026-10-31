@@ -13,10 +13,12 @@ export const ACCOUNT_CODES = {
   cashSafe: '1002_CASH_SAFE',
   accountsReceivable: '1003_ACCOUNTS_RECEIVABLE',
   inventory: '1201_INVENTORY',
+  fixedAssets: '1501_FIXED_ASSETS',
   accountsPayable: '2001_ACCOUNTS_PAYABLE',
   ownerEquity: '3001_OWNER_EQUITY',
   salesRevenue: '4001_SALES_REVENUE',
   financialIncome: '4002_FINANCIAL_INCOME',
+  laborIncome: '4003_LABOR_INCOME',
   financialExpense: '5002_FINANCIAL_EXPENSE',
   operatingExpense: '6001_OPERATING_EXPENSE',
   bountyIncome: '7001_BOUNTY_INCOME'
