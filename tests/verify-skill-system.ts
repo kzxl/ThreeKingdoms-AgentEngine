@@ -10,6 +10,7 @@ import Database from 'better-sqlite3';
 import { DatabaseService } from '../src/core/database';
 import { SkillService } from '../src/modules/progression/skill.service';
 import { QuestService } from '../src/modules/progression/quest.service';
+import { applySkillExpGain, expRequiredForTier, gainMultiplierForTier } from '../src/shared/skill-exp';
 import { initializeInstanceDatabase } from '../src/modules/instances/instance-bootstrap';
 import { ARCHETYPE_PRESETS } from '../src/modules/instances/instances.constants';
 const migration034 = require('../tools/migrations/034-quest-engine');
@@ -119,6 +120,24 @@ function run() {
   const ui = fs.readFileSync(path.join(ROOT, 'public', 'js', 'protagonist-dossier-modal.js'), 'utf8');
   assert(ui.includes('dossier-skill-list'), 'dossier must render the skill sheet');
   assert(ui.includes('/api/skills'), 'dossier must load skills from the API');
+
+  // The EXP curve is shared by the TS service and the CommonJS engine writers.
+  assert.strictEqual(expRequiredForTier(1), 40);
+  assert.strictEqual(expRequiredForTier(3), 180);
+  assert.strictEqual(expRequiredForTier(5), 320);
+  assert.strictEqual(gainMultiplierForTier(2), 0.8);
+  const rankUp = applySkillExpGain(1, 30, 20);
+  assert.strictEqual(rankUp.tier, 2, '40 EXP at tier 1 must reach tier 2');
+  assert.strictEqual(rankUp.currentExp, 10, 'remainder must carry across the tier-up');
+  assert.strictEqual(rankUp.maxExp, 90);
+  const slowed = applySkillExpGain(2, 0, 20);
+  assert.strictEqual(slowed.gained, 16, 'tier 2 must convert only 80% of the award');
+  const capped = applySkillExpGain(5, 310, 100);
+  assert.strictEqual(capped.tier, 5);
+  assert.strictEqual(capped.currentExp, 320, 'EXP must clamp at the final tier');
+  const cjsExp = require('../engine/skill-exp.js');
+  assert.strictEqual(cjsExp.expRequiredForTier(4), expRequiredForTier(4));
+  assert.deepStrictEqual(cjsExp.applySkillExpGain(2, 80, 40), applySkillExpGain(2, 80, 40));
 
   console.log('✅ Skill system: structured effects, tier resolution, quest bonus and starting seeds verified.');
 }

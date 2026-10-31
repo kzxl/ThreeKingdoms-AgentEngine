@@ -19,6 +19,7 @@ import { ArchetypePreset } from './instances.constants';
 import { postCashflowEntryRaw } from '../../shared/ledger';
 import { ACCOUNT_CODES } from '../../shared/account-codes';
 import { readProfileLegacy } from '../../shared/legacy-store';
+import { expRequiredForTier } from '../../shared/skill-exp';
 import SCENARIO_SEEDS from '../../../config/scenario-seeds.json';
 
 export interface InstanceBootstrapOptions {
@@ -304,9 +305,9 @@ export function initializeInstanceDatabase(
       && tableExists(db, 'master_skills')) {
       const grantSkill = db.prepare(`
         INSERT OR IGNORE INTO player_skills (skill_code, skill_name, tier, current_exp, max_exp)
-        SELECT skill_code, skill_name_vi, 1, 0, 60 FROM master_skills WHERE skill_code = ?;
+        SELECT skill_code, skill_name_vi, 1, 0, ? FROM master_skills WHERE skill_code = ?;
       `);
-      for (const code of preset.startingSkills) grantSkill.run(code);
+      for (const code of preset.startingSkills) grantSkill.run(expRequiredForTier(1), code);
     }
 
     // Innate talents are per-archetype in the master roster; store their codes

@@ -8,6 +8,7 @@
  */
 
 import { DatabaseService } from '../../core/database';
+import { applySkillExpGain, expRequiredForTier } from '../../shared/skill-exp';
 
 export interface SkillEffectView {
   tier: number;
@@ -244,26 +245,23 @@ export class SkillService {
       if (!master) return null;
       this.db.execute(
         `INSERT INTO player_skills (skill_code, skill_name, tier, current_exp, max_exp)
-         VALUES (?, ?, 1, 0, 60);`,
-        [skillCode, master.skill_name_vi]
+         VALUES (?, ?, 1, 0, ?);`,
+        [skillCode, master.skill_name_vi, expRequiredForTier(1)]
       );
-      row = { tier: 1, current_exp: 0, max_exp: 60 };
+      row = { tier: 1, current_exp: 0, max_exp: expRequiredForTier(1) };
     }
 
-    let tier = Number(row.tier || 1);
-    let currentExp = Number(row.current_exp || 0) + gain;
-    let maxExp = Number(row.max_exp || 60);
-    while (currentExp >= maxExp && tier < 5) {
-      currentExp -= maxExp;
-      tier += 1;
-      maxExp = Math.round(maxExp * 1.5);
-    }
+    const advanced = applySkillExpGain(
+      Number(row.tier || 1),
+      Number(row.current_exp || 0),
+      gain
+    );
 
     this.db.execute(
       'UPDATE player_skills SET tier = ?, current_exp = ?, max_exp = ? WHERE skill_code = ?;',
-      [tier, currentExp, maxExp, skillCode]
+      [advanced.tier, advanced.currentExp, advanced.maxExp, skillCode]
     );
-    return { tier, currentExp, maxExp };
+    return { tier: advanced.tier, currentExp: advanced.currentExp, maxExp: advanced.maxExp };
   }
 
   public choosePerk(perkCode: string): SkillPerkView {    const perk = this.db.queryOne<any>(

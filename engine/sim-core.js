@@ -18,6 +18,7 @@ const GAME_DIR = path.join(ROOT_DIR, 'game');
 const DEFAULT_DB_PATH = path.join(ROOT_DIR, 'saves', 'session.db');
 
 const { runSqlJson, runSqlBatch, escapeSql } = require('./db-adapter');
+const { applySkillExpGain } = require('./skill-exp');
 const { normalizeAction } = require('./action-validation');
 const { canSpendActionTime, applyActionTime, getClock } = require('./time-manager');
 const { startTask, cancelTask } = require('./task-manager');
@@ -710,19 +711,18 @@ class SimulationCore {
 
     const actionId = this._nextSequenceId('ACT', 'action_log', game_date);
     let skillUpdateSql = '';
+    let appliedExp = 0;
 
     if (exp_skill) {
       const skillRow = runSqlJson(this.dbPath, `SELECT * FROM player_skills WHERE skill_code = '${exp_skill}' LIMIT 1;`)[0];
       if (skillRow) {
-        let newExp = Number(skillRow.current_exp) + Number(exp_amount);
-        let newTier = Number(skillRow.tier);
-        let maxExp = Number(skillRow.max_exp);
-        if (newExp >= maxExp && newTier < 5) {
-          newTier += 1;
-          newExp = newExp - maxExp;
-          maxExp = Math.round(maxExp * 1.5);
-        }
-        skillUpdateSql = `UPDATE player_skills SET current_exp = ${newExp}, tier = ${newTier}, max_exp = ${maxExp} WHERE skill_code = '${exp_skill}';`;
+        const advanced = applySkillExpGain(
+          Number(skillRow.tier || 1),
+          Number(skillRow.current_exp || 0),
+          Number(exp_amount)
+        );
+        appliedExp = advanced.gained;
+        skillUpdateSql = `UPDATE player_skills SET current_exp = ${advanced.currentExp}, tier = ${advanced.tier}, max_exp = ${advanced.maxExp} WHERE skill_code = '${exp_skill}';`;
       }
     }
 
@@ -730,7 +730,7 @@ class SimulationCore {
       UPDATE player_state SET fatigue = ${newFatigue}, morale = ${newMorale};
       ${skillUpdateSql}
       INSERT INTO action_log (action_id, idempotency_key, turn_number, game_date, action_type, payload, result, status)
-      VALUES ('${actionId}', ${idempotency_key ? `'${idempotency_key}'` : 'NULL'}, (SELECT active_turn FROM campaign_meta LIMIT 1), '${game_date}', 'PERSONAL_GROWTH', '${JSON.stringify(action).replace(/'/g, "''")}', '{"subType":"${sub_type}","fatigue":${newFatigue},"morale":${newMorale},"skillCode":${exp_skill ? `"${exp_skill}"` : 'null'},"expGained":${exp_amount || 0},"memo":"${memo || 'Tu thân dưỡng tính hoàn tất'}"}', 'SUCCESS');
+      VALUES ('${actionId}', ${idempotency_key ? `'${idempotency_key}'` : 'NULL'}, (SELECT active_turn FROM campaign_meta LIMIT 1), '${game_date}', 'PERSONAL_GROWTH', '${JSON.stringify(action).replace(/'/g, "''")}', '{"subType":"${sub_type}","fatigue":${newFatigue},"morale":${newMorale},"skillCode":${exp_skill ? `"${exp_skill}"` : 'null'},"expGained":${appliedExp},"memo":"${memo || 'Tu thân dưỡng tính hoàn tất'}"}', 'SUCCESS');
     `;
 
     const batchRes = runSqlBatch(this.dbPath, sql);
@@ -747,7 +747,7 @@ class SimulationCore {
         fatigue: newFatigue,
         morale: newMorale,
         skillCode: exp_skill,
-        expGained: exp_amount || 0,
+        expGained: appliedExp,
         memo: memo || 'Tu thân dưỡng tính hoàn tất'
       }
     };

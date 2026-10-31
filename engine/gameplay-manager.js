@@ -22,6 +22,7 @@ const {
   DAILY_FATIGUE_RECOVERY
 } = require('./time-manager');
 const { listTasks } = require('./task-manager');
+const { expRequiredForTier } = require('./skill-exp');
 const { getPrestigeService } = require('./prestige-bridge');
 const { getFameAttractionService } = require('./fame-attraction-bridge');
 const { getBattleDuelService } = require('./battle-duel-bridge');
@@ -251,8 +252,8 @@ class GameplayManager {
         runSqlExec(
           this.dbPath,
           `INSERT OR IGNORE INTO player_skills (skill_code, skill_name, tier, current_exp, max_exp)
-           SELECT skill_code, skill_name_vi, 1, 0, 60 FROM master_skills WHERE skill_code = ?;`,
-          [code]
+           SELECT skill_code, skill_name_vi, 1, 0, ? FROM master_skills WHERE skill_code = ?;`,
+          [expRequiredForTier(1), code]
         );
       }
     } catch (skillError) {

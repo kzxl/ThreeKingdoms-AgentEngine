@@ -4,6 +4,7 @@
  */
 
 const { runSqlJson, runSqlExec } = require('./db-adapter');
+const { applySkillExpGain } = require('./skill-exp');
 
 function ensureTaskSchema(dbPath) {
   runSqlExec(dbPath, `
@@ -129,23 +130,20 @@ function applyTaskReward(dbPath, task) {
       [payload.exp_skill]
     )[0];
     if (skill) {
-      let newExp = Number(skill.current_exp || 0) + Number(payload.exp_amount);
-      let newTier = Number(skill.tier || 1);
-      let maxExp = Number(skill.max_exp || 40);
-      if (newExp >= maxExp && newTier < 5) {
-        newTier += 1;
-        newExp -= maxExp;
-        maxExp = Math.round(maxExp * 1.5);
-      }
+      const advanced = applySkillExpGain(
+        Number(skill.tier || 1),
+        Number(skill.current_exp || 0),
+        Number(payload.exp_amount)
+      );
       runSqlExec(
         dbPath,
         `UPDATE player_skills SET current_exp = ?, tier = ?, max_exp = ? WHERE skill_code = ?;`,
-        [newExp, newTier, maxExp, payload.exp_skill]
+        [advanced.currentExp, advanced.tier, advanced.maxExp, payload.exp_skill]
       );
       reward.granted = true;
       reward.expSkill = payload.exp_skill;
-      reward.expGained = Number(payload.exp_amount);
-      reward.tier = newTier;
+      reward.expGained = advanced.gained;
+      reward.tier = advanced.tier;
     }
   }
   return reward;
