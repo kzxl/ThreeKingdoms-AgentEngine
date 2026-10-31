@@ -20,7 +20,7 @@ An autonomous, deterministic grand strategy simulation engine and character-driv
 7. [Interactive Historical Event Engine](#interactive-historical-event-engine)
 8. [Model Context Protocol (MCP) Integration](#model-context-protocol-mcp-integration)
 9. [Getting Started & Operational Commands](#getting-started--operational-commands)
-10. [Auditing & Zero-Drift Invariants (1,506)](#auditing--zero-drift-invariants-1506-checks)
+10. [Auditing & Zero-Drift Invariants (1,523)](#auditing--zero-drift-invariants-1523-checks)
 11. [Mathematical & Economic Formulas](#mathematical--economic-formulas)
 
 ---
@@ -105,7 +105,7 @@ ThreeKingdoms-AgentEngine/
 ├── tools/                             # Deterministic CLI Verification & Audit Layer
 │   ├── schema.sql                     # Active session database schema (ACID tables)
 │   ├── schema-master.sql              # Immutable historical master catalog schema
-│   ├── sim-audit.js                   # Independent auditor (1,506 invariants in 8 blocks)
+│   ├── sim-audit.js                   # Independent auditor (1,523 invariants in 8 blocks)
 │   ├── sim-db.js                      # Fast SQLite CLI bridge & progress exporter
 │   └── sim-web.js                     # High-performance HTTP server
 │
@@ -174,10 +174,13 @@ The simulation is partitioned into autonomous feature modules adhering to **Univ
   every successful mutation lands in `action_log`.
 - **Schema contract** — a fresh `schema.sql + all migrations` database has the
   same runtime tables/columns as the live campaign (migration 050).
+- **World treasury** — every faction treasury change goes through
+  `postFactionEntry`; migration 051 adds an `OPENING` row and the audit proves
+  `opening + inflow − outflow = treasury_cash`.
 - **Career paths** — `engine/career-paths.js` computes the five scores once; only
   the active path's modifiers apply, and the API displays the same numbers.
 - **Data repairs** — broken seed text and legacy currency labels are fixed by
-  numbered idempotent migrations (042–050), not ad-hoc SQL.
+  numbered idempotent migrations (042–051), not ad-hoc SQL.
 
 ---
 
@@ -275,7 +278,7 @@ The project includes a native **Model Context Protocol (MCP)** server operating 
 | `sim_get_kizuna` | `{ charA: string, charB: string }` | Query 2-axis social relations (Affinity, Respect), Sworn Brotherhood, and Hooks. |
 | `sim_record_memory` | `{ npcId: string, topic: string, lessonLearned: string, emotionalValence?: string }` | Record episodic memory reflections for continuous NPC self-learning. |
 | `sim_get_npc_journey` | `{ npcId?: string, limit?: number }` | Retrieve autonomous progression state, ambition, prestige, and journey chronicle. |
-| `sim_audit_invariants` | `{}` | Execute independent verification of all 1,506 database invariants. |
+| `sim_audit_invariants` | `{}` | Execute independent verification of all 1,523 database invariants. |
 
 ### Connecting AI Agents
 
@@ -321,13 +324,13 @@ npm install
 # Master schema + lore into saves/session.db and saves/master.db (needs the sqlite3 CLI)
 node tools/ingest-markdown-master.js
 
-# Session schema, seed, and migrations 001–050
+# Session schema, seed, and migrations 001–051
 node tools/sim-db.js init
 
 npm start
 ```
 
-`sim-db init` applies migrations 001–050 to the session database.
+`sim-db init` applies migrations 001–051 to the session database.
 
 `ingest-markdown-master.js` rewrites the `master_*` tables in `saves/session.db`; do not run it
 against a live save without a backup. `sim-db init` applies migrations automatically.
@@ -342,13 +345,13 @@ against a live save without a backup. `sim-db init` applies migrations automatic
 | `npm run lint:ui` | Architecture | Ratchets legacy UI debt (button classes, class usages, inline styles, native confirms); new surfaces should use `src/client/core/ui` (`window.UI`). |
 | `npm run lint:client` | Architecture | Parses every classic client script (`public/app.js`, `public/js/*.js`); one parse error disables a whole UI file. |
 | `npm run routes:shadow` | Architecture | Fails if any legacy `sim-web.js` handler is already served by the modular Router (dead code). |
-| `npm test` | Verification | Runs all 60 suites (4 legacy self-sandboxed + 56 TypeScript `verify-*.ts`) against isolated DB copies. |
+| `npm test` | Verification | Runs all 61 suites (4 legacy self-sandboxed + 57 TypeScript `verify-*.ts`) against isolated DB copies. |
 | `npm run smoke:write` | Verification | Boots the app on a sandbox DB and exercises 8 write paths (trade, loans, equip/unequip, idempotency, input rejection, post-write audit). |
 | `npm run lint` | Architecture | Ratcheting guard over `tools/arch-baseline.json`: SQLite-CLI spawns, SQL interpolation, unseeded RNG, silent catches, the `current_date` keyword trap, legacy UI growth. |
 | `npm run golden:verify` | API Contract | Boots the real composition root and diffs 28 read-only endpoints against `tests/golden/api-shape.json`. |
 | `npm run perf:record` | Performance | Captures p95 latency and a normalised body fingerprint per endpoint, plus `tests/perf/fixture.db`. |
 | `npm run perf:compare` | Performance | Re-measures against the fixture and fails on logic drift or p95 regression. |
-| `npm run audit` | Verification | Executes independent verification of all 1,506 SQLite invariants across eight blocks. |
+| `npm run audit` | Verification | Executes independent verification of all 1,523 SQLite invariants across eight blocks. |
 | `npm run migrate` | Data | Applies versioned, idempotent data migrations to the active session database. |
 | `npm run typecheck` | TypeScript | Performs compile-time strict type-checking across all `.ts` files. |
 | `npm run dev:server` | Fullstack Server | Starts Node.js + `tsx` Hot Reload server on `http://localhost:3300`. |
@@ -360,7 +363,7 @@ against a live save without a backup. `sim-db init` applies migrations automatic
 
 ---
 
-## Auditing & Zero-Drift Invariants (1,506 checks)
+## Auditing & Zero-Drift Invariants (1,523 checks)
 
 The engine enforces strict conservation laws across every transaction:
 

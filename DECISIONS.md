@@ -243,3 +243,23 @@ This document records the architectural choices, rationale, and alternatives con
 - **Consequences**:
   - Positive: A reader can distinguish a deliberate fallback from a hidden failure; a new empty catch fails lint.
   - Negative: Best-effort paths still do not surface a user-facing warning; the comment is the contract, not a runtime log.
+
+---
+
+## ADR-022: The World Has a Treasury Ledger Too (2026-10-31)
+
+- **Context**: The player ledger was closed, but faction treasuries were updated directly in eight places. The auditor only checked that a treasury was non-negative, so world money could appear or vanish.
+- **Decision**: Migration 051 adds `faction_ledger` with an `OPENING` row per faction. `postFactionEntry` owns every treasury change; the audit proves `opening + inflow − outflow = treasury_cash`.
+- **Consequences**:
+  - Positive: The world economy is now auditable; tax, tribute, caravan settlement and rent cannot drift silently.
+  - Negative: Every new faction or treasury mutation must create/use the ledger; a direct SQL update is reported as drift.
+
+---
+
+## ADR-023: Idempotency Covers Every Key Mutation (2026-10-31)
+
+- **Context**: The first idempotency pass covered trade, caravans, obligations, contracts, intel and farm. Politics, lineage, wage labor, expeditions, sieges and caravan claims could still double-apply on retry.
+- **Decision**: The same `action-journal` contract now covers those paths: accept an optional key, replay the stored result, record every success.
+- **Consequences**:
+  - Positive: A retried request cannot move troops twice, declare the same war twice or settle a caravan twice.
+  - Negative: Callers that want a deliberate repeat must omit the key; the journal records the repeat with a null key.

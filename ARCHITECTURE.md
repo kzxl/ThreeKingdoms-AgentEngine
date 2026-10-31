@@ -56,7 +56,7 @@ graph TD
 
 ## 3. SQLite Schema & Invariant Enforcement
 
-All dynamic campaign state is maintained in `saves/session.db` using the schema defined in `tools/schema.sql` (audited across 1,506 invariants in eight blocks):
+All dynamic campaign state is maintained in `saves/session.db` using the schema defined in `tools/schema.sql` (audited across 1,523 invariants in eight blocks):
 
 1. **`player_state`**: Tracks attributes (INT, POL, WAR, LDR, DIP, COM, LOG, CRA), current location, liquid cash, safe cash, fixed capital, grain, and net worth.
 2. **`cashflow_ledger`**: Strict double-entry ledger enforcing:
@@ -138,7 +138,7 @@ millisecond.
 ### 6.3 Versioned data migrations
 
 `tools/migrations/` holds idempotent migrations applied inside a transaction and
-recorded in `schema_migrations` (50 migrations, through `050-runtime-schema-contract`). New playthrough instances
+recorded in `schema_migrations` (51 migrations, through `051-faction-ledger`). New playthrough instances
 are brought to a known data state with `npm run migrate`; `npm run migrate:status` lists
 pending work. Migrations also own data repairs that SQL cannot express safely at the
 read path: 042 adds `businesses.tier/debt`, 043 repairs legacy text and currency labels.
@@ -153,10 +153,10 @@ not require editing that test.
 | :--- | :--- | :--- |
 | Types | `npm run typecheck` | `strict` TypeScript across `src/`, `tests/`, `vite.config.ts`. |
 | Architecture | `npm run lint` | Ratchet over `tools/arch-baseline.json`; debt may only shrink. |
-| Behaviour | `npm test` | 60 suites (4 legacy + 56 modern); each modern suite runs on an isolated DB copy and projections are restored afterwards. |
+| Behaviour | `npm test` | 61 suites (4 legacy + 57 modern); each modern suite runs on an isolated DB copy and projections are restored afterwards. |
 | API contract | `npm run golden:verify` | 28 read-only endpoints: status code, response shape, behavioural assertions. |
 | Write paths | `npm run smoke:write` | 8 HTTP write paths plus a post-write audit on a sandbox database. |
-| Invariants | `npm run audit` | 1,506 SQLite invariants (ledger parity, inventory conservation, projection sync, world/life-sim/clock blocks). |
+| Invariants | `npm run audit` | 1,523 SQLite invariants (ledger parity, inventory conservation, projection sync, world/life-sim/clock blocks). |
 
 `npm run verify` chains all of them and is the merge gate.
 
@@ -449,11 +449,26 @@ These are the rules every feature must follow, independent of content.
   `npm run lint`.
 - A deliberate best-effort fallback carries a comment explaining why it is safe.
 
-### 14.6 What is not yet a core contract
+### 14.6 World treasury ledger
 
-- Faction/world treasury changes are not double-entry (no faction journal).
-- World modules in month close run outside the core atomic batch; a module
-  failure is logged but does not roll back earlier module writes.
+- Migration 051 creates `faction_ledger` with an `OPENING` row per faction equal
+  to its current treasury.
+- `postFactionEntry` updates `session_factions.treasury_cash` and appends one
+  ledger row in a transaction; outflow is clamped to the available treasury.
+- Tax pulse, tribute, officer rewards, caravan purchase/revenue and farm rent all
+  go through the helper. Rebel factions get an opening row; secession uses
+  `INSERT OR IGNORE` so a repeat event cannot reset a treasury.
+- The auditor proves `opening + sum(inflow) − sum(outflow) = treasury_cash` for
+  every faction; a direct treasury write is reported as drift.
+
+### 14.7 What is not yet a core contract
+
+- World modules in month close run outside the core atomic batch. NPC/politics/
+  ecology failures abort the close before the core batch commits (retry is
+  safe), but writes made before the throw are not rolled back as one unit. AI
+  war dispatch failure is logged and does not abort the close.
 - Day phases (morning/afternoon/evening) are not implemented; actions spend whole
   days.
+- Settlement treasuries (as opposed to faction treasuries) do not have their own
+  ledger.
 

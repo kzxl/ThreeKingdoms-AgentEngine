@@ -18,7 +18,7 @@ The **ThreeKingdoms-AgentEngine** test infrastructure provides an autonomous, mu
 ```
 +-------------------------------------------------------------------------+
 |                  TIER 4: State & Audit Invariant Layer                  |
-|          tools/sim-audit.js (1,506 invariants, 8 blocks)                 |
+|          tools/sim-audit.js (1,523 invariants, 8 blocks)                 |
 +------------------------------------+------------------------------------+
                                      |
 +------------------------------------+------------------------------------+
@@ -64,10 +64,11 @@ The **ThreeKingdoms-AgentEngine** test infrastructure provides an autonomous, mu
 - **Ledger Completeness (`tests/verify-ledger-completeness.ts`)**: Migration 049 backfills orphan cashflow rows and `postDoubleEntry` writes a balanced pair.
 - **Core Time Coverage (`tests/verify-core-time-coverage.ts`)**: Trade costs 2 days, reinforcement 1, movement 1 through the real router.
 - **Idempotency (`tests/verify-idempotency.ts`)**: Trade, reinforcement and farm rent replay without double cash, inventory, troops, lease or days.
-- **Schema Contract (`tests/verify-schema-contract.ts`)**: A fresh schema + migrations database has the 18 runtime tables and required business/NPC columns.
+- **Faction Ledger (`tests/verify-faction-ledger.ts`)**: Opening balances, a rent flow, drift detection and outflow clamping keep `opening + inflow − outflow = treasury_cash`.
+- **Schema Contract (`tests/verify-schema-contract.ts`)**: A fresh schema + migrations database has the 19 runtime tables and required business/NPC columns.
 
 ### Tier 4: Invariant & State Conservation Auditor (`tools/sim-audit.js`)
-The auditor verifies **1,506 invariants across eight blocks** against SQLite as the
+The auditor verifies **1,523 invariants across eight blocks** against SQLite as the
 primary truth:
 1. Cashflow ledger sequence and player cash parity.
 2. Physical inventory non-negativity and movement balance.
@@ -104,7 +105,8 @@ primary truth:
 | `tests/verify-core-time-coverage.ts` | Core: Time authority coverage | — | Trade +2 days, reinforce +1, movement +1 |
 | `tests/verify-idempotency.ts` | Core: Idempotent financial actions | — | Replay without double cash/inventory/troops/lease/days |
 | `tests/verify-schema-contract.ts` | Core: Runtime schema contract | — | Fresh schema + migrations has runtime tables/columns |
-| `tools/sim-audit.js` | System: Autonomous Invariant Auditor | 1,506 | Eight blocks: accounting, inventory, journal, projection, enterprise, strategy, life-sim, clock |
+| `tests/verify-faction-ledger.ts` | Core: World treasury ledger | — | Opening + flows = treasury, rent flow, drift detection, outflow clamp |
+| `tools/sim-audit.js` | System: Autonomous Invariant Auditor | 1,523 | Eight blocks: accounting, inventory, journal, projection, enterprise, strategy, life-sim, clock |
 
 ---
 
@@ -121,7 +123,7 @@ npx tsx tests/verify-rotk-duels.ts
 
 ### Full Verification Pipeline
 ```bash
-# Single gate: typecheck → arch ratchet → 60 suites → API contract → write smoke
+# Single gate: typecheck → arch ratchet → 61 suites → API contract → write smoke
 npm run verify
 
 # Individually:
@@ -132,10 +134,10 @@ npm run lint:ui        # UI debt ratchet (button classes, inline styles, native 
 npm run lint:slop      # anti-slop laws: emoji, gradients, glow shadows, font families
 npm run lint:api       # client /api/* paths must exist or be allowlisted with a reason
 npm run routes:shadow  # fails if a legacy route is already served by the Router
-npm test               # 4 legacy + 56 verify-*.ts suites, isolated DB per suite
+npm test               # 4 legacy + 57 verify-*.ts suites, isolated DB per suite
 npm run golden:verify  # 28 read-only endpoint contracts
 npm run smoke:write    # 8 HTTP write paths + post-write audit
-npm run audit          # 1,506 SQLite invariants in eight blocks
+npm run audit          # 1,523 SQLite invariants in eight blocks
 ```
 
 ### Per-Feature Refactor Protocol
@@ -183,7 +185,7 @@ To guarantee that test execution never corrupts active session data or causes in
        ▼
 [4. AUDIT GATE]
   Execute node tools/sim-audit.js.
-  Assert 1,506 invariants verified with 0 discrepancies.
+  Assert 1,523 invariants verified with 0 discrepancies.
 ```
 
 ---
