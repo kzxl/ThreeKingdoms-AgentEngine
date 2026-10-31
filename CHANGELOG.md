@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.28.1] - 2026-10-31
+
+World month close is atomic per module.
+
+### Changed
+- `engine/world-transaction.js` runs each world module (NPC lifecycle, faction
+  politics, ecology, AI war) inside one DatabaseService transaction. A module
+  that writes and then throws rolls back all of its own writes.
+- AI war errors now propagate to the close instead of being logged and skipped;
+  the close aborts before the core batch, so a retry is safe.
+- The AI war step is skipped only when `military_expeditions` is absent (minimal
+  schema fixtures), not on a real module failure.
+- `tests/verify-world-atomic.ts` proves a failed module writes nothing and the
+  clock does not move; a successful module commits.
+
+### Verification
+`npm run verify` green: 63/63 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,546 invariants, 0 discrepancies.
+
+---
+
 ## [1.28.0] - 2026-10-31
 
 Settlement treasuries now have a double-entry ledger too.

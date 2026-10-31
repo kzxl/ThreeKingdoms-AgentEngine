@@ -16,12 +16,9 @@ function getService(dbPath) {
 }
 
 function simulateMonthly(dbPath, turnNumber, gameDate) {
-  try {
-    return getService(dbPath).simulateMonthly(turnNumber, gameDate);
-  } catch (error) {
-    console.warn('[ai-war-bridge] monthly dispatch failed:', error.message);
-    return [];
-  }
+  // Errors propagate so the month close can abort and retry instead of
+  // silently skipping AI movement for the turn.
+  return getService(dbPath).simulateMonthly(turnNumber, gameDate);
 }
 
 module.exports = { simulateMonthly };

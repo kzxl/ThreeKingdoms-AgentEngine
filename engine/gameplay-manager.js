@@ -481,32 +481,48 @@ class GameplayManager {
     let ecologyResults = null;
     const worldErrors = [];
 
+    // Each module is one transaction: a module that throws rolls back its own
+    // writes instead of leaving a half-simulated turn. `world_turn_ledger` still
+    // makes a retry skip the modules that already committed.
+    const { runWorldTransaction } = require('./world-transaction');
     if (gsm && gsm.npcLifecycle && typeof gsm.npcLifecycle.simulateAllActiveNpcs === 'function') {
-      try { npcLogs = gsm.npcLifecycle.simulateAllActiveNpcs(nextTurn, nextDate); }
-      catch (e) { worldErrors.push(`npc: ${e.message}`); }
+      try {
+        npcLogs = runWorldTransaction(this.dbPath, () => gsm.npcLifecycle.simulateAllActiveNpcs(nextTurn, nextDate));
+      } catch (e) { worldErrors.push(`npc: ${e.message}`); }
     }
     if (gsm && gsm.factionPolitics && typeof gsm.factionPolitics.simulatePoliticalCycle === 'function') {
-      try { politicalEvents = gsm.factionPolitics.simulatePoliticalCycle(nextTurn, nextDate); }
-      catch (e) { worldErrors.push(`politics: ${e.message}`); }
+      try {
+        politicalEvents = runWorldTransaction(this.dbPath, () => gsm.factionPolitics.simulatePoliticalCycle(nextTurn, nextDate));
+      } catch (e) { worldErrors.push(`politics: ${e.message}`); }
     }
     if (gsm && gsm.ecologyLogistics && typeof gsm.ecologyLogistics.simulateEcologyAndLogisticsTurn === 'function') {
-      try { ecologyResults = gsm.ecologyLogistics.simulateEcologyAndLogisticsTurn(nextTurn, nextDate); }
-      catch (e) { worldErrors.push(`ecology: ${e.message}`); }
+      try {
+        ecologyResults = runWorldTransaction(this.dbPath, () => gsm.ecologyLogistics.simulateEcologyAndLogisticsTurn(nextTurn, nextDate));
+      } catch (e) { worldErrors.push(`ecology: ${e.message}`); }
+    }
+
+    // AI factions at war may dispatch one army each; movement and battles use
+    // the same day clock as the player's expeditions.
+    let aiWar = [];
+    const aiWarReady = runSqlJson(
+      this.dbPath,
+      "SELECT 1 AS ok FROM sqlite_master WHERE type='table' AND name='military_expeditions' LIMIT 1;"
+    ).length > 0;
+    if (aiWarReady) {
+      try {
+        aiWar = runWorldTransaction(
+          this.dbPath,
+          () => require('./ai-war-bridge').simulateMonthly(this.dbPath, nextTurn, nextDate)
+        ) || [];
+      } catch (aiError) {
+        worldErrors.push(`ai-war: ${aiError.message}`);
+      }
     }
 
     // Caravans advance in the day loop (one call per elapsed day span), so the
     // month close must not move them a second time.
     if (worldErrors.length > 0) {
       throw new Error(`World simulation failed for turn ${nextTurn}; month not closed (retry is safe): ${worldErrors.join('; ')}`);
-    }
-
-    // AI factions at war may dispatch one army each; movement and battles use
-    // the same day clock as the player's expeditions.
-    let aiWar = [];
-    try {
-      aiWar = require('./ai-war-bridge').simulateMonthly(this.dbPath, nextTurn, nextDate);
-    } catch (aiError) {
-      console.warn('[GameplayManager] AI war dispatch failed:', aiError.message);
     }
 
     // EventBus cascade is published after the core batch commits, so
