@@ -19,6 +19,7 @@ import { SiegeService } from './siege.service';
 import { SpatialGuardService } from '../progression/spatial-guard.service';
 import { recordFinancialTransaction } from '../../shared/financial-transaction';
 import { chargePlayerAction } from '../../shared/action-time';
+import { requestIdempotencyKey, findIdempotentResult, recordAction } from '../../shared/action-journal';
 
 function getMilitaryModule(): MilitaryModule | undefined {
   return ModuleRegistry.getInstance().get<MilitaryModule>('module.military');
@@ -293,6 +294,13 @@ export function registerMilitaryRoutes(router: Router): void {
         return;
       }
 
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
+
       const time = chargePlayerAction(
         db.path,
         'MILITARY_MUSTER',
@@ -345,10 +353,17 @@ export function registerMilitaryRoutes(router: Router): void {
         };
       });
 
+      const response = { ...result, time };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'GARRISON_REINFORCE',
+        payload: { settlementId, troopsDelta: delta },
+        result: response
+      });
       sendJson(res, 200, {
         success: true,
-        ...result,
-        time,
+        ...response,
+        idempotent: false,
         message: `Đã điều chỉnh đồn trú tại ${result.settlementName}: ${result.troopsDelta > 0 ? '+' : ''}${result.troopsDelta} binh sĩ (Đồn trú: ${result.newTroops}, Phòng ngự: ${result.newDefense}).`
       });
     } catch (err: any) {

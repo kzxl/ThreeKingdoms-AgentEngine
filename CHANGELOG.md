@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.26.3] - 2026-10-31
+
+Core idempotency and action journal for service-level mutations.
+
+### Added
+- `src/shared/action-journal.ts`: `requestIdempotencyKey` (body or
+  `Idempotency-Key` header), `findIdempotentResult`, `recordAction` and
+  `runIdempotentAction`. A replay returns the stored result without running the
+  mutation or charging days again.
+- Wired into trade, caravan dispatch, garrison reinforcement, obligation
+  payment, contract accept/deliver, intel verification and farm
+  rent/plant/harvest. Every successful action now lands in `action_log` (with a
+  key when supplied, null for intentional repeats).
+- `tests/verify-idempotency.ts` proves trade, reinforcement and farm rent replay
+  without double cash, inventory, troops, lease or calendar movement.
+
+### Verification
+`npm run verify` green: 59/59 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,506 invariants, 0 discrepancies.
+
+---
+
 ## [1.26.2] - 2026-10-31
 
 Core time coverage: trade, military, politics and household actions now cost days.

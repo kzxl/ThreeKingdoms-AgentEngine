@@ -26,6 +26,7 @@ import { ObligationService } from './obligation.service';
 import { ContractBoardService } from './contract-board.service';
 import { IntelService } from './intel.service';
 import { chargePlayerAction } from '../../shared/action-time';
+import { requestIdempotencyKey, findIdempotentResult, recordAction } from '../../shared/action-journal';
 
 function getEconomyModule(): EconomyModule | undefined {
   return ModuleRegistry.getInstance().get<EconomyModule>('module.economy');
@@ -278,6 +279,13 @@ export function registerEconomyRoutes(router: Router): void {
         return;
       }
 
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
+
       // A market session costs two days; charge before the clock-derived quote.
       const time = chargePlayerAction(
         db.path,
@@ -437,11 +445,18 @@ export function registerEconomyRoutes(router: Router): void {
         )
         : null;
 
+      const response = { ...tradeResult, market, time };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: `TRADE_${tradeAction}`,
+        payload: { action: tradeAction, itemCode, quantity: qty },
+        result: response
+      });
+
       sendJson(res, 200, {
         success: true,
-        ...tradeResult,
-        market,
-        time,
+        ...response,
+        idempotent: false,
         message: `Thực hiện lệnh ${tradeAction} thành công: ${qty} ${tradeResult.itemName} tổng trị giá ${totalAmount} quan.`
       });
     } catch (err: any) {
@@ -479,12 +494,25 @@ export function registerEconomyRoutes(router: Router): void {
         sendJson(res, 400, { success: false, error: 'obligationId is required.' });
         return;
       }
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
       const service = ObligationService.forDatabase(db);
       const obligation = service.pay(obligationId, playerId);
+      const response = { obligation, summary: service.summary(playerId) };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'OBLIGATION_PAY',
+        payload: { obligationId, playerId },
+        result: response
+      });
       sendJson(res, 200, {
         success: true,
-        obligation,
-        summary: service.summary(playerId)
+        ...response,
+        idempotent: false
       });
     } catch (err: any) {
       const status = err.code === 'INSUFFICIENT_FUNDS' || err.code === 'INSUFFICIENT_GRAIN' ? 409 : 400;
@@ -517,9 +545,22 @@ export function registerEconomyRoutes(router: Router): void {
         sendJson(res, 400, { success: false, error: 'offerId is required.' });
         return;
       }
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
       const service = ContractBoardService.forDatabase(db);
       const contract = service.accept(offerId, playerId);
-      sendJson(res, 200, { success: true, contract });
+      const response = { contract };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'CONTRACT_ACCEPT',
+        payload: { offerId, playerId },
+        result: response
+      });
+      sendJson(res, 200, { success: true, ...response, idempotent: false });
     } catch (err: any) {
       sendJson(res, 400, { success: false, error: err.message, code: err.code });
     }
@@ -534,12 +575,25 @@ export function registerEconomyRoutes(router: Router): void {
         sendJson(res, 400, { success: false, error: 'contractId is required.' });
         return;
       }
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
       const service = ContractBoardService.forDatabase(db);
       const contract = service.deliver(contractId, playerId);
+      const response = { contract, summary: service.list(playerId).summary };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'CONTRACT_DELIVER',
+        payload: { contractId, playerId },
+        result: response
+      });
       sendJson(res, 200, {
         success: true,
-        contract,
-        summary: service.list(playerId).summary
+        ...response,
+        idempotent: false
       });
     } catch (err: any) {
       const status = err.message?.includes('không còn trong kho') ? 409 : 400;
@@ -576,6 +630,12 @@ export function registerEconomyRoutes(router: Router): void {
         sendJson(res, 400, { success: false, error: 'reportId is required.' });
         return;
       }
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
       const time = chargePlayerAction(
         db.path,
         'EXPLORE_POI',
@@ -583,7 +643,14 @@ export function registerEconomyRoutes(router: Router): void {
         `Verify intel ${reportId}`
       );
       const result = IntelService.forDatabase(db).verify(reportId);
-      sendJson(res, 200, { success: true, ...result, time });
+      const response = { ...result, time };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'INTEL_VERIFY',
+        payload: { reportId },
+        result: response
+      });
+      sendJson(res, 200, { success: true, ...response, idempotent: false });
     } catch (err: any) {
       sendJson(res, err.statusCode || 400, { success: false, error: err.message, code: err.code });
     }
@@ -919,6 +986,13 @@ export function registerEconomyRoutes(router: Router): void {
         (ctx.body || {}).bypassProgressionGate || (ctx.body || {}).bypassSpatialGuard
       );
 
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
+
       const time = chargePlayerAction(
         db.path,
         'ENTERPRISE_MANAGE',
@@ -938,10 +1012,17 @@ export function registerEconomyRoutes(router: Router): void {
         playerId
       );
 
+      const response = { ...result, time };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'CARAVAN_DISPATCH',
+        payload: { cargoItemCode, cargoQuantity, fromSettlementId, toSettlementId, guardTier },
+        result: response
+      });
       sendJson(res, 200, {
         success: true,
-        ...result,
-        time
+        ...response,
+        idempotent: false
       });
     } catch (err: any) {
       sendJson(res, err.statusCode || 400, { success: false, error: err.message });

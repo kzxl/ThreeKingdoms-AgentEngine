@@ -16,6 +16,7 @@ import { SkillService } from '../progression/skill.service';
 import { chargePlayerAction } from '../../shared/action-time';
 import { getCareerModifiers } from '../../../engine/career-paths';
 import { FarmService } from './farm.service';
+import { requestIdempotencyKey, findIdempotentResult, recordAction } from '../../shared/action-journal';
 
 import { WageLaborController } from './features/wage-labor/wage-labor.controller';
 import { registerBespokeForgeRoutes } from './features/bespoke-forge/bespoke-forge.controller';
@@ -335,9 +336,22 @@ export function registerProfessionsRoutes(router: Router): void {
         sendJson(res, 400, { success: false, error: 'parcelId is required.' });
         return;
       }
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
       const time = chargePlayerAction(db.path, 'FARM_RENT', null, `Rent ${parcelId}`);
       const parcel = FarmService.forDatabase(db).rent(parcelId, playerId);
-      sendJson(res, 200, { success: true, parcel, time });
+      const response = { parcel, time };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'FARM_RENT',
+        payload: { parcelId, playerId },
+        result: response
+      });
+      sendJson(res, 200, { success: true, ...response, idempotent: false });
     } catch (err: any) {
       sendJson(res, err.statusCode || 400, { success: false, error: err.message, code: err.code });
     }
@@ -352,9 +366,22 @@ export function registerProfessionsRoutes(router: Router): void {
         sendJson(res, 400, { success: false, error: 'parcelId and cropCode are required.' });
         return;
       }
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
       const time = chargePlayerAction(db.path, 'FARM_PLANT', null, `Plant ${cropCode} at ${parcelId}`);
       const parcel = FarmService.forDatabase(db).plant(parcelId, cropCode, playerId);
-      sendJson(res, 200, { success: true, parcel, time });
+      const response = { parcel, time };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'FARM_PLANT',
+        payload: { parcelId, cropCode, playerId },
+        result: response
+      });
+      sendJson(res, 200, { success: true, ...response, idempotent: false });
     } catch (err: any) {
       sendJson(res, err.statusCode || 400, { success: false, error: err.message, code: err.code });
     }
@@ -369,9 +396,22 @@ export function registerProfessionsRoutes(router: Router): void {
         sendJson(res, 400, { success: false, error: 'parcelId is required.' });
         return;
       }
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
       const time = chargePlayerAction(db.path, 'FARM_HARVEST', null, `Harvest ${parcelId}`);
       const result = FarmService.forDatabase(db).harvest(parcelId, playerId);
-      sendJson(res, 200, { success: true, ...result, time });
+      const response = { ...result, time };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'FARM_HARVEST',
+        payload: { parcelId, playerId },
+        result: response
+      });
+      sendJson(res, 200, { success: true, ...response, idempotent: false });
     } catch (err: any) {
       sendJson(res, err.statusCode || 400, { success: false, error: err.message, code: err.code });
     }
