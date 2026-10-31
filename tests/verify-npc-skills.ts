@@ -72,11 +72,15 @@ function seed() {
   skill.run('SKL-TAC-STRAT', 'Mưu Lược', 'Stratagem', 'TACTICS', 'INT');
   skill.run('SKL-LDR-DRILL', 'Luyện Binh', 'Drill', 'LEADERSHIP', 'LDR');
   skill.run('SKL-CRA-SMITH', 'Rèn', 'Smithing', 'CRAFT', 'CRA');
+  skill.run('SKL-CRA-WEAVE', 'Biên Dệt', 'Weaving', 'CRAFT', 'CRA');
 
   const effect = db.prepare('INSERT INTO master_skill_effects VALUES (?, ?, ?, ?)');
   effect.run('SKL-WAR-DUEL', 3, 'DUEL_POWER', 2);
+  effect.run('SKL-WAR-DUEL', 5, 'DUEL_POWER', 4);
   effect.run('SKL-TAC-STRAT', 3, 'SIEGE_POWER', 2);
+  effect.run('SKL-TAC-STRAT', 4, 'SIEGE_POWER', 3);
   effect.run('SKL-LDR-DRILL', 3, 'MORALE_BONUS', 1);
+  effect.run('SKL-LDR-DRILL', 4, 'MORALE_BONUS', 3);
 
   const perk = db.prepare(`
     INSERT INTO master_perks
@@ -127,11 +131,29 @@ function run(): void {
   const atFive = service.listSkills('NPC-9001').find(skill => skill.skillCode === 'SKL-WAR-DUEL');
   assert.strictEqual(atFive!.perks.length, 2, 'tier 5 must add its perk beside the persisted tier 3 perk');
   assert.strictEqual(atFive!.perks[1].perkCode, 'PRK-DUEL-5');
-  assert.strictEqual(service.effectTotal('NPC-9001', 'DUEL_POWER'), 2 + 2 + 3);
+  assert.strictEqual(service.effectTotal('NPC-9001', 'DUEL_POWER'), 4 + 2 + 3);
   assert.strictEqual(service.ensurePerks('NPC-9001'), 1, 'the new tier perk must persist');
 
+  // Combat EXP uses the shared curve and creates missing rows from master data.
+  const craft = service.awardExp('NPC-9001', 'SKL-CRA-WEAVE', 40);
+  assert(craft, 'a live officer must gain skill EXP');
+  assert.strictEqual(craft!.tier, 2, '40 EXP at tier 1 must reach tier 2');
+  assert.strictEqual(craft!.currentExp, 0);
+  assert.strictEqual(craft!.maxExp, 90);
+  assert.strictEqual(service.awardExp('MC-9002', 'SKL-WAR-DUEL', 40), null, 'master-only generals stay static');
+
+  // Master-only generals expose their aptitude as derived skills instead of
+  // an empty dossier.
+  const masterSkills = service.listSkills('MC-9002');
+  const masterDuel = masterSkills.find(skill => skill.skillCode === 'SKL-WAR-DUEL');
+  assert(masterDuel, 'a master-only general must show a derived duel skill');
+  assert.strictEqual(masterDuel!.derived, true);
+  assert.strictEqual(masterDuel!.tier, 5);
+  assert.strictEqual(masterDuel!.currentExp, 0);
+  assert.strictEqual(masterDuel!.maxExp, expRequiredForTier(5));
+  assert.strictEqual(masterDuel!.perks.length, 0, 'derived skills must not invent perks');
+
   // Master-only generals have no npc_skills rows and fall back to aptitude.
-  assert.strictEqual(service.listSkills('MC-9002').length, 0);
   const master = service.combatBonuses('MC-9002');
   assert.strictEqual(master.duelPower, 4, 'WAR 100 must grade to legendary duel power');
   assert.strictEqual(master.siegePower, 3, 'INT 90 must grade to epic siege power');

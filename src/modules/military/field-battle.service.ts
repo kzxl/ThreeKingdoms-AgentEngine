@@ -92,6 +92,11 @@ export class FieldBattleService {
     const captured = attackerWon && !isPlayerAttack;
     const status = captured ? 'CONCLUDED' : (attackerWon ? 'ARRIVED' : 'CONCLUDED');
 
+    // Both NPC commanders gain field experience; the loser learns less.
+    const skillService = NpcSkillService.forDatabase(this.db);
+    skillService.awardExp(expedition.commander_id, 'SKL-WAR-DUEL', attackerWon ? 20 : 8);
+    skillService.awardExp(defender.commander.id, 'SKL-WAR-DUEL', attackerWon ? 8 : 20);
+
     this.db.transaction(() => {
       this.db.execute(
         'UPDATE military_expeditions SET troop_count = ?, status = ? WHERE expedition_id = ?;',

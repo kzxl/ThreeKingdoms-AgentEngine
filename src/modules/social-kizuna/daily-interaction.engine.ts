@@ -665,6 +665,7 @@ export class DailyInteractionEngine {
       tier: number;
       currentExp: number;
       maxExp: number;
+      derived: boolean;
       perks: Array<{ nameVi: string; nameEn: string; tier: number }>;
     }> = [];
     try {
@@ -674,6 +675,7 @@ export class DailyInteractionEngine {
         tier: skill.tier,
         currentExp: skill.currentExp,
         maxExp: skill.maxExp,
+        derived: skill.derived,
         perks: skill.perks.map(perk => ({
           nameVi: perk.nameVi,
           nameEn: perk.nameEn,

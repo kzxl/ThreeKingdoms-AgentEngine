@@ -24,6 +24,11 @@ Skill extension: shared EXP curve, NPC combat skills and talent-specific effects
 - NPC `DUEL_POWER`, `SIEGE_POWER` and `MORALE_BONUS` now affect single combat,
   pre-battle duels, siege daily damage and field battles. NPC dossiers show
   skills plus their chosen perks.
+- NPC officers gain skill EXP from duels, pre-battle champion duels, sieges and
+  field battles, rolling tiers and persisting newly reached perks through the
+  same curve. Master-only generals have no `npc_state` row and stay static.
+- Generals listed only in `master_characters` now show derived skills in the
+  dossier (marked "Bẩm sinh"/"Innate") instead of an empty skill block.
 - Migration 041 replaces the category-wide talent effects from migration 038
   with a curated list for all 33 master talents (for example `TLT-PEERLESS`
   grants `DUEL_POWER +5`, `TLT-ROAR-BRIDGE` grants `DUEL_POWER +3` and

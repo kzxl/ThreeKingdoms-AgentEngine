@@ -495,7 +495,7 @@
               <div class="dossier-skill-head"><strong>${isEn ? 'Known Skills' : 'Kỹ Năng Sở Trường'}</strong></div>
               <div class="dossier-skill-perks">
                 ${(dossier.skills || []).map(skill => `
-                  <span class="dossier-skill-perk is-chosen">${skill.name} · T${skill.tier} · ${skill.currentExp}/${skill.maxExp}</span>
+                  <span class="dossier-skill-perk is-chosen">${skill.name} · T${skill.tier} · ${skill.derived ? (isEn ? 'Innate' : 'Bẩm sinh') : `${skill.currentExp}/${skill.maxExp}`}</span>
                   ${(skill.perks || []).map(perk => `<span class="dossier-skill-perk is-ready">P${perk.tier} · ${isEn ? perk.nameEn : perk.nameVi}</span>`).join('')}
                 `).join('')}
               </div>

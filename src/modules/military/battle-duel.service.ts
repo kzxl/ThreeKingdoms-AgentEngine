@@ -172,6 +172,12 @@ export class BattleDuelService {
       this.applyPlayerDeath(input.playerId, 'DUEL_DEATH');
     }
 
+    // The defending champion learns from a champion duel that did not kill him.
+    if (input.enemyId && duelTriggered && death !== 'ENEMY') {
+      const exp = duelWinner === 'ENEMY' ? 20 : duelWinner === 'DRAW' ? 10 : 8;
+      NpcSkillService.forDatabase(this.db).awardExp(input.enemyId, 'SKL-WAR-DUEL', exp);
+    }
+
     return {
       battleId: input.battleId,
       negotiationAttempted,

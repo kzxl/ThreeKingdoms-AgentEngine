@@ -193,6 +193,11 @@ export class SiegeService {
       }
     }
 
+    // A siege is a siegecraft lesson for both sides, win or lose.
+    const siegeSkill = NpcSkillService.forDatabase(this.db);
+    siegeSkill.awardExp(commanderId, 'SKL-WAR-SIEGE', 10);
+    if (defender.id) siegeSkill.awardExp(defender.id, 'SKL-WAR-SIEGE', 15);
+
     const dailyDamage = Math.max(
       2,
       Math.round(attackerTroops / 40 + Number(commander?.war_attr || 60) / 20)

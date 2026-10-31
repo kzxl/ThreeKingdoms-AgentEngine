@@ -12,6 +12,7 @@
  */
 
 import { DatabaseService } from '../../core/database';
+import { applySkillExpGain, expRequiredForTier } from '../../shared/skill-exp';
 
 export interface NpcPerkView {
   perkCode: string;
@@ -31,6 +32,8 @@ export interface NpcSkillView {
   tier: number;
   currentExp: number;
   maxExp: number;
+  /** True when the view is derived from attributes because no row exists. */
+  derived: boolean;
   effects: Array<{ tier: number; effectType: string; value: number }>;
   perks: NpcPerkView[];
 }
@@ -71,6 +74,8 @@ export class NpcSkillService {
     } catch {
       return [];
     }
+
+    if (rows.length === 0) return this.deriveSkills(npcId);
 
     let persisted: NpcPerkView[] = [];
     try {
@@ -120,6 +125,7 @@ export class NpcSkillService {
         tier,
         currentExp: Number(row.current_exp || 0),
         maxExp: Number(row.max_exp || 0),
+        derived: false,
         effects,
         perks
       };
@@ -155,6 +161,59 @@ export class NpcSkillService {
       siegePower: Math.round(this.effectTotal(npcId, 'SIEGE_POWER')),
       moraleBonus: Math.round(this.effectTotal(npcId, 'MORALE_BONUS'))
     };
+  }
+
+  /**
+   * Awards skill EXP to a live officer. Master-only generals (no npc_state row)
+   * are historical benchmarks and stay static; their aptitudes are derived.
+   */
+  public awardExp(
+    npcId: string,
+    skillCode: string,
+    amount: number
+  ): { tier: number; currentExp: number; maxExp: number; gained: number } | null {
+    const gain = Math.max(0, Math.round(Number(amount) || 0));
+    if (!npcId || !skillCode || gain === 0) return null;
+    try {
+      const state = this.db.queryOne<any>(
+        'SELECT 1 AS ok FROM npc_state WHERE npc_id = ? LIMIT 1;',
+        [npcId]
+      );
+      if (!state) return null;
+
+      let row = this.db.queryOne<any>(
+        'SELECT tier, current_exp, max_exp FROM npc_skills WHERE npc_id = ? AND skill_code = ? LIMIT 1;',
+        [npcId, skillCode]
+      );
+      if (!row) {
+        const master = this.db.queryOne<any>(
+          'SELECT skill_code, skill_name_vi FROM master_skills WHERE skill_code = ? LIMIT 1;',
+          [skillCode]
+        );
+        if (!master) return null;
+        this.db.execute(
+          `INSERT INTO npc_skills (npc_id, skill_code, skill_name, tier, current_exp, max_exp)
+           VALUES (?, ?, ?, 1, 0, ?);`,
+          [npcId, skillCode, master.skill_name_vi || skillCode, expRequiredForTier(1)]
+        );
+        row = { tier: 1, current_exp: 0, max_exp: expRequiredForTier(1) };
+      }
+
+      const advanced = applySkillExpGain(
+        Number(row.tier || 1),
+        Number(row.current_exp || 0),
+        gain
+      );
+      this.db.execute(
+        `UPDATE npc_skills SET tier = ?, current_exp = ?, max_exp = ?
+         WHERE npc_id = ? AND skill_code = ?;`,
+        [advanced.tier, advanced.currentExp, advanced.maxExp, npcId, skillCode]
+      );
+      this.ensurePerks(npcId);
+      return advanced;
+    } catch {
+      return null;
+    }
   }
 
   /**
@@ -212,6 +271,75 @@ export class NpcSkillService {
       }
     }
     return inserted;
+  }
+
+  private deriveSkills(npcId: string): NpcSkillView[] {
+    const stats = this.lookupAttributes(npcId);
+    if (!stats) return [];
+    const defs: Array<[string, number, string]> = [
+      ['SKL-WAR-DUEL', stats.war, 'MARTIAL'],
+      ['SKL-TAC-STRAT', stats.int, 'TACTICS'],
+      ['SKL-LDR-DRILL', stats.ldr, 'LEADERSHIP'],
+      ['SKL-COM-APPRAISE', stats.com, 'COMMERCE'],
+      ['SKL-LOG-PROV', stats.log, 'LOGISTICS'],
+      ['SKL-POL-ADMIN', stats.pol, 'POLITICS'],
+      ['SKL-DIP-RHET', stats.dip, 'DIPLOMACY'],
+      ['SKL-CRA-WEAVE', stats.cra, 'CRAFT']
+    ];
+
+    const skills: NpcSkillView[] = [];
+    for (const [code, attribute, fallbackDomain] of defs) {
+      const tier = this.aptitudeTier(attribute);
+      if (tier === 0) continue;
+      let master: any = null;
+      try {
+        master = this.db.queryOne<any>(
+          'SELECT skill_name_vi, skill_name_en, domain FROM master_skills WHERE skill_code = ? LIMIT 1;',
+          [code]
+        );
+      } catch {
+        master = null;
+      }
+      skills.push({
+        skillCode: code,
+        nameVi: master?.skill_name_vi || code,
+        nameEn: master?.skill_name_en || code,
+        domain: master?.domain || fallbackDomain,
+        tier,
+        currentExp: 0,
+        maxExp: expRequiredForTier(tier),
+        derived: true,
+        effects: this.effectsFor(code, tier),
+        perks: []
+      });
+    }
+    return skills;
+  }
+
+  private effectsFor(skillCode: string, tier: number): NpcSkillView['effects'] {
+    try {
+      return this.db.query<any>(
+        `SELECT tier, effect_type AS effectType, value
+         FROM master_skill_effects
+         WHERE skill_code = ? AND tier <= ?;`,
+        [skillCode, tier]
+      ).map(effect => ({
+        tier: Number(effect.tier),
+        effectType: String(effect.effectType),
+        value: Number(effect.value)
+      }));
+    } catch {
+      return [];
+    }
+  }
+
+  private aptitudeTier(attribute: number): number {
+    if (attribute >= 95) return 5;
+    if (attribute >= 85) return 4;
+    if (attribute >= 75) return 3;
+    if (attribute >= 65) return 2;
+    if (attribute >= 55) return 1;
+    return 0;
   }
 
   private resolvePerks(skillCode: string, tier: number, persisted: NpcPerkView[]): NpcPerkView[] {
@@ -272,16 +400,17 @@ export class NpcSkillService {
 
   private lookupAttributes(npcId: string): {
     war: number; int: number; ldr: number; com: number; cra: number; log: number;
+    pol: number; dip: number;
   } | null {
     try {
       const npc = this.db.queryOne<any>(
-        `SELECT war_attr, int_attr, ldr_attr, com_attr, cra_attr, log_attr
+        `SELECT war_attr, int_attr, ldr_attr, com_attr, cra_attr, log_attr, pol_attr, dip_attr
          FROM npc_state WHERE npc_id = ? LIMIT 1;`,
         [npcId]
       );
       if (npc) return this.toStats(npc);
       const master = this.db.queryOne<any>(
-        `SELECT war_attr, int_attr, ldr_attr, com_attr, cra_attr, log_attr
+        `SELECT war_attr, int_attr, ldr_attr, com_attr, cra_attr, log_attr, pol_attr, dip_attr
          FROM master_characters WHERE npc_id = ? LIMIT 1;`,
         [npcId]
       );
@@ -298,7 +427,9 @@ export class NpcSkillService {
       ldr: Number(row.ldr_attr || 0),
       com: Number(row.com_attr || 0),
       cra: Number(row.cra_attr || 0),
-      log: Number(row.log_attr || 0)
+      log: Number(row.log_attr || 0),
+      pol: Number(row.pol_attr || 0),
+      dip: Number(row.dip_attr || 0)
     };
   }
 }

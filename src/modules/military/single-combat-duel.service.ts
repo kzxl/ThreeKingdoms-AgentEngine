@@ -1158,6 +1158,13 @@ export class SingleCombatDuelService {
       rewards.fameTierCode = playerChange.tier.code;
     }
 
+    // NPCs also learn from the bout; master-only generals have no state row and
+    // stay static, while live officers roll tiers and perks through the curve.
+    if (duel.metadata?.commitDb !== false) {
+      const npcExp = winnerId === opponent.characterId ? 20 : isDraw ? 10 : 8;
+      NpcSkillService.forDatabase(this.db).awardExp(opponent.characterId, 'SKL-WAR-DUEL', npcExp);
+    }
+
     // Record chronicle row in session_duels
     try {
       this.db.execute(
