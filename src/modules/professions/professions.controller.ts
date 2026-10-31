@@ -155,16 +155,30 @@ export function registerProfessionsRoutes(router: Router): void {
         return;
       }
 
-      const meta = getCampaignMeta(db);
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
+
       const time = chargePlayerAction(
         db.path,
         'GATHER_NODE',
         null,
         `Gather at ${nodeId}`
       );
+      const meta = getCampaignMeta(db);
       const result = professionsMod.gatherResource(characterId, nodeId, meta.activeTurn, meta.currentDate);
 
-      sendJson(res, 200, { success: true, result, time });
+      const response = { result, time };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'GATHER_RESOURCE',
+        payload: { characterId, nodeId },
+        result: response
+      });
+      sendJson(res, 200, { success: true, ...response, idempotent: false });
     } catch (err: any) {
       sendJson(res, err.statusCode || 400, { success: false, error: err.message, code: err.code });
     }
@@ -185,6 +199,13 @@ export function registerProfessionsRoutes(router: Router): void {
       }
 
       const craftQty = Math.max(1, parseInt(quantity, 10));
+
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
 
       const time = chargePlayerAction(
         db.path,
@@ -299,13 +320,19 @@ export function registerProfessionsRoutes(router: Router): void {
       const professionsMod = getProfessionsModule();
       const breakthrough = professionsMod ? professionsMod.checkAndTriggerBreakthrough(characterId, meta.activeTurn, meta.currentDate) : null;
 
-      sendJson(res, 200, {
-        success: true,
+      const response = {
         ...craftResult,
         breakthrough,
         time,
         message: `Chế tác thành công ${craftResult.yieldQuantity} ${craftResult.productNameVi} (+${craftResult.expGained} EXP Nghề rèn dệt)!`
+      };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'CRAFT_RECIPE',
+        payload: { characterId, recipeCode, quantity: craftQty },
+        result: response
       });
+      sendJson(res, 200, { success: true, ...response, idempotent: false });
     } catch (err: any) {
       sendJson(res, err.statusCode || 400, { success: false, error: err.message, code: err.code });
     }

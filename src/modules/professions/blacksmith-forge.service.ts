@@ -29,6 +29,7 @@ import { syncProgressProjection } from '../../shared/projection-sync';
 import { RngService } from '../../core/rng';
 import { nextSequentialId } from '../../shared/id-generator';
 import { chargePlayerAction } from '../../shared/action-time';
+import { requestIdempotencyKey, findIdempotentResult, recordAction } from '../../shared/action-journal';
 
 export type EquipmentSlotType = 'WEAPON' | 'ARMOR' | 'STEED' | 'TREASURE';
 export const VALID_EQUIPMENT_SLOTS: readonly EquipmentSlotType[] = ['WEAPON', 'ARMOR', 'STEED', 'TREASURE'];
@@ -1394,14 +1395,28 @@ export function registerBlacksmithForgeRoutes(router: Router): void {
   router.post('/api/professions/forge/bespoke', async (_req: any, res: any, ctx: RouteContext) => {
     try {
       const payload: BespokeWeaponForgeParams = ctx.body || {};
+      const db = DatabaseService.getInstance();
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { ...prior, idempotent: true });
+        return;
+      }
       const time = chargePlayerAction(
-        DatabaseService.getInstance().path,
+        db.path,
         'PRODUCTION_BATCH',
         null,
         `Forge bespoke weapon ${payload.customName || ''}`.trim()
       );
       const result = service.forgeBespokeGodWeapon(payload);
-      sendJson(res, 200, { ...result, time });
+      const response = { ...result, time };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'FORGE_BESPOKE',
+        payload,
+        result: response
+      });
+      sendJson(res, 200, { ...response, idempotent: false });
     } catch (err: any) {
       sendJson(res, err.statusCode || 400, { success: false, error: err.message, code: err.code });
     }
@@ -1427,14 +1442,28 @@ export function registerBlacksmithForgeRoutes(router: Router): void {
   router.post('/api/professions/forge/standard', async (_req: any, res: any, ctx: RouteContext) => {
     try {
       const payload: StandardArmamentForgeParams = ctx.body || {};
+      const db = DatabaseService.getInstance();
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { ...prior, idempotent: true });
+        return;
+      }
       const time = chargePlayerAction(
-        DatabaseService.getInstance().path,
+        db.path,
         'PRODUCTION_BATCH',
         null,
         'Forge standard armament'
       );
       const result = service.forgeStandardArmament(payload);
-      sendJson(res, 200, { ...result, time });
+      const response = { ...result, time };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'FORGE_STANDARD',
+        payload,
+        result: response
+      });
+      sendJson(res, 200, { ...response, idempotent: false });
     } catch (err: any) {
       sendJson(res, err.statusCode || 400, { success: false, error: err.message, code: err.code });
     }
@@ -1459,14 +1488,28 @@ export function registerBlacksmithForgeRoutes(router: Router): void {
         sendJson(res, 400, { success: false, error: 'shiftId is required.' });
         return;
       }
+      const db = DatabaseService.getInstance();
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { ...prior, idempotent: true });
+        return;
+      }
       const time = chargePlayerAction(
-        DatabaseService.getInstance().path,
+        db.path,
         'WORK_SHIFT',
         null,
         `Work shift ${shiftId}`
       );
       const result = service.performLaborShift(characterId, shiftId);
-      sendJson(res, 200, { ...result, time });
+      const response = { ...result, time };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'ENTERPRISE_WORK',
+        payload: { characterId, shiftId },
+        result: response
+      });
+      sendJson(res, 200, { ...response, idempotent: false });
     } catch (err: any) {
       sendJson(res, err.statusCode || 400, { success: false, error: err.message, code: err.code });
     }
@@ -1480,14 +1523,28 @@ export function registerBlacksmithForgeRoutes(router: Router): void {
         sendJson(res, 400, { success: false, error: 'businessType is required.' });
         return;
       }
+      const db = DatabaseService.getInstance();
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { ...prior, idempotent: true });
+        return;
+      }
       const time = chargePlayerAction(
-        DatabaseService.getInstance().path,
+        db.path,
         'ENTERPRISE_MANAGE',
         null,
         `Open enterprise ${businessType}`
       );
       const result = service.openBusiness(characterId, businessType, customName, Boolean(turnkey));
-      sendJson(res, 200, { ...result, time });
+      const response = { ...result, time };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'ENTERPRISE_OPEN',
+        payload: { characterId, businessType, customName, turnkey: Boolean(turnkey) },
+        result: response
+      });
+      sendJson(res, 200, { ...response, idempotent: false });
     } catch (err: any) {
       sendJson(res, err.statusCode || 400, { success: false, error: err.message, code: err.code });
     }
@@ -1501,9 +1558,23 @@ export function registerBlacksmithForgeRoutes(router: Router): void {
         sendJson(res, 400, { success: false, error: 'businessId is required.' });
         return;
       }
+      const db = DatabaseService.getInstance();
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { ...prior, idempotent: true });
+        return;
+      }
       const result = service.collectProfits(businessId, amount ? Number(amount) : undefined);
       const status = service.getEnterpriseStatus(characterId);
-      sendJson(res, 200, { ...result, status });
+      const response = { ...result, status };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'ENTERPRISE_COLLECT',
+        payload: { characterId, businessId, amount: amount ? Number(amount) : null },
+        result: response
+      });
+      sendJson(res, 200, { ...response, idempotent: false });
     } catch (err: any) {
       sendJson(res, 400, { success: false, error: err.message });
     }

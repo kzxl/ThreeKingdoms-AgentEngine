@@ -10,6 +10,7 @@ import { Router, sendJson, RouteContext } from '../../../../server/router';
 import { SpecialistWorkforceService } from './specialist-workforce.service';
 import { DatabaseService } from '../../../../core/database';
 import { chargePlayerAction } from '../../../../shared/action-time';
+import { requestIdempotencyKey, findIdempotentResult, recordAction } from '../../../../shared/action-journal';
 
 export function registerSpecialistWorkforceRoutes(router: Router): void {
   const service = SpecialistWorkforceService.getInstance();
@@ -73,6 +74,13 @@ export function registerSpecialistWorkforceRoutes(router: Router): void {
         }
       }
 
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(DatabaseService.getInstance(), idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { ...prior, idempotent: true });
+        return;
+      }
+
       const time = chargePlayerAction(
         DatabaseService.getInstance().path,
         'WORKFORCE_HIRE',
@@ -87,7 +95,14 @@ export function registerSpecialistWorkforceRoutes(router: Router): void {
         role
       });
 
-      sendJson(res, 200, { ...result, time });
+      const response = { ...result, time };
+      recordAction(DatabaseService.getInstance(), {
+        key: idempotencyKey,
+        actionType: 'WORKFORCE_HIRE',
+        payload: { characterId, npcId, businessId, role },
+        result: response
+      });
+      sendJson(res, 200, { ...response, idempotent: false });
     } catch (err: any) {
       sendJson(res, err.statusCode || 400, { success: false, error: err.message, code: err.code });
     }

@@ -8,6 +8,7 @@ import { BespokeForgeService } from './bespoke-forge.service';
 import { SpatialGuardService } from '../../../progression/spatial-guard.service';
 import { DatabaseService } from '../../../../core/database';
 import { chargePlayerAction } from '../../../../shared/action-time';
+import { requestIdempotencyKey, findIdempotentResult, recordAction } from '../../../../shared/action-journal';
 
 export function registerBespokeForgeRoutes(router: Router): void {
   const service = BespokeForgeService.getInstance();
@@ -45,15 +46,30 @@ export function registerBespokeForgeRoutes(router: Router): void {
         body.bypassSpatialGuard
       );
 
+      const db = DatabaseService.getInstance();
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { ...prior, idempotent: true });
+        return;
+      }
+
       const time = chargePlayerAction(
-        DatabaseService.getInstance().path,
+        db.path,
         'PRODUCTION_BATCH',
         null,
         `Bespoke forge ${body.customName || ''}`.trim()
       );
 
       const result = service.forgeWeapon(body);
-      sendJson(res, 200, { ...result, time });
+      const response = { ...result, time };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'FORGE_BESPOKE_WEAPON',
+        payload: body,
+        result: response
+      });
+      sendJson(res, 200, { ...response, idempotent: false });
     } catch (err: any) {
       sendJson(res, err.statusCode || 400, { success: false, error: err.message, code: err.code });
     }
