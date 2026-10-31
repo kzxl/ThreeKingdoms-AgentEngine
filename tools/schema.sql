@@ -310,6 +310,14 @@ CREATE TABLE IF NOT EXISTS npc_skills (
     FOREIGN KEY(npc_id) REFERENCES npc_state(npc_id)
 );
 
+-- 12b. NPC Perks (deterministic auto-selection per reached tier)
+CREATE TABLE IF NOT EXISTS npc_perks (
+    npc_id TEXT NOT NULL,
+    perk_code TEXT NOT NULL,
+    chosen_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (npc_id, perk_code)
+);
+
 -- 13. Businesses & Autonomous Enterprise Facilities
 CREATE TABLE IF NOT EXISTS businesses (
     business_id TEXT PRIMARY KEY,

@@ -12,6 +12,7 @@ import { RngService } from '../../core/rng';
 import { nextId } from '../../shared/id-generator';
 import { recordLegacy } from '../../shared/victory';
 import { SkillService } from '../progression/skill.service';
+import { NpcSkillService } from '../progression/npc-skill.service';
 import { getFameTier, fameRatio } from '../../shared/prestige';
 import { PrestigeService } from '../progression/prestige.service';
 import { DynastySuccessionService } from '../lineage-succession/dynasty-succession.service';
@@ -27,6 +28,7 @@ export interface PreBattleInput {
   playerLeadership: number;
   playerDiplomacy: number;
   enemyName: string;
+  enemyId?: string;
   enemyWar: number;
   enemyLeadership: number;
 }
@@ -73,6 +75,10 @@ export class BattleDuelService {
       ['SKL-WAR-DUEL', 'SKL-WAR-SPEAR', 'SKL-WAR-BLADE', 'SKL-WAR-RIDE']
     ));
     const playerWar = Number(input.playerWar || 0) + duelSkill;
+    const enemyDuelSkill = input.enemyId
+      ? NpcSkillService.forDatabase(this.db).combatBonuses(input.enemyId).duelPower
+      : 0;
+    const enemyWar = Number(input.enemyWar || 0) + enemyDuelSkill;
 
     let negotiationAttempted = false;
     let negotiationSuccess = false;
@@ -106,10 +112,10 @@ export class BattleDuelService {
     let deathChance = 0;
     let deathRoll = 1;
 
-    if (cfg.enabled && playerWar >= 70 && input.enemyWar >= 70 && rng.chance(cfg.duelTriggerChance)) {
+    if (cfg.enabled && playerWar >= 70 && enemyWar >= 70 && rng.chance(cfg.duelTriggerChance)) {
       duelTriggered = true;
       const playerScore = playerWar + rng.d20() + input.playerLeadership / 10;
-      const enemyScore = input.enemyWar + rng.d20() + input.enemyLeadership / 10;
+      const enemyScore = enemyWar + rng.d20() + input.enemyLeadership / 10;
       const margin = Math.abs(playerScore - enemyScore);
       duelWinner = playerScore === enemyScore ? 'DRAW' : playerScore > enemyScore ? 'PLAYER' : 'ENEMY';
 

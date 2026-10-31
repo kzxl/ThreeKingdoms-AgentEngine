@@ -17,6 +17,7 @@ import { syncProgressProjection } from '../../shared/projection-sync';
 import { RngService } from '../../core/rng';
 import { nextId } from '../../shared/id-generator';
 import { postCashflowEntry } from '../../shared/ledger';
+import { NpcSkillService } from '../progression/npc-skill.service';
 
 export type FogTier = 1 | 2 | 3 | 4 | 5;
 
@@ -658,17 +659,26 @@ export class DailyInteractionEngine {
       5: 'Tier 5: Sworn Bond'
     };
 
-    let npcSkills: Array<{ skillCode: string; name: string; tier: number; currentExp: number; maxExp: number }> = [];
+    let npcSkills: Array<{
+      skillCode: string;
+      name: string;
+      tier: number;
+      currentExp: number;
+      maxExp: number;
+      perks: Array<{ nameVi: string; nameEn: string; tier: number }>;
+    }> = [];
     try {
-      npcSkills = this.db.query<any>(
-        'SELECT skill_code, skill_name, tier, current_exp, max_exp FROM npc_skills WHERE npc_id = ? ORDER BY tier DESC;',
-        [npcId]
-      ).map(row => ({
-        skillCode: row.skill_code,
-        name: row.skill_name,
-        tier: Number(row.tier || 1),
-        currentExp: Number(row.current_exp || 0),
-        maxExp: Number(row.max_exp || 40)
+      npcSkills = NpcSkillService.forDatabase(this.db).listSkills(npcId).map(skill => ({
+        skillCode: skill.skillCode,
+        name: skill.nameVi,
+        tier: skill.tier,
+        currentExp: skill.currentExp,
+        maxExp: skill.maxExp,
+        perks: skill.perks.map(perk => ({
+          nameVi: perk.nameVi,
+          nameEn: perk.nameEn,
+          tier: perk.tier
+        }))
       }));
     } catch {
       npcSkills = [];

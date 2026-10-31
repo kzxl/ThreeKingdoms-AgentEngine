@@ -103,7 +103,7 @@ async function runRotkDuelsVerification(): Promise<void> {
 
     // 1.4 Test DuelistProfile builder via SingleCombatDuelService
     const guanYuProfile = duelService.buildDuelistProfile('NPC-0003');
-    assert(guanYuProfile.effectiveWar === 103, 'DuelistProfile for Guan Yu reflects 103 effective WAR');
+    assert(guanYuProfile.effectiveWar === 107, 'DuelistProfile for Guan Yu reflects 103 gear WAR + 4 innate duel skill');
     assert(guanYuProfile.isOver100 === true, 'DuelistProfile flags isOver100 for Guan Yu');
     assert(guanYuProfile.maxHp >= 250, `Guan Yu max HP correctly scaled by WAR & Morale (${guanYuProfile.maxHp})`);
     assert(guanYuProfile.weaponName?.includes('Thanh Long'), 'Guan Yu profile includes legendary weapon narrative');
@@ -265,7 +265,7 @@ async function runRotkDuelsVerification(): Promise<void> {
       maxRounds: 3
     });
 
-    assert(duelGuanYu.opponent.effectiveWar === 103, 'Guan Yu enters sparring with 103 effective WAR (Green Dragon Blade)');
+    assert(duelGuanYu.opponent.effectiveWar === 107, 'Guan Yu enters sparring with 103 gear WAR + 4 innate duel skill');
     const gyRound1 = duelService.resolveRound(duelGuanYu.duelId, 'DEFEND');
     assert(gyRound1.roundNumber === 1, 'Sparring round with Guan Yu executed smoothly');
 

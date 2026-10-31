@@ -138,10 +138,13 @@ class GameplayManager {
       DELETE FROM campaign_meta;
       DELETE FROM player_state;
       DELETE FROM player_skills;
+      DELETE FROM player_perks;
+      DELETE FROM player_talents;
       DELETE FROM cashflow_ledger;
       DELETE FROM account_journal;
       DELETE FROM inventory_items;
       DELETE FROM stock_movements;
+      DELETE FROM npc_perks;
       DELETE FROM npc_state;
       DELETE FROM npc_skills;
       DELETE FROM npc_relationship_deltas;

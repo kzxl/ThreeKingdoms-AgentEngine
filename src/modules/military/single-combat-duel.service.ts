@@ -30,6 +30,7 @@ import { nextSequentialId } from '../../shared/id-generator';
 import { postCashflowEntry } from '../../shared/ledger';
 import { PrestigeService } from '../progression/prestige.service';
 import { SkillService } from '../progression/skill.service';
+import { NpcSkillService } from '../progression/npc-skill.service';
 
 // ---------------------------------------------------------------------------
 // 1. Data Contracts & Types
@@ -393,6 +394,16 @@ export class SingleCombatDuelService {
         effectiveWar = baseWar + gearBonusWar;
         isOver100 = effectiveWar > 100;
       }
+    }
+
+    // NPC commanders bring their own skill ladder into the duel. The player's
+    // DUEL_POWER is already applied above; NPCs use the same catalog through
+    // NpcSkillService, including deterministic perks and master-only aptitude.
+    if (characterId !== 'PLY-0001') {
+      const bonuses = NpcSkillService.forDatabase(this.db).combatBonuses(characterId);
+      effectiveWar += bonuses.duelPower;
+      morale = Math.min(100, morale + bonuses.moraleBonus);
+      isOver100 = effectiveWar > 100;
     }
 
     // Historical flavor overrides for major heroes

@@ -15,6 +15,7 @@ import { getGameDate } from '../../shared/game-clock';
 import { recordFinancialTransaction } from '../../shared/financial-transaction';
 import { applyVictoryIfEligible } from '../../shared/victory';
 import { BattleDuelService } from './battle-duel.service';
+import { NpcSkillService } from '../progression/npc-skill.service';
 
 export interface StartSiegeInput {
   settlementId: string;
@@ -134,8 +135,8 @@ export class SiegeService {
     let defenseAdjustment = 0;
     let damageBonus = 0;
     let troopMultiplier = 1;
+    const defender = this.resolveDefender(settlement);
     if (input.preBattle !== false) {
-      const defender = this.resolveDefender(settlement);
       preBattle = BattleDuelService.forDatabase(this.db).resolvePreBattle({
         battleId: `SIEGE-${settlementId}-${gameDate}-${commanderId}`,
         gameDate,
@@ -146,7 +147,8 @@ export class SiegeService {
         playerLeadership: Number(commander?.ldr_attr || 60),
         playerDiplomacy: Number(commander?.dip_attr || 50),
         enemyName: defender.name,
-        enemyWar: defender.war,
+        enemyId: defender.id || undefined,
+        enemyWar: defender.war + defender.duelPower,
         enemyLeadership: defender.ldr
       });
 
@@ -193,7 +195,9 @@ export class SiegeService {
 
     const dailyDamage = Math.max(
       2,
-      Math.round(attackerTroops / 40 + Number(commander?.war_attr || 60) / 20) + damageBonus
+      Math.round(attackerTroops / 40 + Number(commander?.war_attr || 60) / 20)
+        + damageBonus
+        - Math.round(defender.siegePower / 2)
     );
     const siegeId = nextId(this.db, 'siege', 'SIEGE', gameDate);
 
@@ -228,25 +232,46 @@ export class SiegeService {
     };
   }
 
-  private resolveDefender(settlement: any): { name: string; war: number; ldr: number } {
+  private resolveDefender(settlement: any): {
+    id: string | null;
+    name: string;
+    war: number;
+    ldr: number;
+    duelPower: number;
+    siegePower: number;
+  } {
     try {
       const faction = this.db.queryOne<any>(
         'SELECT leader_id, name_vi FROM session_factions WHERE faction_id = ? LIMIT 1;',
         [settlement.ruler_faction_id]
       );
-      const leader = faction?.leader_id
+      const defenderId = settlement.governor_id || faction?.leader_id || null;
+      const leader = defenderId
         ? this.db.queryOne<any>(
           'SELECT name_vi, war_attr, ldr_attr FROM master_characters WHERE npc_id = ? LIMIT 1;',
-          [faction.leader_id]
+          [defenderId]
         )
         : null;
+      const bonuses = defenderId
+        ? NpcSkillService.forDatabase(this.db).combatBonuses(defenderId)
+        : { duelPower: 0, siegePower: 0, moraleBonus: 0 };
       return {
+        id: defenderId,
         name: leader?.name_vi || faction?.name_vi || 'Thủ Tướng Địch',
         war: Number(leader?.war_attr || 65),
-        ldr: Number(leader?.ldr_attr || 65)
+        ldr: Number(leader?.ldr_attr || 65),
+        duelPower: bonuses.duelPower,
+        siegePower: bonuses.siegePower
       };
     } catch {
-      return { name: 'Thủ Tướng Địch', war: 65, ldr: 65 };
+      return {
+        id: null,
+        name: 'Thủ Tướng Địch',
+        war: 65,
+        ldr: 65,
+        duelPower: 0,
+        siegePower: 0
+      };
     }
   }
 

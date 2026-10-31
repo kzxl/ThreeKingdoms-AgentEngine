@@ -11,6 +11,7 @@
 import { DatabaseService } from '../../core/database';
 import { nextId } from '../../shared/id-generator';
 import { TacticalBattleEngine, BattleResult, TerrainType } from './tactical-battle';
+import { NpcSkillService } from '../progression/npc-skill.service';
 
 export interface FieldBattleOutcome {
   battle: boolean;
@@ -142,11 +143,12 @@ export class FieldBattleService {
         [commanderId]
       );
       const row = npc || master;
+      const bonuses = NpcSkillService.forDatabase(this.db).combatBonuses(commanderId);
       return {
         id: commanderId,
         name: String(row?.name || 'Tướng Lĩnh Địch'),
-        war: Number(row?.war_attr || 65),
-        leadership: Number(row?.ldr_attr || 65),
+        war: Number(row?.war_attr || 65) + bonuses.duelPower,
+        leadership: Number(row?.ldr_attr || 65) + Math.round(bonuses.moraleBonus / 2),
         intelligence: Number(row?.int_attr || 60)
       };
     } catch {
@@ -206,12 +208,13 @@ export class FieldBattleService {
       );
       const row = npc || master;
       if (!row) return { commander: { ...fallback, id, name: faction?.name_vi || fallback.name } };
+      const bonuses = NpcSkillService.forDatabase(this.db).combatBonuses(id);
       return {
         commander: {
           id,
           name: String(row.name || faction?.name_vi || fallback.name),
-          war: Number(row.war_attr || 60),
-          leadership: Number(row.ldr_attr || 60),
+          war: Number(row.war_attr || 60) + bonuses.duelPower,
+          leadership: Number(row.ldr_attr || 60) + Math.round(bonuses.moraleBonus / 2),
           intelligence: Number(row.int_attr || 60)
         }
       };

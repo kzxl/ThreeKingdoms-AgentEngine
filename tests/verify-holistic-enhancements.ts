@@ -267,7 +267,9 @@ async function verifyHolisticEnhancements(): Promise<void> {
     ON CONFLICT(child_id) DO UPDATE SET age = 17, status = 'YOUTH_APPRENTICE';
   `, [testChildId]);
 
-  // Clean up any officer row
+  // Clean up any officer row (skills and perks reference npc_state).
+  db.execute(`DELETE FROM npc_perks WHERE npc_id = ?;`, [testChildId]);
+  db.execute(`DELETE FROM npc_skills WHERE npc_id = ?;`, [testChildId]);
   db.execute(`DELETE FROM faction_officers WHERE officer_id = ?;`, [testChildId]);
   db.execute(`DELETE FROM npc_state WHERE npc_id = ?;`, [testChildId]);
 
