@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.26.4] - 2026-10-31
+
+Core schema contract: runtime tables no longer appear only on first use.
+
+### Changed
+- Migration 050 creates the runtime tables that services used to `CREATE TABLE
+  IF NOT EXISTS` lazily: equipment, the six family tables, loans, expeditions,
+  intel fog and the duel chronicle. It also adds the runtime columns on
+  `businesses` (type/owner/revenue/profit) and `npc_state` (eight EXP columns).
+- A fresh `schema.sql + all migrations` database now has the same runtime
+  contract as the live campaign without waiting for a request to hit a service.
+- `tests/verify-schema-contract.ts` builds a fresh database and asserts 18
+  runtime tables plus the required business/NPC columns exist.
+
+### Verification
+`npm run verify` green: 60/60 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,506 invariants, 0 discrepancies.
+
+---
+
 ## [1.26.3] - 2026-10-31
 
 Core idempotency and action journal for service-level mutations.
