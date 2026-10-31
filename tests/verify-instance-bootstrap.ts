@@ -150,7 +150,13 @@ function run(): void {
     ).get();
     assert(unrestTable, 'schema must declare unrest_events');
     const migrations = (fresh.prepare('SELECT COUNT(*) AS c FROM schema_migrations').get() as any).c;
-    assert.strictEqual(Number(migrations), 41, 'initDb must apply all 41 versioned migrations');
+    const expectedMigrations = fs.readdirSync(path.join(ROOT, 'tools', 'migrations'))
+      .filter(name => /^\d{3}-.+\.js$/.test(name)).length;
+    assert.strictEqual(
+      Number(migrations),
+      expectedMigrations,
+      `initDb must apply all ${expectedMigrations} versioned migrations`
+    );
     fresh.close();
 
     // Bootstrap must also work on a schema-initialized database (no live-session

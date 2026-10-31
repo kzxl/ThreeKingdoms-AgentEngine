@@ -28,6 +28,7 @@ const { getFameAttractionService } = require('./fame-attraction-bridge');
 const { getBattleDuelService } = require('./battle-duel-bridge');
 const { driftPlayerSettlement } = require('./settlement-market-bridge');
 const { getRetainerLoyaltyService } = require('./retainer-loyalty-bridge');
+const { settleBusinessMonth, businessHealth } = require('./business-economics');
 const { getFamilyLineageService } = require('./lineage-bridge');
 
 const ROOT_DIR = path.resolve(__dirname, '..');
@@ -423,10 +424,8 @@ class GameplayManager {
       for (const s of staff) {
         totalWages += Number(s.monthly_wage || 0);
       }
-      const tier = Number(b.tier || 1);
-      const workforce = Number(b.current_workforce || 2);
-      const eff = Number(b.efficiency_multiplier || 1.0);
-      let currentSafe = Number(b.safe_cash || 0);
+      const currentSafe = Number(b.safe_cash || 0);
+      const currentDebt = Number(b.debt || 0);
 
       if (settledBusinesses.has(b.business_id)) {
         bizReports.push({
@@ -434,9 +433,12 @@ class GameplayManager {
           businessName: b.name,
           grossIncome: 0,
           totalWages,
+          rent: Number(b.monthly_rent || 0),
           netProfit: 0,
           newSafeCash: currentSafe,
+          debt: currentDebt,
           staffCount: staff.length,
+          health: businessHealth({ staffCount: staff.length, debt: currentDebt, netProfit: 0 }),
           skipped: true,
           skippedReason: 'WORKSHOP_CYCLE_SETTLED',
           settlementMethod: 'WORKSHOP'
@@ -444,22 +446,26 @@ class GameplayManager {
         continue;
       }
 
-      const grossIncome = Math.round(tier * 260 * eff + workforce * 25);
-      const netProfit = grossIncome - totalWages;
-      const updatedSafe = Math.max(0, currentSafe + netProfit);
-      bizUpdates.push(`UPDATE businesses SET safe_cash = ${updatedSafe} WHERE business_id = '${b.business_id}';`);
+      const settlement = settleBusinessMonth(b, staff);
+      bizUpdates.push(
+        `UPDATE businesses SET safe_cash = ${settlement.safeCash}, debt = ${settlement.debt} WHERE business_id = '${b.business_id}';`
+      );
       bizUpdates.push(`INSERT OR IGNORE INTO action_log (action_id, idempotency_key, turn_number, game_date, action_type, payload, result, status)
         VALUES ('ACT-BIZ-${b.business_id}-${closingMonth}', 'BIZ_CYCLE_${b.business_id}_${closingMonth}', ${prevTurn}, '${prevDate}', 'BUSINESS_MONTHLY_ACCRUAL',
-        '{"business_id": "${b.business_id}"}', '{"grossIncome": ${grossIncome}, "netProfit": ${netProfit}, "newSafeCash": ${updatedSafe}}', 'SUCCESS');`);
+        '{"business_id": "${b.business_id}"}', '{"grossIncome": ${settlement.grossIncome}, "totalWages": ${settlement.totalWages}, "rent": ${settlement.rent}, "netProfit": ${settlement.netProfit}, "newSafeCash": ${settlement.safeCash}, "debt": ${settlement.debt}}', 'SUCCESS');`);
 
       bizReports.push({
         businessId: b.business_id,
         businessName: b.name,
-        grossIncome,
-        totalWages,
-        netProfit,
-        newSafeCash: updatedSafe,
-        staffCount: staff.length,
+        grossIncome: settlement.grossIncome,
+        totalWages: settlement.totalWages,
+        rent: settlement.rent,
+        netProfit: settlement.netProfit,
+        newSafeCash: settlement.safeCash,
+        debt: settlement.debt,
+        staffCount: settlement.staffCount,
+        staffingRatio: settlement.staffingRatio,
+        health: businessHealth(settlement),
         settlementMethod: 'PASSIVE'
       });
     }

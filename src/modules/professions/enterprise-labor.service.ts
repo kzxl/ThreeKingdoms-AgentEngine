@@ -229,6 +229,8 @@ export interface EnterpriseDetails {
   delegationLevel: number;
   efficiencyMultiplier: number;
   autoProcure: boolean;
+  tier: number;
+  debt: number;
 }
 
 export interface CollectProfitsResult {
@@ -238,6 +240,7 @@ export interface CollectProfitsResult {
   remainingProfit: number;
   remainingSafeCash: number;
   ownerNewCash: number;
+  debt?: number;
   message: string;
 }
 
@@ -530,7 +533,9 @@ export class EnterpriseLaborService {
       accumulatedProfit: row.accumulated_profit || 0,
       delegationLevel: row.delegation_level,
       efficiencyMultiplier: row.efficiency_multiplier,
-      autoProcure: Boolean(row.auto_procure)
+      autoProcure: Boolean(row.auto_procure),
+      tier: Number(row.tier || 1),
+      debt: Number(row.debt || 0)
     };
   }
 
@@ -562,6 +567,21 @@ export class EnterpriseLaborService {
   public collectProfits(businessId: string, withdrawAmount?: number): CollectProfitsResult {
     const biz = this.getEnterpriseDetails(businessId);
     const availableProfit = biz.accumulatedProfit;
+
+    // Debt has teeth: monthly profit first repays it (engine/business-economics),
+    // and the owner cannot withdraw more while the enterprise is still in debt.
+    if (biz.debt > 0) {
+      return {
+        success: false,
+        businessId,
+        collectedAmount: 0,
+        remainingProfit: availableProfit,
+        remainingSafeCash: biz.safeCash,
+        ownerNewCash: this.getPlayerCash(biz.ownerCharacterId),
+        debt: biz.debt,
+        message: `Cơ sở đang nợ ${biz.debt} quan. Lợi nhuận tháng sẽ được dùng trả nợ trước khi chia.`
+      };
+    }
 
     if (availableProfit <= 0 && (!withdrawAmount || biz.safeCash <= 0)) {
       return {

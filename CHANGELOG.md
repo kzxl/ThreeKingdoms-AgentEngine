@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.23.2] - 2026-10-31
+
+Real enterprise economics: monthly P&L can lose money and carries debt.
+
+### Changed
+- Migration 042 adds `businesses.tier` and `businesses.debt`. The monthly
+  formula previously read a non-existent tier column (always 1) and clamped
+  losses to zero, so a loss-making workshop silently forgave its shortfall.
+- `engine/business-economics.js` is the single pure settlement function:
+  output scales with assigned staff against the roster (no staff = no revenue,
+  understaffing scales down), and rent + actual wages are real costs. Profit
+  pays debt first; a loss consumes safe cash and records the remainder as debt.
+- `GameplayManager.closeMonth` writes `safe_cash` and `debt` from that
+  settlement and reports gross, wages, rent, profit, staffing ratio and health
+  (`PROFITABLE` / `LOSS` / `DISTRESSED` / `CLOSED`). Workshop-settled months
+  still skip the passive path so wages are never charged twice.
+- `EnterpriseLaborService.collectProfits` refuses owner withdrawals while the
+  enterprise carries debt; `EnterpriseDetails` exposes `tier` and `debt`.
+- `tests/verify-workshop-economy.ts` covers the pure settlement and a real
+  month close; `verify-instance-bootstrap` now derives the expected migration
+  count from the migrations directory instead of hardcoding it.
+
+### Verification
+`npm run verify` green: 48/48 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,493 invariants, 0 discrepancies.
+
+---
+
 ## [1.23.1] - 2026-10-31
 
 Server-side action time authority for player mutations.
