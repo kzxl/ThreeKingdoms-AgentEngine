@@ -19,6 +19,7 @@ import { DatabaseService } from '../../core/database';
 import { computeCareerPaths } from '../../../engine/career-paths';
 import { ConditionService } from '../military/condition.service';
 import { chargePlayerAction } from '../../shared/action-time';
+import { requestIdempotencyKey, findIdempotentResult, recordAction } from '../../shared/action-journal';
 
 export function registerProgressionRoutes(router: Router): void {
   const guard = SpatialGuardService.getInstance();
@@ -102,17 +103,30 @@ export function registerProgressionRoutes(router: Router): void {
         return;
       }
       const service = QuestService.forDatabase(DatabaseService.getInstance());
+      const db = DatabaseService.getInstance();
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
       const time = chargePlayerAction(
-        DatabaseService.getInstance().path,
+        db.path,
         'ADMIN_ACTION',
         null,
         `Accept quest ${body.questId}`
       );
-      sendJson(res, 200, {
-        success: true,
+      const response = {
         quest: service.accept(String(body.questId), body.playerId || 'PLY-0001'),
         time
+      };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'QUEST_ACCEPT',
+        payload: { questId: body.questId, playerId: body.playerId || 'PLY-0001' },
+        result: response
       });
+      sendJson(res, 200, { success: true, ...response, idempotent: false });
     } catch (err: any) {
       sendJson(res, 400, { success: false, error: err.message });
     }
@@ -127,10 +141,24 @@ export function registerProgressionRoutes(router: Router): void {
         return;
       }
       const service = QuestService.forDatabase(DatabaseService.getInstance());
+      const db = DatabaseService.getInstance();
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
       const result = service.advance(String(body.questId), body.playerId || 'PLY-0001', {
         roll: body.roll
       });
-      sendJson(res, 200, { success: true, result });
+      const response = { result };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'QUEST_ADVANCE',
+        payload: { questId: body.questId, playerId: body.playerId || 'PLY-0001', roll: body.roll ?? null },
+        result: response
+      });
+      sendJson(res, 200, { success: true, ...response, idempotent: false });
     } catch (err: any) {
       sendJson(res, 400, { success: false, error: err.message });
     }
@@ -171,13 +199,27 @@ export function registerProgressionRoutes(router: Router): void {
         return;
       }
       const service = SkillService.forDatabase(DatabaseService.getInstance());
+      const db = DatabaseService.getInstance();
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
       const time = chargePlayerAction(
-        DatabaseService.getInstance().path,
+        db.path,
         'ADMIN_ACTION',
         null,
         `Choose perk ${perkCode}`
       );
-      sendJson(res, 200, { success: true, perk: service.choosePerk(perkCode), time });
+      const response = { perk: service.choosePerk(perkCode), time };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'PERK_CHOOSE',
+        payload: { perkCode },
+        result: response
+      });
+      sendJson(res, 200, { success: true, ...response, idempotent: false });
     } catch (err: any) {
       sendJson(res, 400, { success: false, error: err.message });
     }
@@ -197,8 +239,16 @@ export function registerProgressionRoutes(router: Router): void {
         return;
       }
 
+      const db = DatabaseService.getInstance();
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
+
       const time = chargePlayerAction(
-        DatabaseService.getInstance().path,
+        db.path,
         'MOVE_LOCATION',
         null,
         `Move to ${newLocation}`
@@ -206,13 +256,19 @@ export function registerProgressionRoutes(router: Router): void {
       guard.setPlayerCurrentLocation(playerId, newLocation);
       const status = guard.getProgressionStatus(playerId);
 
-      sendJson(res, 200, {
-        success: true,
+      const response = {
         message: `Đã di chuyển tới ${newLocation}.`,
         currentLocation: newLocation,
         progression: status,
         time
+      };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'MOVE_LOCATION',
+        payload: { playerId, newLocation },
+        result: response
       });
+      sendJson(res, 200, { success: true, ...response, idempotent: false });
     } catch (err: any) {
       sendJson(res, 400, { success: false, error: err.message });
     }
@@ -240,12 +296,28 @@ export function registerProgressionRoutes(router: Router): void {
   router.post('/api/explore', (req: any, res: any, ctx: RouteContext) => {
     try {
       const body = ctx.body || {};
+      const db = DatabaseService.getInstance();
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
       const result = exploration.explore({
         characterId: body.characterId || body.playerId || 'PLY-0001',
         location: body.location,
         poiName: body.poiName
       });
-      sendJson(res, result.success ? 200 : 400, result);
+      const response = { result };
+      if (result.success) {
+        recordAction(db, {
+          key: idempotencyKey,
+          actionType: 'EXPLORE_POI',
+          payload: { characterId: body.characterId || body.playerId || 'PLY-0001', location: body.location, poiName: body.poiName },
+          result: response
+        });
+      }
+      sendJson(res, result.success ? 200 : 400, { success: result.success, ...response, idempotent: false });
     } catch (err: any) {
       sendJson(res, 500, { success: false, error: err.message });
     }
