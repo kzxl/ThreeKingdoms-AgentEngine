@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.21.0] - 2026-10-31
+
+Quest & encounter engine (Phase 1 of the RPG direction).
+
+### Added
+- Migration 034 creates `master_quests`, `master_quest_steps` and
+  `player_quests`, and seeds five 3-step questlines: Martial, Merchant, Scholar,
+  Artisan and Lineage. Migration 035 rescales step DCs to 12/15/18 for the d20
+  check.
+- `QuestService` handles accept/list/advance: each step consumes calendar days
+  through the day clock, rolls d20 + stat modifier against its DC, and pays
+  cash/fame/attribute EXP/items through the ledger, prestige service and stock
+  movements. Failure stays on the step, costs fatigue and increments attempts.
+- Routes: `GET /api/quests`, `/api/quests/log`, `POST /api/quests/accept`,
+  `POST /api/quests/advance`.
+- A standardized **Nhiệm Vụ** modal in the TS client bundle (no new legacy
+  script) shows the quest log, step checks and results.
+- `tests/verify-quest-engine.ts` covers seeding, day cost, success rewards,
+  completion and the failure path.
+
+### Verification
+`npm run verify` green: 44/44 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,374 invariants.
+
+---
+
 ## [1.20.0] - 2026-10-31
 
 DB-first character dossiers, illustration slots and POI registry.

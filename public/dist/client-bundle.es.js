@@ -1508,7 +1508,110 @@ var g = {
 	async closeTurnAdvanceModal() {
 		await this.turnModal.close();
 	}
-}, V = new B(), H = class {
+}, V = new B();
+// src/client/features/quests/quest.modal.ts
+function H() {
+	return window.currentLang === "en";
+}
+function U(e) {
+	return String(e ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+function W(e) {
+	if (!e || typeof e != "object") return "";
+	let t = [];
+	if (e.cash && t.push(`+${e.cash} Quan`), e.fame && t.push(`+${e.fame} ${H() ? "fame" : "danh vọng"}`), e.exp) for (let [n, r] of Object.entries(e.exp)) r && t.push(`+${r} ${String(n).toUpperCase()} EXP`);
+	if (Array.isArray(e.items)) for (let n of e.items) t.push(`${n.quantity}× ${n.code}`);
+	return t.join(" • ");
+}
+var G = new class {
+	modal;
+	constructor() {
+		this.modal = i({
+			id: "quest-modal",
+			title: "Nhật Ký Nhiệm Vụ",
+			subtitle: "Nhiệm vụ theo từng phẩm lộ, dữ liệu lấy từ DB",
+			seal: "任",
+			size: "md"
+		});
+	}
+	async open() {
+		await this.modal.open(), await this.refresh(null);
+	}
+	async close() {
+		await this.modal.close();
+	}
+	async load() {
+		let e = await (await fetch("/api/quests")).json();
+		if (!e.success) throw Error(e.error || "Quest log failed");
+		return e.quests || [];
+	}
+	async refresh(e) {
+		try {
+			let t = await this.load();
+			this.modal.setContent(this.render(t, e));
+		} catch (e) {
+			this.modal.setContent(`<div class="quest-empty">${U(e.message)}</div>`);
+		}
+	}
+	async accept(e) {
+		try {
+			let t = await (await fetch("/api/quests/accept", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ questId: e })
+			})).json();
+			if (!t.success) throw Error(t.error || "Accept failed");
+			await this.refresh(null);
+		} catch (e) {
+			window.showToast?.(e.message, !0);
+		}
+	}
+	async advance(e) {
+		try {
+			let t = await (await fetch("/api/quests/advance", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ questId: e })
+			})).json();
+			if (!t.success) throw Error(t.error || "Advance failed");
+			await this.refresh(t.result), window.loadStatus?.();
+		} catch (e) {
+			window.showToast?.(e.message, !0);
+		}
+	}
+	render(e, t) {
+		let n = H();
+		return `<div class="quest-body">${t ? `
+      <div class="quest-result ${t.success ? "is-success" : "is-failure"}">
+        <strong>${t.success ? n ? "Step succeeded" : "Bước thành công" : n ? "Step failed" : "Bước thất bại"}</strong>
+        <div>${U(n ? t.narrativeEn : t.narrative)}</div>
+        <div class="quest-meta">D20 ${t.roll} + ${t.mod} = ${t.total} / DC ${t.dc}</div>
+        <div class="quest-meta">${U(W(t.rewards || {}))}</div>
+      </div>
+    ` : ""}${e.map((e) => {
+			let t = e.status === "COMPLETED" ? n ? "Completed" : "Đã hoàn thành" : e.status === "ACTIVE" ? n ? "Active" : "Đang làm" : n ? "Available" : "Có thể nhận", r = e.steps.map((t) => `
+        <div class="quest-step ${t.index < e.currentStep ? "is-done" : t.index === e.currentStep && e.status === "ACTIVE" ? "is-current" : ""}">
+          <span class="quest-step-index">${t.index + 1}</span>
+          <span class="quest-step-title">${U(n ? t.titleEn : t.titleVi)}</span>
+          <span class="quest-step-check">${U(String(t.stat).toUpperCase())} DC ${t.dc} • ${t.daysCost}${n ? "d" : " ngày"}</span>
+        </div>
+      `).join(""), i = e.status === "AVAILABLE" ? `<button class="quest-action" onclick="QuestUI.accept('${U(e.questId)}')">${n ? "Accept" : "Nhận nhiệm vụ"}</button>` : e.status === "ACTIVE" ? `<button class="quest-action is-primary" onclick="QuestUI.advance('${U(e.questId)}')">${n ? `Advance step ${e.currentStep + 1}` : `Thực hiện bước ${e.currentStep + 1}`}</button>` : `<span class="quest-badge">${n ? "Completed" : "Hoàn thành"}</span>`;
+			return `
+        <div class="quest-item">
+          <div class="quest-head">
+            <div>
+              <div class="quest-title">${U(n ? e.titleEn : e.titleVi)}</div>
+              <div class="quest-path">${U(e.pathCode)} • ${t}</div>
+            </div>
+            ${i}
+          </div>
+          <div class="quest-desc">${U(n ? e.descriptionEn : e.descriptionVi)}</div>
+          <div class="quest-steps">${r}</div>
+        </div>
+      `;
+		}).join("") || `<div class="quest-empty">${n ? "No quests available." : "Chưa có nhiệm vụ."}</div>`}</div>`;
+	}
+}(), K = class {
 	modal;
 	constructor() {
 		this.modal = i({
@@ -1528,13 +1631,13 @@ var g = {
 	async close() {
 		await this.modal.close();
 	}
-}, U = new H(), W = {
+}, q = new K(), J = {
 	wu_wei: "xi_liang",
 	he_fei: "shou_chun",
 	pu_yang: "ye_cheng",
 	wu_ling: "jiang_ling"
-}, G = new class {
-	ALIASES = W;
+}, Y = new class {
+	ALIASES = J;
 	state = {
 		status: "idle",
 		fetchedAt: 0,
@@ -1564,7 +1667,7 @@ var g = {
 		errors: []
 	};
 	resolveMapNodeId(e) {
-		return W[e] || e;
+		return J[e] || e;
 	}
 	mergeRecord(e, t) {
 		return Object.assign({}, e || {}, t || {});
@@ -1895,7 +1998,7 @@ var g = {
 	}
 }();
 // src/client/features/legacy-bridge.ts
-function K() {
+function X() {
 	if (typeof window > "u") return;
 	let t = window;
 	t.ModalShellCore = {
@@ -1949,31 +2052,36 @@ function K() {
 		close: () => V.closeTurn(),
 		openLegacy: () => V.openTurnAdvanceModal(),
 		closeLegacy: () => V.closeTurnAdvanceModal()
+	}, t.QuestUI = {
+		open: () => G.open(),
+		close: () => G.close(),
+		accept: (e) => G.accept(e),
+		advance: (e) => G.advance(e)
 	}, t.WorldMapUI = {
-		open: () => U.open(),
-		close: () => U.close()
+		open: () => q.open(),
+		close: () => q.close()
 	}, t.MapLiveService = {
-		load: (e = !1) => G.load(e),
-		getForMapNode: (e) => G.getForMapNode(e),
-		getStatusForMapNode: (e) => G.getStatusForMapNode(e),
-		getThreatForMapNode: (e) => G.getThreatForMapNode(e),
-		findNpcByName: (e) => G.findNpcByName(e),
-		findSpecialistByName: (e) => G.findSpecialistByName(e),
-		getSpecialistsForMapNode: (e) => G.getSpecialistsForMapNode(e),
-		getLocIdForNode: (e) => G.getLocIdForNode(e),
-		getRecruitRequirement: (e) => G.getRecruitRequirement(e),
-		getActionRequirements: () => G.getActionRequirements(),
-		getRoute: (e, t) => G.getRoute(e, t),
-		getLivingEntities: () => G.getLivingEntities(),
-		getResourceDistribution: () => G.getResourceDistribution(),
-		getResourceNodesForMapNode: (e) => G.getResourceNodesForMapNode(e),
-		resolveMapNodeId: (e) => G.resolveMapNodeId(e),
-		hasArmy: () => G.hasArmy(),
-		getState: () => G.getState(),
-		ALIASES: G.ALIASES
+		load: (e = !1) => Y.load(e),
+		getForMapNode: (e) => Y.getForMapNode(e),
+		getStatusForMapNode: (e) => Y.getStatusForMapNode(e),
+		getThreatForMapNode: (e) => Y.getThreatForMapNode(e),
+		findNpcByName: (e) => Y.findNpcByName(e),
+		findSpecialistByName: (e) => Y.findSpecialistByName(e),
+		getSpecialistsForMapNode: (e) => Y.getSpecialistsForMapNode(e),
+		getLocIdForNode: (e) => Y.getLocIdForNode(e),
+		getRecruitRequirement: (e) => Y.getRecruitRequirement(e),
+		getActionRequirements: () => Y.getActionRequirements(),
+		getRoute: (e, t) => Y.getRoute(e, t),
+		getLivingEntities: () => Y.getLivingEntities(),
+		getResourceDistribution: () => Y.getResourceDistribution(),
+		getResourceNodesForMapNode: (e) => Y.getResourceNodesForMapNode(e),
+		resolveMapNodeId: (e) => Y.resolveMapNodeId(e),
+		hasArmy: () => Y.hasArmy(),
+		getState: () => Y.getState(),
+		ALIASES: Y.ALIASES
 	}, console.log("[ThreeKingdoms-AgentEngine] All 14 client feature slices successfully bridged to window.*");
 }
-var q = new class {
+var Z = new class {
 	handlers = /* @__PURE__ */ new Map();
 	on(e, t) {
 		return this.handlers.has(e) || this.handlers.set(e, /* @__PURE__ */ new Set()), this.handlers.get(e).add(t), () => {
@@ -1994,7 +2102,7 @@ var q = new class {
 			}
 		});
 	}
-}(), J = class e {
+}(), Q = class e {
 	static instance;
 	static getInstance() {
 		return e.instance ||= new e(), e.instance;
@@ -2014,7 +2122,7 @@ var q = new class {
 			guardTier: e.escortLevel
 		});
 	}
-}, Y = J.getInstance(), X = class {
+}, $ = Q.getInstance(), ee = class {
 	modal;
 	caravans = [];
 	routes = [];
@@ -2059,7 +2167,7 @@ var q = new class {
 	}
 	async refreshData() {
 		try {
-			let [e, t] = await Promise.all([Y.getCaravans().catch(() => []), Y.getArbitrageOpportunities().catch(() => [])]);
+			let [e, t] = await Promise.all([$.getCaravans().catch(() => []), $.getArbitrageOpportunities().catch(() => [])]);
 			this.caravans = e, this.routes = t, this.modal.updateTabBadge("active", e.length > 0 ? e.length : void 0);
 		} catch (e) {
 			console.error("[CaravanLogisticsModal] Error refreshing data:", e);
@@ -2148,13 +2256,13 @@ var q = new class {
 			escortLevel: r?.value || "MILITIA"
 		};
 		try {
-			let e = await Y.dispatchCaravan(i);
+			let e = await $.dispatchCaravan(i);
 			typeof window.showToast == "function" && window.showToast(e.narrativeVi || "Thương đoàn đã xuất phát!"), await this.refreshData(), await this.modal.switchTab("active");
 		} catch (e) {
 			typeof window.showToast == "function" && window.showToast(e.message || "Lỗi xuất thương đoàn!", !0);
 		}
 	}
-}, Z = new X(), Q = class {
+}, te = new ee(), ne = class {
 	modal;
 	selectedScenario = "184_YELLOW_TURBAN";
 	constructor() {
@@ -2247,9 +2355,9 @@ var q = new class {
 			typeof window.showToast == "function" && window.showToast(e.message || "Lỗi khởi tạo chiến dịch!", !0);
 		}
 	}
-}, $ = new Q();
+}, re = new ne();
 // src/client/main.ts
-K();
-export { X as CaravanLogisticsModal, J as CaravanLogisticsService, _ as ClientApiClient, N as DossiersModal, j as DossiersService, k as EnterpriseWorkshopModal, D as EnterpriseWorkshopService, T as EquipmentForgeModal, C as EquipmentForgeService, t as LEGACY_OWNED_MODAL_IDS, x as LineageFamilyModal, y as LineageFamilyService, r as ModalShell, F as QuickTradeModal, R as TacticalBattleModal, Q as TitleScreenModal, B as TransitTurnModals, H as WorldMapModal, v as apiClient, Z as caravanLogisticsModal, Y as caravanLogisticsService, i as createModalShell, P as dossiersModal, M as dossiersService, A as enterpriseWorkshopModal, O as enterpriseWorkshopService, E as equipmentForgeModal, w as equipmentForgeService, q as eventBus, n as isLegacyOwnedModalId, S as lineageFamilyModal, b as lineageFamilyService, e as modalStack, I as quickTradeModal, z as tacticalBattleModal, $ as titleScreenModal, V as transitTurnModals, U as worldMapModal };
+X();
+export { ee as CaravanLogisticsModal, Q as CaravanLogisticsService, _ as ClientApiClient, N as DossiersModal, j as DossiersService, k as EnterpriseWorkshopModal, D as EnterpriseWorkshopService, T as EquipmentForgeModal, C as EquipmentForgeService, t as LEGACY_OWNED_MODAL_IDS, x as LineageFamilyModal, y as LineageFamilyService, r as ModalShell, F as QuickTradeModal, R as TacticalBattleModal, ne as TitleScreenModal, B as TransitTurnModals, K as WorldMapModal, v as apiClient, te as caravanLogisticsModal, $ as caravanLogisticsService, i as createModalShell, P as dossiersModal, M as dossiersService, A as enterpriseWorkshopModal, O as enterpriseWorkshopService, E as equipmentForgeModal, w as equipmentForgeService, Z as eventBus, n as isLegacyOwnedModalId, S as lineageFamilyModal, b as lineageFamilyService, e as modalStack, I as quickTradeModal, z as tacticalBattleModal, re as titleScreenModal, V as transitTurnModals, q as worldMapModal };
 
 //# sourceMappingURL=client-bundle.es.js.map

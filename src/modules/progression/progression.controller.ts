@@ -13,6 +13,7 @@
 import { Router, sendJson, RouteContext } from '../../server/router';
 import { SpatialGuardService } from './spatial-guard.service';
 import { ExplorationService } from './exploration.service';
+import { QuestService } from './quest.service';
 import { DatabaseService } from '../../core/database';
 
 export function registerProgressionRoutes(router: Router): void {
@@ -125,6 +126,54 @@ export function registerProgressionRoutes(router: Router): void {
       sendJson(res, 500, { success: false, error: err.message });
     }
   });
+
+  /**
+   * Quest log: list DB-authored questlines and per-player progress.
+   */
+  const handleListQuests = (req: any, res: any, ctx: RouteContext) => {
+    try {
+      const playerId = (ctx.query.playerId as string) || (ctx.query.characterId as string) || 'PLY-0001';
+      const service = QuestService.forDatabase(DatabaseService.getInstance());
+      sendJson(res, 200, { success: true, playerId, quests: service.list(playerId) });
+    } catch (err: any) {
+      sendJson(res, 500, { success: false, error: err.message });
+    }
+  };
+  router.get('/api/quests', handleListQuests);
+  router.get('/api/quests/log', handleListQuests);
+
+  const handleAcceptQuest = (req: any, res: any, ctx: RouteContext) => {
+    try {
+      const body = ctx.body || {};
+      if (!body.questId) {
+        sendJson(res, 400, { success: false, error: 'questId is required.' });
+        return;
+      }
+      const service = QuestService.forDatabase(DatabaseService.getInstance());
+      sendJson(res, 200, { success: true, quest: service.accept(String(body.questId), body.playerId || 'PLY-0001') });
+    } catch (err: any) {
+      sendJson(res, 400, { success: false, error: err.message });
+    }
+  };
+  router.post('/api/quests/accept', handleAcceptQuest);
+
+  const handleAdvanceQuest = (req: any, res: any, ctx: RouteContext) => {
+    try {
+      const body = ctx.body || {};
+      if (!body.questId) {
+        sendJson(res, 400, { success: false, error: 'questId is required.' });
+        return;
+      }
+      const service = QuestService.forDatabase(DatabaseService.getInstance());
+      const result = service.advance(String(body.questId), body.playerId || 'PLY-0001', {
+        roll: body.roll
+      });
+      sendJson(res, 200, { success: true, result });
+    } catch (err: any) {
+      sendJson(res, 400, { success: false, error: err.message });
+    }
+  };
+  router.post('/api/quests/advance', handleAdvanceQuest);
 
   /**
    * 2. POST /api/location/switch & /api/location/update

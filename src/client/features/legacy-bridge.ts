@@ -16,6 +16,7 @@ import { dossiersModal } from './dossiers';
 import { quickTradeModal } from './trade-quick';
 import { tacticalBattleModal } from './tactical-battle';
 import { transitTurnModals } from './transit-turn';
+import { questModal } from './quests/quest.modal';
 import { worldMapModal } from './world-map';
 import { mapLiveService } from './world-map/map-live.service';
 
@@ -121,6 +122,12 @@ export function setupLegacyBridge(): void {
     close: () => transitTurnModals.closeTurn(),
     openLegacy: () => transitTurnModals.openTurnAdvanceModal(),
     closeLegacy: () => transitTurnModals.closeTurnAdvanceModal()
+  };
+  w.QuestUI = {
+    open: () => questModal.open(),
+    close: () => questModal.close(),
+    accept: (questId: string) => questModal.accept(questId),
+    advance: (questId: string) => questModal.advance(questId)
   };
 
   // 14. World Map Modal & Live Settlement State

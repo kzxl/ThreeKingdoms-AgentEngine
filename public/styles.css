@@ -9472,3 +9472,180 @@ textarea {
 .market-pulse-empty { padding: 20px; text-align: center; color: #94a3b8; font-size: 11px; }
 
 .market-pulse-chart { width: 120px; height: 28px; vertical-align: middle; }
+
+/* Quest log */
+.quest-dock {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #e2e8f0;
+  background: rgba(148, 163, 184, 0.14);
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  border-radius: var(--radius-xs);
+  cursor: pointer;
+}
+
+.quest-dock:hover {
+  background: rgba(148, 163, 184, 0.28);
+  color: #ffffff;
+}
+
+.quest-card {
+  max-width: 720px;
+}
+
+.quest-close {
+  padding: 2px 7px;
+  font-size: 18px;
+  color: #94a3b8;
+  background: transparent;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: var(--radius-xs);
+  cursor: pointer;
+}
+
+.quest-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.quest-item {
+  padding: 12px;
+  border: 1px solid var(--border-neutral);
+  border-radius: var(--radius-sm);
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.quest-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.quest-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.quest-path {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+.quest-desc {
+  font-size: 11.5px;
+  color: #cbd5e1;
+  margin: 8px 0;
+}
+
+.quest-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.quest-step {
+  display: grid;
+  grid-template-columns: 20px 1fr auto;
+  gap: 8px;
+  align-items: center;
+  padding: 4px 6px;
+  font-size: 11px;
+  color: #94a3b8;
+  border-left: 2px solid rgba(148, 163, 184, 0.25);
+}
+
+.quest-step.is-current {
+  color: #fbbf24;
+  border-left-color: #fbbf24;
+}
+
+.quest-step.is-done {
+  color: #34d399;
+  border-left-color: #34d399;
+}
+
+.quest-step-index {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.quest-step-title {
+  color: inherit;
+}
+
+.quest-step-check {
+  font-size: 11px;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
+.quest-action {
+  padding: 5px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #cbd5e1;
+  background: rgba(148, 163, 184, 0.14);
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  border-radius: var(--radius-xs);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.quest-action.is-primary {
+  color: #fbbf24;
+  border-color: rgba(245, 158, 11, 0.55);
+  background: rgba(245, 158, 11, 0.12);
+}
+
+.quest-badge {
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #34d399;
+  border: 1px solid rgba(52, 211, 153, 0.4);
+  border-radius: var(--radius-xs);
+}
+
+.quest-result {
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 11.5px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.quest-result.is-success {
+  color: #bbf7d0;
+  border: 1px solid rgba(52, 211, 153, 0.45);
+  background: rgba(16, 185, 129, 0.12);
+}
+
+.quest-result.is-failure {
+  color: #fecaca;
+  border: 1px solid rgba(239, 68, 68, 0.45);
+  background: rgba(239, 68, 68, 0.12);
+}
+
+.quest-meta {
+  color: #94a3b8;
+  font-size: 11px;
+}
+
+.quest-empty {
+  padding: 18px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 11px;
+}

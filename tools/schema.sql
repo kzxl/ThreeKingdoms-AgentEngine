@@ -39,7 +39,49 @@ CREATE TABLE IF NOT EXISTS master_poi_scenes (
     scene_key TEXT NOT NULL
 );
 
--- 1c. Deterministic Identifier Sequences (per id scope)
+-- 1d. Quest engine (definitions seeded by migration 034)
+CREATE TABLE IF NOT EXISTS master_quests (
+    quest_id TEXT PRIMARY KEY,
+    title_vi TEXT NOT NULL,
+    title_en TEXT NOT NULL,
+    path_code TEXT NOT NULL,
+    min_stage INTEGER NOT NULL DEFAULT 1,
+    description_vi TEXT,
+    description_en TEXT,
+    reward_json TEXT DEFAULT '{}',
+    sort_order INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS master_quest_steps (
+    step_id TEXT PRIMARY KEY,
+    quest_id TEXT NOT NULL,
+    step_index INTEGER NOT NULL,
+    title_vi TEXT NOT NULL,
+    title_en TEXT NOT NULL,
+    stat TEXT NOT NULL,
+    dc INTEGER NOT NULL,
+    days_cost INTEGER NOT NULL DEFAULT 2,
+    success_vi TEXT,
+    success_en TEXT,
+    failure_vi TEXT,
+    failure_en TEXT,
+    reward_json TEXT DEFAULT '{}',
+    UNIQUE(quest_id, step_index)
+);
+
+CREATE TABLE IF NOT EXISTS player_quests (
+    player_id TEXT NOT NULL,
+    quest_id TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'ACTIVE',
+    current_step INTEGER NOT NULL DEFAULT 0,
+    attempts INTEGER NOT NULL DEFAULT 0,
+    started_date TEXT,
+    completed_date TEXT,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY(player_id, quest_id)
+);
+
+-- 1e. Deterministic Identifier Sequences (per id scope)
 CREATE TABLE IF NOT EXISTS id_sequence (
     scope      TEXT PRIMARY KEY,
     next_value INTEGER NOT NULL DEFAULT 0
