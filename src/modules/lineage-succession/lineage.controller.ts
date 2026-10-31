@@ -25,6 +25,7 @@ import {
 import { SpatialGuardService } from '../progression/spatial-guard.service';
 import { DatabaseService } from '../../core/database';
 import { chargePlayerAction } from '../../shared/action-time';
+import { requestIdempotencyKey, findIdempotentResult, recordAction } from '../../shared/action-journal';
 
 export function registerLineageRoutes(router: Router): void {
   const service = FamilyLineageService.getInstance();
@@ -85,6 +86,12 @@ export function registerLineageRoutes(router: Router): void {
         body.bypassSpatialGuard || body.bypassProgressionGate
       );
 
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(DatabaseService.getInstance(), idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
       const time = chargePlayerAction(
         DatabaseService.getInstance().path,
         'COURTSHIP',
@@ -92,7 +99,14 @@ export function registerLineageRoutes(router: Router): void {
         `Courtship proposal ${params.spouseNpcId || params.wifeNpcId || ''}`.trim()
       );
       const result = service.proposeMarriage(params);
-      sendJson(res, 200, { ...result, time });
+      const response = { ...result, time };
+      recordAction(DatabaseService.getInstance(), {
+        key: idempotencyKey,
+        actionType: 'COURTSHIP_PROPOSE',
+        payload: params,
+        result: response
+      });
+      sendJson(res, 200, { ...response, idempotent: false });
     } catch (err: any) {
       sendJson(res, 400, { success: false, error: err.message });
     }
@@ -159,6 +173,12 @@ export function registerLineageRoutes(router: Router): void {
         body.bypassSpatialGuard
       );
 
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(DatabaseService.getInstance(), idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
       const time = chargePlayerAction(
         DatabaseService.getInstance().path,
         'REST_RECOVERY',
@@ -166,7 +186,14 @@ export function registerLineageRoutes(router: Router): void {
         'Rest with spouse'
       );
       const result = service.restWithSpouse(marriageId);
-      sendJson(res, 200, { ...result, time });
+      const response = { ...result, time };
+      recordAction(DatabaseService.getInstance(), {
+        key: idempotencyKey,
+        actionType: 'REST_WITH_SPOUSE',
+        payload: { marriageId },
+        result: response
+      });
+      sendJson(res, 200, { ...response, idempotent: false });
     } catch (err: any) {
       sendJson(res, 400, { success: false, error: err.message });
     }

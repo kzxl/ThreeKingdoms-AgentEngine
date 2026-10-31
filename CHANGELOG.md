@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.27.1] - 2026-10-31
+
+Idempotency extended to the remaining player mutations.
+
+### Changed
+- Idempotency keys now cover faction declare-war/make-peace, lineage courtship
+  and rest, wage labor, expedition start, siege/assault start and caravan claim.
+- A replay returns the stored result and does not charge days, move troops,
+  change diplomacy or settle a caravan twice.
+- Every one of these actions is recorded in `action_log` with its key (or null
+  for an intentional repeat).
+
+### Verification
+`npm run verify` green: 61/61 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,523 invariants, 0 discrepancies.
+
+---
+
 ## [1.27.0] - 2026-10-31
 
 World economy: faction treasuries now have a double-entry ledger.

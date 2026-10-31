@@ -1083,9 +1083,21 @@ export function registerEconomyRoutes(router: Router): void {
         return;
       }
 
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
       const logisticsService = CaravanLogisticsService.getInstance();
       const result = logisticsService.claimCaravan(caravanId, playerId);
-      sendJson(res, 200, result);
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'CARAVAN_CLAIM',
+        payload: { caravanId, playerId },
+        result
+      });
+      sendJson(res, 200, { ...result, idempotent: false });
     } catch (err: any) {
       sendJson(res, 400, { success: false, error: err.message });
     }

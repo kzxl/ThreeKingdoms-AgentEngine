@@ -409,6 +409,13 @@ export function registerMilitaryRoutes(router: Router): void {
         (ctx.body || {}).bypassProgressionGate || (ctx.body || {}).bypassSpatialGuard
       );
 
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
+
       const time = chargePlayerAction(
         db.path,
         'EXPEDITION_START',
@@ -482,10 +489,17 @@ export function registerMilitaryRoutes(router: Router): void {
         };
       });
 
+      const response = { ...expResult, time };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'EXPEDITION_START',
+        payload: { originSettlementId, targetSettlementId, troopCount },
+        result: response
+      });
       sendJson(res, 200, {
         success: true,
-        ...expResult,
-        time,
+        ...response,
+        idempotent: false,
         message: `Phát động quân đoàn viễn chinh ${troopCount} binh sĩ từ ${originSettlementId} tới ${targetSettlementId} (${marchDays} ngày đường, dự kiến tới ${arrivalDate}; Quân lương tiêu hao: ${grainRequirement} Thạch, Tuyến tiếp vận: ${isSupplied ? 'Thông suốt' : 'Bị đứt đoạn'}).`
       });
     } catch (err: any) {
@@ -561,6 +575,13 @@ export function registerMilitaryRoutes(router: Router): void {
         return;
       }
 
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
+
       const time = chargePlayerAction(
         db.path,
         'SIEGE_PREP',
@@ -574,7 +595,14 @@ export function registerMilitaryRoutes(router: Router): void {
         if (ecology) {
           const meta = getCampaignMeta(db);
           const result = ecology.attackBanditStronghold(commanderId, strongholdId, meta.activeTurn, meta.currentDate);
-          sendJson(res, 200, { success: true, type: 'BANDIT_STRONGHOLD_ASSAULT', ...result, time });
+          const response = { type: 'BANDIT_STRONGHOLD_ASSAULT', ...result, time };
+          recordAction(db, {
+            key: idempotencyKey,
+            actionType: 'BANDIT_STRONGHOLD_ASSAULT',
+            payload: { commanderId, strongholdId },
+            result: response
+          });
+          sendJson(res, 200, { success: true, ...response, idempotent: false });
           return;
         }
       }
@@ -603,8 +631,7 @@ export function registerMilitaryRoutes(router: Router): void {
           gameDate: meta.currentDate,
           expeditionId
         });
-        sendJson(res, 200, {
-          success: true,
+        const response = {
           siege,
           time,
           message: siege.aborted
@@ -612,7 +639,14 @@ export function registerMilitaryRoutes(router: Router): void {
             : siege.status === 'ACTIVE'
               ? `Đã bao vây ${targetSettlementId}: ${siege.attackerTroops} quân, mỗi ngày giảm phòng thủ. Hạ thành khi tường vỡ hoặc đồn trú tan rã.`
               : `Công thành ${targetSettlementId} đã kết thúc.`
+        };
+        recordAction(db, {
+          key: idempotencyKey,
+          actionType: 'SIEGE_START',
+          payload: { targetSettlementId, attackerTroops, commanderId, expeditionId },
+          result: response
         });
+        sendJson(res, 200, { success: true, ...response, idempotent: false });
         return;
       }
 
@@ -698,7 +732,14 @@ export function registerMilitaryRoutes(router: Router): void {
         };
       });
 
-      sendJson(res, 200, { success: true, ...siegeResult, time });
+      const response = { ...siegeResult, time };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'SIEGE_ASSAULT',
+        payload: { targetSettlementId, attackerTroops, commanderId },
+        result: response
+      });
+      sendJson(res, 200, { success: true, ...response, idempotent: false });
     } catch (err: any) {
       sendJson(res, err.statusCode || 400, { success: false, error: err.message });
     }

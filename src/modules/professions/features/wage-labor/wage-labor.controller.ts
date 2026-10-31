@@ -10,6 +10,7 @@ import { Router, sendJson, RouteContext } from '../../../../server/router';
 import { WageLaborService } from './wage-labor.service';
 import { DatabaseService } from '../../../../core/database';
 import { chargePlayerAction } from '../../../../shared/action-time';
+import { requestIdempotencyKey, findIdempotentResult, recordAction } from '../../../../shared/action-journal';
 
 export class WageLaborController {
   private service: WageLaborService;
@@ -48,14 +49,23 @@ export class WageLaborController {
           return;
         }
 
-        const time = chargePlayerAction(
-          DatabaseService.getInstance().path,
-          'WORK_SHIFT',
-          null,
-          `Labor shift ${shiftId}`
-        );
+        const idempotencyKey = requestIdempotencyKey(ctx);
+        const db = DatabaseService.getInstance();
+        const prior = findIdempotentResult(db, idempotencyKey);
+        if (prior) {
+          sendJson(res, 200, { success: true, ...prior, idempotent: true });
+          return;
+        }
+        const time = chargePlayerAction(db.path, 'WORK_SHIFT', null, `Labor shift ${shiftId}`);
         const result = this.service.executeShift(characterId, shiftId);
-        sendJson(res, 200, { success: true, result, time });
+        const response = { result, time };
+        recordAction(db, {
+          key: idempotencyKey,
+          actionType: 'LABOR_WORK',
+          payload: { characterId, shiftId },
+          result: response
+        });
+        sendJson(res, 200, { success: true, ...response, idempotent: false });
       } catch (err: any) {
         sendJson(res, 400, { success: false, error: err.message });
       }
