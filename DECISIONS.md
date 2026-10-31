@@ -193,3 +193,13 @@ This document records the architectural choices, rationale, and alternatives con
 - **Consequences**:
   - Positive: Information becomes a resource and a reason to spend days; false reports create real planning risk.
   - Negative: Players who ignore the intel board are not blocked, just less informed; the UI must keep the section visible.
+
+---
+
+## ADR-017: Farming Is Land, Not a Gathering Node (2026-10-31)
+
+- **Context**: The `FARM` gathering node only paid the player as a hired labourer. There was no land to rent, no crop choice, no season and no harvest cycle, so the agricultural half of the economy was missing.
+- **Decision**: Migration 048 adds `master_crops` and four rentable parcels per settlement. The player pays rent (to the ruling faction), plants an in-season crop, waits 20–60 days, and harvests grain through the inventory writer. Yield depends on area, soil, crisis penalty, lateness and a crop-risk roll.
+- **Consequences**:
+  - Positive: Land, season and crop choice create a real mid-term plan; rent is a second recurring cash sink after tax.
+  - Negative: A parcel can sit idle if the player misses the season; the UI must show the current season and the harvest date clearly.

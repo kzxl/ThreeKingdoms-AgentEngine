@@ -60,6 +60,7 @@ The **ThreeKingdoms-AgentEngine** test infrastructure provides an autonomous, mu
 - **Contract Board (`tests/verify-contract-board.ts`)**: Three deterministic offers per month, accept/deliver consumes real stock and pays the reward, expiry creates a penalty obligation, month close rotates offers.
 - **Combat Consequences (`tests/verify-combat-consequences.ts`)**: An injury reduces effective WAR, NPC death clears the business/faction roster, and one month of rest heals.
 - **Intel Reports (`tests/verify-intel.ts`)**: Monthly reports are deterministic, verification reveals the truth, a report cannot be verified twice, and a 20%-off claim is flagged false.
+- **Farmland (`tests/verify-farm.ts`)**: Rent reaches the landlord, out-of-season crops are rejected, early harvest is rejected, harvest adds real grain, double rent and insufficient cash fail, and leases expire.
 
 ### Tier 4: Invariant & State Conservation Auditor (`tools/sim-audit.js`)
 The auditor verifies **1,493 invariants across eight blocks** against SQLite as the
@@ -94,6 +95,7 @@ primary truth:
 | `tests/verify-contract-board.ts` | P1: Contract board | — | Rotation, accept, delivery with stock, expiry penalty, month-close rotation |
 | `tests/verify-combat-consequences.ts` | RPG: Injuries and NPC death | — | Injury penalty, effective WAR, NPC death clears roster, monthly recovery |
 | `tests/verify-intel.ts` | RPG: Intel reports | — | Deterministic monthly reports, verification, double-verify rejection, false claim |
+| `tests/verify-farm.ts` | RPG: Farmland and crops | — | Rent/landlord, seasonal planting, early-harvest rejection, real grain output, lease expiry |
 | `tools/sim-audit.js` | System: Autonomous Invariant Auditor | 1,493 | Eight blocks: accounting, inventory, journal, projection, enterprise, strategy, life-sim, clock |
 
 ---
@@ -111,7 +113,7 @@ npx tsx tests/verify-rotk-duels.ts
 
 ### Full Verification Pipeline
 ```bash
-# Single gate: typecheck → arch ratchet → 55 suites → API contract → write smoke
+# Single gate: typecheck → arch ratchet → 56 suites → API contract → write smoke
 npm run verify
 
 # Individually:
@@ -122,7 +124,7 @@ npm run lint:ui        # UI debt ratchet (button classes, inline styles, native 
 npm run lint:slop      # anti-slop laws: emoji, gradients, glow shadows, font families
 npm run lint:api       # client /api/* paths must exist or be allowlisted with a reason
 npm run routes:shadow  # fails if a legacy route is already served by the Router
-npm test               # 4 legacy + 51 verify-*.ts suites, isolated DB per suite
+npm test               # 4 legacy + 52 verify-*.ts suites, isolated DB per suite
 npm run golden:verify  # 28 read-only endpoint contracts
 npm run smoke:write    # 8 HTTP write paths + post-write audit
 npm run audit          # 1,493 SQLite invariants in eight blocks

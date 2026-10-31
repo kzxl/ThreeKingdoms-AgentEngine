@@ -74,6 +74,7 @@ All dynamic campaign state is maintained in `saves/session.db` using the schema 
 13. **`contract_offers` & `player_contracts`**: Rotating delivery board and accepted contracts (migration 045).
 14. **`conditions`**: Persistent injuries with combat penalty and recovery (migration 046).
 15. **`intel_reports`**: Monthly price/garrison claims with confidence and verification (migration 047).
+16. **`master_crops` & `land_parcels`**: Seasonal crop catalog and rentable farmland (migration 048).
 
 ---
 
@@ -137,7 +138,7 @@ millisecond.
 ### 6.3 Versioned data migrations
 
 `tools/migrations/` holds idempotent migrations applied inside a transaction and
-recorded in `schema_migrations` (47 migrations, through `047-intel-reports`). New playthrough instances
+recorded in `schema_migrations` (48 migrations, through `048-land-and-crops`). New playthrough instances
 are brought to a known data state with `npm run migrate`; `npm run migrate:status` lists
 pending work. Migrations also own data repairs that SQL cannot express safely at the
 read path: 042 adds `businesses.tier/debt`, 043 repairs legacy text and currency labels.
@@ -152,7 +153,7 @@ not require editing that test.
 | :--- | :--- | :--- |
 | Types | `npm run typecheck` | `strict` TypeScript across `src/`, `tests/`, `vite.config.ts`. |
 | Architecture | `npm run lint` | Ratchet over `tools/arch-baseline.json`; debt may only shrink. |
-| Behaviour | `npm test` | 55 suites (4 legacy + 51 modern); each modern suite runs on an isolated DB copy and projections are restored afterwards. |
+| Behaviour | `npm test` | 56 suites (4 legacy + 52 modern); each modern suite runs on an isolated DB copy and projections are restored afterwards. |
 | API contract | `npm run golden:verify` | 28 read-only endpoints: status code, response shape, behavioural assertions. |
 | Write paths | `npm run smoke:write` | 8 HTTP write paths plus a post-write audit on a sandbox database. |
 | Invariants | `npm run audit` | 1,493 SQLite invariants (ledger parity, inventory conservation, projection sync, world/life-sim/clock blocks). |
@@ -366,4 +367,32 @@ a confidence of 0.4–0.9.
 - A claim more than 20% away from the truth is `isFalse`; a report can only be
   verified once.
 - The quest modal renders an **Intel** section with a Verify button.
+
+---
+
+## 13. Rented Farmland & Seasonal Crops (1.26.0)
+
+Farming was a gathering node: the player worked as a hired labourer. Migration
+048 adds `master_crops` and `land_parcels` so the player can rent land, choose a
+crop and harvest grain.
+
+| Crop | Seasons | Growth | Seed / mu | Yield / mu | Risk |
+| :--- | :--- | ---: | ---: | ---: | ---: |
+| Paddy rice | Spring, Summer | 45 d | 30 quan | 8 | 8% |
+| Wheat | Autumn, Spring | 60 d | 25 quan | 7 | 10% |
+| Soybeans | Summer, Autumn | 30 d | 20 quan | 5 | 6% |
+| Vegetables | Spring, Summer, Autumn | 20 d | 15 quan | 4 | 5% |
+
+- Each settlement has four parcels (2/3/5/8 mu; soil 0.9–1.2; rent 60–220 quan).
+- `FarmService.rent` charges rent, leases for 90 days and credits the ruling
+  faction's treasury. `plant` requires an in-season crop owned by the player and
+  charges `seedCostPerMu × area`. Expected yield is:
+  `area × yieldPerMu × soilQuality × (1 − min(0.6, crisisPenalty × 0.5))`.
+- `harvest` requires the growth date, adds `COM-GRAIN` through
+  `restoreInventoryItem`, awards `PROF_FARMER` EXP, and applies a 10% loss per
+  15 late days plus a crop-risk roll (20% loss).
+- Routes: `GET /api/farm/parcels`, `POST /api/farm/rent|plant|harvest`; actions
+  charge `FARM_RENT` (1 day) or `FARM_PLANT`/`FARM_HARVEST` (2 days).
+- Month close expires leases; the quest modal renders a **Farmland** section
+  with Rent / Plant / Harvest.
 
