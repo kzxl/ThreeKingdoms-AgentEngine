@@ -39,7 +39,7 @@ graph TD
 
     MASTER -->|Seed Baseline| DB
     CLI -->|Executes SQL & ACID Invariants| DB
-    DB -->|Compiled via sim-db export-progress| PROGRESS
+    DB -->|syncProgressProjection (in-process)| PROGRESS
 ```
 
 ### Component Roles & Access Patterns
@@ -56,18 +56,20 @@ graph TD
 
 ## 3. SQLite Schema & Invariant Enforcement
 
-All dynamic campaign state is maintained in `saves/session.db` using the schema defined in `tools/schema.sql` (audited across 193 invariants):
+All dynamic campaign state is maintained in `saves/session.db` using the schema defined in `tools/schema.sql` (audited across 1,493 invariants in eight blocks):
 
 1. **`player_state`**: Tracks attributes (INT, POL, WAR, LDR, DIP, COM, LOG, CRA), current location, liquid cash, safe cash, fixed capital, grain, and net worth.
 2. **`cashflow_ledger`**: Strict double-entry ledger enforcing:
    $$\text{Closing Balance} = \text{Opening Balance} + \sum \text{Inflow} - \sum \text{Outflow}$$
 3. **`account_journal`**: Balanced double-entry financial journal ($Debit == Credit$) categorizing operational expenses, revenues, signing bonuses, and war spoils.
 4. **`inventory_items` & `stock_movements`**: Enforces physical conservation of goods (bamboo, grain, weapons, salt, leather).
-5. **`session_settlements`**: 20 historical Three Kingdoms citadels with authoritative garrisons, wall defenses (10-100), granaries, and treasuries.
-6. **`master_routes`**: 24 strategic connecting routes classified by 4 terrain profiles (`HIGHWAY`, `WATERWAY`, `MOUNTAIN_PASS`, `PLANK_ROAD`).
+5. **`session_settlements`**: 23 settlements across 20 historical map locations, with authoritative garrisons, wall defenses (10-100), granaries, and treasuries.
+6. **`master_routes`**: 41 strategic connecting routes classified by 4 terrain profiles (`HIGHWAY`, `WATERWAY`, `MOUNTAIN_PASS`, `PLANK_ROAD`).
 7. **`trade_caravans`**: Long-distance expedition caravans with route transit progression, guard retinue tiers, and settlement liquidation.
-8. **`businesses` & `npc_state`**: Enterprise operations boosted by hired auxiliary specialists (+15% to +25% efficiency multipliers).
+8. **`businesses` & `npc_state`**: Enterprise operations with `tier`, `safe_cash` and `debt`; assigned staff drive output, and wages plus rent are real monthly costs (see §8).
 9. **`npc_relationship_deltas`**: Stores relational shifts (Affinity, Respect) relative to master character seed dossiers.
+10. **`session_duels`**: Duel chronicle; `winner_id` and `outcome_type` are the contract used by career scoring and spatial gates.
+11. **`player_skills`, `npc_skills` & `master_skills`**: Progression ladders. Player skill display names are resynced from the master catalog by migration 043.
 
 ---
 
@@ -131,8 +133,14 @@ millisecond.
 ### 6.3 Versioned data migrations
 
 `tools/migrations/` holds idempotent migrations applied inside a transaction and
-recorded in `schema_migrations`. New playthrough instances are brought to a known data
-state with `npm run migrate`; `npm run migrate:status` lists pending work.
+recorded in `schema_migrations` (43 migrations, through `043-text-cleanup`). New playthrough instances
+are brought to a known data state with `npm run migrate`; `npm run migrate:status` lists
+pending work. Migrations also own data repairs that SQL cannot express safely at the
+read path: 042 adds `businesses.tier/debt`, 043 repairs legacy text and currency labels.
+
+A migration must be safe to run twice. `verify-instance-bootstrap` derives the expected
+migration count from the directory instead of hardcoding it, so adding a migration does
+not require editing that test.
 
 ### 6.4 Verification gates
 
@@ -140,9 +148,110 @@ state with `npm run migrate`; `npm run migrate:status` lists pending work.
 | :--- | :--- | :--- |
 | Types | `npm run typecheck` | `strict` TypeScript across `src/`, `tests/`, `vite.config.ts`. |
 | Architecture | `npm run lint` | Ratchet over `tools/arch-baseline.json`; debt may only shrink. |
-| Behaviour | `npm test` | 24 suites, each modern suite on an isolated DB copy, projections restored afterwards. |
+| Behaviour | `npm test` | 50 suites (4 legacy + 46 modern); each modern suite runs on an isolated DB copy and projections are restored afterwards. |
 | API contract | `npm run golden:verify` | 28 read-only endpoints: status code, response shape, behavioural assertions. |
-| Invariants | `npm run audit` | 1,358 SQLite invariants (ledger parity, inventory conservation, projection sync). |
+| Write paths | `npm run smoke:write` | 8 HTTP write paths plus a post-write audit on a sandbox database. |
+| Invariants | `npm run audit` | 1,493 SQLite invariants (ledger parity, inventory conservation, projection sync, world/life-sim/clock blocks). |
 
 `npm run verify` chains all of them and is the merge gate.
+
+---
+
+## 7. Action Time Authority (1.23.1)
+
+Calendar time is a server-owned resource. A player action cannot be made free by
+skipping a client helper or by calling an endpoint directly.
+
+- **Cost table**: `engine/action-policy.js` (`ACTION_TIME_POLICY`). Rows declare
+  `days` and `fatigue`. When a feature service already applies stamina, the row
+  declares `fatigue: 0` so the cost is not charged twice.
+- **Enforcement**: `src/shared/action-time.ts` (`chargePlayerAction`) calls
+  `canSpendActionTime` then `applyActionTime` before the service runs. A rejection
+  throws `ActionTimeError` (HTTP 400) with `FATIGUE`, `CAMPAIGN_OVER` or
+  `ACTION_TIME_FAILED`; the clock and game state are untouched.
+- **Coverage**: duels (initiate, spar, arena, caravan ambush), kizuna interactions
+  and natural chat, banquets, brotherhood, retainer/workforce recruitment, caravan
+  dispatch, gathering, crafting, both forge paths, work shifts and enterprise
+  opening. The controller returns the applied charge as `time` in the response.
+- **Legacy path**: `SimulationCore.executeAction` keeps its own server-side charge
+  for the eight core action types; `/api/time/spend` and `apiSpendActionTime` are
+  now clock-refresh shims and never advance the calendar.
+- **Fatigue headroom**: a day-consuming action requires the character to be below
+  the fatigue cap even when the policy row has `fatigue: 0`, because the service
+  will spend stamina.
+- **Adding a mutation**: call `chargePlayerAction` in the controller. An endpoint
+  that does not charge is a free action and a bug.
+- **Test**: `tests/verify-action-time-authority.ts` proves the day cost, the
+  rejection path and that a rejected action leaves the clock unchanged.
+
+---
+
+## 8. Enterprise Monthly Settlement (1.23.2)
+
+`engine/business-economics.js` is the single pure settlement function used by the
+month close and its tests. Migration 042 adds `businesses.tier` and
+`businesses.debt`.
+
+```
+staffingRatio = staffCount == 0 ? 0 : min(1, staffCount / current_workforce)
+grossIncome   = round((tier * 260 * efficiency + staffCount * 25) * staffingRatio)
+netProfit     = grossIncome - sum(monthly_wage) - monthly_rent
+profit        -> repay debt first, remainder to safe_cash
+loss          -> consume safe_cash, remainder becomes debt
+```
+
+- No staff means no revenue; understaffing scales output down. A zero-staff
+  business cannot print money.
+- Rent and actual wages are costs. Both are charged once per month: if the
+  workshop production cycle already settled the business (`BIZ_CYCLE_*` marker),
+  the passive path skips it.
+- Losses are carried as `debt`; `safe_cash` never goes negative. Monthly profit
+  repays debt before reaching the safe, and `EnterpriseLaborService.collectProfits`
+  refuses owner withdrawals while debt is outstanding.
+- The monthly report carries `grossIncome`, `totalWages`, `rent`, `netProfit`,
+  `newSafeCash`, `debt`, `staffCount`, `staffingRatio` and a health label
+  (`PROFITABLE`, `LOSS`, `DISTRESSED`, `CLOSED`).
+- **Test**: `tests/verify-workshop-economy.ts` covers the pure settlement and a
+  real month close.
+
+---
+
+## 9. Career Path Resolver (1.23.3)
+
+`engine/career-paths.js` is the only implementation of the five career identities.
+The progression API displays the same scores and modifiers that gameplay applies.
+
+| Path | Score inputs | Applied modifier |
+| :--- | :--- | :--- |
+| `MARTIAL` | WAR, duel wins (`session_duels.outcome_type = 'VICTORY'`) | +10% WAR EXP |
+| `MERCHANT` | COM, liquid cash | +5% trade margin |
+| `SCHOLAR` | INT/POL average | +10% INT/POL EXP |
+| `ARTISAN` | CRA, highest craft tier | −2% defect chance per tier |
+| `LINEAGE` | spouses, children, fame | +10% clan prestige on marriage/birth/succession |
+
+- The highest score is the active path; only its modifiers apply.
+- Consumers: `AttributeProgressionService`, `SimulationCore` training, quest
+  rewards, the trade quote, the crafting defect roll, and lineage prestige
+  increments.
+- `spatial-guard.service.ts` and the resolver count duel wins with
+  `outcome_type`; the old `outcome` column does not exist, so this was silently
+  zero before 1.23.3.
+- **Test**: `tests/verify-career-paths.ts` covers the five scores, the duel
+  count, the modifiers and a real WAR EXP award.
+
+---
+
+## 10. Data Repair Policy (1.23.4)
+
+Code linting cannot see rows inside `saves/session.db`, so data defects are fixed
+by an idempotent migration rather than an ad-hoc script:
+
+- Migration 043 resyncs `player_skills.skill_name` from
+  `master_skills.skill_name_vi`, repairs the two medicine items with broken
+  code-page text, and rewrites numeric legacy currency labels to Quan/quan in
+  the narrative tables.
+- The currency pass only matches a number followed by the old unit, so ordinary
+  prose such as "nộp tiền mặt" is preserved.
+- New data repairs follow the same rule: a numbered migration, safe to run twice,
+  with a verification suite (`tests/verify-data-cleanup.ts` for 043).
 

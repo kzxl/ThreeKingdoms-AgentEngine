@@ -1,5 +1,9 @@
 # Engine Engineering Progress (PROGRESS.md)
 
+> **Status 2026-10-31:** historical phase log. The current gate is 50/50 suites,
+> 28 API contracts, 8 write smokes and 1,493 invariants; see `ARCHITECTURE.md`
+> §6.4 for the current structure.
+
 ## Current Status: Giai đoạn P0, P1, P2, P3, P4 Hoàn Thành (4/4 Test Suites, 20/20 Tests Passed)
 
 ---

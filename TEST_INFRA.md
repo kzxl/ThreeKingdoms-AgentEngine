@@ -18,7 +18,7 @@ The **ThreeKingdoms-AgentEngine** test infrastructure provides an autonomous, mu
 ```
 +-------------------------------------------------------------------------+
 |                  TIER 4: State & Audit Invariant Layer                  |
-|          tools/sim-audit.js (140/140 Mathematical Conservation)         |
+|          tools/sim-audit.js (1,493 invariants, 8 blocks)                 |
 +------------------------------------+------------------------------------+
                                      |
 +------------------------------------+------------------------------------+
@@ -51,13 +51,22 @@ The **ThreeKingdoms-AgentEngine** test infrastructure provides an autonomous, mu
 - **Marriage & Lineage (`tests/verify-marriage-lineage.ts`)**: Validates courtship eligibility ($\text{Affinity} \ge 80$), dowry schedules, cohabitation, 3-stage gestation, genetic inheritance algorithms, master mentorship, and dynastic succession continuity.
 - **Single Combat Duels (`tests/verify-rotk-duels.ts`)**: Validates 1v1 tactical duels, 4 asymmetric commands (`ATTACK`, `DEFEND`, `SPECIAL_STRIKE`, `FOCUS_SPIRIT`), gear bonus scaling, golden cap ($>100$ WAR), and contextual triggers (sparring, arena, caravan ambushes).
 - **Tavern Banquets & Brotherhood (`tests/verify-tavern-banquets.ts`)**: Validates gourmet dishes and Dukang wine BOM, 3 banquet tiers, inventory deduction, Peach Garden sworn brotherhood oath ($\text{Affinity} \ge 80$), and retainer recruitment into `FAC-LIANG-CLAN`.
+- **Action Time Authority (`tests/verify-action-time-authority.ts`)**: A spar consumes five days, a social interaction two, and a fatigued action is rejected without moving the clock.
+- **Workshop Economy (`tests/verify-workshop-economy.ts`)**: Staffing scales output, rent/wages are charged, losses become debt, profit repays debt first.
+- **Career Paths (`tests/verify-career-paths.ts`)**: Five scores, `outcome_type` duel wins, modifiers, and a real WAR EXP award.
+- **Data Cleanup (`tests/verify-data-cleanup.ts`)**: Skill/item text is repaired, numeric legacy currency labels become Quan, prose is preserved, migration is idempotent.
 
 ### Tier 4: Invariant & State Conservation Auditor (`tools/sim-audit.js`)
-- **Cashflow Ledger Subsystem (51 checks)**: Sequence balance continuity and player cash cross-parity.
-- **Physical Inventory Subsystem (31 checks)**: SKU non-negativity and movement balance alignment.
-- **Double-Entry Journal Subsystem (50 checks)**: Exact debit == credit equality per transaction set.
-- **Projection Synchronization (3 checks)**: Markdown reporting consistency (`game/PROGRESS.md`).
-- **NPC & Enterprise Integrity (5 checks)**: Business safe cash, efficiency, and NPC vitals `[0..100]`.
+The auditor verifies **1,493 invariants across eight blocks** against SQLite as the
+primary truth:
+1. Cashflow ledger sequence and player cash parity.
+2. Physical inventory non-negativity and movement balance.
+3. Double-entry journal `Dr == Cr` parity per transaction set.
+4. `game/PROGRESS.md` projection synchronization.
+5. NPC and enterprise state (safe cash, debt, efficiency, vitals).
+6. Grand-strategy factions, settlements, credit notes and diplomatic pacts.
+7. Life-sim maidens, dowries and encounter rates.
+8. Campaign clock plausibility and turn-history alignment.
 
 ---
 
@@ -71,7 +80,11 @@ The **ThreeKingdoms-AgentEngine** test infrastructure provides an autonomous, mu
 | `tools/verify-equipment-and-exp.ts` | Core: Equipment System & EXP Progression | 58 | Diminishing returns scaling, gear slot constraints, effective stats calculation |
 | `tools/verify-enterprise-labor.ts` | Core: Enterprise Management & Wage Labor | 12 | Master recipe BOM, owner profit accrual, wage labor shifts, fatigue exhaustion guard |
 | `tests/test-branch4-logistics.ts` | Core: Inter-City Caravans & Arbitrage | 8 | 18 settlement profiles, distance matrix, crisis price multipliers, caravan dispatch/claim |
-| `tools/sim-audit.js` | System: Autonomous Invariant Auditor | 140 | Full ACID double-entry accounting, stock conservation, projection synchronization |
+| `tests/verify-action-time-authority.ts` | P0: Server-authoritative action time | — | Day cost per mutation, fatigue rejection, no clock change on rejection |
+| `tests/verify-workshop-economy.ts` | P0: Enterprise monthly P&L | — | Staffing, wages, rent, debt, debt-first repayment, zero-staff closure |
+| `tests/verify-career-paths.ts` | P0: Career-path resolver | — | Five scores, `outcome_type` duel count, modifiers, WAR EXP application |
+| `tests/verify-data-cleanup.ts` | P0: Text and currency repair | — | Skill/item repair, Quan labels, prose preservation, idempotency |
+| `tools/sim-audit.js` | System: Autonomous Invariant Auditor | 1,493 | Eight blocks: accounting, inventory, journal, projection, enterprise, strategy, life-sim, clock |
 
 ---
 
@@ -88,7 +101,7 @@ npx tsx tests/verify-rotk-duels.ts
 
 ### Full Verification Pipeline
 ```bash
-# Single gate: typecheck → arch ratchet → 19 suites → API contract → write smoke
+# Single gate: typecheck → arch ratchet → 50 suites → API contract → write smoke
 npm run verify
 
 # Individually:
@@ -99,10 +112,10 @@ npm run lint:ui        # UI debt ratchet (button classes, inline styles, native 
 npm run lint:slop      # anti-slop laws: emoji, gradients, glow shadows, font families
 npm run lint:api       # client /api/* paths must exist or be allowlisted with a reason
 npm run routes:shadow  # fails if a legacy route is already served by the Router
-npm test               # 4 legacy + 15 verify-*.ts suites, isolated DB per suite
+npm test               # 4 legacy + 46 verify-*.ts suites, isolated DB per suite
 npm run golden:verify  # 28 read-only endpoint contracts
 npm run smoke:write    # 8 HTTP write paths + post-write audit
-npm run audit          # 1,358 SQLite invariants
+npm run audit          # 1,493 SQLite invariants in eight blocks
 ```
 
 ### Per-Feature Refactor Protocol
@@ -150,7 +163,7 @@ To guarantee that test execution never corrupts active session data or causes in
        ▼
 [4. AUDIT GATE]
   Execute node tools/sim-audit.js.
-  Assert 140/140 invariants verified with 0 discrepancies.
+  Assert 1,493 invariants verified with 0 discrepancies.
 ```
 
 ---

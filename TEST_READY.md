@@ -7,6 +7,10 @@
 **Compilation Status:** `npm run typecheck` produces 0 errors  
 **Audit Invariant Status:** `tools/sim-audit.js` verifies 140/140 invariants with 0 discrepancies  
 
+> **Status 2026-10-31:** this declaration is the 2026-10-28 snapshot. Current gate:
+> `npm run verify` 50/50 suites, 28 API contracts, 8 write smokes;
+> `npm run audit` 1,493 invariants, 0 discrepancies. See `ARCHITECTURE.md` §6.4.
+
 ---
 
 ## 1. Executive Summary

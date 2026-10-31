@@ -33,8 +33,24 @@ ThreeKingdoms-AgentEngine is an autonomous Three Kingdoms simulation engine powe
   +--------------------------------------------------------------------------+
 ```
 
+## Current Baseline (2026-10-31)
+
+The milestone tables below are the original expansion history. Current verified state:
+
+- **Gate**: `npm run verify` — 50/50 suites (4 legacy + 46 modern), 28 API contracts,
+  8 write smokes; `npm run audit` — 1,493 invariants, 0 discrepancies.
+- **Data**: 129 master items, 33 talents, 36 skills, 168 master characters, 20
+  locations, 41 routes, 132 POI scenes; 43 versioned migrations.
+- **P0 systems**: server-authoritative action time, enterprise P&L with debt,
+  one career-path resolver, and migration-based text repair (see
+  `ARCHITECTURE.md` §7–10 and `DECISIONS.md` ADR-007–010).
+
 ## Code Layout
 - **Core Database & Models**: `src/core/database.ts`, `tools/schema.sql`
+- **Action Time**: `src/shared/action-time.ts`, `engine/action-policy.js`, `engine/time-manager.js`
+- **Enterprise Economics**: `engine/business-economics.js`, `tools/migrations/042-business-economics.js`
+- **Career Paths**: `engine/career-paths.js`, `src/modules/progression/progression.controller.ts`
+- **Data Repair**: `tools/migrations/043-text-cleanup.js`, `tests/verify-data-cleanup.ts`
 - **R1 (Lineage & Succession)**:
   - Service: `src/modules/lineage-succession/family-lineage.service.ts`
   - Controller: `src/modules/lineage-succession/lineage.controller.ts`
@@ -54,7 +70,8 @@ ThreeKingdoms-AgentEngine is an autonomous Three Kingdoms simulation engine powe
   - Web Server & REST Dispatcher: `tools/sim-web.js`
   - Sanitized Assets: `public/js/map-data.js`, `public/js/caravan-ui.js`, `public/js/equipment-ui.js`, `src/modules/contextual-actions/context-action.engine.ts`
 - **Audit & Invariants**:
-  - `tools/sim-audit.js` (193/193 invariants: Cashflow, Inventory, Double-Entry, Projection, State)
+  - `tools/sim-audit.js` (1,493 invariants in eight blocks: Cashflow, Inventory,
+    Double-Entry, Projection, NPC/Enterprise, Grand Strategy, Life-Sim, Clock)
 
 ---
 
@@ -77,12 +94,16 @@ ThreeKingdoms-AgentEngine is an autonomous Three Kingdoms simulation engine powe
 | 14 | Grand Command Hub Shell | Reorganize fragmented buttons in `.cmd-bar-right` and purge dynamic injections in `equipment-ui.js` / `enterprise-ui.js` into single Master Hub `#grand-command-hub-modal` | M4 | ORIGINAL_REQUEST §R4 |
 | 15 | 6 High-Density Tabs | Tab 1 Quân Trang `[武]`, Tab 2 Sản Nghiệp `[業]`, Tab 3 Thương Đoàn `[商]`, Tab 4 Gia Thất `[家]`, Tab 5 Diễn Võ `[演]`, Tab 6 Tụ Nghĩa `[義]` | M4 | ORIGINAL_REQUEST §R4 |
 | 16 | Codebase-wide Anti-AI-Slop | Purge all emojis in UI and REST payloads (`map-data.js`, `caravan-ui.js`, `sim-web.js`, `context-action.engine.ts`), replace with authentic Hanzi seals | M4 | ORIGINAL_REQUEST §R4 |
-| 17 | E2E Testing Runner & Verification | 100% pass across Marriage, Single Combat Duels, Tavern Banquets, existing suites (`verify-equipment-and-exp.ts`, `verify-enterprise-labor.ts`, `test-branch4-logistics.ts`), and 140/140 SQLite audit invariants | M5 | ORIGINAL_REQUEST §Acceptance |
-| 18 | Historical Master Catalog & 20-Settlement Strategic Map | Enriched 120+ master items, 30+ talents, 150+ characters, 20 historical citadels, 24 tactical routes across 4 terrain profiles (`HIGHWAY`, `WATERWAY`, `MOUNTAIN_PASS`, `PLANK_ROAD`), 3 view modes (`overview`, `military`, `economy`), and route pulse animation | M6 | GRAND_STRATEGY_EXPANSION |
+| 17 | E2E Testing Runner & Verification | Full gate across all feature suites; current state is 50/50 suites, 28 API contracts, 8 write smokes and 1,493 SQLite audit invariants | M5 | ORIGINAL_REQUEST §Acceptance |
+| 18 | Historical Master Catalog & 20-Settlement Strategic Map | Enriched 129 master items, 33 talents, 168 characters, 20 historical citadels, 41 tactical routes across 4 terrain profiles (`HIGHWAY`, `WATERWAY`, `MOUNTAIN_PASS`, `PLANK_ROAD`), 3 view modes (`overview`, `military`, `economy`), and route pulse animation | M6 | GRAND_STRATEGY_EXPANSION |
 | 19 | Specialist Workforce Recruitment (Loop 1) | 20 auxiliary specialists (`NPC-0201` to `NPC-0220`), recruitment signing bonus via double-entry journal, assignment to businesses boosting efficiency by +15% to +25% | M6 | GRAND_STRATEGY_EXPANSION |
 | 20 | 20-Settlement Arbitrage & Caravans (Loop 2) | Full price profile coverage for all 20 citadels, long-distance trade caravans with 3 guard tiers (`MILITIA`, `VETERAN`, `ELITE_RETINUE`), bandit ambushes, and destination liquidation | M6 | GRAND_STRATEGY_EXPANSION |
 | 21 | Garrisons & Citadel Siege Assaults (Loop 3) | Recruit and station garrison troops, wall defense ratings (10-100), vanguard siege assaults with defense destruction and war loot plundering (`WAR_LOOT`) | M6 | GRAND_STRATEGY_EXPANSION |
-| 22 | Double-Entry Transaction Engine & 193 Invariants | `src/shared/financial-transaction.ts`, atomic Dr == Cr accounting, `game/PROGRESS.md` synchronization, and 193/193 audit invariants verified | M6 | GRAND_STRATEGY_EXPANSION |
+| 22 | Double-Entry Transaction Engine | `src/shared/financial-transaction.ts`, atomic Dr == Cr accounting, `game/PROGRESS.md` synchronization, and the current 1,493 audit invariants | M6 | GRAND_STRATEGY_EXPANSION |
+| 23 | Server-Authoritative Action Time | `src/shared/action-time.ts` charges days at the HTTP boundary for duels, social, banquets, recruitment, caravans, gathering, crafting, forging and enterprise actions; `/api/time/spend` is a clock refresh | M7 | P0 1.23.1 |
+| 24 | Enterprise P&L with Debt | Migration 042 adds `businesses.tier/debt`; `engine/business-economics.js` settles output, wages, rent and debt; owner withdrawals are blocked while insolvent | M7 | P0 1.23.2 |
+| 25 | Career-Path Resolver | `engine/career-paths.js` computes five scores and applies the active path's EXP, trade, crafting and clan-prestige modifiers; `duelWins` now reads `session_duels.outcome_type` | M7 | P0 1.23.3 |
+| 26 | Text and Currency Repair | Migration 043 resyncs player skill names from the master catalog, repairs two medicine items and rewrites numeric legacy currency labels to Quan | M7 | P0 1.23.4 |
 
 ---
 
@@ -94,8 +115,9 @@ ThreeKingdoms-AgentEngine is an autonomous Three Kingdoms simulation engine powe
 | M2 | Three Kingdoms Single Combat Dueling System (R2) | Features 7-9: `SingleCombatDuelService`, 4 tactical commands, 3-5 round loop, equipment WAR scaling, contextual triggers | none | DONE |
 | M3 | Tavern Hero Banquets & Brotherhood (R3) | Features 10-13: `TavernBanquetService`, gourmet dishes/Dukang wine consumption, brotherhood oath, retainer recruitment | none | DONE |
 | M4 | Grand Command Hub UI & Anti-AI-Slop (R4) | Features 14-16: Unified `#grand-command-hub-modal`, 6 tabs, REST wiring in `sim-web.js`, emoji eradication | M1, M2, M3 | DONE |
-| M5 | Final E2E Suite Pass & Adversarial Hardening | Feature 17: Pass 100% E2E tests, verify 140/140 audit invariants, forensic auditor review, Tier 5 hardening | E2E, M1-M4 | DONE |
-| M6 | Grand Strategy & 3-Loop Expansion | Features 18-22: 20-settlement 3-layer world map, specialist workforce, 20-city arbitrage caravans, siege assaults, and 193/193 audit invariants | M1-M5 | DONE |
+| M5 | Final E2E Suite Pass & Adversarial Hardening | Feature 17: pass the full E2E gate (currently 50 suites and 1,493 invariants), forensic auditor review, Tier 5 hardening | E2E, M1-M4 | DONE |
+| M6 | Grand Strategy & 3-Loop Expansion | Features 18-22: 20-settlement 3-layer world map, specialist workforce, 20-city arbitrage caravans, siege assaults, and the invariant auditor | M1-M5 | DONE |
+| M7 | Realistic-RPG P0 Foundation | Features 23-26: server-authoritative action time, enterprise P&L with debt, one career-path resolver, and migration-based data repair | M1-M6 | DONE |
 
 ---
 

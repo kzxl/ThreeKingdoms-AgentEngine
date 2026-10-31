@@ -20,7 +20,7 @@ An autonomous, deterministic grand strategy simulation engine and character-driv
 7. [Interactive Historical Event Engine](#interactive-historical-event-engine)
 8. [Model Context Protocol (MCP) Integration](#model-context-protocol-mcp-integration)
 9. [Getting Started & Operational Commands](#getting-started--operational-commands)
-10. [Auditing & Zero-Drift Invariants (193/193)](#auditing--zero-drift-invariants-193193)
+10. [Auditing & Zero-Drift Invariants (1,493)](#auditing--zero-drift-invariants-1493-checks)
 11. [Mathematical & Economic Formulas](#mathematical--economic-formulas)
 
 ---
@@ -60,8 +60,14 @@ ThreeKingdoms-AgentEngine/
 │   │   └── npc-lifecycle/             # NPC Autonomous Progression & Ambitions
 │   │
 │   ├── shared/                        # Cross-Cutting Core Utilities
-│   │   └── financial-transaction.ts   # Double-Entry Atomic Ledger Engine (Dr == Cr)
+│   │   ├── ledger.ts                  # The only cashflow writer (typed + raw)
+│   │   ├── account-codes.ts           # Canonical chart of accounts + legacy aliases
+│   │   ├── action-time.ts             # Server-side action time authority
+│   │   ├── financial-transaction.ts   # Double-Entry Atomic Ledger Engine (Dr == Cr)
+│   │   ├── victory.ts                 # Victory/defeat conditions and NG+ legacy
+│   │   └── market-*.ts, prestige.ts   # Shared price, fame and progression rules
 │   │
+│   ├── client/                        # Modern TypeScript modal/UI bundle
 │   ├── server/                        # Backend Server Composition Root
 │   │   ├── router.ts                  # Lightweight REST Router & JSON Dispatcher
 │   │   └── main.ts                    # Bootstraps modular engine & exposes REST API (:3300)
@@ -70,6 +76,25 @@ ThreeKingdoms-AgentEngine/
 │       ├── types.ts                   # JSON-RPC 2.0 & MCP protocol schemas
 │       ├── tools.ts                   # Authoritative tool execution handlers
 │       └── server.ts                  # Standard stdio MCP server for AI Agents
+│
+├── engine/                            # CommonJS simulation kernel
+│   ├── time-manager.js                # Day clock, month boundary, single time writer
+│   ├── action-policy.js               # Day/fatigue cost table
+│   ├── business-economics.js          # Pure enterprise monthly settlement
+│   ├── career-paths.js                # Five career scores and modifiers
+│   ├── gameplay-manager.js            # New game, day loop, month close
+│   └── sim-core.js                    # Validate → rule → atomic SQLite → log
+│
+├── config/                            # Balance and rules data (single source)
+│   ├── game-constants.json            # Currency, grain, calendar, fatigue, EXP curve
+│   ├── prestige.json                  # Fame tiers, gains, decay, effects
+│   ├── battle-duel.json               # Duel, death and negotiation balance
+│   └── scenario-seeds.json            # Scenario ownership and starting wars
+│
+├── saves/                             # Local campaign state (git-ignored)
+│   ├── session.db                     # Active campaign
+│   ├── master.db                      # Master catalog
+│   └── instances/                     # Per-playthrough clone databases
 │
 ├── public/                            # Web UI Dashboard & Canvas Map View
 │   ├── index.html                     # Strategy command center & Grand Command Hub
@@ -80,7 +105,7 @@ ThreeKingdoms-AgentEngine/
 ├── tools/                             # Deterministic CLI Verification & Audit Layer
 │   ├── schema.sql                     # Active session database schema (ACID tables)
 │   ├── schema-master.sql              # Immutable historical master catalog schema
-│   ├── sim-audit.js                   # Independent double-entry auditor (193/193 Invariants)
+│   ├── sim-audit.js                   # Independent auditor (1,493 invariants in 8 blocks)
 │   ├── sim-db.js                      # Fast SQLite CLI bridge & progress exporter
 │   └── sim-web.js                     # High-performance HTTP server
 │
@@ -109,8 +134,21 @@ The simulation is partitioned into autonomous feature modules adhering to **Univ
 | **Specialist Workforce** | Recruitment of 20 auxiliary specialists, assignment to enterprises, operational efficiency boost (+15% to +25%), and monthly wages. | `/api/workforce/specialists`, `/api/workforce/hire`, `/api/workforce/businesses` |
 | **Social Kizuna & Banquets** | 2-Axis relational mesh: Affinity (-100..+100) and Respect (0..100). Sworn Brotherhood, gourmet banquets across 3 tiers, and character recruitment. | `/api/banquets/*`, `/api/social/*` |
 | **Lineage & Succession** | Courtship, dowry exchange, marriage, genetic stat inheritance $[-3, +5]$, master mentorship, and ancestral retirement succession. | `/api/lineage/*` |
-| **Progression & Ranks** | 4-Tier Societal Progression (Plain Clothes → Estate Master → Grand Merchant → Hegemonic Lord) and skill attribute ladders. | `/api/progression/*` |
+| **Progression & Ranks** | 4-Tier societal progression, skill/attribute ladders, and five real career paths (Martial, Merchant, Scholar, Artisan, Lineage) whose active-path modifiers feed EXP, trade, crafting and clan prestige. | `/api/progression/*`, `/api/quests/*` |
 | **Agent Bridge & MCP** | Continuous knowledge harvesting: records episodic memory reflections after major decisions; native stdio MCP tools for AI Agents. | `/api/agent/prompt`, `/api/agent/logs` |
+
+### Cross-cutting rules (1.23.x)
+
+- **Action time** — every player mutation that consumes a day charges it on the
+  server (`src/shared/action-time.ts`) before its service runs. `/api/time/spend`
+  is a deprecated clock refresh; the client helper cannot double-charge.
+- **Enterprise settlement** — `engine/business-economics.js` computes gross income
+  from tier, efficiency and actual staffing, subtracts wages and rent, repays debt
+  first and records a loss as debt. `safe_cash` never goes negative.
+- **Career paths** — `engine/career-paths.js` computes the five scores once; only
+  the active path's modifiers apply, and the API displays the same numbers.
+- **Data repairs** — broken seed text and legacy currency labels are fixed by
+  numbered idempotent migrations (042–043), not ad-hoc SQL.
 
 ---
 
@@ -208,7 +246,7 @@ The project includes a native **Model Context Protocol (MCP)** server operating 
 | `sim_get_kizuna` | `{ charA: string, charB: string }` | Query 2-axis social relations (Affinity, Respect), Sworn Brotherhood, and Hooks. |
 | `sim_record_memory` | `{ npcId: string, topic: string, lessonLearned: string, emotionalValence?: string }` | Record episodic memory reflections for continuous NPC self-learning. |
 | `sim_get_npc_journey` | `{ npcId?: string, limit?: number }` | Retrieve autonomous progression state, ambition, prestige, and journey chronicle. |
-| `sim_audit_invariants` | `{}` | Execute independent verification of all 193/193 database invariants. |
+| `sim_audit_invariants` | `{}` | Execute independent verification of all 1,493 database invariants. |
 
 ### Connecting AI Agents
 
@@ -254,11 +292,13 @@ npm install
 # Master schema + lore into saves/session.db and saves/master.db (needs the sqlite3 CLI)
 node tools/ingest-markdown-master.js
 
-# Session schema, seed, and migrations 001–023
+# Session schema, seed, and migrations 001–043
 node tools/sim-db.js init
 
 npm start
 ```
+
+`sim-db init` applies migrations 001–043 to the session database.
 
 `ingest-markdown-master.js` rewrites the `master_*` tables in `saves/session.db`; do not run it
 against a live save without a backup. `sim-db init` applies migrations automatically.
@@ -267,19 +307,19 @@ against a live save without a backup. `sim-db init` applies migrations automatic
 
 | Command | Action | Description |
 | :--- | :--- | :--- |
-| `npm run verify` | **Full Gate** | Runs typecheck → architecture guard → client syntax → UI ratchet → anti-slop lint → client API contract → route-shadow report → 24 verification suites → API contract check → write-path smoke. |
+| `npm run verify` | **Full Gate** | Runs typecheck → architecture guard → client syntax → UI ratchet → anti-slop lint → client API contract → route-shadow report → 50 verification suites → API contract check → write-path smoke. |
 | `npm run lint:api` | Architecture | Fails when the TS client calls an `/api/*` path that neither the Router nor the gateway serves (known gaps are reasoned in `tools/client-api-allowlist.json`). |
 | `npm run lint:slop` | Architecture | Enforces AS-05 (no emoji), AS-06 (no gradients), neutral elevation, two font families; ratchets the font-size scale. |
 | `npm run lint:ui` | Architecture | Ratchets legacy UI debt (button classes, class usages, inline styles, native confirms); new surfaces should use `src/client/core/ui` (`window.UI`). |
 | `npm run lint:client` | Architecture | Parses every classic client script (`public/app.js`, `public/js/*.js`); one parse error disables a whole UI file. |
 | `npm run routes:shadow` | Architecture | Fails if any legacy `sim-web.js` handler is already served by the modular Router (dead code). |
-| `npm test` | Verification | Runs all 29 suites (4 legacy self-sandboxed + 25 TypeScript `verify-*.ts`) against isolated DB copies. |
+| `npm test` | Verification | Runs all 50 suites (4 legacy self-sandboxed + 46 TypeScript `verify-*.ts`) against isolated DB copies. |
 | `npm run smoke:write` | Verification | Boots the app on a sandbox DB and exercises 8 write paths (trade, loans, equip/unequip, idempotency, input rejection, post-write audit). |
 | `npm run lint` | Architecture | Ratcheting guard over `tools/arch-baseline.json`: SQLite-CLI spawns, SQL interpolation, unseeded RNG, silent catches, the `current_date` keyword trap, legacy UI growth. |
 | `npm run golden:verify` | API Contract | Boots the real composition root and diffs 28 read-only endpoints against `tests/golden/api-shape.json`. |
 | `npm run perf:record` | Performance | Captures p95 latency and a normalised body fingerprint per endpoint, plus `tests/perf/fixture.db`. |
 | `npm run perf:compare` | Performance | Re-measures against the fixture and fails on logic drift or p95 regression. |
-| `npm run audit` | Verification | Executes independent verification of all 1,358 SQLite invariants. |
+| `npm run audit` | Verification | Executes independent verification of all 1,493 SQLite invariants across eight blocks. |
 | `npm run migrate` | Data | Applies versioned, idempotent data migrations to the active session database. |
 | `npm run typecheck` | TypeScript | Performs compile-time strict type-checking across all `.ts` files. |
 | `npm run dev:server` | Fullstack Server | Starts Node.js + `tsx` Hot Reload server on `http://localhost:3300`. |
@@ -291,7 +331,7 @@ against a live save without a backup. `sim-db init` applies migrations automatic
 
 ---
 
-## Auditing & Zero-Drift Invariants (1,358 checks)
+## Auditing & Zero-Drift Invariants (1,493 checks)
 
 The engine enforces strict conservation laws across every transaction:
 
@@ -307,10 +347,13 @@ npm run audit
 [2] PHYSICAL INVENTORY (SQLite Conservation)   : ✅ Passed (Non-negative quantity & movements verified)
 [3] DOUBLE-ENTRY JOURNAL (Dr/Cr Parity)        : ✅ Passed (Every set Dr == Cr exactly)
 [4] PROJECTION SYNCHRONIZATION (PROGRESS.md)   : ✅ Passed (Matches SQLite state across all metrics)
-[5] NPC & ENTERPRISE STATE (P4 Integrity)      : ✅ Passed (Attributes, skills, and safe cash verified)
+[5] NPC & ENTERPRISE STATE (P4 Integrity)      : ✅ Passed (Attributes, skills, safe cash and debt verified)
+[6] GRAND STRATEGY (Factions & Settlements)    : ✅ Passed (Treasuries, garrisons, pacts verified)
+[7] LIFE-SIM (Maidens & Encounter Rates)       : ✅ Passed (Dowries, strata, rates verified)
+[8] CAMPAIGN CLOCK INTEGRITY                   : ✅ Passed (Date and turn history aligned)
 ====================================================
  🟢 AUDIT VERDICT: PASSED
-    Total Invariants Verified: 1358
+    Total Invariants Verified: 1493
     Discrepancies Detected   : 0
 ====================================================
 ```
@@ -332,6 +375,30 @@ $$\text{Defect Rate (\%)} = \max\left(2\%,\; \text{Base Defect} - (\text{Lead Ar
 - 1,000 Soldiers require **100 piculs of grain/month**.
 - 1 War Horse consumes **0.3 piculs of grain and fodder/month**.
 - Severed supply lines induce a **15-point daily morale collapse** with exponential troop desertion within 7–10 days.
+
+### 4. Action Time Resolution
+$$\text{Action} \rightarrow \text{check campaign ACTIVE} \rightarrow \text{check fatigue headroom} \rightarrow \text{advance days} \rightarrow \text{run service}$$
+- Day/fatigue costs live in `engine/action-policy.js`. A rejected action (fatigue cap,
+  ended campaign) returns HTTP 400 with `FATIGUE` or `CAMPAIGN_OVER` and does not move
+  the clock. A day-consuming action requires fatigue below the cap even when the
+  service owns its stamina cost.
+
+### 5. Enterprise Monthly Settlement
+$$\text{staffingRatio} = \begin{cases}0 & \text{no staff}\\\min(1, \text{staff} / \text{roster}) & \text{otherwise}\end{cases}$$
+$$\text{gross} = \left(\text{tier} \times 260 \times \text{efficiency} + \text{staff} \times 25\right) \times \text{staffingRatio}$$
+$$\text{net} = \text{gross} - \sum \text{wages} - \text{rent}$$
+- Positive net repays `debt` first, then adds to `safe_cash`. Negative net consumes
+  `safe_cash`, then becomes `debt`. `safe_cash` is never negative and owner
+  withdrawals are blocked while debt is outstanding.
+
+### 6. Career Path Modifiers
+| Path | Condition (highest score wins) | Modifier |
+| :--- | :--- | :--- |
+| MARTIAL | WAR × 0.75 + min(30, duel wins × 8) | +10% WAR EXP |
+| MERCHANT | COM × 0.65 + min(40, liquid cash / 500) | +5% trade margin |
+| SCHOLAR | (INT + POL) / 2 | +10% INT/POL EXP |
+| ARTISAN | CRA × 0.7 + craft tier × 6 | −2% defect chance per tier |
+| LINEAGE | spouse + children + fame | +10% clan prestige |
 
 ---
 
