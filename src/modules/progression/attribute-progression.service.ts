@@ -14,6 +14,7 @@
  */
 
 import { DatabaseService } from '../../core/database';
+import { getCareerModifiers } from '../../../engine/career-paths';
 
 export type AttributeType =
   | 'int'
@@ -143,7 +144,12 @@ export class AttributeProgressionService {
 
     const oldVal = Number(charRecord.row[attrCol] ?? 50);
     const startingExp = Number(charRecord.row[expCol] ?? 0);
-    const safeAmount = Math.max(0, Math.floor(amount));
+    // The active career path multiplies the player's matching attribute EXP;
+    // NPCs have no career path and keep the raw amount.
+    const careerMultiplier = characterId === 'PLY-0001'
+      ? Number(getCareerModifiers(this.db as any, characterId).modifiers.expMultiplier[normalizedKey] || 1)
+      : 1;
+    const safeAmount = Math.max(0, Math.floor(amount * careerMultiplier));
 
     let currentExp = startingExp + safeAmount;
     let newVal = oldVal;

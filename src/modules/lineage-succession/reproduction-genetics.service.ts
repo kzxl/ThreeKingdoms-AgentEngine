@@ -13,6 +13,7 @@
 import { DatabaseService } from '../../core/database';
 import { RngService } from '../../core/rng';
 import { nextSequentialId } from '../../shared/id-generator';
+import { getCareerModifiers } from '../../../engine/career-paths';
 import {
   HouseholdRole,
   RestWithSpouseResult,
@@ -492,11 +493,14 @@ export class ReproductionGeneticsService {
         [params.motherId]
       );
 
-      // 8. Increase Family Prestige (only for Liang protagonist dynasty)
+      // 8. Increase Family Prestige (LINEAGE path adds 10%).
       if (spouse.husband_id === 'PLY-0001') {
+        const birthPrestige = Math.round(
+          150 * (1 + getCareerModifiers(this.db as any, 'PLY-0001').modifiers.clanPrestigeBonus)
+        );
         this.db.execute(
-          'UPDATE family_lineage SET family_prestige = family_prestige + 150 WHERE family_id = ?;',
-          ['FAM-LIANG']
+          'UPDATE family_lineage SET family_prestige = family_prestige + ? WHERE family_id = ?;',
+          [birthPrestige, 'FAM-LIANG']
         );
       }
 

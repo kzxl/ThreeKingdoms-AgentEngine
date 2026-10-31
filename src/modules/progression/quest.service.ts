@@ -14,6 +14,7 @@ import { getGameDate } from '../../shared/game-clock';
 import { recordFinancialTransaction } from '../../shared/financial-transaction';
 import { PrestigeService } from './prestige.service';
 import { SkillService } from './skill.service';
+import { getCareerModifiers } from '../../../engine/career-paths';
 
 const EXP_SQL: Record<string, string> = {
   int: 'UPDATE player_state SET int_exp = COALESCE(int_exp, 0) + ? WHERE player_id = ?;',
@@ -264,9 +265,14 @@ export class QuestService {
 
     if (reward?.exp && typeof reward.exp === 'object') {
       applied.exp = {};
+      // The active career path boosts matching attribute EXP from quests too.
+      const career = playerId === 'PLY-0001'
+        ? getCareerModifiers(this.db as any, playerId).modifiers
+        : null;
       for (const [stat, amount] of Object.entries(reward.exp)) {
         const sql = EXP_SQL[stat];
-        const gain = Math.max(0, Math.round(Number(amount) || 0));
+        const multiplier = Number(career?.expMultiplier?.[stat] || 1);
+        const gain = Math.max(0, Math.round((Number(amount) || 0) * multiplier));
         if (!sql || gain === 0) continue;
         this.db.execute(sql, [gain, playerId]);
         applied.exp[stat] = gain;

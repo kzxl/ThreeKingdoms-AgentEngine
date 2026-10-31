@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.23.3] - 2026-10-31
+
+Career paths become real: one resolver drives both the API and gameplay.
+
+### Changed
+- `engine/career-paths.js` is the single resolver for the five paths. The
+  progression API now returns the same scores and `modifiers` gameplay applies,
+  instead of recomputing them inline while no service read them.
+- Fixed `spatial-guard.service.ts` counting `session_duels.outcome`, a column
+  that does not exist (the schema uses `outcome_type`). Duel wins were silently
+  always zero, which also disabled the stage-3 duel criterion.
+- Applied the active path's modifiers:
+  - MARTIAL: +10% WAR EXP through `AttributeProgressionService` and training
+    skill EXP in `SimulationCore`.
+  - SCHOLAR: +10% INT/POL EXP through the same writers.
+  - MERCHANT: +5% trade margin in the economy trade quote.
+  - ARTISAN: -2% defect chance per profession tier in crafting.
+  - LINEAGE: +10% clan prestige from marriage, birth and succession.
+- `tests/verify-career-paths.ts` covers the five scores, the `outcome_type`
+  duel count, the modifiers and a real WAR EXP award.
+
+### Verification
+`npm run verify` green: 49/49 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,493 invariants, 0 discrepancies.
+
+---
+
 ## [1.23.2] - 2026-10-31
 
 Real enterprise economics: monthly P&L can lose money and carries debt.

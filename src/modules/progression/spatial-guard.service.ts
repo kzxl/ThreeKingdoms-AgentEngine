@@ -138,7 +138,7 @@ export class SpatialGuardService {
     let duelWins = 0;
     try {
       const duelRow = this.db.queryOne<{ cnt: number }>(
-        'SELECT COUNT(*) as cnt FROM session_duels WHERE player_id = ? AND outcome = "VICTORY";',
+        "SELECT COUNT(*) as cnt FROM session_duels WHERE player_id = ? AND outcome_type = 'VICTORY';",
         [playerId]
       );
       duelWins = duelRow?.cnt || 0;

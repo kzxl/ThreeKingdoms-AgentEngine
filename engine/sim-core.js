@@ -22,6 +22,7 @@ const { applySkillExpGain } = require('./skill-exp');
 const { normalizeAction } = require('./action-validation');
 const { canSpendActionTime, applyActionTime, getClock } = require('./time-manager');
 const { startTask, cancelTask } = require('./task-manager');
+const { getCareerModifiers, readerForDbPath } = require('./career-paths');
 
 /** Action types that append to cashflow_ledger and must stay chronologically ordered. */
 const LEDGER_ACTIONS = new Set(['TRADE_BUY', 'TRADE_SELL', 'PAY_WAGES', 'RECORD_BOUNTY', 'REWARD_NPC']);
@@ -716,10 +717,20 @@ class SimulationCore {
     if (exp_skill) {
       const skillRow = runSqlJson(this.dbPath, `SELECT * FROM player_skills WHERE skill_code = '${exp_skill}' LIMIT 1;`)[0];
       if (skillRow) {
+        // The active career path boosts training for its matching attribute.
+        const skillMeta = runSqlJson(
+          this.dbPath,
+          'SELECT primary_attr FROM master_skills WHERE skill_code = ? LIMIT 1;',
+          [exp_skill]
+        )[0];
+        const career = skillMeta?.primary_attr
+          ? getCareerModifiers(readerForDbPath(this.dbPath)).modifiers
+          : null;
+        const careerMultiplier = Number(career?.expMultiplier?.[skillMeta?.primary_attr] || 1);
         const advanced = applySkillExpGain(
           Number(skillRow.tier || 1),
           Number(skillRow.current_exp || 0),
-          Number(exp_amount)
+          Math.max(0, Math.round(Number(exp_amount) * careerMultiplier))
         );
         appliedExp = advanced.gained;
         skillUpdateSql = `UPDATE player_skills SET current_exp = ${advanced.currentExp}, tier = ${advanced.tier}, max_exp = ${advanced.maxExp} WHERE skill_code = '${exp_skill}';`;

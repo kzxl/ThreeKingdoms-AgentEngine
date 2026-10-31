@@ -14,6 +14,7 @@ import { DatabaseService } from '../../core/database';
 import { nextId } from '../../shared/id-generator';
 import { postCashflowEntry } from '../../shared/ledger';
 import { getGameDate } from '../../shared/game-clock';
+import { getCareerModifiers } from '../../../engine/career-paths';
 import {
   SuccessionParams,
   SuccessionExecutionParams,
@@ -323,10 +324,13 @@ export class DynastySuccessionService {
         [txnId, meta.campaignId, meta.currentDate]
       );
 
-      // 7. Advance Generation & Update Lineage Records
+      // 7. Advance Generation & Update Lineage Records (LINEAGE path adds 10%).
+      const successionPrestige = Math.round(
+        500 * (1 + getCareerModifiers(this.db as any, 'PLY-0001').modifiers.clanPrestigeBonus)
+      );
       this.db.execute(
-        'UPDATE family_lineage SET current_generation = current_generation + 1, family_prestige = family_prestige + 500 WHERE family_id = ?;',
-        ['FAM-LIANG']
+        'UPDATE family_lineage SET current_generation = current_generation + 1, family_prestige = family_prestige + ? WHERE family_id = ?;',
+        [successionPrestige, 'FAM-LIANG']
       );
       if (charityAmount > 0) {
         this.db.execute(

@@ -15,6 +15,7 @@ import { nextId } from '../../shared/id-generator';
 import { postCashflowEntry } from '../../shared/ledger';
 import { getGameDate } from '../../shared/game-clock';
 import { DailyInteractionEngine } from '../social-kizuna/daily-interaction.engine';
+import { getCareerModifiers } from '../../../engine/career-paths';
 import {
   CourtshipCandidateDTO,
   ActivityEncounterParams,
@@ -994,10 +995,13 @@ export class CourtshipBetrothalService {
         [playerId, targetWifeId, lineage.current_generation, `Hôn phối chính thê [${character.name_vi}]`]
       );
 
-      // 12. Increase Family Prestige & NPC devotion
+      // 12. Increase Family Prestige & NPC devotion (LINEAGE path adds 10%).
+      const prestigeGain = Math.round(
+        250 * (1 + getCareerModifiers(this.db as any, 'PLY-0001').modifiers.clanPrestigeBonus)
+      );
       this.db.execute(
-        'UPDATE family_lineage SET family_prestige = family_prestige + 250 WHERE family_id = ?;',
-        ['FAM-LIANG']
+        'UPDATE family_lineage SET family_prestige = family_prestige + ? WHERE family_id = ?;',
+        [prestigeGain, 'FAM-LIANG']
       );
 
       const newSentimentTotal = Math.max(0, Math.min(100, sentiment.affinity + 10));
