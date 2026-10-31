@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.23.0] - 2026-10-30
+
+Skill extension: shared EXP curve, NPC combat skills and talent-specific effects.
+
+### Changed
+- Migration 039 aligns every `player_skills` / `npc_skills` row with one shared
+  EXP curve (`40 / 90 / 180 / 320`) defined in `config/game-constants.json`.
+  Higher tiers convert incoming EXP at 100% / 80% / 60% / 40%, and EXP clamps at
+  tier 5. `SkillService`, `engine/task-manager.js` and `engine/sim-core.js` all
+  use the same helper instead of three divergent `max_exp * 1.5` loops.
+- Migration 040 seeds `npc_skills` for every `npc_state` officer from canonical
+  attributes, creates `npc_perks`, and persists the best perk for each reached
+  tier. `NpcSkillService` resolves NPC effects deterministically; generals that
+  exist only in `master_characters` fall back to an attribute aptitude grade.
+- NPC `DUEL_POWER`, `SIEGE_POWER` and `MORALE_BONUS` now affect single combat,
+  pre-battle duels, siege daily damage and field battles. NPC dossiers show
+  skills plus their chosen perks.
+- Migration 041 replaces the category-wide talent effects from migration 038
+  with a curated list for all 33 master talents (for example `TLT-PEERLESS`
+  grants `DUEL_POWER +5`, `TLT-ROAR-BRIDGE` grants `DUEL_POWER +3` and
+  `MORALE_BONUS +2`). `SkillService.listTalents` groups effects per talent and
+  retains the category fallback for homebrew/test talents.
+- New campaigns also clear `player_perks`, `player_talents` and `npc_perks`, so
+  a fresh run no longer inherits the previous campaign's progression.
+- `tests/verify-npc-skills.ts` covers seeding, perk selection and the mastery
+  fallback; `tests/verify-skill-system.ts` covers the EXP curve and talent
+  aggregation.
+
+### Verification
+`npm run verify` green: 46/46 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,493 invariants.
+
+---
+
 ## [1.22.0] - 2026-10-31
 
 Skill effects, starting skills and the dossier skill sheet.
