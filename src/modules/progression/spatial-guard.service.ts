@@ -128,7 +128,7 @@ export class SpatialGuardService {
     let businessesCount = 0;
     try {
       const bizRow = this.db.queryOne<{ cnt: number }>(
-        'SELECT COUNT(*) as cnt FROM businesses WHERE owner_id = ? AND status = "ACTIVE";',
+        "SELECT COUNT(*) as cnt FROM businesses WHERE owner_character_id = ? AND status = 'ACTIVE';",
         [playerId]
       );
       businessesCount = bizRow?.cnt || 0;

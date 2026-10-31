@@ -18,6 +18,7 @@ import { SkillService } from './skill.service';
 import { DatabaseService } from '../../core/database';
 import { computeCareerPaths } from '../../../engine/career-paths';
 import { ConditionService } from '../military/condition.service';
+import { chargePlayerAction } from '../../shared/action-time';
 
 export function registerProgressionRoutes(router: Router): void {
   const guard = SpatialGuardService.getInstance();
@@ -180,6 +181,12 @@ export function registerProgressionRoutes(router: Router): void {
         return;
       }
 
+      const time = chargePlayerAction(
+        DatabaseService.getInstance().path,
+        'MOVE_LOCATION',
+        null,
+        `Move to ${newLocation}`
+      );
       guard.setPlayerCurrentLocation(playerId, newLocation);
       const status = guard.getProgressionStatus(playerId);
 
@@ -187,7 +194,8 @@ export function registerProgressionRoutes(router: Router): void {
         success: true,
         message: `Đã di chuyển tới ${newLocation}.`,
         currentLocation: newLocation,
-        progression: status
+        progression: status,
+        time
       });
     } catch (err: any) {
       sendJson(res, 400, { success: false, error: err.message });

@@ -8,6 +8,8 @@
 
 import { Router, sendJson, RouteContext } from '../../../../server/router';
 import { WageLaborService } from './wage-labor.service';
+import { DatabaseService } from '../../../../core/database';
+import { chargePlayerAction } from '../../../../shared/action-time';
 
 export class WageLaborController {
   private service: WageLaborService;
@@ -46,8 +48,14 @@ export class WageLaborController {
           return;
         }
 
+        const time = chargePlayerAction(
+          DatabaseService.getInstance().path,
+          'WORK_SHIFT',
+          null,
+          `Labor shift ${shiftId}`
+        );
         const result = this.service.executeShift(characterId, shiftId);
-        sendJson(res, 200, { success: true, result });
+        sendJson(res, 200, { success: true, result, time });
       } catch (err: any) {
         sendJson(res, 400, { success: false, error: err.message });
       }

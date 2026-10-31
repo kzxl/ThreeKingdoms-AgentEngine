@@ -23,6 +23,8 @@ import {
   ChildGrowthFocus
 } from './family-lineage.service';
 import { SpatialGuardService } from '../progression/spatial-guard.service';
+import { DatabaseService } from '../../core/database';
+import { chargePlayerAction } from '../../shared/action-time';
 
 export function registerLineageRoutes(router: Router): void {
   const service = FamilyLineageService.getInstance();
@@ -83,8 +85,14 @@ export function registerLineageRoutes(router: Router): void {
         body.bypassSpatialGuard || body.bypassProgressionGate
       );
 
+      const time = chargePlayerAction(
+        DatabaseService.getInstance().path,
+        'COURTSHIP',
+        null,
+        `Courtship proposal ${params.spouseNpcId || params.wifeNpcId || ''}`.trim()
+      );
       const result = service.proposeMarriage(params);
-      sendJson(res, 200, result);
+      sendJson(res, 200, { ...result, time });
     } catch (err: any) {
       sendJson(res, 400, { success: false, error: err.message });
     }
@@ -151,8 +159,14 @@ export function registerLineageRoutes(router: Router): void {
         body.bypassSpatialGuard
       );
 
+      const time = chargePlayerAction(
+        DatabaseService.getInstance().path,
+        'REST_RECOVERY',
+        null,
+        'Rest with spouse'
+      );
       const result = service.restWithSpouse(marriageId);
-      sendJson(res, 200, result);
+      sendJson(res, 200, { ...result, time });
     } catch (err: any) {
       sendJson(res, 400, { success: false, error: err.message });
     }

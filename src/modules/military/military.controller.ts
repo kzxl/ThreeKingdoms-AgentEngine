@@ -18,6 +18,7 @@ import { NODE_TO_LOC_MAP } from '../ecology-logistics/spatial-registry';
 import { SiegeService } from './siege.service';
 import { SpatialGuardService } from '../progression/spatial-guard.service';
 import { recordFinancialTransaction } from '../../shared/financial-transaction';
+import { chargePlayerAction } from '../../shared/action-time';
 
 function getMilitaryModule(): MilitaryModule | undefined {
   return ModuleRegistry.getInstance().get<MilitaryModule>('module.military');
@@ -292,13 +293,23 @@ export function registerMilitaryRoutes(router: Router): void {
         return;
       }
 
+      const time = chargePlayerAction(
+        db.path,
+        'MILITARY_MUSTER',
+        null,
+        `Reinforce garrison ${settlementId} by ${delta}`
+      );
+
       const result = db.transaction(() => {
         const settlement = db.queryOne<any>('SELECT * FROM session_settlements WHERE settlement_id = ?', [settlementId]);
         if (!settlement) {
           throw new Error(`Settlement ${settlementId} not found.`);
         }
 
-        const player = db.queryOne<any>('SELECT liquid_cash FROM player_state WHERE player_id = "PLY-0001"');
+        const player = db.queryOne<any>(
+          'SELECT liquid_cash FROM player_state WHERE player_id = ?;',
+          ['PLY-0001']
+        );
         if (delta > 0 && player.liquid_cash < totalCost) {
           throw new Error(`Insufficient funds: requires ${totalCost} quan, available ${player.liquid_cash} quan.`);
         }
@@ -337,7 +348,8 @@ export function registerMilitaryRoutes(router: Router): void {
       sendJson(res, 200, {
         success: true,
         ...result,
-        message: `Đã điều chỉnh đồn trú tại ${result.settlementName}: ${delta > 0 ? '+' : ''}${delta} binh sĩ (Đồn trú: ${result.newTroops}, Phòng ngự: ${result.newDefense}).`
+        time,
+        message: `Đã điều chỉnh đồn trú tại ${result.settlementName}: ${result.troopsDelta > 0 ? '+' : ''}${result.troopsDelta} binh sĩ (Đồn trú: ${result.newTroops}, Phòng ngự: ${result.newDefense}).`
       });
     } catch (err: any) {
       sendJson(res, err.statusCode || 400, { success: false, error: err.message });
@@ -380,6 +392,13 @@ export function registerMilitaryRoutes(router: Router): void {
         3,
         'Viễn Chinh Liên Châu',
         (ctx.body || {}).bypassProgressionGate || (ctx.body || {}).bypassSpatialGuard
+      );
+
+      const time = chargePlayerAction(
+        db.path,
+        'EXPEDITION_START',
+        null,
+        `Expedition ${originSettlementId} -> ${targetSettlementId}`
       );
 
       const military = getMilitaryModule();
@@ -451,6 +470,7 @@ export function registerMilitaryRoutes(router: Router): void {
       sendJson(res, 200, {
         success: true,
         ...expResult,
+        time,
         message: `Phát động quân đoàn viễn chinh ${troopCount} binh sĩ từ ${originSettlementId} tới ${targetSettlementId} (${marchDays} ngày đường, dự kiến tới ${arrivalDate}; Quân lương tiêu hao: ${grainRequirement} Thạch, Tuyến tiếp vận: ${isSupplied ? 'Thông suốt' : 'Bị đứt đoạn'}).`
       });
     } catch (err: any) {
@@ -521,13 +541,25 @@ export function registerMilitaryRoutes(router: Router): void {
         expeditionId
       } = ctx.body || {};
 
+      if (!strongholdId && !targetSettlementId) {
+        sendJson(res, 400, { success: false, error: 'targetSettlementId or strongholdId is required.' });
+        return;
+      }
+
+      const time = chargePlayerAction(
+        db.path,
+        'SIEGE_PREP',
+        null,
+        `Assault ${targetSettlementId || strongholdId}`
+      );
+
       // If attacking a bandit stronghold, leverage ecology logistics
       if (strongholdId) {
         const ecology = getEcologyModule();
         if (ecology) {
           const meta = getCampaignMeta(db);
           const result = ecology.attackBanditStronghold(commanderId, strongholdId, meta.activeTurn, meta.currentDate);
-          sendJson(res, 200, { success: true, type: 'BANDIT_STRONGHOLD_ASSAULT', ...result });
+          sendJson(res, 200, { success: true, type: 'BANDIT_STRONGHOLD_ASSAULT', ...result, time });
           return;
         }
       }
@@ -559,6 +591,7 @@ export function registerMilitaryRoutes(router: Router): void {
         sendJson(res, 200, {
           success: true,
           siege,
+          time,
           message: siege.aborted
             ? 'Tiền trận bất lợi: chủ tướng tử trận, bao vây bị hủy.'
             : siege.status === 'ACTIVE'
@@ -650,7 +683,7 @@ export function registerMilitaryRoutes(router: Router): void {
         };
       });
 
-      sendJson(res, 200, { success: true, ...siegeResult });
+      sendJson(res, 200, { success: true, ...siegeResult, time });
     } catch (err: any) {
       sendJson(res, err.statusCode || 400, { success: false, error: err.message });
     }

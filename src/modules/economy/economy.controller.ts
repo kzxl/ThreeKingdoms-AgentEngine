@@ -278,6 +278,14 @@ export function registerEconomyRoutes(router: Router): void {
         return;
       }
 
+      // A market session costs two days; charge before the clock-derived quote.
+      const time = chargePlayerAction(
+        db.path,
+        tradeAction === 'BUY' ? 'TRADE_BUY' : 'TRADE_SELL',
+        null,
+        `Trade ${tradeAction} ${qty} ${itemCode}`
+      );
+
       const meta = getCampaignMeta(db);
       const effectiveDate = meta.currentDate;
       const fameRow = db.queryOne<{ fame: number; current_location: string }>(
@@ -433,6 +441,7 @@ export function registerEconomyRoutes(router: Router): void {
         success: true,
         ...tradeResult,
         market,
+        time,
         message: `Thực hiện lệnh ${tradeAction} thành công: ${qty} ${tradeResult.itemName} tổng trị giá ${totalAmount} quan.`
       });
     } catch (err: any) {
@@ -910,6 +919,13 @@ export function registerEconomyRoutes(router: Router): void {
         (ctx.body || {}).bypassProgressionGate || (ctx.body || {}).bypassSpatialGuard
       );
 
+      const time = chargePlayerAction(
+        db.path,
+        'ENTERPRISE_MANAGE',
+        null,
+        `Dispatch caravan ${fromSettlementId} -> ${toSettlementId}`
+      );
+
       const logisticsService = CaravanLogisticsService.getInstance();
       const result = logisticsService.dispatchCaravan(
         {
@@ -924,7 +940,8 @@ export function registerEconomyRoutes(router: Router): void {
 
       sendJson(res, 200, {
         success: true,
-        ...result
+        ...result,
+        time
       });
     } catch (err: any) {
       sendJson(res, err.statusCode || 400, { success: false, error: err.message });

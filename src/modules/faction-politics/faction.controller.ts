@@ -12,6 +12,8 @@ import { Router, sendJson, RouteContext } from '../../server/router';
 import { ModuleRegistry } from '../../core/module-registry';
 import { FactionPoliticsModule } from './faction-politics.module';
 import { SpatialGuardService } from '../progression/spatial-guard.service';
+import { DatabaseService } from '../../core/database';
+import { chargePlayerAction } from '../../shared/action-time';
 
 function getFactionModule(): FactionPoliticsModule | undefined {
   return ModuleRegistry.getInstance().get<FactionPoliticsModule>('module.faction-politics');
@@ -76,7 +78,17 @@ export function registerFactionReadRoutes(router: Router): void {
         body.bypassProgressionGate || body.bypassSpatialGuard
       );
       const factionId = String(body.factionId || '');
-      sendJson(res, 200, mod.declareWar(factionId));
+      if (!factionId) {
+        sendJson(res, 400, { success: false, error: 'factionId is required.' });
+        return;
+      }
+      const time = chargePlayerAction(
+        DatabaseService.getInstance().path,
+        'POLITICAL_ACTION',
+        null,
+        `Declare war on ${factionId}`
+      );
+      sendJson(res, 200, { ...mod.declareWar(factionId), time });
     } catch (err: any) {
       sendJson(res, err.statusCode || 400, { success: false, error: err.message });
     }
@@ -87,7 +99,17 @@ export function registerFactionReadRoutes(router: Router): void {
       const mod = getFactionModule();
       if (!mod) return unavailable(res);
       const factionId = String((ctx.body || {}).factionId || '');
-      sendJson(res, 200, mod.makePeace(factionId));
+      if (!factionId) {
+        sendJson(res, 400, { success: false, error: 'factionId is required.' });
+        return;
+      }
+      const time = chargePlayerAction(
+        DatabaseService.getInstance().path,
+        'POLITICAL_ACTION',
+        null,
+        `Make peace with ${factionId}`
+      );
+      sendJson(res, 200, { ...mod.makePeace(factionId), time });
     } catch (err: any) {
       sendJson(res, 400, { success: false, error: err.message });
     }

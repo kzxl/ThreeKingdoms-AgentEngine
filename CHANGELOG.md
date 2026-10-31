@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.26.2] - 2026-10-31
+
+Core time coverage: trade, military, politics and household actions now cost days.
+
+### Changed
+- New policy rows: `MILITARY_MUSTER`, `EXPEDITION_START`, `SIEGE_PREP`,
+  `POLITICAL_ACTION`, `COURTSHIP`.
+- `POST /api/trade` charges `TRADE_BUY`/`TRADE_SELL` (2 days) before quoting.
+- `POST /api/caravans/dispatch` charges `ENTERPRISE_MANAGE`; `/api/garrisons/reinforce`
+  charges `MILITARY_MUSTER`; expedition start charges `EXPEDITION_START`; assault
+  and siege start charge `SIEGE_PREP`.
+- Faction declare-war/make-peace charge `POLITICAL_ACTION`; lineage courtship
+  charges `COURTSHIP`; rest with spouse charges `REST_RECOVERY`; wage labor
+  charges `WORK_SHIFT`; location switch charges `MOVE_LOCATION`.
+- Fixed two SQL literals written with double quotes (`player_id = "PLY-0001"`,
+  `status = "ACTIVE"`) that made reinforcement and the business counter fail
+  silently.
+- `syncProgressProjection` refuses OS-temp databases, so a directly-run test can
+  no longer render `game/PROGRESS.md` from its sandbox.
+- `tests/verify-core-time-coverage.ts` proves trade +2 days, reinforcement +1
+  and movement +1 through the real router.
+
+### Verification
+`npm run verify` green: 58/58 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,506 invariants, 0 discrepancies.
+
+---
+
 ## [1.26.1] - 2026-10-31
 
 Core accounting: every cashflow row now has a balanced journal pair.

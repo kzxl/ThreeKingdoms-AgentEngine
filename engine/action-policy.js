@@ -47,7 +47,13 @@ const ACTION_TIME_POLICY = {
   // Farming: rent paperwork is quick; planting and harvest are field work.
   FARM_RENT: { days: 1, fatigue: 3, labelVi: 'Thuê ruộng', labelEn: 'Lease land' },
   FARM_PLANT: { days: 2, fatigue: 6, labelVi: 'Gieo trồng', labelEn: 'Plant crop' },
-  FARM_HARVEST: { days: 2, fatigue: 8, labelVi: 'Thu hoạch', labelEn: 'Harvest' }
+  FARM_HARVEST: { days: 2, fatigue: 8, labelVi: 'Thu hoạch', labelEn: 'Harvest' },
+  // Core military/political actions that used to be instant.
+  MILITARY_MUSTER: { days: 1, fatigue: 4, labelVi: 'Điều quân', labelEn: 'Muster troops' },
+  EXPEDITION_START: { days: 1, fatigue: 5, labelVi: 'Xuất chinh', labelEn: 'Start expedition' },
+  SIEGE_PREP: { days: 1, fatigue: 5, labelVi: 'Chuẩn bị công thành', labelEn: 'Prepare siege' },
+  POLITICAL_ACTION: { days: 1, fatigue: 2, labelVi: 'Chính sự', labelEn: 'Political action' },
+  COURTSHIP: { days: 1, fatigue: 3, labelVi: 'Cầu hôn', labelEn: 'Courtship' }
 };
 
 function getActionTimeCost(type, subType) {
