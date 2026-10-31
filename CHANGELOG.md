@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.30.0] - 2026-10-31
+
+Core contracts now cover the extended feature groups, not only the original
+trade/military/farm paths.
+
+### Added
+- Loans accept an idempotency key, spend one administrative phase and book
+  borrow/repay through `postDoubleEntry`; the controller no longer creates the
+  table at runtime.
+- Ecology relief, stronghold assault and transport replay cleanly. Bandit loot
+  is ledgered (`Combat/BanditLoot`) and `/api/ecology/transport` delegates to
+  `CaravanLogisticsService`, so cargo, guard fee and `dispatched_by_player` are
+  handled by the single caravan writer.
+- Professions gather/craft/forge/hire/open/collect, social kizuna/banquet/
+  brotherhood/recruit, progression move/quest/perk/explore, duel
+  initiate/round/spar/arena/ambush, and lineage pregnancy/birth/mentorship/
+  aging/succession all accept idempotency keys and record `action_log`.
+- Seven contract suites: `verify-loan-contracts`, `verify-ecology-contracts`,
+  `verify-profession-contracts`, `verify-social-contracts`,
+  `verify-progression-contracts`, `verify-duel-contracts`,
+  `verify-lineage-contracts`.
+
+### Verification
+`npm run verify` green: 71/71 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,546 invariants, 0 discrepancies.
+
+---
+
 ## [1.29.0] - 2026-10-31
 
 Day phases: a day has morning, afternoon and evening.

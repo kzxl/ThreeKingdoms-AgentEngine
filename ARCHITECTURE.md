@@ -153,7 +153,7 @@ not require editing that test.
 | :--- | :--- | :--- |
 | Types | `npm run typecheck` | `strict` TypeScript across `src/`, `tests/`, `vite.config.ts`. |
 | Architecture | `npm run lint` | Ratchet over `tools/arch-baseline.json`; debt may only shrink. |
-| Behaviour | `npm test` | 64 suites (4 legacy + 60 modern); each modern suite runs on an isolated DB copy and projections are restored afterwards. |
+| Behaviour | `npm test` | 71 suites (4 legacy + 67 modern); each modern suite runs on an isolated DB copy and projections are restored afterwards. |
 | API contract | `npm run golden:verify` | 28 read-only endpoints: status code, response shape, behavioural assertions. |
 | Write paths | `npm run smoke:write` | 8 HTTP write paths plus a post-write audit on a sandbox database. |
 | Invariants | `npm run audit` | 1,546 SQLite invariants (ledger parity, inventory conservation, projection sync, world/life-sim/clock blocks). |
@@ -490,4 +490,34 @@ These are the rules every feature must follow, independent of content.
   cross-module guarantee.
 - Only administrative actions use phases; most field actions still spend whole
   days by design.
+
+### 14.10 Extended feature coverage (1.30.0)
+
+The core contracts above now cover the remaining player-facing feature groups,
+not only the original trade/military/farm set:
+
+| Group | Mutations | Time | Idempotency |
+| :--- | :--- | :--- | :--- |
+| Loans | borrow / repay | 1 phase (`ADMIN_ACTION`) | key + `action_log` |
+| Ecology | grain relief / stronghold assault / transport | phase / 1 day / 2 days | key + `action_log` |
+| Professions | gather / craft / forge / hire / open / collect | policy row | key + `action_log` |
+| Social | kizuna / natural chat / banquet / brotherhood / recruit | policy row | key + `action_log` |
+| Progression | move / quest accept / quest step / perk / explore | phase or policy row | key + `action_log` |
+| Duels | initiate / round / spar / arena / caravan ambush | policy row | key + `action_log` |
+| Lineage | pregnancy tick / birth / mentorship / aging / succession | none or policy row | key + `action_log` |
+
+Two ledger rules close gaps found during this pass:
+
+- A bandit-stronghold victory books loot with `postDoubleEntry`
+  (`Combat/BanditLoot`, credit `7001_BOUNTY_INCOME`) instead of updating
+  `player_state.liquid_cash` directly.
+- `/api/ecology/transport` delegates to `CaravanLogisticsService.dispatchCaravan`
+  so cargo is deducted, the guard fee is journaled, and the caravan is marked
+  `dispatched_by_player = 1` and can be claimed.
+
+Each group has a dedicated gate: `verify-loan-contracts`, `verify-ecology-contracts`,
+`verify-profession-contracts`, `verify-social-contracts`,
+`verify-progression-contracts`, `verify-duel-contracts` and
+`verify-lineage-contracts`.
+
 

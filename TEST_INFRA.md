@@ -112,6 +112,13 @@ primary truth:
 | `tests/verify-settlement-ledger.ts` | Core: Settlement treasury ledger | — | Opening + flows = treasury, loot flow, drift detection |
 | `tests/verify-world-atomic.ts` | Core: Atomic world month close | — | Failed module rolls back, close aborts, successful module commits |
 | `tests/verify-day-phases.ts` | Core: Three-phase day | — | Three admin phases fill a day, day action resets, route wiring |
+| `tests/verify-loan-contracts.ts` | Extended: Loan contracts | — | Borrow/repay phase, replay, balanced journal |
+| `tests/verify-ecology-contracts.ts` | Extended: Ecology contracts | — | Relief phase, assault day/loot ledger, transport stock and replay |
+| `tests/verify-profession-contracts.ts` | Extended: Profession contracts | — | Gather/craft days, dividend replay, stock conservation |
+| `tests/verify-social-contracts.ts` | Extended: Social contracts | — | Kizuna/banquet days, dish and cash replay |
+| `tests/verify-progression-contracts.ts` | Extended: Progression contracts | — | Move day, quest phase/step, replay |
+| `tests/verify-duel-contracts.ts` | Extended: Duel contracts | — | Initiation day, round replay, unchanged duel state |
+| `tests/verify-lineage-contracts.ts` | Extended: Lineage contracts | — | Aging and mentorship replay, no duplicate growth |
 | `tools/sim-audit.js` | System: Autonomous Invariant Auditor | 1,546 | Eight blocks: accounting, inventory, journal, projection, enterprise, strategy, life-sim, clock |
 
 ---
@@ -129,7 +136,7 @@ npx tsx tests/verify-rotk-duels.ts
 
 ### Full Verification Pipeline
 ```bash
-# Single gate: typecheck → arch ratchet → 64 suites → API contract → write smoke
+# Single gate: typecheck → arch ratchet → 71 suites → API contract → write smoke
 npm run verify
 
 # Individually:
@@ -140,7 +147,7 @@ npm run lint:ui        # UI debt ratchet (button classes, inline styles, native 
 npm run lint:slop      # anti-slop laws: emoji, gradients, glow shadows, font families
 npm run lint:api       # client /api/* paths must exist or be allowlisted with a reason
 npm run routes:shadow  # fails if a legacy route is already served by the Router
-npm test               # 4 legacy + 60 verify-*.ts suites, isolated DB per suite
+npm test               # 4 legacy + 67 verify-*.ts suites, isolated DB per suite
 npm run golden:verify  # 28 read-only endpoint contracts
 npm run smoke:write    # 8 HTTP write paths + post-write audit
 npm run audit          # 1,546 SQLite invariants in eight blocks

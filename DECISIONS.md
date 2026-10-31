@@ -293,3 +293,13 @@ This document records the architectural choices, rationale, and alternatives con
 - **Consequences**:
   - Positive: Administrative work has a small, real time cost and three such actions fill a day; field actions remain chunky by design.
   - Negative: Only administrative actions use phases for now; a future pass can move social or market actions to phases if balance supports it.
+
+---
+
+## ADR-027: Core Contracts Extend to Every Feature Group (2026-10-31)
+
+- **Context**: After 1.29.0 the core money, time, idempotency and ledger rules were closed, but loans, ecology, professions, social actions, progression, duels and lineage still had player-facing mutations without a key or with direct cash writes.
+- **Decision**: Apply the same contracts to those groups: optional `idempotencyKey` with stored-result replay, one `chargePlayerAction` per action at the HTTP boundary, and `postDoubleEntry` for every cash reward (including bandit loot). `/api/ecology/transport` delegates to the single caravan writer instead of inserting a caravan manually.
+- **Consequences**:
+  - Positive: A retried request cannot double a loan, a crafted batch, a banquet, a quest step, a duel round, a mentorship session or a succession transfer; the `action_log` records each successful mutation once.
+  - Negative: Every new mutation must decide its time cost and key policy; repeatable actions must omit the key deliberately.
