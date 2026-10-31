@@ -451,6 +451,15 @@ class GameplayManager {
       throw new Error(`World simulation failed for turn ${nextTurn}; month not closed (retry is safe): ${worldErrors.join('; ')}`);
     }
 
+    // AI factions at war may dispatch one army each; movement and battles use
+    // the same day clock as the player's expeditions.
+    let aiWar = [];
+    try {
+      aiWar = require('./ai-war-bridge').simulateMonthly(this.dbPath, nextTurn, nextDate);
+    } catch (aiError) {
+      console.warn('[GameplayManager] AI war dispatch failed:', aiError.message);
+    }
+
     // EventBus cascade is published after the core batch commits, so
     // subscribers always observe the new calendar state.
     const eventBus = gsm?.registry?.ctx?.eventBus || gsm?.utilityAi?.ctx?.eventBus;
@@ -795,6 +804,7 @@ class GameplayManager {
       retainerDepartures,
       defeatStatus,
       victoryStatus,
+      aiWar,
       playerStatus,
       playerLocationName: locationRow ? locationRow.name_vi : (playerLoc || ''),
       bizReports,

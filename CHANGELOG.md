@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.18.0] - 2026-10-31
+
+AI armies and AI conquest.
+
+### Added
+- `AiArmyService` runs at each month close: every active AI faction at war with
+  at least `military_power >= 800` may dispatch one expedition from its capital
+  against the weakest enemy settlement. An active expedition blocks a second
+  dispatch.
+- `FieldBattleService` now resolves both sides generically: player arrivals keep
+  `ARRIVED` for a manual siege, while an AI victory captures the city
+  (`ruler_faction_id`, governor, surviving garrison, defense 30, order -20) and
+  ends the expedition `CONCLUDED`. Captures are chronicled as `AI_CONQUEST`.
+- The month report carries the `aiWar` dispatch list.
+- `tests/verify-ai-war.ts` covers one-army-per-faction, the day-clock march,
+  field battle, capture and the chronicle row.
+
+### Verification
+`npm run verify` green: 42/42 suites, 28/28 contracts, 8/8 write smokes.
+
+---
+
 ## [1.17.0] - 2026-10-31
 
 Profile-level NG+ legacy.

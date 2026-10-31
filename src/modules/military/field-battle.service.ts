@@ -9,6 +9,7 @@
  */
 
 import { DatabaseService } from '../../core/database';
+import { nextId } from '../../shared/id-generator';
 import { TacticalBattleEngine, BattleResult, TerrainType } from './tactical-battle';
 
 export interface FieldBattleOutcome {
@@ -16,6 +17,7 @@ export interface FieldBattleOutcome {
   expeditionStatus?: 'ARRIVED' | 'CONCLUDED';
   result?: BattleResult;
   reason?: string;
+  captured?: boolean;
 }
 
 export class FieldBattleService {
@@ -40,12 +42,12 @@ export class FieldBattleService {
     );
     if (!settlement) return { battle: false, reason: 'no-target' };
 
-    const playerFaction = this.db.queryOne<{ faction_id: string }>(
-      `SELECT faction_id FROM session_factions WHERE leader_id = ? AND is_active = 1 LIMIT 1;`,
+    const attackerFaction = this.db.queryOne<{ faction_id: string; leader_id: string }>(
+      `SELECT faction_id, leader_id FROM session_factions WHERE leader_id = ? AND is_active = 1 LIMIT 1;`,
       [expedition.commander_id]
     );
-    if (!playerFaction?.faction_id) return { battle: false, reason: 'no-faction' };
-    if (settlement.ruler_faction_id === playerFaction.faction_id) {
+    if (!attackerFaction?.faction_id) return { battle: false, reason: 'no-faction' };
+    if (settlement.ruler_faction_id === attackerFaction.faction_id) {
       return { battle: false, reason: 'friendly-city' };
     }
 
@@ -54,14 +56,11 @@ export class FieldBattleService {
        WHERE relation_state = 'WAR'
          AND ((faction_id_a = ? AND faction_id_b = ?) OR (faction_id_a = ? AND faction_id_b = ?))
        LIMIT 1;`,
-      [playerFaction.faction_id, settlement.ruler_faction_id, settlement.ruler_faction_id, playerFaction.faction_id]
+      [attackerFaction.faction_id, settlement.ruler_faction_id, settlement.ruler_faction_id, attackerFaction.faction_id]
     );
     if (!war) return { battle: false, reason: 'not-at-war' };
 
-    const attacker = this.db.queryOne<any>(
-      `SELECT name, war_attr, ldr_attr, int_attr FROM player_state WHERE player_id = ? LIMIT 1;`,
-      [expedition.commander_id]
-    ) || {};
+    const attacker = this.resolveAttacker(expedition.commander_id);
     const defender = this.resolveDefender(settlement);
 
     const attackerTroops = Math.max(1, Math.round(Number(expedition.troop_count) || 0));
@@ -71,13 +70,7 @@ export class FieldBattleService {
       battleId: `FIELD-${expeditionId}-${gameDate}`,
       terrain: this.resolveTerrain(expedition.route_id),
       attacker: {
-        commander: {
-          id: expedition.commander_id,
-          name: String(attacker.name || 'Lương Diễn'),
-          war: Number(attacker.war_attr || 60),
-          leadership: Number(attacker.ldr_attr || 60),
-          intelligence: Number(attacker.int_attr || 60)
-        },
+        commander: attacker,
         vanguardTroops: Math.round(attackerTroops * 0.4),
         centerTroops: Math.round(attackerTroops * 0.4),
         rearguardTroops: Math.max(1, attackerTroops - Math.round(attackerTroops * 0.8))
@@ -94,20 +87,98 @@ export class FieldBattleService {
     const attackerSurvivors = Math.max(0, Number(result.attackerFinalTroops || 0));
     const defenderSurvivors = Math.max(0, Number(result.defenderFinalTroops || 0));
     const attackerWon = result.winner === 'ATTACKER';
-    const status = attackerWon ? 'ARRIVED' : 'CONCLUDED';
+    const isPlayerAttack = attackerFaction.leader_id === 'PLY-0001';
+    const captured = attackerWon && !isPlayerAttack;
+    const status = captured ? 'CONCLUDED' : (attackerWon ? 'ARRIVED' : 'CONCLUDED');
 
     this.db.transaction(() => {
       this.db.execute(
         'UPDATE military_expeditions SET troop_count = ?, status = ? WHERE expedition_id = ?;',
         [attackerSurvivors, status, expeditionId]
       );
-      this.db.execute(
-        'UPDATE session_settlements SET garrison_troops = ? WHERE settlement_id = ?;',
-        [defenderSurvivors, settlement.settlement_id]
-      );
+      if (captured) {
+        // AI conquerors install their commander and leave the survivors behind.
+        this.db.execute(
+          `UPDATE session_settlements
+           SET ruler_faction_id = ?, governor_id = ?, garrison_troops = ?,
+               defense = 30, public_order = MAX(20, public_order - 20)
+           WHERE settlement_id = ?;`,
+          [attackerFaction.faction_id, expedition.commander_id, attackerSurvivors, settlement.settlement_id]
+        );
+      } else {
+        this.db.execute(
+          'UPDATE session_settlements SET garrison_troops = ? WHERE settlement_id = ?;',
+          [defenderSurvivors, settlement.settlement_id]
+        );
+      }
     });
 
-    return { battle: true, expeditionStatus: status, result };
+    if (captured) this.recordAiConquest(expedition, settlement, attackerFaction, attackerSurvivors, gameDate);
+
+    return { battle: true, expeditionStatus: status, result, captured };
+  }
+
+  private resolveAttacker(commanderId: string): { id: string; name: string; war: number; leadership: number; intelligence: number } {
+    if (commanderId === 'PLY-0001') {
+      const player = this.db.queryOne<any>(
+        `SELECT name, war_attr, ldr_attr, int_attr FROM player_state WHERE player_id = ? LIMIT 1;`,
+        [commanderId]
+      ) || {};
+      return {
+        id: commanderId,
+        name: String(player.name || 'Lương Diễn'),
+        war: Number(player.war_attr || 60),
+        leadership: Number(player.ldr_attr || 60),
+        intelligence: Number(player.int_attr || 60)
+      };
+    }
+    try {
+      const npc = this.db.queryOne<any>(
+        'SELECT name, war_attr, ldr_attr, int_attr FROM npc_state WHERE npc_id = ? LIMIT 1;',
+        [commanderId]
+      );
+      const master = npc ? null : this.db.queryOne<any>(
+        'SELECT name_vi AS name, war_attr, ldr_attr, int_attr FROM master_characters WHERE npc_id = ? LIMIT 1;',
+        [commanderId]
+      );
+      const row = npc || master;
+      return {
+        id: commanderId,
+        name: String(row?.name || 'Tướng Lĩnh Địch'),
+        war: Number(row?.war_attr || 65),
+        leadership: Number(row?.ldr_attr || 65),
+        intelligence: Number(row?.int_attr || 60)
+      };
+    } catch {
+      return { id: commanderId, name: 'Tướng Lĩnh Địch', war: 65, leadership: 65, intelligence: 60 };
+    }
+  }
+
+  private recordAiConquest(expedition: any, settlement: any, faction: any, troops: number, gameDate: string): void {
+    try {
+      const meta = this.db.queryOne<{ active_turn: number }>(
+        'SELECT active_turn FROM campaign_meta LIMIT 1;'
+      );
+      this.db.execute(
+        `INSERT OR REPLACE INTO faction_political_events
+           (event_id, turn_number, game_date, event_type, source_faction_id, target_faction_id,
+            instigator_officer_id, title_vi, narrative_vi, consequences_json)
+         VALUES (?, ?, ?, 'AI_CONQUEST', ?, ?, ?, ?, ?, ?);`,
+        [
+          nextId(this.db, 'faction-event', 'FPE', gameDate),
+          Number(meta?.active_turn || 1),
+          gameDate,
+          faction.faction_id,
+          settlement.ruler_faction_id || null,
+          expedition.commander_id,
+          `${faction.faction_id} chiếm ${settlement.name_vi}`,
+          `Quân ${faction.faction_id} đánh bại đồn trú ${settlement.name_vi}; ${troops} quân sống sót chiếm thành.`,
+          JSON.stringify({ settlementId: settlement.settlement_id, troops })
+        ]
+      );
+    } catch {
+      // The capture stands even if the chronicle row cannot be written.
+    }
   }
 
   private resolveDefender(settlement: any): { commander: { id: string; name: string; war: number; leadership: number; intelligence: number } } {
