@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.23.4] - 2026-10-31
+
+Text cleanup: broken code-page names and legacy currency labels.
+
+### Changed
+- Migration 043 resyncs `player_skills.skill_name` from the clean
+  `master_skills.skill_name_vi` (six rows had a broken code page), repairs the
+  two medicine items (`MED-TRAUMA-SALVE`, `MED-REVIVE-PILL`), and rewrites
+  numeric legacy currency labels to Quan/quan across session events, master
+  events, chronicle, turn log, quests and quest steps. Ordinary uses of the word
+  money (for example "nộp tiền mặt") are left untouched.
+- `tests/verify-data-cleanup.ts` seeds dirty rows, runs the migration twice and
+  asserts clean names, normalised labels, preserved prose and idempotency.
+
+### Verification
+`npm run verify` green: 50/50 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,493 invariants, 0 discrepancies.
+
+---
+
 ## [1.23.3] - 2026-10-31
 
 Career paths become real: one resolver drives both the API and gameplay.
