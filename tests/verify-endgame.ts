@@ -12,6 +12,7 @@ const { applyVictoryIfEligible, evaluateVictory } = require('../src/shared/victo
 const ROOT = path.resolve(__dirname, '..');
 const TEST_DIR = path.join(ROOT, 'tests', '.endgame');
 const TEST_DB = path.join(TEST_DIR, 'session.db');
+process.env.SIM_LEGACY_PATH = path.join(TEST_DIR, 'legacy.json');
 
 function seedDatabase() {
   if (fs.existsSync(TEST_DIR)) fs.rmSync(TEST_DIR, { recursive: true, force: true });

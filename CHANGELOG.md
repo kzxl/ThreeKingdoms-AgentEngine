@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.17.0] - 2026-10-31
+
+Profile-level NG+ legacy.
+
+### Changed
+- `src/shared/legacy-store.ts` keeps the strongest finished campaign in
+  `saves/legacy.json` (path overridable with `SIM_LEGACY_PATH`). A victory is
+  never downgraded by a later defeat.
+- `recordLegacy` writes both the per-database row and the profile file, so a
+  brand-new instance cloned from the clean template also receives the 10%
+  cash bonus and the `Di Sản Tổ Tiên` license.
+- Tests that trigger victory or death now isolate `SIM_LEGACY_PATH` to their
+  temp directory, so a full verify run cannot contaminate fresh instances.
+
+### Verification
+`npm run verify` green: 41/41 suites, 28/28 contracts, 8/8 write smokes.
+
+---
+
 ## [1.16.0] - 2026-10-31
 
 Field battles on hostile arrival.

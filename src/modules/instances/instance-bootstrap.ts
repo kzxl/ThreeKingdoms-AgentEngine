@@ -18,6 +18,7 @@ import Database from 'better-sqlite3';
 import { ArchetypePreset } from './instances.constants';
 import { postCashflowEntryRaw } from '../../shared/ledger';
 import { ACCOUNT_CODES } from '../../shared/account-codes';
+import { readProfileLegacy } from '../../shared/legacy-store';
 import SCENARIO_SEEDS from '../../../config/scenario-seeds.json';
 
 export interface InstanceBootstrapOptions {
@@ -202,20 +203,29 @@ export function initializeInstanceDatabase(
     `).run(`CMP-${startDate.replace(/-/g, '')}-INSTANCE`, campaignName, startDate, startDate);
 
     // NG+ legacy: the previous campaign's record gives the next one a small
-    // head start. The legacy table is deliberately not cleared above.
+    // head start. The legacy table is deliberately not cleared above; a clean
+    // template instance falls back to the machine-level profile file.
+    let legacyNetWorth = 0;
     if (tableExists(db, 'campaign_legacy')) {
       try {
         const legacy = db.prepare(
-          'SELECT net_worth FROM campaign_legacy ORDER BY rowid DESC LIMIT 1;'
+          'SELECT MAX(net_worth) AS net_worth FROM campaign_legacy;'
         ).get() as { net_worth?: number } | undefined;
-        if (legacy) {
-          legacyBonus = Math.min(20000, Math.floor(Number(legacy.net_worth || 0) * 0.1));
-          totalCash += legacyBonus;
-          if (!startingLicenses.includes('Di Sản Tổ Tiên')) startingLicenses.push('Di Sản Tổ Tiên');
-        }
+        legacyNetWorth = Number(legacy?.net_worth || 0);
       } catch {
-        legacyBonus = 0;
+        legacyNetWorth = 0;
       }
+    }
+    try {
+      const profile = readProfileLegacy();
+      if (profile) legacyNetWorth = Math.max(legacyNetWorth, Number(profile.netWorth || 0));
+    } catch {
+      // A missing/corrupt profile file keeps the database legacy only.
+    }
+    if (legacyNetWorth > 0) {
+      legacyBonus = Math.min(20000, Math.floor(legacyNetWorth * 0.1));
+      totalCash += legacyBonus;
+      if (!startingLicenses.includes('Di Sản Tổ Tiên')) startingLicenses.push('Di Sản Tổ Tiên');
     }
 
     db.prepare(`

@@ -8,6 +8,7 @@
  */
 
 import { DatabaseService } from '../core/database';
+import { writeProfileLegacy } from './legacy-store';
 
 export interface VictoryCheck {
   victorious: boolean;
@@ -106,6 +107,9 @@ export function recordLegacy(
     } catch { /* family tables absent */ }
 
     const campaignId = String(meta.campaign_id || 'CMP-UNKNOWN');
+    const netWorth = Number(player.liquid_cash || 0) + Number(player.safe_cash || 0);
+    const fame = Number(player.fame || 0);
+    const title = titleVi || (outcome === 'VICTORIOUS' ? 'Bá Nghiệp' : 'Tử Chiến');
     db.execute(
       `INSERT OR REPLACE INTO campaign_legacy
          (legacy_id, campaign_id, generation, fame, net_worth, settlements, outcome, title_vi)
@@ -114,13 +118,23 @@ export function recordLegacy(
         `LEG-${campaignId}`,
         campaignId,
         generation,
-        Number(player.fame || 0),
-        Number(player.liquid_cash || 0) + Number(player.safe_cash || 0),
+        fame,
+        netWorth,
         settlements,
         outcome,
-        titleVi || (outcome === 'VICTORIOUS' ? 'Bá Nghiệp' : 'Tử Chiến')
+        title
       ]
     );
+    // Machine-level copy so a clean template instance also inherits NG+.
+    writeProfileLegacy({
+      campaignId,
+      generation,
+      fame,
+      netWorth,
+      settlements,
+      outcome,
+      titleVi: title
+    });
   } catch (error) {
     console.warn('[victory] legacy record failed:', (error as Error).message);
   }

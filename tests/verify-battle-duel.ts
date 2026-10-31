@@ -13,6 +13,7 @@ const ROOT = path.resolve(__dirname, '..');
 const LIVE_DB = process.env.SIM_DB_PATH || path.join(ROOT, 'saves', 'session.db');
 const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'sim-duel-'));
 const TEST_DB = path.join(TMP, 'session.db');
+process.env.SIM_LEGACY_PATH = path.join(TMP, 'legacy.json');
 
 function run(): void {
   console.log('=== Battle duel, death and defeat states ===');

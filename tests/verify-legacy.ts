@@ -18,6 +18,8 @@ const { applyVictoryIfEligible, recordLegacy } = require('../src/shared/victory'
 const ROOT = path.resolve(__dirname, '..');
 const TEST_DIR = path.join(ROOT, 'tests', '.legacy');
 const TEST_DB = path.join(TEST_DIR, 'session.db');
+const FRESH_DB = path.join(TEST_DIR, 'fresh.db');
+process.env.SIM_LEGACY_PATH = path.join(TEST_DIR, 'legacy.json');
 
 function seedVictory() {
   if (fs.existsSync(TEST_DIR)) fs.rmSync(TEST_DIR, { recursive: true, force: true });
@@ -80,6 +82,21 @@ function run() {
   assert.strictEqual(Number(player.liquid_cash), 100 + 8000, '10% legacy bonus must be added to starting cash');
   assert(String(player.special_licenses).includes('Di Sản Tổ Tiên'), 'legacy license must be granted');
   next.close();
+
+  // A clean template instance has no campaign_legacy row but must still read
+  // the machine-level profile file.
+  const fresh = new Database(FRESH_DB);
+  fresh.pragma('journal_mode = DELETE');
+  fresh.exec(fs.readFileSync(path.join(ROOT, 'tools', 'schema.sql'), 'utf8'));
+  fresh.pragma('foreign_keys = OFF');
+  initializeInstanceDatabase(fresh, {
+    preset: ARCHETYPE_PRESETS['ARCH-COMMONER-YOUTH'],
+    playerName: 'Fresh Heir',
+    playerStyle: 'Tân Kế'
+  });
+  const freshPlayer = fresh.prepare(`SELECT liquid_cash FROM player_state WHERE player_id = 'PLY-0001';`).get() as any;
+  assert.strictEqual(Number(freshPlayer.liquid_cash), 100 + 8000, 'fresh instances must inherit the profile legacy');
+  fresh.close();
 
   console.log('✅ Legacy/NG+: victory and defeat records, capped cash bonus and legacy license verified.');
 }
