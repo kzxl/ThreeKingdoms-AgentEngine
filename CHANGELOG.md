@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.25.1] - 2026-10-31
+
+ROTK scenario identity: each start date now has its own war and alliance.
+
+### Changed
+- `config/scenario-seeds.json` no longer makes 184 and 190 identical:
+  - 184 Yellow Turban: Zhuo County, at war with the Yellow Turbans.
+  - 190 Coalition: Zhuo County, at war with Dong Zhuo and allied with Cao Cao.
+  - 200 Guandu: Zhuo + Pingyuan, at war with Yuan Shao.
+  - 208 Red Cliffs: Zhuo + Pingyuan + Xuchang, at war with Cao Cao and allied
+    with Sun Jian.
+- Both scenario appliers (`engine/scenario-seed.js` and the instance bootstrap)
+  write `relation_state = 'ALLY'` for the new `allies` list, next to the
+  existing `wars` list. Missing factions are skipped.
+- `tests/verify-scenario-seed.ts` asserts the four seeds differ, the 208 war and
+  alliance are written, and the three-holding start still works.
+
+### Verification
+`npm run verify` green: 54/54 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,493 invariants, 0 discrepancies.
+
+---
+
 ## [1.25.0] - 2026-10-31
 
 RPG combat consequences: injuries, real NPC death and monthly recovery.

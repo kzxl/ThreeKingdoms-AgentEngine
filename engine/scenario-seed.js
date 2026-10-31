@@ -55,6 +55,18 @@ function applyScenarioSeed(dbPath, scenarioId) {
         [`DIP-${player.faction_id}-${enemy}`, player.faction_id, enemy]
       );
     }
+
+    for (const ally of seed.allies || []) {
+      const exists = runSqlJson(dbPath, 'SELECT 1 AS ok FROM session_factions WHERE faction_id = ? LIMIT 1;', [ally]);
+      if (!exists.length) continue;
+      runSqlExec(
+        dbPath,
+        `INSERT OR REPLACE INTO faction_diplomacy
+           (id, faction_id_a, faction_id_b, relation_state, diplomatic_attitude, truce_turns_remaining, tribute_amount, updated_turn)
+         VALUES (?, ?, ?, 'ALLY', 60, 0, 0, 1);`,
+        [`DIP-${player.faction_id}-${ally}`, player.faction_id, ally]
+      );
+    }
     return { applied: true };
   } catch (error) {
     return { applied: false, error: error.message };

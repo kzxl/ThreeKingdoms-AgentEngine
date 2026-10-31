@@ -103,7 +103,11 @@ function columnExists(db: Database.Database, table: string, column: string): boo
  */
 function applyScenarioSeed(db: Database.Database, scenarioId?: string): void {
   if (!scenarioId) return;
-  const seed = (SCENARIO_SEEDS as Record<string, { playerSettlements?: string[]; wars?: string[] }>)[scenarioId];
+  const seed = (SCENARIO_SEEDS as Record<string, {
+    playerSettlements?: string[];
+    wars?: string[];
+    allies?: string[];
+  }>)[scenarioId];
   if (!seed) return;
 
   const playerFaction = db.prepare(
@@ -140,6 +144,16 @@ function applyScenarioSeed(db: Database.Database, scenarioId?: string): void {
   for (const enemy of seed.wars || []) {
     const exists = db.prepare('SELECT 1 AS ok FROM session_factions WHERE faction_id = ?;').get(enemy);
     if (exists) war.run(`DIP-${playerFaction.faction_id}-${enemy}`, playerFaction.faction_id, enemy);
+  }
+
+  const ally = db.prepare(`
+    INSERT OR REPLACE INTO faction_diplomacy
+      (id, faction_id_a, faction_id_b, relation_state, diplomatic_attitude, truce_turns_remaining, tribute_amount, updated_turn)
+    VALUES (?, ?, ?, 'ALLY', 60, 0, 0, 1);
+  `);
+  for (const friend of seed.allies || []) {
+    const exists = db.prepare('SELECT 1 AS ok FROM session_factions WHERE faction_id = ?;').get(friend);
+    if (exists) ally.run(`DIP-${playerFaction.faction_id}-${friend}`, playerFaction.faction_id, friend);
   }
 }
 
