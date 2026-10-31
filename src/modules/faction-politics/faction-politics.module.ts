@@ -13,6 +13,7 @@ import { UnrestService } from './unrest.service';
 import { OfficerUnrestConsequence } from './unrest-consequence';
 import { isTurnModuleDone, markTurnModuleDone } from '../../shared/turn-ledger';
 import { nextId } from '../../shared/id-generator';
+import { postFactionEntry, ensureFactionOpening } from '../../shared/faction-ledger';
 import {
   IFeatureModule,
   ModuleContext,
@@ -378,11 +379,13 @@ export class FactionPoliticsModule implements IFeatureModule {
             [eventId, turnNumber, gameDate, off.faction_id, off.officer_id, titleVi, narrativeVi, JSON.stringify(consequences)]
           );
 
-          // 1. Establish new rebel warlord faction in session_factions
+          // 1. Establish new rebel warlord faction in session_factions. OR IGNORE
+          //    avoids resetting an existing rebel treasury on a repeated event.
           this.db.execute(`
-            INSERT OR REPLACE INTO session_factions (faction_id, name_vi, name_en, leader_id, capital_settlement_id, treasury_cash, granary_grain, military_power, prestige, ideology, color_hex)
+            INSERT OR IGNORE INTO session_factions (faction_id, name_vi, name_en, leader_id, capital_settlement_id, treasury_cash, granary_grain, military_power, prestige, ideology, color_hex)
             VALUES (?, ?, ?, ?, ?, 8000, 300.0, 450, 120, 'WARLORD', '#f97316');
           `, [rebelFactionId, rebelNameVi, rebelNameEn, off.officer_id, off.appointed_settlement_id]);
+          ensureFactionOpening(this.db, rebelFactionId, gameDate);
 
           // 2. Transfer territorial sovereignty of settlement
           this.db.execute(`
@@ -464,21 +467,31 @@ export class FactionPoliticsModule implements IFeatureModule {
       }
     }
 
-    // Faction economic pulse: collect tax from controlled cities
+    // Faction economic pulse: collect tax from controlled cities. Every treasury
+    // movement goes through the faction ledger so the world economy is auditable.
+    const taxRows = this.db.query<any>(`
+      SELECT f.faction_id, COALESCE(SUM(s.commerce * 10), 500) AS tax
+      FROM session_factions f
+      LEFT JOIN session_settlements s ON s.ruler_faction_id = f.faction_id
+      GROUP BY f.faction_id;
+    `);
+    for (const row of taxRows) {
+      postFactionEntry(this.db, {
+        factionId: row.faction_id,
+        gameDate,
+        category: 'TAX_REVENUE',
+        counterparty: 'Lãnh thổ trực thuộc',
+        inflow: Number(row.tax || 0),
+        memo: `Thuế thương mại lượt ${turnNumber}`
+      });
+    }
     this.db.execute(`
-      UPDATE session_factions 
-      SET 
-        treasury_cash = treasury_cash + (
-          SELECT COALESCE(SUM(s.commerce * 10), 500) 
-          FROM session_settlements s 
-          WHERE s.ruler_faction_id = session_factions.faction_id
-        ),
-        granary_grain = granary_grain + (
-          SELECT COALESCE(SUM(s.agriculture * 0.5), 25.0) 
-          FROM session_settlements s 
-          WHERE s.ruler_faction_id = session_factions.faction_id
-        ),
-        updated_at = CURRENT_TIMESTAMP;
+      UPDATE session_factions
+      SET granary_grain = granary_grain + (
+        SELECT COALESCE(SUM(s.agriculture * 0.5), 25.0)
+        FROM session_settlements s
+        WHERE s.ruler_faction_id = session_factions.faction_id
+      ), updated_at = CURRENT_TIMESTAMP;
     `);
 
     // Settlement grain consumption by garrisons & populace
@@ -584,9 +597,21 @@ export class FactionPoliticsModule implements IFeatureModule {
         if (rel.tribute_amount > 0 && rel.relation_state === 'TRUCE') {
           const tribute = Math.min(rel.tribute_amount, fa.treasury_cash);
           if (tribute > 0) {
-            this.db.transaction(() => {
-              this.db.execute(`UPDATE session_factions SET treasury_cash = treasury_cash - ? WHERE faction_id = ?;`, [tribute, fa.faction_id]);
-              this.db.execute(`UPDATE session_factions SET treasury_cash = treasury_cash + ? WHERE faction_id = ?;`, [tribute, fb.faction_id]);
+            postFactionEntry(this.db, {
+              factionId: fa.faction_id,
+              gameDate,
+              category: 'TRIBUTE_PAID',
+              counterparty: fb.name_vi,
+              outflow: tribute,
+              memo: `Cống nạp cho ${fb.name_vi}`
+            });
+            postFactionEntry(this.db, {
+              factionId: fb.faction_id,
+              gameDate,
+              category: 'TRIBUTE_RECEIVED',
+              counterparty: fa.name_vi,
+              inflow: tribute,
+              memo: `Nhận cống nạp từ ${fa.name_vi}`
             });
           }
         }
@@ -914,8 +939,14 @@ export class FactionPoliticsModule implements IFeatureModule {
     const loyaltyBoost = Math.min(30, Math.floor(amount / 20));
 
     this.db.transaction(() => {
-      // Deduct from faction treasury
-      this.db.execute(`UPDATE session_factions SET treasury_cash = treasury_cash - ? WHERE faction_id = ?;`, [amount, factionId]);
+      // Deduct from faction treasury through the world ledger.
+      postFactionEntry(this.db, {
+        factionId,
+        category: 'OFFICER_REWARD',
+        counterparty: officerId,
+        outflow: amount,
+        memo: `Thưởng công cho ${officerId}`
+      });
 
       // Add to personal cash of officer
       this.db.execute(`

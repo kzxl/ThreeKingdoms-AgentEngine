@@ -12,6 +12,7 @@ import { DatabaseService } from '../../core/database';
 import { RngService } from '../../core/rng';
 import { restoreInventoryItem } from '../../shared/inventory-movement';
 import { LOC_TO_NODE_MAP } from '../ecology-logistics/spatial-registry';
+import { postFactionEntry } from '../../shared/faction-ledger';
 
 export interface CropView {
   cropCode: string;
@@ -198,10 +199,14 @@ export class FarmService {
         [playerId, addDays(today, LEASE_DAYS), parcelId]
       );
       if (parcel.owner_id) {
-        this.db.execute(
-          'UPDATE session_factions SET treasury_cash = treasury_cash + ? WHERE faction_id = ?;',
-          [rent, parcel.owner_id]
-        );
+        postFactionEntry(this.db, {
+          factionId: parcel.owner_id,
+          gameDate: today,
+          category: 'LAND_RENT',
+          counterparty: parcel.name_vi,
+          inflow: rent,
+          memo: `Tô ruộng ${parcelId}`
+        });
       }
     });
     return this.listParcels(playerId, parcel.settlement_id, today)

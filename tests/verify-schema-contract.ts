@@ -32,7 +32,8 @@ const REQUIRED_TABLES = [
   'player_contracts',
   'intel_reports',
   'master_crops',
-  'land_parcels'
+  'land_parcels',
+  'faction_ledger'
 ];
 
 const REQUIRED_COLUMNS: Record<string, string[]> = {

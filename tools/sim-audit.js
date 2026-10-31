@@ -293,7 +293,7 @@ function auditSqliteFactionsAndSettlements() {
   // Check if session_factions and session_settlements exist in sqlite_master
   let tableCheck = [];
   try {
-    tableCheck = runSqlJson(`SELECT name FROM sqlite_master WHERE type='table' AND name IN ('session_factions', 'session_settlements', 'npc_personal_progression', 'merchant_promissory_notes', 'faction_diplomacy');`);
+    tableCheck = runSqlJson(`SELECT name FROM sqlite_master WHERE type='table' AND name IN ('session_factions', 'session_settlements', 'npc_personal_progression', 'merchant_promissory_notes', 'faction_diplomacy', 'faction_ledger');`);
   } catch (e) {
     return { passed: true, checksCount: 0, errors: [], installed: false, factionCount: 0, settlementCount: 0, progCount: 0, noteCount: 0, diploCount: 0 };
   }
@@ -305,6 +305,22 @@ function auditSqliteFactionsAndSettlements() {
 
   // 1. Audit Factions
   const factions = runSqlJson(`SELECT faction_id, treasury_cash, granary_grain FROM session_factions;`);
+  const hasFactionLedger = existingTables.has('faction_ledger');
+  if (!hasFactionLedger) {
+    checksCount++;
+    errors.push('faction_ledger table is missing; world treasury changes are not auditable');
+  }
+  const ledgerByFaction = new Map();
+  if (hasFactionLedger) {
+    for (const row of runSqlJson(`SELECT faction_id, category, inflow, outflow FROM faction_ledger;`)) {
+      const current = ledgerByFaction.get(row.faction_id) || { opening: 0, inflow: 0, outflow: 0, entries: 0 };
+      if (row.category === 'OPENING') current.opening += Number(row.inflow || 0);
+      else current.inflow += Number(row.inflow || 0);
+      current.outflow += Number(row.outflow || 0);
+      current.entries += 1;
+      ledgerByFaction.set(row.faction_id, current);
+    }
+  }
   for (const f of factions) {
     checksCount++;
     if (f.treasury_cash < 0) {
@@ -313,6 +329,18 @@ function auditSqliteFactionsAndSettlements() {
     checksCount++;
     if (f.granary_grain < 0) {
       errors.push(`Faction ${f.faction_id} has negative granary grain: ${f.granary_grain}`);
+    }
+    if (hasFactionLedger) {
+      checksCount++;
+      const ledger = ledgerByFaction.get(f.faction_id) || { opening: 0, inflow: 0, outflow: 0, entries: 0 };
+      const expected = ledger.opening + ledger.inflow - ledger.outflow;
+      if (ledger.entries === 0) {
+        errors.push(`Faction ${f.faction_id} has no faction_ledger opening row`);
+      } else if (Math.abs(expected - Number(f.treasury_cash)) > 0.01) {
+        errors.push(
+          `Faction ${f.faction_id} treasury ${f.treasury_cash} != ledger expected ${expected} (opening ${ledger.opening}, in ${ledger.inflow}, out ${ledger.outflow})`
+        );
+      }
     }
   }
 
@@ -709,6 +737,7 @@ function runAudit() {
     if (factionResult.installed && (factionResult.factionCount > 0 || factionResult.settlementCount > 0)) {
       console.log(`\n[${journalResult.installed ? 6 : 5}] GRAND STRATEGY INVARIANTS (Factions & Settlements):`);
       console.log(`    Factions Verified     : ${factionResult.factionCount}`);
+      console.log(`    World Treasury Ledger : ${factionResult.passed ? 'opening + flows match' : 'drift detected'}`);
       console.log(`    Settlements Verified  : ${factionResult.settlementCount}`);
       if (factionResult.progCount > 0) {
         console.log(`    Personal Assets Checked: ${factionResult.progCount}`);

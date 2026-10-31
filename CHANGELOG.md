@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.27.0] - 2026-10-31
+
+World economy: faction treasuries now have a double-entry ledger.
+
+### Added
+- Migration 051 creates `faction_ledger` and an `OPENING` row for every faction,
+  equal to its current treasury.
+- `src/shared/faction-ledger.ts` (`postFactionEntry`, `ensureFactionOpening`)
+  updates `session_factions.treasury_cash` and appends one ledger row in a
+  transaction. Outflow is clamped to the available treasury.
+- All faction treasury writes moved to the helper: tax pulse, tribute transfer,
+  officer reward, caravan purchase/revenue, farm rent. New rebel factions get an
+  opening row; the secession insert is `OR IGNORE` so a repeat event cannot reset
+  a rebel treasury.
+- The auditor now proves `opening + sum(inflow) − sum(outflow) = treasury_cash`
+  for every faction and fails if a treasury changed outside the ledger.
+  Invariants: 1,523.
+- `tests/verify-faction-ledger.ts` covers opening balances, a rent flow, drift
+  detection and outflow clamping.
+
+### Verification
+`npm run verify` green: 61/61 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,523 invariants, 0 discrepancies.
+
+---
+
 ## [1.26.5] - 2026-10-31
 
 Core error handling: no empty catch blocks remain.

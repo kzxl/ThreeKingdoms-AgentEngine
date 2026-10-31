@@ -20,6 +20,7 @@ import {
 } from '../economy/regional-market.service';
 import { ProgressionExpService } from '../progression/attribute-progression.service';
 import { SettlementMarketService } from '../economy/settlement-market.service';
+import { postFactionEntry } from '../../shared/faction-ledger';
 import { postCashflowEntry } from '../../shared/ledger';
 import { CaravanStatus } from '../../core/types';
 
@@ -502,14 +503,20 @@ export class CaravanLogisticsService {
     const buyerFactionId = destSettlement?.ruler_faction_id || 'FAC-HAN';
 
     this.db.transaction(() => {
-      this.db.execute(
-        `UPDATE session_factions SET treasury_cash = MAX(0, treasury_cash - ?) WHERE faction_id = ?;`,
-        [payout, buyerFactionId]
-      );
-      this.db.execute(
-        `UPDATE session_factions SET treasury_cash = treasury_cash + ? WHERE faction_id = ?;`,
-        [payout, caravan.owner_faction_id]
-      );
+      postFactionEntry(this.db, {
+        factionId: buyerFactionId,
+        category: 'CARAVAN_PURCHASE',
+        counterparty: caravan.caravan_name || caravan.caravan_id,
+        outflow: payout,
+        memo: `Chi trả thương đoàn ${caravan.caravan_id}`
+      });
+      postFactionEntry(this.db, {
+        factionId: caravan.owner_faction_id,
+        category: 'CARAVAN_REVENUE',
+        counterparty: caravan.to_settlement_id,
+        inflow: payout,
+        memo: `Thu tiền bán hàng thương đoàn ${caravan.caravan_id}`
+      });
     });
   }
 
