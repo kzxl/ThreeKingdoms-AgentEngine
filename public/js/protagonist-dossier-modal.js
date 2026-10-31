@@ -236,8 +236,10 @@
         <!-- Header -->
         <div class="modal-header" style="background: rgba(15, 23, 42, 0.98); border-bottom: 1px solid rgba(245, 158, 11, 0.3); padding: 14px 20px;">
           <div style="display: flex; align-items: center; gap: 14px;">
-            <div style="width: 48px; height: 48px; border-radius: 8px; background: linear-gradient(135deg, #b45309, #78350f); border: 2px solid #fbbf24; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 900; color: #fef08a; text-shadow: 0 2px 4px rgba(0,0,0,0.6);">
-              梁
+            <div class="dossier-portrait-frame">
+              ${p.portrait_url
+                ? `<img class="dossier-portrait-img" src="${p.portrait_url}" alt="${p.name || 'Lương Diễn'}" loading="lazy" />`
+                : `<span class="dossier-portrait-seal">梁</span>`}
             </div>
             <div>
               <div style="display: flex; align-items: center; gap: 8px;">
@@ -256,6 +258,13 @@
             </div>
           </div>
           <button class="btn-modal-close" onclick="closeProtagonistDossierModal()">&times;</button>
+        </div>
+
+        <!-- Illustration slot: filled from player_state.illustration_url -->
+        <div class="dossier-illustration-frame is-inset">
+          ${p.illustration_url
+            ? `<img class="dossier-illustration-img" src="${p.illustration_url}" alt="${p.name || 'Lương Diễn'}" loading="lazy" />`
+            : `<div class="dossier-illustration-empty">${isEn ? 'Illustration slot — art can be added later' : 'Khung ảnh minh hoạ — có thể bổ sung sau'}</div>`}
         </div>
 
         <!-- Vitals Telemetry Row -->

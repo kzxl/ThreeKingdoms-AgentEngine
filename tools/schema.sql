@@ -32,7 +32,14 @@ CREATE TABLE IF NOT EXISTS campaign_legacy (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 1b. Deterministic Identifier Sequences (per id scope)
+-- 1b. DB-driven POI scene registry (populated by migration 033)
+CREATE TABLE IF NOT EXISTS master_poi_scenes (
+    poi_name TEXT PRIMARY KEY,
+    location_id TEXT NOT NULL,
+    scene_key TEXT NOT NULL
+);
+
+-- 1c. Deterministic Identifier Sequences (per id scope)
 CREATE TABLE IF NOT EXISTS id_sequence (
     scope      TEXT PRIMARY KEY,
     next_value INTEGER NOT NULL DEFAULT 0
@@ -73,7 +80,9 @@ CREATE TABLE IF NOT EXISTS player_state (
     fame INTEGER NOT NULL DEFAULT 500 CHECK (fame >= 0),
     credibility INTEGER NOT NULL DEFAULT 50 CHECK (credibility >= 0 AND credibility <= 100),
     virtue INTEGER NOT NULL DEFAULT 50 CHECK (virtue >= 0 AND virtue <= 100),
-    militia INTEGER NOT NULL DEFAULT 0 CHECK (militia >= 0)
+    militia INTEGER NOT NULL DEFAULT 0 CHECK (militia >= 0),
+    portrait_url TEXT,
+    illustration_url TEXT
 );
 
 -- 3. Player Skills Ladder
@@ -199,6 +208,8 @@ CREATE TABLE IF NOT EXISTS npc_state (
     management_exp INTEGER NOT NULL DEFAULT 0,
     craft_exp INTEGER NOT NULL DEFAULT 0,
     is_alive INTEGER NOT NULL DEFAULT 1,
+    portrait_url TEXT,
+    illustration_url TEXT,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

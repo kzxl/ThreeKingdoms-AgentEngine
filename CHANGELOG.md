@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.20.0] - 2026-10-31
+
+DB-first character dossiers, illustration slots and POI registry.
+
+### Changed
+- `master_characters`, `npc_state` and `player_state` gain `portrait_url` and
+  `illustration_url` (migration 032). The NPC dossier prefers roster
+  personality/motivation over the narrative hardcodes, so DB rows are the
+  primary source; narrative cases only fill fields the roster lacks.
+- Both dossiers render a portrait frame (image or seal fallback) and a
+  full-width illustration slot. An empty slot says art can be added later, so a
+  future art pipeline only writes URLs into the database.
+- Migration 033 creates `master_poi_scenes`, seeded from all 133
+  `master_locations.sub_locations` entries with the scene key the runtime should
+  use. `sim-web` now reads this registry first and keeps the keyword chain only
+  as a fallback.
+
+### Verification
+`npm run verify` green: 43/43 suites (new `verify-dossier-db.ts`), 28/28
+contracts, 8/8 write smokes; `npm run audit` 1,374 invariants.
+
+---
+
 ## [1.19.0] - 2026-10-31
 
 Unknown POIs keep their identity.

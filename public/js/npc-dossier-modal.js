@@ -567,9 +567,11 @@
         <div class="modal-body" style="padding: 16px; display: flex; flex-direction: column; gap: 12px;">
           <!-- 1. Fixed Header: Identity, Location, Proximity & Kizuna Aura -->
           <div style="display: grid; grid-template-columns: 80px 1fr 1fr; gap: 16px; background: rgba(0, 0, 0, 0.28); padding: 12px 14px; border: 1px solid var(--border-neutral); border-radius: var(--radius-sm);">
-            <!-- Avatar Portrait -->
-            <div style="width: 80px; height: 80px; background: #0c0f18; border: 2px solid ${dossier.intelLevel >= 4 ? '#f59e0b' : 'var(--brand-primary)'}; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 34px; font-weight: bold; color: var(--brand-primary); font-family: 'Noto Serif SC', 'Songti SC', serif; box-shadow: 0 0 14px rgba(245, 158, 11, 0.15);">
-              ${dossier.avatarChar}
+            <!-- Avatar Portrait (DB-driven, illustration-ready) -->
+            <div class="dossier-portrait-frame ${dossier.intelLevel >= 4 ? 'is-unlocked' : ''}">
+              ${dossier.portraitUrl
+                ? `<img class="dossier-portrait-img" src="${dossier.portraitUrl}" alt="${primaryName}" loading="lazy" />`
+                : `<span class="dossier-portrait-seal">${dossier.avatarChar}</span>`}
             </div>
 
             <!-- Identity Core -->
@@ -620,6 +622,13 @@
                 </div>
               </div>
             </div>
+          </div>
+
+          <!-- Illustration slot: filled from master_characters.illustration_url -->
+          <div class="dossier-illustration-frame">
+            ${dossier.illustrationUrl
+              ? `<img class="dossier-illustration-img" src="${dossier.illustrationUrl}" alt="${primaryName}" loading="lazy" />`
+              : `<div class="dossier-illustration-empty">${isEn ? 'Illustration slot — art can be added later' : 'Khung ảnh minh hoạ — có thể bổ sung sau'}</div>`}
           </div>
 
           <!-- 2. ROTK 3-Tab Bar -->

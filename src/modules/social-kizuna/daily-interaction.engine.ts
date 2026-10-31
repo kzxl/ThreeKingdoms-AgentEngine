@@ -54,6 +54,8 @@ export interface NpcProfile {
   positionVi?: string;
   positionEn?: string;
   age?: number;
+  portraitUrl?: string | null;
+  illustrationUrl?: string | null;
   war: number;
   int: number;
   ldr: number;
@@ -102,6 +104,8 @@ export interface NpcDossierView {
   positionVi: string;
   positionEn: string;
   age?: number;
+  portraitUrl?: string | null;
+  illustrationUrl?: string | null;
   baselineLocation?: string;
   locationVi: string;
   locationEn: string;
@@ -386,6 +390,13 @@ export class DailyInteractionEngine {
     const positionVi = char?.baseline_position_vi || state?.assigned_role || 'Hào Kiệt Bản Địa';
     const positionEn = POSITION_EN_MAP[positionVi] || char?.baseline_position_en || positionVi;
     const age = Number(state?.age ?? char?.baseline_age ?? 30);
+    const portraitUrl = state?.portrait_url || char?.portrait_url || null;
+    const illustrationUrl = state?.illustration_url || char?.illustration_url || null;
+
+    // The database is the primary source: narrative fallbacks above only fill
+    // fields the roster does not carry.
+    if (char?.personality) personality = String(char.personality);
+    if (char?.motivation) motivation = String(char.motivation);
 
     return {
       npcId,
@@ -400,6 +411,8 @@ export class DailyInteractionEngine {
       positionVi,
       positionEn,
       age,
+      portraitUrl,
+      illustrationUrl,
       war,
       int,
       ldr,
@@ -654,6 +667,8 @@ export class DailyInteractionEngine {
       positionVi: profile.positionVi || 'Hào Kiệt Bản Địa',
       positionEn: profile.positionEn || 'Local Champion',
       age: profile.age,
+      portraitUrl: profile.portraitUrl || null,
+      illustrationUrl: profile.illustrationUrl || null,
       baselineLocation: profile.baselineLocation || 'LOC-0001',
       locationVi: profile.locationVi || 'LOC-0001',
       locationEn: profile.locationEn || profile.baselineLocation || 'LOC-0001',

@@ -1528,6 +1528,51 @@ function getLiveSceneRelations() {
 }
 
 // Dynamic Scene Context Engine: Generates contextual NPC, transparent D20 formulas & 4 tactical choices
+let poiSceneRegistryCache = { at: 0, rows: [] };
+
+function normalizePoiName(value) {
+  return String(value || '')
+    .normalize('NFC')
+    .toLowerCase()
+    .replace(/\s*\([^)]*\)/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Reads the DB-driven POI registry (migration 033). Unknown names return null
+ * and fall back to the legacy keyword chain.
+ */
+function resolvePoiSceneKey(subLocation) {
+  const name = normalizePoiName(subLocation);
+  if (!name) return null;
+  try {
+    if (Date.now() - poiSceneRegistryCache.at > 30000) {
+      poiSceneRegistryCache = {
+        at: Date.now(),
+        rows: runSqlJson('SELECT poi_name, scene_key FROM master_poi_scenes;')
+      };
+    }
+  } catch {
+    poiSceneRegistryCache = { at: Date.now(), rows: [] };
+  }
+
+  let best = null;
+  let bestLength = 0;
+  for (const row of poiSceneRegistryCache.rows) {
+    const poi = normalizePoiName(row.poi_name);
+    if (!poi) continue;
+    if (poi === name) return row.scene_key;
+    if (name.includes(poi) || poi.includes(name)) {
+      if (poi.length > bestLength) {
+        best = row;
+        bestLength = poi.length;
+      }
+    }
+  }
+  return best ? best.scene_key : null;
+}
+
 function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction = null, lastNarrative = null) {
   const player = runSqlJson(`SELECT * FROM player_state LIMIT 1;`)[0] || {};
   const meta = runSqlJson(`SELECT * FROM campaign_meta LIMIT 1;`)[0] || {};
@@ -1538,7 +1583,10 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
   // masquerade as Vườn Đào.
   let currentLocKey = (subLocation || '').trim() || 'Ngoại Ô Bản Địa';
   const subLower = (subLocation || '').toLowerCase();
-  if (subLower.includes('thiết điếm') || subLower.includes('lò rèn') || subLower.includes('smithy') || subLower.includes('forge')) {
+  const dbSceneKey = resolvePoiSceneKey(subLocation);
+  if (dbSceneKey) {
+    currentLocKey = dbSceneKey;
+  } else if (subLower.includes('thiết điếm') || subLower.includes('lò rèn') || subLower.includes('smithy') || subLower.includes('forge')) {
     currentLocKey = 'Thiết Điếm Trác Huyện';
   } else if (subLower.includes('tửu quán') || subLower.includes('quán rượu') || subLower.includes('tavern')) {
     currentLocKey = 'Tửu Quán Trác Huyện';

@@ -72,7 +72,9 @@ CREATE TABLE IF NOT EXISTS master_characters (
     core_associates TEXT, -- JSON array of NPC IDs
     talents TEXT,         -- JSON array of talents
     bio_vi TEXT,
-    bio_en TEXT
+    bio_en TEXT,
+    portrait_url TEXT,
+    illustration_url TEXT
 );
 
 -- 4. Master Strategic Citadels & Geographical Nodes
