@@ -9,6 +9,9 @@
 import { DatabaseService } from '../../core/database';
 import { syncProgressProjection } from '../../shared/projection-sync';
 import { isTurnModuleDone, markTurnModuleDone } from '../../shared/turn-ledger';
+import { postDoubleEntry } from '../../shared/ledger';
+import { ACCOUNT_CODES } from '../../shared/account-codes';
+import { nextSequentialId } from '../../shared/id-generator';
 import {
   IFeatureModule,
   ModuleContext,
@@ -286,12 +289,33 @@ export class EcologyLogisticsModule implements IFeatureModule {
       const bounty = stronghold.bounty_reward;
       const totalReward = lootCash + bounty;
 
-      // Update player cash and fatigue
+      // Update player cash and fatigue. The reward is booked through the ledger
+      // so a bandit victory cannot create cash without a matching journal pair.
       this.db.transaction(() => {
-        this.db.execute(
-          `UPDATE player_state SET liquid_cash = liquid_cash + ?, fatigue = MIN(100, fatigue + 30) WHERE player_id = ?;`,
-          [totalReward, characterId]
+        const current = this.db.queryOne<{ liquid_cash: number; safe_cash: number }>(
+          'SELECT liquid_cash, safe_cash FROM player_state WHERE player_id = ?;',
+          [characterId]
         );
+        const safeCash = Number(current?.safe_cash || 0);
+        const newCash = Number(current?.liquid_cash || 0) + totalReward;
+
+        this.db.execute(
+          `UPDATE player_state SET liquid_cash = ?, fatigue = MIN(100, fatigue + 30) WHERE player_id = ?;`,
+          [newCash, characterId]
+        );
+
+        const txnId = nextSequentialId(this.db, 'cashflow_ledger', 'TXN', gameDate);
+        postDoubleEntry(this.db, {
+          txnId,
+          gameDate,
+          counterparty: stronghold.name_vi,
+          category: 'Combat/BanditLoot',
+          inflow: totalReward,
+          balance: newCash + safeCash,
+          memo: `Chiến lợi phẩm và thưởng quân công ${stronghold.name_vi}`,
+          debitAccount: ACCOUNT_CODES.cashMobile,
+          creditAccount: ACCOUNT_CODES.bountyIncome
+        });
 
         this.db.execute(
           `UPDATE bandit_strongholds SET status = 'SUBDUED', plundered_wealth = 0 WHERE stronghold_id = ?;`,

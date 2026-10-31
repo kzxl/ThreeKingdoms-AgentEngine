@@ -8,20 +8,14 @@
 
 import { Router, sendJson, RouteContext } from '../../server/router';
 import { DatabaseService } from '../../core/database';
-import { nextId } from '../../shared/id-generator';
-import { getGameDate } from '../../shared/game-clock';
 import { ModuleRegistry } from '../../core/module-registry';
 import { EcologyLogisticsModule } from './ecology-logistics.module';
-import { EconomyModule } from '../economy/economy.module';
-import { GUARD_TIER_CONFIGS } from './caravan-logistics.service';
+import { CaravanLogisticsService, GUARD_TIER_CONFIGS } from './caravan-logistics.service';
 import { chargePlayerAction } from '../../shared/action-time';
+import { requestIdempotencyKey, findIdempotentResult, recordAction } from '../../shared/action-journal';
 
 function getEcologyModule(): EcologyLogisticsModule | undefined {
   return ModuleRegistry.getInstance().get<EcologyLogisticsModule>('module.ecology-logistics');
-}
-
-function getEconomyModule(): EconomyModule | undefined {
-  return ModuleRegistry.getInstance().get<EconomyModule>('module.economy');
 }
 
 function getDb(): DatabaseService {
@@ -94,18 +88,44 @@ export function registerEcologyRoutes(router: Router): void {
         return;
       }
 
+      const grain = parseFloat(String(grainAmount));
+      if (isNaN(grain) || grain <= 0) {
+        sendJson(res, 400, { success: false, error: 'grainAmount must be a positive number.' });
+        return;
+      }
+
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
+
       const ecology = getEcologyModule();
       if (!ecology) {
         sendJson(res, 500, { success: false, error: 'EcologyLogisticsModule not initialized.' });
         return;
       }
 
+      const time = chargePlayerAction(
+        db.path,
+        'ADMIN_ACTION',
+        null,
+        `Grain relief ${settlementId}`
+      );
       const meta = getCampaignMeta(db);
-      const result = ecology.dispatchGrainRelief(settlementId, parseFloat(grainAmount), meta.activeTurn, meta.currentDate);
+      const result = ecology.dispatchGrainRelief(settlementId, grain, meta.activeTurn, meta.currentDate);
 
-      sendJson(res, 200, { success: true, result });
+      const response = { result, time };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'ECOLOGY_RELIEF',
+        payload: { settlementId, grainAmount: grain },
+        result: response
+      });
+      sendJson(res, 200, { success: true, ...response, idempotent: false });
     } catch (err: any) {
-      sendJson(res, 400, { success: false, error: err.message });
+      sendJson(res, err.statusCode || 400, { success: false, error: err.message, code: err.code });
     }
   };
 
@@ -139,9 +159,8 @@ export function registerEcologyRoutes(router: Router): void {
         toSettlementId,
         cargoItemCode,
         cargoQuantity,
-        guardTroops = 30,
-        caravanName,
-        ownerFactionId = 'FAC-LIANG-CLAN'
+        guardTier = 'VETERAN',
+        playerId = 'PLY-0001'
       } = ctx.body || {};
 
       if (!fromSettlementId || !toSettlementId || !cargoItemCode || !cargoQuantity) {
@@ -164,7 +183,12 @@ export function registerEcologyRoutes(router: Router): void {
         return;
       }
 
-      const cargoValue = Math.round(qty * item.baseline_peace_price);
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
 
       const time = chargePlayerAction(
         db.path,
@@ -173,47 +197,32 @@ export function registerEcologyRoutes(router: Router): void {
         `Dispatch caravan ${fromSettlementId} -> ${toSettlementId}`
       );
 
-      const generatedCaravanId = nextId(db, 'caravan', 'CARAVAN', getGameDate(db));
-      const name = caravanName || `Trù Vận Đội (${fromSettlementId} -> ${toSettlementId})`;
-      const meta = getCampaignMeta(db);
-
-      // Distance decay calculation if EconomyModule available
-      const economy = getEconomyModule();
-      const estimatedDecay = economy ? economy.calculateDistanceDecay(cargoValue, 250) : { deliveredCash: cargoValue, lostInTransit: 0 };
-
-      db.execute(
-        `INSERT INTO trade_caravans (
-          caravan_id, caravan_name, owner_faction_id, from_settlement_id, to_settlement_id,
-          cargo_item_code, cargo_quantity, cargo_value_qian, guard_troops, route_progress,
-          status, created_turn
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0.0, 'EN_ROUTE', ?);`,
-        [
-          generatedCaravanId,
-          name,
-          ownerFactionId,
+      // Delegate to the one caravan writer: it checks stock, deducts the cargo,
+      // charges the guard fee through the ledger and marks the caravan as
+      // player-dispatched so it can be claimed on arrival.
+      const result = CaravanLogisticsService.getInstance().dispatchCaravan(
+        {
+          cargoItemCode,
+          cargoQuantity: qty,
           fromSettlementId,
           toSettlementId,
-          cargoItemCode,
-          qty,
-          cargoValue,
-          parseInt(guardTroops, 10) || 30,
-          meta.activeTurn
-        ]
+          guardTier
+        },
+        playerId
       );
 
-      sendJson(res, 200, {
-        success: true,
-        caravanId: generatedCaravanId,
-        caravanName: name,
-        cargoItemCode,
-        cargoItemName: item.name_vi,
-        cargoQuantity: qty,
-        cargoValueQian: cargoValue,
-        estimatedDeliveredValue: estimatedDecay.deliveredCash,
-        estimatedLossRate: `${Math.round((estimatedDecay.lostInTransit / cargoValue) * 100)}%`,
-        message: `Đã xuất phát ${name} vận tải ${qty} ${item.name_vi} (Tổng giá trị ${cargoValue} quan).`,
+      const response = {
+        ...result,
+        cargoValueQian: result.cargoCostBasis,
         time
+      };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'ECOLOGY_TRANSPORT',
+        payload: { fromSettlementId, toSettlementId, cargoItemCode, cargoQuantity: qty, guardTier, playerId },
+        result: response
       });
+      sendJson(res, 200, { success: true, ...response, idempotent: false });
     } catch (err: any) {
       sendJson(res, err.statusCode || 400, { success: false, error: err.message, code: err.code });
     }
@@ -259,18 +268,38 @@ export function registerEcologyRoutes(router: Router): void {
         return;
       }
 
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
+
       const ecology = getEcologyModule();
       if (!ecology) {
         sendJson(res, 500, { success: false, error: 'EcologyLogisticsModule not initialized.' });
         return;
       }
 
+      const time = chargePlayerAction(
+        db.path,
+        'COMBAT_ENCOUNTER',
+        null,
+        `Attack stronghold ${strongholdId}`
+      );
       const meta = getCampaignMeta(db);
       const result = ecology.attackBanditStronghold(characterId, strongholdId, meta.activeTurn, meta.currentDate);
 
-      sendJson(res, 200, { success: true, result });
+      const response = { result, time };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'BANDIT_STRONGHOLD_ASSAULT',
+        payload: { strongholdId, characterId },
+        result: response
+      });
+      sendJson(res, 200, { success: true, ...response, idempotent: false });
     } catch (err: any) {
-      sendJson(res, 400, { success: false, error: err.message });
+      sendJson(res, err.statusCode || 400, { success: false, error: err.message, code: err.code });
     }
   });
 
