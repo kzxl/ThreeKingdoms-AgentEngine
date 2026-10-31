@@ -6,7 +6,7 @@ The `ThreeKingdoms-AgentEngine` has been upgraded to an industrial-grade, determ
 - **Human & Agent View**: Auto-projected Markdown (`game/PROGRESS.md`) & Live Tactical Web UI (`http://localhost:3300`).
 - **Core Engine Skeleton**: Git tracks rules, master seed data (`game/master/`), tools, and tests. Playthrough data is completely isolated in local SQLite and excluded from Git by `.gitignore`.
 - **Validation Pipeline**: Full Simulation Core (`engine/sim-core.js`) with condition checking, atomic SQLite transactions, and idempotency protection.
-- **Independent Auditor**: `tools/sim-audit.js` verifies 1,523 invariants in eight blocks directly against SQLite.
+- **Independent Auditor**: `tools/sim-audit.js` verifies 1,546 invariants in eight blocks directly against SQLite.
 - **P0 foundation (1.23.1–1.23.4)**: server-authoritative action time
   (`src/shared/action-time.ts`), enterprise P&L with debt
   (`engine/business-economics.js`), one career-path resolver

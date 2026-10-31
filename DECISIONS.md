@@ -263,3 +263,33 @@ This document records the architectural choices, rationale, and alternatives con
 - **Consequences**:
   - Positive: A retried request cannot move troops twice, declare the same war twice or settle a caravan twice.
   - Negative: Callers that want a deliberate repeat must omit the key; the journal records the repeat with a null key.
+
+---
+
+## ADR-024: Settlement Treasuries Join the World Ledger (2026-10-31)
+
+- **Context**: Faction treasuries had a ledger after 051, but settlement treasuries could still be looted or seeded without a counterpart. The auditor only checked that they were non-negative.
+- **Decision**: Migration 052 adds `settlement_ledger`; `postSettlementEntry` owns every settlement treasury change; the audit proves `opening + inflow − outflow = treasury_cash`.
+- **Consequences**:
+  - Positive: Loot, local revenue and seeded cash are auditable end to end.
+  - Negative: A new settlement or treasury mutation must seed/use the ledger; a direct update is reported as drift.
+
+---
+
+## ADR-025: Month Close Is Atomic per World Module (2026-10-31)
+
+- **Context**: World modules ran outside the core batch; a module failure aborted the close by design, but writes made before the throw were not rolled back as one unit, and AI war failure was only logged.
+- **Decision**: `engine/world-transaction.js` wraps NPC lifecycle, politics, ecology and AI war each in one DatabaseService transaction. A throw rolls back that module; AI war errors now abort the close instead of being skipped.
+- **Consequences**:
+  - Positive: A failed module leaves no partial writes; retry is safe and `world_turn_ledger` skips completed modules.
+  - Negative: This is per-module atomicity, not one transaction across the core batch and every module; the retry ledger remains the cross-module contract.
+
+---
+
+## ADR-026: Day Phases Are an Administrative Resource (2026-10-31)
+
+- **Context**: Every action spent whole days, so bookkeeping actions (accepting a quest, paying a bill, accepting a contract) were free and could be repeated without any calendar cost.
+- **Decision**: A day has three phases (morning/afternoon/evening). `ADMIN_ACTION` costs one phase; field actions keep whole-day costs and reset the phase. `campaign_meta.current_phase` is persisted by migration 053.
+- **Consequences**:
+  - Positive: Administrative work has a small, real time cost and three such actions fill a day; field actions remain chunky by design.
+  - Negative: Only administrative actions use phases for now; a future pass can move social or market actions to phases if balance supports it.
