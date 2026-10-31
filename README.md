@@ -137,7 +137,7 @@ The simulation is partitioned into autonomous feature modules adhering to **Univ
 | **Progression & Ranks** | 4-Tier societal progression, skill/attribute ladders, and five real career paths (Martial, Merchant, Scholar, Artisan, Lineage) whose active-path modifiers feed EXP, trade, crafting and clan prestige. | `/api/progression/*`, `/api/quests/*` |
 | **Agent Bridge & MCP** | Continuous knowledge harvesting: records episodic memory reflections after major decisions; native stdio MCP tools for AI Agents. | `/api/agent/prompt`, `/api/agent/logs` |
 
-### Cross-cutting rules (1.23.x–1.24.x)
+### Cross-cutting rules (1.23.x–1.25.x)
 
 - **Action time** — every player mutation that consumes a day charges it on the
   server (`src/shared/action-time.ts`) before its service runs. `/api/time/spend`
@@ -154,10 +154,18 @@ The simulation is partitioned into autonomous feature modules adhering to **Univ
 - **Contract board** — migration 045 posts three rotating delivery contracts per
   settlement per month. Delivery consumes real stock; expiry creates a penalty
   obligation.
+- **Combat consequences** — migration 046 adds injuries that reduce effective
+  WAR, and NPC officers can die permanently (business/faction roster cleared).
+  One month of rest heals active injuries.
+- **Scenario identity** — `config/scenario-seeds.json` gives 184/190/200/208
+  different holdings, wars and allies; 190 and 208 are no longer copies of 184.
+- **Intel reports** — migration 047 posts monthly price/garrison rumors with
+  confidence; verifying one costs two exploration days and may expose a false
+  claim.
 - **Career paths** — `engine/career-paths.js` computes the five scores once; only
   the active path's modifiers apply, and the API displays the same numbers.
 - **Data repairs** — broken seed text and legacy currency labels are fixed by
-  numbered idempotent migrations (042–045), not ad-hoc SQL.
+  numbered idempotent migrations (042–047), not ad-hoc SQL.
 
 ---
 
@@ -301,13 +309,13 @@ npm install
 # Master schema + lore into saves/session.db and saves/master.db (needs the sqlite3 CLI)
 node tools/ingest-markdown-master.js
 
-# Session schema, seed, and migrations 001–045
+# Session schema, seed, and migrations 001–047
 node tools/sim-db.js init
 
 npm start
 ```
 
-`sim-db init` applies migrations 001–045 to the session database.
+`sim-db init` applies migrations 001–047 to the session database.
 
 `ingest-markdown-master.js` rewrites the `master_*` tables in `saves/session.db`; do not run it
 against a live save without a backup. `sim-db init` applies migrations automatically.
@@ -316,13 +324,13 @@ against a live save without a backup. `sim-db init` applies migrations automatic
 
 | Command | Action | Description |
 | :--- | :--- | :--- |
-| `npm run verify` | **Full Gate** | Runs typecheck → architecture guard → client syntax → UI ratchet → anti-slop lint → client API contract → route-shadow report → 53 verification suites → API contract check → write-path smoke. |
+| `npm run verify` | **Full Gate** | Runs typecheck → architecture guard → client syntax → UI ratchet → anti-slop lint → client API contract → route-shadow report → 55 verification suites → API contract check → write-path smoke. |
 | `npm run lint:api` | Architecture | Fails when the TS client calls an `/api/*` path that neither the Router nor the gateway serves (known gaps are reasoned in `tools/client-api-allowlist.json`). |
 | `npm run lint:slop` | Architecture | Enforces AS-05 (no emoji), AS-06 (no gradients), neutral elevation, two font families; ratchets the font-size scale. |
 | `npm run lint:ui` | Architecture | Ratchets legacy UI debt (button classes, class usages, inline styles, native confirms); new surfaces should use `src/client/core/ui` (`window.UI`). |
 | `npm run lint:client` | Architecture | Parses every classic client script (`public/app.js`, `public/js/*.js`); one parse error disables a whole UI file. |
 | `npm run routes:shadow` | Architecture | Fails if any legacy `sim-web.js` handler is already served by the modular Router (dead code). |
-| `npm test` | Verification | Runs all 53 suites (4 legacy self-sandboxed + 49 TypeScript `verify-*.ts`) against isolated DB copies. |
+| `npm test` | Verification | Runs all 55 suites (4 legacy self-sandboxed + 51 TypeScript `verify-*.ts`) against isolated DB copies. |
 | `npm run smoke:write` | Verification | Boots the app on a sandbox DB and exercises 8 write paths (trade, loans, equip/unequip, idempotency, input rejection, post-write audit). |
 | `npm run lint` | Architecture | Ratcheting guard over `tools/arch-baseline.json`: SQLite-CLI spawns, SQL interpolation, unseeded RNG, silent catches, the `current_date` keyword trap, legacy UI growth. |
 | `npm run golden:verify` | API Contract | Boots the real composition root and diffs 28 read-only endpoints against `tests/golden/api-shape.json`. |

@@ -163,3 +163,33 @@ This document records the architectural choices, rationale, and alternatives con
 - **Consequences**:
   - Positive: The game has infinite low-authoring content tied to the local economy; delivery and expiry both have real consequences.
   - Negative: Offers are generated, not hand-written, so narrative variety is limited until a content pass adds templates.
+
+---
+
+## ADR-014: Combat Leaves Permanent Marks (2026-10-31)
+
+- **Context**: Single combat floored health at 20 and pre-battle enemy death was only a sentence. A duel had no lasting cost beyond fatigue, and a named officer could "die" and remain in the roster.
+- **Decision**: Migration 046 adds `conditions`. Injuries reduce `effectiveWar` until the next month close; NPC death sets `is_alive = 0`, clears the business assignment and removes the faction officer row. Death chances are context-specific (sparring 0, arena 0, caravan/pre-battle small).
+- **Consequences**:
+  - Positive: ROTK officers become a scarce, mortal resource; wounds create a reason to rest or avoid a fight.
+  - Negative: A seeded campaign can lose a favourite officer permanently; tests and saves must read `is_alive` rather than assume the roster is static.
+
+---
+
+## ADR-015: Scenario Seeds Carry War and Alliance (2026-10-31)
+
+- **Context**: 184 and 190 used the same seed, and 208 opened at war with the Han court regardless of the historical coalition. Choosing a scenario changed the date and little else.
+- **Decision**: `config/scenario-seeds.json` gains `allies` next to `wars`; both appliers write `WAR`/`ALLY` diplomacy rows. The four dates now have distinct holdings, enemies and allies.
+- **Consequences**:
+  - Positive: The start date changes the strategic problem, not only the calendar.
+  - Negative: The seed file is now balance data; changing it affects every new campaign and needs a test update (`verify-scenario-seed`).
+
+---
+
+## ADR-016: Intel Is a Report, Not a Database Read (2026-10-31)
+
+- **Context**: The UI could read exact prices and garrisons, so scouting had no value and every market was transparent.
+- **Decision**: Migration 047 adds `intel_reports`. Monthly claims carry confidence and error; `POST /api/intel/verify` costs two exploration days and reveals the truth, with a 20% error threshold marking a claim false.
+- **Consequences**:
+  - Positive: Information becomes a resource and a reason to spend days; false reports create real planning risk.
+  - Negative: Players who ignore the intel board are not blocked, just less informed; the UI must keep the section visible.

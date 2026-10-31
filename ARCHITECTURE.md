@@ -72,6 +72,8 @@ All dynamic campaign state is maintained in `saves/session.db` using the schema 
 11. **`player_skills`, `npc_skills` & `master_skills`**: Progression ladders. Player skill display names are resynced from the master catalog by migration 043.
 12. **`obligations`**: Periodic tax/fee bills with a due date, status, breakdown and penalty (migration 044).
 13. **`contract_offers` & `player_contracts`**: Rotating delivery board and accepted contracts (migration 045).
+14. **`conditions`**: Persistent injuries with combat penalty and recovery (migration 046).
+15. **`intel_reports`**: Monthly price/garrison claims with confidence and verification (migration 047).
 
 ---
 
@@ -135,7 +137,7 @@ millisecond.
 ### 6.3 Versioned data migrations
 
 `tools/migrations/` holds idempotent migrations applied inside a transaction and
-recorded in `schema_migrations` (45 migrations, through `045-contract-board`). New playthrough instances
+recorded in `schema_migrations` (47 migrations, through `047-intel-reports`). New playthrough instances
 are brought to a known data state with `npm run migrate`; `npm run migrate:status` lists
 pending work. Migrations also own data repairs that SQL cannot express safely at the
 read path: 042 adds `businesses.tier/debt`, 043 repairs legacy text and currency labels.
@@ -150,7 +152,7 @@ not require editing that test.
 | :--- | :--- | :--- |
 | Types | `npm run typecheck` | `strict` TypeScript across `src/`, `tests/`, `vite.config.ts`. |
 | Architecture | `npm run lint` | Ratchet over `tools/arch-baseline.json`; debt may only shrink. |
-| Behaviour | `npm test` | 53 suites (4 legacy + 49 modern); each modern suite runs on an isolated DB copy and projections are restored afterwards. |
+| Behaviour | `npm test` | 55 suites (4 legacy + 51 modern); each modern suite runs on an isolated DB copy and projections are restored afterwards. |
 | API contract | `npm run golden:verify` | 28 read-only endpoints: status code, response shape, behavioural assertions. |
 | Write paths | `npm run smoke:write` | 8 HTTP write paths plus a post-write audit on a sandbox database. |
 | Invariants | `npm run audit` | 1,493 SQLite invariants (ledger parity, inventory conservation, projection sync, world/life-sim/clock blocks). |
@@ -310,8 +312,58 @@ per month from the settlement's surplus/deficit pool.
 2. World modules (NPC, politics, ecology, caravans).
 3. `processDue` + next-month tax (044 bridge).
 4. Contract expiry + next-month offers (045 bridge).
-5. Fame decay, arrivals, bankruptcy, retainer loyalty, victory check.
+5. Condition recovery (046 bridge): one month clears active injuries.
+6. Fame decay, arrivals, bankruptcy, retainer loyalty, victory check.
 
-The report returned by `GameplayManager.closeMonth` carries `obligations` and
-`contracts`, so the UI and tests read the same summary the player sees.
+The report returned by `GameplayManager.closeMonth` carries `obligations`,
+`contracts` and `conditionsRecovered`, so the UI and tests read the same summary
+the player sees.
+
+---
+
+## 12. RPG & ROTK Layer (1.25.x)
+
+### 12.1 Injuries, death and recovery
+
+Migration 046 creates `conditions`. `ConditionService` records a wound with
+severity 1–3, a combat penalty (3/6/9) and a recovery timer. The duel profile
+subtracts `getCombatPenalty` from `effectiveWar`, so a wounded officer really
+fights worse.
+
+- Single combat consequences: sparring 8% minor injury; arena 30% severity 1–2;
+  caravan defence 25% winner injury / 45% loser injury. A caravan win has a 4%
+  chance to kill the bandit chief; a loss has a 1% player-death chance (heir
+  succession or `DEFEATED`).
+- Pre-battle champion duels kill the enemy officer for real and wound the
+  surviving loser.
+- NPC death sets `npc_state.is_alive = 0`, clears the business assignment and
+  removes the `faction_officers` row; the master catalog keeps the record.
+- One month of rest clears active injuries; `GET /api/conditions` exposes the
+  list and the current penalty.
+
+### 12.2 Scenario identity
+
+`config/scenario-seeds.json` differentiates the four start dates with
+`playerSettlements`, `wars` and `allies`. Both appliers (`engine/scenario-seed.js`
+and the instance bootstrap) write `relation_state = 'WAR'` or `'ALLY'` and skip
+factions that the current world does not have.
+
+| Scenario | Holdings | War | Ally |
+| :--- | :--- | :--- | :--- |
+| 184 Yellow Turban | Zhuo | Yellow Turbans | — |
+| 190 Coalition | Zhuo | Dong Zhuo | Cao Cao |
+| 200 Guandu | Zhuo, Pingyuan | Yuan Shao | — |
+| 208 Red Cliffs | Zhuo, Pingyuan, Xuchang | Cao Cao | Sun Jian |
+
+### 12.3 Intel reports
+
+Migration 047 creates `intel_reports`. Each settlement posts three monthly
+reports (two price claims, one garrison claim) with a claim error of ±25–30% and
+a confidence of 0.4–0.9.
+
+- `GET /api/intel` lists open reports; `POST /api/intel/verify` charges two
+  exploration days and reveals the actual value.
+- A claim more than 20% away from the truth is `isFalse`; a report can only be
+  verified once.
+- The quest modal renders an **Intel** section with a Verify button.
 
