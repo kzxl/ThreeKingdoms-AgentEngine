@@ -15,6 +15,7 @@ import { ProfessionsModule } from './professions.module';
 import { SkillService } from '../progression/skill.service';
 import { chargePlayerAction } from '../../shared/action-time';
 import { getCareerModifiers } from '../../../engine/career-paths';
+import { FarmService } from './farm.service';
 
 import { WageLaborController } from './features/wage-labor/wage-labor.controller';
 import { registerBespokeForgeRoutes } from './features/bespoke-forge/bespoke-forge.controller';
@@ -310,6 +311,73 @@ export function registerProfessionsRoutes(router: Router): void {
   };
 
   router.post('/api/professions/craft', handleCraft);
+
+  // -------------------------------------------------------------
+  // 4b. Farmland: list parcels, rent, plant, harvest
+  // -------------------------------------------------------------
+  const handleGetFarmParcels = (req: any, res: any, ctx: RouteContext) => {
+    try {
+      const playerId = (ctx.query.playerId as string) || 'PLY-0001';
+      const settlementId = ctx.query.settlementId as string | undefined;
+      const board = FarmService.forDatabase(db).listParcels(playerId, settlementId);
+      sendJson(res, 200, { success: true, playerId, ...board });
+    } catch (err: any) {
+      sendJson(res, 500, { success: false, error: err.message });
+    }
+  };
+  router.get('/api/farm/parcels', handleGetFarmParcels);
+  router.get('/api/professions/farm', handleGetFarmParcels);
+
+  const handleRentFarm = (req: any, res: any, ctx: RouteContext) => {
+    try {
+      const { parcelId, playerId = 'PLY-0001' } = ctx.body || {};
+      if (!parcelId) {
+        sendJson(res, 400, { success: false, error: 'parcelId is required.' });
+        return;
+      }
+      const time = chargePlayerAction(db.path, 'FARM_RENT', null, `Rent ${parcelId}`);
+      const parcel = FarmService.forDatabase(db).rent(parcelId, playerId);
+      sendJson(res, 200, { success: true, parcel, time });
+    } catch (err: any) {
+      sendJson(res, err.statusCode || 400, { success: false, error: err.message, code: err.code });
+    }
+  };
+  router.post('/api/farm/rent', handleRentFarm);
+  router.post('/api/professions/farm/rent', handleRentFarm);
+
+  const handlePlantCrop = (req: any, res: any, ctx: RouteContext) => {
+    try {
+      const { parcelId, cropCode, playerId = 'PLY-0001' } = ctx.body || {};
+      if (!parcelId || !cropCode) {
+        sendJson(res, 400, { success: false, error: 'parcelId and cropCode are required.' });
+        return;
+      }
+      const time = chargePlayerAction(db.path, 'FARM_PLANT', null, `Plant ${cropCode} at ${parcelId}`);
+      const parcel = FarmService.forDatabase(db).plant(parcelId, cropCode, playerId);
+      sendJson(res, 200, { success: true, parcel, time });
+    } catch (err: any) {
+      sendJson(res, err.statusCode || 400, { success: false, error: err.message, code: err.code });
+    }
+  };
+  router.post('/api/farm/plant', handlePlantCrop);
+  router.post('/api/professions/farm/plant', handlePlantCrop);
+
+  const handleHarvestFarm = (req: any, res: any, ctx: RouteContext) => {
+    try {
+      const { parcelId, playerId = 'PLY-0001' } = ctx.body || {};
+      if (!parcelId) {
+        sendJson(res, 400, { success: false, error: 'parcelId is required.' });
+        return;
+      }
+      const time = chargePlayerAction(db.path, 'FARM_HARVEST', null, `Harvest ${parcelId}`);
+      const result = FarmService.forDatabase(db).harvest(parcelId, playerId);
+      sendJson(res, 200, { success: true, ...result, time });
+    } catch (err: any) {
+      sendJson(res, err.statusCode || 400, { success: false, error: err.message, code: err.code });
+    }
+  };
+  router.post('/api/farm/harvest', handleHarvestFarm);
+  router.post('/api/professions/farm/harvest', handleHarvestFarm);
 
   // -------------------------------------------------------------
   // 5. POST /api/professions/paradigm-shift & /api/professions/synthesize

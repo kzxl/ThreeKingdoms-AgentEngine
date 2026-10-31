@@ -831,6 +831,14 @@ class GameplayManager {
       console.warn('[GameplayManager] condition recovery failed:', conditionError.message);
     }
 
+    // Land leases that reached their end date return to the market.
+    let farmLeasesExpired = 0;
+    try {
+      farmLeasesExpired = require('./farm-bridge').expireLeases(this.dbPath);
+    } catch (farmError) {
+      console.warn('[GameplayManager] farm lease expiry failed:', farmError.message);
+    }
+
     // Day ticks were already published by the day loop for every elapsed day.
     // Cascade only after the core turn is committed. Subscribers re-entering
     // the world modules are safe: world_turn_ledger already marks this turn.
@@ -886,6 +894,7 @@ class GameplayManager {
       obligations,
       contracts,
       conditionsRecovered,
+      farmLeasesExpired,
       aiWar,
       playerStatus,
       playerLocationName: locationRow ? locationRow.name_vi : (playerLoc || ''),

@@ -87,6 +87,34 @@ interface ContractBoard {
   summary: { active: number; overdue: number; rewardAtRisk: number };
 }
 
+interface CropOption {
+  cropCode: string;
+  nameVi: string;
+  nameEn: string;
+  inSeason: boolean;
+  growthDays: number;
+  seedCostPerMu: number;
+}
+
+interface FarmParcel {
+  parcelId: string;
+  nameVi: string;
+  nameEn: string;
+  areaMu: number;
+  soilQuality: number;
+  rentCash: number;
+  status: string;
+  crop: { cropCode: string; nameVi: string; harvestDate: string; daysRemaining: number; expectedYield: number } | null;
+  availableCrops: CropOption[];
+}
+
+interface FarmBoard {
+  settlementId: string;
+  season: string;
+  parcels: FarmParcel[];
+  summary: { idle: number; leased: number; growing: number; nextHarvest: string | null };
+}
+
 interface IntelReport {
   reportId: string;
   subjectType: string;
@@ -156,6 +184,18 @@ class QuestModal {
     return data.quests || [];
   }
 
+  private async loadFarm(): Promise<FarmBoard> {
+    const res = await fetch('/api/farm/parcels');
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error || 'Farm board failed');
+    return {
+      settlementId: data.settlementId || '',
+      season: data.season || '',
+      parcels: data.parcels || [],
+      summary: data.summary || { idle: 0, leased: 0, growing: 0, nextHarvest: null }
+    };
+  }
+
   private async loadIntel(): Promise<IntelReport[]> {
     const res = await fetch('/api/intel');
     const data = await res.json();
@@ -187,7 +227,7 @@ class QuestModal {
 
   public async refresh(result: any): Promise<void> {
     try {
-      const [quests, dues, board, intel] = await Promise.all([
+      const [quests, dues, board, intel, farm] = await Promise.all([
         this.load(),
         this.loadObligations().catch(() => ({
           obligations: [] as ObligationView[],
@@ -199,9 +239,15 @@ class QuestModal {
           contracts: [] as PlayerContract[],
           summary: { active: 0, overdue: 0, rewardAtRisk: 0 }
         })),
-        this.loadIntel().catch(() => [] as IntelReport[])
+        this.loadIntel().catch(() => [] as IntelReport[]),
+        this.loadFarm().catch(() => ({
+          settlementId: '',
+          season: '',
+          parcels: [] as FarmParcel[],
+          summary: { idle: 0, leased: 0, growing: 0, nextHarvest: null }
+        }))
       ]);
-      this.modal.setContent(this.render(quests, dues.obligations, dues.summary, board, intel, result));
+      this.modal.setContent(this.render(quests, dues.obligations, dues.summary, board, intel, farm, result));
     } catch (error: any) {
       this.modal.setContent(`<div class="quest-empty">${esc(error.message)}</div>`);
     }
@@ -264,6 +310,54 @@ class QuestModal {
       const data = await res.json();
       if (!data.success) throw new Error(data.error || 'Accept contract failed');
       await this.refresh(null);
+    } catch (error: any) {
+      (window as any).showToast?.(error.message, true);
+    }
+  }
+
+  public async rentFarm(parcelId: string): Promise<void> {
+    try {
+      const res = await fetch('/api/farm/rent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ parcelId })
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || 'Rent failed');
+      await this.refresh(null);
+      (window as any).loadStatus?.();
+    } catch (error: any) {
+      (window as any).showToast?.(error.message, true);
+    }
+  }
+
+  public async plantCrop(parcelId: string, cropCode: string): Promise<void> {
+    try {
+      const res = await fetch('/api/farm/plant', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ parcelId, cropCode })
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || 'Plant failed');
+      await this.refresh(null);
+      (window as any).loadStatus?.();
+    } catch (error: any) {
+      (window as any).showToast?.(error.message, true);
+    }
+  }
+
+  public async harvestFarm(parcelId: string): Promise<void> {
+    try {
+      const res = await fetch('/api/farm/harvest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ parcelId })
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || 'Harvest failed');
+      await this.refresh(null);
+      (window as any).loadStatus?.();
     } catch (error: any) {
       (window as any).showToast?.(error.message, true);
     }
@@ -341,6 +435,47 @@ class QuestModal {
       <div class="quest-section">
         <div class="quest-section-title">${esc(header)}</div>
         ${activeHtml}${offerHtml}
+      </div>
+    `;
+  }
+
+  private renderFarm(farm: FarmBoard, en: boolean): string {
+    if (!farm.parcels || farm.parcels.length === 0) {
+      return `<div class="quest-empty">${en ? 'No farmland here.' : 'Không có ruộng ở đây.'}</div>`;
+    }
+    const items = farm.parcels.map(parcel => {
+      const name = en ? parcel.nameEn : parcel.nameVi;
+      let action = '';
+      if (parcel.status === 'IDLE') {
+        action = `<button class="quest-action" onclick="QuestUI.rentFarm('${esc(parcel.parcelId)}')">${en ? 'Rent' : 'Thuê'} (${parcel.rentCash} Quan)</button>`;
+      } else if (parcel.status === 'LEASED') {
+        const crops = (parcel.availableCrops || []).filter(crop => crop.inSeason);
+        action = crops.length > 0
+          ? crops.map(crop => `<button class="quest-action" onclick="QuestUI.plantCrop('${esc(parcel.parcelId)}','${esc(crop.cropCode)}')">${en ? `Plant ${crop.nameEn}` : `Trồng ${crop.nameVi}`}</button>`).join(' ')
+          : `<span class="quest-badge">${en ? 'Out of season' : 'Trái mùa'}</span>`;
+      } else if (parcel.status === 'GROWING' && parcel.crop) {
+        const ready = parcel.crop.daysRemaining <= 0;
+        action = `<button class="quest-action ${ready ? 'is-primary' : ''}" onclick="QuestUI.harvestFarm('${esc(parcel.parcelId)}')">${en ? 'Harvest' : 'Thu hoạch'}</button>`;
+      }
+      const cropLine = parcel.crop
+        ? `${esc(en ? parcel.crop.nameVi : parcel.crop.nameVi)} • ${en ? 'harvest' : 'thu'} ${esc(parcel.crop.harvestDate)} • ${parcel.crop.daysRemaining}${en ? 'd' : ' ngày'}`
+        : `${parcel.areaMu} ${en ? 'mu' : 'mẫu'} • ${en ? 'rent' : 'tô'} ${parcel.rentCash} Quan`;
+      return `
+        <div class="quest-item">
+          <div class="quest-head">
+            <div>
+              <div class="quest-title">${esc(name)}</div>
+              <div class="quest-path">${cropLine}</div>
+            </div>
+            ${action}
+          </div>
+        </div>
+      `;
+    }).join('');
+    return `
+      <div class="quest-section">
+        <div class="quest-section-title">${en ? `Farmland • ${farm.season} • ${farm.summary.growing} growing` : `Nông Trại • ${farm.season} • ${farm.summary.growing} vụ`}</div>
+        ${items}
       </div>
     `;
   }
@@ -425,6 +560,7 @@ class QuestModal {
     summary: ObligationSummary,
     board: ContractBoard,
     intel: IntelReport[],
+    farm: FarmBoard,
     result: any
   ): string {
     const en = isEn();
@@ -472,8 +608,9 @@ class QuestModal {
 
     const obligationsHtml = this.renderObligations(obligations, summary, en);
     const contractsHtml = this.renderContracts(board, en);
+    const farmHtml = this.renderFarm(farm, en);
     const intelHtml = this.renderIntel(intel, en);
-    return `<div class="quest-body">${resultHtml}${obligationsHtml}${contractsHtml}${intelHtml}${items || `<div class="quest-empty">${en ? 'No quests available.' : 'Chưa có nhiệm vụ.'}</div>`}</div>`;
+    return `<div class="quest-body">${resultHtml}${obligationsHtml}${contractsHtml}${farmHtml}${intelHtml}${items || `<div class="quest-empty">${en ? 'No quests available.' : 'Chưa có nhiệm vụ.'}</div>`}</div>`;
   }
 }
 

@@ -43,7 +43,11 @@ const ACTION_TIME_POLICY = {
   ARENA_CHALLENGE: { days: 5, fatigue: 0, labelVi: 'Khiêu chiến lôi đài', labelEn: 'Arena challenge' },
   COMBAT_ENCOUNTER: { days: 1, fatigue: 0, labelVi: 'Giao chiến', labelEn: 'Combat encounter' },
   // Gathering services already charge fatigue per node.
-  GATHER_NODE: { days: 1, fatigue: 0, labelVi: 'Khai thác', labelEn: 'Gather' }
+  GATHER_NODE: { days: 1, fatigue: 0, labelVi: 'Khai thác', labelEn: 'Gather' },
+  // Farming: rent paperwork is quick; planting and harvest are field work.
+  FARM_RENT: { days: 1, fatigue: 3, labelVi: 'Thuê ruộng', labelEn: 'Lease land' },
+  FARM_PLANT: { days: 2, fatigue: 6, labelVi: 'Gieo trồng', labelEn: 'Plant crop' },
+  FARM_HARVEST: { days: 2, fatigue: 8, labelVi: 'Thu hoạch', labelEn: 'Harvest' }
 };
 
 function getActionTimeCost(type, subType) {

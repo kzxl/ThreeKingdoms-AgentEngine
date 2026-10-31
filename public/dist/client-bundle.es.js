@@ -1545,6 +1545,21 @@ var G = new class {
 		if (!e.success) throw Error(e.error || "Quest log failed");
 		return e.quests || [];
 	}
+	async loadFarm() {
+		let e = await (await fetch("/api/farm/parcels")).json();
+		if (!e.success) throw Error(e.error || "Farm board failed");
+		return {
+			settlementId: e.settlementId || "",
+			season: e.season || "",
+			parcels: e.parcels || [],
+			summary: e.summary || {
+				idle: 0,
+				leased: 0,
+				growing: 0,
+				nextHarvest: null
+			}
+		};
+	}
 	async loadIntel() {
 		let e = await (await fetch("/api/intel")).json();
 		if (!e.success) throw Error(e.error || "Intel board failed");
@@ -1580,7 +1595,7 @@ var G = new class {
 	}
 	async refresh(e) {
 		try {
-			let [t, n, r, i] = await Promise.all([
+			let [t, n, r, i, a] = await Promise.all([
 				this.load(),
 				this.loadObligations().catch(() => ({
 					obligations: [],
@@ -1602,9 +1617,20 @@ var G = new class {
 						rewardAtRisk: 0
 					}
 				})),
-				this.loadIntel().catch(() => [])
+				this.loadIntel().catch(() => []),
+				this.loadFarm().catch(() => ({
+					settlementId: "",
+					season: "",
+					parcels: [],
+					summary: {
+						idle: 0,
+						leased: 0,
+						growing: 0,
+						nextHarvest: null
+					}
+				}))
 			]);
-			this.modal.setContent(this.render(t, n.obligations, n.summary, r, i, e));
+			this.modal.setContent(this.render(t, n.obligations, n.summary, r, i, a, e));
 		} catch (e) {
 			this.modal.setContent(`<div class="quest-empty">${U(e.message)}</div>`);
 		}
@@ -1657,6 +1683,48 @@ var G = new class {
 			})).json();
 			if (!t.success) throw Error(t.error || "Accept contract failed");
 			await this.refresh(null);
+		} catch (e) {
+			window.showToast?.(e.message, !0);
+		}
+	}
+	async rentFarm(e) {
+		try {
+			let t = await (await fetch("/api/farm/rent", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ parcelId: e })
+			})).json();
+			if (!t.success) throw Error(t.error || "Rent failed");
+			await this.refresh(null), window.loadStatus?.();
+		} catch (e) {
+			window.showToast?.(e.message, !0);
+		}
+	}
+	async plantCrop(e, t) {
+		try {
+			let n = await (await fetch("/api/farm/plant", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					parcelId: e,
+					cropCode: t
+				})
+			})).json();
+			if (!n.success) throw Error(n.error || "Plant failed");
+			await this.refresh(null), window.loadStatus?.();
+		} catch (e) {
+			window.showToast?.(e.message, !0);
+		}
+	}
+	async harvestFarm(e) {
+		try {
+			let t = await (await fetch("/api/farm/harvest", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ parcelId: e })
+			})).json();
+			if (!t.success) throw Error(t.error || "Harvest failed");
+			await this.refresh(null), window.loadStatus?.();
 		} catch (e) {
 			window.showToast?.(e.message, !0);
 		}
@@ -1722,6 +1790,35 @@ var G = new class {
       </div>
     `;
 	}
+	renderFarm(e, t) {
+		if (!e.parcels || e.parcels.length === 0) return `<div class="quest-empty">${t ? "No farmland here." : "Không có ruộng ở đây."}</div>`;
+		let n = e.parcels.map((e) => {
+			let n = t ? e.nameEn : e.nameVi, r = "";
+			if (e.status === "IDLE") r = `<button class="quest-action" onclick="QuestUI.rentFarm('${U(e.parcelId)}')">${t ? "Rent" : "Thuê"} (${e.rentCash} Quan)</button>`;
+			else if (e.status === "LEASED") {
+				let n = (e.availableCrops || []).filter((e) => e.inSeason);
+				r = n.length > 0 ? n.map((n) => `<button class="quest-action" onclick="QuestUI.plantCrop('${U(e.parcelId)}','${U(n.cropCode)}')">${t ? `Plant ${n.nameEn}` : `Trồng ${n.nameVi}`}</button>`).join(" ") : `<span class="quest-badge">${t ? "Out of season" : "Trái mùa"}</span>`;
+			} else e.status === "GROWING" && e.crop && (r = `<button class="quest-action ${e.crop.daysRemaining <= 0 ? "is-primary" : ""}" onclick="QuestUI.harvestFarm('${U(e.parcelId)}')">${t ? "Harvest" : "Thu hoạch"}</button>`);
+			let i = e.crop ? `${U(e.crop.nameVi)} • ${t ? "harvest" : "thu"} ${U(e.crop.harvestDate)} • ${e.crop.daysRemaining}${t ? "d" : " ngày"}` : `${e.areaMu} ${t ? "mu" : "mẫu"} • ${t ? "rent" : "tô"} ${e.rentCash} Quan`;
+			return `
+        <div class="quest-item">
+          <div class="quest-head">
+            <div>
+              <div class="quest-title">${U(n)}</div>
+              <div class="quest-path">${i}</div>
+            </div>
+            ${r}
+          </div>
+        </div>
+      `;
+		}).join("");
+		return `
+      <div class="quest-section">
+        <div class="quest-section-title">${t ? `Farmland • ${e.season} • ${e.summary.growing} growing` : `Nông Trại • ${e.season} • ${e.summary.growing} vụ`}</div>
+        ${n}
+      </div>
+    `;
+	}
 	renderIntel(e, t) {
 		if (!e || e.length === 0) return `<div class="quest-empty">${t ? "No reports this month." : "Không có tin đồn tháng này."}</div>`;
 		let n = e.map((e) => {
@@ -1772,37 +1869,37 @@ var G = new class {
       </div>
     `;
 	}
-	render(e, t, n, r, i, a) {
-		let o = H(), s = a ? `
-      <div class="quest-result ${a.success ? "is-success" : "is-failure"}">
-        <strong>${a.success ? o ? "Step succeeded" : "Bước thành công" : o ? "Step failed" : "Bước thất bại"}</strong>
-        <div>${U(o ? a.narrativeEn : a.narrative)}</div>
-        <div class="quest-meta">D20 ${a.roll} + ${a.mod} = ${a.total} / DC ${a.dc}</div>
-        <div class="quest-meta">${U(W(a.rewards || {}))}</div>
+	render(e, t, n, r, i, a, o) {
+		let s = H(), c = o ? `
+      <div class="quest-result ${o.success ? "is-success" : "is-failure"}">
+        <strong>${o.success ? s ? "Step succeeded" : "Bước thành công" : s ? "Step failed" : "Bước thất bại"}</strong>
+        <div>${U(s ? o.narrativeEn : o.narrative)}</div>
+        <div class="quest-meta">D20 ${o.roll} + ${o.mod} = ${o.total} / DC ${o.dc}</div>
+        <div class="quest-meta">${U(W(o.rewards || {}))}</div>
       </div>
-    ` : "", c = e.map((e) => {
-			let t = e.status === "COMPLETED" ? o ? "Completed" : "Đã hoàn thành" : e.status === "ACTIVE" ? o ? "Active" : "Đang làm" : o ? "Available" : "Có thể nhận", n = e.steps.map((t) => `
+    ` : "", l = e.map((e) => {
+			let t = e.status === "COMPLETED" ? s ? "Completed" : "Đã hoàn thành" : e.status === "ACTIVE" ? s ? "Active" : "Đang làm" : s ? "Available" : "Có thể nhận", n = e.steps.map((t) => `
         <div class="quest-step ${t.index < e.currentStep ? "is-done" : t.index === e.currentStep && e.status === "ACTIVE" ? "is-current" : ""}">
           <span class="quest-step-index">${t.index + 1}</span>
-          <span class="quest-step-title">${U(o ? t.titleEn : t.titleVi)}</span>
-          <span class="quest-step-check">${U(String(t.stat).toUpperCase())} DC ${t.dc} • ${t.daysCost}${o ? "d" : " ngày"}</span>
+          <span class="quest-step-title">${U(s ? t.titleEn : t.titleVi)}</span>
+          <span class="quest-step-check">${U(String(t.stat).toUpperCase())} DC ${t.dc} • ${t.daysCost}${s ? "d" : " ngày"}</span>
         </div>
-      `).join(""), r = e.status === "AVAILABLE" ? `<button class="quest-action" onclick="QuestUI.accept('${U(e.questId)}')">${o ? "Accept" : "Nhận nhiệm vụ"}</button>` : e.status === "ACTIVE" ? `<button class="quest-action is-primary" onclick="QuestUI.advance('${U(e.questId)}')">${o ? `Advance step ${e.currentStep + 1}` : `Thực hiện bước ${e.currentStep + 1}`}</button>` : `<span class="quest-badge">${o ? "Completed" : "Hoàn thành"}</span>`;
+      `).join(""), r = e.status === "AVAILABLE" ? `<button class="quest-action" onclick="QuestUI.accept('${U(e.questId)}')">${s ? "Accept" : "Nhận nhiệm vụ"}</button>` : e.status === "ACTIVE" ? `<button class="quest-action is-primary" onclick="QuestUI.advance('${U(e.questId)}')">${s ? `Advance step ${e.currentStep + 1}` : `Thực hiện bước ${e.currentStep + 1}`}</button>` : `<span class="quest-badge">${s ? "Completed" : "Hoàn thành"}</span>`;
 			return `
         <div class="quest-item">
           <div class="quest-head">
             <div>
-              <div class="quest-title">${U(o ? e.titleEn : e.titleVi)}</div>
+              <div class="quest-title">${U(s ? e.titleEn : e.titleVi)}</div>
               <div class="quest-path">${U(e.pathCode)} • ${t}</div>
             </div>
             ${r}
           </div>
-          <div class="quest-desc">${U(o ? e.descriptionEn : e.descriptionVi)}</div>
+          <div class="quest-desc">${U(s ? e.descriptionEn : e.descriptionVi)}</div>
           <div class="quest-steps">${n}</div>
         </div>
       `;
 		}).join("");
-		return `<div class="quest-body">${s}${this.renderObligations(t, n, o)}${this.renderContracts(r, o)}${this.renderIntel(i, o)}${c || `<div class="quest-empty">${o ? "No quests available." : "Chưa có nhiệm vụ."}</div>`}</div>`;
+		return `<div class="quest-body">${c}${this.renderObligations(t, n, s)}${this.renderContracts(r, s)}${this.renderFarm(a, s)}${this.renderIntel(i, s)}${l || `<div class="quest-empty">${s ? "No quests available." : "Chưa có nhiệm vụ."}</div>`}</div>`;
 	}
 }(), K = class {
 	modal;
@@ -2253,7 +2350,10 @@ function X() {
 		payObligation: (e) => G.payObligation(e),
 		acceptContract: (e) => G.acceptContract(e),
 		deliverContract: (e) => G.deliverContract(e),
-		verifyIntel: (e) => G.verifyIntel(e)
+		verifyIntel: (e) => G.verifyIntel(e),
+		rentFarm: (e) => G.rentFarm(e),
+		plantCrop: (e, t) => G.plantCrop(e, t),
+		harvestFarm: (e) => G.harvestFarm(e)
 	}, t.WorldMapUI = {
 		open: () => q.open(),
 		close: () => q.close()

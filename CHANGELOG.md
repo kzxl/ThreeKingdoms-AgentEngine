@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.26.0] - 2026-10-31
+
+RPG farming: rent a parcel, plant a seasonal crop, harvest grain.
+
+### Added
+- Migration 048 creates `master_crops` (rice, wheat, soybeans, vegetables with
+  seasons, growth days, seed cost, yield per mu, risk) and `land_parcels`
+  (four parcels per settlement, area 2/3/5/8 mu, soil quality, rent, lease).
+- `FarmService` rents a parcel for 90 days (rent goes to the ruling faction
+  treasury), plants only in-season crops (seed cost per mu × area), computes
+  expected yield from area, soil and active ecological crises, and harvests on
+  or after the growth date into `COM-GRAIN` through the inventory movement
+  writer. Late harvest loses 10% per 15 days; a crop risk roll can lose 20%.
+- Routes: `GET /api/farm/parcels`, `POST /api/farm/rent`,
+  `POST /api/farm/plant`, `POST /api/farm/harvest` (and `/api/professions/farm*`
+  aliases), each action charged through `chargePlayerAction`
+  (`FARM_RENT` 1 day, `FARM_PLANT`/`FARM_HARVEST` 2 days).
+- `GameplayManager.closeMonth` expires leases (`farmLeasesExpired`); harvesting
+  awards `PROF_FARMER` EXP.
+- The quest modal now renders a **Farmland** section with Rent / Plant / Harvest
+  actions (`QuestUI.rentFarm`, `plantCrop`, `harvestFarm`); the client bundle was
+  rebuilt.
+- `tests/verify-farm.ts` covers rent/landlord payment, seasonal rejection, early
+  harvest, real grain output, double rent, insufficient cash and lease expiry.
+
+### Verification
+`npm run verify` green: 56/56 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,493 invariants, 0 discrepancies.
+
+---
+
 ## [1.25.2] - 2026-10-31
 
 RPG information layer: monthly intel reports with confidence and verification.
