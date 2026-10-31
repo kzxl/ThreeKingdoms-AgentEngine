@@ -203,3 +203,43 @@ This document records the architectural choices, rationale, and alternatives con
 - **Consequences**:
   - Positive: Land, season and crop choice create a real mid-term plan; rent is a second recurring cash sink after tax.
   - Negative: A parcel can sit idle if the player misses the season; the UI must show the current season and the harvest date clearly.
+
+---
+
+## ADR-018: A Cashflow Row Without a Journal Pair Is a Bug (2026-10-31)
+
+- **Context**: Wage, dividend and capital paths wrote `cashflow_ledger` without `account_journal`, and the auditor only checked Dr/Cr parity for rows that happened to exist. Eleven live rows were already unexplained.
+- **Decision**: `postDoubleEntry` writes both sides under one transaction; migration 049 backfills historical orphans; the audit fails on any cashflow row without a pair, any pair without cashflow, or a missing journal table.
+- **Consequences**:
+  - Positive: The player ledger is now complete in both directions; the audit can prove it.
+  - Negative: A new money path that forgets journal accounts fails the gate, so adding a transaction takes one more explicit decision.
+
+---
+
+## ADR-019: Time and Idempotency Are HTTP-Boundary Contracts (2026-10-31)
+
+- **Context**: Trade, reinforcement, military, politics and household actions were free of calendar cost, and service-level mutations had no retry protection. SimCore had both; the newer modules did not.
+- **Decision**: Every time-consuming player mutation calls `chargePlayerAction` at the HTTP boundary. Financial actions accept an `idempotencyKey` and replay the stored result; every successful mutation records in `action_log`.
+- **Consequences**:
+  - Positive: The calendar cannot be skipped from the UI or a direct API call, and a retried request cannot double-charge.
+  - Negative: Controllers carry the charge and journal calls explicitly; a forgotten call is a review finding, covered by the core time/idempotency tests for the main paths.
+
+---
+
+## ADR-020: Runtime Schema Is Migration-Owned (2026-10-31)
+
+- **Context**: Services created family, loan, equipment, expedition, intel and duel tables on first use, so a fresh database had 68 tables while the live campaign had 94. A service could run before its table existed and silently fall back.
+- **Decision**: Migration 050 creates the runtime tables and columns; a fresh `schema.sql + migrations` database is the complete contract. Services may keep `IF NOT EXISTS` as a defensive no-op, but they no longer own schema creation.
+- **Consequences**:
+  - Positive: Fresh checkout, tests and live campaigns share one runtime schema; missing tables are caught by `verify-schema-contract` instead of a first request.
+  - Negative: Schema changes now require a numbered migration, even for a small service-owned table.
+
+---
+
+## ADR-021: No Silent Catch (2026-10-31)
+
+- **Context**: Nineteen empty catch blocks hid optional-schema probes, JSON fallbacks and projection writes; one of them masked a double-quoted SQL literal that silently returned zero.
+- **Decision**: Every catch either handles the failure or carries a comment explaining the best-effort fallback. The `silent-catch` ratchet is locked at 0.
+- **Consequences**:
+  - Positive: A reader can distinguish a deliberate fallback from a hidden failure; a new empty catch fails lint.
+  - Negative: Best-effort paths still do not surface a user-facing warning; the comment is the contract, not a runtime log.

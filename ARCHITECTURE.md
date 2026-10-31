@@ -56,7 +56,7 @@ graph TD
 
 ## 3. SQLite Schema & Invariant Enforcement
 
-All dynamic campaign state is maintained in `saves/session.db` using the schema defined in `tools/schema.sql` (audited across 1,493 invariants in eight blocks):
+All dynamic campaign state is maintained in `saves/session.db` using the schema defined in `tools/schema.sql` (audited across 1,506 invariants in eight blocks):
 
 1. **`player_state`**: Tracks attributes (INT, POL, WAR, LDR, DIP, COM, LOG, CRA), current location, liquid cash, safe cash, fixed capital, grain, and net worth.
 2. **`cashflow_ledger`**: Strict double-entry ledger enforcing:
@@ -138,7 +138,7 @@ millisecond.
 ### 6.3 Versioned data migrations
 
 `tools/migrations/` holds idempotent migrations applied inside a transaction and
-recorded in `schema_migrations` (48 migrations, through `048-land-and-crops`). New playthrough instances
+recorded in `schema_migrations` (50 migrations, through `050-runtime-schema-contract`). New playthrough instances
 are brought to a known data state with `npm run migrate`; `npm run migrate:status` lists
 pending work. Migrations also own data repairs that SQL cannot express safely at the
 read path: 042 adds `businesses.tier/debt`, 043 repairs legacy text and currency labels.
@@ -153,10 +153,10 @@ not require editing that test.
 | :--- | :--- | :--- |
 | Types | `npm run typecheck` | `strict` TypeScript across `src/`, `tests/`, `vite.config.ts`. |
 | Architecture | `npm run lint` | Ratchet over `tools/arch-baseline.json`; debt may only shrink. |
-| Behaviour | `npm test` | 56 suites (4 legacy + 52 modern); each modern suite runs on an isolated DB copy and projections are restored afterwards. |
+| Behaviour | `npm test` | 60 suites (4 legacy + 56 modern); each modern suite runs on an isolated DB copy and projections are restored afterwards. |
 | API contract | `npm run golden:verify` | 28 read-only endpoints: status code, response shape, behavioural assertions. |
 | Write paths | `npm run smoke:write` | 8 HTTP write paths plus a post-write audit on a sandbox database. |
-| Invariants | `npm run audit` | 1,493 SQLite invariants (ledger parity, inventory conservation, projection sync, world/life-sim/clock blocks). |
+| Invariants | `npm run audit` | 1,506 SQLite invariants (ledger parity, inventory conservation, projection sync, world/life-sim/clock blocks). |
 
 `npm run verify` chains all of them and is the merge gate.
 
@@ -395,4 +395,65 @@ crop and harvest grain.
   charge `FARM_RENT` (1 day) or `FARM_PLANT`/`FARM_HARVEST` (2 days).
 - Month close expires leases; the quest modal renders a **Farmland** section
   with Rent / Plant / Harvest.
+
+---
+
+## 14. Core Contracts (1.26.x)
+
+These are the rules every feature must follow, independent of content.
+
+### 14.1 Ledger completeness
+
+- `src/shared/ledger.ts#postDoubleEntry` writes the cashflow row and the
+  matching Dr/Cr journal pair under one `txn_id` in one transaction.
+- Migration 049 backfills historical cashflow rows that had no journal.
+- `tools/sim-audit.js` fails if the journal table is missing, if a cashflow row
+  has no pair, or if a journal row has no cashflow. The audit is no longer
+  optional.
+- `tests/verify-ledger-completeness.ts` covers both directions.
+
+### 14.2 Time coverage
+
+- Every player mutation that spends time calls `chargePlayerAction` at the HTTP
+  boundary. Day-only actions also require fatigue headroom.
+- Covered homes: duel, kizuna/banquet, professions (gather/craft/forge/farm),
+  workforce, trade, caravan dispatch, garrison reinforcement, expedition start,
+  assault/siege start, faction war/peace, courtship, rest, wage labor and
+  location movement.
+- Quests and exploration keep their service-level `applyActionTime`.
+- `tests/verify-core-time-coverage.ts` proves trade +2 days, reinforcement +1
+  and movement +1 through the real router.
+
+### 14.3 Idempotency and action journal
+
+- `src/shared/action-journal.ts` reads `idempotencyKey` (body or
+  `Idempotency-Key` header), replays the stored result for a known key, and
+  records every successful mutation in `action_log`.
+- Trade, caravan dispatch, reinforcement, obligation payment, contract
+  accept/deliver, intel verification and farm rent/plant/harvest use it.
+  Replays do not re-charge cash, inventory, troops or days.
+- `tests/verify-idempotency.ts` covers trade, reinforcement and farm rent.
+
+### 14.4 Schema contract
+
+- Services no longer create tables on first use. Migration 050 creates the
+  runtime tables (equipment, family, loans, expeditions, intel fog, duels) and
+  adds the runtime columns on `businesses` and `npc_state`.
+- `tests/verify-schema-contract.ts` builds a fresh `schema.sql + all migrations`
+  database and asserts the 18 runtime tables plus the required columns.
+
+### 14.5 Error handling
+
+- No empty `catch` blocks remain in `engine/` or `src/`. The `silent-catch`
+  architecture ratchet is locked at 0, so a new silent fallback fails
+  `npm run lint`.
+- A deliberate best-effort fallback carries a comment explaining why it is safe.
+
+### 14.6 What is not yet a core contract
+
+- Faction/world treasury changes are not double-entry (no faction journal).
+- World modules in month close run outside the core atomic batch; a module
+  failure is logged but does not roll back earlier module writes.
+- Day phases (morning/afternoon/evening) are not implemented; actions spend whole
+  days.
 
