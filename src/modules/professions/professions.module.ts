@@ -11,6 +11,7 @@ import { syncProgressProjection } from '../../shared/projection-sync';
 import { RngService } from '../../core/rng';
 import { nextId } from '../../shared/id-generator';
 import { getGameDate } from '../../shared/game-clock';
+import { SkillService } from '../progression/skill.service';
 import {
   IFeatureModule,
   ModuleContext,
@@ -20,6 +21,16 @@ import {
   GatheringNode,
   EmergentInnovation
 } from '../../core/types';
+
+const PROFESSION_SKILL: Record<string, string> = {
+  PROF_MINER: 'SKL-CRA-SMITH',
+  PROF_HERBALIST: 'SKL-MED-HEAL',
+  PROF_CARPENTER: 'SKL-CRA-WEAVE',
+  PROF_SALT_MAKER: 'SKL-COM-SPECULATE',
+  PROF_FARMER: 'SKL-LOG-PROV',
+  PROF_FISHER: 'SKL-LOG-PROV',
+  PROF_HUNTER: 'SKL-WAR-ARCH'
+};
 
 export class ProfessionsModule implements IFeatureModule {
   public readonly id = 'module.professions';
@@ -364,6 +375,14 @@ export class ProfessionsModule implements IFeatureModule {
         `, [characterId, profCode, names.vi, names.en, expGain]);
       }
     });
+
+    // Profession work also feeds the matching skill (one progression ladder for checks).
+    try {
+      const skillCode = PROFESSION_SKILL[profCode] || 'SKL-LOG-PROV';
+      SkillService.forDatabase(this.db).awardExp(skillCode, expGain);
+    } catch {
+      // A missing master skill must not roll back the harvest.
+    }
 
     // 4. Check for Emergent Breakthrough Synthesis
     const breakthrough = this.checkAndTriggerBreakthrough(characterId, turnNumber, gameDate);

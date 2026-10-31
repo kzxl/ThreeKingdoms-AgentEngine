@@ -182,9 +182,37 @@ export function registerProgressionRoutes(router: Router): void {
   router.get('/api/skills', (_req: any, res: any, _ctx: RouteContext) => {
     try {
       const service = SkillService.forDatabase(DatabaseService.getInstance());
-      sendJson(res, 200, { success: true, skills: service.list() });
+      sendJson(res, 200, { success: true, skills: service.list(), talents: service.listTalents() });
     } catch (err: any) {
       sendJson(res, 500, { success: false, error: err.message });
+    }
+  });
+
+  router.get('/api/perks', (req: any, res: any, ctx: RouteContext) => {
+    try {
+      const skillCode = String(ctx.query.skillCode || '');
+      if (!skillCode) {
+        sendJson(res, 400, { success: false, error: 'skillCode is required.' });
+        return;
+      }
+      const service = SkillService.forDatabase(DatabaseService.getInstance());
+      sendJson(res, 200, { success: true, skillCode, perks: service.availablePerks(skillCode) });
+    } catch (err: any) {
+      sendJson(res, 500, { success: false, error: err.message });
+    }
+  });
+
+  router.post('/api/perks/choose', (req: any, res: any, ctx: RouteContext) => {
+    try {
+      const perkCode = String((ctx.body || {}).perkCode || '');
+      if (!perkCode) {
+        sendJson(res, 400, { success: false, error: 'perkCode is required.' });
+        return;
+      }
+      const service = SkillService.forDatabase(DatabaseService.getInstance());
+      sendJson(res, 200, { success: true, perk: service.choosePerk(perkCode) });
+    } catch (err: any) {
+      sendJson(res, 400, { success: false, error: err.message });
     }
   });
 

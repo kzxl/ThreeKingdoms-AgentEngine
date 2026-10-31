@@ -147,6 +147,38 @@ CREATE TABLE IF NOT EXISTS master_skill_effects (
     PRIMARY KEY (skill_code, tier, effect_type)
 );
 
+-- 3c. Skill perks (seeded by migration 037)
+CREATE TABLE IF NOT EXISTS master_perks (
+    perk_code TEXT PRIMARY KEY,
+    skill_code TEXT NOT NULL,
+    tier INTEGER NOT NULL,
+    name_vi TEXT NOT NULL,
+    name_en TEXT NOT NULL,
+    description_vi TEXT,
+    description_en TEXT,
+    effect_type TEXT NOT NULL,
+    value REAL NOT NULL,
+    UNIQUE(skill_code, tier)
+);
+
+CREATE TABLE IF NOT EXISTS player_perks (
+    perk_code TEXT PRIMARY KEY,
+    chosen_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 3d. Player talents (seeded by migration 038)
+CREATE TABLE IF NOT EXISTS player_talents (
+    talent_code TEXT PRIMARY KEY,
+    chosen_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS master_talent_effects (
+    talent_code TEXT NOT NULL,
+    effect_type TEXT NOT NULL,
+    value REAL NOT NULL,
+    PRIMARY KEY (talent_code, effect_type)
+);
+
 -- 4. Single-Entry Cash Flow Log (Running balance cache)
 CREATE TABLE IF NOT EXISTS cashflow_ledger (
     txn_id TEXT PRIMARY KEY,

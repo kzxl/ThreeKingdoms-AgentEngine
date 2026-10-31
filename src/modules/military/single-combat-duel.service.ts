@@ -29,6 +29,7 @@ import { RngService } from '../../core/rng';
 import { nextSequentialId } from '../../shared/id-generator';
 import { postCashflowEntry } from '../../shared/ledger';
 import { PrestigeService } from '../progression/prestige.service';
+import { SkillService } from '../progression/skill.service';
 
 // ---------------------------------------------------------------------------
 // 1. Data Contracts & Types
@@ -346,6 +347,13 @@ export class SingleCombatDuelService {
         const rawGearBonus = equipStats.gearBonuses.war || 0;
         gearBonusWar = rawGearBonus > 0 ? clampStatModifier(rawGearBonus) : 0;
         effectiveWar = baseWar + gearBonusWar;
+        if (characterId === 'PLY-0001') {
+          const duelSkill = Math.round(SkillService.forDatabase(this.db).getEffectTotal(
+            'DUEL_POWER',
+            ['SKL-WAR-DUEL', 'SKL-WAR-SPEAR', 'SKL-WAR-BLADE', 'SKL-WAR-RIDE']
+          ));
+          effectiveWar += duelSkill;
+        }
         isOver100 = effectiveWar > 100;
 
         // Query equipped gear details for narrative flavor

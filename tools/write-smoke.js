@@ -136,8 +136,11 @@ async function main() {
       const res = await post('/api/trade', { action: 'BUY', itemCode: 'COM-BAMBOO', quantity: 5, unitPrice: 1 });
       assert(res.status === 200, `HTTP ${res.status}: ${JSON.stringify(res.body).slice(0, 160)}`);
       assert(res.body.success === true, `success=false: ${res.body.error}`);
-      // 5 bamboo × 16 quan buy quote (reference 15 + spread − fame discount).
-      assert(res.body.totalAmount === 80, `expected totalAmount 80, got ${res.body.totalAmount}`);
+      // 5 bamboo at the master-quote buy price (reference 15 + spread − fame discount),
+      // improved by the player's trade-margin skill (capped at 20%).
+      const unitPrice = Number(res.body.unitPrice);
+      assert(unitPrice >= 12 && unitPrice <= 16, `buy unit price ${unitPrice} outside the master-quote band`);
+      assert(res.body.totalAmount === unitPrice * 5, `expected totalAmount ${unitPrice * 5}, got ${res.body.totalAmount}`);
       assert(String(res.body.txnId).startsWith('TXN-'), `bad txnId ${res.body.txnId}`);
 
       const invAfter = await httpJson(PORT, '/api/inventory');

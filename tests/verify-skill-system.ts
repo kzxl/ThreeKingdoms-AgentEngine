@@ -14,6 +14,8 @@ import { initializeInstanceDatabase } from '../src/modules/instances/instance-bo
 import { ARCHETYPE_PRESETS } from '../src/modules/instances/instances.constants';
 const migration034 = require('../tools/migrations/034-quest-engine');
 const migration036 = require('../tools/migrations/036-skill-effects');
+const migration037 = require('../tools/migrations/037-skill-perks');
+const migration038 = require('../tools/migrations/038-player-talents');
 
 const ROOT = path.resolve(__dirname, '..');
 const TEST_DIR = path.join(ROOT, 'tests', '.skill-system');
@@ -33,7 +35,14 @@ function seed() {
       domain TEXT NOT NULL,
       primary_attr TEXT NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS master_talents (
+      talent_code TEXT PRIMARY KEY,
+      name_vi TEXT NOT NULL,
+      name_en TEXT NOT NULL,
+      category TEXT NOT NULL
+    );
   `);
+  db.prepare(`INSERT INTO master_talents VALUES ('TLT-TEST', 'Thiên Phú Thử', 'Test Talent', 'MARTIAL')`).run();
   const skill = db.prepare('INSERT INTO master_skills VALUES (?, ?, ?, ?, ?)');
   skill.run('SKL-WAR-DUEL', 'Đơn Đả Độc Đấu', 'Duel', 'MARTIAL', 'WAR');
   skill.run('SKL-CRA-SMITH', 'Rèn Đúc Binh Khí', 'Smithing', 'CRAFT', 'CRA');
@@ -42,6 +51,9 @@ function seed() {
   skill.run('SKL-LOG-PROV', 'Lương Thảo Vận Trù', 'Provisioning', 'LOGISTICS', 'LOG');
   migration034.up(db);
   migration036.up(db);
+  migration037.up(db);
+  migration038.up(db);
+  db.prepare(`INSERT INTO player_talents (talent_code) VALUES ('TLT-TEST');`).run();
 
   db.prepare(`
     INSERT INTO campaign_meta (campaign_id, campaign_name, start_date, "current_date", active_turn)
@@ -67,7 +79,7 @@ function run() {
   assert.strictEqual(skills.length, 1);
   assert.strictEqual(skills[0].tier, 3);
   assert.strictEqual(service.getCheckBonus(['SKL-WAR-DUEL']), 2, 'tier 3 must give +2, not the sum of tiers');
-  assert.strictEqual(service.getEffectTotal('DUEL_POWER', ['SKL-WAR-DUEL']), 2);
+  assert.strictEqual(service.getEffectTotal('DUEL_POWER', ['SKL-WAR-DUEL']), 4, 'tier effect 2 + innate talent 2');
 
   // Quest step uses the linked skill: roll 10 + mod 0 + skill 2 = 12 at DC 12.
   const quests = QuestService.forDatabase(DatabaseService.getInstance(TEST_DB));
@@ -76,6 +88,16 @@ function run() {
   assert.strictEqual(step.success, true, 'skill bonus must turn a 10 into a DC 12 success');
   assert.strictEqual(step.skillBonus, 2);
   assert.strictEqual(step.total, 12);
+
+  // Perks and innate talents join the same resolver.
+  const beforePerk = service.getEffectTotal('DUEL_POWER', ['SKL-WAR-DUEL']);
+  assert.strictEqual(beforePerk, 4, 'tier effect 2 + innate talent 2');
+  const perk = service.choosePerk('SKL-WAR-DUEL-P3');
+  assert.strictEqual(perk.tier, 3);
+  assert.strictEqual(service.getEffectTotal('DUEL_POWER', ['SKL-WAR-DUEL']), 6, 'perk must add +2');
+  assert.throws(() => service.choosePerk('SKL-WAR-DUEL-P3'), /Đã chọn perk/);
+  assert.throws(() => service.choosePerk('SKL-WAR-DUEL-P5'), /bậc 5/);
+  assert(service.listTalents().some(talent => talent.talentCode === 'TLT-TEST'));
 
   // A fresh campaign seeds the archetype's three opening skills.
   const db = new Database(TEST_DB);

@@ -249,6 +249,17 @@ export function registerProfessionsRoutes(router: Router): void {
           [expGain, characterId]
         );
 
+        // Crafting feeds the matching skill so checks and perks see the work.
+        const recipeCategory = String(recipe.category || '').toUpperCase();
+        const skillCode = /MEDICINE|ALCHEMIST/.test(recipeCategory)
+          ? 'SKL-MED-HEAL'
+          : /SMITH|WEAPON|ARMOR/.test(recipeCategory)
+            ? 'SKL-CRA-SMITH'
+            : /COOK|BREW|COMMERCE|CARAVAN/.test(recipeCategory)
+              ? 'SKL-MGT-ENTERPRISE'
+              : 'SKL-CRA-WEAVE';
+        SkillService.forDatabase(db).awardExp(skillCode, expGain);
+
         return {
           recipeCode,
           productItemCode: recipe.product_item_code,

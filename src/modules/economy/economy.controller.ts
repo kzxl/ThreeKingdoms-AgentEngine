@@ -20,6 +20,7 @@ import { getMarketItem } from '../../shared/market-price-book';
 import { quoteFromReference } from '../../shared/market-quote';
 import { worldPriceMultiplier } from '../../shared/world-price';
 import { SpatialGuardService } from '../progression/spatial-guard.service';
+import { SkillService } from '../progression/skill.service';
 
 function getEconomyModule(): EconomyModule | undefined {
   return ModuleRegistry.getInstance().get<EconomyModule>('module.economy');
@@ -284,7 +285,13 @@ export function registerEconomyRoutes(router: Router): void {
         ? SettlementMarketService.forDatabase(db).getLocalMultiplier(settlementNode, itemCode)
         : 1;
       const quote = quoteFromReference(marketItem.price, Number(fameRow?.fame || 0), itemCode, worldMultiplier, localMultiplier);
-      const effectiveUnitPrice = tradeAction === 'BUY' ? quote.buyPrice : quote.sellPrice;
+      const tradeMargin = Math.min(0.2, SkillService.forDatabase(db).getEffectTotal(
+        'TRADE_MARGIN',
+        ['SKL-COM-APPRAISE', 'SKL-COM-SPECULATE', 'SKL-COM-CARAVAN', 'SKL-MGT-ENTERPRISE']
+      ));
+      const effectiveUnitPrice = tradeAction === 'BUY'
+        ? Math.max(1, Math.round(quote.buyPrice * (1 - tradeMargin)))
+        : Math.max(1, Math.round(quote.sellPrice * (1 + tradeMargin)));
       const itemInfo = {
         item_code: marketItem.itemCode,
         name_vi: marketItem.nameVi,

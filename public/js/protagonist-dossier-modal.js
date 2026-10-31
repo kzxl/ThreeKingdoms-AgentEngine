@@ -19,6 +19,7 @@
   let cachedEquipmentData = null;
   let cachedLineageData = null;
   let cachedSkills = [];
+  let cachedTalents = [];
 
   function isEnglish() {
     return window.currentLang === 'en';
@@ -178,6 +179,7 @@
       cachedEquipmentData = eqRes.overview || { slots: {}, effectiveAttributes: {}, equipmentBuffs: {} };
       cachedLineageData = linRes.overview || {};
       cachedSkills = skillRes.skills || [];
+      cachedTalents = skillRes.talents || [];
 
       renderModalContent(modalEl);
     } catch (err) {
@@ -204,6 +206,22 @@
     activeTabKey = tabKey;
     const modalEl = document.getElementById('protagonist-dossier-modal');
     if (modalEl) renderModalContent(modalEl);
+  }
+
+  async function choosePerk(perkCode) {
+    try {
+      const res = await fetch('/api/perks/choose', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ perkCode })
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || 'Perk failed');
+      if (typeof showToast === 'function') showToast(data.perk?.nameVi || 'Đã chọn perk');
+      await openProtagonistDossierModal();
+    } catch (error) {
+      if (typeof showToast === 'function') showToast(error.message, true);
+    }
   }
 
   function renderModalContent(modalEl) {
@@ -541,9 +559,24 @@
           default: return `${effect.effectType} +${value}`;
         }
       };
+      const talentHtml = (cachedTalents || []).map((talent) => {
+        const label = `${isEn ? talent.nameEn : talent.nameVi} · ${effectLabel({ effectType: talent.effectType, value: talent.value })}`;
+        return `<span class="dossier-skill-perk is-chosen">${label}</span>`;
+      }).join('');
+      const talentRow = talentHtml
+        ? `<div class="dossier-skill-row"><div class="dossier-skill-head"><strong>${isEn ? 'Innate Talents' : 'Thiên Phú Bẩm Sinh'}</strong></div><div class="dossier-skill-perks">${talentHtml}</div></div>`
+        : '';
       const rows = cachedSkills.map((skill) => {
         const pct = Math.min(100, Math.round((Number(skill.currentExp || 0) / Math.max(1, Number(skill.maxExp || 1))) * 100));
         const effects = (skill.effects || []).map(effectLabel).join(' • ');
+        const perks = (skill.perks || []).map((perk) => {
+          const label = `T${perk.tier} · ${isEn ? perk.nameEn : perk.nameVi}`;
+          if (perk.chosen) return `<span class="dossier-skill-perk is-chosen">${label}</span>`;
+          if (perk.tier <= skill.tier) {
+            return `<button class="dossier-skill-perk is-ready" onclick="window.ProtagonistDossierModal.choosePerk('${perk.perkCode}')">${isEn ? 'Choose' : 'Chọn'} ${label}</button>`;
+          }
+          return `<span class="dossier-skill-perk is-locked">${label}</span>`;
+        }).join('');
         return `
           <div class="dossier-skill-row">
             <div class="dossier-skill-head">
@@ -553,10 +586,11 @@
             <div class="dossier-skill-meta">${skill.domain} • ${skill.primaryAttr} • ${skill.currentExp}/${skill.maxExp} EXP</div>
             <progress class="dossier-skill-progress" value="${pct}" max="100"></progress>
             <div class="dossier-skill-effects">${effects || (isEn ? 'No active effect yet' : 'Chưa có hiệu ứng')}</div>
+            <div class="dossier-skill-perks">${perks}</div>
           </div>
         `;
       }).join('');
-      return `<div class="dossier-skill-list">${rows || `<div class="quest-empty">${isEn ? 'No skills learned yet.' : 'Chưa học kỹ năng nào.'}</div>`}</div>`;
+      return `<div class="dossier-skill-list">${talentRow}${rows || `<div class="quest-empty">${isEn ? 'No skills learned yet.' : 'Chưa học kỹ năng nào.'}</div>`}</div>`;
     }
 
     if (tabKey === 'lineage') {
@@ -609,7 +643,8 @@
   window.ProtagonistDossierModal = {
     open: openProtagonistDossierModal,
     close: closeProtagonistDossierModal,
-    switchTab: switchDossierTab
+    switchTab: switchDossierTab,
+    choosePerk
   };
 
   window.openProtagonistDossierModal = openProtagonistDossierModal;

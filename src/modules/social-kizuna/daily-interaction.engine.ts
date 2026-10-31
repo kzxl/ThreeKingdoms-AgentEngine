@@ -107,6 +107,7 @@ export interface NpcDossierView {
   portraitUrl?: string | null;
   illustrationUrl?: string | null;
   baselineLocation?: string;
+  skills?: Array<{ skillCode: string; name: string; tier: number; currentExp: number; maxExp: number }>;
   locationVi: string;
   locationEn: string;
   avatarChar: string;
@@ -657,6 +658,22 @@ export class DailyInteractionEngine {
       5: 'Tier 5: Sworn Bond'
     };
 
+    let npcSkills: Array<{ skillCode: string; name: string; tier: number; currentExp: number; maxExp: number }> = [];
+    try {
+      npcSkills = this.db.query<any>(
+        'SELECT skill_code, skill_name, tier, current_exp, max_exp FROM npc_skills WHERE npc_id = ? ORDER BY tier DESC;',
+        [npcId]
+      ).map(row => ({
+        skillCode: row.skill_code,
+        name: row.skill_name,
+        tier: Number(row.tier || 1),
+        currentExp: Number(row.current_exp || 0),
+        maxExp: Number(row.max_exp || 40)
+      }));
+    } catch {
+      npcSkills = [];
+    }
+
     return {
       npcId: profile.npcId,
       nameVi: profile.nameVi,
@@ -669,6 +686,7 @@ export class DailyInteractionEngine {
       age: profile.age,
       portraitUrl: profile.portraitUrl || null,
       illustrationUrl: profile.illustrationUrl || null,
+      skills: npcSkills,
       baselineLocation: profile.baselineLocation || 'LOC-0001',
       locationVi: profile.locationVi || 'LOC-0001',
       locationEn: profile.locationEn || profile.baselineLocation || 'LOC-0001',

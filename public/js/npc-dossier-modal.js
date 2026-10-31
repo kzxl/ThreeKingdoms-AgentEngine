@@ -488,6 +488,17 @@
             <div style="font-size: 14px; font-weight: bold; color: #94a3b8; font-family: monospace;">Hạng C</div>
           </div>
         </div>
+
+        ${(dossier.skills || []).length > 0 ? `
+          <div class="dossier-skill-list">
+            <div class="dossier-skill-row">
+              <div class="dossier-skill-head"><strong>${isEn ? 'Known Skills' : 'Kỹ Năng Sở Trường'}</strong></div>
+              <div class="dossier-skill-perks">
+                ${(dossier.skills || []).map(skill => `<span class="dossier-skill-perk is-chosen">${skill.name} · T${skill.tier} · ${skill.currentExp}/${skill.maxExp}</span>`).join('')}
+              </div>
+            </div>
+          </div>
+        ` : ''}
       </div>
     `;
 

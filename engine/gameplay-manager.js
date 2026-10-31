@@ -259,6 +259,23 @@ class GameplayManager {
       console.warn('[GameplayManager] starting skill seed failed:', skillError.message);
     }
 
+    // Innate talents from the archetype master row.
+    try {
+      const talents = JSON.parse(arch.innate_talents || '[]');
+      for (const talent of Array.isArray(talents) ? talents : []) {
+        const code = String(talent).split(':')[0].trim();
+        if (code) {
+          runSqlExec(
+            this.dbPath,
+            'INSERT OR IGNORE INTO player_talents (talent_code) VALUES (?);',
+            [code]
+          );
+        }
+      }
+    } catch (talentError) {
+      console.warn('[GameplayManager] starting talent seed failed:', talentError.message);
+    }
+
     return {
       success: true,
       campaignId,

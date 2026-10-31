@@ -309,6 +309,24 @@ export function initializeInstanceDatabase(
       for (const code of preset.startingSkills) grantSkill.run(code);
     }
 
+    // Innate talents are per-archetype in the master roster; store their codes
+    // so the skill resolver can apply the structured talent effects.
+    if (tableExists(db, 'player_talents') && tableExists(db, 'master_player_archetypes')) {
+      try {
+        const row = db.prepare(
+          'SELECT innate_talents FROM master_player_archetypes WHERE archetype_id = ? LIMIT 1;'
+        ).get(preset.id) as { innate_talents?: string } | undefined;
+        const talents = row?.innate_talents ? JSON.parse(row.innate_talents) : [];
+        const grantTalent = db.prepare('INSERT OR IGNORE INTO player_talents (talent_code) VALUES (?);');
+        for (const talent of Array.isArray(talents) ? talents : []) {
+          const code = String(talent).split(':')[0].trim();
+          if (code) grantTalent.run(code);
+        }
+      } catch {
+        // A missing master talent row keeps the campaign playable.
+      }
+    }
+
     // 4. Starting workshop and NPC assignments. A commoner does not own it
     //    (the foreman does), matching the zero-to-hero archetype.
     const owner = isCommoner ? 'NPC-0007' : 'PLY-0001';

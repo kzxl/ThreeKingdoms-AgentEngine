@@ -9698,3 +9698,37 @@ textarea {
   font-size: 11px;
   color: #7dd3fc;
 }
+
+.dossier-skill-perks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 7px;
+}
+
+.dossier-skill-perk {
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: var(--radius-xs);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  color: #94a3b8;
+  background: transparent;
+}
+
+.dossier-skill-perk.is-ready {
+  color: #fbbf24;
+  border-color: rgba(245, 158, 11, 0.5);
+  background: rgba(245, 158, 11, 0.1);
+  cursor: pointer;
+}
+
+.dossier-skill-perk.is-chosen {
+  color: #34d399;
+  border-color: rgba(52, 211, 153, 0.45);
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.dossier-skill-perk.is-locked {
+  opacity: 0.55;
+}

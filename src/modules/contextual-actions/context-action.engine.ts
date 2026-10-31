@@ -21,6 +21,7 @@ import { quoteFromReference } from '../../shared/market-quote';
 import { worldPriceMultiplier } from '../../shared/world-price';
 import { SettlementMarketService } from '../economy/settlement-market.service';
 import { LOC_TO_NODE_MAP } from '../ecology-logistics/spatial-registry';
+import { SkillService } from '../progression/skill.service';
 
 export type ActionPillar =
   | 'KIZUNA_SOCIAL'
@@ -217,13 +218,20 @@ export class ContextActionEngine {
     }
     const node = LOC_TO_NODE_MAP[this.location] || this.location;
     const localMultiplier = SettlementMarketService.forDatabase(this.db).getLocalMultiplier(node, itemCode);
-    return quoteFromReference(
+    const quote = quoteFromReference(
       item.price,
       this.fame,
       itemCode,
       worldPriceMultiplier(this.db, itemCode, this.gameDate),
       localMultiplier
-    )[side];
+    );
+    const margin = Math.min(0.2, SkillService.forDatabase(this.db).getEffectTotal(
+      'TRADE_MARGIN',
+      ['SKL-COM-APPRAISE', 'SKL-COM-SPECULATE', 'SKL-COM-CARAVAN', 'SKL-MGT-ENTERPRISE']
+    ));
+    return side === 'buyPrice'
+      ? Math.max(1, Math.round(quote.buyPrice * (1 - margin)))
+      : Math.max(1, Math.round(quote.sellPrice * (1 + margin)));
   }
 
   private buyPrice(itemCode: string): number {
