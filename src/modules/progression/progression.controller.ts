@@ -14,6 +14,7 @@ import { Router, sendJson, RouteContext } from '../../server/router';
 import { SpatialGuardService } from './spatial-guard.service';
 import { ExplorationService } from './exploration.service';
 import { QuestService } from './quest.service';
+import { SkillService } from './skill.service';
 import { DatabaseService } from '../../core/database';
 
 export function registerProgressionRoutes(router: Router): void {
@@ -174,6 +175,18 @@ export function registerProgressionRoutes(router: Router): void {
     }
   };
   router.post('/api/quests/advance', handleAdvanceQuest);
+
+  /**
+   * Player skill sheet with structured effects (migration 036).
+   */
+  router.get('/api/skills', (_req: any, res: any, _ctx: RouteContext) => {
+    try {
+      const service = SkillService.forDatabase(DatabaseService.getInstance());
+      sendJson(res, 200, { success: true, skills: service.list() });
+    } catch (err: any) {
+      sendJson(res, 500, { success: false, error: err.message });
+    }
+  });
 
   /**
    * 2. POST /api/location/switch & /api/location/update

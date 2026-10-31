@@ -9649,3 +9649,52 @@ textarea {
   color: #94a3b8;
   font-size: 11px;
 }
+
+/* Dossier skill sheet */
+.dossier-skill-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dossier-skill-row {
+  padding: 10px 12px;
+  border: 1px solid var(--border-neutral);
+  border-radius: var(--radius-sm);
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.dossier-skill-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #f8fafc;
+  font-size: 12.5px;
+}
+
+.dossier-skill-tier {
+  padding: 1px 7px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  border-radius: var(--radius-xs);
+}
+
+.dossier-skill-meta {
+  margin: 3px 0 5px;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.dossier-skill-progress {
+  width: 100%;
+  height: 5px;
+  accent-color: #34d399;
+}
+
+.dossier-skill-effects {
+  margin-top: 5px;
+  font-size: 11px;
+  color: #7dd3fc;
+}

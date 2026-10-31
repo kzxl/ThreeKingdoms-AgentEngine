@@ -12,7 +12,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { runSqlJson, runSqlBatch, escapeSql } = require('./db-adapter');
+const { runSqlJson, runSqlBatch, runSqlExec, escapeSql } = require('./db-adapter');
 const { advanceCalendarMonth, parseGameDate, formatGameDate, getSeasonInfo, calculateMonthDiff } = require('./date-utils');
 const {
   advanceTime,
@@ -32,6 +32,13 @@ const { getFamilyLineageService } = require('./lineage-bridge');
 const ROOT_DIR = path.resolve(__dirname, '..');
 const SAVES_DIR = path.join(ROOT_DIR, 'saves');
 const DB_PATH = process.env.SIM_DB_PATH || path.join(SAVES_DIR, 'session.db');
+
+const ARCHETYPE_STARTING_SKILLS = {
+  'ARCH-COMMONER-YOUTH': ['SKL-CRA-WEAVE', 'SKL-COM-APPRAISE', 'SKL-LOG-PROV'],
+  'ARCH-SCHOLAR-ARTISAN': ['SKL-COM-BOOK', 'SKL-COM-APPRAISE', 'SKL-MGT-ENTERPRISE'],
+  'ARCH-FRONTIER-OFFICER': ['SKL-WAR-SPEAR', 'SKL-LDR-DRILL', 'SKL-LOG-PROV'],
+  'ARCH-SILK-CARAVAN': ['SKL-COM-CARAVAN', 'SKL-COM-SPECULATE', 'SKL-COM-APPRAISE']
+};
 
 class GameplayManager {
   constructor(dbPath = DB_PATH) {
@@ -235,6 +242,21 @@ class GameplayManager {
       require('./scenario-seed').applyScenarioSeed(this.dbPath, scenarioId);
     } catch (scenarioError) {
       console.warn('[GameplayManager] scenario seed failed:', scenarioError.message);
+    }
+
+    // Starting skills: the reset deletes player_skills, so a new campaign must
+    // seed the archetype's three opening skills.
+    try {
+      for (const code of ARCHETYPE_STARTING_SKILLS[archetypeId] || ARCHETYPE_STARTING_SKILLS['ARCH-COMMONER-YOUTH']) {
+        runSqlExec(
+          this.dbPath,
+          `INSERT OR IGNORE INTO player_skills (skill_code, skill_name, tier, current_exp, max_exp)
+           SELECT skill_code, skill_name_vi, 1, 0, 60 FROM master_skills WHERE skill_code = ?;`,
+          [code]
+        );
+      }
+    } catch (skillError) {
+      console.warn('[GameplayManager] starting skill seed failed:', skillError.message);
     }
 
     return {

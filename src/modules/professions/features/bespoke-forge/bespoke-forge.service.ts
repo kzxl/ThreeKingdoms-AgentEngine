@@ -13,6 +13,7 @@ import { DatabaseService } from '../../../../core/database';
 import { RngService } from '../../../../core/rng';
 import { nextId } from '../../../../shared/id-generator';
 import { getGameDate } from '../../../../shared/game-clock';
+import { SkillService } from '../../../progression/skill.service';
 import {
   BESPOKE_FORGE_RULES,
   BESPOKE_WEAPON_CATALOG,
@@ -65,7 +66,8 @@ export class BespokeForgeService {
     const craftsmanTier = prof ? Number(prof.tier || 1) : 1;
 
     const fatiguePenalty = Math.max(0, Math.floor((fatigue - 20) * 0.4));
-    const effectiveMasteryScore = Math.max(10, craAttr + craftsmanTier * 8 - fatiguePenalty);
+    const skillMastery = SkillService.forDatabase(this.db).getCheckBonus(['SKL-CRA-SMITH']) * 3;
+    const effectiveMasteryScore = Math.max(10, craAttr + craftsmanTier * 8 + skillMastery - fatiguePenalty);
 
     let pLegendary = Math.min(25, Math.max(1, Math.floor((effectiveMasteryScore - 55) * 0.5)));
     let pMasterwork = Math.min(40, Math.max(5, Math.floor((effectiveMasteryScore - 35) * 0.7)));

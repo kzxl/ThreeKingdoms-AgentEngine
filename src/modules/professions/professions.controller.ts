@@ -12,6 +12,7 @@ import { RngService } from '../../core/rng';
 import { nextId } from '../../shared/id-generator';
 import { ModuleRegistry } from '../../core/module-registry';
 import { ProfessionsModule } from './professions.module';
+import { SkillService } from '../progression/skill.service';
 
 import { WageLaborController } from './features/wage-labor/wage-labor.controller';
 import { registerBespokeForgeRoutes } from './features/bespoke-forge/bespoke-forge.controller';
@@ -215,8 +216,9 @@ export function registerProfessionsRoutes(router: Router): void {
           );
         }
 
-        // Defect calculation based on Craft attribute
-        const defectChance = Math.max(0.02, recipe.base_defect_rate - ((player?.cra_attr || 50) / 1000));
+        // Defect calculation based on Craft attribute and craft-skill perks.
+        const skillReduction = SkillService.forDatabase(db).getEffectTotal('DEFECT_REDUCTION');
+        const defectChance = Math.max(0.01, recipe.base_defect_rate - ((player?.cra_attr || 50) / 1000) - skillReduction);
         const defects = RngService.forDomain(db, 'crafting').chance(defectChance) ? 1 : 0;
         const finalYield = Math.max(1, craftQty - defects);
 

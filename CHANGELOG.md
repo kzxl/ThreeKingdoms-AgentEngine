@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.22.0] - 2026-10-31
+
+Skill effects, starting skills and the dossier skill sheet.
+
+### Changed
+- Migration 036 creates `master_skill_effects` and seeds structured tier 2–5
+  effects for all 36 master skills: `CHECK_BONUS` for every skill plus
+  domain effects (`TRADE_MARGIN`, `DEFECT_REDUCTION`, `TRAVEL_SPEED`,
+  `DUEL_POWER`, `SIEGE_POWER`, `MORALE_BONUS`).
+- `SkillService` resolves the **highest reached tier** per skill (not the sum of
+  lower tiers). `getCheckBonus` and `getEffectTotal` are the single resolver.
+- New campaigns seed three starting skills per archetype; previously the reset
+  deleted `player_skills` and never re-seeded, so fresh characters had none.
+- Quest steps carry a `skill_code`; the d20 check now adds the linked skill's
+  check bonus. Travel checks add logistics/scout/ride skill bonuses, travel
+  speed shortens march days, crafting reduces defect chance, and bespoke forge
+  mastery includes the smithing skill.
+- The protagonist dossier gains a **Kỹ Năng & Tuyệt Kỹ** tab fed by
+  `GET /api/skills`, showing tier, EXP and active effects.
+- `tests/verify-skill-system.ts` covers effect resolution, the quest bonus and
+  starting-skill seeding.
+
+### Verification
+`npm run verify` green: 45/45 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,374 invariants.
+
+---
+
 ## [1.21.0] - 2026-10-31
 
 Quest & encounter engine (Phase 1 of the RPG direction).

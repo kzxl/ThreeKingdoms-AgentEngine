@@ -47,6 +47,7 @@ export interface ArchetypePreset {
   startingItems?: StartingItemGrant[];
   startingEquipment?: StartingEquipmentGrant[];
   startingLicenses?: string[];
+  startingSkills?: string[];
   attributes: {
     war: number;
     ldr: number;
@@ -71,6 +72,7 @@ export const ARCHETYPE_PRESETS: Record<string, ArchetypePreset> = {
     initialSafeCash: 0,
     startingLocation: 'Huyện Trác (Thảo Lư)',
     seal: '布',
+  startingSkills: ['SKL-CRA-WEAVE', 'SKL-COM-APPRAISE', 'SKL-LOG-PROV'],
     bioVi: 'Thanh niên áo vải chốn hương thôn, hai bàn tay trắng lập thân. Dựa vào đôi tay quai búa và đan lát kiếm sống, nuôi chí lớn giữa thời tao loạn.',
     startingAssetsVi: ['Vải thô áo cộc', 'Đòn gánh tre', '100 Đồng tiền vụn'],
     attributes: {
@@ -95,6 +97,7 @@ export const ARCHETYPE_PRESETS: Record<string, ArchetypePreset> = {
     initialSafeCash: 1000,
     startingLocation: 'Huyện Trác (Xưởng Lương Gia)',
     seal: '士',
+  startingSkills: ['SKL-COM-BOOK', 'SKL-COM-APPRAISE', 'SKL-MGT-ENTERPRISE'],
     bioVi: 'Hậu duệ gia tộc tiểu thương U Châu, học rộng biết sâu, kết hợp xưởng thủ công dệt gai và cung ứng hậu cần quân nhu.',
     startingAssetsVi: ['Xưởng Dệt Lương Gia', '3 Khung cửi dệt gai', 'Bộ đồ nghề thợ mộc'],
     startingItems: [
@@ -124,6 +127,7 @@ export const ARCHETYPE_PRESETS: Record<string, ArchetypePreset> = {
     initialSafeCash: 500,
     startingLocation: 'Bắc Quân Tiền Doanh',
     seal: '武',
+  startingSkills: ['SKL-WAR-SPEAR', 'SKL-LDR-DRILL', 'SKL-LOG-PROV'],
     bioVi: 'Tướng lĩnh đồn trú biên viễn U Châu, thông thạo trận pháp binh nhung và rèn giũa hương binh dũng sĩ bảo vệ bách tính.',
     startingAssetsVi: ['Giáp da khâu đinh tán', 'Hán trực thương', 'Chiến mã phương bắc'],
     startingItems: [
@@ -154,6 +158,7 @@ export const ARCHETYPE_PRESETS: Record<string, ArchetypePreset> = {
     initialSafeCash: 2000,
     startingLocation: 'Thương Hội U Châu',
     seal: '商',
+  startingSkills: ['SKL-COM-CARAVAN', 'SKL-COM-SPECULATE', 'SKL-COM-APPRAISE'],
     bioVi: 'Tổng quản thương đoàn cự phú vận chuyển hàng hóa tơ lụa và trà muối giữa Ký Châu, Lạc Dương và Từ Châu.',
     startingAssetsVi: ['2 Cỗ xe ngựa gia cố', '4 Lừa thồ hàng', 'Giấy thông hành Thương hội'],
     startingItems: [

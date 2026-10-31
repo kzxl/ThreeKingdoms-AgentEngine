@@ -297,6 +297,18 @@ export function initializeInstanceDatabase(
       }
     }
 
+    // Starting skills: the archetype opens three real skill rows (the old game
+    // deleted player_skills and never seeded them).
+    if (preset.startingSkills?.length
+      && tableExists(db, 'player_skills')
+      && tableExists(db, 'master_skills')) {
+      const grantSkill = db.prepare(`
+        INSERT OR IGNORE INTO player_skills (skill_code, skill_name, tier, current_exp, max_exp)
+        SELECT skill_code, skill_name_vi, 1, 0, 60 FROM master_skills WHERE skill_code = ?;
+      `);
+      for (const code of preset.startingSkills) grantSkill.run(code);
+    }
+
     // 4. Starting workshop and NPC assignments. A commoner does not own it
     //    (the foreman does), matching the zero-to-hero archetype.
     const owner = isCommoner ? 'NPC-0007' : 'PLY-0001';

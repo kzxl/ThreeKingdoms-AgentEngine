@@ -13,6 +13,7 @@ import { nextId } from '../../shared/id-generator';
 import { getGameDate } from '../../shared/game-clock';
 import { recordFinancialTransaction } from '../../shared/financial-transaction';
 import { PrestigeService } from './prestige.service';
+import { SkillService } from './skill.service';
 
 const EXP_SQL: Record<string, string> = {
   int: 'UPDATE player_state SET int_exp = COALESCE(int_exp, 0) + ? WHERE player_id = ?;',
@@ -32,6 +33,7 @@ export interface QuestStepView {
   stat: string;
   dc: number;
   daysCost: number;
+  skillCode?: string | null;
 }
 
 export interface QuestView {
@@ -85,7 +87,8 @@ export class QuestService {
           titleEn: step.title_en,
           stat: step.stat,
           dc: Number(step.dc),
-          daysCost: Number(step.days_cost)
+          daysCost: Number(step.days_cost),
+          skillCode: step.skill_code || null
         }))
       };
     });
@@ -142,10 +145,13 @@ export class QuestService {
     const statKey = String(step.stat || 'int');
     const statValue = Number(player[`${statKey}_attr`] || 50);
     const mod = Math.floor((statValue - 50) / 5);
+    const skillBonus = step.skill_code
+      ? SkillService.forDatabase(this.db).getCheckBonus([String(step.skill_code)])
+      : 0;
     const roll = options.roll !== undefined
       ? Math.max(1, Math.min(20, Math.round(Number(options.roll))))
       : RngService.forDomain(this.db, 'quest').d20();
-    const total = roll + mod;
+    const total = roll + mod + skillBonus;
     const dc = Number(step.dc || 10);
     const success = total >= dc;
     const gameDate = time.nextDate;
@@ -169,6 +175,7 @@ export class QuestService {
         stepIndex: Number(step.step_index),
         roll,
         mod,
+        skillBonus,
         total,
         dc,
         narrative: step.failure_vi || 'Bước này thất bại.',
@@ -207,6 +214,7 @@ export class QuestService {
       stepIndex: Number(step.step_index),
       roll,
       mod,
+      skillBonus,
       total,
       dc,
       narrative: step.success_vi || 'Bước này thành công.',

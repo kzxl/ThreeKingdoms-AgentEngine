@@ -18,6 +18,7 @@
   let cachedPlayerData = null;
   let cachedEquipmentData = null;
   let cachedLineageData = null;
+  let cachedSkills = [];
 
   function isEnglish() {
     return window.currentLang === 'en';
@@ -166,15 +167,17 @@
     modalEl.classList.remove('hidden');
 
     try {
-      const [statusRes, eqRes, linRes] = await Promise.all([
+      const [statusRes, eqRes, linRes, skillRes] = await Promise.all([
         fetch('/api/status').then((r) => r.json()),
         fetch('/api/equipment?characterId=PLY-0001').then((r) => r.json()).catch(() => ({})),
-        fetch('/api/lineage/status').then((r) => r.json()).catch(() => ({}))
+        fetch('/api/lineage/status').then((r) => r.json()).catch(() => ({})),
+        fetch('/api/skills').then((r) => r.json()).catch(() => ({}))
       ]);
 
       cachedPlayerData = statusRes.player || {};
       cachedEquipmentData = eqRes.overview || { slots: {}, effectiveAttributes: {}, equipmentBuffs: {} };
       cachedLineageData = linRes.overview || {};
+      cachedSkills = skillRes.skills || [];
 
       renderModalContent(modalEl);
     } catch (err) {
@@ -323,6 +326,9 @@
           </button>
           <button class="grand-hub-subnav-btn ${activeTabKey === 'lineage' ? 'active' : ''}" onclick="window.ProtagonistDossierModal.switchTab('lineage')">
             <span class="hub-subnav-seal">家</span> ${isEn ? 'Clan & Life Destiny' : 'Gia Tộc & Phẩm Lộ'}
+          </button>
+          <button class="grand-hub-subnav-btn ${activeTabKey === 'skills' ? 'active' : ''}" onclick="window.ProtagonistDossierModal.switchTab('skills')">
+            <span class="hub-subnav-seal">技</span> ${isEn ? 'Skills & Perks' : 'Kỹ Năng & Tuyệt Kỹ'}
           </button>
         </div>
 
@@ -519,6 +525,38 @@
           </div>
         </div>
       `;
+    }
+
+    if (tabKey === 'skills') {
+      const effectLabel = (effect) => {
+        const value = Number(effect.value || 0);
+        switch (effect.effectType) {
+          case 'CHECK_BONUS': return `${isEn ? 'Check' : 'Kiểm tra'} +${value}`;
+          case 'TRADE_MARGIN': return `${isEn ? 'Trade margin' : 'Biên thương vụ'} +${Math.round(value * 100)}%`;
+          case 'DEFECT_REDUCTION': return `${isEn ? 'Defect' : 'Phế phẩm'} -${Math.round(value * 100)}%`;
+          case 'TRAVEL_SPEED': return `${isEn ? 'Travel speed' : 'Tốc độ đi'} +${Math.round(value * 100)}%`;
+          case 'DUEL_POWER': return `${isEn ? 'Duel power' : 'Uy lực đơn đả'} +${value}`;
+          case 'SIEGE_POWER': return `${isEn ? 'Siege power' : 'Uy lực công thành'} +${value}`;
+          case 'MORALE_BONUS': return `${isEn ? 'Morale' : 'Sĩ khí'} +${value}`;
+          default: return `${effect.effectType} +${value}`;
+        }
+      };
+      const rows = cachedSkills.map((skill) => {
+        const pct = Math.min(100, Math.round((Number(skill.currentExp || 0) / Math.max(1, Number(skill.maxExp || 1))) * 100));
+        const effects = (skill.effects || []).map(effectLabel).join(' • ');
+        return `
+          <div class="dossier-skill-row">
+            <div class="dossier-skill-head">
+              <strong>${isEn ? skill.nameEn : skill.nameVi}</strong>
+              <span class="dossier-skill-tier">T${skill.tier}</span>
+            </div>
+            <div class="dossier-skill-meta">${skill.domain} • ${skill.primaryAttr} • ${skill.currentExp}/${skill.maxExp} EXP</div>
+            <progress class="dossier-skill-progress" value="${pct}" max="100"></progress>
+            <div class="dossier-skill-effects">${effects || (isEn ? 'No active effect yet' : 'Chưa có hiệu ứng')}</div>
+          </div>
+        `;
+      }).join('');
+      return `<div class="dossier-skill-list">${rows || `<div class="quest-empty">${isEn ? 'No skills learned yet.' : 'Chưa học kỹ năng nào.'}</div>`}</div>`;
     }
 
     if (tabKey === 'lineage') {

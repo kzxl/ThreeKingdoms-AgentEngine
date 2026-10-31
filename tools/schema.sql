@@ -66,6 +66,7 @@ CREATE TABLE IF NOT EXISTS master_quest_steps (
     failure_vi TEXT,
     failure_en TEXT,
     reward_json TEXT DEFAULT '{}',
+    skill_code TEXT,
     UNIQUE(quest_id, step_index)
 );
 
@@ -135,6 +136,15 @@ CREATE TABLE IF NOT EXISTS player_skills (
     current_exp INTEGER NOT NULL DEFAULT 0,
     max_exp INTEGER NOT NULL DEFAULT 40,
     notes TEXT
+);
+
+-- 3b. Structured skill effects (seeded by migration 036)
+CREATE TABLE IF NOT EXISTS master_skill_effects (
+    skill_code TEXT NOT NULL,
+    tier INTEGER NOT NULL,
+    effect_type TEXT NOT NULL,
+    value REAL NOT NULL,
+    PRIMARY KEY (skill_code, tier, effect_type)
 );
 
 -- 4. Single-Entry Cash Flow Log (Running balance cache)

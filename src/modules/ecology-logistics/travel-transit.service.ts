@@ -10,6 +10,7 @@
 import { DatabaseService } from '../../core/database';
 import { RngService } from '../../core/rng';
 import { nextId } from '../../shared/id-generator';
+import { SkillService } from '../progression/skill.service';
 import {
   NODE_TO_LOC_MAP,
   resolveLocationId,
@@ -116,7 +117,9 @@ export class TravelTransitService {
     const terrainType = route ? route.terrain_type : 'PLAINS';
     // Whole calendar days; the plan must show the same number of days charged.
     const rawMarchDays = route ? route.standard_march_days : (tgtLocation?.march_days || 2.0);
-    const marchDays = Math.max(1, Math.round(Number(rawMarchDays) || 1));
+    const travelSpeed = Math.min(0.4, SkillService.forDatabase(this.db)
+      .getEffectTotal('TRAVEL_SPEED', ['SKL-LOG-PROV', 'SKL-COM-CARAVAN']));
+    const marchDays = Math.max(1, Math.round((Number(rawMarchDays) || 1) * (1 - travelSpeed)));
     const grainCost = route ? route.grain_provision_cost : (tgtLocation?.grain_cost || 2.0);
     const riskLevel = route ? route.ambush_risk_level : (tgtLocation?.threat_level_vi || 'MODERATE');
     const routeDescVi = route?.description_vi || `Đại lộ quan đạo tiến về ${tgtLocation?.name_vi || toNodeId}.`;
@@ -405,6 +408,7 @@ export class TravelTransitService {
     success: boolean;
     d20Roll: number;
     mod: number;
+    skillBonus: number;
     totalScore: number;
     targetDC: number;
     isSuccess: boolean;
@@ -416,7 +420,9 @@ export class TravelTransitService {
     const choice = encounter.choices.find(c => c.id === choiceId) || encounter.choices[0];
 
     const d20Roll = roll !== undefined ? Number(roll) : RngService.forDomain(this.db, 'travel').d20();
-    const totalScore = d20Roll + choice.playerMod;
+    const skillBonus = SkillService.forDatabase(this.db)
+      .getCheckBonus(['SKL-LOG-PROV', 'SKL-TAC-SCOUT', 'SKL-WAR-RIDE']);
+    const totalScore = d20Roll + choice.playerMod + skillBonus;
     const isSuccess = choice.targetDC === 0 || totalScore >= choice.targetDC;
 
     const delta = isSuccess ? choice.successDelta : choice.failureDelta;
@@ -444,6 +450,7 @@ export class TravelTransitService {
       success: true,
       d20Roll,
       mod: choice.playerMod,
+      skillBonus,
       totalScore,
       targetDC: choice.targetDC,
       isSuccess,
