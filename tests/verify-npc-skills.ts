@@ -120,6 +120,16 @@ function run(): void {
   assert.strictEqual(service.combatBonuses('NPC-9001').duelPower, 4);
   assert.strictEqual(service.ensurePerks('NPC-9001'), 0, 'perks are already persisted by the migration');
 
+  // A later tier-up must gain its perk even though tier 3 is already persisted.
+  const db = new Database(TEST_DB);
+  db.prepare(`UPDATE npc_skills SET tier = 5 WHERE npc_id = 'NPC-9001' AND skill_code = 'SKL-WAR-DUEL';`).run();
+  db.close();
+  const atFive = service.listSkills('NPC-9001').find(skill => skill.skillCode === 'SKL-WAR-DUEL');
+  assert.strictEqual(atFive!.perks.length, 2, 'tier 5 must add its perk beside the persisted tier 3 perk');
+  assert.strictEqual(atFive!.perks[1].perkCode, 'PRK-DUEL-5');
+  assert.strictEqual(service.effectTotal('NPC-9001', 'DUEL_POWER'), 2 + 2 + 3);
+  assert.strictEqual(service.ensurePerks('NPC-9001'), 1, 'the new tier perk must persist');
+
   // Master-only generals have no npc_skills rows and fall back to aptitude.
   assert.strictEqual(service.listSkills('MC-9002').length, 0);
   const master = service.combatBonuses('MC-9002');

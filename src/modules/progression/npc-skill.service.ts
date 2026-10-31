@@ -216,20 +216,22 @@ export class NpcSkillService {
 
   private resolvePerks(skillCode: string, tier: number, persisted: NpcPerkView[]): NpcPerkView[] {
     const chosen = persisted.filter(perk => perk.skillCode === skillCode && perk.tier <= tier);
-    if (chosen.length > 0) return chosen;
+    const coveredTiers = new Set(chosen.map(perk => perk.tier));
     try {
-      return this.db.query<any>(
+      const auto = this.db.query<any>(
         `SELECT perk_code, skill_code, tier, name_vi, name_en, effect_type, value
          FROM master_perks
          WHERE skill_code = ? AND tier <= ?
          ORDER BY tier ASC, value DESC, perk_code ASC;`,
         [skillCode, tier]
       ).reduce<NpcPerkView[]>((perks, row) => {
-        if (perks.some(perk => perk.tier === Number(row.tier))) return perks;
+        const perkTier = Number(row.tier);
+        if (coveredTiers.has(perkTier)) return perks;
+        coveredTiers.add(perkTier);
         perks.push({
           perkCode: row.perk_code,
           skillCode: row.skill_code,
-          tier: Number(row.tier),
+          tier: perkTier,
           nameVi: row.name_vi,
           nameEn: row.name_en,
           effectType: row.effect_type,
@@ -237,8 +239,9 @@ export class NpcSkillService {
         });
         return perks;
       }, []);
+      return [...chosen, ...auto].sort((a, b) => a.tier - b.tier);
     } catch {
-      return [];
+      return chosen;
     }
   }
 
