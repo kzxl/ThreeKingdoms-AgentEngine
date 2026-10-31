@@ -53,7 +53,9 @@ const ACTION_TIME_POLICY = {
   EXPEDITION_START: { days: 1, fatigue: 5, labelVi: 'Xuất chinh', labelEn: 'Start expedition' },
   SIEGE_PREP: { days: 1, fatigue: 5, labelVi: 'Chuẩn bị công thành', labelEn: 'Prepare siege' },
   POLITICAL_ACTION: { days: 1, fatigue: 2, labelVi: 'Chính sự', labelEn: 'Political action' },
-  COURTSHIP: { days: 1, fatigue: 3, labelVi: 'Cầu hôn', labelEn: 'Courtship' }
+  COURTSHIP: { days: 1, fatigue: 3, labelVi: 'Cầu hôn', labelEn: 'Courtship' },
+  // Administrative work uses one of the three day phases instead of a whole day.
+  ADMIN_ACTION: { days: 0, phases: 1, fatigue: 0, labelVi: 'Công văn', labelEn: 'Administrative action' }
 };
 
 function getActionTimeCost(type, subType) {

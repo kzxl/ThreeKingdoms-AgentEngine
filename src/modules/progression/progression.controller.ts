@@ -102,7 +102,17 @@ export function registerProgressionRoutes(router: Router): void {
         return;
       }
       const service = QuestService.forDatabase(DatabaseService.getInstance());
-      sendJson(res, 200, { success: true, quest: service.accept(String(body.questId), body.playerId || 'PLY-0001') });
+      const time = chargePlayerAction(
+        DatabaseService.getInstance().path,
+        'ADMIN_ACTION',
+        null,
+        `Accept quest ${body.questId}`
+      );
+      sendJson(res, 200, {
+        success: true,
+        quest: service.accept(String(body.questId), body.playerId || 'PLY-0001'),
+        time
+      });
     } catch (err: any) {
       sendJson(res, 400, { success: false, error: err.message });
     }
@@ -161,7 +171,13 @@ export function registerProgressionRoutes(router: Router): void {
         return;
       }
       const service = SkillService.forDatabase(DatabaseService.getInstance());
-      sendJson(res, 200, { success: true, perk: service.choosePerk(perkCode) });
+      const time = chargePlayerAction(
+        DatabaseService.getInstance().path,
+        'ADMIN_ACTION',
+        null,
+        `Choose perk ${perkCode}`
+      );
+      sendJson(res, 200, { success: true, perk: service.choosePerk(perkCode), time });
     } catch (err: any) {
       sendJson(res, 400, { success: false, error: err.message });
     }

@@ -66,7 +66,10 @@ export function chargePlayerAction(
   // spend a whole day duelling, working or socialising.
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const fatigueMax = Number(require('../../config/game-constants.json').fatigue.max || 100);
-  if (Number(check.cost?.days || 0) > 0 && Number(check.clock?.fatigue || 0) >= fatigueMax) {
+  if (
+    (Number(check.cost?.days || 0) > 0 || Number(check.cost?.phases || 0) > 0)
+    && Number(check.clock?.fatigue || 0) >= fatigueMax
+  ) {
     throw new ActionTimeError(
       `Thể lực đã cạn (${fatigueMax}/${fatigueMax}). Hãy nghỉ ngơi trước khi tiếp tục.`,
       'FATIGUE'

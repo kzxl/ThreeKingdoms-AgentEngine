@@ -9,6 +9,7 @@
   },
   "calendar": {
     "daysPerMonth": 30,
+    "phasesPerDay": 3,
     "monthsPerYear": 12,
     "grainPerDay": 0.02,
     "dailyFatigueRecovery": 1,

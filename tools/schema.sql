@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS campaign_meta (
     start_date TEXT NOT NULL DEFAULT '184-02-01',
     current_date TEXT NOT NULL DEFAULT '184-02-01',
     active_turn INTEGER NOT NULL DEFAULT 0,
+    current_phase INTEGER NOT NULL DEFAULT 0,
     rules_version TEXT NOT NULL DEFAULT '1.1.0',
     random_seed INTEGER NOT NULL DEFAULT 1840201,
     status TEXT NOT NULL DEFAULT 'ACTIVE',

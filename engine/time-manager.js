@@ -19,11 +19,13 @@ const { parseGameDate, formatGameDate, addDaysToDate } = require('./date-utils')
 const GAME_CONSTANTS = require('../config/game-constants.json');
 
 const DAYS_PER_MONTH = GAME_CONSTANTS.calendar.daysPerMonth;
+const PHASES_PER_DAY = Number(GAME_CONSTANTS.calendar.phasesPerDay || 3);
 const GRAIN_PER_DAY = GAME_CONSTANTS.calendar.grainPerDay;
 const DAILY_FATIGUE_RECOVERY = GAME_CONSTANTS.calendar.dailyFatigueRecovery;
 const FATIGUE_MAX = GAME_CONSTANTS.fatigue.max;
 const FALLBACK_DATE = GAME_CONSTANTS.calendar.fallbackDate;
 const DATE_PATTERN = /^\d{3}-\d{2}-\d{2}$/;
+const PHASE_LABELS = ['Sáng', 'Chiều', 'Tối'];
 
 // Thin adapters over engine/date-utils so there is one parser/formatter for the
 // whole engine. They keep the local call signatures used below.
@@ -82,11 +84,15 @@ function publishDayTicks(startDate, days) {
 }
 
 function getClock(dbPath) {
-  const meta = runSqlJson(dbPath, `SELECT campaign_id, "current_date", active_turn FROM campaign_meta LIMIT 1;`)[0];
+  const meta = runSqlJson(
+    dbPath,
+    `SELECT campaign_id, "current_date", active_turn, current_phase FROM campaign_meta LIMIT 1;`
+  )[0];
   const player = runSqlJson(dbPath, `SELECT fatigue, strategic_grain, health, morale FROM player_state LIMIT 1;`)[0] || {};
   const currentDate = meta ? meta.current_date : FALLBACK_DATE;
   const { year, month, day } = parseDate(currentDate);
   const season = month <= 3 ? 'Xuân' : (month <= 6 ? 'Hạ' : (month <= 9 ? 'Thu' : 'Đông'));
+  const phase = Math.max(0, Math.min(PHASES_PER_DAY - 1, Number(meta?.current_phase || 0)));
   return {
     campaignId: meta ? meta.campaign_id : null,
     currentDate,
@@ -95,6 +101,9 @@ function getClock(dbPath) {
     dayOfMonth: day,
     daysLeft: Math.max(0, DAYS_PER_MONTH - day),
     daysPerMonth: DAYS_PER_MONTH,
+    phase,
+    phasesPerDay: PHASES_PER_DAY,
+    phaseLabel: PHASE_LABELS[phase] || PHASE_LABELS[0],
     season,
     activeTurn: meta ? Number(meta.active_turn || 1) : 1,
     fatigue: Number(player.fatigue || 0),
@@ -106,10 +115,11 @@ function getClock(dbPath) {
 
 function resolveActionCost(type, subType, daysOverride) {
   const baseCost = getActionTimeCost(type, subType);
+  const phases = Math.max(0, Math.round(Number(baseCost.phases || 0)));
   if (daysOverride === null || daysOverride === undefined) {
-    return { ...baseCost, days: normalizeDays(baseCost.days) };
+    return { ...baseCost, days: normalizeDays(baseCost.days), phases };
   }
-  return { ...baseCost, days: Math.min(DAYS_PER_MONTH, normalizeDays(daysOverride)) };
+  return { ...baseCost, days: Math.min(DAYS_PER_MONTH, normalizeDays(daysOverride)), phases };
 }
 
 function canSpendActionTime(dbPath, type, subType, daysOverride = null) {
@@ -188,7 +198,7 @@ function advanceCampaignDays(dbPath, rawDays, options = {}) {
   if (advancedDays > 0) {
     runSqlExec(
       dbPath,
-      `UPDATE campaign_meta SET current_date = ? WHERE campaign_id = ?;`,
+      `UPDATE campaign_meta SET current_date = ?, current_phase = 0 WHERE campaign_id = ?;`,
       [nextDate, clock.campaignId]
     );
     runSqlExec(
@@ -398,20 +408,92 @@ function advanceTime(dbPath, rawDays, options = {}) {
   };
 }
 
+/**
+ * Spends phase slots inside the current day. Reaching the end of the day
+ * advances one calendar day (and resets the phase to morning).
+ */
+function advancePhase(dbPath, rawPhases = 1, options = {}) {
+  const requested = Math.max(0, Math.round(Number(rawPhases) || 0));
+  const startClock = getClock(dbPath);
+  if (!startClock.campaignId) {
+    return { success: false, error: 'Campaign metadata missing.' };
+  }
+  let remaining = requested;
+  let daysAdvanced = 0;
+  const monthsClosed = [];
+  let last = null;
+
+  while (remaining > 0) {
+    const clock = getClock(dbPath);
+    const toEnd = PHASES_PER_DAY - clock.phase;
+    if (remaining >= toEnd) {
+      const result = advanceTime(dbPath, 1, {
+        reason: options.reason || 'phase advance',
+        fatigueDelta: Number(options.fatigueDelta || 0),
+        grainUpkeepPerDay: GRAIN_PER_DAY,
+        fatigueRecoveryPerDay: DAILY_FATIGUE_RECOVERY,
+        publishTicks: options.publishTicks !== false
+      });
+      if (!result.success) return { ...result, partial: true };
+      daysAdvanced += result.advancedDays;
+      monthsClosed.push(...(result.monthsClosed || []));
+      last = result;
+      remaining -= toEnd;
+    } else {
+      runSqlExec(
+        dbPath,
+        'UPDATE campaign_meta SET current_phase = ? WHERE campaign_id = ?;',
+        [clock.phase + remaining, clock.campaignId]
+      );
+      remaining = 0;
+    }
+  }
+
+  const clock = getClock(dbPath);
+  return {
+    success: true,
+    requestedPhases: requested,
+    phasesSpent: requested,
+    daysAdvanced,
+    monthsClosed,
+    prevDate: startClock.currentDate,
+    nextDate: clock.currentDate,
+    phase: clock.phase,
+    phaseLabel: clock.phaseLabel,
+    grainCost: last ? last.grainCost : 0,
+    grainAfter: last ? last.grainAfter : clock.grain,
+    fatigueBefore: startClock.fatigue,
+    fatigueAfter: clock.fatigue
+  };
+}
+
 function applyActionTime(dbPath, type, subType, reason = '', daysOverride = null) {
   const cost = resolveActionCost(type, subType, daysOverride);
-  const result = advanceTime(dbPath, cost.days, {
-    reason,
-    fatigueDelta: cost.fatigue,
-    grainUpkeepPerDay: GRAIN_PER_DAY,
-    fatigueRecoveryPerDay: DAILY_FATIGUE_RECOVERY
-  });
+  let result;
+  if (cost.days > 0) {
+    result = advanceTime(dbPath, cost.days, {
+      reason,
+      fatigueDelta: cost.fatigue,
+      grainUpkeepPerDay: GRAIN_PER_DAY,
+      fatigueRecoveryPerDay: DAILY_FATIGUE_RECOVERY
+    });
+  } else if (cost.phases > 0) {
+    result = advancePhase(dbPath, cost.phases, { reason });
+  } else {
+    result = advanceTime(dbPath, 0, {
+      reason,
+      fatigueDelta: cost.fatigue,
+      grainUpkeepPerDay: GRAIN_PER_DAY,
+      fatigueRecoveryPerDay: DAILY_FATIGUE_RECOVERY
+    });
+  }
   if (!result.success) return result;
   return { ...result, actionType: type, subType: subType || null };
 }
 
 module.exports = {
   DAYS_PER_MONTH,
+  PHASES_PER_DAY,
   GRAIN_PER_DAY,
   DAILY_FATIGUE_RECOVERY,
   DATE_PATTERN,
@@ -419,6 +501,7 @@ module.exports = {
   getClock,
   canSpendActionTime,
   applyActionTime,
+  advancePhase,
   advanceCampaignDays,
   advanceTime,
   publishDayTicks

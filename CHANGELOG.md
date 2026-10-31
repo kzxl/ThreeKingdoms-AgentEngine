@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.29.0] - 2026-10-31
+
+Day phases: a day has morning, afternoon and evening.
+
+### Added
+- `config/game-constants.json` gains `calendar.phasesPerDay = 3`;
+  `campaign_meta.current_phase` is added by migration 053 (and the base schema).
+- `getClock` returns `phase`, `phasesPerDay` and `phaseLabel`.
+- `advancePhase` spends phase slots; reaching the end advances one day and resets
+  to morning. `applyActionTime` uses phases when a policy row has `phases` and no
+  `days`.
+- New `ADMIN_ACTION` policy (1 phase). Quest accept, perk choice, obligation
+  payment, contract accept and caravan claim use it, so three administrative
+  actions fill a day while field actions still consume whole days.
+- `tests/verify-day-phases.ts` proves three admin phases fill a day, a day action
+  resets the phase, and quest accept spends one phase through the router.
+
+### Verification
+`npm run verify` green: 64/64 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,546 invariants, 0 discrepancies.
+
+---
+
 ## [1.28.1] - 2026-10-31
 
 World month close is atomic per module.

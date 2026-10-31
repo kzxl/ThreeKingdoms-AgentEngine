@@ -500,9 +500,10 @@ export function registerEconomyRoutes(router: Router): void {
         sendJson(res, 200, { success: true, ...prior, idempotent: true });
         return;
       }
+      const time = chargePlayerAction(db.path, 'ADMIN_ACTION', null, `Pay obligation ${obligationId}`);
       const service = ObligationService.forDatabase(db);
       const obligation = service.pay(obligationId, playerId);
-      const response = { obligation, summary: service.summary(playerId) };
+      const response = { obligation, summary: service.summary(playerId), time };
       recordAction(db, {
         key: idempotencyKey,
         actionType: 'OBLIGATION_PAY',
@@ -551,9 +552,10 @@ export function registerEconomyRoutes(router: Router): void {
         sendJson(res, 200, { success: true, ...prior, idempotent: true });
         return;
       }
+      const time = chargePlayerAction(db.path, 'ADMIN_ACTION', null, `Accept contract ${offerId}`);
       const service = ContractBoardService.forDatabase(db);
       const contract = service.accept(offerId, playerId);
-      const response = { contract };
+      const response = { contract, time };
       recordAction(db, {
         key: idempotencyKey,
         actionType: 'CONTRACT_ACCEPT',
@@ -1089,15 +1091,17 @@ export function registerEconomyRoutes(router: Router): void {
         sendJson(res, 200, { success: true, ...prior, idempotent: true });
         return;
       }
+      const time = chargePlayerAction(db.path, 'ADMIN_ACTION', null, `Claim caravan ${caravanId}`);
       const logisticsService = CaravanLogisticsService.getInstance();
       const result = logisticsService.claimCaravan(caravanId, playerId);
+      const response = { ...result, time };
       recordAction(db, {
         key: idempotencyKey,
         actionType: 'CARAVAN_CLAIM',
         payload: { caravanId, playerId },
-        result
+        result: response
       });
-      sendJson(res, 200, { ...result, idempotent: false });
+      sendJson(res, 200, { ...response, idempotent: false });
     } catch (err: any) {
       sendJson(res, 400, { success: false, error: err.message });
     }
