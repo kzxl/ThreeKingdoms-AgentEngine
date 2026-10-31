@@ -14,7 +14,7 @@ import { RegionalMarketService, SETTLEMENT_PROFILES } from './regional-market.se
 import { LOC_TO_NODE_MAP } from '../ecology-logistics/spatial-registry';
 import { SettlementMarketService } from './settlement-market.service';
 import { CaravanLogisticsService } from '../ecology-logistics/caravan-logistics.service';
-import { postCashflowEntry } from '../../shared/ledger';
+import { postCashflowEntry, postDoubleEntry } from '../../shared/ledger';
 import { ACCOUNT_CODES } from '../../shared/account-codes';
 import { getMarketItem } from '../../shared/market-price-book';
 import { quoteFromReference } from '../../shared/market-quote';
@@ -34,22 +34,6 @@ function getEconomyModule(): EconomyModule | undefined {
 
 function getDb(): DatabaseService {
   return DatabaseService.getInstance();
-}
-
-function ensureLoansTable(db: DatabaseService): void {
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS financial_loans (
-      loan_id TEXT PRIMARY KEY,
-      borrower_id TEXT NOT NULL,
-      lender_name TEXT NOT NULL,
-      principal INTEGER NOT NULL,
-      interest_rate REAL NOT NULL DEFAULT 0.05,
-      outstanding_balance INTEGER NOT NULL,
-      created_date TEXT NOT NULL,
-      due_date TEXT NOT NULL,
-      status TEXT NOT NULL DEFAULT 'ACTIVE'
-    );
-  `);
 }
 
 function getCampaignMeta(db: DatabaseService): { campaignId: string; activeTurn: number; currentDate: string } {
@@ -114,7 +98,6 @@ function oneYearLater(gameDate: string): string {
  */
 export function registerEconomyRoutes(router: Router): void {
   const db = getDb();
-  ensureLoansTable(db);
 
   // -------------------------------------------------------------
   // 1. GET /api/market & /api/economy/market
@@ -747,7 +730,28 @@ export function registerEconomyRoutes(router: Router): void {
         sendJson(res, 400, { success: false, error: 'Positive loan amount is required.' });
         return;
       }
+      if (loanAction !== 'BORROW' && loanAction !== 'REPAY') {
+        sendJson(res, 400, { success: false, error: 'Action must be BORROW or REPAY.' });
+        return;
+      }
+      if (loanAction === 'REPAY' && !loanId) {
+        sendJson(res, 400, { success: false, error: 'loanId is required to repay a specific debt.' });
+        return;
+      }
 
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
+
+      const time = chargePlayerAction(
+        db.path,
+        'ADMIN_ACTION',
+        null,
+        `Loan ${loanAction} ${numAmount}`
+      );
       const meta = getCampaignMeta(db);
       const effectiveDate = meta.currentDate;
 
@@ -774,24 +778,16 @@ export function registerEconomyRoutes(router: Router): void {
           );
 
           const txnId = nextSequentialId(db, 'cashflow_ledger', 'TXN', effectiveDate);
-          postCashflowEntry(db, {
+          postDoubleEntry(db, {
             txnId,
             gameDate: effectiveDate,
             counterparty: lenderName,
             category: 'Financing/Loan',
             inflow: numAmount,
             balance: newCash + safeCash,
-            memo: `Vay vốn kinh doanh từ ${lenderName}`
-          });
-
-          insertJournalPair(db, {
-            txnId,
-            campaignId: meta.campaignId,
-            gameDate: effectiveDate,
+            memo: `Vay vốn kinh doanh từ ${lenderName}`,
             debitAccount: ACCOUNT_CODES.cashMobile,
-            creditAccount: ACCOUNT_CODES.accountsPayable,
-            amount: numAmount,
-            memo: `Vay vốn lưu động ${lenderName}`
+            creditAccount: ACCOUNT_CODES.accountsPayable
           });
 
           return {
@@ -802,59 +798,55 @@ export function registerEconomyRoutes(router: Router): void {
             newLiquidCash: newCash,
             message: `Vay thành công ${numAmount} quan từ ${lenderName} (Lãi suất 5%, hoàn trả ${outstanding} quan).`
           };
-        } else if (loanAction === 'REPAY') {
-          if (!loanId) throw new Error('loanId is required to repay a specific debt.');
-          const targetLoan = db.queryOne<any>('SELECT * FROM financial_loans WHERE loan_id = ? AND status = ?', [loanId, 'ACTIVE']);
-          if (!targetLoan) throw new Error(`Active loan ${loanId} not found.`);
-
-          const payAmount = Math.min(numAmount, targetLoan.outstanding_balance);
-          if (player.liquid_cash < payAmount) {
-            throw new Error(`Insufficient funds: require ${payAmount} quan, available ${player.liquid_cash} quan.`);
-          }
-
-          const newCash = player.liquid_cash - payAmount;
-          const remainingDebt = targetLoan.outstanding_balance - payAmount;
-          const newStatus = remainingDebt <= 0 ? 'REPAID' : 'ACTIVE';
-
-          db.execute('UPDATE player_state SET liquid_cash = ? WHERE player_id = ?', [newCash, 'PLY-0001']);
-          db.execute('UPDATE financial_loans SET outstanding_balance = ?, status = ? WHERE loan_id = ?', [remainingDebt, newStatus, loanId]);
-
-          const txnId = nextSequentialId(db, 'cashflow_ledger', 'TXN', effectiveDate);
-          postCashflowEntry(db, {
-            txnId,
-            gameDate: effectiveDate,
-            counterparty: targetLoan.lender_name,
-            category: 'Financing/Repayment',
-            outflow: payAmount,
-            balance: newCash + safeCash,
-            memo: `Trả nợ khoản vay ${loanId}`
-          });
-
-          insertJournalPair(db, {
-            txnId,
-            campaignId: meta.campaignId,
-            gameDate: effectiveDate,
-            debitAccount: ACCOUNT_CODES.accountsPayable,
-            creditAccount: ACCOUNT_CODES.cashMobile,
-            amount: payAmount,
-            memo: `Hoàn trả nợ vay ${loanId}`
-          });
-
-          return {
-            loanId,
-            action: 'REPAY',
-            paidAmount: payAmount,
-            remainingDebt,
-            newStatus,
-            newLiquidCash: newCash,
-            message: `Hoàn trả ${payAmount} quan cho ${targetLoan.lender_name}. Nợ còn lại: ${remainingDebt} quan.`
-          };
-        } else {
-          throw new Error('Action must be BORROW or REPAY.');
         }
+
+        const targetLoan = db.queryOne<any>('SELECT * FROM financial_loans WHERE loan_id = ? AND status = ?', [loanId, 'ACTIVE']);
+        if (!targetLoan) throw new Error(`Active loan ${loanId} not found.`);
+
+        const payAmount = Math.min(numAmount, targetLoan.outstanding_balance);
+        if (player.liquid_cash < payAmount) {
+          throw new Error(`Insufficient funds: require ${payAmount} quan, available ${player.liquid_cash} quan.`);
+        }
+
+        const newCash = player.liquid_cash - payAmount;
+        const remainingDebt = targetLoan.outstanding_balance - payAmount;
+        const newStatus = remainingDebt <= 0 ? 'REPAID' : 'ACTIVE';
+
+        db.execute('UPDATE player_state SET liquid_cash = ? WHERE player_id = ?', [newCash, 'PLY-0001']);
+        db.execute('UPDATE financial_loans SET outstanding_balance = ?, status = ? WHERE loan_id = ?', [remainingDebt, newStatus, loanId]);
+
+        const txnId = nextSequentialId(db, 'cashflow_ledger', 'TXN', effectiveDate);
+        postDoubleEntry(db, {
+          txnId,
+          gameDate: effectiveDate,
+          counterparty: targetLoan.lender_name,
+          category: 'Financing/Repayment',
+          outflow: payAmount,
+          balance: newCash + safeCash,
+          memo: `Trả nợ khoản vay ${loanId}`,
+          debitAccount: ACCOUNT_CODES.accountsPayable,
+          creditAccount: ACCOUNT_CODES.cashMobile
+        });
+
+        return {
+          loanId,
+          action: 'REPAY',
+          paidAmount: payAmount,
+          remainingDebt,
+          newStatus,
+          newLiquidCash: newCash,
+          message: `Hoàn trả ${payAmount} quan cho ${targetLoan.lender_name}. Nợ còn lại: ${remainingDebt} quan.`
+        };
       });
 
-      sendJson(res, 200, { success: true, ...result });
+      const response = { ...result, time };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: `LOAN_${loanAction}`,
+        payload: { action: loanAction, amount: numAmount, lenderName, loanId },
+        result: response
+      });
+      sendJson(res, 200, { success: true, ...response, idempotent: false });
     } catch (err: any) {
       sendJson(res, 400, { success: false, error: err.message });
     }
