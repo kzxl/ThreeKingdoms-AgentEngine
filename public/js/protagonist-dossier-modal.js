@@ -560,8 +560,12 @@
         }
       };
       const talentHtml = (cachedTalents || []).map((talent) => {
-        const label = `${isEn ? talent.nameEn : talent.nameVi} · ${effectLabel({ effectType: talent.effectType, value: talent.value })}`;
-        return `<span class="dossier-skill-perk is-chosen">${label}</span>`;
+        const effects = (talent.effects && talent.effects.length > 0 ? talent.effects : [talent])
+          .map(effectLabel)
+          .join(' • ');
+        const description = String((isEn ? talent.descriptionEn : talent.descriptionVi) || '').replace(/"/g, '&quot;');
+        const rarity = talent.rarity ? `${talent.rarity} · ` : '';
+        return `<span class="dossier-skill-perk is-chosen" title="${description}">${rarity}${isEn ? talent.nameEn : talent.nameVi} · ${effects}</span>`;
       }).join('');
       const talentRow = talentHtml
         ? `<div class="dossier-skill-row"><div class="dossier-skill-head"><strong>${isEn ? 'Innate Talents' : 'Thiên Phú Bẩm Sinh'}</strong></div><div class="dossier-skill-perks">${talentHtml}</div></div>`

@@ -46,9 +46,21 @@ export interface PlayerTalentView {
   nameVi: string;
   nameEn: string;
   category: string;
+  rarity: string;
+  descriptionVi: string;
+  descriptionEn: string;
   effectType: string;
   value: number;
+  effects: Array<{ effectType: string; value: number }>;
 }
+
+const CATEGORY_FALLBACK_EFFECTS: Record<string, [string, number]> = {
+  MARTIAL: ['DUEL_POWER', 2],
+  GOVERNANCE: ['MORALE_BONUS', 2],
+  STRATEGY: ['SIEGE_POWER', 2],
+  COMMERCE: ['TRADE_MARGIN', 0.03],
+  LEADERSHIP: ['MORALE_BONUS', 2]
+};
 
 export class SkillService {
   constructor(private readonly db: DatabaseService) {}
@@ -169,15 +181,34 @@ export class SkillService {
     let talents: any[] = [];
     try {
       talents = this.db.query<any>(
-        `SELECT mte.effect_type, mte.value
+        `SELECT pt.talent_code, mte.effect_type, mte.value
          FROM master_talent_effects mte
          JOIN player_talents pt ON pt.talent_code = mte.talent_code;`
       );
     } catch {
       talents = [];
     }
+    const covered = new Set(talents.map(talent => talent.talent_code));
     for (const talent of talents) {
       if (talent.effect_type === effectType) total += Number(talent.value);
+    }
+
+    // Homebrew or newly-added talents without a curated effect row keep the
+    // category fallback instead of silently doing nothing.
+    let unmapped: any[] = [];
+    try {
+      unmapped = this.db.query<any>(
+        `SELECT pt.talent_code, mt.category
+         FROM player_talents pt
+         JOIN master_talents mt ON mt.talent_code = pt.talent_code;`
+      );
+    } catch {
+      unmapped = [];
+    }
+    for (const talent of unmapped) {
+      if (covered.has(talent.talent_code)) continue;
+      const fallback = CATEGORY_FALLBACK_EFFECTS[talent.category] || ['CHECK_BONUS', 1];
+      if (fallback[0] === effectType) total += fallback[1];
     }
     return Number(total.toFixed(4));
   }
@@ -188,21 +219,50 @@ export class SkillService {
 
   public listTalents(): PlayerTalentView[] {
     try {
-      return this.db.query<any>(
-        `SELECT pt.talent_code, mt.name_vi, mt.name_en, mt.category,
-                mte.effect_type, mte.value
+      const rows = this.db.query<any>(
+        `SELECT pt.talent_code, mt.name_vi, mt.name_en, mt.category, mt.rarity,
+                mt.effect_vi, mt.effect_en, mte.effect_type, mte.value
          FROM player_talents pt
          LEFT JOIN master_talents mt ON mt.talent_code = pt.talent_code
          LEFT JOIN master_talent_effects mte ON mte.talent_code = pt.talent_code
-         ORDER BY pt.talent_code ASC;`
-      ).map(row => ({
-        talentCode: row.talent_code,
-        nameVi: row.name_vi || row.talent_code,
-        nameEn: row.name_en || row.name_vi || row.talent_code,
-        category: row.category || 'GENERAL',
-        effectType: row.effect_type || 'CHECK_BONUS',
-        value: Number(row.value || 0)
-      }));
+         ORDER BY pt.talent_code ASC, mte.effect_type ASC;`
+      );
+
+      const grouped = new Map<string, PlayerTalentView>();
+      for (const row of rows) {
+        let talent = grouped.get(row.talent_code);
+        if (!talent) {
+          talent = {
+            talentCode: row.talent_code,
+            nameVi: row.name_vi || row.talent_code,
+            nameEn: row.name_en || row.name_vi || row.talent_code,
+            category: row.category || 'GENERAL',
+            rarity: row.rarity || 'RARE',
+            descriptionVi: row.effect_vi || '',
+            descriptionEn: row.effect_en || '',
+            effectType: 'CHECK_BONUS',
+            value: 0,
+            effects: []
+          };
+          grouped.set(row.talent_code, talent);
+        }
+        if (row.effect_type) {
+          talent.effects.push({
+            effectType: row.effect_type,
+            value: Number(row.value || 0)
+          });
+        }
+      }
+
+      return [...grouped.values()].map(talent => {
+        if (talent.effects.length === 0) {
+          const fallback = CATEGORY_FALLBACK_EFFECTS[talent.category] || ['CHECK_BONUS', 1];
+          talent.effects.push({ effectType: fallback[0], value: fallback[1] });
+        }
+        talent.effectType = talent.effects[0].effectType;
+        talent.value = talent.effects[0].value;
+        return talent;
+      });
     } catch {
       return [];
     }

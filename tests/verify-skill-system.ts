@@ -17,6 +17,7 @@ const migration034 = require('../tools/migrations/034-quest-engine');
 const migration036 = require('../tools/migrations/036-skill-effects');
 const migration037 = require('../tools/migrations/037-skill-perks');
 const migration038 = require('../tools/migrations/038-player-talents');
+const migration041 = require('../tools/migrations/041-talent-effects');
 
 const ROOT = path.resolve(__dirname, '..');
 const TEST_DIR = path.join(ROOT, 'tests', '.skill-system');
@@ -40,10 +41,15 @@ function seed() {
       talent_code TEXT PRIMARY KEY,
       name_vi TEXT NOT NULL,
       name_en TEXT NOT NULL,
-      category TEXT NOT NULL
+      category TEXT NOT NULL,
+      rarity TEXT NOT NULL DEFAULT 'RARE',
+      effect_vi TEXT,
+      effect_en TEXT
     );
   `);
-  db.prepare(`INSERT INTO master_talents VALUES ('TLT-TEST', 'Thiên Phú Thử', 'Test Talent', 'MARTIAL')`).run();
+  db.prepare(`INSERT INTO master_talents VALUES ('TLT-TEST', 'Thiên Phú Thử', 'Test Talent', 'MARTIAL', 'RARE', '', '')`).run();
+  db.prepare(`INSERT INTO master_talents VALUES ('TLT-PEERLESS', 'Chiến Thần Vô Song', 'Peerless', 'MARTIAL', 'LEGENDARY', 'Vô địch đơn đấu.', 'Unbeatable in duels.')`).run();
+  db.prepare(`INSERT INTO master_talents VALUES ('TLT-ROAR-BRIDGE', 'Đoạn Trường Hống', 'Bridge-Shaking Roar', 'MARTIAL', 'EPIC', 'Giảm sĩ khí địch.', 'Routs enemies.')`).run();
   const skill = db.prepare('INSERT INTO master_skills VALUES (?, ?, ?, ?, ?)');
   skill.run('SKL-WAR-DUEL', 'Đơn Đả Độc Đấu', 'Duel', 'MARTIAL', 'WAR');
   skill.run('SKL-CRA-SMITH', 'Rèn Đúc Binh Khí', 'Smithing', 'CRAFT', 'CRA');
@@ -54,6 +60,7 @@ function seed() {
   migration036.up(db);
   migration037.up(db);
   migration038.up(db);
+  migration041.up(db);
   db.prepare(`INSERT INTO player_talents (talent_code) VALUES ('TLT-TEST');`).run();
 
   db.prepare(`
@@ -115,6 +122,8 @@ function run() {
     `SELECT COUNT(*) AS c FROM player_skills WHERE skill_code IN ('SKL-CRA-WEAVE','SKL-COM-APPRAISE','SKL-LOG-PROV');`
   ).get() as any;
   assert.strictEqual(Number(known.c), 3);
+  const seededTalents = db.prepare('SELECT COUNT(*) AS c FROM player_talents;').get() as any;
+  assert.strictEqual(Number(seededTalents.c), 0, 'a new campaign must not inherit the previous talents');
   db.close();
 
   const ui = fs.readFileSync(path.join(ROOT, 'public', 'js', 'protagonist-dossier-modal.js'), 'utf8');
@@ -138,6 +147,31 @@ function run() {
   const cjsExp = require('../engine/skill-exp.js');
   assert.strictEqual(cjsExp.expRequiredForTier(4), expRequiredForTier(4));
   assert.deepStrictEqual(cjsExp.applySkillExpGain(2, 80, 40), applySkillExpGain(2, 80, 40));
+
+  // Curated talents carry their own effects; unknown talents keep the category fallback.
+  const talentDb = new Database(TEST_DB);
+  talentDb.prepare(`INSERT OR IGNORE INTO player_talents (talent_code) VALUES ('TLT-TEST');`).run();
+  talentDb.prepare(`INSERT OR IGNORE INTO player_talents (talent_code) VALUES ('TLT-PEERLESS');`).run();
+  talentDb.prepare(`INSERT OR IGNORE INTO player_talents (talent_code) VALUES ('TLT-ROAR-BRIDGE');`).run();
+  talentDb.close();
+
+  const talents = service.listTalents();
+  const testTalent = talents.find(talent => talent.talentCode === 'TLT-TEST');
+  assert(testTalent, 'the fallback talent must still be listed');
+  assert.deepStrictEqual(testTalent!.effects, [{ effectType: 'DUEL_POWER', value: 2 }]);
+  const peerless = talents.find(talent => talent.talentCode === 'TLT-PEERLESS');
+  assert(peerless, 'curated talent must be listed');
+  assert.strictEqual(peerless!.rarity, 'LEGENDARY');
+  assert.deepStrictEqual(peerless!.effects, [{ effectType: 'DUEL_POWER', value: 5 }]);
+  const roar = talents.find(talent => talent.talentCode === 'TLT-ROAR-BRIDGE');
+  assert.strictEqual(roar!.effects.length, 2, 'multi-effect talents must stay one entry with two effects');
+  assert.deepStrictEqual(roar!.effects, [
+    { effectType: 'DUEL_POWER', value: 3 },
+    { effectType: 'MORALE_BONUS', value: 2 }
+  ]);
+  // The fresh campaign reset replaced the duel skill; only talents contribute now.
+  assert.strictEqual(service.getEffectTotal('DUEL_POWER'), 2 + 5 + 3);
+  assert.strictEqual(service.getEffectTotal('MORALE_BONUS'), 2);
 
   console.log('✅ Skill system: structured effects, tier resolution, quest bonus and starting seeds verified.');
 }
