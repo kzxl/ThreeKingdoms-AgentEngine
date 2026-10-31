@@ -208,8 +208,22 @@ export function registerLineageRoutes(router: Router): void {
   const handlePregnancyTick = (req: any, res: any, ctx: RouteContext) => {
     try {
       const body = ctx.body || {};
+      const db = DatabaseService.getInstance();
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
       service.advancePregnancyTick(body.turn, body.gameDate);
-      sendJson(res, 200, { success: true, message: 'Đã tiến chuyển chu kỳ thai nghén.' });
+      const response = { message: 'Đã tiến chuyển chu kỳ thai nghén.' };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'PREGNANCY_TICK',
+        payload: { turn: body.turn ?? null, gameDate: body.gameDate ?? null },
+        result: response
+      });
+      sendJson(res, 200, { success: true, ...response, idempotent: false });
     } catch (err: any) {
       sendJson(res, 500, { success: false, error: err.message });
     }
@@ -237,8 +251,22 @@ export function registerLineageRoutes(router: Router): void {
         gender: body.gender
       };
 
+      const db = DatabaseService.getInstance();
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
+
       const result = service.birthChild(params);
-      sendJson(res, 200, { success: true, ...result });
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'CHILD_BIRTH',
+        payload: params,
+        result
+      });
+      sendJson(res, 200, { success: true, ...result, idempotent: false });
     } catch (err: any) {
       sendJson(res, 400, { success: false, error: err.message });
     }
@@ -331,8 +359,22 @@ export function registerLineageRoutes(router: Router): void {
         body.bypassSpatialGuard
       );
 
+      const db = DatabaseService.getInstance();
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
+
       const result = service.executeMentorshipTurn(childId);
-      sendJson(res, 200, { success: true, ...result });
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'MENTORSHIP_TURN',
+        payload: { childId },
+        result
+      });
+      sendJson(res, 200, { success: true, ...result, idempotent: false });
     } catch (err: any) {
       sendJson(res, 400, { success: false, error: err.message });
     }
@@ -378,8 +420,23 @@ export function registerLineageRoutes(router: Router): void {
         return;
       }
 
+      const db = DatabaseService.getInstance();
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
+
       service.ageChild(childId, years);
-      sendJson(res, 200, { success: true, message: `Đã tăng niên kỷ cho hài nhi thêm ${years} tuổi.` });
+      const response = { message: `Đã tăng niên kỷ cho hài nhi thêm ${years} tuổi.` };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'CHILD_AGE',
+        payload: { childId, years },
+        result: response
+      });
+      sendJson(res, 200, { success: true, ...response, idempotent: false });
     } catch (err: any) {
       sendJson(res, 400, { success: false, error: err.message });
     }
@@ -401,11 +458,27 @@ export function registerLineageRoutes(router: Router): void {
         return;
       }
 
+      const db = DatabaseService.getInstance();
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
+
       const result = service.executeSuccession({
         heirId,
         reason: body.reason || 'VOLUNTARY_RETIREMENT'
       });
-      sendJson(res, 200, result);
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'LINEAGE_SUCCESSION',
+        payload: { heirId, reason: body.reason || 'VOLUNTARY_RETIREMENT' },
+        result
+      });
+      const response: any = { ...result, idempotent: false };
+      if (response.success === undefined) response.success = true;
+      sendJson(res, 200, response);
     } catch (err: any) {
       sendJson(res, 400, { success: false, error: err.message });
     }
