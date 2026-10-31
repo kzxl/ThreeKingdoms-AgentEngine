@@ -1533,8 +1533,10 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
   const meta = runSqlJson(`SELECT * FROM campaign_meta LIMIT 1;`)[0] || {};
   const inventory = runSqlJson(`SELECT * FROM inventory_items;`);
 
-  // Normalize subLocation
-  let currentLocKey = 'Vườn Đào';
+  // Normalize subLocation. Unknown POIs keep their own name so the dynamic
+  // contextual-action engine can build location-aware choices; they must not
+  // masquerade as Vườn Đào.
+  let currentLocKey = (subLocation || '').trim() || 'Ngoại Ô Bản Địa';
   const subLower = (subLocation || '').toLowerCase();
   if (subLower.includes('thiết điếm') || subLower.includes('lò rèn') || subLower.includes('smithy') || subLower.includes('forge')) {
     currentLocKey = 'Thiết Điếm Trác Huyện';
@@ -1589,7 +1591,7 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
   } else if (subLower.includes('giao châu') || subLower.includes('jiaozhi') || subLower.includes('giao chỉ')) {
     currentLocKey = 'Giao Châu Thái Thú Phủ';
   } else {
-    currentLocKey = 'Vườn Đào';
+    currentLocKey = (subLocation || '').trim() || 'Ngoại Ô Bản Địa';
   }
 
   const relations = getLiveSceneRelations();
@@ -1608,7 +1610,7 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
   let lastCheck = {};
   let narrative = '';
   let options = [];
-  let locationFull = '';
+  let locationFull = subLocation ? `${subLocation} — Địa Phương Bản Đồ` : '';
 
   if (currentLocKey === 'Thiết Điếm Trác Huyện') {
     locationFull = 'Thiết Điếm Lò Rèn Trác Huyện — Khu Phố Thợ Rèn';

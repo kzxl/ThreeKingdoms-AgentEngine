@@ -41,4 +41,8 @@ for (const label of engineCases.slice(0, 5)) {
   assert(switchBlock.includes(`case '${label}'`), `${label} must be inside the scene switch`);
 }
 
-console.log('✅ POI coverage: 5 Zhuo POIs and 5 citadels reach bespoke scenes.');
+// Unknown POIs keep their own name instead of being relabelled as Vườn Đào.
+assert(!web.includes("let currentLocKey = 'Vườn Đào';"), 'unknown POIs must not default to Vườn Đào');
+assert(web.includes("currentLocKey = (subLocation || '').trim()"), 'unknown POIs must keep their own name');
+
+console.log('✅ POI coverage: 5 Zhuo POIs, 5 citadels and unknown-POI fallback verified.');

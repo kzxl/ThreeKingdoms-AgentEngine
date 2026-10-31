@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.19.0] - 2026-10-31
+
+Unknown POIs keep their identity.
+
+### Changed
+- The scene normalizer no longer relabels an unmatched sub-location as
+  `Vườn Đào`. It keeps the raw name, so the location-aware generic choices use
+  the player's actual settlement and resident NPC/resource instead of Peach
+  Garden fiction.
+- `verify-poi-coverage.ts` now guards the unknown-POI fallback in addition to
+  the ten bespoke mappings.
+
+### Verification
+`npm run verify` green: 42/42 suites, 28/28 contracts, 8/8 write smokes.
+
+---
+
 ## [1.18.0] - 2026-10-31
 
 AI armies and AI conquest.
