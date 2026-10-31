@@ -30,6 +30,7 @@ import { nextSequentialId } from '../../shared/id-generator';
 import { postCashflowEntry } from '../../shared/ledger';
 import { PrestigeService } from '../progression/prestige.service';
 import { SkillService } from '../progression/skill.service';
+import { ConditionService } from './condition.service';
 import { NpcSkillService } from '../progression/npc-skill.service';
 
 // ---------------------------------------------------------------------------
@@ -403,6 +404,13 @@ export class SingleCombatDuelService {
       const bonuses = NpcSkillService.forDatabase(this.db).combatBonuses(characterId);
       effectiveWar += bonuses.duelPower;
       morale = Math.min(100, morale + bonuses.moraleBonus);
+      isOver100 = effectiveWar > 100;
+    }
+
+    // Active injuries reduce combat power for both the player and NPC officers.
+    const injuryPenalty = ConditionService.forDatabase(this.db).getCombatPenalty(characterId);
+    if (injuryPenalty > 0) {
+      effectiveWar = Math.max(1, effectiveWar - injuryPenalty);
       isOver100 = effectiveWar > 100;
     }
 
@@ -1111,6 +1119,10 @@ export class SingleCombatDuelService {
       }
     }
 
+    if (duel.metadata?.commitDb !== false) {
+      this.applyDuelConsequences(duel, isVictory, outcomeType);
+    }
+
     const result: DuelResult = {
       duelId: duel.duelId,
       duelContext: duel.context,
@@ -1193,6 +1205,52 @@ export class SingleCombatDuelService {
   /**
    * Commits friendly sparring rewards to database without breaking SQLite invariants.
    */
+  /**
+   * A duel now leaves a mark. Sparring is mostly safe, the arena can wound, and
+   * a caravan defence can kill: the bandit chief can die, and a losing player
+   * can fall. Wounds feed `ConditionService`, which the duel profile reads.
+   */
+  private applyDuelConsequences(duel: any, isVictory: boolean, _outcomeType: string): void {
+    const conditions = ConditionService.forDatabase(this.db);
+    const rng = RngService.forDomain(this.db, 'duel-consequence');
+    const date = this.getGameDate();
+    const loser = isVictory ? duel.opponent : duel.player;
+    const winner = isVictory ? duel.player : duel.opponent;
+
+    if (duel.context === 'FRIENDLY_SPARRING') {
+      if (rng.chance(0.08)) {
+        conditions.applyInjury(loser.characterId, 1, 'FRIENDLY_SPARRING', date);
+      }
+      return;
+    }
+
+    if (duel.context === 'TOURNAMENT_ARENA') {
+      if (rng.chance(0.3)) {
+        const severity = rng.chance(0.25) ? 2 : 1;
+        conditions.applyInjury(loser.characterId, severity, 'TOURNAMENT_ARENA', date);
+      }
+      return;
+    }
+
+    if (duel.context === 'CARAVAN_DEFENSE') {
+      if (isVictory) {
+        if (rng.chance(0.25)) {
+          conditions.applyInjury(winner.characterId, 1, 'CARAVAN_DEFENSE', date);
+        }
+        if (rng.chance(0.04)) {
+          conditions.applyNpcDeath(duel.opponent.characterId, 'CARAVAN_DEFENSE');
+        }
+      } else {
+        conditions.applyInjury(loser.characterId, rng.chance(0.35) ? 3 : 2, 'CARAVAN_DEFENSE', date);
+        if (rng.chance(0.01)) {
+          // eslint-disable-next-line @typescript-eslint/no-var-requires
+          const { BattleDuelService } = require('./battle-duel.service');
+          BattleDuelService.forDatabase(this.db).applyPlayerDeath(duel.player.characterId, 'DUEL_DEATH');
+        }
+      }
+    }
+  }
+
   private commitSparringRewards(
     playerId: string,
     npcId: string,

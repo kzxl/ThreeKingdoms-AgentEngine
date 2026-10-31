@@ -16,6 +16,7 @@ import { NpcSkillService } from '../progression/npc-skill.service';
 import { getFameTier, fameRatio } from '../../shared/prestige';
 import { PrestigeService } from '../progression/prestige.service';
 import { DynastySuccessionService } from '../lineage-succession/dynasty-succession.service';
+import { ConditionService } from './condition.service';
 import BATTLE_CONFIG from '../../../config/battle-duel.json';
 
 export interface PreBattleInput {
@@ -140,6 +141,22 @@ export class BattleDuelService {
       } else {
         narrativeVi = `Hai tướng giao đấu bất phân thắng bại.`;
         narrativeEn = `The two champions fought to a standstill.`;
+      }
+    }
+
+    // Combat consequences: a killed enemy leaves the roster; a surviving loser
+    // carries a wound that reduces combat power until the next month close.
+    if (duelTriggered) {
+      const conditions = ConditionService.forDatabase(this.db);
+      if (death === 'ENEMY' && input.enemyId) {
+        conditions.applyNpcDeath(input.enemyId, 'BATTLE_DUEL');
+      } else if (death !== 'PLAYER') {
+        const severity = rng.chance(0.3) ? 3 : 2;
+        if (duelWinner === 'PLAYER' && input.enemyId) {
+          conditions.applyInjury(input.enemyId, severity, 'BATTLE_DUEL', input.gameDate);
+        } else if (duelWinner === 'ENEMY') {
+          conditions.applyInjury(input.playerId, severity, 'BATTLE_DUEL', input.gameDate);
+        }
       }
     }
 

@@ -17,6 +17,7 @@ import { QuestService } from './quest.service';
 import { SkillService } from './skill.service';
 import { DatabaseService } from '../../core/database';
 import { computeCareerPaths } from '../../../engine/career-paths';
+import { ConditionService } from '../military/condition.service';
 
 export function registerProgressionRoutes(router: Router): void {
   const guard = SpatialGuardService.getInstance();
@@ -37,6 +38,22 @@ export function registerProgressionRoutes(router: Router): void {
 
   router.get('/api/progression/status', handleGetStatus);
   router.get('/api/progression/state', handleGetStatus);
+
+  /** Active injuries/conditions and the combat penalty they impose. */
+  router.get('/api/conditions', (req: any, res: any, ctx: RouteContext) => {
+    try {
+      const characterId = (ctx.query.characterId as string) || 'PLY-0001';
+      const service = ConditionService.forDatabase(DatabaseService.getInstance());
+      sendJson(res, 200, {
+        success: true,
+        characterId,
+        penalty: service.getCombatPenalty(characterId),
+        conditions: service.list(characterId)
+      });
+    } catch (err: any) {
+      sendJson(res, 500, { success: false, error: err.message });
+    }
+  });
 
   /**
    * 5 career identities. Scores are derived from the 8-axis stats, wealth,

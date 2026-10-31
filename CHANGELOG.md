@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.25.0] - 2026-10-31
+
+RPG combat consequences: injuries, real NPC death and monthly recovery.
+
+### Added
+- Migration 046 creates `conditions`: persistent injuries with severity 1–3,
+  a combat penalty (3/6/9), a recovery timer and narrative.
+- `ConditionService` applies injuries (health −8×severity for the player,
+  morale −10×severity for NPCs), exposes `getCombatPenalty`, heals active
+  conditions at month close, and kills NPC officers permanently
+  (`is_alive = 0`, business cleared, faction officer row removed, episodic
+  memory where available).
+- Single combat now applies context consequences: sparring has an 8% minor
+  injury, arena 30% severity 1–2, caravan defence 25% winner injury / 45% loser
+  injury; a caravan win has a 4% chance to kill the bandit chief and a loss has
+  a 1% player-death chance (heir succession or DEFEATED).
+- Pre-battle champion duels kill the enemy officer for real and wound the
+  surviving loser. `effectiveWar` in the duel profile subtracts active injury
+  penalties, so a wounded officer fights worse.
+- `GameplayManager.closeMonth` heals active conditions; the report carries
+  `conditionsRecovered`. Route `GET /api/conditions?characterId=...`.
+- `tests/verify-combat-consequences.ts` covers the penalty, NPC death, monthly
+  recovery and the month-close bridge.
+
+### Verification
+`npm run verify` green: 54/54 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,493 invariants, 0 discrepancies.
+
+---
+
 ## [1.24.2] - 2026-10-31
 
 P1-c: repeatable local contract board.

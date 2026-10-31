@@ -823,6 +823,14 @@ class GameplayManager {
       console.warn('[GameplayManager] contract board processing failed:', contractError.message);
     }
 
+    // One month of rest clears active injuries (10/20/30-day wounds).
+    let conditionsRecovered = 0;
+    try {
+      conditionsRecovered = require('./condition-bridge').recoverMonth(this.dbPath);
+    } catch (conditionError) {
+      console.warn('[GameplayManager] condition recovery failed:', conditionError.message);
+    }
+
     // Day ticks were already published by the day loop for every elapsed day.
     // Cascade only after the core turn is committed. Subscribers re-entering
     // the world modules are safe: world_turn_ledger already marks this turn.
@@ -877,6 +885,7 @@ class GameplayManager {
       victoryStatus,
       obligations,
       contracts,
+      conditionsRecovered,
       aiWar,
       playerStatus,
       playerLocationName: locationRow ? locationRow.name_vi : (playerLoc || ''),
