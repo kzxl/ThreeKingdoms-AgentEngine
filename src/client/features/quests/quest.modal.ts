@@ -30,6 +30,28 @@ interface QuestView {
   steps: QuestStepView[];
 }
 
+interface ObligationView {
+  obligationId: string;
+  type: string;
+  counterparty: string;
+  amountCash: number;
+  amountGrain: number;
+  dueDate: string;
+  status: 'DUE' | 'PAID' | 'OVERDUE' | 'WAIVED';
+  daysRemaining: number;
+  narrativeVi: string;
+  narrativeEn: string;
+  penalty?: Record<string, unknown>;
+}
+
+interface ObligationSummary {
+  dueCount: number;
+  overdueCount: number;
+  totalCashDue: number;
+  totalGrainDue: number;
+  nextDueDate: string | null;
+}
+
 function isEn(): boolean {
   return (window as any).currentLang === 'en';
 }
@@ -87,10 +109,23 @@ class QuestModal {
     return data.quests || [];
   }
 
+  private async loadObligations(): Promise<{ obligations: ObligationView[]; summary: ObligationSummary }> {
+    const res = await fetch('/api/obligations');
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error || 'Obligation log failed');
+    return {
+      obligations: data.obligations || [],
+      summary: data.summary || { dueCount: 0, overdueCount: 0, totalCashDue: 0, totalGrainDue: 0, nextDueDate: null }
+    };
+  }
+
   public async refresh(result: any): Promise<void> {
     try {
-      const quests = await this.load();
-      this.modal.setContent(this.render(quests, result));
+      const [quests, dues] = await Promise.all([this.load(), this.loadObligations().catch(() => ({
+        obligations: [] as ObligationView[],
+        summary: { dueCount: 0, overdueCount: 0, totalCashDue: 0, totalGrainDue: 0, nextDueDate: null }
+      }))]);
+      this.modal.setContent(this.render(quests, dues.obligations, dues.summary, result));
     } catch (error: any) {
       this.modal.setContent(`<div class="quest-empty">${esc(error.message)}</div>`);
     }
@@ -127,7 +162,68 @@ class QuestModal {
     }
   }
 
-  private render(quests: QuestView[], result: any): string {
+  public async payObligation(obligationId: string): Promise<void> {
+    try {
+      const res = await fetch('/api/obligations/pay', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ obligationId })
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || 'Payment failed');
+      await this.refresh(null);
+      (window as any).loadStatus?.();
+    } catch (error: any) {
+      (window as any).showToast?.(error.message, true);
+    }
+  }
+
+  private renderObligations(
+    obligations: ObligationView[],
+    summary: ObligationSummary,
+    en: boolean
+  ): string {
+    const active = obligations.filter(row => row.status === 'DUE' || row.status === 'OVERDUE');
+    if (active.length === 0) {
+      return `<div class="quest-empty">${en ? 'No obligations due.' : 'Không có nghĩa vụ đến hạn.'}</div>`;
+    }
+    const header = en
+      ? `Obligations • ${summary.totalCashDue} quan due${summary.overdueCount ? ` • ${summary.overdueCount} overdue` : ''}`
+      : `Nghĩa vụ • ${summary.totalCashDue} Quan đến hạn${summary.overdueCount ? ` • ${summary.overdueCount} quá hạn` : ''}`;
+    const items = active.map(row => {
+      const overdue = row.status === 'OVERDUE';
+      const statusLabel = overdue
+        ? (en ? 'Overdue' : 'Quá hạn')
+        : (en ? 'Due' : 'Đến hạn');
+      const timing = overdue
+        ? (en ? `${Math.abs(row.daysRemaining)} days late` : `Trễ ${Math.abs(row.daysRemaining)} ngày`)
+        : (en ? `${row.daysRemaining} days left` : `Còn ${row.daysRemaining} ngày`);
+      const amount = row.amountGrain > 0
+        ? `${row.amountCash} Quan + ${row.amountGrain} ${en ? 'piculs' : 'Thạch'}`
+        : `${row.amountCash} Quan`;
+      return `
+        <div class="quest-item">
+          <div class="quest-head">
+            <div>
+              <div class="quest-title">${esc((en ? row.narrativeEn : row.narrativeVi) || row.type)}</div>
+              <div class="quest-path">${esc(row.type)} • ${esc(row.dueDate)} • ${esc(timing)}</div>
+            </div>
+            <button class="quest-action ${overdue ? 'is-primary' : ''}" onclick="QuestUI.payObligation('${esc(row.obligationId)}')">${en ? 'Pay' : 'Nộp'}</button>
+          </div>
+          <div class="quest-meta">${esc(amount)}</div>
+          <div class="quest-path"><span class="quest-badge">${statusLabel}</span></div>
+        </div>
+      `;
+    }).join('');
+    return `
+      <div class="quest-section">
+        <div class="quest-section-title">${esc(header)}</div>
+        ${items}
+      </div>
+    `;
+  }
+
+  private render(quests: QuestView[], obligations: ObligationView[], summary: ObligationSummary, result: any): string {
     const en = isEn();
     const resultHtml = result ? `
       <div class="quest-result ${result.success ? 'is-success' : 'is-failure'}">
@@ -171,7 +267,8 @@ class QuestModal {
       `;
     }).join('');
 
-    return `<div class="quest-body">${resultHtml}${items || `<div class="quest-empty">${en ? 'No quests available.' : 'Chưa có nhiệm vụ.'}</div>`}</div>`;
+    const obligationsHtml = this.renderObligations(obligations, summary, en);
+    return `<div class="quest-body">${resultHtml}${obligationsHtml}${items || `<div class="quest-empty">${en ? 'No quests available.' : 'Chưa có nhiệm vụ.'}</div>`}</div>`;
   }
 }
 

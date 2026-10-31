@@ -1545,10 +1545,33 @@ var G = new class {
 		if (!e.success) throw Error(e.error || "Quest log failed");
 		return e.quests || [];
 	}
+	async loadObligations() {
+		let e = await (await fetch("/api/obligations")).json();
+		if (!e.success) throw Error(e.error || "Obligation log failed");
+		return {
+			obligations: e.obligations || [],
+			summary: e.summary || {
+				dueCount: 0,
+				overdueCount: 0,
+				totalCashDue: 0,
+				totalGrainDue: 0,
+				nextDueDate: null
+			}
+		};
+	}
 	async refresh(e) {
 		try {
-			let t = await this.load();
-			this.modal.setContent(this.render(t, e));
+			let [t, n] = await Promise.all([this.load(), this.loadObligations().catch(() => ({
+				obligations: [],
+				summary: {
+					dueCount: 0,
+					overdueCount: 0,
+					totalCashDue: 0,
+					totalGrainDue: 0,
+					nextDueDate: null
+				}
+			}))]);
+			this.modal.setContent(this.render(t, n.obligations, n.summary, e));
 		} catch (e) {
 			this.modal.setContent(`<div class="quest-empty">${U(e.message)}</div>`);
 		}
@@ -1579,37 +1602,76 @@ var G = new class {
 			window.showToast?.(e.message, !0);
 		}
 	}
-	render(e, t) {
-		let n = H();
-		return `<div class="quest-body">${t ? `
-      <div class="quest-result ${t.success ? "is-success" : "is-failure"}">
-        <strong>${t.success ? n ? "Step succeeded" : "Bước thành công" : n ? "Step failed" : "Bước thất bại"}</strong>
-        <div>${U(n ? t.narrativeEn : t.narrative)}</div>
-        <div class="quest-meta">D20 ${t.roll} + ${t.mod} = ${t.total} / DC ${t.dc}</div>
-        <div class="quest-meta">${U(W(t.rewards || {}))}</div>
-      </div>
-    ` : ""}${e.map((e) => {
-			let t = e.status === "COMPLETED" ? n ? "Completed" : "Đã hoàn thành" : e.status === "ACTIVE" ? n ? "Active" : "Đang làm" : n ? "Available" : "Có thể nhận", r = e.steps.map((t) => `
-        <div class="quest-step ${t.index < e.currentStep ? "is-done" : t.index === e.currentStep && e.status === "ACTIVE" ? "is-current" : ""}">
-          <span class="quest-step-index">${t.index + 1}</span>
-          <span class="quest-step-title">${U(n ? t.titleEn : t.titleVi)}</span>
-          <span class="quest-step-check">${U(String(t.stat).toUpperCase())} DC ${t.dc} • ${t.daysCost}${n ? "d" : " ngày"}</span>
-        </div>
-      `).join(""), i = e.status === "AVAILABLE" ? `<button class="quest-action" onclick="QuestUI.accept('${U(e.questId)}')">${n ? "Accept" : "Nhận nhiệm vụ"}</button>` : e.status === "ACTIVE" ? `<button class="quest-action is-primary" onclick="QuestUI.advance('${U(e.questId)}')">${n ? `Advance step ${e.currentStep + 1}` : `Thực hiện bước ${e.currentStep + 1}`}</button>` : `<span class="quest-badge">${n ? "Completed" : "Hoàn thành"}</span>`;
+	async payObligation(e) {
+		try {
+			let t = await (await fetch("/api/obligations/pay", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ obligationId: e })
+			})).json();
+			if (!t.success) throw Error(t.error || "Payment failed");
+			await this.refresh(null), window.loadStatus?.();
+		} catch (e) {
+			window.showToast?.(e.message, !0);
+		}
+	}
+	renderObligations(e, t, n) {
+		let r = e.filter((e) => e.status === "DUE" || e.status === "OVERDUE");
+		if (r.length === 0) return `<div class="quest-empty">${n ? "No obligations due." : "Không có nghĩa vụ đến hạn."}</div>`;
+		let i = n ? `Obligations • ${t.totalCashDue} quan due${t.overdueCount ? ` • ${t.overdueCount} overdue` : ""}` : `Nghĩa vụ • ${t.totalCashDue} Quan đến hạn${t.overdueCount ? ` • ${t.overdueCount} quá hạn` : ""}`, a = r.map((e) => {
+			let t = e.status === "OVERDUE", r = t ? n ? "Overdue" : "Quá hạn" : n ? "Due" : "Đến hạn", i = t ? n ? `${Math.abs(e.daysRemaining)} days late` : `Trễ ${Math.abs(e.daysRemaining)} ngày` : n ? `${e.daysRemaining} days left` : `Còn ${e.daysRemaining} ngày`, a = e.amountGrain > 0 ? `${e.amountCash} Quan + ${e.amountGrain} ${n ? "piculs" : "Thạch"}` : `${e.amountCash} Quan`;
 			return `
         <div class="quest-item">
           <div class="quest-head">
             <div>
-              <div class="quest-title">${U(n ? e.titleEn : e.titleVi)}</div>
-              <div class="quest-path">${U(e.pathCode)} • ${t}</div>
+              <div class="quest-title">${U((n ? e.narrativeEn : e.narrativeVi) || e.type)}</div>
+              <div class="quest-path">${U(e.type)} • ${U(e.dueDate)} • ${U(i)}</div>
             </div>
-            ${i}
+            <button class="quest-action ${t ? "is-primary" : ""}" onclick="QuestUI.payObligation('${U(e.obligationId)}')">${n ? "Pay" : "Nộp"}</button>
           </div>
-          <div class="quest-desc">${U(n ? e.descriptionEn : e.descriptionVi)}</div>
-          <div class="quest-steps">${r}</div>
+          <div class="quest-meta">${U(a)}</div>
+          <div class="quest-path"><span class="quest-badge">${r}</span></div>
         </div>
       `;
-		}).join("") || `<div class="quest-empty">${n ? "No quests available." : "Chưa có nhiệm vụ."}</div>`}</div>`;
+		}).join("");
+		return `
+      <div class="quest-section">
+        <div class="quest-section-title">${U(i)}</div>
+        ${a}
+      </div>
+    `;
+	}
+	render(e, t, n, r) {
+		let i = H(), a = r ? `
+      <div class="quest-result ${r.success ? "is-success" : "is-failure"}">
+        <strong>${r.success ? i ? "Step succeeded" : "Bước thành công" : i ? "Step failed" : "Bước thất bại"}</strong>
+        <div>${U(i ? r.narrativeEn : r.narrative)}</div>
+        <div class="quest-meta">D20 ${r.roll} + ${r.mod} = ${r.total} / DC ${r.dc}</div>
+        <div class="quest-meta">${U(W(r.rewards || {}))}</div>
+      </div>
+    ` : "", o = e.map((e) => {
+			let t = e.status === "COMPLETED" ? i ? "Completed" : "Đã hoàn thành" : e.status === "ACTIVE" ? i ? "Active" : "Đang làm" : i ? "Available" : "Có thể nhận", n = e.steps.map((t) => `
+        <div class="quest-step ${t.index < e.currentStep ? "is-done" : t.index === e.currentStep && e.status === "ACTIVE" ? "is-current" : ""}">
+          <span class="quest-step-index">${t.index + 1}</span>
+          <span class="quest-step-title">${U(i ? t.titleEn : t.titleVi)}</span>
+          <span class="quest-step-check">${U(String(t.stat).toUpperCase())} DC ${t.dc} • ${t.daysCost}${i ? "d" : " ngày"}</span>
+        </div>
+      `).join(""), r = e.status === "AVAILABLE" ? `<button class="quest-action" onclick="QuestUI.accept('${U(e.questId)}')">${i ? "Accept" : "Nhận nhiệm vụ"}</button>` : e.status === "ACTIVE" ? `<button class="quest-action is-primary" onclick="QuestUI.advance('${U(e.questId)}')">${i ? `Advance step ${e.currentStep + 1}` : `Thực hiện bước ${e.currentStep + 1}`}</button>` : `<span class="quest-badge">${i ? "Completed" : "Hoàn thành"}</span>`;
+			return `
+        <div class="quest-item">
+          <div class="quest-head">
+            <div>
+              <div class="quest-title">${U(i ? e.titleEn : e.titleVi)}</div>
+              <div class="quest-path">${U(e.pathCode)} • ${t}</div>
+            </div>
+            ${r}
+          </div>
+          <div class="quest-desc">${U(i ? e.descriptionEn : e.descriptionVi)}</div>
+          <div class="quest-steps">${n}</div>
+        </div>
+      `;
+		}).join("");
+		return `<div class="quest-body">${a}${this.renderObligations(t, n, i)}${o || `<div class="quest-empty">${i ? "No quests available." : "Chưa có nhiệm vụ."}</div>`}</div>`;
 	}
 }(), K = class {
 	modal;
@@ -2056,7 +2118,8 @@ function X() {
 		open: () => G.open(),
 		close: () => G.close(),
 		accept: (e) => G.accept(e),
-		advance: (e) => G.advance(e)
+		advance: (e) => G.advance(e),
+		payObligation: (e) => G.payObligation(e)
 	}, t.WorldMapUI = {
 		open: () => q.open(),
 		close: () => q.close()

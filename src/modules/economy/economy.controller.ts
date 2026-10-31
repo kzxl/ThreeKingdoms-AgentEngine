@@ -22,6 +22,7 @@ import { worldPriceMultiplier } from '../../shared/world-price';
 import { SpatialGuardService } from '../progression/spatial-guard.service';
 import { SkillService } from '../progression/skill.service';
 import { getCareerModifiers } from '../../../engine/career-paths';
+import { ObligationService } from './obligation.service';
 
 function getEconomyModule(): EconomyModule | undefined {
   return ModuleRegistry.getInstance().get<EconomyModule>('module.economy');
@@ -438,6 +439,48 @@ export function registerEconomyRoutes(router: Router): void {
 
   router.post('/api/trade', handleTrade);
   router.post('/api/economy/trade', handleTrade);
+
+  // -------------------------------------------------------------
+  // 3b. GET /api/obligations & POST /api/obligations/pay
+  // -------------------------------------------------------------
+  const handleGetObligations = (req: any, res: any, ctx: RouteContext) => {
+    try {
+      const playerId = (ctx.query.playerId as string) || 'PLY-0001';
+      const service = ObligationService.forDatabase(db);
+      sendJson(res, 200, {
+        success: true,
+        playerId,
+        obligations: service.list(playerId),
+        summary: service.summary(playerId)
+      });
+    } catch (err: any) {
+      sendJson(res, 500, { success: false, error: err.message });
+    }
+  };
+  router.get('/api/obligations', handleGetObligations);
+  router.get('/api/economy/obligations', handleGetObligations);
+
+  const handlePayObligation = (req: any, res: any, ctx: RouteContext) => {
+    try {
+      const { obligationId, playerId = 'PLY-0001' } = ctx.body || {};
+      if (!obligationId) {
+        sendJson(res, 400, { success: false, error: 'obligationId is required.' });
+        return;
+      }
+      const service = ObligationService.forDatabase(db);
+      const obligation = service.pay(obligationId, playerId);
+      sendJson(res, 200, {
+        success: true,
+        obligation,
+        summary: service.summary(playerId)
+      });
+    } catch (err: any) {
+      const status = err.code === 'INSUFFICIENT_FUNDS' || err.code === 'INSUFFICIENT_GRAIN' ? 409 : 400;
+      sendJson(res, status, { success: false, error: err.message, code: err.code });
+    }
+  };
+  router.post('/api/obligations/pay', handlePayObligation);
+  router.post('/api/economy/obligations/pay', handlePayObligation);
 
   // -------------------------------------------------------------
   // 4. GET /api/ledger & /api/economy/ledger

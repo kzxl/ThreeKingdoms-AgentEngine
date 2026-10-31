@@ -9516,6 +9516,20 @@ textarea {
   overflow-y: auto;
 }
 
+.quest-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.quest-section-title {
+  font-size: 0.86rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
 .quest-item {
   padding: 12px;
   border: 1px solid var(--border-neutral);

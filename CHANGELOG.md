@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.24.1] - 2026-10-31
+
+P1-b: periodic obligations with a due date and real consequences.
+
+### Added
+- Migration 044 creates `obligations`: player tax bills with amount, due date,
+  status (`DUE`/`PAID`/`OVERDUE`/`WAIVED`), breakdown, penalty and narrative.
+- `ObligationService` issues one monthly tax for the month being entered
+  (5% of estimated enterprise gross plus a household poll tax with a 20 quan
+  minimum), lists dues with days remaining, pays from cash/grain through the
+  single ledger writer, and marks unpaid bills `OVERDUE` with a 10% late fee and
+  a 5-point credibility loss.
+- `GameplayManager.closeMonth` processes overdue bills and issues the next
+  month's tax; the report carries `obligations` (overdue, issued, summary).
+- Routes: `GET /api/obligations`, `GET /api/economy/obligations`,
+  `POST /api/obligations/pay`, `POST /api/economy/obligations/pay`.
+- The quest modal now renders an **Obligations** section with Pay buttons
+  (`QuestUI.payObligation`); the client bundle was rebuilt.
+- `tests/verify-obligations.ts` covers issue, idempotency, payment, the late
+  fee/credibility penalty, insufficient funds and the month-close hook.
+
+### Verification
+`npm run verify` green: 52/52 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,493 invariants, 0 discrepancies.
+
+---
+
 ## [1.24.0] - 2026-10-31
 
 P1-a: the local settlement market is the single write/read source for stock.

@@ -801,6 +801,17 @@ class GameplayManager {
       console.warn('[GameplayManager] victory check failed:', victoryError.message);
     }
 
+    // Periodic obligations: penalise bills that passed their due date, then
+    // issue the tax for the month being entered.
+    let obligations = null;
+    try {
+      obligations = require('./obligation-bridge').processMonthClose(
+        this.dbPath, 'PLY-0001', prevDate, nextDate
+      );
+    } catch (obligationError) {
+      console.warn('[GameplayManager] obligation processing failed:', obligationError.message);
+    }
+
     // Day ticks were already published by the day loop for every elapsed day.
     // Cascade only after the core turn is committed. Subscribers re-entering
     // the world modules are safe: world_turn_ledger already marks this turn.
@@ -853,6 +864,7 @@ class GameplayManager {
       retainerDepartures,
       defeatStatus,
       victoryStatus,
+      obligations,
       aiWar,
       playerStatus,
       playerLocationName: locationRow ? locationRow.name_vi : (playerLoc || ''),
