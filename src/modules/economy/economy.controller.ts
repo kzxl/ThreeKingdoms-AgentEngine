@@ -416,9 +416,19 @@ export function registerEconomyRoutes(router: Router): void {
         };
       });
 
+      // The local market state is the same source its quote read; book the fill.
+      const market = settlementNode
+        ? SettlementMarketService.forDatabase(db).applyTrade(
+          settlementNode,
+          itemCode,
+          tradeAction === 'BUY' ? -qty : qty
+        )
+        : null;
+
       sendJson(res, 200, {
         success: true,
         ...tradeResult,
+        market,
         message: `Thực hiện lệnh ${tradeAction} thành công: ${qty} ${tradeResult.itemName} tổng trị giá ${totalAmount} quan.`
       });
     } catch (err: any) {

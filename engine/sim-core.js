@@ -9,7 +9,7 @@ const path = require('path');
 const { getMarketItem, resolveMarketPrice } = require('./market-price-book');
 const { quoteFromReference } = require('./market-quote');
 const { worldPriceMultiplier } = require('./world-price');
-const { getLocalMultiplier } = require('./settlement-market-bridge');
+const { getLocalMultiplier, applyTrade } = require('./settlement-market-bridge');
 const { BILL_OF_MATERIALS, calculateDefectRate } = require('./rules');
 const { renderProgressMarkdown } = require('./projector');
 
@@ -294,6 +294,14 @@ class SimulationCore {
       return { success: false, code: 'TRANSACTION_FAILED', error: batchRes.error };
     }
 
+    // Buying removes stock from the local market, so the next quote is higher.
+    const market = applyTrade(
+      this.dbPath,
+      fameRow?.current_location || 'LOC-0001',
+      item_code,
+      -quantity
+    );
+
     this._project();
 
     return {
@@ -305,7 +313,8 @@ class SimulationCore {
         newCashBalance: newBal,
         itemCode: item_code,
         newQuantity: newQty,
-        unitCostBasis: newUnitCost
+        unitCostBasis: newUnitCost,
+        market
       }
     };
   }
@@ -389,6 +398,14 @@ class SimulationCore {
       return { success: false, code: 'TRANSACTION_FAILED', error: batchRes.error };
     }
 
+    // Selling adds stock to the local market, so the next quote is lower.
+    const market = applyTrade(
+      this.dbPath,
+      fameRow?.current_location || 'LOC-0001',
+      item_code,
+      quantity
+    );
+
     this._project();
 
     return {
@@ -400,7 +417,8 @@ class SimulationCore {
         newCashBalance: newBal,
         itemCode: item_code,
         newQuantity: newQty,
-        netProfit
+        netProfit,
+        market
       }
     };
   }

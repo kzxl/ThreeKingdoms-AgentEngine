@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.24.0] - 2026-10-31
+
+P1-a: the local settlement market is the single write/read source for stock.
+
+### Changed
+- `SettlementMarketService.applyTrade` books physical fills into
+  `settlement_market_state`: buying drains local stock (the next quote rises),
+  selling adds to it (the next quote falls). Stock is clamped and the state is
+  the same row `getLocalMultiplier` already reads.
+- `SimulationCore` TRADE_BUY/TRADE_SELL, `POST /api/trade` and caravan claim
+  settlement all call `applyTrade`; each response exposes the new `market`
+  state. Arbitrage now moves both settlements instead of only drifting on a
+  monthly timer.
+- `settlement-market-bridge` keeps one context per database path. The previous
+  single-slot cache returned the first campaign for every later path, so a
+  sandbox or instance could read another campaign's market.
+- `driftSettlement` accepts `{ recordHistory: false }` for daily drift; the
+  monthly call still writes one pulse-history row per item.
+- `tests/verify-local-market.ts` proves buy/sell stock movement, price direction,
+  drift and history; `verify-market-price-book` now re-reads the post-fill quote.
+
+### Verification
+`npm run verify` green: 51/51 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,493 invariants, 0 discrepancies.
+
+---
+
 ## [1.23.4] - 2026-10-31
 
 Text cleanup: broken code-page names and legacy currency labels.

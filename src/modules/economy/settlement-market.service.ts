@@ -75,13 +75,49 @@ export class SettlementMarketService {
     return Math.max(0.5, Math.min(2, specialization * this.getStockMultiplier(settlementId, itemCode)));
   }
 
-  /** Monthly drift: stock reverts toward demand with a small seeded shock. */
-  public driftSettlement(settlementId: string, gameDate?: string): number {
+  /**
+   * Books a physical trade into local stock. Buying reduces what the market has
+   * left; selling adds to it. This is the write side of the same state that
+   * `getLocalMultiplier` reads, so player trades move prices instead of only
+   * drifting on a monthly timer.
+   */
+  public applyTrade(
+    settlementId: string,
+    itemCode: string,
+    stockDelta: number
+  ): SettlementMarketState & { stockMultiplier: number } {
+    const state = this.getState(settlementId, itemCode);
+    const delta = Number(stockDelta) || 0;
+    const stock = Number(Math.max(1, Math.min(100000, state.stock + delta)).toFixed(1));
+    this.db.execute(
+      'UPDATE settlement_market_state SET stock = ?, updated_at = CURRENT_TIMESTAMP WHERE settlement_id = ? AND item_code = ?;',
+      [stock, settlementId, itemCode]
+    );
+    const stockMultiplier = Math.max(0.5, Math.min(2, Math.sqrt(state.demand / Math.max(1, stock))));
+    return {
+      settlementId,
+      itemCode,
+      stock,
+      demand: state.demand,
+      stockMultiplier: Number(stockMultiplier.toFixed(3))
+    };
+  }
+
+  /**
+   * Drift stock toward demand with a small seeded shock. Daily calls can pass
+   * `recordHistory: false` to keep the pulse table monthly-sized.
+   */
+  public driftSettlement(
+    settlementId: string,
+    gameDate?: string,
+    options: { recordHistory?: boolean } = {}
+  ): number {
     const rows = this.db.query<any>(
       'SELECT item_code, stock, demand FROM settlement_market_state WHERE settlement_id = ?;',
       [settlementId]
     );
     if (rows.length === 0) return 0;
+    const recordHistory = options.recordHistory !== false;
     const rng = RngService.forDomain(this.db, 'settlement-market');
     const date = gameDate || this.currentDate();
     this.db.transaction(() => {
@@ -92,22 +128,24 @@ export class SettlementMarketService {
           'UPDATE settlement_market_state SET stock = ?, demand = ?, updated_at = CURRENT_TIMESTAMP WHERE settlement_id = ? AND item_code = ?;',
           [Number(stock.toFixed(1)), Number(demand.toFixed(1)), settlementId, row.item_code]
         );
-        const stockMultiplier = Math.max(0.5, Math.min(2, Math.sqrt(Number(demand) / Math.max(1, Number(stock)))));
-        this.db.execute(
-          `INSERT INTO settlement_market_history
-            (history_id, settlement_id, item_code, game_date, stock, demand, stock_multiplier, local_multiplier)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?);`,
-          [
-            nextId(this.db, 'settlement_market_history', 'MKH', date),
-            settlementId,
-            row.item_code,
-            date,
-            Number(stock.toFixed(1)),
-            Number(demand.toFixed(1)),
-            Number(stockMultiplier.toFixed(3)),
-            Number((this.specializationMultiplier(settlementId, row.item_code) * stockMultiplier).toFixed(3))
-          ]
-        );
+        if (recordHistory) {
+          const stockMultiplier = Math.max(0.5, Math.min(2, Math.sqrt(Number(demand) / Math.max(1, Number(stock)))));
+          this.db.execute(
+            `INSERT INTO settlement_market_history
+              (history_id, settlement_id, item_code, game_date, stock, demand, stock_multiplier, local_multiplier)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?);`,
+            [
+              nextId(this.db, 'settlement_market_history', 'MKH', date),
+              settlementId,
+              row.item_code,
+              date,
+              Number(stock.toFixed(1)),
+              Number(demand.toFixed(1)),
+              Number(stockMultiplier.toFixed(3)),
+              Number((this.specializationMultiplier(settlementId, row.item_code) * stockMultiplier).toFixed(3))
+            ]
+          );
+        }
       }
     });
     return rows.length;

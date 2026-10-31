@@ -19,6 +19,7 @@ import { SettlementMarketService } from '../src/modules/economy/settlement-marke
 import { SkillService } from '../src/modules/progression/skill.service';
 
 const { SimulationCore } = require('../engine/sim-core');
+const { getLocalMultiplier } = require('../engine/settlement-market-bridge');
 const cjsBook = require('../engine/market-price-book');
 
 const ROOT = path.resolve(__dirname, '..');
@@ -67,7 +68,13 @@ function run(): void {
       'SELECT "current_date" AS current_date FROM campaign_meta LIMIT 1;'
     )?.current_date || '184-05-02';
     const grainWorld = worldPriceMultiplier(db, 'COM-GRAIN', campaignDate);
-    const grainQuote = quoteFromReference(grainPrice, fame, 'COM-GRAIN', grainWorld);
+    const location = db.queryOne<{ current_location: string }>(
+      "SELECT current_location FROM player_state WHERE player_id = 'PLY-0001';"
+    )?.current_location || 'LOC-0001';
+    // The trade reads the local stock multiplier before it fills.
+    const grainQuote = quoteFromReference(
+      grainPrice, fame, 'COM-GRAIN', grainWorld, getLocalMultiplier(TEST_DB, location, 'COM-GRAIN')
+    );
     const buy = core.executeAction({
       type: 'TRADE_BUY',
       item_code: 'COM-GRAIN',
@@ -88,7 +95,12 @@ function run(): void {
       game_date: '184-05-02'
     });
     assert.strictEqual(sell.success, true, `sell failed: ${sell.error}`);
-    assert.strictEqual(sell.data.totalRevenue, grainQuote.sellPrice, 'TRADE_SELL must pay the sell quote');
+    // The buy drained one unit of local stock, so the sell quote uses the
+    // post-fill stock multiplier returned by the trade itself.
+    const sellQuote = quoteFromReference(
+      grainPrice, fame, 'COM-GRAIN', grainWorld, buy.data.market?.stockMultiplier ?? 1
+    );
+    assert.strictEqual(sell.data.totalRevenue, sellQuote.sellPrice, 'TRADE_SELL must pay the sell quote');
     assert(buy.data.totalCost > sell.data.totalRevenue, 'buy price must stay above the sell price');
 
     // 3b. The CommonJS and TypeScript quote implementations must agree.

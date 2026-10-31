@@ -19,6 +19,7 @@ import {
   SETTLEMENT_PROFILES
 } from '../economy/regional-market.service';
 import { ProgressionExpService } from '../progression/attribute-progression.service';
+import { SettlementMarketService } from '../economy/settlement-market.service';
 import { postCashflowEntry } from '../../shared/ledger';
 import { CaravanStatus } from '../../core/types';
 
@@ -111,6 +112,7 @@ export interface ClaimCaravanResult {
   expGained?: number;
   newLiquidCash: number;
   message: string;
+  market?: unknown;
 }
 
 export class CaravanLogisticsService {
@@ -633,6 +635,13 @@ export class CaravanLogisticsService {
       };
     });
 
+    // The cargo lands in the destination market: more stock, lower next quote.
+    const market = SettlementMarketService.forDatabase(this.db).applyTrade(
+      caravan.to_settlement_id,
+      caravan.cargo_item_code,
+      Number(caravan.cargo_quantity)
+    );
+
     // 3. Keep PROGRESS.md synchronized
     syncProgressProjection(this.db);
 
@@ -649,6 +658,7 @@ export class CaravanLogisticsService {
       grossRevenue,
       initialValue: initialCostBasis,
       netProfit,
+      market,
       comExpAwarded: finalResult.comExp,
       ldrExpAwarded: finalResult.ldrExp,
       expGained: finalResult.comExp,
