@@ -589,7 +589,7 @@ class TravelManager {
         pContent = pContent.replace(/\|\s*\*\*Current Location\*\*\s*\|\s*[^\n|]+\|/i, `| **Current Location** | ${targetSubLoc} |`);
         pContent = pContent.replace(/\|\s*\*\*Strategic Grain\*\*\s*\|\s*\*\*([^*]+)\*\*/i, `| **Strategic Grain** | **${newGrain.toFixed(2)} piculs**`);
         fs.writeFileSync(progressPath, pContent, 'utf8');
-      } catch (e) {}
+      } catch { /* best-effort fallback */ }
     }
 
     return {

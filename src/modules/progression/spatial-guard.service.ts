@@ -132,7 +132,7 @@ export class SpatialGuardService {
         [playerId]
       );
       businessesCount = bizRow?.cnt || 0;
-    } catch {}
+    } catch { /* best-effort fallback */ }
 
     // Count duel wins
     let duelWins = 0;
@@ -142,7 +142,7 @@ export class SpatialGuardService {
         [playerId]
       );
       duelWins = duelRow?.cnt || 0;
-    } catch {}
+    } catch { /* best-effort fallback */ }
 
     // Evaluate 8-axis maximum attribute
     const maxAttribute = Math.max(

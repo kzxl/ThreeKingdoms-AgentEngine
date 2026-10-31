@@ -143,7 +143,7 @@ class WorkshopEngine {
     )[0];
     if (priorRun) {
       let priorResult = null;
-      try { priorResult = JSON.parse(priorRun.result); } catch (e) {}
+      try { priorResult = JSON.parse(priorRun.result); } catch { /* best-effort fallback */ }
       return {
         success: true,
         idempotent: true,
@@ -241,7 +241,7 @@ class WorkshopEngine {
       const tList = JSON.parse(foreman.talents || '[]');
       if (tList.includes('Meticulous')) talentDefectBonus += 0.01;
       if (tList.includes('Master Artisan')) talentDefectBonus += 0.015;
-    } catch (e) {}
+    } catch { /* best-effort fallback */ }
 
     const defectMat = Math.max(0.01, calculateDefectRate(0.05, foreman.cra_attr, foreman.fatigue) - talentDefectBonus - (weaveSkill.tier * 0.005));
     const defectBask = Math.max(0.01, calculateDefectRate(0.08, foreman.cra_attr, foreman.fatigue) - talentDefectBonus - (weaveSkill.tier * 0.005));

@@ -552,9 +552,9 @@ export class DailyInteractionEngine {
     let revealedDislikes: string[] = [];
     let revealedStats: string[] = [];
 
-    try { revealedHobbies = JSON.parse(row.revealed_hobbies || '[]'); } catch (e) {}
-    try { revealedDislikes = JSON.parse(row.revealed_dislikes || '[]'); } catch (e) {}
-    try { revealedStats = JSON.parse(row.revealed_stats || '[]'); } catch (e) {}
+    try { revealedHobbies = JSON.parse(row.revealed_hobbies || '[]'); } catch { /* best-effort fallback */ }
+    try { revealedDislikes = JSON.parse(row.revealed_dislikes || '[]'); } catch { /* best-effort fallback */ }
+    try { revealedStats = JSON.parse(row.revealed_stats || '[]'); } catch { /* best-effort fallback */ }
 
     return {
       npcId,

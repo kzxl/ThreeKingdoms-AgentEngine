@@ -42,7 +42,7 @@ function syncProgressLiquidCash(totalClosing, liquidCash, safeCash) {
     );
 
     fs.writeFileSync(progressPath, content, 'utf8');
-  } catch (e) {}
+  } catch { /* best-effort fallback */ }
 }
 
 class EventManager {
@@ -164,7 +164,7 @@ class EventManager {
       try {
         const parsed = JSON.parse(event.choices_json);
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      } catch (e) {}
+      } catch { /* best-effort fallback */ }
     }
 
     // Default choices based on specific famous event IDs

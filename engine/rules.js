@@ -104,7 +104,7 @@ try {
   if (typeof canonicalStamina === 'function') {
     calculatePlayerStamina = canonicalStamina;
   }
-} catch (e) {}
+} catch { /* best-effort fallback */ }
 
 module.exports = {
   BILL_OF_MATERIALS,

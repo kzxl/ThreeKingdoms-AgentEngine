@@ -229,10 +229,10 @@ export class InstanceManagerService {
       deleted = true;
     }
     if (fs.existsSync(walPath)) {
-      try { fs.unlinkSync(walPath); } catch (e) {}
+      try { fs.unlinkSync(walPath); } catch { /* best-effort fallback */ }
     }
     if (fs.existsSync(shmPath)) {
-      try { fs.unlinkSync(shmPath); } catch (e) {}
+      try { fs.unlinkSync(shmPath); } catch { /* best-effort fallback */ }
     }
     return deleted;
   }
@@ -308,7 +308,7 @@ export class InstanceManagerService {
       return null;
     } finally {
       if (db) {
-        try { db.close(); } catch (e) {}
+        try { db.close(); } catch { /* best-effort fallback */ }
       }
     }
   }

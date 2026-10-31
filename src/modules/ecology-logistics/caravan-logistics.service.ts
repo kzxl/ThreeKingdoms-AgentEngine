@@ -151,7 +151,7 @@ export class CaravanLogisticsService {
           currentDate: row.current_date || '184-05-02'
         };
       }
-    } catch {}
+    } catch { /* best-effort fallback */ }
     return { campaignId: 'CMP-184-ZHOU-01', activeTurn: 6, currentDate: '184-05-02' };
   }
 

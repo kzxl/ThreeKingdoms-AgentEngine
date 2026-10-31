@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.26.5] - 2026-10-31
+
+Core error handling: no empty catch blocks remain.
+
+### Changed
+- All 19 empty `catch {}` blocks in `engine/` and `src/` now carry an explicit
+  best-effort comment, so a reader can tell a deliberate fallback from a hidden
+  failure. The architecture ratchet for `silent-catch` is locked at **0**; a new
+  empty catch fails `npm run lint`.
+- No behaviour change: the catches are the same fallback paths (projection
+  writes, optional JSON parse, schema probing, file cleanup).
+
+### Verification
+`npm run verify` green: 60/60 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,506 invariants, 0 discrepancies.
+
+---
+
 ## [1.26.4] - 2026-10-31
 
 Core schema contract: runtime tables no longer appear only on first use.

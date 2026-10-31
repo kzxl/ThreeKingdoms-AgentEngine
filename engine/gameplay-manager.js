@@ -876,7 +876,7 @@ class GameplayManager {
           pContent = pContent.replace(turnHeaderTag, `${turnHeaderTag}\n${newTurnBlock}`);
         }
         fs.writeFileSync(progressPath, pContent, 'utf8');
-      } catch (e) {}
+      } catch { /* best-effort fallback */ }
     }
 
     return {
