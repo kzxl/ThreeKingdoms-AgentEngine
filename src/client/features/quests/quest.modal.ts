@@ -103,6 +103,8 @@ interface FarmParcel {
   areaMu: number;
   soilQuality: number;
   rentCash: number;
+  baseRentCash?: number;
+  rentDiscount?: number;
   status: string;
   crop: { cropCode: string; nameVi: string; harvestDate: string; daysRemaining: number; expectedYield: number } | null;
   availableCrops: CropOption[];
@@ -458,8 +460,8 @@ class QuestModal {
         action = `<button class="quest-action ${ready ? 'is-primary' : ''}" onclick="QuestUI.harvestFarm('${esc(parcel.parcelId)}')">${en ? 'Harvest' : 'Thu hoạch'}</button>`;
       }
       const cropLine = parcel.crop
-        ? `${esc(en ? parcel.crop.nameVi : parcel.crop.nameVi)} • ${en ? 'harvest' : 'thu'} ${esc(parcel.crop.harvestDate)} • ${parcel.crop.daysRemaining}${en ? 'd' : ' ngày'}`
-        : `${parcel.areaMu} ${en ? 'mu' : 'mẫu'} • ${en ? 'rent' : 'tô'} ${parcel.rentCash} Quan`;
+        ? `${esc(en ? parcel.crop.nameVi : parcel.crop.nameVi)} • ${en ? 'harvest' : 'thu'} ${esc(parcel.crop.harvestDate)} • ${parcel.crop.daysRemaining}${en ? 'd' : ' ngày'} • ${en ? 'yield' : 'dự kiến'} ${parcel.crop.expectedYield}`
+        : `${parcel.areaMu} ${en ? 'mu' : 'mẫu'} • ${en ? 'soil' : 'đất'} ${parcel.soilQuality.toFixed(2)} • ${en ? 'rent' : 'tô'} ${parcel.rentCash} Quan${(parcel.rentDiscount || 0) > 0 ? ` (-${parcel.rentDiscount}%)` : ''}`;
       return `
         <div class="quest-item">
           <div class="quest-head">

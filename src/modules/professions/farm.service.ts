@@ -10,6 +10,7 @@
 
 import { DatabaseService } from '../../core/database';
 import { RngService } from '../../core/rng';
+import { SkillService } from '../progression/skill.service';
 import { restoreInventoryItem } from '../../shared/inventory-movement';
 import { LOC_TO_NODE_MAP } from '../ecology-logistics/spatial-registry';
 import { postFactionEntry } from '../../shared/faction-ledger';
@@ -25,6 +26,9 @@ export interface CropView {
   riskRate: number;
   descriptionVi: string;
   inSeason: boolean;
+  skillCode: string;
+  rotationGroup: string;
+  soilImpact: number;
 }
 
 export interface FarmParcelView {
@@ -35,6 +39,9 @@ export interface FarmParcelView {
   areaMu: number;
   soilQuality: number;
   rentCash: number;
+  baseRentCash: number;
+  rentDiscount: number;
+  lastCropCode: string | null;
   status: string;
   leasedBy: string | null;
   leaseUntil: string | null;
@@ -123,6 +130,7 @@ export class FarmService {
       [settlement]
     );
     const parcels: FarmParcelView[] = rows.map(row => {
+      const rentInfo = this.rentFor(row, playerId);
       let crop: FarmParcelView['crop'] = null;
       if (row.status === 'GROWING' && row.crop_code) {
         const definition = this.getCrop(row.crop_code);
@@ -143,7 +151,10 @@ export class FarmService {
         nameEn: row.name_en,
         areaMu: Number(row.area_mu),
         soilQuality: Number(row.soil_quality),
-        rentCash: Number(row.rent_cash),
+        rentCash: rentInfo.cost,
+        baseRentCash: rentInfo.base,
+        rentDiscount: rentInfo.discount,
+        lastCropCode: row.last_crop_code || null,
         status: row.status,
         leasedBy: row.leased_by || null,
         leaseUntil: row.lease_until || null,
@@ -177,7 +188,8 @@ export class FarmService {
     );
     if (!parcel) throw new Error(`Thửa ruộng ${parcelId} không tồn tại.`);
     if (parcel.status !== 'IDLE') throw new Error('Thửa ruộng này đã được thuê hoặc đang canh tác.');
-    const rent = Number(parcel.rent_cash || 0);
+    const rentInfo = this.rentFor(parcel, playerId);
+    const rent = rentInfo.cost;
     const player = this.db.queryOne<{ liquid_cash: number }>(
       "SELECT liquid_cash FROM player_state WHERE player_id = 'PLY-0001';"
     );
@@ -246,12 +258,17 @@ export class FarmService {
     }
 
     const crisisPenalty = this.crisisPenalty(parcel.settlement_id);
+    const yieldPct = this.effect('CROP_YIELD', [crop.skillCode || 'SKL-AGR-PLANT', 'SKL-FARM-LABOR']);
+    const riskReductionPct = Math.min(80, this.effect('CROP_RISK_REDUCTION', ['SKL-AGR-IRRIG']));
+    const rotation = this.rotationFor(parcel, crop);
     const expected = Math.max(
       1,
       Number(parcel.area_mu || 1)
       * Number(crop.yieldPerMu)
       * Number(parcel.soil_quality || 1)
-      * (1 - Math.min(0.6, crisisPenalty * 0.5))
+      * (1 + yieldPct / 100)
+      * rotation.multiplier
+      * (1 - Math.min(0.6, crisisPenalty * 0.5 * (1 - riskReductionPct / 100)))
     );
     const harvestDate = addDays(today, crop.growthDays);
 
@@ -278,6 +295,10 @@ export class FarmService {
     quantity: number;
     lateDays: number;
     riskLoss: number;
+    effectiveRisk: number;
+    soilBefore: number;
+    soilAfter: number;
+    previousCropCode: string | null;
   } {
     const today = gameDate || this.currentDate();
     const parcel = this.db.queryOne<any>(
@@ -297,9 +318,18 @@ export class FarmService {
     const lateDays = Math.max(0, dayNumber(today) - dayNumber(parcel.harvest_date));
     const latePenalty = Math.min(0.5, Math.floor(lateDays / 15) * 0.1);
     const rng = RngService.forDomain(this.db, 'farm-harvest');
-    const riskLoss = rng.chance(Number(crop.riskRate)) ? 0.2 : 0;
+    const riskReductionPct = Math.min(80, this.effect('CROP_RISK_REDUCTION', ['SKL-AGR-IRRIG']));
+    const effectiveRisk = Number(crop.riskRate) * (1 - riskReductionPct / 100);
+    const riskLoss = rng.chance(effectiveRisk) ? 0.2 : 0;
     const expected = Number(parcel.expected_yield || 0);
     const quantity = Math.max(1, Math.round(expected * (1 - latePenalty) * (1 - riskLoss)));
+
+    const soilRecoveryPct = Math.min(80, this.effect('SOIL_RECOVERY', ['SKL-AGR-SOIL']));
+    const soilImpact = Number(crop.soilImpact || 0);
+    const newSoil = Math.max(
+      0.5,
+      Math.min(1.5, Number(parcel.soil_quality || 1) - soilImpact * (1 - soilRecoveryPct / 100))
+    );
 
     const item = this.db.queryOne<any>(
       'SELECT name_vi, category FROM master_items WHERE item_code = ? LIMIT 1;',
@@ -314,16 +344,24 @@ export class FarmService {
         refTxn: `FARM-${parcelId}`,
         category: item?.category || 'FOOD_STUFF',
         description: item?.name_vi || crop.nameVi,
-        unitCost: 0
+        unitCost: 0,
+        location: `Kho ${parcel.settlement_id}`
       });
       this.db.execute(
         `UPDATE land_parcels
-         SET status = 'LEASED', crop_code = NULL, planted_date = NULL, harvest_date = NULL,
-             seed_invested = 0, expected_yield = 0
+         SET status = 'LEASED', crop_code = NULL, last_crop_code = ?, planted_date = NULL,
+             harvest_date = NULL, seed_invested = 0, expected_yield = 0, soil_quality = ?
          WHERE parcel_id = ?;`,
-        [parcelId]
+        [crop.cropCode, Number(newSoil.toFixed(3)), parcelId]
       );
       this.awardFarmingExp(playerId, 30);
+      try {
+        const skills = SkillService.forDatabase(this.db);
+        skills.awardExp(crop.skillCode || 'SKL-AGR-PLANT', 25);
+        skills.awardExp('SKL-AGR-SOIL', 8);
+      } catch {
+        // Missing master skill must not roll back the harvest.
+      }
     });
 
     return {
@@ -332,7 +370,11 @@ export class FarmService {
       itemCode: crop.yieldItemCode,
       quantity,
       lateDays,
-      riskLoss
+      riskLoss,
+      effectiveRisk: Number(effectiveRisk.toFixed(3)),
+      soilBefore: Number(parcel.soil_quality || 1),
+      soilAfter: Number(newSoil.toFixed(3)),
+      previousCropCode: parcel.last_crop_code || null
     };
   }
 
@@ -360,7 +402,10 @@ export class FarmService {
         yieldPerMu: Number(row.yield_per_mu),
         riskRate: Number(row.risk_rate),
         descriptionVi: row.description_vi || '',
-        inSeason: seasons.includes(season)
+        inSeason: seasons.includes(season),
+        skillCode: row.skill_code || 'SKL-AGR-PLANT',
+        rotationGroup: row.rotation_group || 'GRAIN',
+        soilImpact: Number(row.soil_impact ?? 0.02)
       };
     });
   }
@@ -378,8 +423,36 @@ export class FarmService {
       seedCostPerMu: Number(row.seed_cost_per_mu),
       yieldPerMu: Number(row.yield_per_mu),
       yieldItemCode: row.yield_item_code,
-      riskRate: Number(row.risk_rate)
+      riskRate: Number(row.risk_rate),
+      skillCode: row.skill_code || 'SKL-AGR-PLANT',
+      rotationGroup: row.rotation_group || 'GRAIN',
+      soilImpact: Number(row.soil_impact ?? 0.02)
     };
+  }
+
+  private effect(effectType: string, skillCodes: string[]): number {
+    return SkillService.forDatabase(this.db).getEffectTotal(effectType, skillCodes);
+  }
+
+  private rentFor(parcel: any, playerId: string): { base: number; cost: number; discount: number } {
+    const base = Number(parcel.rent_cash || 0);
+    const discount = Math.max(0, Math.min(30, this.effect('RENT_DISCOUNT', ['SKL-LAND-LEASE'])));
+    return {
+      base,
+      discount,
+      cost: Math.max(1, Math.round(base * (1 - discount / 100)))
+    };
+  }
+
+  private rotationFor(parcel: any, crop: any): { multiplier: number; labelVi: string } {
+    const previousCode = parcel.last_crop_code;
+    if (!previousCode) return { multiplier: 1, labelVi: 'Vụ đầu' };
+    const previous = this.getCrop(previousCode);
+    if (!previous) return { multiplier: 1, labelVi: 'Không rõ vụ trước' };
+    if (previous.rotationGroup !== crop.rotationGroup) {
+      return { multiplier: 1.1, labelVi: `Luân canh ${previous.rotationGroup} → ${crop.rotationGroup}` };
+    }
+    return { multiplier: 0.95, labelVi: `Trồng liên tiếp ${crop.rotationGroup}` };
   }
 
   private crisisPenalty(settlementId: string): number {
