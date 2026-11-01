@@ -6,16 +6,17 @@ Baseline HEAD: `c775225` (1.39.0; clean working tree)
 Source analyses: `docs/audit/*`, `docs/*_2026-10-29.md`, `docs/REFACTOR_2026-10.md`,
 `docs/PRESTIGE_SYSTEM.md`, plus the 2026-11-01 supply-chain re-check.
 
-Baseline gate after Wave 0 and the first Wave 1 slice:
+Baseline gate after Wave 0 and Wave 1 (except W1-5):
 
 | Gate | Result |
 | :--- | :--- |
-| `npm run verify` | 91/91 suites, 28/28 API contracts, 8/8 write smokes |
+| `npm run verify` | 93/93 suites, 28/28 API contracts, 8/8 write smokes |
 | `npm run audit` | 1,961 invariants, 0 discrepancies |
 | Route shadow report | 48 live legacy handlers, 0 shadowed |
 
-Wave 0 (`c775225`) and W1-1/W1-2/W1-6 (`43f22da`, `5346294`) are complete.
-Waves 1 (remaining), 2–8 below are open.
+Wave 0 (`c775225`), W1-1/W1-2/W1-6 (`43f22da`, `5346294`), W1-4 (`ea945f9`),
+W1-3 (`e4bb051`) and the W1-7 warehouse/boat part (`d4228d9`) are complete.
+W1-5 and multi-item routes remain.
 The rule for every item below: one feature per commit, `npm run verify` and
 `npm run audit` green before the commit, only task-scoped files staged.
 
@@ -213,13 +214,13 @@ day is byte-identical.
 | :--- | :--- | :--- | :--- |
 | W1-1 | ✅ **Done (`43f22da`).** Stall listings add `+quantity` to municipal stock, each sale subtracts `-sold`, closing subtracts the unsold remainder. `stall_listings.market_effect` makes the three steps auditable. | `stall.service.ts`, migration 077 | `verify-market-stall.ts`, audit block 9 |
 | W1-2 | ✅ **Done (`5346294`).** Freight demand unions `settlement_consumption` with `deficitItems`, highest demand first; source falls back from surplus to highest stock to endowment. | `freight.service.ts` | `verify-freight-demand.ts` |
-| W1-3 | Fourth market tab: freight contracts and merchant routes; wire the existing client calls | `src/client/features/market-stall/market-stall.modal.ts`, `market-stall.service.ts` | browser check; `lint:api` green |
-| W1-4 | Real freight/route risk: ambush roll by guard tier, insurance premium, cargo loss and claim | `freight.service.ts`, `merchant-company.service.ts`, `config` risk table | deterministic ambush test; guard tier changes expected loss |
+| W1-3 | ✅ **Done (`e4bb051`).** Fourth market tab shows freight contracts (guard tier + insurance), active shipments with delivery and merchant routes with pause/resume. | `market-stall.modal.ts`, `market-stall.service.ts` | `lint:api`, client build |
+| W1-4 | ✅ **Done (`ea945f9`).** Deterministic lair/guard risk, 25/15/10% cargo loss by tier, freight 4% premium / 75% claim, one ambush per shipment, route cargo loss. | `logistics-risk.ts`, migration 078 | `verify-logistics-risk.ts`, audit |
 | W1-5 | Per-city personal bag: tag inventory by settlement instead of one global bag | `tools/schema.sql`, `inventory-movement.ts`, UI | buying in A and selling in B still requires transport |
 | W1-6 | ✅ **Done (`43f22da`).** Audit block 9 checks `market_effect = quantity` for ACTIVE listings and `0` for closed/sold-out listings; freight reservation is checked too. | `tools/sim-audit.js` | deliberately corrupt a row; audit fails |
-| W1-7 | P2 cleanups: re-renting an active warehouse prorates instead of charging full 300 and resetting 90 days; add `TOOL-BOAT`; allow multi-item merchant routes | `warehouse.service.ts:144`, `tool_rules`, `merchant-company.service.ts:149` | focused tests |
+| W1-7 | **Partial (`d4228d9`)**: warehouse lease extends from its current end, `TOOL-BOAT` + recipe + FISH alternate ship. Multi-item merchant routes remain. | `warehouse.service.ts`, migration 079 | `verify-warehouse.ts`, `verify-tool-boat.ts` |
 
-Remaining order inside Wave 1: W1-3 → W1-4 → W1-5 → W1-7.
+Remaining order inside Wave 1: W1-5 → multi-item routes.
 
 ---
 
@@ -477,15 +478,15 @@ both counts down.
 
 ## 13. Recommended next slice
 
-Wave 0 and W1-1/W1-2/W1-6 are done. Continue **Wave 1** with:
+Wave 1 is complete except the per-city bag and multi-item routes. Continue with:
 
-1. `W1-3 fourth market tab` — expose freight contracts and merchant routes in
-   the existing market modal, with a browser check.
-2. `W1-4 freight/route risk` — ambush roll by guard tier, insurance premium and
-   cargo loss, with a deterministic test.
-3. `W1-5 per-city bag` — inventory location is part of the transport loop.
-4. `W1-7 P2 cleanups` — warehouse re-rent proration, `TOOL-BOAT`, multi-item
-   routes.
+1. `W1-5 per-city bag` — make `inventory_items.location` authoritative per
+   settlement, move stock on travel, and update trade/stall/warehouse queries.
+   This is the last transport-loop gap and needs its own migration + suite.
+2. `multi-item merchant routes` — allow one route to carry a basket instead of a
+   single `item_code`; extend `merchant_route_stock` and the UI.
+3. Then start **Wave 2** with `W2-1 NPC income conservation` and `W2-2 one
+   health/death rule`.
 
 New features should follow `docs/FEATURE_MODULE_STANDARD.md` and start from
 `npm run scaffold:feature <name> --domain=<domain>`.

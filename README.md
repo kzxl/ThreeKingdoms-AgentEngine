@@ -329,13 +329,13 @@ npm install
 # Master schema + lore into saves/session.db and saves/master.db (needs the sqlite3 CLI)
 node tools/ingest-markdown-master.js
 
-# Session schema, seed, and migrations 001–077
+# Session schema, seed, and migrations 001–079
 node tools/sim-db.js init
 
 npm start
 ```
 
-`sim-db init` applies migrations 001–077 to the session database.
+`sim-db init` applies migrations 001–079 to the session database.
 
 `ingest-markdown-master.js` rewrites the `master_*` tables in `saves/session.db`; do not run it
 against a live save without a backup. `sim-db init` applies migrations automatically.
@@ -344,13 +344,13 @@ against a live save without a backup. `sim-db init` applies migrations automatic
 
 | Command | Action | Description |
 | :--- | :--- | :--- |
-| `npm run verify` | **Full Gate** | Runs typecheck → architecture guard → client syntax → UI ratchet → anti-slop lint → client API contract → route-shadow report → 91 verification suites → API contract check → write-path smoke. |
+| `npm run verify` | **Full Gate** | Runs typecheck → architecture guard → client syntax → UI ratchet → anti-slop lint → client API contract → route-shadow report → 93 verification suites → API contract check → write-path smoke. |
 | `npm run lint:api` | Architecture | Fails when the TS client calls an `/api/*` path that neither the Router nor the gateway serves (known gaps are reasoned in `tools/client-api-allowlist.json`). |
 | `npm run lint:slop` | Architecture | Enforces AS-05 (no emoji), AS-06 (no gradients), neutral elevation, two font families; ratchets the font-size scale. |
 | `npm run lint:ui` | Architecture | Ratchets legacy UI debt (button classes, class usages, inline styles, native confirms); new surfaces should use `src/client/core/ui` (`window.UI`). |
 | `npm run lint:client` | Architecture | Parses every classic client script (`public/app.js`, `public/js/*.js`); one parse error disables a whole UI file. |
 | `npm run routes:shadow` | Architecture | Fails if any legacy `sim-web.js` handler is already served by the modular Router (dead code). |
-| `npm test` | Verification | Runs all 91 suites (4 legacy self-sandboxed + 87 TypeScript `verify-*.ts`) against isolated DB copies. |
+| `npm test` | Verification | Runs all 93 suites (4 legacy self-sandboxed + 89 TypeScript `verify-*.ts`) against isolated DB copies. |
 | `npm run smoke:write` | Verification | Boots the app on a sandbox DB and exercises 8 write paths (trade, loans, equip/unequip, idempotency, input rejection, post-write audit). |
 | `npm run lint` | Architecture | Ratcheting guard over `tools/arch-baseline.json`: SQLite-CLI spawns, SQL interpolation, unseeded RNG, silent catches, the `current_date` keyword trap, legacy UI growth. |
 | `npm run golden:verify` | API Contract | Boots the real composition root and diffs 28 read-only endpoints against `tests/golden/api-shape.json`. |

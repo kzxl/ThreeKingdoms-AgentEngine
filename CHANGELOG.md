@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.41.0] - 2026-11-01
+
+Logistics risk, freight insurance and the market logistics screen.
+
+### Added
+- Deterministic ambush risk for freight and merchant routes: an active bandit
+  lair near an endpoint threatens the cargo; `MILITIA` is ambushed, `VETERAN`
+  and `ELITE_RETINUE` deter weaker lairs and lose less when they do not.
+- Freight insurance: optional 4% premium at accept, 75% claim on lost cargo.
+- Migration 078 adds insurance and ambush columns to shipment tables; audit
+  checks `quantity + spoiled + ambush <= initial` and claims only when insured.
+- The market modal has a fourth `Vận Chuyển` tab: freight contracts with guard
+  tiers/insurance, active shipments and merchant route pause/resume.
+- Warehouse rent/renew extends the existing lease by 90 days instead of
+  resetting from today, using the 30-day campaign calendar.
+- Migration 079 adds `TOOL-BOAT`, its recipe and the FISH alternate tool.
+- `verify-logistics-risk.ts` and `verify-tool-boat.ts`.
+
+### Verification
+`npm run verify` green: 93/93 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,961 invariants, 0 discrepancies.
+
+---
+
 ## [1.40.0] - 2026-11-01
 
 Market demand completion and a standard feature-module scaffold.

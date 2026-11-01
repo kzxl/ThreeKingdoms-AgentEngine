@@ -17,14 +17,14 @@ web UI are read models.
 - **Legacy surface**: `tools/sim-web.js` still serves 48 handlers that have not
   moved to module controllers; `public/js/*.js` still contains 21 classic
   scripts loaded alongside the TS bundle.
-- **Data**: `tools/schema.sql` plus 77 numbered migrations in
+- **Data**: `tools/schema.sql` plus 79 numbered migrations in
   `tools/migrations/`. `saves/` is local and gitignored.
 
 ## 2. Verified gate (2026-11-01)
 
 | Gate | Result |
 | :--- | :--- |
-| `npm run verify` | 91/91 suites (4 legacy + 87 modern), 28/28 API contracts, 8/8 write smokes |
+| `npm run verify` | 93/93 suites (4 legacy + 89 modern), 28/28 API contracts, 8/8 write smokes |
 | `npm run audit` | 1,961 SQLite invariants, 0 discrepancies |
 | `npm run routes:shadow` | 48 live legacy handlers, 0 shadowed |
 
@@ -34,9 +34,9 @@ its regression suite and the invariant audit are green.
 ## 3. Essential commands
 
 ```bash
-npm run verify          # typecheck, five lints, route shadow, 91 suites, golden, write smokes
+npm run verify          # typecheck, five lints, route shadow, 93 suites, golden, write smokes
 npm run audit           # 1,961 invariants against saves/session.db
-npm run migrate         # apply pending migrations (currently through 077)
+npm run migrate         # apply pending migrations (currently through 079)
 npm run migrate:status  # list applied/pending
 npm test                # suites only
 npm run build:client    # rebuild the TS client bundle after src/client changes
@@ -47,7 +47,7 @@ node tools/sim-db.js status
 After a client change, rebuild the bundle and restart the server before a browser
 check; an old server keeps serving the old bundle.
 
-## 4. Current economic rules (1.40.0)
+## 4. Current economic rules (1.41.0)
 
 - **Freight**: `accept` reserves source settlement stock inside the transaction;
   `deliver` credits the destination; `failContract` returns unspoiled cargo.
@@ -58,13 +58,15 @@ check; an old server keeps serving the old bundle.
   trade, stalls, contract board, intel and contextual actions use it.
 - **Stall**: listing adds goods to municipal stock, a sale consumes them and
   closing removes unsold goods; `stall_listings.market_effect` is audited.
+- **Risk**: a lair near an endpoint can ambush a shipment; guard tier decides
+  deterrence and loss. Freight insurance is 4% premium / 75% claim.
 - **Day ledger**: `world_day_ledger(system, game_date)` makes stall, freight,
   merchant and consumption ticks idempotent. Day arithmetic uses
   `src/shared/game-date.ts` (30-day months).
 
 ## 5. Where to look next
 
-- Architecture and gates: `ARCHITECTURE.md` §6.4, §20 and §21.
+- Architecture and gates: `ARCHITECTURE.md` §6.4, §20, §21 and §22.
 - Feature folder contract and scaffold: `docs/FEATURE_MODULE_STANDARD.md`,
   `npm run scaffold:feature`.
 - Decisions: `DECISIONS.md` ADR-040–042.

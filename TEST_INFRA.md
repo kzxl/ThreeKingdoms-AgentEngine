@@ -139,6 +139,8 @@ primary truth:
 | `tests/verify-day-tick-idempotency.ts` | Market: Day ledger | — | Stall, freight and consumption replay without a second effect |
 | `tests/verify-freight-demand.ts` | Market: Consumption demand | — | Fish demand posts a fish contract from a fishing town |
 | `tests/verify-feature-scaffold.ts` | Tooling: Feature standard | — | Scaffold creates the standard folder, refuses overwrite, dry-run writes nothing |
+| `tests/verify-logistics-risk.ts` | Market: Ambush/insurance | — | Guard deterrence, cargo loss, one claim, replay no-op |
+| `tests/verify-tool-boat.ts` | Livelihood: Fishing boat | — | Item, durability rule, recipe and FISH alternate tool |
 | `tools/sim-audit.js` | System: Autonomous Invariant Auditor | 1,961 | Nine blocks: accounting, inventory, journal, projection, enterprise, strategy, life-sim, clock, trade/warehouse/shipment |
 
 ---
@@ -156,7 +158,7 @@ npx tsx tests/verify-rotk-duels.ts
 
 ### Full Verification Pipeline
 ```bash
-# Single gate: typecheck → arch ratchet → 91 suites → API contract → write smoke
+# Single gate: typecheck → arch ratchet → 93 suites → API contract → write smoke
 npm run verify
 
 # Individually:

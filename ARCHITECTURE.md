@@ -138,7 +138,7 @@ millisecond.
 ### 6.3 Versioned data migrations
 
 `tools/migrations/` holds idempotent migrations applied inside a transaction and
-recorded in `schema_migrations` (77 migrations, through `077-stall-market-effect`). New playthrough instances
+recorded in `schema_migrations` (79 migrations, through `079-tool-boat`). New playthrough instances
 are brought to a known data state with `npm run migrate`; `npm run migrate:status` lists
 pending work. Migrations also own data repairs that SQL cannot express safely at the
 read path: 042 adds `businesses.tier/debt`, 043 repairs legacy text and currency labels.
@@ -153,7 +153,7 @@ not require editing that test.
 | :--- | :--- | :--- |
 | Types | `npm run typecheck` | `strict` TypeScript across `src/`, `tests/`, `vite.config.ts`. |
 | Architecture | `npm run lint` | Ratchet over `tools/arch-baseline.json`; debt may only shrink. |
-| Behaviour | `npm test` | 91 suites (4 legacy + 87 modern); each modern suite runs on an isolated DB copy and projections are restored afterwards. |
+| Behaviour | `npm test` | 93 suites (4 legacy + 89 modern); each modern suite runs on an isolated DB copy and projections are restored afterwards. |
 | API contract | `npm run golden:verify` | 28 read-only endpoints: status code, response shape, behavioural assertions. |
 | Write paths | `npm run smoke:write` | 8 HTTP write paths plus a post-write audit on a sandbox database. |
 | Invariants | `npm run audit` | 1,961 SQLite invariants (ledger parity, inventory conservation, projection sync, world/life-sim/clock blocks). |
@@ -1041,6 +1041,29 @@ Controllers own HTTP, services own rules and transactions, modules own lifecycle
 and route registration. `npm run scaffold:feature <name> --domain=<domain>`
 creates the folder and a passing smoke suite. Existing debt is retired slice by
 slice; there is no big-bang rewrite.
+
+---
+
+## 22. Logistics Risk and Insurance (1.41.0)
+
+`src/shared/logistics-risk.ts` is the single ambush resolver for freight and
+company routes. The check is deterministic:
+
+- an active `bandit_strongholds` row near either endpoint threatens the cargo;
+- `MILITIA` (10 troops) is below the deterrence threshold for a typical lair,
+  `VETERAN` (25) deters weaker lairs and `ELITE_RETINUE` (40) deters more;
+- an ambushed shipment loses 25% / 15% / 10% by guard tier.
+
+Freight stores `ambush_loss_quantity`, `ambush_resolved`, `insured`,
+`insurance_premium` and `insurance_claim` (migration 078). The premium is 4% of
+cargo value at accept; the claim is 75% of the lost value. Merchant route
+shipments store the loss fields but have no insurance yet. The audit checks
+`quantity + spoiled + ambush ≤ initial` and that a claim exists only when insured.
+
+The market modal now exposes freight contracts, active shipments and merchant
+routes in a fourth `Vận Chuyển` tab. Warehouse rent/renew extends an active lease
+by 90 days from its current end, and `TOOL-BOAT` is a durable FISH alternate
+(migration 079).
 
 
 

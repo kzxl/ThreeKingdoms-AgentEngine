@@ -473,3 +473,23 @@ This document records the architectural choices, rationale, and alternatives con
 - **Consequences**:
   - Positive: New features start from one shape; ownership is explicit; a feature folder can be removed without another feature importing its internals.
   - Negative: Manual module registration in `src/server/main.ts` remains until modules adopt `registerRoutes`; the scaffold prints the two lines to add.
+
+---
+
+## ADR-045: Logistics Risk Is Deterministic, Insurance Is Optional (2026-11-01)
+
+- **Context**: Freight and company routes paid a guard fee but the guard tier never affected the outcome; cargo moved safely through active bandit territory.
+- **Decision**: `resolveLogisticsAmbush` checks an active lair near either endpoint against the guard tier. Militia is below the deterrence threshold for a typical lair; veterans and elite retinues deter weaker lairs and lose 15%/10% instead of 25%. The check is deterministic, runs once per shipment (`ambush_resolved`), and credits the lair's `plundered_wealth`. Freight can buy insurance at 4% of cargo value for a 75% loss claim; company routes carry risk without insurance for now.
+- **Consequences**:
+  - Positive: Guard tiers have a real economic effect; insurance is a meaningful choice; replaying a day cannot double-ambush.
+  - Negative: Risk is threshold-based, not a per-day probability, so a militia convoy on a threatened route always loses cargo.
+
+---
+
+## ADR-046: Warehouse Renewal Extends the Existing Lease (2026-11-01)
+
+- **Context**: Re-renting or renewing an active warehouse charged the full 300 and reset the lease to `today + 90`, discarding the remaining days.
+- **Decision**: Both `rent` and `renew` start from `max(existing lease_until, today)` and add 90 days using the 30-day campaign calendar.
+- **Consequences**:
+  - Positive: The player never loses paid lease time; month boundaries follow the game calendar.
+  - Negative: A renewal near expiry produces a longer total lease than a fresh 90-day term; the price remains the full 90-day rent.
