@@ -48,6 +48,24 @@ export interface ResourceVariant {
   byproductQuantity: number;
 }
 
+export interface ToolRule {
+  itemCode: string;
+  kind: 'CONSUMABLE' | 'DURABLE';
+  maxUses: number;
+  craftSkillCode: string | null;
+  craftSkillTier: number;
+  notesVi: string | null;
+}
+
+export interface ToolStatus {
+  itemCode: string;
+  available: boolean;
+  kind: 'CONSUMABLE' | 'DURABLE';
+  usesLeft: number;
+  maxUses: number;
+  quantity: number;
+}
+
 function seasonOf(date: string): string {
   const month = Number(String(date || '184-05-02').split('-')[1]) || 5;
   if (month <= 3) return 'SPRING';
@@ -152,6 +170,133 @@ export class ResourceNodeService {
       [toolCode]
     );
     return Number(row?.quantity || 0) > 0;
+  }
+
+  public getToolRule(toolCode: string | null): ToolRule | null {
+    if (!toolCode) return null;
+    const row = this.db.queryOne<any>(
+      'SELECT * FROM tool_rules WHERE item_code = ? LIMIT 1;',
+      [toolCode]
+    );
+    if (!row) return null;
+    return {
+      itemCode: row.item_code,
+      kind: row.kind === 'CONSUMABLE' ? 'CONSUMABLE' : 'DURABLE',
+      maxUses: Number(row.max_uses || 1),
+      craftSkillCode: row.craft_skill_code || null,
+      craftSkillTier: Number(row.craft_skill_tier || 1),
+      notesVi: row.notes_vi || null
+    };
+  }
+
+  /**
+   * Reads a tool without consuming it. Unknown tools are treated as an
+   * unlimited basic tool so a new seed item cannot silently break gathering.
+   */
+  public toolStatus(characterId: string, toolCode: string | null): ToolStatus | null {
+    if (!toolCode) return null;
+    const rule = this.getToolRule(toolCode);
+    const stock = this.db.queryOne<{ quantity: number }>(
+      'SELECT quantity FROM inventory_items WHERE item_code = ? LIMIT 1;',
+      [toolCode]
+    );
+    const quantity = Number(stock?.quantity || 0);
+    if (!rule) {
+      return { itemCode: toolCode, available: quantity > 0, kind: 'DURABLE', usesLeft: 1, maxUses: 1, quantity };
+    }
+    if (rule.kind === 'CONSUMABLE') {
+      return {
+        itemCode: toolCode,
+        available: quantity > 0,
+        kind: 'CONSUMABLE',
+        usesLeft: quantity > 0 ? 1 : 0,
+        maxUses: rule.maxUses,
+        quantity
+      };
+    }
+    const uses = this.db.queryOne<{ uses_left: number }>(
+      'SELECT uses_left FROM character_tool_uses WHERE character_id = ? AND item_code = ? LIMIT 1;',
+      [characterId, toolCode]
+    );
+    const usesLeft = uses ? Number(uses.uses_left) : rule.maxUses;
+    return {
+      itemCode: toolCode,
+      available: quantity > 0 && usesLeft > 0,
+      kind: 'DURABLE',
+      usesLeft,
+      maxUses: rule.maxUses,
+      quantity
+    };
+  }
+
+  /**
+   * Consumes one use after a successful gather. A consumable loses one item;
+   * a durable tool loses one use and loses one item when it breaks.
+   */
+  public consumeTool(characterId: string, toolCode: string | null, gameDate: string): any {
+    if (!toolCode) return null;
+    const rule = this.getToolRule(toolCode);
+    const status = this.toolStatus(characterId, toolCode);
+    if (!status || !status.available) return { itemCode: toolCode, consumed: false, broke: false, usesLeft: 0 };
+
+    if (!rule) {
+      return { itemCode: toolCode, consumed: false, broke: false, usesLeft: status.usesLeft };
+    }
+
+    if (rule.kind === 'CONSUMABLE') {
+      consumeInventoryItem(this.db, {
+        itemCode: toolCode,
+        quantity: 1,
+        reason: 'TOOL_CONSUMED',
+        gameDate,
+        refTxn: `TOOL-${toolCode}`
+      });
+      return {
+        itemCode: toolCode,
+        consumed: true,
+        broke: true,
+        kind: rule.kind,
+        usesLeft: 0,
+        remainingQuantity: Math.max(0, status.quantity - 1)
+      };
+    }
+
+    const usesLeft = Math.max(0, status.usesLeft - 1);
+    let broke = false;
+    let remainingQuantity = status.quantity;
+    if (usesLeft <= 0) {
+      consumeInventoryItem(this.db, {
+        itemCode: toolCode,
+        quantity: 1,
+        reason: 'TOOL_BROKEN',
+        gameDate,
+        refTxn: `TOOL-${toolCode}`
+      });
+      broke = true;
+      remainingQuantity = Math.max(0, status.quantity - 1);
+      this.db.execute(
+        `INSERT INTO character_tool_uses (character_id, item_code, uses_left)
+         VALUES (?, ?, ?)
+         ON CONFLICT(character_id, item_code) DO UPDATE SET uses_left = excluded.uses_left, updated_at = CURRENT_TIMESTAMP;`,
+        [characterId, toolCode, remainingQuantity > 0 ? rule.maxUses : 0]
+      );
+    } else {
+      this.db.execute(
+        `INSERT INTO character_tool_uses (character_id, item_code, uses_left)
+         VALUES (?, ?, ?)
+         ON CONFLICT(character_id, item_code) DO UPDATE SET uses_left = excluded.uses_left, updated_at = CURRENT_TIMESTAMP;`,
+        [characterId, toolCode, usesLeft]
+      );
+    }
+
+    return {
+      itemCode: toolCode,
+      consumed: true,
+      broke,
+      kind: rule.kind,
+      usesLeft: broke && remainingQuantity > 0 ? rule.maxUses : usesLeft,
+      remainingQuantity
+    };
   }
 
   public skillTier(skillCode: string): number {

@@ -310,8 +310,10 @@ export class ProfessionsModule implements IFeatureModule {
       );
     }
 
-    // Tools are not consumed; a missing tool reduces yield by 30%.
-    const hasRequiredTool = resources.hasTool(rule?.requiredToolCode || null);
+    // Tools are not consumed by the check; the successful gather consumes one
+    // use (nets/traps are consumed, axes/picks/hoes/bows wear down).
+    const toolStatus = resources.toolStatus(characterId, rule?.requiredToolCode || null);
+    const hasRequiredTool = toolStatus ? toolStatus.available : true;
     const toolMultiplier = hasRequiredTool ? 1 : 0.7;
 
     // Profession tier is the broad ladder; the specialised skill is the
@@ -389,6 +391,7 @@ export class ProfessionsModule implements IFeatureModule {
     let actualYield = requestedYield;
     let byproductYield = 0;
     let stockRemaining = stockBefore ? stockBefore.stock : null;
+    let toolUse: any = null;
 
     this.db.transaction(() => {
       // 0. Consume node stock first so an exhausted node cannot add inventory.
@@ -401,6 +404,11 @@ export class ProfessionsModule implements IFeatureModule {
         const error: any = new Error('Điểm khai thác đã cạn kiệt; hãy đợi vài ngày để tài nguyên tái sinh.');
         error.code = 'NODE_EXHAUSTED';
         throw error;
+      }
+
+      // 0b. A successful gather consumes one tool use.
+      if (rule?.requiredToolCode && hasRequiredTool) {
+        toolUse = resources.consumeTool(characterId, rule.requiredToolCode, gameDate);
       }
 
       // 1. Physically deposit into inventory_items (Safe conservation)
@@ -508,6 +516,9 @@ export class ProfessionsModule implements IFeatureModule {
       toolMultiplier,
       toolCode: rule?.requiredToolCode || null,
       toolMissing: !hasRequiredTool,
+      toolKind: toolStatus?.kind || null,
+      toolUsesLeft: toolUse?.usesLeft ?? toolStatus?.usesLeft ?? null,
+      toolBroke: Boolean(toolUse?.broke),
       stockRemaining,
       breakthrough: breakthrough || null
     };

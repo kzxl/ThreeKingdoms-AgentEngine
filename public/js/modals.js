@@ -1482,7 +1482,12 @@ async function handleGatherResource(nodeId) {
       const byproduct = data.byproductItemCode && data.byproductQuantity > 0
         ? ` + ${data.byproductQuantity} ${data.byproductItemCode}`
         : '';
-      showToast(`Thu hoạch thành công +${data.yieldQuantity} ${data.itemName}${quality}${byproduct}! (${data.expMessage})`, false);
+      const toolInfo = data.toolCode
+        ? (data.toolBroke
+          ? ` • ${data.toolCode} đã hỏng`
+          : (data.toolUsesLeft != null ? ` • ${data.toolCode} còn ${data.toolUsesLeft} lần` : ''))
+        : '';
+      showToast(`Thu hoạch thành công +${data.yieldQuantity} ${data.itemName}${quality}${byproduct}${toolInfo}! (${data.expMessage})`, false);
       if (data.breakthrough) {
         setTimeout(() => {
           alert(`CHÚC MỪNG ĐỘT PHÁ NGHỀ MỚI!\n\n${data.breakthrough.titleVi}\n\n${data.breakthrough.narrativeVi}`);
