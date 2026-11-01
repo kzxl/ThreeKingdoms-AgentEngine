@@ -641,9 +641,9 @@ export class FreightService {
             this.db.execute(
               `UPDATE freight_shipments
                SET days_remaining = ?, status = ?, quantity = ?, ambush_loss_quantity = ?,
-                   insurance_claim = ?, ambush_resolved = 1, updated_at = CURRENT_TIMESTAMP
+                   insurance_claim = ?, ambush_resolved = ?, updated_at = CURRENT_TIMESTAMP
                WHERE shipment_id = ?;`,
-              [remaining, status, quantity, ambushLoss, insuranceClaim, shipment.shipment_id]
+              [remaining, status, quantity, ambushLoss, insuranceClaim, ambushResolved ? 1 : 0, shipment.shipment_id]
             );
           }
         }

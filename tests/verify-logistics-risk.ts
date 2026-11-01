@@ -57,7 +57,7 @@ function run(): void {
 
   const contracts = freight.listContracts('zhuo_xian', DATE);
   assert(contracts.length > 0, 'a freight contract must be available');
-  const contract = contracts[0];
+  const contract = contracts.find(row => Number(row.travelDays) >= 4) || contracts[0];
   market.getState(contract.fromSettlementId, contract.itemCode);
   db.execute(
     'UPDATE settlement_market_state SET stock = ? WHERE settlement_id = ? AND item_code = ?;',
@@ -84,6 +84,17 @@ function run(): void {
   assert(db.queryOne("SELECT 1 AS ok FROM cashflow_ledger WHERE category = 'Logistics/FreightInsurance' LIMIT 1;"));
 
   const arrival = addGameDays(DATE, shipment.daysRemaining);
+  // A day before the midpoint must not resolve or damage the shipment.
+  if (shipment.daysRemaining >= 4) {
+    freight.advanceByDays(1, addGameDays(DATE, 1));
+    const early = db.queryOne<any>(
+      'SELECT ambush_resolved, ambush_loss_quantity FROM freight_shipments WHERE shipment_id = ?;',
+      [shipment.shipmentId]
+    );
+    assert.strictEqual(Number(early.ambush_resolved), 0, 'risk must not resolve before the midpoint');
+    assert.strictEqual(Number(early.ambush_loss_quantity), 0);
+  }
+
   freight.advanceByDays(shipment.daysRemaining, arrival);
   const after = db.queryOne<{
     quantity: number;

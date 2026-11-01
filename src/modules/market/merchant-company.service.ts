@@ -263,7 +263,11 @@ export class MerchantCompanyService {
       let ambushResolved = Number(row.ambush_resolved || 0) === 1;
       if (remaining === 0 && !ambushResolved) {
         const route = this.db.queryOne<any>(
-          'SELECT guard_tier, from_settlement, to_settlement FROM merchant_routes WHERE route_id = ? LIMIT 1;',
+          `SELECT r.guard_tier, wf.settlement_id AS from_settlement, wt.settlement_id AS to_settlement
+           FROM merchant_routes r
+           JOIN warehouses wf ON wf.warehouse_id = r.from_warehouse_id
+           JOIN warehouses wt ON wt.warehouse_id = r.to_warehouse_id
+           WHERE r.route_id = ? LIMIT 1;`,
           [row.route_id]
         );
         if (route) {
@@ -309,9 +313,9 @@ export class MerchantCompanyService {
         this.db.execute(
           `UPDATE merchant_shipments
            SET days_remaining = ?, status = ?, quantity = ?, ambush_loss_quantity = ?,
-               ambush_resolved = 1, updated_at = CURRENT_TIMESTAMP
+               ambush_resolved = ?, updated_at = CURRENT_TIMESTAMP
            WHERE shipment_id = ?;`,
-          [remaining, 'EN_ROUTE', quantity, ambushLoss, row.shipment_id]
+          [remaining, 'EN_ROUTE', quantity, ambushLoss, ambushResolved ? 1 : 0, row.shipment_id]
         );
       }
     }
