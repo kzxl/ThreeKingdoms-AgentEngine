@@ -16,6 +16,7 @@ import { getMarketItem } from '../../shared/market-price-book';
 import { SettlementMarketService } from '../economy/settlement-market.service';
 import { SETTLEMENT_PROFILES } from '../economy/regional-market.service';
 import { LOC_TO_NODE_MAP } from '../ecology-logistics/spatial-registry';
+import { npcAskMultiplier } from './npc-pricing';
 
 const DEFAULT_POOL = [
   'COM-GRAIN', 'COM-SALT', 'COM-LEATH', 'COM-BAMBOO', 'RAW-HERB-WILD',
@@ -135,7 +136,8 @@ export class NpcMarketService {
         if (duplicate) continue;
         const market = this.marketPrice(settlementId, itemCode) || item.price;
         const multiplier = 0.85 + rng.nextFloat() * 0.4;
-        const unitPrice = Math.max(1, Math.round(market * multiplier));
+        const askMultiplier = npcAskMultiplier(this.db, npc.npc_id, item.category);
+        const unitPrice = Math.max(1, Math.round(market * multiplier * askMultiplier));
         const quantity = 2 + Math.floor(rng.nextFloat() * 6);
         const offerId = nextSequentialId(this.db, 'npc_market_offers', 'OFFER', date);
         this.db.execute(

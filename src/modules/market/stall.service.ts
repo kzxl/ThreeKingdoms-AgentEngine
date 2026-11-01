@@ -16,6 +16,7 @@ import { consumeInventoryItem, restoreInventoryItem } from '../../shared/invento
 import { getMarketItem } from '../../shared/market-price-book';
 import { SettlementMarketService } from '../economy/settlement-market.service';
 import { LOC_TO_NODE_MAP } from '../ecology-logistics/spatial-registry';
+import { npcBidMultiplier } from './npc-pricing';
 
 const OPEN_FEE = 20;
 
@@ -269,12 +270,16 @@ export class StallService {
 
     for (const listing of listings) {
       const marketPrice = this.marketPrice(stall.settlement_id, listing.item_code);
-      const maxBuyerPrice = Math.round(marketPrice * 1.15);
-      if (marketPrice <= 0 || Number(listing.unit_price) > maxBuyerPrice) continue;
+      const item = getMarketItem(this.db, listing.item_code);
+      if (marketPrice <= 0 || !item) continue;
 
       for (const buyer of buyers) {
         if (used.has(buyer.npc_id)) continue;
+        const maxBuyerPrice = Math.round(
+          marketPrice * npcBidMultiplier(this.db, buyer.npc_id, item.category)
+        );
         const price = Number(listing.unit_price);
+        if (price > maxBuyerPrice) continue;
         const affordable = Math.floor(Number(buyer.personal_cash) / price);
         if (affordable < 1) continue;
         const want = Math.min(
