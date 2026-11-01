@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.35.0] - 2026-10-31
+
+Tools wear out and the local market is now two-sided.
+
+### Added
+- Migration 059: `tool_rules`, `character_tool_uses`, `TOOL-TRAP`, and six tool
+  recipes. Nets/traps are consumed per use; axes/picks/hoes/bows lose durability
+  and break on the last use.
+- Gather returns `toolKind`, `toolUsesLeft` and `toolBroke`; the legacy toast
+  reports wear and breakage.
+- Migrations 060–061: player stalls, listings, sales, NPC offers and NPC
+  purchases. NPC personal cash is seeded for the whole master roster.
+- NPCs buy player listings at up to 115% of the local quote; NPC sellers ask
+  85–125%. Both sides move real cash, inventory and local market stock, with
+  append-only sale rows.
+- `engine/stall-bridge.js` runs sales on every elapsed day.
+- Grand Command Hub gains a `Chợ & Quầy Bán` tab with stall, listings and offers.
+- `tests/verify-tool-durability.ts` and `tests/verify-market-stall.ts`.
+
+### Verification
+`npm run verify` green: 78/78 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,708 invariants, 0 discrepancies.
+
+---
+
 ## [1.34.0] - 2026-10-31
 
 Rare-variant sinks and active resource restoration.

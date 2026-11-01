@@ -56,7 +56,7 @@ graph TD
 
 ## 3. SQLite Schema & Invariant Enforcement
 
-All dynamic campaign state is maintained in `saves/session.db` using the schema defined in `tools/schema.sql` (audited across 1,546 invariants in eight blocks):
+All dynamic campaign state is maintained in `saves/session.db` using the schema defined in `tools/schema.sql` (audited across 1,708 invariants in eight blocks):
 
 1. **`player_state`**: Tracks attributes (INT, POL, WAR, LDR, DIP, COM, LOG, CRA), current location, liquid cash, safe cash, fixed capital, grain, and net worth.
 2. **`cashflow_ledger`**: Strict double-entry ledger enforcing:
@@ -153,10 +153,10 @@ not require editing that test.
 | :--- | :--- | :--- |
 | Types | `npm run typecheck` | `strict` TypeScript across `src/`, `tests/`, `vite.config.ts`. |
 | Architecture | `npm run lint` | Ratchet over `tools/arch-baseline.json`; debt may only shrink. |
-| Behaviour | `npm test` | 76 suites (4 legacy + 72 modern); each modern suite runs on an isolated DB copy and projections are restored afterwards. |
+| Behaviour | `npm test` | 78 suites (4 legacy + 74 modern); each modern suite runs on an isolated DB copy and projections are restored afterwards. |
 | API contract | `npm run golden:verify` | 28 read-only endpoints: status code, response shape, behavioural assertions. |
 | Write paths | `npm run smoke:write` | 8 HTTP write paths plus a post-write audit on a sandbox database. |
-| Invariants | `npm run audit` | 1,546 SQLite invariants (ledger parity, inventory conservation, projection sync, world/life-sim/clock blocks). |
+| Invariants | `npm run audit` | 1,708 SQLite invariants (ledger parity, inventory conservation, projection sync, world/life-sim/clock blocks). |
 
 `npm run verify` chains all of them and is the merge gate.
 
@@ -707,6 +707,82 @@ skill requirement, a disabled button when the node is empty, the restore button,
 and the variant quality/byproduct in the harvest toast.
 
 Gate: `tests/verify-node-restoration.ts`.
+
+### 16.6 Tool wear and crafting (1.35.0)
+
+`tool_rules` separates two tool economies:
+
+- **CONSUMABLE** — `TOOL-NET` and `TOOL-TRAP` lose one item per successful
+  gather. A net or trap is spent, not repaired.
+- **DURABLE** — `TOOL-AXE`, `TOOL-PICK`, `TOOL-HOE`, `TOOL-BOW` keep
+  `character_tool_uses.uses_left`; the last use removes one item and resets the
+  counter for the next stack.
+
+A successful gather consumes the tool only after node stock is available; a
+failed gather spends no stamina and no tool. Missing tool still gives the −30%
+yield penalty. Six recipes (`REC-TOOL-*`) build every tool from fibre, twine,
+timber and iron, with smithing/weaving/survival skill gates.
+
+---
+
+## 17. Two-Sided Market: Stall and NPC Offers (1.35.0)
+
+### 17.1 Player stall (ask side)
+
+The player opens one stall per settlement for 20 Quan, lists goods (inventory is
+moved out of the warehouse into `stall_listings`) and waits. Each elapsed day,
+`engine/stall-bridge.js` runs `StallService.advanceByDays`:
+
+- buyers are named NPCs whose `master_characters.baseline_location` maps to the
+  stall settlement and whose `npc_personal_progression.personal_cash > 0`;
+- an NPC buys only when the listing price is at most **115% of the local
+  quote**; quantity is 1–3 per buyer per day, limited by cash;
+- each sale moves NPC cash to the player, writes
+  `Trade/StallSale` through `postDoubleEntry`, adds local market stock and
+  appends `stall_sales` with the buyer id.
+
+Closing the stall returns every unsold listing to the warehouse.
+
+### 17.2 NPC offers (bid side)
+
+`NpcMarketService` generates at most six NPCs × two offers per settlement,
+lazily and deterministically from the `npc-market` RNG stream. The item pool is
+the settlement's `surplusItems`, falling back to common goods. The ask is:
+
+```
+local quote × (0.85 + rng × 0.40)    → 85%–125% of the local quote
+quantity 2–7, expires in 30 days
+```
+
+The player buys with cash. The player ledger posts `Trade/NpcPurchase` (debit
+inventory, credit cash), the NPC personal cash rises, goods enter the warehouse,
+local market stock falls and `npc_market_sales` records the buyer.
+
+### 17.3 Why the price band works
+
+- **Local quote** already includes settlement specialisation and the persisted
+  `sqrt(demand / stock)` multiplier (0.5–2). This is the common anchor for both
+  sides, so a fish offer in a fishing town and a fish offer inland start from
+  different prices.
+- **Ask 85–125%** gives NPC sellers a realistic spread: a surplus town asks
+  below the local quote, a deficit town asks above it.
+- **Bid cap 115%** prevents the player from dumping arbitrary-priced goods; a
+  player can profit only by buying below the local quote and selling below the
+  NPC cap, or by selling goods they produced cheaply.
+- **The two loops feed back**: player stall sales add local stock (pushing the
+  quote down), NPC purchases remove local stock (pushing it up), and monthly
+  drift pulls both toward demand. There is no infinite money loop: NPC cash is
+  finite (seeded once for the roster), offers expire, listings are real
+  inventory, and every cash move has a journal pair and audit row.
+- **Named buyers** matter: `stall_sales.npc_id` and
+  `npc_market_sales.npc_id` let future loyalty, relationship or faction
+  preferences price the same goods differently per buyer.
+
+APIs: `GET /api/stall`, `POST /api/stall/open|list|close`,
+`GET /api/market/npc-offers`, `POST /api/market/npc-offers/buy`.
+
+Gate: `tests/verify-market-stall.ts` and `tests/verify-tool-durability.ts`.
+
 
 
 

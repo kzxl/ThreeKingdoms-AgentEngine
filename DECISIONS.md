@@ -343,3 +343,23 @@ This document records the architectural choices, rationale, and alternatives con
 - **Consequences**:
   - Positive: Fishing, forestry, hunting and herb gathering now have an input → restoration → output loop; restoration costs are real and auditable.
   - Negative: Restoration is per-node and manual; NPC-driven restoration and per-warehouse transport remain later phases.
+
+---
+
+## ADR-032: Tools Are Consumed or Worn, Not Permanent Keys (2026-10-31)
+
+- **Context**: `TOOL-NET`, `TOOL-AXE` and friends were checked as inventory keys and never consumed, so a single net fished forever and tool crafting had no economic role.
+- **Decision**: `tool_rules` declares `CONSUMABLE` (net, trap: one item per successful gather) or `DURABLE` (axe, pick, hoe, bow: `character_tool_uses`). The last durable use removes one item; a failed gather spends no tool. Six tool recipes build them from fibre, twine, timber and iron.
+- **Consequences**:
+  - Positive: Gathering has a real operating cost; tool demand feeds the crafting and market loops.
+  - Negative: Players must restock nets/traps; the UI shows uses and breakage but does not repair durable tools yet.
+
+---
+
+## ADR-033: The Market Has Both a Bid and an Ask (2026-10-31)
+
+- **Context**: `/api/trade` used an abstract counterparty. There was no stall, no named NPC buyer and no NPC offer to buy from, so the player could not participate in a two-sided local market.
+- **Decision**: Add `player_stalls`, `stall_listings`, `stall_sales`, `npc_market_offers` and `npc_market_sales`. NPC buyers pay up to 115% of the local quote; NPC sellers ask 85–125% of it. Sales and purchases move NPC personal cash, player cash through `postDoubleEntry`, local market stock and an append-only sale row. Offers expire after 30 days and are generated lazily from settlement surplus.
+- **Consequences**:
+  - Positive: Price discovery is two-sided; the player can produce, buy low and sell high, and the local quote reacts to both flows.
+  - Negative: Balance now depends on NPC cash seeding and offer frequency; relationship-based haggling and per-NPC demand profiles are later phases.
