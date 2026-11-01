@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.42.0] - 2026-11-01
+
+One player damage path and one zero-health transition.
+
+### Changed
+- Every combat/injury/assault path now calls
+  `applyPlayerDamage` (`src/modules/military/player-vitals.ts`). Health may reach
+  0 instead of being clamped to 1, 20 or 25.
+- At 0 health the existing `BattleDuelService.applyPlayerDeath` runs once:
+  succession if an heir exists, otherwise `campaign_meta.status = 'DEFEATED'`.
+- Injury, siege defeat, tactical assault, duel ambush and bandit assault all use
+  the same path.
+- `tools/test-runner.js` gives each modern suite its own `SIM_LEGACY_PATH`, so a
+  death test can no longer overwrite the shared `saves/legacy.json`.
+- `verify-instance-manager.ts` isolates the NG+ profile explicitly.
+
+### Verification
+`npm run verify` green: 94/94 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,961 invariants, 0 discrepancies.
+
+---
+
 ## [1.41.0] - 2026-11-01
 
 Logistics risk, freight insurance and the market logistics screen.

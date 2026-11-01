@@ -6,17 +6,17 @@ Baseline HEAD: `c775225` (1.39.0; clean working tree)
 Source analyses: `docs/audit/*`, `docs/*_2026-10-29.md`, `docs/REFACTOR_2026-10.md`,
 `docs/PRESTIGE_SYSTEM.md`, plus the 2026-11-01 supply-chain re-check.
 
-Baseline gate after Wave 0 and Wave 1 (except W1-5):
+Baseline gate after Wave 0, Wave 1 (except W1-5) and W2-2:
 
 | Gate | Result |
 | :--- | :--- |
-| `npm run verify` | 93/93 suites, 28/28 API contracts, 8/8 write smokes |
+| `npm run verify` | 94/94 suites, 28/28 API contracts, 8/8 write smokes |
 | `npm run audit` | 1,961 invariants, 0 discrepancies |
 | Route shadow report | 48 live legacy handlers, 0 shadowed |
 
 Wave 0 (`c775225`), W1-1/W1-2/W1-6 (`43f22da`, `5346294`), W1-4 (`ea945f9`),
-W1-3 (`e4bb051`) and the W1-7 warehouse/boat part (`d4228d9`) are complete.
-W1-5 and multi-item routes remain.
+W1-3 (`e4bb051`), the W1-7 warehouse/boat part (`d4228d9`) and W2-2 (`6ed8c5f`)
+are complete. W1-5, multi-item routes and W2-1/W2-3/W2-4 remain.
 The rule for every item below: one feature per commit, `npm run verify` and
 `npm run audit` green before the commit, only task-scoped files staged.
 
@@ -242,24 +242,24 @@ debits `bandit_strongholds.plundered_wealth`; mirror that pattern:
 faction treasury is unchanged by a simulated NPC turn except for explicit
 production/consumption.
 
-### W2-2 One health/death rule
+### W2-2 One health/death rule — DONE (`6ed8c5f`)
 
-Current clamps disagree:
+All damage paths now call `applyPlayerDamage`
+(`src/modules/military/player-vitals.ts`): injury, siege defeat, tactical
+assault, duel ambush and bandit assault. Health may reach 0, and the first zero
+calls `BattleDuelService.applyPlayerDeath` once (heir succession or `DEFEATED`).
+The test runner gives every suite its own `SIM_LEGACY_PATH`, so a death test
+cannot overwrite the shared NG+ profile. Gate: 94/94 suites.
 
-| Path | Clamp |
+The original clamp table is kept below for history.
+
+| Path | Old clamp |
 | :--- | :--- |
 | `ecology-logistics.module.ts:340` | `MAX(0, health - 20)` |
 | `condition.service.ts:104` | `MAX(1, ...)` |
 | `military.module.ts:510` | `MAX(25, ...)` |
 | `military.controller.ts:721` | `MAX(20, ...)` |
 | `single-combat-duel.service.ts:1367` | `MAX(20, ...)` |
-
-Decision: health may reach 0 on every path; reaching 0 calls one
-`handlePlayerDeath()` that routes into `battle-duel.service.ts` /
-`family-lineage.service.ts` succession. Add `config/defeat.json` for the death
-threshold and heir grace period.
-**Test:** `tests/verify-defeat-consistency.ts` — each damage path can reach 0 and
-triggers exactly one DEFEATED/SUCCEEDED_BY_HEIR transition.
 
 ### W2-3 NPC-owned business succession
 
@@ -485,8 +485,9 @@ Wave 1 is complete except the per-city bag and multi-item routes. Continue with:
    This is the last transport-loop gap and needs its own migration + suite.
 2. `multi-item merchant routes` — allow one route to carry a basket instead of a
    single `item_code`; extend `merchant_route_stock` and the UI.
-3. Then start **Wave 2** with `W2-1 NPC income conservation` and `W2-2 one
-   health/death rule`.
+3. Then continue **Wave 2** with `W2-1 NPC income conservation`,
+   `W2-3 NPC-owned business succession` and `W2-4 defeat/victory consistency`
+   (`W2-2` is done).
 
 New features should follow `docs/FEATURE_MODULE_STANDARD.md` and start from
 `npm run scaffold:feature <name> --domain=<domain>`.

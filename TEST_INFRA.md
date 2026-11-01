@@ -141,6 +141,7 @@ primary truth:
 | `tests/verify-feature-scaffold.ts` | Tooling: Feature standard | — | Scaffold creates the standard folder, refuses overwrite, dry-run writes nothing |
 | `tests/verify-logistics-risk.ts` | Market: Ambush/insurance | — | Guard deterrence, cargo loss, one claim, replay no-op |
 | `tests/verify-tool-boat.ts` | Livelihood: Fishing boat | — | Item, durability rule, recipe and FISH alternate tool |
+| `tests/verify-defeat-consistency.ts` | Military: One damage path | — | Health reaches 0, one DEFEATED transition, injury uses the same path |
 | `tools/sim-audit.js` | System: Autonomous Invariant Auditor | 1,961 | Nine blocks: accounting, inventory, journal, projection, enterprise, strategy, life-sim, clock, trade/warehouse/shipment |
 
 ---
@@ -158,7 +159,7 @@ npx tsx tests/verify-rotk-duels.ts
 
 ### Full Verification Pipeline
 ```bash
-# Single gate: typecheck → arch ratchet → 93 suites → API contract → write smoke
+# Single gate: typecheck → arch ratchet → 94 suites → API contract → write smoke
 npm run verify
 
 # Individually:

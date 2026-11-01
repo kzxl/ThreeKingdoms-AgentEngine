@@ -37,7 +37,7 @@ ThreeKingdoms-AgentEngine is an autonomous Three Kingdoms simulation engine powe
 
 The milestone tables below are the original expansion history. Current verified state:
 
-- **Gate**: `npm run verify` — 93/93 suites (4 legacy + 89 modern), 28 API contracts,
+- **Gate**: `npm run verify` — 94/94 suites (4 legacy + 90 modern), 28 API contracts,
   8 write smokes; `npm run audit` — 1,961 invariants, 0 discrepancies.
 - **Data**: 159 master items, 33 talents, 59 skills, 168 master characters, 20
   locations, 41 routes, 132 POI scenes; 79 versioned migrations.
@@ -95,7 +95,7 @@ The milestone tables below are the original expansion history. Current verified 
 | 14 | Grand Command Hub Shell | Reorganize fragmented buttons in `.cmd-bar-right` and purge dynamic injections in `equipment-ui.js` / `enterprise-ui.js` into single Master Hub `#grand-command-hub-modal` | M4 | ORIGINAL_REQUEST §R4 |
 | 15 | 6 High-Density Tabs | Tab 1 Quân Trang `[武]`, Tab 2 Sản Nghiệp `[業]`, Tab 3 Thương Đoàn `[商]`, Tab 4 Gia Thất `[家]`, Tab 5 Diễn Võ `[演]`, Tab 6 Tụ Nghĩa `[義]` | M4 | ORIGINAL_REQUEST §R4 |
 | 16 | Codebase-wide Anti-AI-Slop | Purge all emojis in UI and REST payloads (`map-data.js`, `caravan-ui.js`, `sim-web.js`, `context-action.engine.ts`), replace with authentic Hanzi seals | M4 | ORIGINAL_REQUEST §R4 |
-| 17 | E2E Testing Runner & Verification | Full gate across all feature suites; current state is 93/93 suites, 28 API contracts, 8 write smokes and 1,961 SQLite audit invariants | M5 | ORIGINAL_REQUEST §Acceptance |
+| 17 | E2E Testing Runner & Verification | Full gate across all feature suites; current state is 94/94 suites, 28 API contracts, 8 write smokes and 1,961 SQLite audit invariants | M5 | ORIGINAL_REQUEST §Acceptance |
 | 18 | Historical Master Catalog & 20-Settlement Strategic Map | Enriched 129 master items, 33 talents, 168 characters, 20 historical citadels, 41 tactical routes across 4 terrain profiles (`HIGHWAY`, `WATERWAY`, `MOUNTAIN_PASS`, `PLANK_ROAD`), 3 view modes (`overview`, `military`, `economy`), and route pulse animation | M6 | GRAND_STRATEGY_EXPANSION |
 | 19 | Specialist Workforce Recruitment (Loop 1) | 20 auxiliary specialists (`NPC-0201` to `NPC-0220`), recruitment signing bonus via double-entry journal, assignment to businesses boosting efficiency by +15% to +25% | M6 | GRAND_STRATEGY_EXPANSION |
 | 20 | 20-Settlement Arbitrage & Caravans (Loop 2) | Full price profile coverage for all 20 citadels, long-distance trade caravans with 3 guard tiers (`MILITIA`, `VETERAN`, `ELITE_RETINUE`), bandit ambushes, and destination liquidation | M6 | GRAND_STRATEGY_EXPANSION |
@@ -153,6 +153,7 @@ The milestone tables below are the original expansion history. Current verified 
 | 72 | Feature Module Standard | Standard feature folder, ownership rules, scaffold and smoke suite | M24 | Tooling 1.40.0 |
 | 73 | Logistics Risk & Insurance | Deterministic ambush risk by lair/guard, freight premium and claim, route cargo loss | M25 | Logistics 1.41.0 |
 | 74 | Market Logistics UI & Tools | Fourth market tab, warehouse lease extension, fishing boat item/recipe | M25 | Logistics 1.41.0 |
+| 75 | One Damage & Death Path | `applyPlayerDamage` unifies health to 0 and routes the first zero into succession or DEFEATED; per-suite legacy isolation | M26 | Defeat 1.42.0 |
 
 ---
 
@@ -164,7 +165,7 @@ The milestone tables below are the original expansion history. Current verified 
 | M2 | Three Kingdoms Single Combat Dueling System (R2) | Features 7-9: `SingleCombatDuelService`, 4 tactical commands, 3-5 round loop, equipment WAR scaling, contextual triggers | none | DONE |
 | M3 | Tavern Hero Banquets & Brotherhood (R3) | Features 10-13: `TavernBanquetService`, gourmet dishes/Dukang wine consumption, brotherhood oath, retainer recruitment | none | DONE |
 | M4 | Grand Command Hub UI & Anti-AI-Slop (R4) | Features 14-16: Unified `#grand-command-hub-modal`, 6 tabs, REST wiring in `sim-web.js`, emoji eradication | M1, M2, M3 | DONE |
-| M5 | Final E2E Suite Pass & Adversarial Hardening | Feature 17: pass the full E2E gate (currently 93 suites and 1,961 invariants), forensic auditor review, Tier 5 hardening | E2E, M1-M4 | DONE |
+| M5 | Final E2E Suite Pass & Adversarial Hardening | Feature 17: pass the full E2E gate (currently 94 suites and 1,961 invariants), forensic auditor review, Tier 5 hardening | E2E, M1-M4 | DONE |
 | M6 | Grand Strategy & 3-Loop Expansion | Features 18-22: 20-settlement 3-layer world map, specialist workforce, 20-city arbitrage caravans, siege assaults, and the invariant auditor | M1-M5 | DONE |
 | M7 | Realistic-RPG P0 Foundation | Features 23-26: server-authoritative action time, enterprise P&L with debt, one career-path resolver, and migration-based data repair | M1-M6 | DONE |
 | M8 | P1 Local Economy Loop | Features 27-29: local market write side, periodic obligations and the repeatable contract board | M1-M7 | DONE |
@@ -185,6 +186,7 @@ The milestone tables below are the original expansion history. Current verified 
 | M23 | Economic Conservation | Feature 69: freight source reservation, one endowment-aware price resolver and per-system day ledger | M1-M22 | DONE |
 | M24 | Market Demand & Feature Standard | Features 70-72: stall local supply, consumption-driven freight and the feature-module scaffold | M1-M23 | DONE |
 | M25 | Logistics Risk & Market UI | Features 73-74: ambush/insurance, logistics tab, warehouse lease extension and fishing boat | M1-M24 | DONE |
+| M26 | Defeat Consistency | Feature 75: one player damage path, one zero-health transition and isolated legacy profiles | M1-M25 | DONE |
 
 ---
 

@@ -493,3 +493,13 @@ This document records the architectural choices, rationale, and alternatives con
 - **Consequences**:
   - Positive: The player never loses paid lease time; month boundaries follow the game calendar.
   - Negative: A renewal near expiry produces a longer total lease than a fresh 90-day term; the price remains the full 90-day rent.
+
+---
+
+## ADR-047: One Player Damage Path, One Death Transition (2026-11-01)
+
+- **Context**: Damage paths clamped health differently (`MAX(1)`, `MAX(20)`, `MAX(25)`), so the player could be immortal in one system and dead in another. A zero-health result did not always reach succession/defeat.
+- **Decision**: `src/modules/military/player-vitals.ts` (`applyPlayerDamage`) owns health loss, fatigue/morale side effects and the zero-health transition. Every damage path calls it. At 0 it invokes `BattleDuelService.applyPlayerDeath` once; an heir continues the campaign, otherwise the campaign becomes `DEFEATED`. The transition is skipped when the campaign is already non-`ACTIVE`.
+- **Consequences**:
+  - Positive: One rule for immortality, death and succession; every path is testable through the same helper.
+  - Negative: Combat balance can now actually kill the protagonist; heirs become a real progression requirement rather than a optional feature.

@@ -153,7 +153,7 @@ not require editing that test.
 | :--- | :--- | :--- |
 | Types | `npm run typecheck` | `strict` TypeScript across `src/`, `tests/`, `vite.config.ts`. |
 | Architecture | `npm run lint` | Ratchet over `tools/arch-baseline.json`; debt may only shrink. |
-| Behaviour | `npm test` | 93 suites (4 legacy + 89 modern); each modern suite runs on an isolated DB copy and projections are restored afterwards. |
+| Behaviour | `npm test` | 94 suites (4 legacy + 90 modern); each modern suite runs on an isolated DB copy and projections are restored afterwards. |
 | API contract | `npm run golden:verify` | 28 read-only endpoints: status code, response shape, behavioural assertions. |
 | Write paths | `npm run smoke:write` | 8 HTTP write paths plus a post-write audit on a sandbox database. |
 | Invariants | `npm run audit` | 1,961 SQLite invariants (ledger parity, inventory conservation, projection sync, world/life-sim/clock blocks). |
@@ -1064,6 +1064,29 @@ The market modal now exposes freight contracts, active shipments and merchant
 routes in a fourth `Vận Chuyển` tab. Warehouse rent/renew extends an active lease
 by 90 days from its current end, and `TOOL-BOAT` is a durable FISH alternate
 (migration 079).
+
+---
+
+## 23. One Player Damage and Death Path (1.42.0)
+
+`src/modules/military/player-vitals.ts` is the only writer of player health on a
+negative delta:
+
+```ts
+applyPlayerDamage(db, playerId, { healthLoss, fatigueGain?, moraleLoss?, reason })
+```
+
+- Health may reach 0; there is no `MAX(1|20|25, ...)` clamp left in a damage path.
+- At 0 the helper calls `BattleDuelService.applyPlayerDeath` once. An heir makes
+  the campaign continue (`SUCCEEDED_BY_HEIR`); otherwise `campaign_meta.status`
+  becomes `DEFEATED` with the reason.
+- The transition is skipped when the campaign is already non-`ACTIVE`.
+- Injury, siege defeat, tactical assault, duel ambush and bandit assault all call
+  the same helper.
+
+Test isolation: `tools/test-runner.js` sets a per-suite `SIM_LEGACY_PATH`, so a
+death test cannot overwrite the shared `saves/legacy.json` or change another
+suite's starting cash.
 
 
 
