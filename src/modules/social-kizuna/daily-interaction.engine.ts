@@ -16,8 +16,10 @@ import { ContextDialogueService } from './context-dialogue.service';
 import { syncProgressProjection } from '../../shared/projection-sync';
 import { RngService } from '../../core/rng';
 import { nextId } from '../../shared/id-generator';
-import { postCashflowEntry } from '../../shared/ledger';
+import { postDoubleEntry } from '../../shared/ledger';
+import { ACCOUNT_CODES } from '../../shared/account-codes';
 import { NpcSkillService } from '../progression/npc-skill.service';
+import { SkillService } from '../progression/skill.service';
 
 export type FogTier = 1 | 2 | 3 | 4 | 5;
 
@@ -173,7 +175,7 @@ export interface DailyInteractionResult {
     moraleDelta?: number;
     staminaChange?: number;
     itemConsumed?: string;
-    expGained?: { skill: string; amount: number };
+    expGained?: { skill: string; skillName?: string; amount: number };
     newIntelUnlocked?: string[];
   };
   updatedDossier: NpcDossierView;
@@ -795,7 +797,7 @@ export class DailyInteractionEngine {
     let affinityDelta = 5;
     let respectDelta = 2;
     let cashCost = 0;
-    let expGained: { skill: string; amount: number } | undefined = undefined;
+    let expGained: { skill: string; skillName?: string; amount: number } | undefined = undefined;
 
     if (totalRoll >= 22 || (d20 === 20 && hobbyBonus > 0)) {
       outcome = 'CRITICAL_SUCCESS';
@@ -836,8 +838,13 @@ export class DailyInteractionEngine {
       fatigueDelta = 10;
       moraleDelta = 5;
       if (outcome === 'SUCCESS' || outcome === 'CRITICAL_SUCCESS') {
+        const skillCode = profile.war >= profile.int ? 'SKL-WAR-DUEL' : 'SKL-TAC-STRAT';
         const skillName = profile.war >= profile.int ? 'Võ Thuật (Warfare)' : 'Mưu Lược (Tactics)';
-        expGained = { skill: skillName, amount: outcome === 'CRITICAL_SUCCESS' ? 25 : 12 };
+        expGained = {
+          skill: skillCode,
+          skillName,
+          amount: outcome === 'CRITICAL_SUCCESS' ? 25 : 12
+        };
       }
     } else if (actionType === 'SPAR_DEBATE') {
       fatigueDelta = 15; // Tiêu hao 15 thể lực
@@ -892,7 +899,6 @@ export class DailyInteractionEngine {
       'SELECT campaign_id, "current_date" AS d FROM campaign_meta LIMIT 1;'
     );
     const gameDate = campaignMeta?.d || '184-05-02';
-    const campaignId = campaignMeta?.campaign_id || 'CMP-184-ZHOU-01';
     this.db.transaction(() => {
       // 5.1 Deduct cash if any and balance with ledger & journal
       if (cashCost > 0) {
@@ -907,28 +913,17 @@ export class DailyInteractionEngine {
           const txnId = nextId(this.db, 'cashflow', 'TXN-SOC', gameDate);
           const memo = `Chi phí giao tế & ẩm thực cùng ${heroName}`;
 
-          postCashflowEntry(this.db, {
+          postDoubleEntry(this.db, {
             txnId,
             gameDate,
             counterparty: heroName,
             category: 'ENTERTAINMENT_LIVING',
             outflow: cashCost,
             balance: newTotalBalance,
-            memo
+            memo,
+            debitAccount: ACCOUNT_CODES.operatingExpense,
+            creditAccount: ACCOUNT_CODES.cashMobile
           });
-
-          // Double-Entry Parity
-          this.db.execute(`
-            INSERT INTO account_journal (
-              txn_id, campaign_id, game_date, account_code, debit, credit, memo
-            ) VALUES (?, ?, ?, '6001_OPERATING_EXPENSE', ?, 0, ?);
-          `, [txnId, campaignId, gameDate, cashCost, memo]);
-
-          this.db.execute(`
-            INSERT INTO account_journal (
-              txn_id, campaign_id, game_date, account_code, debit, credit, memo
-            ) VALUES (?, ?, ?, '1001_CASH_MOBILE', 0, ?, 'Xuất tiền mặt chi tiêu giao tế');
-          `, [txnId, campaignId, gameDate, cashCost]);
         }
       }
 
@@ -945,6 +940,11 @@ export class DailyInteractionEngine {
         fog.relationshipTitleVi,
         `${actionType}: ${outcome} (${dialogueNarrativeVi.slice(0, 60)}...)`
       ]);
+
+      // 5.2b Mentorship must actually train the player, not just narrate it.
+      if (expGained) {
+        SkillService.forDatabase(this.db).awardExp(expGained.skill, expGained.amount);
+      }
 
       // 5.3 Update Fog Table
       const updatedHobbiesJson = JSON.stringify(fog.revealedHobbies);

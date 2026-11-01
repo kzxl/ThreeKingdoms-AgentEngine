@@ -36,6 +36,7 @@ export interface SpecialistCandidate {
   signingBonus: number;
   effectiveSigningBonus: number;
   fameDiscount: number;
+  virtueDiscount: number;
   minFame: number;
   eligible: boolean;
   lockedReasonVi?: string;
@@ -92,7 +93,9 @@ export class SpecialistWorkforceService {
   public getAvailableSpecialists(locationId?: string, characterId = 'PLY-0001'): SpecialistCandidate[] {
     const prestige = PrestigeService.forDatabase(this.db);
     const fame = prestige.getFame(characterId);
-    const discount = fameEffects(fame).hireDiscount;
+    const fameDiscount = fameEffects(fame).hireDiscount;
+    const virtueDiscount = this.getVirtueDiscount(characterId);
+    const discount = Math.min(0.5, fameDiscount + virtueDiscount);
     let sql = `
       SELECT 
         mc.npc_id as npcId,
@@ -158,7 +161,8 @@ export class SpecialistWorkforceService {
         monthlyWage: r.currentWage || monthlyWage,
         signingBonus,
         effectiveSigningBonus: this.applyFameDiscount(signingBonus, discount),
-        fameDiscount: discount,
+        fameDiscount: fameDiscount,
+        virtueDiscount,
         minFame: profile.minFame,
         eligible,
         lockedReasonVi: eligible ? undefined : `Danh vọng chưa đủ (${fame}/${profile.minFame}) để chiêu mộ nhân sự này.`,
@@ -195,6 +199,19 @@ export class SpecialistWorkforceService {
 
   private applyFameDiscount(base: number, discount: number): number {
     return Math.max(1, Math.round(base * (1 - Math.max(0, Math.min(0.5, discount)))));
+  }
+
+  /**
+   * Virtue is the life-sim standing score: a virtuous lord attracts talent for
+   * less. Above 50 virtue the signing bonus drops by up to 10%.
+   */
+  private getVirtueDiscount(characterId: string): number {
+    const row = this.db.queryOne<{ virtue: number }>(
+      'SELECT virtue FROM player_state WHERE player_id = ? LIMIT 1;',
+      [characterId]
+    );
+    const virtue = Number(row?.virtue ?? 50);
+    return Math.max(0, Math.min(0.1, (virtue - 50) / 500));
   }
 
   /**
@@ -270,10 +287,12 @@ export class SpecialistWorkforceService {
     const efficiencyIncrease = isManager ? 0.25 : 0.15;
 
     // The server owns the signing price; a client-supplied value is ignored.
-    // Fame lowers it by up to 10%, never to zero.
+    // Fame and virtue lower it by up to 10% each, never to zero.
     const prestige = PrestigeService.forDatabase(this.db);
     const fame = prestige.getFame(characterId);
     const fameDiscount = fameEffects(fame).hireDiscount;
+    const virtueDiscount = this.getVirtueDiscount(characterId);
+    const discount = Math.min(0.5, fameDiscount + virtueDiscount);
     const profile = this.deriveRoleProfile(masterChar.baseline_position_vi);
     if (fame < profile.minFame) {
       throw new Error(
@@ -281,7 +300,7 @@ export class SpecialistWorkforceService {
       );
     }
     const baseSigningBonus = profile.signingBonus;
-    const signingBonus = input.waiveSigningBonus ? 0 : this.applyFameDiscount(baseSigningBonus, fameDiscount);
+    const signingBonus = input.waiveSigningBonus ? 0 : this.applyFameDiscount(baseSigningBonus, discount);
 
     // 4. Execute atomic transaction
     return this.db.transaction(() => {

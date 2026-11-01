@@ -28,7 +28,8 @@ function toNumber(value, fallback = 0) {
 function settleBusinessMonth(business = {}, staff = []) {
   const workers = Array.isArray(staff) ? staff : [];
   const tier = Math.max(1, Math.round(toNumber(business.tier, 1)));
-  const efficiency = Math.max(0, toNumber(business.efficiency_multiplier, 1));
+  const efficiency = Math.max(0, toNumber(business.efficiency_multiplier, 1))
+    * Math.max(0, toNumber(business.household_efficiency_multiplier, 1));
   const staffCount = workers.length;
   const roster = Math.max(1, Math.round(toNumber(business.current_workforce, 1)));
   // No staff means the workshop is closed; understaffing scales output down.

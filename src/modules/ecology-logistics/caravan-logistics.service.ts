@@ -391,8 +391,24 @@ export class CaravanLogisticsService {
           const banditPower = Number(dangerousStronghold.bandit_power) || 200;
           const combatThreshold = Math.floor(banditPower / 2);
           const guards = Number(caravan.guard_troops) || 0;
+          let hasHouseholdDefender = false;
+          if (Number(caravan.dispatched_by_player) === 1) {
+            try {
+              hasHouseholdDefender = Boolean(
+                this.db.queryOne(
+                  `SELECT 1 AS ok FROM family_spouses
+                   WHERE husband_id = 'PLY-0001' AND household_role = 'MILITARY_DEFENDER' AND status = 'MARRIED'
+                   LIMIT 1;`
+                )
+              );
+            } catch {
+              // A sparse database without lineage tables has no defender bonus.
+              hasHouseholdDefender = false;
+            }
+          }
+          const effectiveGuards = hasHouseholdDefender ? Math.round(guards * 1.25) : guards;
 
-          if (guards >= combatThreshold) {
+          if (effectiveGuards >= combatThreshold) {
             // Victory: Repelled the bandits!
             const ldrExp = 15;
             ProgressionExpService.awardAttributeExp('PLY-0001', 'ldr', ldrExp);
@@ -404,7 +420,7 @@ export class CaravanLogisticsService {
               strongholdNameVi: dangerousStronghold.name_vi,
               isVictory: true,
               ldrExpGained: ldrExp,
-              narrativeVi: `Thương đoàn ${caravan.caravan_name} chạm trán toán thảo khấu thuộc ${dangerousStronghold.name_vi} (${dangerousStronghold.bandit_chief_name}). Nhờ hộ vệ tinh nhuệ (${guards} quân vs ngưỡng ${combatThreshold}), thương đoàn đã kích thoái giặc cướp thành công (+${ldrExp} LDR EXP)!`
+              narrativeVi: `Thương đoàn ${caravan.caravan_name} chạm trán toán thảo khấu thuộc ${dangerousStronghold.name_vi} (${dangerousStronghold.bandit_chief_name}). Nhờ hộ vệ tinh nhuệ (${effectiveGuards} quân vs ngưỡng ${combatThreshold}), thương đoàn đã kích thoái giặc cướp thành công (+${ldrExp} LDR EXP)!`
             });
           } else {
             // Defeat: Ambushed and 20% cargo plundered!
@@ -435,7 +451,7 @@ export class CaravanLogisticsService {
               isVictory: false,
               cargoPlundered: plunderQty,
               valueLost,
-              narrativeVi: `Thương đoàn ${caravan.caravan_name} bị đạo tặc ${dangerousStronghold.name_vi} phục kích chớp nhoáng! Lực lượng hộ vệ (${guards} quân) quá mỏng, bị cướp đoạt 20% hàng hóa (-${plunderQty} hàng, -${valueLost} quan)!`
+              narrativeVi: `Thương đoàn ${caravan.caravan_name} bị đạo tặc ${dangerousStronghold.name_vi} phục kích chớp nhoáng! Lực lượng hộ vệ (${effectiveGuards} quân) quá mỏng, bị cướp đoạt 20% hàng hóa (-${plunderQty} hàng, -${valueLost} quan)!`
             });
 
             // Re-read updated cargo

@@ -416,9 +416,24 @@ class GameplayManager {
     );
 
     const businesses = runSqlJson(this.dbPath, `SELECT * FROM businesses;`);
+    let hasEnterpriseSupervisor = false;
+    try {
+      hasEnterpriseSupervisor = runSqlJson(
+        this.dbPath,
+        `SELECT 1 AS ok FROM family_spouses
+         WHERE husband_id = 'PLY-0001' AND household_role = 'ENTERPRISE_SUPERVISOR' AND status = 'MARRIED'
+         LIMIT 1;`
+      ).length > 0;
+    } catch {
+      // Older/sparse databases may not have the lineage tables yet.
+      hasEnterpriseSupervisor = false;
+    }
     const bizReports = [];
     const bizUpdates = [];
     for (const b of businesses) {
+      if (hasEnterpriseSupervisor && b.owner_character_id === 'PLY-0001') {
+        b.household_efficiency_multiplier = 1.15;
+      }
       const staff = runSqlJson(this.dbPath, `SELECT * FROM npc_state WHERE assigned_business_id = '${b.business_id}';`);
       let totalWages = 0;
       for (const s of staff) {
