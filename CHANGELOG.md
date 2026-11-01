@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.37.0] - 2026-10-31
+
+Gia Thương foundation: per-settlement warehouses, freight contracts, automated
+trade routes and perishable cargo.
+
+### Added
+- Migration 064: `warehouses` and `warehouse_stock`. Rent (300/90 days) or buy
+  (2,000), capacity, deposit/withdraw and lease expiry. The personal bag and
+  the settlement warehouse are separate stores.
+- Migration 065: stall listings track `source_type` (`BAG|WAREHOUSE`) and
+  `warehouse_id`; closing the stall returns unsold goods to the original source.
+- Migration 066: NPC freight contracts and shipments. The issuer owns the cargo;
+  the player pays the escort fee and receives a fee on delivery.
+- Migration 067: merchant company routes. The daily tick procures from NPC
+  offers below the buy ceiling, stores at the source warehouse, ships on
+  schedule, unloads at the destination and sells above the sell floor.
+- Migration 068: shelf life/spoilage on items; fresh fish/meat lose quantity on
+  long trips, dried/salted goods stay stable. `SKL-LOG-COLD` reduces spoilage,
+  `SKL-LOG-FREIGHT` discounts escort fees, and `TRAVEL_SPEED` shortens freight
+  and company travel.
+- APIs: `/api/warehouses/*`, `/api/freight/*`, `/api/merchant/*`; stall listing
+  accepts `source=WAREHOUSE`.
+- Five new gates: warehouse, stall-warehouse, freight, merchant-route, spoilage.
+
+### Verification
+`npm run verify` green: 85/85 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,708 invariants, 0 discrepancies.
+
+---
+
 ## [1.36.0] - 2026-10-31
 
 NPCs price goods by relationship and preference; durable tools can be repaired.

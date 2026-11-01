@@ -797,6 +797,95 @@ APIs: `GET /api/stall`, `POST /api/stall/open|list|close`,
 
 Gate: `tests/verify-market-stall.ts` and `tests/verify-tool-durability.ts`.
 
+---
+
+## 18. Gia Thương Foundation (1.37.0)
+
+The stall and caravan are now connected through per-settlement warehouses and
+two merchant modes.
+
+### 18.1 Warehouses
+
+Migration 064 separates the personal bag from settlement storage:
+
+- `warehouses`: owner, settlement, `RENTED|OWNED`, capacity, rent, purchase
+  price, lease, status. One per owner per settlement.
+- `warehouse_stock`: per-warehouse item quantity and cost basis.
+
+Rent costs 300 for 90 days; buying costs 2,000 and removes the lease. Deposit
+moves items from `inventory_items` into the warehouse; withdraw moves them back.
+Capacity is enforced on deposit and on caravan/company unloading. An expired
+lease blocks deposit/listing until renewed.
+
+APIs: `GET /api/warehouses`, `GET /api/warehouses/:id`,
+`POST /api/warehouses/rent|buy|renew|deposit|withdraw`.
+
+### 18.2 Stall storage is separate
+
+Migration 065 adds `source_type` (`BAG|WAREHOUSE`) and `warehouse_id` to
+`stall_listings`. Listing from a warehouse removes stock from that warehouse,
+not the personal bag; closing the stall returns unsold goods to the original
+source. This is the first real separation of “túi nhân / kho thành / kho quầy”.
+
+### 18.3 Freight contracts (merchant mode 1)
+
+Migration 066:
+
+- `freight_contracts`: issuer NPC, origin/destination, item, quantity, reward,
+  penalty, deadline, status.
+- `freight_shipments`: owner, route, cargo, days remaining, reward, guard fee.
+
+`FreightService.refresh` finds a destination deficit and a source surplus,
+picks a named NPC at the destination with enough personal cash, and posts up to
+three contracts. The player pays the guard fee, travels, and receives the fee on
+delivery; the cargo is never bought by the player. The destination market gains
+the delivered quantity. Reward scales with the delivered ratio when perishables
+spoil in transit.
+
+APIs: `GET /api/freight/contracts|shipments`, `POST /api/freight/accept|deliver`.
+
+### 18.4 Merchant company routes (merchant mode 2)
+
+Migration 067:
+
+- `merchant_routes`: owner, source/destination warehouse, item, buy ceiling,
+  sell floor, quantity per run, frequency, guard tier, status, next run date.
+- `merchant_shipments` and `merchant_events`.
+
+Every elapsed day the bridge runs, in order:
+
+1. advance company shipments;
+2. unload arrived cargo into the destination warehouse (overflow is sold);
+3. sell destination stock when the local quote ≥ sell floor;
+4. procure from NPC offers at the source settlement ≤ buy ceiling;
+5. dispatch the next run if due and stocked.
+
+Every buy, guard fee and sale uses `postDoubleEntry`; events record what the
+company did. The route is capped by warehouse capacity, NPC offer quantity,
+player cash and the price ceiling/floor.
+
+APIs: `GET /api/merchant/routes|events`, `POST /api/merchant/routes`,
+`POST /api/merchant/routes/:id/status`.
+
+### 18.5 Perishables and logistics skills
+
+Migration 068 adds `master_items.shelf_life_days`, `spoil_rate_per_day`,
+`preserve_skill_code`, `preserve_min_tier`; shipment tables gain
+`initial_quantity`, `total_days`, `spoiled_quantity`.
+
+- Fresh fish/meat spoil by `rate × travelDays`; dried/salted goods are
+  near-stable.
+- `SKL-LOG-COLD` reduces spoilage up to 50%.
+- `SKL-LOG-FREIGHT` reduces escort fees up to 10%.
+- `TRAVEL_SPEED` now shortens freight and company travel days.
+
+The strategic choice is explicit: ship fresh fish for a higher price and risk
+loss, or process it into dried fish/sauce/jerky for stable long-haul cargo.
+
+Gates: `tests/verify-warehouse.ts`, `verify-stall-warehouse.ts`,
+`verify-freight.ts`, `verify-merchant-route.ts`, `verify-spoilage.ts`.
+
+
 
 
 

@@ -383,3 +383,33 @@ This document records the architectural choices, rationale, and alternatives con
 - **Consequences**:
   - Positive: Axe/pick/hoe/bow ownership has maintenance cost, while nets/traps stay a recurring consumable sink.
   - Negative: Repair is API-only for now; a tool panel can surface it later.
+
+---
+
+## ADR-036: Warehouses Are Per Settlement, Not Global (2026-10-31)
+
+- **Context**: `inventory_items` was one global row per item, so a stall in Chengdu could sell fish caught in Jiangdong without any transport. That made freight and local supply meaningless.
+- **Decision**: Migration 064 adds `warehouses` and `warehouse_stock`; one warehouse per owner per settlement, rented (300/90 days) or owned (2,000). Deposit/withdraw are explicit moves between the bag and the warehouse. Migration 065 lets stall listings source from the warehouse and return there on close.
+- **Consequences**:
+  - Positive: Local supply, capacity, transport and stall stock now have a real location dimension.
+  - Negative: The personal bag remains global; carrying goods across the map still has no per-hex inventory until a later pass.
+
+---
+
+## ADR-037: Two Merchant Modes Share One Ledger (2026-10-31)
+
+- **Context**: A single “caravan sells cargo for cash” loop cannot express either NPC logistics or an automated trading house.
+- **Decision**: Add `freight_contracts`/`freight_shipments` for NPC-owned cargo and `merchant_routes`/`merchant_shipments` for player-owned automated supply chains. Freight pays a fee and risk; company routes buy from NPC offers, store, ship, unload and sell on a fixed daily order.
+- **Consequences**:
+  - Positive: The player can earn fee income without capital, or run a capital-intensive trading house with warehouses and routes.
+  - Negative: Both modes depend on warehouse capacity and NPC cash; route automation is capped by price ceiling/floor and frequency.
+
+---
+
+## ADR-038: Perishables Make Fresh vs Processed a Real Choice (2026-10-31)
+
+- **Context**: Fresh fish, dried fish, grain and timber all travelled identically.
+- **Decision**: Migration 068 adds shelf life/spoil rate to `master_items`; shipment tables record initial quantity, total days and spoiled quantity. Fresh fish/meat spoil per travel day; dried/salted goods are near-stable. `SKL-LOG-COLD` reduces loss, `SKL-LOG-FREIGHT` cuts escort fees, and `TRAVEL_SPEED` shortens freight/company travel.
+- **Consequences**:
+  - Positive: Processing and cold-chain skills have a clear economic role; long-haul fresh fish is profitable but risky.
+  - Negative: Spoilage is applied at arrival, not continuously; insurance and partial-route sales are later layers.
