@@ -33,6 +33,7 @@ const REQUIRED_TABLES = [
   'intel_reports',
   'master_crops',
   'land_parcels',
+  'location_sublocations',
   'faction_ledger',
   'settlement_ledger',
   'player_life_state',

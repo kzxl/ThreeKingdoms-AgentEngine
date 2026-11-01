@@ -21,6 +21,7 @@ import { registerEconomyRoutes } from '../modules/economy/economy.controller';
 import { registerMilitaryRoutes } from '../modules/military/military.controller';
 import { registerProfessionsRoutes } from '../modules/professions/professions.controller';
 import { registerEcologyRoutes } from '../modules/ecology-logistics/ecology.controller';
+import { registerMapRoutes } from '../modules/ecology-logistics/map.controller';
 import { registerKizunaRoutes } from '../modules/social-kizuna/kizuna.controller';
 import { registerBlacksmithForgeRoutes } from '../modules/professions/blacksmith-forge.service';
 import { registerLineageRoutes } from '../modules/lineage-succession/lineage.controller';
@@ -93,6 +94,7 @@ export function createGrandStrategyRouter(): Router {
   registerMilitaryRoutes(router);
   registerProfessionsRoutes(router);
   registerEcologyRoutes(router);
+  registerMapRoutes(router);
   registerKizunaRoutes(router);
   registerBlacksmithForgeRoutes(router);
   registerLineageRoutes(router);
