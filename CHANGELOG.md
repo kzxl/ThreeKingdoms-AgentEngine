@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.32.0] - 2026-10-31
+
+Livelihood depth foundation: agriculture, forestry, fishing and hunting now
+have their own skills, node economy and farm rules.
+
+### Added
+- Migration 055 seeds twelve livelihood skills across `AGRICULTURE`, `FISHING`,
+  `FORAGING`, `SURVIVAL`, `COMMERCE` and `LEADERSHIP`, with tiered effects and
+  perks.
+- `resource_node_rules` defines skill, tool, max stock, respawn and minimum tier
+  per resource type; `gathering_node_state` stores per-node stock.
+- `ResourceNodeService` refreshes stock lazily from elapsed days; gather
+  consumes stock in the same transaction and returns `stockRemaining`,
+  `skillTier`, `skillBonus`, `toolMultiplier` and `toolMissing`.
+- Tool items (`TOOL-PICK`, `TOOL-AXE`, `TOOL-NET`, `TOOL-BOW`, `TOOL-HOE`) are
+  ordinary market items. A missing tool cuts gather yield by 30%.
+- `master_crops` gains `skill_code`, `rotation_group` and `soil_impact`;
+  `land_parcels` remembers `last_crop_code`.
+- Farm yield now uses crop skill + `SKL-FARM-LABOR`; irrigation reduces crisis
+  and harvest risk; harvest depletes or restores soil; rotation gives ×1.10 or
+  ×0.95; `SKL-LAND-LEASE` discounts rent.
+- Farm board shows soil, effective rent/discount and expected yield.
+- `tests/verify-livelihood-depth.ts` covers node stock/regrowth, tool penalty,
+  specialised skill bonus, rent discount, crop yield, soil and rotation.
+
+### Verification
+`npm run verify` green: 74/74 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,546 invariants, 0 discrepancies.
+
+---
+
 ## [1.31.0] - 2026-10-31
 
 Life-sim systems now feed a real skill domain and a daily loop.

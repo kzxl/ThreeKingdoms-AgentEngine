@@ -313,3 +313,13 @@ This document records the architectural choices, rationale, and alternatives con
 - **Consequences**:
   - Positive: Daily phases now have a life-sim sink; social, household and self-care actions train real skills and the four spouse roles apply real bonuses.
   - Negative: The life loop is deliberately small (three needs, six actions); festivals, illness, child skills and the twelve livelihood skills remain later phases.
+
+---
+
+## ADR-029: Livelihood Depth Is Data-Driven (2026-10-31)
+
+- **Context**: Agriculture had a decent loop, but forestry, fishing and hunting were the same gather formula with different item names. Adding a new resource required editing `gatherResource`, and nodes never depleted.
+- **Decision**: Migration 055 adds twelve livelihood skills plus `resource_node_rules` (skill, tool, max stock, respawn, minimum tier) and `gathering_node_state` (per-node stock). `ResourceNodeService` refreshes stock lazily from elapsed campaign days; gather consumes stock in the same transaction. A missing tool cuts yield by 30% instead of hard-blocking basic nodes. Crops gain `skill_code`, `rotation_group` and `soil_impact`; parcels remember `last_crop_code`, so rotation, depletion and legume recovery are data-driven.
+- **Consequences**:
+  - Positive: A new fish, timber, game or crop is a seed-data change (rule + node + optional tool), not a new code path; every direction already shares time, idempotency, ledger and audit.
+  - Negative: The first pass still shares one gather UI and one item per node; species-specific quality grades, boats, replanting and NPC labour are later phases.

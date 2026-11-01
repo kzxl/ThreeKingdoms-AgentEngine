@@ -153,7 +153,7 @@ not require editing that test.
 | :--- | :--- | :--- |
 | Types | `npm run typecheck` | `strict` TypeScript across `src/`, `tests/`, `vite.config.ts`. |
 | Architecture | `npm run lint` | Ratchet over `tools/arch-baseline.json`; debt may only shrink. |
-| Behaviour | `npm test` | 73 suites (4 legacy + 69 modern); each modern suite runs on an isolated DB copy and projections are restored afterwards. |
+| Behaviour | `npm test` | 74 suites (4 legacy + 70 modern); each modern suite runs on an isolated DB copy and projections are restored afterwards. |
 | API contract | `npm run golden:verify` | 28 read-only endpoints: status code, response shape, behavioural assertions. |
 | Write paths | `npm run smoke:write` | 8 HTTP write paths plus a post-write audit on a sandbox database. |
 | Invariants | `npm run audit` | 1,546 SQLite invariants (ledger parity, inventory conservation, projection sync, world/life-sim/clock blocks). |
@@ -590,6 +590,74 @@ household summary, six action buttons and the learned LIFE skills. It calls the
 life API directly; no new legacy script or contextual-action switch is added.
 
 Gates: `tests/verify-life-layer.ts` and `tests/verify-life-wiring.ts`.
+
+---
+
+## 16. Livelihood Depth Foundation (1.32.0)
+
+Agriculture, forestry, fishing and hunting were previously one generic gather
+formula with different item names. Migration 055 makes the differences
+data-driven.
+
+### 16.1 Twelve livelihood skills
+
+`master_skills` gains `AGRICULTURE`, `FISHING`, `FORAGING` and `SURVIVAL` skills:
+
+| Group | Skills | Primary effects |
+| :--- | :--- | :--- |
+| Agriculture | `SKL-AGR-PLANT`, `SKL-AGR-IRRIG`, `SKL-AGR-SOIL` | crop yield, crisis risk reduction, soil recovery |
+| Fishing | `SKL-FISH-NET`, `SKL-FISH-BOAT` | gather yield, travel speed |
+| Foraging | `SKL-HERB-FORAGE`, `SKL-HERB-PREP` | gather yield, quality, defect reduction |
+| Survival | `SKL-HUNT-TRACK`, `SKL-HUNT-SKIN`, `SKL-WILD-SURVIVAL` | gather yield, byproduct bonus, fatigue reduction |
+| Tenure | `SKL-LAND-LEASE`, `SKL-FARM-LABOR` | rent discount, crop yield, fatigue reduction |
+
+Each has five tiers, `CHECK_BONUS` plus its specialty effect, and perks at
+tiers 3 and 5.
+
+### 16.2 Resource rules and node state
+
+`resource_node_rules` is the per-resource contract:
+
+- `skill_code` — which skill receives EXP and gives the yield bonus.
+- `required_tool_code` — a missing tool cuts yield by 30%, it does not block a
+  basic node.
+- `max_stock`, `respawn_per_day`, `min_skill_tier` — per-type economy limits.
+
+`gathering_node_state` stores mutable stock per node. `ResourceNodeService`
+refreshes stock lazily from the elapsed campaign days, so no world tick is
+required and a failed gather rolls back inside the same transaction. Adding a
+new resource is a data change: insert a rule, a node and optionally a tool item.
+
+Gather yield is now:
+
+```
+base × (1 + (professionTier−1)×0.15)
+     × (1 + min(0.30, skillTier×0.06))
+     × toolMultiplier
+     capped at base × 2.2
+```
+
+The response carries `skillCode`, `skillTier`, `skillBonus`, `toolMultiplier`,
+`toolMissing` and `stockRemaining`, so the UI and audit can explain the number.
+
+### 16.3 Farm rotation, soil and tenure
+
+`master_crops` gains `skill_code`, `rotation_group` and `soil_impact`;
+`land_parcels` remembers `last_crop_code`.
+
+- Crop skill and `SKL-FARM-LABOR` raise expected yield.
+- `SKL-AGR-IRRIG` reduces crisis and harvest risk.
+- Harvest applies `soil_impact` (grain depletes, legumes restore) reduced by
+  `SKL-AGR-SOIL`.
+- A different `rotation_group` gives ×1.10; repeating the same group gives
+  ×0.95.
+- `SKL-LAND-LEASE` discounts rent, and the board exposes base rent, effective
+  rent and discount.
+- Harvest returns `soilBefore`, `soilAfter`, `effectiveRisk` and
+  `previousCropCode`.
+
+Gate: `tests/verify-livelihood-depth.ts`.
+
 
 
 
