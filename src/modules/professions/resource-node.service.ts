@@ -55,6 +55,9 @@ export interface ToolRule {
   craftSkillCode: string | null;
   craftSkillTier: number;
   notesVi: string | null;
+  repairCash: number;
+  repairSkillCode: string | null;
+  repairMinTier: number;
 }
 
 export interface ToolStatus {
@@ -185,7 +188,10 @@ export class ResourceNodeService {
       maxUses: Number(row.max_uses || 1),
       craftSkillCode: row.craft_skill_code || null,
       craftSkillTier: Number(row.craft_skill_tier || 1),
-      notesVi: row.notes_vi || null
+      notesVi: row.notes_vi || null,
+      repairCash: Number(row.repair_cash || 0),
+      repairSkillCode: row.repair_skill_code || null,
+      repairMinTier: Number(row.repair_min_tier || 0)
     };
   }
 
@@ -305,6 +311,72 @@ export class ResourceNodeService {
       [skillCode]
     );
     return Number(row?.tier || 0);
+  }
+
+  /**
+   * Repairs a durable tool to full uses. Consumables have no repair rule.
+   */
+  public repairTool(characterId: string, itemCode: string, gameDate: string): any {
+    const rule = this.getToolRule(itemCode);
+    if (!rule) throw new Error(`Công cụ ${itemCode} không tồn tại.`);
+    if (rule.kind !== 'DURABLE') throw new Error(`${itemCode} là vật phẩm tiêu hao, hãy mua mới thay vì sửa.`);
+
+    const status = this.toolStatus(characterId, itemCode);
+    if (!status || status.quantity < 1) throw new Error(`Không có ${itemCode} trong kho để sửa.`);
+    if (status.usesLeft >= rule.maxUses) throw new Error(`${itemCode} đang ở độ bền tối đa.`);
+
+    const skillTier = rule.repairSkillCode ? this.skillTier(rule.repairSkillCode) : 0;
+    if (rule.repairMinTier > 0 && skillTier < rule.repairMinTier) {
+      throw new Error(
+        `Cần kỹ năng ${rule.repairSkillCode} bậc ${rule.repairMinTier} để sửa ${itemCode} (hiện tại bậc ${skillTier}).`
+      );
+    }
+
+    const player = this.db.queryOne<{ liquid_cash: number; safe_cash: number }>(
+      'SELECT liquid_cash, safe_cash FROM player_state WHERE player_id = ? LIMIT 1;',
+      [characterId]
+    );
+    if (!player) throw new Error(`Không tìm thấy nhân vật ${characterId}.`);
+    if (Number(player.liquid_cash || 0) < rule.repairCash) {
+      throw new Error(`Cần ${rule.repairCash} Quan để sửa ${itemCode}.`);
+    }
+
+    return this.db.transaction(() => {
+      if (rule.repairCash > 0) {
+        const newLiquid = Number(player.liquid_cash || 0) - rule.repairCash;
+        this.db.execute('UPDATE player_state SET liquid_cash = ? WHERE player_id = ?;', [newLiquid, characterId]);
+        const txnId = nextSequentialId(this.db, 'cashflow_ledger', 'TXN', gameDate);
+        postDoubleEntry(this.db, {
+          txnId,
+          gameDate,
+          counterparty: itemCode,
+          category: 'Livelihood/ToolRepair',
+          outflow: rule.repairCash,
+          balance: newLiquid + Number(player.safe_cash || 0),
+          memo: `Sửa công cụ ${itemCode}`,
+          debitAccount: ACCOUNT_CODES.operatingExpense,
+          creditAccount: ACCOUNT_CODES.cashMobile
+        });
+      }
+      this.db.execute(
+        `INSERT INTO character_tool_uses (character_id, item_code, uses_left)
+         VALUES (?, ?, ?)
+         ON CONFLICT(character_id, item_code) DO UPDATE SET uses_left = excluded.uses_left, updated_at = CURRENT_TIMESTAMP;`,
+        [characterId, itemCode, rule.maxUses]
+      );
+      if (rule.repairSkillCode) {
+        SkillService.forDatabase(this.db).awardExp(rule.repairSkillCode, 5);
+      }
+      return {
+        itemCode,
+        cashPaid: rule.repairCash,
+        usesBefore: status.usesLeft,
+        usesAfter: rule.maxUses,
+        maxUses: rule.maxUses,
+        skillCode: rule.repairSkillCode,
+        skillTier
+      };
+    });
   }
 
   /**

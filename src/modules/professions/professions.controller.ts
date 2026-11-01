@@ -389,6 +389,38 @@ export function registerProfessionsRoutes(router: Router): void {
   });
 
   // -------------------------------------------------------------
+  // 4aa. Durable tool repair
+  // -------------------------------------------------------------
+  router.post('/api/professions/tools/repair', async (_req: any, res: any, ctx: RouteContext) => {
+    try {
+      const { itemCode, characterId = 'PLY-0001' } = ctx.body || {};
+      if (!itemCode) {
+        sendJson(res, 400, { success: false, error: 'itemCode is required.' });
+        return;
+      }
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
+      const time = chargePlayerAction(db.path, 'ADMIN_ACTION', null, `Repair ${itemCode}`);
+      const meta = getCampaignMeta(db);
+      const result = ResourceNodeService.forDatabase(db).repairTool(characterId, itemCode, meta.currentDate);
+      const response = { result, time };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'TOOL_REPAIR',
+        payload: { itemCode, characterId },
+        result: response
+      });
+      sendJson(res, 200, { success: true, ...response, idempotent: false });
+    } catch (err: any) {
+      sendJson(res, err.statusCode || 400, { success: false, error: err.message, code: err.code });
+    }
+  });
+
+  // -------------------------------------------------------------
   // 4b. Farmland: list parcels, rent, plant, harvest
   // -------------------------------------------------------------
   const handleGetFarmParcels = (req: any, res: any, ctx: RouteContext) => {
