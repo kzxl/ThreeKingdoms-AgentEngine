@@ -799,6 +799,15 @@ class GameplayManager {
       console.warn('[GameplayManager] fame arrivals failed:', arrivalError.message);
     }
 
+    // The same month-close gate owns victory and bankruptcy. Victory is checked
+    // first so a terminal campaign cannot be downgraded to BANKRUPT.
+    let victoryStatus = null;
+    try {
+      victoryStatus = require('./victory-bridge').checkVictory(this.dbPath);
+    } catch (victoryError) {
+      console.warn('[GameplayManager] victory check failed:', victoryError.message);
+    }
+
     // Bankruptcy is a slow defeat: two consecutive closes below the cash/grain floor.
     let defeatStatus = null;
     try {
@@ -830,14 +839,6 @@ class GameplayManager {
       if (loyalty) retainerDepartures = loyalty.evaluateMonthly('PLY-0001', prevDate);
     } catch (loyaltyError) {
       console.warn('[GameplayManager] retainer loyalty failed:', loyaltyError.message);
-    }
-
-    // Hegemony victory: 12 settlements, fame 5,000 and stage 4.
-    let victoryStatus = null;
-    try {
-      victoryStatus = require('./victory-bridge').checkVictory(this.dbPath);
-    } catch (victoryError) {
-      console.warn('[GameplayManager] victory check failed:', victoryError.message);
     }
 
     // Periodic obligations: penalise bills that passed their due date, then
