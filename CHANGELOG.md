@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.40.0] - 2026-11-01
+
+Market demand completion and a standard feature-module scaffold.
+
+### Added
+- Stall listings now enter local market stock; sales consume stock and closing
+  returns unsold goods. Migration 077 adds `stall_listings.market_effect`, and
+  audit block 9 proves the listing/sale/close reconciliation.
+- Freight demand is generated from `settlement_consumption` as well as static
+  deficits. A fish-consuming inland town now posts fish contracts when a
+  fishing town has stock.
+- `docs/FEATURE_MODULE_STANDARD.md` defines the feature folder contract, and
+  `tools/scaffold-feature.js` / `npm run scaffold:feature` create it.
+- `verify-freight-demand.ts` and `verify-feature-scaffold.ts`.
+
+### Verification
+`npm run verify` green: 91/91 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,961 invariants, 0 discrepancies.
+
+---
+
 ## [1.39.0] - 2026-11-01
 
 Economic conservation: the three remaining P0 defects from the 1.38.0 re-check

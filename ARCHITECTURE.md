@@ -138,7 +138,7 @@ millisecond.
 ### 6.3 Versioned data migrations
 
 `tools/migrations/` holds idempotent migrations applied inside a transaction and
-recorded in `schema_migrations` (76 migrations, through `076-world-day-ledger`). New playthrough instances
+recorded in `schema_migrations` (77 migrations, through `077-stall-market-effect`). New playthrough instances
 are brought to a known data state with `npm run migrate`; `npm run migrate:status` lists
 pending work. Migrations also own data repairs that SQL cannot express safely at the
 read path: 042 adds `businesses.tier/debt`, 043 repairs legacy text and currency labels.
@@ -153,7 +153,7 @@ not require editing that test.
 | :--- | :--- | :--- |
 | Types | `npm run typecheck` | `strict` TypeScript across `src/`, `tests/`, `vite.config.ts`. |
 | Architecture | `npm run lint` | Ratchet over `tools/arch-baseline.json`; debt may only shrink. |
-| Behaviour | `npm test` | 89 suites (4 legacy + 85 modern); each modern suite runs on an isolated DB copy and projections are restored afterwards. |
+| Behaviour | `npm test` | 91 suites (4 legacy + 87 modern); each modern suite runs on an isolated DB copy and projections are restored afterwards. |
 | API contract | `npm run golden:verify` | 28 read-only endpoints: status code, response shape, behavioural assertions. |
 | Write paths | `npm run smoke:write` | 8 HTTP write paths plus a post-write audit on a sandbox database. |
 | Invariants | `npm run audit` | 1,961 SQLite invariants (ledger parity, inventory conservation, projection sync, world/life-sim/clock blocks). |
@@ -1000,6 +1000,47 @@ transaction:
 Day arithmetic uses `src/shared/game-date.ts` (30-day months), not Gregorian
 `Date`. `verify-day-tick-idempotency.ts` proves that replaying a day produces no
 second sale, shipment step or consumption draw.
+
+---
+
+## 21. Market Demand Completion and Feature Standard (1.40.0)
+
+### 21.1 Stall listings are local supply
+
+`stall_listings.market_effect` records the net local stock held by a listing:
+
+- `listItem` removes goods from bag/warehouse and adds the same quantity to
+  `settlement_market_state`;
+- each stall sale subtracts the sold quantity;
+- `closeStall` subtracts the unsold quantity before returning it to storage.
+
+The audit requires `market_effect = quantity` for an ACTIVE listing and
+`market_effect = 0` for a sold-out/closed listing. A fully sold listing therefore
+leaves municipal stock unchanged: the player supplied the goods that were
+consumed.
+
+### 21.2 Freight demand follows consumption
+
+`FreightService.refresh` now unions `settlement_consumption` demand with the
+static `deficitItems`, highest monthly demand first. A source is chosen from a
+declared surplus, then the highest local stock, then regional endowment. This is
+what makes a fish-consuming inland town post fish contracts to a fishing town.
+
+### 21.3 Feature module standard
+
+`docs/FEATURE_MODULE_STANDARD.md` is the contract for new features:
+
+```text
+src/modules/<domain>/<feature>/
+  <feature>.module.ts / .controller.ts / .service.ts
+  <feature>.types.ts / index.ts
+tests/verify-<feature>.ts
+```
+
+Controllers own HTTP, services own rules and transactions, modules own lifecycle
+and route registration. `npm run scaffold:feature <name> --domain=<domain>`
+creates the folder and a passing smoke suite. Existing debt is retired slice by
+slice; there is no big-bang rewrite.
 
 
 

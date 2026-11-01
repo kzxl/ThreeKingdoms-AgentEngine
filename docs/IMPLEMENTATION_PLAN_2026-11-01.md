@@ -6,15 +6,16 @@ Baseline HEAD: `c775225` (1.39.0; clean working tree)
 Source analyses: `docs/audit/*`, `docs/*_2026-10-29.md`, `docs/REFACTOR_2026-10.md`,
 `docs/PRESTIGE_SYSTEM.md`, plus the 2026-11-01 supply-chain re-check.
 
-Baseline gate after Wave 0:
+Baseline gate after Wave 0 and the first Wave 1 slice:
 
 | Gate | Result |
 | :--- | :--- |
-| `npm run verify` | 89/89 suites, 28/28 API contracts, 8/8 write smokes |
+| `npm run verify` | 91/91 suites, 28/28 API contracts, 8/8 write smokes |
 | `npm run audit` | 1,961 invariants, 0 discrepancies |
 | Route shadow report | 48 live legacy handlers, 0 shadowed |
 
-Wave 0 is complete (`c775225`). Waves 1–8 below remain.
+Wave 0 (`c775225`) and W1-1/W1-2/W1-6 (`43f22da`, `5346294`) are complete.
+Waves 1 (remaining), 2–8 below are open.
 The rule for every item below: one feature per commit, `npm run verify` and
 `npm run audit` green before the commit, only task-scoped files staged.
 
@@ -39,7 +40,7 @@ the item is still reproducible at `bb48ac7`, not merely undocumented.
 | `docs/UX_UI_REVIEW_2026-10-29.md` | All P0 (duplicate chronicle, one date source, telemetry hidden, ledger labels) | P1–P3: dock height, navigation groups, header vitals, typography floor, `Intl.NumberFormat`, onboarding |
 | `docs/UI_ICON_AUDIT_2026-10-29.md` | Completed icon/ratchet pass | Maintenance only |
 | `docs/PRESTIGE_SYSTEM.md` | Fame scale, tiers, decay, prestige events, succession, wills | Market-pulse long chart; officer territory transfer through the consequence strategy; equipment-instance uniqueness |
-| Supply-chain re-check 2026-11-01 | **Wave 0 closed (`c775225`)**: freight reserves source stock, one endowment-aware price resolver, per-system day ledger | P1/P2 list in §4 |
+| Supply-chain re-check 2026-11-01 | **Wave 0 closed (`c775225`)** and **W1-1/W1-2/W1-6 closed (`43f22da`, `5346294`)**: freight reserves stock, one endowment-aware price resolver, per-system day ledger, stall local supply, consumption-driven freight | W1-3/W1-4/W1-5/W1-7 and the rest of the list in §4 |
 
 ### 1.1 The three live P0 defects (verified in code)
 
@@ -210,15 +211,15 @@ day is byte-identical.
 
 | ID | Task | Files | Test / acceptance |
 | :--- | :--- | :--- | :--- |
-| W1-1 | Stall retail sales book municipal demand: call `applyTrade(settlement, item, -soldQuantity)` inside the sale transaction | `stall.service.ts:357-447` | stall sale lowers local stock; audit invariant |
-| W1-2 | Generate freight demand from `settlement_consumption`, not only `deficitItems`; include fish/game (1,258 fish/month across 23 settlements currently produce no orders) | `freight.service.ts:169-190`, `SETTLEMENT_PROFILES`, migration for demand mapping | a fishing town consumes fish and posts a fish contract |
+| W1-1 | ✅ **Done (`43f22da`).** Stall listings add `+quantity` to municipal stock, each sale subtracts `-sold`, closing subtracts the unsold remainder. `stall_listings.market_effect` makes the three steps auditable. | `stall.service.ts`, migration 077 | `verify-market-stall.ts`, audit block 9 |
+| W1-2 | ✅ **Done (`5346294`).** Freight demand unions `settlement_consumption` with `deficitItems`, highest demand first; source falls back from surplus to highest stock to endowment. | `freight.service.ts` | `verify-freight-demand.ts` |
 | W1-3 | Fourth market tab: freight contracts and merchant routes; wire the existing client calls | `src/client/features/market-stall/market-stall.modal.ts`, `market-stall.service.ts` | browser check; `lint:api` green |
 | W1-4 | Real freight/route risk: ambush roll by guard tier, insurance premium, cargo loss and claim | `freight.service.ts`, `merchant-company.service.ts`, `config` risk table | deterministic ambush test; guard tier changes expected loss |
 | W1-5 | Per-city personal bag: tag inventory by settlement instead of one global bag | `tools/schema.sql`, `inventory-movement.ts`, UI | buying in A and selling in B still requires transport |
-| W1-6 | Extend audit block 9 to catch W0-1 and stall-stock drift | `tools/sim-audit.js:686` | deliberately corrupt a row; audit fails |
+| W1-6 | ✅ **Done (`43f22da`).** Audit block 9 checks `market_effect = quantity` for ACTIVE listings and `0` for closed/sold-out listings; freight reservation is checked too. | `tools/sim-audit.js` | deliberately corrupt a row; audit fails |
 | W1-7 | P2 cleanups: re-renting an active warehouse prorates instead of charging full 300 and resetting 90 days; add `TOOL-BOAT`; allow multi-item merchant routes | `warehouse.service.ts:144`, `tool_rules`, `merchant-company.service.ts:149` | focused tests |
 
-Recommended order inside Wave 1: W1-1 → W1-6 → W1-2 → W1-3 → W1-4 → W1-5 → W1-7.
+Remaining order inside Wave 1: W1-3 → W1-4 → W1-5 → W1-7.
 
 ---
 
@@ -476,14 +477,15 @@ both counts down.
 
 ## 13. Recommended next slice
 
-Wave 0 is done. Start **Wave 1** with the two items that complete the
-supply-chain loop:
+Wave 0 and W1-1/W1-2/W1-6 are done. Continue **Wave 1** with:
 
-1. `W1-1 stall retail books municipal demand` — one `applyTrade` call in the
-   stall sale transaction.
-2. `W1-6 extend audit block 9` — catch stall-stock drift and freight
-   reservation violations.
+1. `W1-3 fourth market tab` — expose freight contracts and merchant routes in
+   the existing market modal, with a browser check.
+2. `W1-4 freight/route risk` — ambush roll by guard tier, insurance premium and
+   cargo loss, with a deterministic test.
+3. `W1-5 per-city bag` — inventory location is part of the transport loop.
+4. `W1-7 P2 cleanups` — warehouse re-rent proration, `TOOL-BOAT`, multi-item
+   routes.
 
-Then `W1-2` (freight demand from consumption, including fish/game),
-`W1-3` (fourth market tab), `W1-4` (ambush/insurance), `W1-5` (per-city bag)
-and the P2 cleanups. Keep each item as its own commit with a focused suite.
+New features should follow `docs/FEATURE_MODULE_STANDARD.md` and start from
+`npm run scaffold:feature <name> --domain=<domain>`.

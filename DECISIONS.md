@@ -453,3 +453,23 @@ This document records the architectural choices, rationale, and alternatives con
 - **Consequences**:
   - Positive: Every day tick is retry-safe and auditable; a failed day rolls back whole.
   - Negative: A subsystem that forgets to mark its day can still double-run, so new daily systems must use `hasProcessedDay`/`markProcessedDay`.
+
+---
+
+## ADR-043: Stall Listings Are Local Supply (2026-11-01)
+
+- **Context**: A listing removed goods from the player's bag/warehouse, but the municipal market never saw them. Selling from a stall neither added supply when listed nor consumed it when sold, so the stall was economically invisible.
+- **Decision**: `stall_listings.market_effect` tracks the net local stock held by a listing. Listing adds `+quantity`, each sale subtracts `-sold`, and closing subtracts the unsold remainder before returning goods to storage. The audit requires `market_effect = quantity` for ACTIVE listings and `0` for closed/sold-out listings.
+- **Consequences**:
+  - Positive: A player importing goods can lower local prices while listed; the audit catches drift.
+  - Negative: A fully sold imported listing leaves municipal stock unchanged, which is correct but can look surprising in a naive report.
+
+---
+
+## ADR-044: New Features Follow One Module Contract (2026-11-01)
+
+- **Context**: The engine already uses UA v4.0 modules and an event bus, but new code could still copy the legacy patterns (SQL in controllers, routes in `sim-web.js`, god services). Feature growth needed one folder contract and a scaffold.
+- **Decision**: `docs/FEATURE_MODULE_STANDARD.md` defines `src/modules/<domain>/<feature>/` with module/controller/service/types/index and one autodiscovered suite. Controllers own HTTP only; services own rules and transactions; modules own lifecycle and route registration. `npm run scaffold:feature` creates the folder. Existing debt (legacy gateway, legacy scripts, god services, `PLY-0001`) is retired slice by slice, never as a big-bang rewrite.
+- **Consequences**:
+  - Positive: New features start from one shape; ownership is explicit; a feature folder can be removed without another feature importing its internals.
+  - Negative: Manual module registration in `src/server/main.ts` remains until modules adopt `registerRoutes`; the scaffold prints the two lines to add.
