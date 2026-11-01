@@ -553,3 +553,13 @@ This document records the architectural choices, rationale, and alternatives con
 - **Consequences**:
   - Positive: The known four-source map defect is fixed first; tile mechanics can be added incrementally.
   - Negative: The map will not look like ROTK XIV's continuous terrain in this phase; local zoom is the only tile surface.
+
+---
+
+## ADR-053: Sub-Locations Are a Normalized Map Registry (2026-11-01)
+
+- **Context**: `master_locations.sub_locations` was a JSON array; the client hardcoded 40 of 133 names, POIs had no runtime consumer and the map had four competing sources.
+- **Decision**: Migration 081 creates `location_sublocations` with a stable id, parent location, kind and sort order. `MapRegistryService` resolves sub-locations, POI scenes, resource nodes and settlements to the 20 rendered nodes through one alias file; `GET /api/map/registry` is the server surface.
+- **Consequences**:
+  - Positive: Every sub-location/POI/resource resolves with zero orphans; Step B (clickable picker) becomes a UI change.
+  - Negative: `master_locations.sub_locations` remains as the ingest source until the ingest tool writes the normalized table directly; rerunning migration 081 is required after a master re-ingest.

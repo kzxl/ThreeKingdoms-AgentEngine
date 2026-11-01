@@ -1180,6 +1180,29 @@ with a ROTK XIV-style continuous tile map. The decision:
 This decision is ADR-052; the work belongs to Wave 5 (Level 4–5) and the
 profession Phase 2–3 plan.
 
+---
+
+## 28. One Map Registry from SQLite (1.46.0)
+
+Map Step A removes the four-source location split:
+
+- Migration 081 turns `master_locations.sub_locations` into
+  `location_sublocations(sub_location_id, location_id, name_vi, kind, sort_order)`.
+  Kinds are `URBAN`, `WILDERNESS`, `WATER`, `ROAD` or `RUINS`; the current seed
+  has 133 rows.
+- `MapRegistryService` reads `master_locations`, `location_sublocations`,
+  `master_poi_scenes`, `gathering_nodes` and `session_settlements`, and resolves
+  every row to one of the 20 rendered nodes through
+  `src/shared/map-aliases.ts`.
+- `GET /api/map/registry` returns the flat arrays and per-node groups; the
+  registry's `orphans` list is empty.
+- `MapLiveService` loads that endpoint and exposes
+  `getSubLocationsForNode` / `getPoiScenesForNode` for the next UI step.
+
+The 20-node strategic graph remains the renderer; the registry is the source of
+truth for sub-locations and POIs. Step B (clickable Nội Thành / Dã Ngoại picker)
+is now a UI change, not a data change.
+
 
 
 

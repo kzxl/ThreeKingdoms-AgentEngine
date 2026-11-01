@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.46.0] - 2026-11-01
+
+One map registry from SQLite (Map Step A).
+
+### Added
+- Migration 081 normalizes all 133 sub-locations into
+  `location_sublocations` with a stable id, parent location, sort order and
+  `URBAN/WILDERNESS/WATER/ROAD/RUINS` kind.
+- `MapRegistryService` and `GET /api/map/registry` return 20 nodes, 133
+  sub-locations, 132 POI scenes, 23 resource nodes and 23 settlements. Every
+  entity resolves to a rendered node; the registry reports zero orphans.
+- `MapLiveService` loads the registry and exposes
+  `getSubLocationsForNode` / `getPoiScenesForNode`.
+- Settlement aliases moved to `src/shared/map-aliases.ts`, shared by client and
+  server.
+- `verify-map-registry.ts`; schema contract covers `location_sublocations`.
+
+### Verification
+`npm run verify` green: 99/99 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 2,313 invariants, 0 discrepancies.
+
+---
+
 ## [1.45.0] - 2026-11-01
 
 NPC hiring pushback and the map evolution decision.

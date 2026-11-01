@@ -146,6 +146,7 @@ primary truth:
 | `tests/verify-npc-business-succession.ts` | NPC: Business succession | — | Heir, foreman trustee, settlement liquidation, applyNpcDeath wiring |
 | `tests/verify-terminal-state.ts` | Campaign: Terminal state | — | Victory before bankruptcy, two-month bankrupt, CAMPAIGN_OVER guard |
 | `tests/verify-npc-refusal.ts` | Social: Hire refusal | — | Low-standing refusal, retry date, affinity-gated success |
+| `tests/verify-map-registry.ts` | Map: One registry | — | 20 nodes, 133 sub-locations, 132 POIs, 23 resources, zero orphans |
 | `tools/sim-audit.js` | System: Autonomous Invariant Auditor | 2,313 | Nine blocks: accounting, inventory, journal, projection, enterprise, strategy, life-sim, clock, trade/warehouse/shipment |
 
 ---
@@ -163,7 +164,7 @@ npx tsx tests/verify-rotk-duels.ts
 
 ### Full Verification Pipeline
 ```bash
-# Single gate: typecheck → arch ratchet → 98 suites → API contract → write smoke
+# Single gate: typecheck → arch ratchet → 99 suites → API contract → write smoke
 npm run verify
 
 # Individually:

@@ -1,6 +1,9 @@
 # Map Evolution Analysis — Node Graph vs ROTK XIV-Style Tile Layer
 
 Date: 2026-11-01
+Status: **Step A implemented in 1.46.0 (`a6abaf6`).** 133 sub-locations are
+normalized in `location_sublocations`; `/api/map/registry` returns 20 nodes,
+133 sub-locations, 132 POIs, 23 resources and 23 settlements with zero orphans.
 Scope: `public/js/map-data.js`, `public/js/world-map.js`,
 `src/client/features/world-map/map-live.service.ts`,
 `src/modules/ecology-logistics/spatial-registry.ts`, `master_locations`,
@@ -105,7 +108,7 @@ location_sublocations(sub_location_id, location_id, name_vi, name_en,
 
 | Step | Work | Risk | Value |
 | :--- | :--- | :--- | :--- |
-| A | One map registry: DB is authoritative, `map-data.js` keeps coordinates/art only, `spatial-registry` becomes a query, all 133 sub-locations resolve | Low | Fixes the 4-source defect; makes POIs reachable |
+| A | **Done (1.46.0).** One map registry: DB is authoritative, `location_sublocations` normalizes all 133 sub-locations, `/api/map/registry` returns every entity with zero orphans | Low | Fixes the 4-source defect; makes POIs reachable |
 | B | Clickable passes/POIs/resources; Nội Thành / Dã Ngoại picker; 8–12 wilderness scenes | Low–medium | First playable spatial content |
 | C | Terrain tiles at local zoom; movement cost, supply, ambush read `map_tiles` | Medium | Level 4 command layer; professions Phase 3 |
 | D | Fog of war, multi-leg waypoints, diplomacy mode, army token interpolation | Medium | Level 4 complete |

@@ -17,14 +17,14 @@ web UI are read models.
 - **Legacy surface**: `tools/sim-web.js` still serves 48 handlers that have not
   moved to module controllers; `public/js/*.js` still contains 21 classic
   scripts loaded alongside the TS bundle.
-- **Data**: `tools/schema.sql` plus 80 numbered migrations in
+- **Data**: `tools/schema.sql` plus 81 numbered migrations in
   `tools/migrations/`. `saves/` is local and gitignored.
 
 ## 2. Verified gate (2026-11-01)
 
 | Gate | Result |
 | :--- | :--- |
-| `npm run verify` | 98/98 suites (4 legacy + 94 modern), 28/28 API contracts, 8/8 write smokes |
+| `npm run verify` | 99/99 suites (4 legacy + 95 modern), 28/28 API contracts, 8/8 write smokes |
 | `npm run audit` | 2,313 SQLite invariants, 0 discrepancies |
 | `npm run routes:shadow` | 48 live legacy handlers, 0 shadowed |
 
@@ -34,9 +34,9 @@ its regression suite and the invariant audit are green.
 ## 3. Essential commands
 
 ```bash
-npm run verify          # typecheck, five lints, route shadow, 98 suites, golden, write smokes
+npm run verify          # typecheck, five lints, route shadow, 99 suites, golden, write smokes
 npm run audit           # 2,313 invariants against saves/session.db
-npm run migrate         # apply pending migrations (currently through 080)
+npm run migrate         # apply pending migrations (currently through 081)
 npm run migrate:status  # list applied/pending
 npm test                # suites only
 npm run build:client    # rebuild the TS client bundle after src/client changes
@@ -70,14 +70,17 @@ check; an old server keeps serving the old bundle.
   rejects player actions with `CAMPAIGN_OVER`.
 - **Hiring**: affinity + fame + virtue gate; a low-standing stranger is refused
   with `NPC_REFUSED` and a 30-day retry date.
+- **Map**: `GET /api/map/registry` is the single source for 20 nodes, 133
+  sub-locations, 132 POIs and 23 resource nodes; every row resolves, zero
+  orphans.
 - **Day ledger**: `world_day_ledger(system, game_date)` makes stall, freight,
   merchant and consumption ticks idempotent. Day arithmetic uses
   `src/shared/game-date.ts` (30-day months).
 
 ## 5. Where to look next
 
-- Architecture and gates: `ARCHITECTURE.md` §6.4, §20–§27.
-- Map direction: `docs/MAP_EVOLUTION_ANALYSIS_2026-11-01.md`.
+- Architecture and gates: `ARCHITECTURE.md` §6.4, §20–§28.
+- Map direction: `docs/MAP_EVOLUTION_ANALYSIS_2026-11-01.md` (Step A is done).
 - Feature folder contract and scaffold: `docs/FEATURE_MODULE_STANDARD.md`,
   `npm run scaffold:feature`.
 - Decisions: `DECISIONS.md` ADR-040–042.
