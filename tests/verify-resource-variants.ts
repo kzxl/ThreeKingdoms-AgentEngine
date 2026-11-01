@@ -142,7 +142,8 @@ async function run(): Promise<void> {
 
   // 3. Recipes process the common outputs; skill gates are enforced.
   const stockRows: Array<[string, number]> = [
-    ['COM-FISH-FRESH', 20], ['COM-SALT', 20], ['COM-GAME-MEAT', 20], ['RAW-HIDE', 10], ['RAW-TIMBER-OAK', 20]
+    ['COM-FISH-FRESH', 20], ['COM-SALT', 20], ['COM-GAME-MEAT', 20], ['RAW-HIDE', 10], ['RAW-TIMBER-OAK', 20],
+    ['RAW-FISH-ROE', 2], ['COM-FISH-CARP', 4], ['COM-GAME-VENISON', 4], ['RAW-TIMBER-EBONY', 4]
   ];
   for (const [code, qty] of stockRows) {
     db.execute(`
@@ -171,6 +172,20 @@ async function run(): Promise<void> {
   assert.strictEqual(dried.data.productItemCode, 'FOOD-FISH-DRIED');
   assert(scalar(db, "SELECT quantity FROM inventory_items WHERE item_code = 'FOOD-FISH-DRIED';")?.quantity >= 1);
   assert.strictEqual(scalar(db, "SELECT quantity FROM inventory_items WHERE item_code = 'COM-FISH-FRESH';").quantity, 18);
+
+  // Rare variants have their own sink.
+  setSkill(db, 'SKL-FISH-NET', 3);
+  const caviar = await request(router, 'POST', '/api/professions/craft', {
+    recipeCode: 'REC-CAVIAR', quantity: 1, idempotencyKey: 'TEST-VARIANT-CAVIAR'
+  });
+  assert.strictEqual(caviar.status, 200, JSON.stringify(caviar.data));
+  assert(scalar(db, "SELECT quantity FROM inventory_items WHERE item_code = 'FOOD-CAVIAR';")?.quantity >= 1);
+
+  const carpDried = await request(router, 'POST', '/api/professions/craft', {
+    recipeCode: 'REC-FISH-DRY-CARP', quantity: 1, idempotencyKey: 'TEST-VARIANT-CARP'
+  });
+  assert.strictEqual(carpDried.status, 200, JSON.stringify(carpDried.data));
+  assert(scalar(db, "SELECT quantity FROM inventory_items WHERE item_code = 'FOOD-FISH-DRIED-FINE';")?.quantity >= 1);
 
   setSkill(db, 'SKL-HUNT-SKIN', 2);
   const jerky = await request(router, 'POST', '/api/professions/craft', {
