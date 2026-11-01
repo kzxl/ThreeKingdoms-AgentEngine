@@ -138,7 +138,7 @@ millisecond.
 ### 6.3 Versioned data migrations
 
 `tools/migrations/` holds idempotent migrations applied inside a transaction and
-recorded in `schema_migrations` (53 migrations, through `053-day-phases`). New playthrough instances
+recorded in `schema_migrations` (76 migrations, through `076-world-day-ledger`). New playthrough instances
 are brought to a known data state with `npm run migrate`; `npm run migrate:status` lists
 pending work. Migrations also own data repairs that SQL cannot express safely at the
 read path: 042 adds `businesses.tier/debt`, 043 repairs legacy text and currency labels.
@@ -153,7 +153,7 @@ not require editing that test.
 | :--- | :--- | :--- |
 | Types | `npm run typecheck` | `strict` TypeScript across `src/`, `tests/`, `vite.config.ts`. |
 | Architecture | `npm run lint` | Ratchet over `tools/arch-baseline.json`; debt may only shrink. |
-| Behaviour | `npm test` | 86 suites (4 legacy + 82 modern); each modern suite runs on an isolated DB copy and projections are restored afterwards. |
+| Behaviour | `npm test` | 89 suites (4 legacy + 85 modern); each modern suite runs on an isolated DB copy and projections are restored afterwards. |
 | API contract | `npm run golden:verify` | 28 read-only endpoints: status code, response shape, behavioural assertions. |
 | Write paths | `npm run smoke:write` | 8 HTTP write paths plus a post-write audit on a sandbox database. |
 | Invariants | `npm run audit` | 1,961 SQLite invariants (ledger parity, inventory conservation, projection sync, world/life-sim/clock blocks). |
@@ -932,8 +932,9 @@ fame/career spread on top of the same anchor.
 
 - `stall/list` and `stall/close` require `stallId` or `settlementId` when more
   than one stall is open.
-- Freight contracts check source settlement stock and reserve issuer cash;
-  overdue shipments fail and charge the penalty.
+- Freight contracts reserve the source settlement stock at accept, credit the
+  destination only on delivery and return unspoiled cargo when the contract
+  fails; overdue shipments fail and charge the penalty.
 - Merchant routes only ship/sell their own `merchant_route_stock`, not any
   matching item already in the warehouse.
 - Route procurement/dispatch and route creation reject expired warehouse leases.
@@ -956,6 +957,49 @@ Migrations 073/074 add `settlement_item_endowment`,
 
 The stall/warehouse UI is available from the market panel; freight/merchant
 route screens remain API-first.
+
+---
+
+## 20. Economic Conservation and the Day Ledger (1.39.0)
+
+1.38.0 left three economic-correctness defects: freight credited a destination
+without debiting the source, quote consumers used a local multiplier without
+regional endowment, and stall/freight/consumption day ticks could run twice.
+
+### 20.1 Freight reserves source stock
+
+Migration 075 adds `freight_shipments.source_reserved_quantity`.
+`FreightService.accept` checks the source market inside the transaction and
+debits the contract quantity with `applyTrade(-quantity)`. Delivery credits the
+destination; `failContract` returns the unspoiled quantity still held. At no
+point does a shipment create stock. The audit checks that the reservation is
+non-negative and never exceeds the initial quantity.
+
+### 20.2 One endowment-aware local multiplier
+
+`SettlementMarketService.getLocalMultiplier` is now
+`specialisation × stock pressure × regional endowment`, clamped to `0.5..2`.
+`calculateSettlementPrice`, trade, stall, contract board, intel and contextual
+actions compose the same value; `quoteFromReference` still adds fame and the
+merchant spread. `verify-market-price-parity.ts` pins the two price paths
+together and fails if endowment is omitted.
+
+### 20.3 Per-system day ledger
+
+Migration 076 adds `world_day_ledger(system, game_date)` with a unique key. Every
+subsystem that advances on a campaign day checks and marks its day inside one
+transaction:
+
+| System | Owner |
+| :--- | :--- |
+| `stall` | `StallService.advanceByDays` |
+| `freight` | `FreightService.advanceByDays` |
+| `merchant` | `MerchantCompanyService.advanceByDays` |
+| `consumption` | `SettlementMarketService.consumeEssentials` |
+
+Day arithmetic uses `src/shared/game-date.ts` (30-day months), not Gregorian
+`Date`. `verify-day-tick-idempotency.ts` proves that replaying a day produces no
+second sale, shipment step or consumption draw.
 
 
 

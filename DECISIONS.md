@@ -423,3 +423,33 @@ This document records the architectural choices, rationale, and alternatives con
 - **Consequences**:
   - Positive: New games are clean, goods/cargo are auditable, a retried merchant day is safe, and wholesale/retail prices agree.
   - Negative: Freight/merchant UI is still API-first; route optimisation, insurance and partial-route sales remain.
+
+---
+
+## ADR-040: Freight Reserves Source Stock at Accept (2026-11-01)
+
+- **Context**: ADR-039 said freight reserved source stock, but `accept` only charged the guard fee and `deliver` credited the destination. Two contracts could draw the same supply and delivery created goods.
+- **Decision**: Migration 075 adds `source_reserved_quantity`. `accept` checks and debits the source market inside the same transaction that charges the fee and inserts the shipment. `deliver` credits the destination; `failContract` returns the unspoiled quantity still held.
+- **Consequences**:
+  - Positive: Total settlement stock is conserved across accept, delivery and failure; parallel contracts cannot oversubscribe a source.
+  - Negative: A contract can fail at accept when the source has been drained since the board was generated; the UI must show that error.
+
+---
+
+## ADR-041: One Endowment-Aware Local Multiplier (2026-11-01)
+
+- **Context**: `calculateSettlementPrice` included regional endowment, but `getLocalMultiplier` (used by trade, stall, contract board, intel and contextual actions) did not. Farm/fishing endowment never reached those prices.
+- **Decision**: `getLocalMultiplier` becomes `specialisation × stock pressure × endowment` clamped to `0.5..2`. `calculateSettlementPrice` composes the same multiplier with the world season/crisis layer, and `quoteFromReference` adds fame/spread on top. A parity suite pins the two paths.
+- **Consequences**:
+  - Positive: A fish-rich town is cheap for every consumer, not only on one screen; price disputes have one answer.
+  - Negative: Extreme specialisation × stock × endowment combinations are capped at 2 instead of the previous uncapped product.
+
+---
+
+## ADR-042: One Day Ledger per World System (2026-11-01)
+
+- **Context**: Merchant routes had `merchant_day_ledger`, but stalls looped `N` days with one fixed date, freight had no transaction or day marker, and essential consumption had no per-date key. Replaying a day could sell, spoil or consume twice.
+- **Decision**: Migration 076 adds `world_day_ledger(system, game_date)` with a unique key. Stall, freight, merchant and consumption check and mark their day inside one transaction. Day arithmetic uses the 30-day campaign calendar in `src/shared/game-date.ts`.
+- **Consequences**:
+  - Positive: Every day tick is retry-safe and auditable; a failed day rolls back whole.
+  - Negative: A subsystem that forgets to mark its day can still double-run, so new daily systems must use `hasProcessedDay`/`markProcessedDay`.

@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.39.0] - 2026-11-01
+
+Economic conservation: the three remaining P0 defects from the 1.38.0 re-check
+are fixed, and every day tick is now idempotent.
+
+### Fixed
+- Freight contracts reserve source settlement stock at accept, credit the
+  destination only on delivery and return unspoiled cargo when the contract
+  fails. Two contracts can no longer draw the same source supply.
+- Every quote consumer uses one local multiplier that includes regional
+  endowment: direct trade, stall, contract board, intel and contextual actions.
+  `calculateSettlementPrice` and `getLocalMultiplier` are pinned by a parity
+  test.
+- Stall sales, freight progress, merchant routes and monthly essential
+  consumption are idempotent per campaign day. Replaying a day no longer sells,
+  spoils or consumes twice.
+
+### Added
+- Migration 075: `freight_shipments.source_reserved_quantity`.
+- Migration 076: `world_day_ledger(system, game_date)`; merchant rows are copied
+  from the old `merchant_day_ledger`.
+- `src/shared/game-date.ts` uses the 30-day campaign calendar for day arithmetic.
+- `verify-freight-conservation.ts`, `verify-market-price-parity.ts` and
+  `verify-day-tick-idempotency.ts`.
+- Audit block 9 checks that a freight reservation is non-negative and never
+  exceeds the initial quantity.
+
+### Verification
+`npm run verify` green: 89/89 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,961 invariants, 0 discrepancies.
+
+---
+
 ## [1.38.0] - 2026-10-31
 
 Supply-chain hardening: the Gia Thương layer is isolated, audited, atomic and

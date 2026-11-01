@@ -68,7 +68,7 @@ The **ThreeKingdoms-AgentEngine** test infrastructure provides an autonomous, mu
 - **Settlement Ledger (`tests/verify-settlement-ledger.ts`)**: Opening, a loot flow and drift detection keep every settlement treasury balanced.
 - **World Atomicity (`tests/verify-world-atomic.ts`)**: A world module that throws rolls back its write and aborts the close; a successful module commits.
 - **Day Phases (`tests/verify-day-phases.ts`)**: Three admin phases fill a day, a day action resets the phase, and quest accept spends one phase.
-- **Schema Contract (`tests/verify-schema-contract.ts`)**: A fresh schema + migrations database has the 20 runtime tables and required business/NPC columns.
+- **Schema Contract (`tests/verify-schema-contract.ts`)**: A fresh schema + migrations database has the 45 runtime tables and required business/NPC columns.
 
 ### Tier 4: Invariant & State Conservation Auditor (`tools/sim-audit.js`)
 The auditor verifies **1,961 invariants across nine blocks** against SQLite as the
@@ -134,6 +134,9 @@ primary truth:
 | `tests/verify-merchant-route.ts` | Gia Thương: Company route | — | Procure, dispatch, unload, sell, pause |
 | `tests/verify-spoilage.ts` | Gia Thương: Perishables | — | Fresh vs dried loss, cold chain, freight discount |
 | `tests/verify-endowment-consumption.ts` | Market: Endowment | — | Fish-rich price, monthly shortage, public order, log |
+| `tests/verify-market-price-parity.ts` | Market: One price formula | — | Endowment-aware local multiplier, calculate/quote parity |
+| `tests/verify-freight-conservation.ts` | Market: Freight conservation | — | Source reservation, delivery credit, failure return, parallel rejection |
+| `tests/verify-day-tick-idempotency.ts` | Market: Day ledger | — | Stall, freight and consumption replay without a second effect |
 | `tools/sim-audit.js` | System: Autonomous Invariant Auditor | 1,961 | Nine blocks: accounting, inventory, journal, projection, enterprise, strategy, life-sim, clock, trade/warehouse/shipment |
 
 ---
@@ -151,7 +154,7 @@ npx tsx tests/verify-rotk-duels.ts
 
 ### Full Verification Pipeline
 ```bash
-# Single gate: typecheck → arch ratchet → 86 suites → API contract → write smoke
+# Single gate: typecheck → arch ratchet → 89 suites → API contract → write smoke
 npm run verify
 
 # Individually:
