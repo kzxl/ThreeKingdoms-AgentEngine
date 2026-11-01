@@ -11,17 +11,12 @@ import { nextSequentialId } from '../../shared/id-generator';
 import { postDoubleEntry } from '../../shared/ledger';
 import { ACCOUNT_CODES } from '../../shared/account-codes';
 import { consumeInventoryItem, restoreInventoryItem } from '../../shared/inventory-movement';
+import { addGameDays } from '../../shared/game-date';
 
 const RENT_CASH = 300;
 const PURCHASE_PRICE = 2000;
 const LEASE_DAYS = 90;
 const DEFAULT_CAPACITY = 300;
-
-function addDays(date: string, days: number): string {
-  const [year, month, day] = String(date || '184-05-02').split('-').map(Number);
-  const next = new Date(Date.UTC(year || 184, (month || 5) - 1, (day || 2) + days));
-  return `${next.getUTCFullYear()}-${String(next.getUTCMonth() + 1).padStart(2, '0')}-${String(next.getUTCDate()).padStart(2, '0')}`;
-}
 
 export class WarehouseService {
   constructor(private readonly db: DatabaseService) {}
@@ -148,6 +143,12 @@ export class WarehouseService {
     );
     if (existing?.ownership_type === 'OWNED') throw new Error('Bạn đã sở hữu kho tại thành này.');
     const warehouseId = existing?.warehouse_id || nextSequentialId(this.db, 'warehouses', 'WH', gameDate);
+    // Re-renting an active lease extends it instead of discarding the remaining
+    // days and restarting from today.
+    const leaseBase = existing?.lease_until && String(existing.lease_until) >= gameDate
+      ? String(existing.lease_until)
+      : gameDate;
+    const leaseUntil = addGameDays(leaseBase, LEASE_DAYS);
     return this.db.transaction(() => {
       this.pay(ownerId, RENT_CASH, gameDate, 'Trade/WarehouseRent', `Thuê kho tại ${settlementId}`, ACCOUNT_CODES.operatingExpense);
       this.db.execute(
@@ -162,7 +163,7 @@ export class WarehouseService {
           warehouseId, ownerId, settlementId, `Kho ${settlementId}`,
           Math.max(DEFAULT_CAPACITY, Number(capacity) || DEFAULT_CAPACITY),
           RENT_CASH, PURCHASE_PRICE,
-          addDays(gameDate, LEASE_DAYS), gameDate
+          leaseUntil, gameDate
         ]
       );
       return this.getWarehouse(ownerId, warehouseId, gameDate);
@@ -198,11 +199,15 @@ export class WarehouseService {
   public renew(ownerId: string, warehouseId: string, gameDate: string): any {
     const row = this.warehouseRow(warehouseId, ownerId);
     if (row.ownership_type === 'OWNED') throw new Error('Kho sở hữu không cần gia hạn.');
+    const leaseBase = row.lease_until && String(row.lease_until) >= gameDate
+      ? String(row.lease_until)
+      : gameDate;
+    const leaseUntil = addGameDays(leaseBase, LEASE_DAYS);
     return this.db.transaction(() => {
       this.pay(ownerId, RENT_CASH, gameDate, 'Trade/WarehouseRent', `Gia hạn kho ${warehouseId}`, ACCOUNT_CODES.operatingExpense);
       this.db.execute(
         "UPDATE warehouses SET status = 'ACTIVE', lease_until = ?, updated_at = CURRENT_TIMESTAMP WHERE warehouse_id = ?;",
-        [addDays(gameDate, LEASE_DAYS), warehouseId]
+        [leaseUntil, warehouseId]
       );
       return this.getWarehouse(ownerId, warehouseId, gameDate);
     });

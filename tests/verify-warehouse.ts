@@ -92,6 +92,15 @@ async function run(): Promise<void> {
   assert.strictEqual(Number(rent.data.result.capacity), 300);
   assert.strictEqual(rent.data.result.status, 'ACTIVE');
   assert.strictEqual(num(raw, "SELECT liquid_cash FROM player_state WHERE player_id = 'PLY-0001';"), 9700);
+  // Re-renting an active lease must extend from the existing end, not today.
+  raw.prepare("UPDATE warehouses SET lease_until = '185-08-01' WHERE warehouse_id = ?;").run(warehouseId);
+  const extend = await request(router, 'POST', '/api/warehouses/renew', {
+    warehouseId,
+    idempotencyKey: 'TEST-WH-RENEW-ACTIVE'
+  });
+  assert.strictEqual(extend.status, 200, JSON.stringify(extend.data));
+  assert.strictEqual(extend.data.result.leaseUntil, '185-11-01');
+  assert.notStrictEqual(extend.data.result.leaseUntil, '185-09-01');
 
   const deposit = await request(router, 'POST', '/api/warehouses/deposit', {
     warehouseId,
