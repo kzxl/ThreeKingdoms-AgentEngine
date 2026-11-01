@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.38.0] - 2026-10-31
+
+Supply-chain hardening: the Gia Thương layer is isolated, audited, atomic and
+uses one price anchor.
+
+### Added
+- All new session tables are in `HISTORY_TABLES`; a new game no longer inherits
+  warehouses, stalls, offers, freight, routes, tool wear, life state or node
+  stock.
+- Audit block 9 (`TRADE, WAREHOUSE & SHIPMENT`) checks warehouse capacity,
+  stock/offer/shipment bounds, route-tag stock, endowments and consumption. Total
+  invariants: 1,961.
+- `merchant_day_ledger` makes each campaign day one atomic transaction; a repeated
+  tick is a no-op.
+- `calculateSettlementPrice` now includes stock/demand, regional endowment and
+  season/crisis, and is used by stall, NPC offers, caravans, freight and company
+  routes.
+- Stall list/close require `stallId` or `settlementId` when multiple stalls are
+  open.
+- Freight contracts check source stock, reserve issuer cash and charge penalties
+  on overdue delivery.
+- `merchant_route_stock` ensures a route only ships/sells its own cargo; route
+  creation/procurement/dispatch reject expired leases.
+- NPC offer purchases go to the local warehouse when possible.
+- Retail sales no longer inflate local market stock.
+- `SKL-FISH-BOAT`/`SKL-HUNT-SKIN` stack with cold chain; `TOOL-BOW` is an
+  alternate hunting tool.
+- Migrations 073–074 add regional endowment and monthly essential consumption,
+  with public-order loss on shortage.
+- Market panel now exposes stall sourcing from warehouse and warehouse
+  rent/buy/deposit/withdraw.
+
+### Verification
+`npm run verify` green: 86/86 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,961 invariants, 0 discrepancies.
+
+---
+
 ## [1.37.0] - 2026-10-31
 
 Gia Thương foundation: per-settlement warehouses, freight contracts, automated

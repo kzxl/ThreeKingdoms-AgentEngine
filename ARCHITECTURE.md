@@ -56,7 +56,7 @@ graph TD
 
 ## 3. SQLite Schema & Invariant Enforcement
 
-All dynamic campaign state is maintained in `saves/session.db` using the schema defined in `tools/schema.sql` (audited across 1,708 invariants in eight blocks):
+All dynamic campaign state is maintained in `saves/session.db` using the schema defined in `tools/schema.sql` (audited across 1,961 invariants in nine blocks):
 
 1. **`player_state`**: Tracks attributes (INT, POL, WAR, LDR, DIP, COM, LOG, CRA), current location, liquid cash, safe cash, fixed capital, grain, and net worth.
 2. **`cashflow_ledger`**: Strict double-entry ledger enforcing:
@@ -153,10 +153,10 @@ not require editing that test.
 | :--- | :--- | :--- |
 | Types | `npm run typecheck` | `strict` TypeScript across `src/`, `tests/`, `vite.config.ts`. |
 | Architecture | `npm run lint` | Ratchet over `tools/arch-baseline.json`; debt may only shrink. |
-| Behaviour | `npm test` | 78 suites (4 legacy + 74 modern); each modern suite runs on an isolated DB copy and projections are restored afterwards. |
+| Behaviour | `npm test` | 86 suites (4 legacy + 82 modern); each modern suite runs on an isolated DB copy and projections are restored afterwards. |
 | API contract | `npm run golden:verify` | 28 read-only endpoints: status code, response shape, behavioural assertions. |
 | Write paths | `npm run smoke:write` | 8 HTTP write paths plus a post-write audit on a sandbox database. |
-| Invariants | `npm run audit` | 1,708 SQLite invariants (ledger parity, inventory conservation, projection sync, world/life-sim/clock blocks). |
+| Invariants | `npm run audit` | 1,961 SQLite invariants (ledger parity, inventory conservation, projection sync, world/life-sim/clock blocks). |
 
 `npm run verify` chains all of them and is the merge gate.
 
@@ -884,6 +884,79 @@ loss, or process it into dried fish/sauce/jerky for stable long-haul cargo.
 
 Gates: `tests/verify-warehouse.ts`, `verify-stall-warehouse.ts`,
 `verify-freight.ts`, `verify-merchant-route.ts`, `verify-spoilage.ts`.
+
+---
+
+## 19. Supply-Chain Hardening (1.38.0)
+
+The first Gia Thương pass was feature-complete but had correctness gaps. This
+section closes them.
+
+### 19.1 Instance isolation
+
+Every new session table is now in `HISTORY_TABLES`: warehouses and stock, stall
+listings/sales, NPC offers and preferences, freight contracts/shipments,
+merchant routes/shipments/events/day ledger/route stock, life state, gathering
+node state, tool wear and consumption logs. A new game no longer inherits old
+kho, quầy, route, offer or durability state.
+
+### 19.2 Audit coverage
+
+`tools/sim-audit.js` gains block 9 (`TRADE, WAREHOUSE & SHIPMENT`): warehouse
+capacity, non-negative stock, stall/NPC offer bounds, shipment quantity ≤
+initial, route day ledger, route-tag stock ≤ warehouse stock, endowment and
+consumption bounds. The audit now reports 1,961 invariants.
+
+### 19.3 Atomic merchant day
+
+`merchant_day_ledger(game_date)` makes each campaign day a single transaction:
+advance shipments, unload, sell, procure and dispatch either all commit or all
+roll back. Re-running the same day is a no-op.
+
+### 19.4 One price resolver
+
+`RegionalMarketService.calculateSettlementPrice` is the single wholesale/retail
+quote:
+
+```
+base × settlementSpecialization
+     × sqrt(demand / stock) (0.5–2)
+     × regionalEndowment (0.6–1.6)
+     × season/crisis
+```
+
+Stall, NPC offers, caravan, freight and company routes all use it. Trade adds
+fame/career spread on top of the same anchor.
+
+### 19.5 Identity and guards
+
+- `stall/list` and `stall/close` require `stallId` or `settlementId` when more
+  than one stall is open.
+- Freight contracts check source settlement stock and reserve issuer cash;
+  overdue shipments fail and charge the penalty.
+- Merchant routes only ship/sell their own `merchant_route_stock`, not any
+  matching item already in the warehouse.
+- Route procurement/dispatch and route creation reject expired warehouse leases.
+- Buying an NPC offer deposits into the local warehouse when one exists; it only
+  falls back to the personal bag when the warehouse is missing/full.
+- A stall sale to an NPC no longer adds artificial market stock.
+- Item-level preservation skills (`SKL-FISH-BOAT` for fish, `SKL-HUNT-SKIN` for
+  game) stack with `SKL-LOG-COLD`; `TOOL-BOW` is accepted as an alternate
+  hunting tool.
+
+### 19.6 Regional endowment and consumption
+
+Migrations 073/074 add `settlement_item_endowment`,
+`settlement_consumption` and `settlement_consumption_log`:
+
+- fishing towns have fish supply and therefore lower fish quotes;
+- inland/high-garrison towns have demand and higher quotes;
+- month close consumes essential goods, reduces stock and lowers public order
+  when there is a shortage.
+
+The stall/warehouse UI is available from the market panel; freight/merchant
+route screens remain API-first.
+
 
 
 

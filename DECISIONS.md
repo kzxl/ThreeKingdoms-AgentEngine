@@ -413,3 +413,13 @@ This document records the architectural choices, rationale, and alternatives con
 - **Consequences**:
   - Positive: Processing and cold-chain skills have a clear economic role; long-haul fresh fish is profitable but risky.
   - Negative: Spoilage is applied at arrival, not continuously; insurance and partial-route sales are later layers.
+
+---
+
+## ADR-039: Supply-Chain Hardening Before New Content (2026-10-31)
+
+- **Context**: The 1.37.0 Gia Thương layer worked on happy paths but lacked instance isolation, audit coverage, atomicity, a single price resolver and stall identity. New content would have amplified those gaps.
+- **Decision**: Add all new tables to `HISTORY_TABLES`; add audit block 9; wrap the merchant day in `merchant_day_ledger` and one transaction; make `calculateSettlementPrice` the one quote; require stall identity; reserve freight source stock/issuer cash and enforce penalties; tag route cargo with `merchant_route_stock`; enforce warehouse leases; deposit NPC purchases into the local warehouse; stop retail sales from inflating market stock; use item-level preservation skills and alternate tools; add endowment/consumption pricing.
+- **Consequences**:
+  - Positive: New games are clean, goods/cargo are auditable, a retried merchant day is safe, and wholesale/retail prices agree.
+  - Negative: Freight/merchant UI is still API-first; route optimisation, insurance and partial-route sales remain.

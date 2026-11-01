@@ -37,10 +37,10 @@ ThreeKingdoms-AgentEngine is an autonomous Three Kingdoms simulation engine powe
 
 The milestone tables below are the original expansion history. Current verified state:
 
-- **Gate**: `npm run verify` — 85/85 suites (4 legacy + 81 modern), 28 API contracts,
-  8 write smokes; `npm run audit` — 1,708 invariants, 0 discrepancies.
+- **Gate**: `npm run verify` — 86/86 suites (4 legacy + 82 modern), 28 API contracts,
+  8 write smokes; `npm run audit` — 1,961 invariants, 0 discrepancies.
 - **Data**: 159 master items, 33 talents, 59 skills, 168 master characters, 20
-  locations, 41 routes, 132 POI scenes; 68 versioned migrations.
+  locations, 41 routes, 132 POI scenes; 74 versioned migrations.
 - **P0 systems**: server-authoritative action time, enterprise P&L with debt,
   one career-path resolver, and migration-based text repair (see
   `ARCHITECTURE.md` §7–10 and `DECISIONS.md` ADR-007–010).
@@ -70,7 +70,7 @@ The milestone tables below are the original expansion history. Current verified 
   - Web Server & REST Dispatcher: `tools/sim-web.js`
   - Sanitized Assets: `public/js/map-data.js`, `public/js/caravan-ui.js`, `public/js/equipment-ui.js`, `src/modules/contextual-actions/context-action.engine.ts`
 - **Audit & Invariants**:
-  - `tools/sim-audit.js` (1,708 invariants in eight blocks: Cashflow, Inventory,
+  - `tools/sim-audit.js` (1,961 invariants in nine blocks: Cashflow, Inventory,
     Double-Entry, Projection, NPC/Enterprise, Grand Strategy, Life-Sim, Clock)
 
 ---
@@ -94,12 +94,12 @@ The milestone tables below are the original expansion history. Current verified 
 | 14 | Grand Command Hub Shell | Reorganize fragmented buttons in `.cmd-bar-right` and purge dynamic injections in `equipment-ui.js` / `enterprise-ui.js` into single Master Hub `#grand-command-hub-modal` | M4 | ORIGINAL_REQUEST §R4 |
 | 15 | 6 High-Density Tabs | Tab 1 Quân Trang `[武]`, Tab 2 Sản Nghiệp `[業]`, Tab 3 Thương Đoàn `[商]`, Tab 4 Gia Thất `[家]`, Tab 5 Diễn Võ `[演]`, Tab 6 Tụ Nghĩa `[義]` | M4 | ORIGINAL_REQUEST §R4 |
 | 16 | Codebase-wide Anti-AI-Slop | Purge all emojis in UI and REST payloads (`map-data.js`, `caravan-ui.js`, `sim-web.js`, `context-action.engine.ts`), replace with authentic Hanzi seals | M4 | ORIGINAL_REQUEST §R4 |
-| 17 | E2E Testing Runner & Verification | Full gate across all feature suites; current state is 85/85 suites, 28 API contracts, 8 write smokes and 1,708 SQLite audit invariants | M5 | ORIGINAL_REQUEST §Acceptance |
+| 17 | E2E Testing Runner & Verification | Full gate across all feature suites; current state is 86/86 suites, 28 API contracts, 8 write smokes and 1,961 SQLite audit invariants | M5 | ORIGINAL_REQUEST §Acceptance |
 | 18 | Historical Master Catalog & 20-Settlement Strategic Map | Enriched 129 master items, 33 talents, 168 characters, 20 historical citadels, 41 tactical routes across 4 terrain profiles (`HIGHWAY`, `WATERWAY`, `MOUNTAIN_PASS`, `PLANK_ROAD`), 3 view modes (`overview`, `military`, `economy`), and route pulse animation | M6 | GRAND_STRATEGY_EXPANSION |
 | 19 | Specialist Workforce Recruitment (Loop 1) | 20 auxiliary specialists (`NPC-0201` to `NPC-0220`), recruitment signing bonus via double-entry journal, assignment to businesses boosting efficiency by +15% to +25% | M6 | GRAND_STRATEGY_EXPANSION |
 | 20 | 20-Settlement Arbitrage & Caravans (Loop 2) | Full price profile coverage for all 20 citadels, long-distance trade caravans with 3 guard tiers (`MILITIA`, `VETERAN`, `ELITE_RETINUE`), bandit ambushes, and destination liquidation | M6 | GRAND_STRATEGY_EXPANSION |
 | 21 | Garrisons & Citadel Siege Assaults (Loop 3) | Recruit and station garrison troops, wall defense ratings (10-100), vanguard siege assaults with defense destruction and war loot plundering (`WAR_LOOT`) | M6 | GRAND_STRATEGY_EXPANSION |
-| 22 | Double-Entry Transaction Engine | `src/shared/financial-transaction.ts`, atomic Dr == Cr accounting, `game/PROGRESS.md` synchronization, and the current 1,708 audit invariants | M6 | GRAND_STRATEGY_EXPANSION |
+| 22 | Double-Entry Transaction Engine | `src/shared/financial-transaction.ts`, atomic Dr == Cr accounting, `game/PROGRESS.md` synchronization, and the current 1,961 audit invariants | M6 | GRAND_STRATEGY_EXPANSION |
 | 23 | Server-Authoritative Action Time | `src/shared/action-time.ts` charges days at the HTTP boundary for duels, social, banquets, recruitment, caravans, gathering, crafting, forging and enterprise actions; `/api/time/spend` is a clock refresh | M7 | P0 1.23.1 |
 | 24 | Enterprise P&L with Debt | Migration 042 adds `businesses.tier/debt`; `engine/business-economics.js` settles output, wages, rent and debt; owner withdrawals are blocked while insolvent | M7 | P0 1.23.2 |
 | 25 | Career-Path Resolver | `engine/career-paths.js` computes five scores and applies the active path's EXP, trade, crafting and clan-prestige modifiers; `duelWins` now reads `session_duels.outcome_type` | M7 | P0 1.23.3 |
@@ -145,6 +145,7 @@ The milestone tables below are the original expansion history. Current verified 
 | 65 | Freight Contracts | NPC-owned cargo, escort fee, reward and deadline delivery | M21 | Gia Thương 1.37.0 |
 | 66 | Merchant Company Routes | Automatic procure → store → ship → unload → sell between warehouses | M21 | Gia Thương 1.37.0 |
 | 67 | Perishables & Logistics Skills | Fresh/dried cargo spoilage, cold chain and freight discount | M21 | Gia Thương 1.37.0 |
+| 68 | Supply-Chain Hardening | Instance isolation, trade audit, atomic merchant day, unified quote, stall identity, freight/lease guards, endowment and consumption | M22 | Hardening 1.38.0 |
 
 ---
 
@@ -156,7 +157,7 @@ The milestone tables below are the original expansion history. Current verified 
 | M2 | Three Kingdoms Single Combat Dueling System (R2) | Features 7-9: `SingleCombatDuelService`, 4 tactical commands, 3-5 round loop, equipment WAR scaling, contextual triggers | none | DONE |
 | M3 | Tavern Hero Banquets & Brotherhood (R3) | Features 10-13: `TavernBanquetService`, gourmet dishes/Dukang wine consumption, brotherhood oath, retainer recruitment | none | DONE |
 | M4 | Grand Command Hub UI & Anti-AI-Slop (R4) | Features 14-16: Unified `#grand-command-hub-modal`, 6 tabs, REST wiring in `sim-web.js`, emoji eradication | M1, M2, M3 | DONE |
-| M5 | Final E2E Suite Pass & Adversarial Hardening | Feature 17: pass the full E2E gate (currently 85 suites and 1,708 invariants), forensic auditor review, Tier 5 hardening | E2E, M1-M4 | DONE |
+| M5 | Final E2E Suite Pass & Adversarial Hardening | Feature 17: pass the full E2E gate (currently 86 suites and 1,961 invariants), forensic auditor review, Tier 5 hardening | E2E, M1-M4 | DONE |
 | M6 | Grand Strategy & 3-Loop Expansion | Features 18-22: 20-settlement 3-layer world map, specialist workforce, 20-city arbitrage caravans, siege assaults, and the invariant auditor | M1-M5 | DONE |
 | M7 | Realistic-RPG P0 Foundation | Features 23-26: server-authoritative action time, enterprise P&L with debt, one career-path resolver, and migration-based data repair | M1-M6 | DONE |
 | M8 | P1 Local Economy Loop | Features 27-29: local market write side, periodic obligations and the repeatable contract board | M1-M7 | DONE |
@@ -173,6 +174,7 @@ The milestone tables below are the original expansion history. Current verified 
 | M19 | Tools & Two-Sided Market | Features 59-60: consumable/durable tools, crafting and player↔NPC stall trading | M1-M18 | DONE |
 | M20 | Relationship Pricing & Repair | Features 61-62: per-NPC bid/ask preferences and durable tool repair | M1-M19 | DONE |
 | M21 | Gia Thương Foundation | Features 63-67: warehouses, stall sourcing, freight contracts, merchant routes and perishables | M1-M20 | DONE |
+| M22 | Supply-Chain Hardening | Feature 68: instance isolation, trade audit, atomic day, unified quote, stall identity, freight guards, endowment/consumption | M1-M21 | DONE |
 
 ---
 
