@@ -723,6 +723,12 @@ failed gather spends no stamina and no tool. Missing tool still gives the −30%
 yield penalty. Six recipes (`REC-TOOL-*`) build every tool from fibre, twine,
 timber and iron, with smithing/weaving/survival skill gates.
 
+Durable tools can be repaired through `POST /api/professions/tools/repair`:
+one administrative phase, a cash fee through `postDoubleEntry`
+(`Livelihood/ToolRepair`), a smithing/weaving skill gate, and a full reset of
+`character_tool_uses`. Consumable nets and traps are rejected; they must be
+crafted or bought again.
+
 ---
 
 ## 17. Two-Sided Market: Stall and NPC Offers (1.35.0)
@@ -769,6 +775,14 @@ local market stock falls and `npc_market_sales` records the buyer.
 - **Bid cap 115%** prevents the player from dumping arbitrary-priced goods; a
   player can profit only by buying below the local quote and selling below the
   NPC cap, or by selling goods they produced cheaply.
+- **Named buyers price differently.** `npc-pricing.ts` reads affinity from
+  `npc_relationship_deltas` + baseline sentiment (0.90–1.10 multiplier) and a
+  category preference derived from WAR/INT/COM/CRA/LDR, stored in
+  `npc_trade_preferences`. The buyer cap is
+  `1.15 × relationship × preference`, clamped to 0.95–1.30. The NPC ask is
+  `band / relationship × preference.ask`, clamped to 0.75–1.35. A warrior pays
+  more for weapons, a scholar for medicine, a merchant for food; a friendly NPC
+  bids higher and asks lower.
 - **The two loops feed back**: player stall sales add local stock (pushing the
   quote down), NPC purchases remove local stock (pushing it up), and monthly
   drift pulls both toward demand. There is no infinite money loop: NPC cash is

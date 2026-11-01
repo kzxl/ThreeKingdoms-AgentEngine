@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.36.0] - 2026-10-31
+
+NPCs price goods by relationship and preference; durable tools can be repaired.
+
+### Added
+- Migration 062: `npc_trade_preferences` stores bid/ask modifiers per NPC and
+  item category. `npc-pricing.ts` derives affinity from baseline sentiment +
+  relationship deltas and preferences from WAR/INT/COM/CRA/LDR.
+- Stall buyer caps become `1.15 × relationship × preference` (0.95–1.30); NPC
+  asks become `band / relationship × preference.ask` (0.75–1.35). A friendly
+  warrior pays more for weapons and asks less for them; a stranger pays less.
+- Migration 063: `tool_rules.repair_cash/repair_skill_code/repair_min_tier`.
+  `POST /api/professions/tools/repair` charges one phase + cash, resets uses
+  and awards the repair skill. Consumable nets/traps are rejected.
+- `tests/verify-npc-pricing.ts` and `tests/verify-tool-repair.ts`.
+
+### Verification
+`npm run verify` green: 80/80 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,708 invariants, 0 discrepancies.
+
+---
+
 ## [1.35.0] - 2026-10-31
 
 Tools wear out and the local market is now two-sided.

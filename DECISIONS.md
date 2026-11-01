@@ -363,3 +363,23 @@ This document records the architectural choices, rationale, and alternatives con
 - **Consequences**:
   - Positive: Price discovery is two-sided; the player can produce, buy low and sell high, and the local quote reacts to both flows.
   - Negative: Balance now depends on NPC cash seeding and offer frequency; relationship-based haggling and per-NPC demand profiles are later phases.
+
+---
+
+## ADR-034: Named NPCs Price Goods Differently (2026-10-31)
+
+- **Context**: Every buyer used the same 115% cap and every seller the same 85–125% band, so a close ally and a stranger paid the same.
+- **Decision**: `npc_trade_preferences` stores bid/ask modifiers per NPC and item category. Affinity comes from baseline sentiment + relationship deltas; category preference is derived once from WAR/INT/COM/CRA/LDR and stored. Buyer cap becomes `1.15 × relationship × preference` (0.95–1.30); ask becomes `band / relationship × preference.ask` (0.75–1.35).
+- **Consequences**:
+  - Positive: Relationships and NPC identity now have economic value; the same fish is worth different amounts to different people.
+  - Negative: Balance must account for high-affinity buyers; faction and personality-specific pricing remain later layers.
+
+---
+
+## ADR-035: Durable Tools Are Repaired, Consumables Are Replaced (2026-10-31)
+
+- **Context**: Durable tools broke permanently and consumables had no replacement path except crafting/buying.
+- **Decision**: `tool_rules` gains `repair_cash`, `repair_skill_code` and `repair_min_tier`. `POST /api/professions/tools/repair` charges one phase and the cash fee through `postDoubleEntry`, resets uses to max and awards the repair skill. Consumables are rejected.
+- **Consequences**:
+  - Positive: Axe/pick/hoe/bow ownership has maintenance cost, while nets/traps stay a recurring consumable sink.
+  - Negative: Repair is API-only for now; a tool panel can surface it later.
