@@ -276,15 +276,6 @@ export class ProfessionsModule implements IFeatureModule {
       }
     }
 
-    // Check player fatigue if player
-    if (characterId === 'PLY-0001') {
-      const player = this.db.queryOne<any>(`SELECT fatigue, health FROM player_state WHERE player_id = 'PLY-0001';`);
-      if (player && player.fatigue + node.fatigue_cost > 90) {
-        throw new Error(`Khí lực kiệt quệ (${player.fatigue}/100)! Cần nghỉ ngơi ẩm trà hoặc dưỡng sức trước khi tiếp tục lên núi khai thác.`);
-      }
-      this.db.execute(`UPDATE player_state SET fatigue = MIN(100, fatigue + ?) WHERE player_id = 'PLY-0001';`, [node.fatigue_cost]);
-    }
-
     // Determine corresponding profession category
     const profCodeMap: Record<string, string> = {
       MINERAL: 'PROF_MINER',
@@ -325,10 +316,6 @@ export class ProfessionsModule implements IFeatureModule {
     const skillBonus = 1.0 + Math.min(0.30, skillTier * 0.06);
 
     // Calculate yield (conservation-safe integer or float)
-    const baseYield = node.yield_quantity_min + RngService.forDomain(this.db, 'gathering').nextFloat() * (node.yield_quantity_max - node.yield_quantity_min);
-    const rawYield = baseYield * professionBonus * skillBonus * toolMultiplier;
-    const totalYield = Math.round(Math.min(rawYield, baseYield * 2.2) * 10) / 10;
-
     const stockBefore = rule
       ? resources.getStock(nodeId, rule, gameDate)
       : null;
@@ -337,6 +324,20 @@ export class ProfessionsModule implements IFeatureModule {
       error.code = 'NODE_EXHAUSTED';
       throw error;
     }
+
+    // Check player fatigue only after the node is known to be available, so a
+    // failed gather never spends stamina.
+    if (characterId === 'PLY-0001') {
+      const player = this.db.queryOne<any>(`SELECT fatigue, health FROM player_state WHERE player_id = 'PLY-0001';`);
+      if (player && player.fatigue + node.fatigue_cost > 90) {
+        throw new Error(`Khí lực kiệt quệ (${player.fatigue}/100)! Cần nghỉ ngơi ẩm trà hoặc dưỡng sức trước khi tiếp tục lên núi khai thác.`);
+      }
+      this.db.execute(`UPDATE player_state SET fatigue = MIN(100, fatigue + ?) WHERE player_id = 'PLY-0001';`, [node.fatigue_cost]);
+    }
+
+    const baseYield = node.yield_quantity_min + RngService.forDomain(this.db, 'gathering').nextFloat() * (node.yield_quantity_max - node.yield_quantity_min);
+    const rawYield = baseYield * professionBonus * skillBonus * toolMultiplier;
+    const totalYield = Math.round(Math.min(rawYield, baseYield * 2.2) * 10) / 10;
 
     const expGain = 25;
     let upgradedTier = tier;
