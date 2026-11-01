@@ -75,7 +75,13 @@ export function registerFreightRoutes(router: Router): void {
   router.post('/api/freight/accept', async (_req: any, res: any, ctx: RouteContext) => {
     const body = ctx.body || {};
     await mutate(res, ctx, 'FREIGHT_ACCEPT', (characterId, date) =>
-      service.accept(characterId, String(body.contractId || ''), String(body.guardTier || 'VETERAN'), date)
+      service.accept(
+        characterId,
+        String(body.contractId || ''),
+        String(body.guardTier || 'VETERAN'),
+        date,
+        body.insurance === true
+      )
     );
   });
 

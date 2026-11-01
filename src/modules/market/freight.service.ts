@@ -24,6 +24,7 @@ import { LOC_TO_NODE_MAP } from '../ecology-logistics/spatial-registry';
 import { computeSpoilage, freightDiscountPct } from './spoilage';
 import { addGameDays, gameDayOrdinal } from '../../shared/game-date';
 import { hasProcessedDay, markProcessedDay } from '../../shared/day-ledger';
+import { resolveLogisticsAmbush } from '../../shared/logistics-risk';
 
 export class FreightService {
   constructor(private readonly db: DatabaseService) {}
@@ -274,7 +275,13 @@ export class FreightService {
     return stock >= quantity ? { settlementId: endowment.settlement_id, stock } : null;
   }
 
-  public accept(ownerId: string, contractId: string, guardTier: string, gameDate: string): any {
+  public accept(
+    ownerId: string,
+    contractId: string,
+    guardTier: string,
+    gameDate: string,
+    insured = false
+  ): any {
     const contract = this.db.queryOne<any>(
       "SELECT * FROM freight_contracts WHERE contract_id = ? AND status = 'OPEN' LIMIT 1;",
       [contractId]
@@ -287,18 +294,27 @@ export class FreightService {
     const guard = this.guardTier(guardTier);
     const discount = freightDiscountPct(this.db);
     const guardFee = Math.max(1, Math.round(guard.costQian * (1 - discount / 100)));
+    const quantity = Number(contract.quantity);
+    const destinationPrice = new RegionalMarketService(this.db).calculateSettlementPrice(
+      contract.to_settlement_id,
+      contract.item_code,
+      gameDate
+    );
+    const insurancePremium = insured
+      ? Math.max(1, Math.round(quantity * destinationPrice * 0.04))
+      : 0;
+    const upfront = guardFee + insurancePremium;
     const player = this.db.queryOne<{ liquid_cash: number; safe_cash: number }>(
       'SELECT liquid_cash, safe_cash FROM player_state WHERE player_id = ? LIMIT 1;',
       [ownerId]
     );
     if (!player) throw new Error(`Không tìm thấy nhân vật ${ownerId}.`);
-    if (Number(player.liquid_cash || 0) < guardFee) {
-      throw new Error(`Cần ${guardFee} Quan phí hộ vệ ${guard.tier}.`);
+    if (Number(player.liquid_cash || 0) < upfront) {
+      throw new Error(`Cần ${upfront} Quan (hộ vệ ${guardFee} + bảo hiểm ${insurancePremium}).`);
     }
 
     const shipmentId = nextSequentialId(this.db, 'freight_shipments', 'SHP', gameDate);
     const days = this.travelDays(contract.from_settlement_id, contract.to_settlement_id, ownerId);
-    const quantity = Number(contract.quantity);
     return this.db.transaction(() => {
       const market = SettlementMarketService.forDatabase(this.db);
       const source = market.getState(contract.from_settlement_id, contract.item_code);
@@ -325,6 +341,22 @@ export class FreightService {
         debitAccount: ACCOUNT_CODES.operatingExpense,
         creditAccount: ACCOUNT_CODES.cashMobile
       });
+      if (insurancePremium > 0) {
+        const insuredBalance = newLiquid - insurancePremium;
+        this.db.execute('UPDATE player_state SET liquid_cash = ? WHERE player_id = ?;', [insuredBalance, ownerId]);
+        const insuranceTxnId = nextSequentialId(this.db, 'cashflow_ledger', 'TXN', gameDate);
+        postDoubleEntry(this.db, {
+          txnId: insuranceTxnId,
+          gameDate,
+          counterparty: 'Bảo Hiểm Thương Lộ',
+          category: 'Logistics/FreightInsurance',
+          outflow: insurancePremium,
+          balance: insuredBalance + Number(player.safe_cash || 0),
+          memo: `Phí bảo hiểm chuyến ${contractId}`,
+          debitAccount: ACCOUNT_CODES.operatingExpense,
+          creditAccount: ACCOUNT_CODES.cashMobile
+        });
+      }
       this.db.execute(
         "UPDATE freight_contracts SET status = 'ACCEPTED', accepted_by = ?, accepted_date = ?, updated_at = CURRENT_TIMESTAMP WHERE contract_id = ?;",
         [ownerId, gameDate, contractId]
@@ -334,8 +366,8 @@ export class FreightService {
           (shipment_id, contract_id, owner_id, from_settlement_id, to_settlement_id,
            item_code, quantity, days_remaining, status, reward_cash, penalty_cash,
            guard_tier, guard_fee, created_date, initial_quantity, total_days, spoiled_quantity,
-           source_reserved_quantity)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'EN_ROUTE', ?, ?, ?, ?, ?, ?, ?, 0, ?);`,
+           source_reserved_quantity, insured, insurance_premium)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'EN_ROUTE', ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?);`,
         [
           shipmentId,
           contractId,
@@ -352,7 +384,9 @@ export class FreightService {
           gameDate,
           quantity,
           days,
-          quantity
+          quantity,
+          insured ? 1 : 0,
+          insurancePremium
         ]
       );
       return {
@@ -366,6 +400,8 @@ export class FreightService {
         rewardCash: Number(contract.reward_cash),
         guardFee,
         guardTier: guard.tier,
+        insured: Boolean(insured),
+        insurancePremium,
         deadline: contract.deadline
       };
     });
@@ -522,23 +558,88 @@ export class FreightService {
         for (const shipment of shipments) {
           const remaining = Math.max(0, Number(shipment.days_remaining) - 1);
           const status = remaining === 0 ? 'ARRIVED' : 'EN_ROUTE';
+          const totalDays = Number(shipment.total_days) || Number(shipment.days_remaining) || 1;
+          let quantity = Number(shipment.quantity);
+          let ambushLoss = Number(shipment.ambush_loss_quantity || 0);
+          let insuranceClaim = Number(shipment.insurance_claim || 0);
+          let ambushResolved = Number(shipment.ambush_resolved || 0) === 1;
+
+          // Resolve the ambush once at the midpoint (or on the only day of a
+          // one-day route). A thin escort can lose cargo to a nearby lair.
+          if (!ambushResolved && remaining <= Math.ceil(totalDays / 2)) {
+            const risk = resolveLogisticsAmbush(this.db, {
+              fromSettlementId: shipment.from_settlement_id,
+              toSettlementId: shipment.to_settlement_id,
+              guardTier: shipment.guard_tier,
+              quantity
+            });
+            ambushResolved = true;
+            if (risk.ambushed) {
+              const lost = Math.min(quantity, risk.lostQuantity);
+              quantity = Math.max(0, Number((quantity - lost).toFixed(1)));
+              ambushLoss = Number((ambushLoss + lost).toFixed(1));
+              const destinationPrice = new RegionalMarketService(this.db).calculateSettlementPrice(
+                shipment.to_settlement_id,
+                shipment.item_code,
+                dayDate
+              );
+              const lostValue = Math.max(1, Math.round(lost * destinationPrice));
+              if (risk.strongholdId) {
+                this.db.execute(
+                  'UPDATE bandit_strongholds SET plundered_wealth = plundered_wealth + ? WHERE stronghold_id = ?;',
+                  [lostValue, risk.strongholdId]
+                );
+              }
+              if (Number(shipment.insured) === 1) {
+                insuranceClaim = Math.max(1, Math.round(lostValue * 0.75));
+                const player = this.db.queryOne<{ liquid_cash: number; safe_cash: number }>(
+                  'SELECT liquid_cash, safe_cash FROM player_state WHERE player_id = ? LIMIT 1;',
+                  [shipment.owner_id]
+                );
+                const newLiquid = Number(player?.liquid_cash || 0) + insuranceClaim;
+                this.db.execute(
+                  'UPDATE player_state SET liquid_cash = ? WHERE player_id = ?;',
+                  [newLiquid, shipment.owner_id]
+                );
+                const txnId = nextSequentialId(this.db, 'cashflow_ledger', 'TXN', dayDate);
+                postDoubleEntry(this.db, {
+                  txnId,
+                  gameDate: dayDate,
+                  counterparty: 'Bảo Hiểm Thương Lộ',
+                  category: 'Logistics/InsuranceClaim',
+                  inflow: insuranceClaim,
+                  balance: newLiquid + Number(player?.safe_cash || 0),
+                  memo: `Bồi thường phục kích chuyến ${shipment.shipment_id}`,
+                  debitAccount: ACCOUNT_CODES.cashMobile,
+                  creditAccount: ACCOUNT_CODES.financialIncome
+                });
+              }
+            }
+          }
+
           if (status === 'ARRIVED') {
-            const totalDays = Number(shipment.total_days) || Number(shipment.days_remaining) || 1;
             const spoil = computeSpoilage(
               this.db,
               shipment.item_code,
-              Number(shipment.initial_quantity || shipment.quantity),
+              quantity,
               Math.max(1, totalDays)
             );
             this.db.execute(
-              'UPDATE freight_shipments SET days_remaining = ?, status = ?, quantity = ?, spoiled_quantity = ?, updated_at = CURRENT_TIMESTAMP WHERE shipment_id = ?;',
-              [remaining, status, spoil.quantity, spoil.lost, shipment.shipment_id]
+              `UPDATE freight_shipments
+               SET days_remaining = ?, status = ?, quantity = ?, spoiled_quantity = ?,
+                   ambush_loss_quantity = ?, insurance_claim = ?, ambush_resolved = 1,
+                   updated_at = CURRENT_TIMESTAMP
+               WHERE shipment_id = ?;`,
+              [remaining, status, spoil.quantity, spoil.lost, ambushLoss, insuranceClaim, shipment.shipment_id]
             );
             arrived.add(shipment.shipment_id);
           } else {
             this.db.execute(
-              'UPDATE freight_shipments SET days_remaining = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE shipment_id = ?;',
-              [remaining, status, shipment.shipment_id]
+              `UPDATE freight_shipments
+               SET days_remaining = ?, status = ?, quantity = ?, ambush_loss_quantity = ?,
+                   insurance_claim = ?, ambush_resolved = 1, updated_at = CURRENT_TIMESTAMP
+               WHERE shipment_id = ?;`,
+              [remaining, status, quantity, ambushLoss, insuranceClaim, shipment.shipment_id]
             );
           }
         }

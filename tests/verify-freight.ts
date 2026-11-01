@@ -33,6 +33,8 @@ function seed(): void {
   `).run();
   db.prepare('DELETE FROM freight_contracts;').run();
   db.prepare('DELETE FROM freight_shipments;').run();
+  // Happy-path flow: lair/guard/insurance scenarios live in verify-logistics-risk.
+  db.prepare('DELETE FROM bandit_strongholds;').run();
   db.prepare("DELETE FROM action_log WHERE idempotency_key LIKE 'TEST-FREIGHT%';").run();
   db.close();
 }

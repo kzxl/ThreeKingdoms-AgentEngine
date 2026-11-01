@@ -19,6 +19,7 @@ import { NpcMarketService } from './npc-market.service';
 import { computeSpoilage, freightDiscountPct } from './spoilage';
 import { addGameDays } from '../../shared/game-date';
 import { hasProcessedDay, markProcessedDay } from '../../shared/day-ledger';
+import { resolveLogisticsAmbush } from '../../shared/logistics-risk';
 
 export class MerchantCompanyService {
   constructor(private readonly db: DatabaseService) {}
@@ -256,22 +257,61 @@ export class MerchantCompanyService {
     const rows = this.db.query<any>("SELECT * FROM merchant_shipments WHERE status = 'EN_ROUTE';");
     for (const row of rows) {
       const remaining = Math.max(0, Number(row.days_remaining) - days);
+      const totalDays = Number(row.total_days) || Number(row.days_remaining) || 1;
+      let quantity = Number(row.quantity);
+      let ambushLoss = Number(row.ambush_loss_quantity || 0);
+      let ambushResolved = Number(row.ambush_resolved || 0) === 1;
+      if (remaining === 0 && !ambushResolved) {
+        const route = this.db.queryOne<any>(
+          'SELECT guard_tier, from_settlement, to_settlement FROM merchant_routes WHERE route_id = ? LIMIT 1;',
+          [row.route_id]
+        );
+        if (route) {
+          const risk = resolveLogisticsAmbush(this.db, {
+            fromSettlementId: route.from_settlement,
+            toSettlementId: route.to_settlement,
+            guardTier: route.guard_tier,
+            quantity
+          });
+          ambushResolved = true;
+          if (risk.ambushed) {
+            const lost = Math.min(quantity, risk.lostQuantity);
+            quantity = Math.max(0, Number((quantity - lost).toFixed(1)));
+            ambushLoss = Number((ambushLoss + lost).toFixed(1));
+            if (risk.strongholdId) {
+              const price = new RegionalMarketService(this.db).calculateSettlementPrice(
+                route.to_settlement,
+                row.item_code
+              );
+              this.db.execute(
+                'UPDATE bandit_strongholds SET plundered_wealth = plundered_wealth + ? WHERE stronghold_id = ?;',
+                [Math.max(1, Math.round(lost * price)), risk.strongholdId]
+              );
+            }
+          }
+        }
+      }
       if (remaining === 0) {
-        const totalDays = Number(row.total_days) || Number(row.days_remaining) || 1;
         const spoil = computeSpoilage(
           this.db,
           row.item_code,
-          Number(row.initial_quantity || row.quantity),
+          quantity,
           Math.max(1, totalDays)
         );
         this.db.execute(
-          'UPDATE merchant_shipments SET days_remaining = 0, status = ?, quantity = ?, spoiled_quantity = ?, updated_at = CURRENT_TIMESTAMP WHERE shipment_id = ?;',
-          ['ARRIVED', spoil.quantity, spoil.lost, row.shipment_id]
+          `UPDATE merchant_shipments
+           SET days_remaining = 0, status = ?, quantity = ?, spoiled_quantity = ?,
+               ambush_loss_quantity = ?, ambush_resolved = 1, updated_at = CURRENT_TIMESTAMP
+           WHERE shipment_id = ?;`,
+          ['ARRIVED', spoil.quantity, spoil.lost, ambushLoss, row.shipment_id]
         );
       } else {
         this.db.execute(
-          'UPDATE merchant_shipments SET days_remaining = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE shipment_id = ?;',
-          [remaining, 'EN_ROUTE', row.shipment_id]
+          `UPDATE merchant_shipments
+           SET days_remaining = ?, status = ?, quantity = ?, ambush_loss_quantity = ?,
+               ambush_resolved = 1, updated_at = CURRENT_TIMESTAMP
+           WHERE shipment_id = ?;`,
+          [remaining, 'EN_ROUTE', quantity, ambushLoss, row.shipment_id]
         );
       }
     }

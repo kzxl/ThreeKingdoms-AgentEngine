@@ -747,14 +747,28 @@ function auditTradeAndWarehouses() {
       const quantity = Number(row.quantity || 0);
       const initial = Number(row.initial_quantity || quantity);
       const spoiled = Number(row.spoiled_quantity || 0);
+      const ambushLoss = Number(row.ambush_loss_quantity || 0);
       if (quantity < 0) errors.push(`${table} ${row.shipment_id} has negative quantity`);
       if (spoiled < 0) errors.push(`${table} shipment has negative spoiled quantity`);
+      if (ambushLoss < 0) errors.push(`${table} shipment has negative ambush loss`);
       if (initial + 0.01 < quantity) errors.push(`${table} shipment delivered ${quantity} above initial ${initial}`);
+      if (quantity + spoiled + ambushLoss > initial + 0.01) {
+        errors.push(`${table} ${row.shipment_id} quantity + spoiled + ambush exceeds initial ${initial}`);
+      }
       if (table === 'freight_shipments' && row.source_reserved_quantity !== undefined) {
         const reserved = Number(row.source_reserved_quantity || 0);
         if (reserved < 0) errors.push(`${table} ${row.shipment_id} has negative source reservation`);
         if (reserved > initial + 0.01) {
           errors.push(`${table} ${row.shipment_id} reserved ${reserved} above initial ${initial}`);
+        }
+      }
+      if (table === 'freight_shipments' && row.insured !== undefined) {
+        const premium = Number(row.insurance_premium || 0);
+        const claim = Number(row.insurance_claim || 0);
+        if (premium < 0) errors.push(`${table} ${row.shipment_id} has negative insurance premium`);
+        if (claim < 0) errors.push(`${table} ${row.shipment_id} has negative insurance claim`);
+        if (Number(row.insured) === 0 && claim > 0) {
+          errors.push(`${table} ${row.shipment_id} has a claim without insurance`);
         }
       }
     }
