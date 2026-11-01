@@ -62,6 +62,17 @@ function getLocalMultiplier(dbPath, location, itemCode) {
   }
 }
 
+/** Monthly essential consumption across every settlement. */
+function consumeEssentials(dbPath, gameDate) {
+  const ctx = getSettlementMarketContext(dbPath);
+  if (!ctx) return [];
+  try {
+    return ctx.service.consumeEssentials(gameDate);
+  } catch (error) {
+    return [];
+  }
+}
+
 /**
  * Books a trade into local stock: buying passes a negative delta, selling a
  * positive one. Returns the new state or null when the bridge is unavailable.
@@ -95,4 +106,4 @@ function getStockState(dbPath, location, itemCode) {
   }
 }
 
-module.exports = { driftPlayerSettlement, getLocalMultiplier, getStockState, applyTrade, close };
+module.exports = { driftPlayerSettlement, consumeEssentials, getLocalMultiplier, getStockState, applyTrade, close };

@@ -151,6 +151,47 @@ export class SettlementMarketService {
     return rows.length;
   }
 
+  /**
+   * Monthly essential consumption. Draws stock down; a shortage reduces public
+   * order and is logged for the report/audit.
+   */
+  public consumeEssentials(gameDate?: string): any[] {
+    const date = gameDate || this.currentDate();
+    const rows = this.db.query<any>(
+      `SELECT settlement_id, item_code, monthly_demand
+       FROM settlement_consumption WHERE monthly_demand > 0;`
+    );
+    const events: any[] = [];
+    this.db.transaction(() => {
+      for (const row of rows) {
+        const state = this.getState(row.settlement_id, row.item_code);
+        const demand = Number(row.monthly_demand);
+        const consumed = Math.min(Number(state.stock), demand);
+        const shortage = Math.max(0, demand - consumed);
+        const stock = Math.max(0, Number(state.stock) - consumed);
+        this.db.execute(
+          'UPDATE settlement_market_state SET stock = ?, updated_at = CURRENT_TIMESTAMP WHERE settlement_id = ? AND item_code = ?;',
+          [Number(stock.toFixed(1)), row.settlement_id, row.item_code]
+        );
+        if (shortage > 0) {
+          this.db.execute(
+            'UPDATE session_settlements SET public_order = MAX(0, public_order - ?) WHERE settlement_id = ?;',
+            [Math.min(20, Math.ceil(shortage * 0.5)), row.settlement_id]
+          );
+        }
+        const logId = nextId(this.db, 'settlement_consumption_log', 'CONS', date);
+        this.db.execute(
+          `INSERT INTO settlement_consumption_log
+            (log_id, settlement_id, item_code, game_date, demand, consumed, shortage)
+           VALUES (?, ?, ?, ?, ?, ?, ?);`,
+          [logId, row.settlement_id, row.item_code, date, demand, consumed, shortage]
+        );
+        events.push({ settlementId: row.settlement_id, itemCode: row.item_code, demand, consumed, shortage });
+      }
+    });
+    return events;
+  }
+
   public getMarketPulse(settlementId: string, itemLimit = 30): any[] {
     const states = this.db.query<any>(
       'SELECT item_code, stock, demand, updated_at FROM settlement_market_state WHERE settlement_id = ? ORDER BY item_code LIMIT ?;',

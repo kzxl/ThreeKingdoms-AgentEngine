@@ -162,8 +162,10 @@ export class FreightService {
     if (!issuer) return 0;
 
     const regional = new RegionalMarketService(this.db);
+    const market = SettlementMarketService.forDatabase(this.db);
     const rng = RngService.forDomain(this.db, 'freight-contract');
     let created = 0;
+    let issuerCash = Number(issuer.personal_cash);
     for (const itemCode of destination.specialization.deficitItems) {
       if (created >= 3 - active) break;
       const duplicate = this.db.queryOne(
@@ -182,12 +184,15 @@ export class FreightService {
 
       const distance = calculateDistanceLi(source.settlementId, settlementId);
       const quantity = 5 + Math.floor(rng.nextFloat() * 8);
+      const sourceStock = market.getState(source.settlementId, itemCode).stock;
+      if (sourceStock < quantity) continue;
       const destPrice = regional.calculateSettlementPrice(settlementId, itemCode) || item.price;
       const reward = Math.max(
         20,
         Math.round(quantity * destPrice * 0.15 + distance * 0.15)
       );
-      if (reward > Number(issuer.personal_cash)) continue;
+      if (reward > issuerCash) continue;
+      issuerCash -= reward;
       const deadline = addDays(date, Math.max(3, Math.ceil(distance / CARAVAN_DAILY_LI) + 3));
       const contractId = nextSequentialId(this.db, 'freight_contracts', 'FRT', date);
       this.db.execute(
@@ -309,9 +314,8 @@ export class FreightService {
     );
     if (!contract) throw new Error('Hợp đồng nguồn không tồn tại.');
     if (String(contract.deadline) < gameDate) {
-      this.db.execute("UPDATE freight_shipments SET status = 'FAILED' WHERE shipment_id = ?;", [shipmentId]);
-      this.db.execute("UPDATE freight_contracts SET status = 'FAILED' WHERE contract_id = ?;", [shipment.contract_id]);
-      throw new Error('Đã quá hạn giao hàng; hợp đồng thất bại.');
+      this.failContract(shipment, contract, gameDate);
+      throw new Error('Đã quá hạn giao hàng; hợp đồng thất bại và bị phạt.');
     }
 
     const issuer = this.db.queryOne<{ personal_cash: number }>(
@@ -376,6 +380,39 @@ export class FreightService {
     });
   }
 
+  private failContract(shipment: any, contract: any, gameDate: string): void {
+    const player = this.db.queryOne<{ liquid_cash: number; safe_cash: number }>(
+      'SELECT liquid_cash, safe_cash FROM player_state WHERE player_id = ? LIMIT 1;',
+      [shipment.owner_id]
+    );
+    const penalty = Math.min(
+      Math.max(0, Number(contract.penalty_cash || 0)),
+      Math.max(0, Number(player?.liquid_cash || 0))
+    );
+    if (penalty > 0) {
+      const newLiquid = Number(player?.liquid_cash || 0) - penalty;
+      this.db.execute('UPDATE player_state SET liquid_cash = ? WHERE player_id = ?;', [newLiquid, shipment.owner_id]);
+      const txnId = nextSequentialId(this.db, 'cashflow_ledger', 'TXN', gameDate);
+      postDoubleEntry(this.db, {
+        txnId,
+        gameDate,
+        counterparty: contract.issuer_name_vi,
+        category: 'Logistics/FreightPenalty',
+        outflow: penalty,
+        balance: newLiquid + Number(player?.safe_cash || 0),
+        memo: `Phạt trễ hạn hợp đồng ${contract.contract_id}`,
+        debitAccount: ACCOUNT_CODES.operatingExpense,
+        creditAccount: ACCOUNT_CODES.cashMobile
+      });
+      this.db.execute(
+        'UPDATE npc_personal_progression SET personal_cash = personal_cash + ? WHERE npc_id = ?;',
+        [penalty, contract.issuer_npc_id]
+      );
+    }
+    this.db.execute("UPDATE freight_shipments SET status = 'FAILED' WHERE shipment_id = ?;", [shipment.shipment_id]);
+    this.db.execute("UPDATE freight_contracts SET status = 'FAILED' WHERE contract_id = ?;", [contract.contract_id]);
+  }
+
   public advanceByDays(days: number, gameDate?: string): { advanced: number; arrived: string[] } {
     const dayCount = Math.max(0, Math.floor(Number(days) || 0));
     if (dayCount === 0) return { advanced: 0, arrived: [] };
@@ -407,7 +444,17 @@ export class FreightService {
       }
       if (status === 'ARRIVED') arrived.push(shipment.shipment_id);
     }
-    // Expire open contracts past the deadline.
+    // Expire open contracts and fail accepted shipments past their deadline.
+    const overdue = this.db.query<any>(
+      `SELECT s.*, c.deadline, c.penalty_cash, c.issuer_npc_id, c.issuer_name_vi, c.contract_id
+       FROM freight_shipments s
+       JOIN freight_contracts c ON c.contract_id = s.contract_id
+       WHERE s.status IN ('EN_ROUTE','ARRIVED') AND c.deadline < ?;`,
+      [date]
+    );
+    for (const row of overdue) {
+      this.failContract(row, row, date);
+    }
     this.db.execute(
       "UPDATE freight_contracts SET status = 'EXPIRED', updated_at = CURRENT_TIMESTAMP WHERE status = 'OPEN' AND deadline < ?;",
       [date]

@@ -3,7 +3,7 @@
  */
 
 import { createModalShell, ModalShellInstance } from '../../core/modal-shell';
-import { marketStallService, NpcOffer, StallView } from './market-stall.service';
+import { marketStallService, NpcOffer, StallView, WarehouseView } from './market-stall.service';
 
 function esc(value: unknown): string {
   return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -17,6 +17,7 @@ export class MarketStallModal {
   private modal: ModalShellInstance;
   private stall: StallView | null = null;
   private offers: NpcOffer[] = [];
+  private warehouses: WarehouseView[] = [];
 
   constructor() {
     this.modal = createModalShell({
@@ -27,7 +28,8 @@ export class MarketStallModal {
       size: 'lg',
       tabs: [
         { id: 'stall', label: 'Quầy Của Ta', seal: '攤' },
-        { id: 'offers', label: 'Hàng NPC Bán', seal: '貨' }
+        { id: 'offers', label: 'Hàng NPC Bán', seal: '貨' },
+        { id: 'warehouse', label: 'Kho Thành', seal: '倉' }
       ],
       activeTabId: 'stall',
       onOpen: async () => {
@@ -51,11 +53,14 @@ export class MarketStallModal {
   private async refresh(): Promise<void> {
     this.stall = await marketStallService.getStall('PLY-0001');
     this.offers = await marketStallService.getOffers(this.stall?.settlementId);
+    this.warehouses = await marketStallService.getWarehouses();
   }
 
   private render(): void {
     const tab = this.modal.activeTab || 'stall';
-    this.modal.setContent(tab === 'offers' ? this.renderOffers() : this.renderStall());
+    if (tab === 'offers') this.modal.setContent(this.renderOffers());
+    else if (tab === 'warehouse') this.modal.setContent(this.renderWarehouses());
+    else this.modal.setContent(this.renderStall());
     this.bind();
   }
 
@@ -114,6 +119,16 @@ export class MarketStallModal {
             <input id="stall-item-price" type="number" min="1" step="1" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200" value="50" />
             <button class="ui-btn ui-btn--primary ui-btn--sm" data-stall-action="list">Niêm Yết</button>
           </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-[11px] mt-2">
+            <input id="stall-source" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200" value="BAG" placeholder="BAG hoặc WAREHOUSE" />
+            <input id="stall-warehouse" list="stall-warehouse-list" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200" placeholder="Mã kho (nếu lấy từ kho)" />
+            <datalist id="stall-warehouse-list">
+              ${this.warehouses
+                .filter(row => row.settlementId === this.stall?.settlementId)
+                .map(row => `<option value="${esc(row.warehouseId)}">${esc(row.nameVi)} (${row.usedCapacity}/${row.capacity})</option>`)
+                .join('')}
+            </datalist>
+          </div>
           <div class="text-muted text-[10px] mt-1">Giá thấp hơn 115% giá chợ thì NPC mua nhanh hơn; giá quá cao sẽ không có người mua.</div>
         </div>
 
@@ -126,6 +141,58 @@ export class MarketStallModal {
           <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800">
             <div class="text-xs font-bold text-amber-200 mb-2">Giao Dịch Gần Đây</div>
             ${sales}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  private renderWarehouses(): string {
+    const rows = this.warehouses.length > 0
+      ? this.warehouses.map(row => `
+        <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800 mb-2">
+          <div class="flex justify-between items-center">
+            <div>
+              <div class="text-sm font-bold text-slate-200">${esc(row.nameVi)} • ${esc(row.ownershipType)}</div>
+              <div class="text-[11px] text-muted">${esc(row.settlementId)} • ${row.usedCapacity}/${row.capacity} • ${row.status}${row.leaseUntil ? ` • hết hạn ${esc(row.leaseUntil)}` : ''}</div>
+            </div>
+            <button class="ui-btn ui-btn--ghost ui-btn--sm" data-warehouse-action="withdraw" data-warehouse-id="${esc(row.warehouseId)}">Rút hàng</button>
+          </div>
+        </div>
+      `).join('')
+      : '<div class="text-muted text-sm mb-2">Chưa có kho. Thuê kho tại thành đang đứng để mở kho địa phương.</div>';
+
+    const warehouseOptions = this.warehouses.map(row =>
+      `<option value="${esc(row.warehouseId)}">${esc(row.nameVi)}</option>`
+    ).join('');
+
+    return `
+      <div class="journal-modal-content">
+        <div class="spatial-banner-lead">
+          <div class="lead-seal">倉</div>
+          <div class="lead-text">
+            <h3>Kho Theo Thành</h3>
+            <div class="text-muted text-sm">Kho tách khỏi túi nhân. Thuê 300 Quan / 90 ngày; mua 2.000 Quan.</div>
+          </div>
+        </div>
+        <div class="flex gap-2 mb-3">
+          <button class="ui-btn ui-btn--primary ui-btn--sm" data-warehouse-action="rent">Thuê kho tại thành hiện tại</button>
+          <button class="ui-btn ui-btn--ghost ui-btn--sm" data-warehouse-action="buy">Mua kho tại thành hiện tại</button>
+        </div>
+        ${rows}
+        <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800">
+          <div class="text-xs font-bold text-amber-200 mb-2">Nạp / Rút Kho</div>
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-2 text-[11px]">
+            <input id="warehouse-id" list="warehouse-id-list" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200" placeholder="Mã kho" />
+            <datalist id="warehouse-id-list">
+              ${warehouseOptions || '<option value="">Chưa có kho</option>'}
+            </datalist>
+            <input id="warehouse-item" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200" value="COM-GRAIN" placeholder="Mã hàng" />
+            <input id="warehouse-qty" type="number" min="1" step="1" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200" value="10" />
+            <div class="flex gap-2">
+              <button class="ui-btn ui-btn--primary ui-btn--sm flex-1" data-warehouse-action="deposit">Nạp</button>
+              <button class="ui-btn ui-btn--ghost ui-btn--sm flex-1" data-warehouse-action="withdraw-form">Rút</button>
+            </div>
           </div>
         </div>
       </div>
@@ -176,10 +243,12 @@ export class MarketStallModal {
             const itemCode = body.querySelector<HTMLInputElement>('#stall-item-code')?.value.trim() || '';
             const quantity = Number(body.querySelector<HTMLInputElement>('#stall-item-qty')?.value || 0);
             const unitPrice = Number(body.querySelector<HTMLInputElement>('#stall-item-price')?.value || 0);
-            await marketStallService.listItem(itemCode, quantity, unitPrice);
+            const source = ((body.querySelector<HTMLInputElement>('#stall-source')?.value || 'BAG').toUpperCase()) as 'BAG' | 'WAREHOUSE';
+            const warehouseId = body.querySelector<HTMLInputElement>('#stall-warehouse')?.value || undefined;
+            await marketStallService.listItem(itemCode, quantity, unitPrice, source, warehouseId, this.stall?.stallId);
             toast(`Đã niêm yết ${quantity} ${itemCode}.`);
           } else if (action === 'close') {
-            await marketStallService.closeStall();
+            await marketStallService.closeStall(this.stall?.stallId);
             toast('Đã đóng quầy và trả hàng về kho.');
           }
           await this.refresh();
@@ -203,6 +272,38 @@ export class MarketStallModal {
         } catch (error: any) {
           button.removeAttribute('disabled');
           toast(error.message || 'Mua hàng thất bại.', true);
+        }
+      });
+    });
+
+    body.querySelectorAll<HTMLElement>('[data-warehouse-action]').forEach(button => {
+      button.addEventListener('click', async () => {
+        const action = button.dataset.warehouseAction || '';
+        const warehouseId = button.dataset.warehouseId
+          || body.querySelector<HTMLInputElement>('#warehouse-id')?.value
+          || '';
+        const itemCode = body.querySelector<HTMLInputElement>('#warehouse-item')?.value.trim() || 'COM-GRAIN';
+        const quantity = Number(body.querySelector<HTMLInputElement>('#warehouse-qty')?.value || 1);
+        button.setAttribute('disabled', 'true');
+        try {
+          if (action === 'rent') {
+            await marketStallService.rentWarehouse();
+            toast('Đã thuê kho tại thành hiện tại.');
+          } else if (action === 'buy') {
+            await marketStallService.buyWarehouse();
+            toast('Đã mua kho tại thành hiện tại.');
+          } else if (action === 'deposit') {
+            await marketStallService.deposit(warehouseId, itemCode, quantity);
+            toast(`Đã nạp ${quantity} ${itemCode} vào kho.`);
+          } else {
+            await marketStallService.withdraw(warehouseId, itemCode, quantity);
+            toast(`Đã rút ${quantity} ${itemCode} khỏi kho.`);
+          }
+          await this.refresh();
+          this.render();
+        } catch (error: any) {
+          button.removeAttribute('disabled');
+          toast(error.message || 'Thao tác kho thất bại.', true);
         }
       });
     });

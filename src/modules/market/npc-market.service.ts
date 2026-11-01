@@ -14,7 +14,7 @@ import { ACCOUNT_CODES } from '../../shared/account-codes';
 import { restoreInventoryItem } from '../../shared/inventory-movement';
 import { getMarketItem } from '../../shared/market-price-book';
 import { SettlementMarketService } from '../economy/settlement-market.service';
-import { SETTLEMENT_PROFILES } from '../economy/regional-market.service';
+import { SETTLEMENT_PROFILES, RegionalMarketService } from '../economy/regional-market.service';
 import { LOC_TO_NODE_MAP } from '../ecology-logistics/spatial-registry';
 import { npcAskMultiplier } from './npc-pricing';
 
@@ -49,10 +49,7 @@ export class NpcMarketService {
   }
 
   private marketPrice(settlementId: string, itemCode: string): number {
-    const item = getMarketItem(this.db, itemCode);
-    if (!item) return 0;
-    const local = SettlementMarketService.forDatabase(this.db).getLocalMultiplier(settlementId, itemCode);
-    return Math.max(1, Math.round(item.price * local));
+    return new RegionalMarketService(this.db).calculateSettlementPrice(settlementId, itemCode, this.currentDate());
   }
 
   public listOffers(settlementId: string, gameDate?: string): any[] {
@@ -186,6 +183,22 @@ export class NpcMarketService {
       throw new Error(`Cần ${total} Quan để mua ${qty} ${offer.item_code}.`);
     }
 
+    const warehouse = this.db.queryOne<any>(
+      "SELECT * FROM warehouses WHERE owner_id = ? AND settlement_id = ? LIMIT 1;",
+      [characterId, offer.settlement_id]
+    );
+    const warehouseUsed = warehouse
+      ? Number(this.db.queryOne<{ v: number }>(
+        'SELECT COALESCE(SUM(quantity), 0) AS v FROM warehouse_stock WHERE warehouse_id = ?;',
+        [warehouse.warehouse_id]
+      )?.v || 0)
+      : 0;
+    const usableWarehouse = warehouse
+      && warehouse.status === 'ACTIVE'
+      && (warehouse.ownership_type === 'OWNED' || !warehouse.lease_until || String(warehouse.lease_until) >= date)
+      && warehouseUsed + qty <= Number(warehouse.capacity);
+    const storedIn = usableWarehouse ? 'WAREHOUSE' : 'BAG';
+
     return this.db.transaction(() => {
       const newLiquid = Number(player.liquid_cash || 0) - total;
       this.db.execute('UPDATE player_state SET liquid_cash = ? WHERE player_id = ?;', [newLiquid, characterId]);
@@ -205,14 +218,32 @@ export class NpcMarketService {
         'UPDATE npc_personal_progression SET personal_cash = personal_cash + ? WHERE npc_id = ?;',
         [total, offer.npc_id]
       );
-      restoreInventoryItem(this.db, {
-        itemCode: offer.item_code,
-        quantity: qty,
-        reason: 'NPC_MARKET_BUY',
-        gameDate: date,
-        refTxn: `OFFER-${offerId}`,
-        location: `Kho ${offer.settlement_id}`
-      });
+      if (storedIn === 'WAREHOUSE') {
+        const existingStock = this.db.queryOne<any>(
+          'SELECT quantity FROM warehouse_stock WHERE warehouse_id = ? AND item_code = ? LIMIT 1;',
+          [warehouse.warehouse_id, offer.item_code]
+        );
+        if (existingStock) {
+          this.db.execute(
+            'UPDATE warehouse_stock SET quantity = quantity + ?, updated_at = CURRENT_TIMESTAMP WHERE warehouse_id = ? AND item_code = ?;',
+            [qty, warehouse.warehouse_id, offer.item_code]
+          );
+        } else {
+          this.db.execute(
+            'INSERT INTO warehouse_stock (warehouse_id, item_code, quantity, unit_cost_basis) VALUES (?, ?, ?, ?);',
+            [warehouse.warehouse_id, offer.item_code, qty, Number(offer.unit_price)]
+          );
+        }
+      } else {
+        restoreInventoryItem(this.db, {
+          itemCode: offer.item_code,
+          quantity: qty,
+          reason: 'NPC_MARKET_BUY',
+          gameDate: date,
+          refTxn: `OFFER-${offerId}`,
+          location: `Túi nhân ${offer.settlement_id}`
+        });
+      }
       const remaining = Math.max(0, Number(offer.quantity) - qty);
       this.db.execute(
         "UPDATE npc_market_offers SET quantity = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE offer_id = ?;",
@@ -235,6 +266,7 @@ export class NpcMarketService {
         quantity: qty,
         unitPrice: Number(offer.unit_price),
         totalCash: total,
+        storedIn,
         remainingQuantity: remaining
       };
     });

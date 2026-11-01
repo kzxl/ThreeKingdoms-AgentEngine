@@ -808,6 +808,14 @@ class GameplayManager {
       console.warn('[GameplayManager] bankruptcy check failed:', defeatError.message);
     }
 
+    // Essential goods are consumed before the local market drifts.
+    let essentialConsumption = [];
+    try {
+      essentialConsumption = require('./settlement-market-bridge').consumeEssentials(this.dbPath, prevDate);
+    } catch (consumptionError) {
+      console.warn('[GameplayManager] essential consumption failed:', consumptionError.message);
+    }
+
     // Local stock/demand drifts once per month for the player's settlement.
     try {
       driftPlayerSettlement(this.dbPath, player?.current_location || 'LOC-0001');
@@ -926,6 +934,7 @@ class GameplayManager {
       contracts,
       conditionsRecovered,
       farmLeasesExpired,
+      essentialConsumption,
       aiWar,
       playerStatus,
       playerLocationName: locationRow ? locationRow.name_vi : (playerLoc || ''),

@@ -51,6 +51,19 @@ export interface NpcOffer {
   expiresDate: string;
 }
 
+export interface WarehouseView {
+  warehouseId: string;
+  settlementId: string;
+  nameVi: string;
+  ownershipType: string;
+  capacity: number;
+  usedCapacity: number;
+  rentCash: number;
+  purchasePrice: number;
+  leaseUntil: string | null;
+  status: string;
+}
+
 export class MarketStallService {
   private static instance: MarketStallService;
 
@@ -69,21 +82,56 @@ export class MarketStallService {
     return (res as any).offers || [];
   }
 
+  public async getWarehouses(): Promise<WarehouseView[]> {
+    const res = await apiClient.get('/api/warehouses', { characterId: 'PLY-0001' });
+    return (res as any).warehouses || [];
+  }
+
+  public async rentWarehouse(settlementId?: string): Promise<any> {
+    return apiClient.post('/api/warehouses/rent', { settlementId, idempotencyKey: `warehouse-rent-${Date.now()}` });
+  }
+
+  public async buyWarehouse(settlementId?: string): Promise<any> {
+    return apiClient.post('/api/warehouses/buy', { settlementId, idempotencyKey: `warehouse-buy-${Date.now()}` });
+  }
+
+  public async deposit(warehouseId: string, itemCode: string, quantity: number): Promise<any> {
+    return apiClient.post('/api/warehouses/deposit', {
+      warehouseId, itemCode, quantity, idempotencyKey: `warehouse-deposit-${Date.now()}`
+    });
+  }
+
+  public async withdraw(warehouseId: string, itemCode: string, quantity: number): Promise<any> {
+    return apiClient.post('/api/warehouses/withdraw', {
+      warehouseId, itemCode, quantity, idempotencyKey: `warehouse-withdraw-${Date.now()}`
+    });
+  }
+
   public async openStall(settlementId?: string): Promise<any> {
     return apiClient.post('/api/stall/open', { settlementId, idempotencyKey: `stall-open-${Date.now()}` });
   }
 
-  public async listItem(itemCode: string, quantity: number, unitPrice: number): Promise<any> {
+  public async listItem(
+    itemCode: string,
+    quantity: number,
+    unitPrice: number,
+    source: 'BAG' | 'WAREHOUSE' = 'BAG',
+    warehouseId?: string,
+    stallId?: string
+  ): Promise<any> {
     return apiClient.post('/api/stall/list', {
       itemCode,
       quantity,
       unitPrice,
+      source,
+      warehouseId,
+      stallId,
       idempotencyKey: `stall-list-${itemCode}-${Date.now()}`
     });
   }
 
-  public async closeStall(): Promise<any> {
-    return apiClient.post('/api/stall/close', { idempotencyKey: `stall-close-${Date.now()}` });
+  public async closeStall(stallId?: string): Promise<any> {
+    return apiClient.post('/api/stall/close', { stallId, idempotencyKey: `stall-close-${Date.now()}` });
   }
 
   public async buyOffer(offerId: string, quantity: number): Promise<any> {
@@ -92,6 +140,38 @@ export class MarketStallService {
       quantity,
       idempotencyKey: `offer-buy-${offerId}-${Date.now()}`
     });
+  }
+
+  public async getFreightContracts(settlementId?: string): Promise<any[]> {
+    const res = await apiClient.get('/api/freight/contracts', settlementId ? { settlementId } : undefined);
+    return (res as any).contracts || [];
+  }
+
+  public async getFreightShipments(): Promise<any[]> {
+    const res = await apiClient.get('/api/freight/shipments');
+    return (res as any).shipments || [];
+  }
+
+  public async acceptFreight(contractId: string, guardTier = 'VETERAN'): Promise<any> {
+    return apiClient.post('/api/freight/accept', {
+      contractId, guardTier, idempotencyKey: `freight-accept-${contractId}-${Date.now()}`
+    });
+  }
+
+  public async deliverFreight(shipmentId: string): Promise<any> {
+    return apiClient.post('/api/freight/deliver', {
+      shipmentId, idempotencyKey: `freight-deliver-${shipmentId}-${Date.now()}`
+    });
+  }
+
+  public async getMerchantRoutes(): Promise<any[]> {
+    const res = await apiClient.get('/api/merchant/routes');
+    return (res as any).routes || [];
+  }
+
+  public async getMerchantEvents(): Promise<any[]> {
+    const res = await apiClient.get('/api/merchant/events');
+    return (res as any).events || [];
   }
 }
 

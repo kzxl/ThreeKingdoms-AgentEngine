@@ -129,6 +129,14 @@ async function run(): Promise<void> {
   ).all() as any[];
   assert(stocks.length > 0, 'procurement or destination stock must exist');
 
+  // Same campaign day must be a no-op on replay.
+  const { MerchantCompanyService } = require('../src/modules/market/merchant-company.service');
+  const company = MerchantCompanyService.forDatabase(DatabaseService.getInstance(TEST_DB));
+  const eventCount = num(raw, 'SELECT COUNT(*) FROM merchant_events;');
+  const replay = company.advanceByDays(1, '185-06-06');
+  assert.strictEqual(replay.daysProcessed, 0, 'same-day merchant tick must be idempotent');
+  assert.strictEqual(num(raw, 'SELECT COUNT(*) FROM merchant_events;'), eventCount);
+
   const toggled = await request(router, 'POST', `/api/merchant/routes/${routeId}/status`, {
     status: 'PAUSED',
     idempotencyKey: 'TEST-MERCHANT-PAUSE'

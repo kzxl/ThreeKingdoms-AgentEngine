@@ -23,8 +23,8 @@ export function computeSpoilage(
   quantity: number,
   travelDays: number
 ): SpoilageResult {
-  const item = db.queryOne<{ spoil_rate_per_day: number; shelf_life_days: number }>(
-    'SELECT spoil_rate_per_day, shelf_life_days FROM master_items WHERE item_code = ? LIMIT 1;',
+  const item = db.queryOne<{ spoil_rate_per_day: number; shelf_life_days: number; preserve_skill_code: string | null; preserve_min_tier: number }>(
+    'SELECT spoil_rate_per_day, shelf_life_days, preserve_skill_code, preserve_min_tier FROM master_items WHERE item_code = ? LIMIT 1;',
     [itemCode]
   );
   const rate = Number(item?.spoil_rate_per_day || 0);
@@ -42,6 +42,22 @@ export function computeSpoilage(
   } catch {
     reductionPct = 0;
   }
+
+  // Item-specific cargo skill: fresh fish with the boat skill, game with skinning.
+  if (item?.preserve_skill_code) {
+    try {
+      const tier = Number(db.queryOne<{ tier: number }>(
+        'SELECT tier FROM player_skills WHERE skill_code = ? LIMIT 1;',
+        [item.preserve_skill_code]
+      )?.tier || 0);
+      if (tier >= Number(item.preserve_min_tier || 0)) {
+        reductionPct += 15;
+      }
+    } catch {
+      // Missing skill table keeps only the global cold-chain reduction.
+    }
+  }
+  reductionPct = Math.max(0, Math.min(80, reductionPct));
 
   const effectiveRate = rate * (1 - reductionPct / 100);
   const lost = Math.min(

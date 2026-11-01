@@ -148,11 +148,29 @@ async function run(): Promise<void> {
   assert.strictEqual(replay.data.idempotent, true);
   assert.strictEqual(Number(scalar(raw, "SELECT liquid_cash FROM player_state WHERE player_id = 'PLY-0001';").liquid_cash), playerCashBefore - offer.unitPrice);
 
-  // 5. Closing returns unsold stock.
-  const close = await request(router, 'POST', '/api/stall/close', { idempotencyKey: 'TEST-STALL-CLOSE' });
+  // 5. Two open stalls require an explicit stallId/settlementId.
+  const secondStall = await request(router, 'POST', '/api/stall/open', {
+    settlementId: 'luo_yang',
+    idempotencyKey: 'TEST-STALL-OPEN-SECOND'
+  });
+  assert.strictEqual(secondStall.status, 200, JSON.stringify(secondStall.data));
+  const ambiguous = await request(router, 'POST', '/api/stall/list', {
+    itemCode: 'COM-GRAIN',
+    quantity: 1,
+    unitPrice: 10,
+    idempotencyKey: 'TEST-STALL-AMBIGUOUS'
+  });
+  assert.strictEqual(ambiguous.status, 400);
+  assert(/nhiều quầy/i.test(ambiguous.data.error));
+
+  // 6. Closing returns unsold stock.
+  const close = await request(router, 'POST', '/api/stall/close', {
+    stallId: open.data.stall.stallId,
+    idempotencyKey: 'TEST-STALL-CLOSE'
+  });
   assert.strictEqual(close.status, 200, JSON.stringify(close.data));
   assert.strictEqual(close.data.result.closed, true);
-  assert.strictEqual(scalar(raw, "SELECT status FROM player_stalls WHERE owner_id = 'PLY-0001';").status, 'CLOSED');
+  assert.strictEqual(scalar(raw, "SELECT status FROM player_stalls WHERE stall_id = ?;", [open.data.stall.stallId]).status, 'CLOSED');
 
   raw.close();
   DatabaseService.resetInstance();

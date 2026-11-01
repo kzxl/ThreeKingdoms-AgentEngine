@@ -81,7 +81,26 @@ const HISTORY_TABLES = [
   'merchant_promissory_notes',
   'emergent_innovations',
   'faction_political_events',
-  'world_turn_ledger'
+  'world_turn_ledger',
+  'player_life_state',
+  'gathering_node_state',
+  'character_tool_uses',
+  'warehouses',
+  'warehouse_stock',
+  'player_stalls',
+  'stall_listings',
+  'stall_sales',
+  'npc_market_offers',
+  'npc_market_sales',
+  'npc_trade_preferences',
+  'freight_contracts',
+  'freight_shipments',
+  'merchant_routes',
+  'merchant_shipments',
+  'merchant_events',
+  'merchant_day_ledger',
+  'merchant_route_stock',
+  'settlement_consumption_log'
 ];
 
 const START_DATE = '184-05-02';

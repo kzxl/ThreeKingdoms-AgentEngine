@@ -167,6 +167,7 @@ export class ProfessionsModule implements IFeatureModule {
         maxStock: stock?.maxStock ?? null,
         skillCode: row.rule_skill_code || null,
         requiredToolCode: row.rule_tool_code || null,
+        alternateToolCode: row.rule_alt_tool_code || null,
         minSkillTier: Number(row.min_skill_tier || 0),
         restoreItemCode: rule?.restoreItemCode || null,
         restoreCash: rule?.restoreCash || 0,
@@ -312,7 +313,15 @@ export class ProfessionsModule implements IFeatureModule {
 
     // Tools are not consumed by the check; the successful gather consumes one
     // use (nets/traps are consumed, axes/picks/hoes/bows wear down).
-    const toolStatus = resources.toolStatus(characterId, rule?.requiredToolCode || null);
+    let chosenTool = rule?.requiredToolCode || null;
+    let toolStatus = chosenTool ? resources.toolStatus(characterId, chosenTool) : null;
+    if (chosenTool && toolStatus && !toolStatus.available && rule?.alternateToolCode) {
+      const alternate = resources.toolStatus(characterId, rule.alternateToolCode);
+      if (alternate?.available) {
+        chosenTool = rule.alternateToolCode;
+        toolStatus = alternate;
+      }
+    }
     const hasRequiredTool = toolStatus ? toolStatus.available : true;
     const toolMultiplier = hasRequiredTool ? 1 : 0.7;
 
@@ -407,8 +416,8 @@ export class ProfessionsModule implements IFeatureModule {
       }
 
       // 0b. A successful gather consumes one tool use.
-      if (rule?.requiredToolCode && hasRequiredTool) {
-        toolUse = resources.consumeTool(characterId, rule.requiredToolCode, gameDate);
+      if (chosenTool && hasRequiredTool) {
+        toolUse = resources.consumeTool(characterId, chosenTool, gameDate);
       }
 
       // 1. Physically deposit into inventory_items (Safe conservation)
@@ -514,7 +523,7 @@ export class ProfessionsModule implements IFeatureModule {
       professionBonus: Number(professionBonus.toFixed(2)),
       skillBonus: Number(skillBonus.toFixed(2)),
       toolMultiplier,
-      toolCode: rule?.requiredToolCode || null,
+      toolCode: chosenTool,
       toolMissing: !hasRequiredTool,
       toolKind: toolStatus?.kind || null,
       toolUsesLeft: toolUse?.usesLeft ?? toolStatus?.usesLeft ?? null,

@@ -85,7 +85,9 @@ export function registerMarketStallRoutes(router: Router): void {
         unitPrice,
         currentDate(db),
         body.source === 'WAREHOUSE' ? 'WAREHOUSE' : 'BAG',
-        body.warehouseId ? String(body.warehouseId) : undefined
+        body.warehouseId ? String(body.warehouseId) : undefined,
+        body.stallId ? String(body.stallId) : undefined,
+        body.settlementId ? String(body.settlementId) : undefined
       );
       const response = { stall: result, time };
       recordAction(db, {
@@ -111,7 +113,12 @@ export function registerMarketStallRoutes(router: Router): void {
         return;
       }
       const time = chargePlayerAction(db.path, 'ADMIN_ACTION', null, 'Close market stall');
-      const result = stallService.closeStall(characterId, currentDate(db));
+      const result = stallService.closeStall(
+        characterId,
+        currentDate(db),
+        body.stallId ? String(body.stallId) : undefined,
+        body.settlementId ? String(body.settlementId) : undefined
+      );
       const response = { result, time };
       recordAction(db, { key: idempotencyKey, actionType: 'STALL_CLOSE', payload: { characterId }, result: response });
       sendJson(res, 200, { success: true, ...response, idempotent: false });

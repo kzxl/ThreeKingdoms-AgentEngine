@@ -14,7 +14,7 @@ import { postDoubleEntry } from '../../shared/ledger';
 import { ACCOUNT_CODES } from '../../shared/account-codes';
 import { consumeInventoryItem, restoreInventoryItem } from '../../shared/inventory-movement';
 import { getMarketItem } from '../../shared/market-price-book';
-import { SettlementMarketService } from '../economy/settlement-market.service';
+import { RegionalMarketService } from '../economy/regional-market.service';
 import { LOC_TO_NODE_MAP } from '../ecology-logistics/spatial-registry';
 import { npcBidMultiplier } from './npc-pricing';
 
@@ -69,10 +69,7 @@ export class StallService {
   }
 
   private marketPrice(settlementId: string, itemCode: string): number {
-    const item = getMarketItem(this.db, itemCode);
-    if (!item) return 0;
-    const local = SettlementMarketService.forDatabase(this.db).getLocalMultiplier(settlementId, itemCode);
-    return Math.max(1, Math.round(item.price * local));
+    return new RegionalMarketService(this.db).calculateSettlementPrice(settlementId, itemCode, this.currentDate());
   }
 
   public getStall(characterId = 'PLY-0001'): any {
@@ -170,6 +167,34 @@ export class StallService {
     });
   }
 
+  private findOpenStall(characterId: string, stallId?: string, settlementId?: string): any {
+    if (stallId) {
+      const row = this.db.queryOne<any>(
+        "SELECT * FROM player_stalls WHERE stall_id = ? AND owner_id = ? AND status = 'OPEN' LIMIT 1;",
+        [stallId, characterId]
+      );
+      if (!row) throw new Error('Quầy không tồn tại hoặc đã đóng.');
+      return row;
+    }
+    if (settlementId) {
+      const row = this.db.queryOne<any>(
+        "SELECT * FROM player_stalls WHERE owner_id = ? AND settlement_id = ? AND status = 'OPEN' LIMIT 1;",
+        [characterId, settlementId]
+      );
+      if (!row) throw new Error(`Không có quầy mở tại ${settlementId}.`);
+      return row;
+    }
+    const rows = this.db.query<any>(
+      "SELECT * FROM player_stalls WHERE owner_id = ? AND status = 'OPEN' ORDER BY created_date DESC;",
+      [characterId]
+    );
+    if (rows.length === 0) throw new Error('Hãy mở quầy trước khi niêm yết hàng.');
+    if (rows.length > 1) {
+      throw new Error('Bạn có nhiều quầy đang mở; hãy truyền stallId hoặc settlementId.');
+    }
+    return rows[0];
+  }
+
   public listItem(
     characterId: string,
     itemCode: string,
@@ -177,13 +202,11 @@ export class StallService {
     unitPrice: number,
     gameDate: string,
     source: 'BAG' | 'WAREHOUSE' = 'BAG',
-    warehouseId?: string
+    warehouseId?: string,
+    stallId?: string,
+    settlementId?: string
   ): any {
-    const stall = this.db.queryOne<any>(
-      "SELECT * FROM player_stalls WHERE owner_id = ? AND status = 'OPEN' LIMIT 1;",
-      [characterId]
-    );
-    if (!stall) throw new Error('Hãy mở quầy trước khi niêm yết hàng.');
+    const stall = this.findOpenStall(characterId, stallId, settlementId);
     const qty = Math.max(0.1, Number(quantity) || 0);
     const price = Math.max(1, Math.round(Number(unitPrice) || 0));
     const item = getMarketItem(this.db, itemCode);
@@ -251,12 +274,14 @@ export class StallService {
     });
   }
 
-  public closeStall(characterId: string, gameDate: string): any {
-    const stall = this.db.queryOne<any>(
-      "SELECT * FROM player_stalls WHERE owner_id = ? AND status = 'OPEN' LIMIT 1;",
-      [characterId]
-    );
-    if (!stall) return { closed: false, returned: [] };
+  public closeStall(characterId: string, gameDate: string, stallId?: string, settlementId?: string): any {
+    let stall: any;
+    try {
+      stall = this.findOpenStall(characterId, stallId, settlementId);
+    } catch (error: any) {
+      if (/Hãy mở quầy/.test(error.message)) return { closed: false, returned: [] };
+      throw error;
+    }
     return this.db.transaction(() => {
       const rows = this.db.query<any>(
         'SELECT * FROM stall_listings WHERE stall_id = ? AND quantity > 0;',
@@ -401,7 +426,6 @@ export class StallService {
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);`,
             [saleId, stall.stall_id, buyer.npc_id, buyerName, listing.item_code, want, price, total, gameDate]
           );
-          SettlementMarketService.forDatabase(this.db).applyTrade(stall.settlement_id, listing.item_code, want);
         });
 
         used.add(buyer.npc_id);

@@ -683,6 +683,123 @@ function auditCampaignClock() {
   };
 }
 
+function auditTradeAndWarehouses() {
+  const errors = [];
+  let checksCount = 0;
+  const tables = new Set(
+    runSqlJson(`SELECT name FROM sqlite_master WHERE type = 'table';`).map(row => row.name)
+  );
+  if (!tables.has('warehouses') || !tables.has('warehouse_stock')) {
+    return { installed: false, passed: true, checksCount: 0, errors, warehouseCount: 0, listingCount: 0, shipmentCount: 0 };
+  }
+
+  const warehouses = runSqlJson(`SELECT * FROM warehouses;`);
+  const stockRows = runSqlJson(`SELECT * FROM warehouse_stock;`);
+  const usage = new Map();
+  for (const row of stockRows) {
+    checksCount++;
+    const qty = Number(row.quantity || 0);
+    if (qty < 0) errors.push(`Warehouse ${row.warehouse_id} item ${row.item_code} has negative stock: ${qty}`);
+    usage.set(row.warehouse_id, (usage.get(row.warehouse_id) || 0) + qty);
+  }
+  for (const warehouse of warehouses) {
+    checksCount++;
+    const capacity = Number(warehouse.capacity || 0);
+    const used = usage.get(warehouse.warehouse_id) || 0;
+    if (capacity <= 0) errors.push(`Warehouse ${warehouse.warehouse_id} has non-positive capacity`);
+    if (used > capacity + 0.01) {
+      errors.push(`Warehouse ${warehouse.warehouse_id} over capacity: used=${used}, capacity=${capacity}`);
+    }
+    if (!['RENTED', 'OWNED'].includes(String(warehouse.ownership_type))) {
+      errors.push(`Warehouse ${warehouse.warehouse_id} has invalid ownership type ${warehouse.ownership_type}`);
+    }
+  }
+
+  if (tables.has('stall_listings')) {
+    for (const row of runSqlJson(`SELECT * FROM stall_listings;`)) {
+      checksCount++;
+      if (Number(row.quantity || 0) < 0) errors.push(`Stall listing ${row.listing_id} has negative quantity`);
+      if (Number(row.unit_price || 0) <= 0) errors.push(`Stall listing ${row.listing_id} has non-positive price`);
+    }
+  }
+  if (tables.has('npc_market_offers')) {
+    for (const row of runSqlJson(`SELECT * FROM npc_market_offers;`)) {
+      checksCount++;
+      if (Number(row.quantity || 0) < 0) errors.push(`NPC offer ${row.offer_id} has negative quantity`);
+      if (Number(row.unit_price || 0) <= 0) errors.push(`NPC offer ${row.offer_id} has non-positive price`);
+    }
+  }
+  for (const table of ['freight_shipments', 'merchant_shipments']) {
+    if (!tables.has(table)) continue;
+    for (const row of runSqlJson(`SELECT * FROM ${table};`)) {
+      checksCount++;
+      const quantity = Number(row.quantity || 0);
+      const initial = Number(row.initial_quantity || quantity);
+      const spoiled = Number(row.spoiled_quantity || 0);
+      if (quantity < 0) errors.push(`${table} ${row.shipment_id} has negative quantity`);
+      if (spoiled < 0) errors.push(`${table} shipment has negative spoiled quantity`);
+      if (initial + 0.01 < quantity) errors.push(`${table} shipment delivered ${quantity} above initial ${initial}`);
+    }
+  }
+  if (tables.has('merchant_routes')) {
+    for (const row of runSqlJson(`SELECT * FROM merchant_routes;`)) {
+      checksCount++;
+      if (Number(row.max_buy_price) >= Number(row.min_sell_price)) {
+        errors.push(`Merchant route ${row.route_id} has buy ceiling >= sell floor`);
+      }
+    }
+  }
+  if (tables.has('merchant_route_stock')) {
+    const warehouseMap = new Map(
+      runSqlJson('SELECT warehouse_id, item_code, quantity FROM warehouse_stock;')
+        .map(row => [`${row.warehouse_id}:${row.item_code}`, Number(row.quantity || 0)])
+    );
+    for (const row of runSqlJson(`SELECT * FROM merchant_route_stock;`)) {
+      checksCount++;
+      const qty = Number(row.quantity || 0);
+      const available = warehouseMap.get(`${row.warehouse_id}:${row.item_code}`) || 0;
+      if (qty < 0) errors.push(`Route stock ${row.route_id}/${row.item_code} is negative`);
+      if (qty > available + 0.01) {
+        errors.push(`Route stock ${row.route_id}/${row.item_code} exceeds warehouse stock`);
+      }
+    }
+  }
+  if (tables.has('settlement_consumption')) {
+    for (const row of runSqlJson(`SELECT * FROM settlement_consumption;`)) {
+      checksCount++;
+      if (Number(row.monthly_demand || 0) < 0) errors.push(`Consumption demand for ${row.item_code} is negative`);
+    }
+  }
+  if (tables.has('settlement_item_endowment')) {
+    for (const row of runSqlJson(`SELECT * FROM settlement_item_endowment;`)) {
+      checksCount++;
+      if (Number(row.supply_score || 0) < 0 || Number(row.demand_score || 0) < 0) {
+        errors.push(`Endowment for ${row.settlement_id}/${row.item_code} is negative`);
+      }
+    }
+  }
+  if (tables.has('settlement_consumption_log')) {
+    for (const row of runSqlJson(`SELECT * FROM settlement_consumption_log;`)) {
+      checksCount++;
+      if (Number(row.consumed || 0) > Number(row.demand || 0) + 0.01) {
+        errors.push(`Consumption log ${row.log_id} consumed more than demand`);
+      }
+      if (Number(row.shortage || 0) < 0) errors.push(`Consumption log ${row.log_id} has negative shortage`);
+    }
+  }
+
+  return {
+    installed: true,
+    passed: errors.length === 0,
+    checksCount,
+    errors,
+    warehouseCount: warehouses.length,
+    listingCount: tables.has('stall_listings') ? runSqlJson(`SELECT COUNT(*) AS c FROM stall_listings;`)[0].c : 0,
+    shipmentCount: (tables.has('freight_shipments') ? runSqlJson(`SELECT COUNT(*) AS c FROM freight_shipments;`)[0].c : 0)
+      + (tables.has('merchant_shipments') ? runSqlJson(`SELECT COUNT(*) AS c FROM merchant_shipments;`)[0].c : 0)
+  };
+}
+
 function runAudit() {
   console.log('====================================================');
   console.log(' ⚡ ThreeKingdoms-AgentEngine: Invariant & State Auditor');
@@ -817,6 +934,22 @@ function runAudit() {
       console.log(`    ✅ Passed: Game date is plausible and aligned with turn history.`);
     }
 
+    // 9. Trade, Warehouse & Shipment Audit
+    const tradeResult = auditTradeAndWarehouses();
+    totalChecks += tradeResult.checksCount;
+    if (tradeResult.installed) {
+      console.log(`\n[${journalResult.installed ? 9 : 8}] TRADE, WAREHOUSE & SHIPMENT INVARIANTS:`);
+      console.log(`    Warehouses Checked    : ${tradeResult.warehouseCount}`);
+      console.log(`    Stall Listings        : ${tradeResult.listingCount}`);
+      console.log(`    Shipments Checked     : ${tradeResult.shipmentCount}`);
+      if (!tradeResult.passed) {
+        allPassed = false;
+        tradeResult.errors.forEach(e => { console.error(`    ❌ ${e}`); allErrors.push(e); });
+      } else {
+        console.log(`    ✅ Passed: Capacity, non-negative stock, offers and shipment loss are bounded.`);
+      }
+    }
+
     console.log('\n====================================================');
     if (allPassed) {
       console.log(` 🟢 AUDIT VERDICT: PASSED`);
@@ -850,5 +983,6 @@ module.exports = {
   auditSqliteFactionsAndSettlements,
   auditCivilianMaidensAndLifeSim,
   auditCampaignClock,
+  auditTradeAndWarehouses,
   runAudit
 };

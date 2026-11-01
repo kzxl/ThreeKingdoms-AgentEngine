@@ -19,6 +19,7 @@ export interface ResourceRule {
   resourceType: string;
   skillCode: string;
   requiredToolCode: string | null;
+  alternateToolCode: string | null;
   maxStock: number;
   respawnPerDay: number;
   minSkillTier: number;
@@ -99,6 +100,7 @@ export class ResourceNodeService {
       resourceType: row.resource_type,
       skillCode: row.skill_code,
       requiredToolCode: row.required_tool_code || null,
+      alternateToolCode: row.alternate_tool_code || null,
       maxStock: Number(row.max_stock || 50),
       respawnPerDay: Number(row.respawn_per_day || 2),
       minSkillTier: Number(row.min_skill_tier || 0),
@@ -521,6 +523,7 @@ export class ResourceNodeService {
     const rows = settlementId
       ? this.db.query<any>(
         `SELECT g.*, r.skill_code AS rule_skill_code, r.required_tool_code AS rule_tool_code,
+                r.alternate_tool_code AS rule_alt_tool_code,
                 r.max_stock, r.respawn_per_day, r.min_skill_tier, s.stock
          FROM gathering_nodes g
          LEFT JOIN resource_node_rules r ON r.resource_type = g.resource_type
@@ -531,6 +534,7 @@ export class ResourceNodeService {
       )
       : this.db.query<any>(
         `SELECT g.*, r.skill_code AS rule_skill_code, r.required_tool_code AS rule_tool_code,
+                r.alternate_tool_code AS rule_alt_tool_code,
                 r.max_stock, r.respawn_per_day, r.min_skill_tier, s.stock
          FROM gathering_nodes g
          LEFT JOIN resource_node_rules r ON r.resource_type = g.resource_type

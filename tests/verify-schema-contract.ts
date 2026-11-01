@@ -53,7 +53,12 @@ const REQUIRED_TABLES = [
   'freight_shipments',
   'merchant_routes',
   'merchant_shipments',
-  'merchant_events'
+  'merchant_events',
+  'merchant_day_ledger',
+  'merchant_route_stock',
+  'settlement_item_endowment',
+  'settlement_consumption',
+  'settlement_consumption_log'
 ];
 
 const REQUIRED_COLUMNS: Record<string, string[]> = {
@@ -62,12 +67,13 @@ const REQUIRED_COLUMNS: Record<string, string[]> = {
   player_life_state: ['stress', 'last_meal_date', 'last_rest_date', 'last_upkeep_month', 'routine_streak'],
   master_crops: ['skill_code', 'rotation_group', 'soil_impact'],
   land_parcels: ['last_crop_code'],
-  resource_node_rules: ['restore_item_code', 'restore_cash', 'restore_stock', 'restore_skill_code'],
+  resource_node_rules: ['restore_item_code', 'restore_cash', 'restore_stock', 'restore_skill_code', 'alternate_tool_code'],
   tool_rules: ['repair_cash', 'repair_skill_code', 'repair_min_tier'],
   stall_listings: ['source_type', 'warehouse_id'],
-  master_items: ['shelf_life_days', 'spoil_rate_per_day', 'preserve_skill_code'],
+  master_items: ['shelf_life_days', 'spoil_rate_per_day', 'preserve_skill_code', 'preserve_min_tier'],
   freight_shipments: ['initial_quantity', 'total_days', 'spoiled_quantity'],
-  merchant_shipments: ['initial_quantity', 'total_days', 'spoiled_quantity']
+  merchant_shipments: ['initial_quantity', 'total_days', 'spoiled_quantity'],
+  merchant_route_stock: ['route_id', 'warehouse_id', 'item_code', 'quantity']
 };
 
 function buildFresh(): Database.Database {

@@ -17,6 +17,7 @@ import { quickTradeModal } from './trade-quick';
 import { tacticalBattleModal } from './tactical-battle';
 import { transitTurnModals } from './transit-turn';
 import { questModal } from './quests/quest.modal';
+import { marketStallModal } from './market-stall';
 import { worldMapModal } from './world-map';
 import { mapLiveService } from './world-map/map-live.service';
 
@@ -101,6 +102,11 @@ export function setupLegacyBridge(): void {
     close: () => quickTradeModal.close(),
     updateTotal: () => quickTradeModal.updateTotal(),
     submit: () => quickTradeModal.submit()
+  };
+
+  w.MarketStallModal = {
+    open: (tab = 'stall') => marketStallModal.open(tab),
+    close: () => marketStallModal.close()
   };
 
   // 11. Tactical Battle & Combat
