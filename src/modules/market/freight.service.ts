@@ -157,7 +157,31 @@ export class FreightService {
     const rng = RngService.forDomain(this.db, 'freight-contract');
     let created = 0;
     let issuerCash = Number(issuer.personal_cash);
+
+    // Essential-consumption demand comes first: a fishing town needs fish even
+    // when fish is not in its static deficit list. Structural deficits follow.
+    const demandRows = this.db.query<{ item_code: string; monthly_demand: number }>(
+      `SELECT item_code, monthly_demand
+       FROM settlement_consumption
+       WHERE settlement_id = ? AND monthly_demand > 0
+       ORDER BY monthly_demand DESC, item_code ASC
+       LIMIT 8;`,
+      [settlementId]
+    );
+    const candidates: string[] = [];
+    const seen = new Set<string>();
+    for (const row of demandRows) {
+      if (seen.has(row.item_code)) continue;
+      seen.add(row.item_code);
+      candidates.push(row.item_code);
+    }
     for (const itemCode of destination.specialization.deficitItems) {
+      if (seen.has(itemCode)) continue;
+      seen.add(itemCode);
+      candidates.push(itemCode);
+    }
+
+    for (const itemCode of candidates) {
       if (created >= 3 - active) break;
       const duplicate = this.db.queryOne(
         "SELECT 1 AS ok FROM freight_contracts WHERE to_settlement_id = ? AND item_code = ? AND status IN ('OPEN','ACCEPTED') LIMIT 1;",
@@ -165,18 +189,13 @@ export class FreightService {
       );
       if (duplicate) continue;
 
-      const source = Object.values(SETTLEMENT_PROFILES).find(profile =>
-        profile.settlementId !== settlementId
-        && profile.specialization.surplusItems.includes(itemCode)
-      );
-      if (!source) continue;
       const item = getMarketItem(this.db, itemCode);
       if (!item) continue;
+      const quantity = 5 + Math.floor(rng.nextFloat() * 8);
+      const source = this.findFreightSource(itemCode, settlementId, quantity, market);
+      if (!source) continue;
 
       const distance = calculateDistanceLi(source.settlementId, settlementId);
-      const quantity = 5 + Math.floor(rng.nextFloat() * 8);
-      const sourceStock = market.getState(source.settlementId, itemCode).stock;
-      if (sourceStock < quantity) continue;
       const destPrice = regional.calculateSettlementPrice(settlementId, itemCode) || item.price;
       const reward = Math.max(
         20,
@@ -208,6 +227,51 @@ export class FreightService {
       created += 1;
     }
     return created;
+  }
+
+  /**
+   * Finds a settlement with enough stock for the contract. A declared surplus
+   * wins; otherwise the highest local stock (or endowment supply) can supply it.
+   */
+  private findFreightSource(
+    itemCode: string,
+    destinationId: string,
+    quantity: number,
+    market: SettlementMarketService
+  ): { settlementId: string; stock: number } | null {
+    const surplus = Object.values(SETTLEMENT_PROFILES).find(profile =>
+      profile.settlementId !== destinationId
+      && profile.specialization.surplusItems.includes(itemCode)
+    );
+    if (surplus) {
+      const stock = Number(market.getState(surplus.settlementId, itemCode).stock);
+      if (stock >= quantity) return { settlementId: surplus.settlementId, stock };
+    }
+
+    const rows = this.db.query<{ settlement_id: string; stock: number }>(
+      `SELECT settlement_id, stock
+       FROM settlement_market_state
+       WHERE item_code = ? AND settlement_id <> ? AND stock >= ?
+       ORDER BY stock DESC
+       LIMIT 5;`,
+      [itemCode, destinationId, quantity]
+    );
+    for (const row of rows) {
+      if (!SETTLEMENT_PROFILES[row.settlement_id]) continue;
+      return { settlementId: row.settlement_id, stock: Number(row.stock) };
+    }
+
+    const endowment = this.db.queryOne<{ settlement_id: string; supply_score: number }>(
+      `SELECT settlement_id, supply_score
+       FROM settlement_item_endowment
+       WHERE item_code = ? AND settlement_id <> ? AND supply_score > 0
+       ORDER BY supply_score DESC
+       LIMIT 1;`,
+      [itemCode, destinationId]
+    );
+    if (!endowment || !SETTLEMENT_PROFILES[endowment.settlement_id]) return null;
+    const stock = Number(market.getState(endowment.settlement_id, itemCode).stock);
+    return stock >= quantity ? { settlementId: endowment.settlement_id, stock } : null;
   }
 
   public accept(ownerId: string, contractId: string, guardTier: string, gameDate: string): any {
