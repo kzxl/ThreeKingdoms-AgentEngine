@@ -46,7 +46,14 @@ const REQUIRED_TABLES = [
   'stall_sales',
   'npc_market_offers',
   'npc_market_sales',
-  'npc_trade_preferences'
+  'npc_trade_preferences',
+  'warehouses',
+  'warehouse_stock',
+  'freight_contracts',
+  'freight_shipments',
+  'merchant_routes',
+  'merchant_shipments',
+  'merchant_events'
 ];
 
 const REQUIRED_COLUMNS: Record<string, string[]> = {
@@ -56,13 +63,18 @@ const REQUIRED_COLUMNS: Record<string, string[]> = {
   master_crops: ['skill_code', 'rotation_group', 'soil_impact'],
   land_parcels: ['last_crop_code'],
   resource_node_rules: ['restore_item_code', 'restore_cash', 'restore_stock', 'restore_skill_code'],
-  tool_rules: ['repair_cash', 'repair_skill_code', 'repair_min_tier']
+  tool_rules: ['repair_cash', 'repair_skill_code', 'repair_min_tier'],
+  stall_listings: ['source_type', 'warehouse_id'],
+  master_items: ['shelf_life_days', 'spoil_rate_per_day', 'preserve_skill_code'],
+  freight_shipments: ['initial_quantity', 'total_days', 'spoiled_quantity'],
+  merchant_shipments: ['initial_quantity', 'total_days', 'spoiled_quantity']
 };
 
 function buildFresh(): Database.Database {
   const db = new Database(TEST_DB);
   db.pragma('journal_mode = DELETE');
   db.exec(fs.readFileSync(path.join(ROOT, 'tools', 'schema.sql'), 'utf8'));
+  db.exec(fs.readFileSync(path.join(ROOT, 'tools', 'schema-master.sql'), 'utf8'));
   const migrationsDir = path.join(ROOT, 'tools', 'migrations');
   for (const file of fs.readdirSync(migrationsDir).filter(name => /^\d{3}-.+\.js$/.test(name)).sort()) {
     // eslint-disable-next-line @typescript-eslint/no-var-requires

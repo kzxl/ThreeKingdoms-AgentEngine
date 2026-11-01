@@ -33,6 +33,9 @@ import { ContextActionEngine } from '../modules/contextual-actions/context-actio
 import { registerFactionReadRoutes } from '../modules/faction-politics/faction.controller';
 import { registerLifeRoutes } from '../modules/life/life.controller';
 import { registerMarketStallRoutes } from '../modules/market/market-stall.controller';
+import { registerFreightRoutes } from '../modules/market/freight.controller';
+import { registerMerchantCompanyRoutes } from '../modules/market/merchant-company.controller';
+import { registerWarehouseRoutes } from '../modules/market/warehouse.controller';
 import { CaravanLogisticsService } from '../modules/ecology-logistics/caravan-logistics.service';
 
 // Resolve database path
@@ -100,6 +103,9 @@ export function createGrandStrategyRouter(): Router {
   registerFactionReadRoutes(router);
   registerLifeRoutes(router);
   registerMarketStallRoutes(router);
+  registerWarehouseRoutes(router);
+  registerFreightRoutes(router);
+  registerMerchantCompanyRoutes(router);
   return router;
 }
 

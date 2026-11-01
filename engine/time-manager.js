@@ -251,6 +251,26 @@ function advanceCampaignDays(dbPath, rawDays, options = {}) {
     }
   }
 
+  let freightResult = null;
+  if (advancedDays > 0) {
+    try {
+      const { advanceByDays: advanceFreightByDays } = require('./freight-bridge');
+      freightResult = advanceFreightByDays(dbPath, advancedDays, nextDate);
+    } catch (error) {
+      freightResult = { advanced: 0, arrived: [], error: error.message };
+    }
+  }
+
+  let merchantResult = null;
+  if (advancedDays > 0) {
+    try {
+      const { advanceByDays: advanceMerchantsByDays } = require('./merchant-bridge');
+      merchantResult = advanceMerchantsByDays(dbPath, advancedDays, nextDate);
+    } catch (error) {
+      merchantResult = { routes: 0, events: 0, error: error.message };
+    }
+  }
+
   const tasks = advancedDays > 0 ? progressTasks(dbPath, advancedDays, nextDate) : [];
 
   // Publish after the write so subscribers observe the new calendar day.
@@ -276,6 +296,8 @@ function advanceCampaignDays(dbPath, rawDays, options = {}) {
     expeditions: expeditionResult,
     sieges: siegeResult,
     stalls: stallResult,
+    freight: freightResult,
+    merchants: merchantResult,
     activeTasks: tasks.filter(task => task.status === 'IN_PROGRESS')
   };
 }

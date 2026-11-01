@@ -78,7 +78,15 @@ export function registerMarketStallRoutes(router: Router): void {
         return;
       }
       const time = chargePlayerAction(db.path, 'ADMIN_ACTION', null, `List ${itemCode} at stall`);
-      const result = stallService.listItem(characterId, itemCode, quantity, unitPrice, currentDate(db));
+      const result = stallService.listItem(
+        characterId,
+        itemCode,
+        quantity,
+        unitPrice,
+        currentDate(db),
+        body.source === 'WAREHOUSE' ? 'WAREHOUSE' : 'BAG',
+        body.warehouseId ? String(body.warehouseId) : undefined
+      );
       const response = { stall: result, time };
       recordAction(db, {
         key: idempotencyKey,

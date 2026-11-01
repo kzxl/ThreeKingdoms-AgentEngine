@@ -95,7 +95,9 @@ export class StallService {
       quantity: Number(row.quantity),
       unitPrice: Number(row.unit_price),
       marketPrice: this.marketPrice(stall.settlement_id, row.item_code),
-      status: row.status
+      status: row.status,
+      sourceType: row.source_type || 'BAG',
+      warehouseId: row.warehouse_id || null
     }));
     const sales = this.db.query<any>(
       'SELECT * FROM stall_sales WHERE stall_id = ? ORDER BY rowid DESC LIMIT 12;',
@@ -168,7 +170,15 @@ export class StallService {
     });
   }
 
-  public listItem(characterId: string, itemCode: string, quantity: number, unitPrice: number, gameDate: string): any {
+  public listItem(
+    characterId: string,
+    itemCode: string,
+    quantity: number,
+    unitPrice: number,
+    gameDate: string,
+    source: 'BAG' | 'WAREHOUSE' = 'BAG',
+    warehouseId?: string
+  ): any {
     const stall = this.db.queryOne<any>(
       "SELECT * FROM player_stalls WHERE owner_id = ? AND status = 'OPEN' LIMIT 1;",
       [characterId]
@@ -178,19 +188,49 @@ export class StallService {
     const price = Math.max(1, Math.round(Number(unitPrice) || 0));
     const item = getMarketItem(this.db, itemCode);
     if (!item) throw new Error(`Mặt hàng ${itemCode} không tồn tại.`);
+    const sourceType = source === 'WAREHOUSE' ? 'WAREHOUSE' : 'BAG';
+    if (sourceType === 'WAREHOUSE' && !warehouseId) throw new Error('warehouseId is required for a warehouse listing.');
 
     return this.db.transaction(() => {
-      consumeInventoryItem(this.db, {
-        itemCode,
-        quantity: qty,
-        reason: 'STALL_STOCK',
-        gameDate,
-        refTxn: `STALL-${stall.stall_id}`
-      });
       const existing = this.db.queryOne<any>(
         'SELECT * FROM stall_listings WHERE stall_id = ? AND item_code = ? LIMIT 1;',
         [stall.stall_id, itemCode]
       );
+      if (existing && (existing.source_type || 'BAG') !== sourceType) {
+        throw new Error('Mặt hàng này đang niêm yết từ nguồn khác; hãy đóng quầy hoặc bán hết trước.');
+      }
+
+      if (sourceType === 'WAREHOUSE') {
+        const warehouse = this.db.queryOne<any>(
+          `SELECT * FROM warehouses
+           WHERE warehouse_id = ? AND owner_id = ? AND settlement_id = ? LIMIT 1;`,
+          [warehouseId, characterId, stall.settlement_id]
+        );
+        if (!warehouse) throw new Error('Kho không thuộc thành của quầy hoặc không do bạn sở hữu.');
+        if (warehouse.status !== 'ACTIVE') throw new Error('Kho đã hết hạn; hãy gia hạn trước.');
+        if (warehouse.ownership_type === 'RENTED' && warehouse.lease_until && String(warehouse.lease_until) < gameDate) {
+          this.db.execute("UPDATE warehouses SET status = 'EXPIRED' WHERE warehouse_id = ?;", [warehouseId]);
+          throw new Error('Kho đã hết hạn; hãy gia hạn trước.');
+        }
+        const stock = this.db.queryOne<{ quantity: number }>(
+          'SELECT quantity FROM warehouse_stock WHERE warehouse_id = ? AND item_code = ? LIMIT 1;',
+          [warehouseId, itemCode]
+        );
+        if (!stock || Number(stock.quantity) < qty) throw new Error(`Kho không đủ ${itemCode}.`);
+        this.db.execute(
+          'UPDATE warehouse_stock SET quantity = quantity - ?, updated_at = CURRENT_TIMESTAMP WHERE warehouse_id = ? AND item_code = ?;',
+          [qty, warehouseId, itemCode]
+        );
+      } else {
+        consumeInventoryItem(this.db, {
+          itemCode,
+          quantity: qty,
+          reason: 'STALL_STOCK',
+          gameDate,
+          refTxn: `STALL-${stall.stall_id}`
+        });
+      }
+
       if (existing) {
         this.db.execute(
           `UPDATE stall_listings
@@ -201,9 +241,10 @@ export class StallService {
       } else {
         const listingId = nextSequentialId(this.db, 'stall_listings', 'LST', gameDate);
         this.db.execute(
-          `INSERT INTO stall_listings (listing_id, stall_id, item_code, quantity, unit_price, status)
-           VALUES (?, ?, ?, ?, ?, 'ACTIVE');`,
-          [listingId, stall.stall_id, itemCode, qty, price]
+          `INSERT INTO stall_listings
+            (listing_id, stall_id, item_code, quantity, unit_price, status, source_type, warehouse_id)
+           VALUES (?, ?, ?, ?, ?, 'ACTIVE', ?, ?);`,
+          [listingId, stall.stall_id, itemCode, qty, price, sourceType, warehouseId || null]
         );
       }
       return this.getStall(characterId);
@@ -223,15 +264,46 @@ export class StallService {
       );
       const returned: any[] = [];
       for (const row of rows) {
-        restoreInventoryItem(this.db, {
-          itemCode: row.item_code,
-          quantity: Number(row.quantity),
-          reason: 'STALL_RETURN',
-          gameDate,
-          refTxn: `STALL-${stall.stall_id}`,
-          location: `Kho ${stall.settlement_id}`
-        });
-        returned.push({ itemCode: row.item_code, quantity: Number(row.quantity) });
+        if ((row.source_type || 'BAG') === 'WAREHOUSE' && row.warehouse_id) {
+          const warehouse = this.db.queryOne<any>(
+            'SELECT * FROM warehouses WHERE warehouse_id = ? AND owner_id = ? LIMIT 1;',
+            [row.warehouse_id, characterId]
+          );
+          if (!warehouse) throw new Error('Kho nguồn của mặt hàng này không còn tồn tại.');
+          const used = Number(this.db.queryOne<{ v: number }>(
+            'SELECT COALESCE(SUM(quantity), 0) AS v FROM warehouse_stock WHERE warehouse_id = ?;',
+            [row.warehouse_id]
+          )?.v || 0);
+          if (used + Number(row.quantity) > Number(warehouse.capacity)) {
+            throw new Error(`Kho ${warehouse.name_vi} không đủ sức chứa để nhận lại hàng; hãy rút bớt hàng trước.`);
+          }
+          const existing = this.db.queryOne<any>(
+            'SELECT quantity FROM warehouse_stock WHERE warehouse_id = ? AND item_code = ? LIMIT 1;',
+            [row.warehouse_id, row.item_code]
+          );
+          if (existing) {
+            this.db.execute(
+              'UPDATE warehouse_stock SET quantity = quantity + ?, updated_at = CURRENT_TIMESTAMP WHERE warehouse_id = ? AND item_code = ?;',
+              [Number(row.quantity), row.warehouse_id, row.item_code]
+            );
+          } else {
+            this.db.execute(
+              'INSERT INTO warehouse_stock (warehouse_id, item_code, quantity, unit_cost_basis) VALUES (?, ?, ?, 0);',
+              [row.warehouse_id, row.item_code, Number(row.quantity)]
+            );
+          }
+          returned.push({ itemCode: row.item_code, quantity: Number(row.quantity), sourceType: 'WAREHOUSE' });
+        } else {
+          restoreInventoryItem(this.db, {
+            itemCode: row.item_code,
+            quantity: Number(row.quantity),
+            reason: 'STALL_RETURN',
+            gameDate,
+            refTxn: `STALL-${stall.stall_id}`,
+            location: `Kho ${stall.settlement_id}`
+          });
+          returned.push({ itemCode: row.item_code, quantity: Number(row.quantity), sourceType: 'BAG' });
+        }
       }
       this.db.execute("UPDATE stall_listings SET quantity = 0, status = 'SOLD_OUT' WHERE stall_id = ?;", [stall.stall_id]);
       this.db.execute("UPDATE player_stalls SET status = 'CLOSED', updated_at = CURRENT_TIMESTAMP WHERE stall_id = ?;", [stall.stall_id]);
