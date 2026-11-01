@@ -338,6 +338,17 @@ export class ProfessionsModule implements IFeatureModule {
     const baseYield = node.yield_quantity_min + RngService.forDomain(this.db, 'gathering').nextFloat() * (node.yield_quantity_max - node.yield_quantity_min);
     const rawYield = baseYield * professionBonus * skillBonus * toolMultiplier;
     const totalYield = Math.round(Math.min(rawYield, baseYield * 2.2) * 10) / 10;
+    const variant = resources.pickVariant(node.resource_type, skillTier, gameDate);
+    const requestedYield = Math.round(totalYield * Number(variant?.quantityMultiplier || 1) * 10) / 10;
+    const yieldItemCode = variant?.itemCode || node.yield_item_code;
+    const yieldItem = this.db.queryOne<any>(
+      'SELECT name_vi, category FROM master_items WHERE item_code = ? LIMIT 1;',
+      [yieldItemCode]
+    );
+    const byproductCode = variant?.byproductItemCode || null;
+    const byproductItem = byproductCode
+      ? this.db.queryOne<any>('SELECT name_vi, category FROM master_items WHERE item_code = ? LIMIT 1;', [byproductCode])
+      : null;
 
     const expGain = 25;
     let upgradedTier = tier;
@@ -371,13 +382,14 @@ export class ProfessionsModule implements IFeatureModule {
     }
 
     const movId = nextId(this.db, 'stock-movements', 'MOV-GATH', getGameDate(this.db));
-    let actualYield = totalYield;
+    let actualYield = requestedYield;
+    let byproductYield = 0;
     let stockRemaining = stockBefore ? stockBefore.stock : null;
 
     this.db.transaction(() => {
       // 0. Consume node stock first so an exhausted node cannot add inventory.
       if (rule) {
-        const consumed = resources.consume(nodeId, rule, totalYield, gameDate);
+        const consumed = resources.consume(nodeId, rule, requestedYield, gameDate);
         actualYield = consumed.taken;
         stockRemaining = consumed.stock;
       }
@@ -388,11 +400,13 @@ export class ProfessionsModule implements IFeatureModule {
       }
 
       // 1. Physically deposit into inventory_items (Safe conservation)
+      const category = yieldItem?.category || 'RAW_MATERIAL';
+      const itemName = yieldItem?.name_vi || yieldItemCode;
       this.db.execute(`
         INSERT INTO inventory_items (item_code, category, description, quantity, unit_cost_basis, location)
-        VALUES (?, 'RAW_MATERIAL', ?, ?, 10, ?)
+        VALUES (?, ?, ?, ?, 10, ?)
         ON CONFLICT(item_code) DO UPDATE SET quantity = quantity + excluded.quantity;
-      `, [node.yield_item_code, node.yield_item_name_vi, actualYield, `Kho ${node.settlement_id}`]);
+      `, [yieldItemCode, category, itemName, actualYield, `Kho ${node.settlement_id}`]);
 
       // 2. Log stock movement
       this.db.execute(`
@@ -407,7 +421,33 @@ export class ProfessionsModule implements IFeatureModule {
           (SELECT quantity FROM inventory_items WHERE item_code = ?), 
           ?
         );
-      `, [movId, gameDate, node.yield_item_code, actualYield, node.yield_item_code, nodeId]);
+      `, [movId, gameDate, yieldItemCode, actualYield, yieldItemCode, nodeId]);
+
+      // 2b. Byproduct (hide, roe, antler) scales with the actual harvest.
+      if (byproductCode && Number(variant?.byproductQuantity || 0) > 0) {
+        byproductYield = Math.round(
+          Number(variant?.byproductQuantity || 0) * (actualYield / Math.max(0.1, requestedYield)) * 10
+        ) / 10;
+        if (byproductYield > 0) {
+          const byproductMovementId = nextId(this.db, 'stock-movements', 'MOV-GATH', getGameDate(this.db));
+          this.db.execute(`
+            INSERT INTO inventory_items (item_code, category, description, quantity, unit_cost_basis, location)
+            VALUES (?, ?, ?, ?, 5, ?)
+            ON CONFLICT(item_code) DO UPDATE SET quantity = quantity + excluded.quantity;
+          `, [
+            byproductCode,
+            byproductItem?.category || 'RAW_MATERIAL',
+            byproductItem?.name_vi || byproductCode,
+            byproductYield,
+            `Kho ${node.settlement_id}`
+          ]);
+          this.db.execute(`
+            INSERT INTO stock_movements (mov_id, game_date, item_code, movement_type, quantity, unit_cost, balance_after, ref_txn)
+            VALUES (?, ?, ?, 'GATHERING_BYPRODUCT', ?, 5,
+                    (SELECT quantity FROM inventory_items WHERE item_code = ?), ?);
+          `, [byproductMovementId, gameDate, byproductCode, byproductYield, byproductCode, nodeId]);
+        }
+      }
 
       // 3. Award Profession EXP and check tier upgrade
       if (prof) {
@@ -441,9 +481,18 @@ export class ProfessionsModule implements IFeatureModule {
       success: true,
       nodeId,
       nodeName: node.name_vi,
-      itemCode: node.yield_item_code,
-      itemName: node.yield_item_name_vi,
+      itemCode: yieldItemCode,
+      itemName: yieldItem?.name_vi || yieldItemCode,
       yieldQuantity: actualYield,
+      variant: variant
+        ? {
+          variantId: variant.variantId,
+          quality: variant.quality,
+          quantityMultiplier: variant.quantityMultiplier
+        }
+        : null,
+      byproductItemCode: byproductCode,
+      byproductQuantity: byproductYield,
       fatigueCost: node.fatigue_cost,
       expGained: expGain,
       professionTier: upgradedTier,

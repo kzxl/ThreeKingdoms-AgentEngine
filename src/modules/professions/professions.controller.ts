@@ -226,6 +226,20 @@ export function registerProfessionsRoutes(router: Router): void {
           throw new Error(`Khí lực kiệt quệ (${player.fatigue}/100)! Không đủ sức đứng lò chế tác khí giới.`);
         }
 
+        const requiredSkill = recipe.required_skill_code || null;
+        if (requiredSkill) {
+          const skillRow = db.queryOne<any>(
+            'SELECT tier FROM player_skills WHERE skill_code = ? LIMIT 1;',
+            [requiredSkill]
+          );
+          const requiredTier = Number(recipe.required_skill_tier || 1);
+          if (Number(skillRow?.tier || 0) < requiredTier) {
+            throw new Error(
+              `Cần kỹ năng ${requiredSkill} bậc ${requiredTier} để chế biến ${recipe.product_name_vi} (hiện tại bậc ${Number(skillRow?.tier || 0)}).`
+            );
+          }
+        }
+
         // Parse Bill of Materials
         let bomInputs: Array<{ item_code: string; quantity: number }> = [];
         try {
@@ -293,13 +307,13 @@ export function registerProfessionsRoutes(router: Router): void {
 
         // Crafting feeds the matching skill so checks and perks see the work.
         const recipeCategory = String(recipe.category || '').toUpperCase();
-        const skillCode = /MEDICINE|ALCHEMIST/.test(recipeCategory)
+        const skillCode = requiredSkill || (/MEDICINE|ALCHEMIST/.test(recipeCategory)
           ? 'SKL-MED-HEAL'
           : /SMITH|WEAPON|ARMOR/.test(recipeCategory)
             ? 'SKL-CRA-SMITH'
             : /COOK|BREW|COMMERCE|CARAVAN/.test(recipeCategory)
               ? 'SKL-MGT-ENTERPRISE'
-              : 'SKL-CRA-WEAVE';
+              : 'SKL-CRA-WEAVE');
         SkillService.forDatabase(db).awardExp(skillCode, expGain);
 
         return {

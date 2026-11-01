@@ -8,6 +8,7 @@
  */
 
 import { DatabaseService } from '../../core/database';
+import { RngService } from '../../core/rng';
 
 export interface ResourceRule {
   resourceType: string;
@@ -25,6 +26,23 @@ export interface NodeStock {
   maxStock: number;
   respawnPerDay: number;
   lastRespawnDate: string | null;
+}
+
+export interface ResourceVariant {
+  variantId: string;
+  itemCode: string;
+  quality: string;
+  quantityMultiplier: number;
+  byproductItemCode: string | null;
+  byproductQuantity: number;
+}
+
+function seasonOf(date: string): string {
+  const month = Number(String(date || '184-05-02').split('-')[1]) || 5;
+  if (month <= 3) return 'SPRING';
+  if (month <= 6) return 'SUMMER';
+  if (month <= 9) return 'AUTUMN';
+  return 'WINTER';
 }
 
 function dayNumber(date: string): number {
@@ -125,6 +143,44 @@ export class ResourceNodeService {
       [skillCode]
     );
     return Number(row?.tier || 0);
+  }
+
+  /**
+   * Weighted variant pick filtered by skill tier and season. The caller passes
+   * no RNG state, so the service keeps one deterministic stream per campaign.
+   */
+  public pickVariant(resourceType: string, skillTier: number, gameDate: string): ResourceVariant | null {
+    const season = seasonOf(gameDate);
+    const rows = this.db.query<any>(
+      `SELECT * FROM resource_yield_variants
+       WHERE resource_type = ?
+         AND min_skill_tier <= ?
+         AND (season = 'ALL' OR season = ?)
+       ORDER BY variant_id;`,
+      [resourceType, skillTier, season]
+    );
+    if (rows.length === 0) return null;
+
+    const totalWeight = rows.reduce((sum, row) => sum + Number(row.weight || 0), 0);
+    if (totalWeight <= 0) return null;
+    const roll = RngService.forDomain(this.db, 'resource-variant').nextFloat() * totalWeight;
+    let cursor = 0;
+    let picked = rows[rows.length - 1];
+    for (const row of rows) {
+      cursor += Number(row.weight || 0);
+      if (roll <= cursor) {
+        picked = row;
+        break;
+      }
+    }
+    return {
+      variantId: picked.variant_id,
+      itemCode: picked.item_code,
+      quality: picked.quality || 'COMMON',
+      quantityMultiplier: Number(picked.quantity_multiplier || 1),
+      byproductItemCode: picked.byproduct_item_code || null,
+      byproductQuantity: Number(picked.byproduct_quantity || 0)
+    };
   }
 
   public listNodes(settlementId?: string): any[] {

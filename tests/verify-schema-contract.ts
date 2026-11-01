@@ -37,7 +37,8 @@ const REQUIRED_TABLES = [
   'settlement_ledger',
   'player_life_state',
   'resource_node_rules',
-  'gathering_node_state'
+  'gathering_node_state',
+  'resource_yield_variants'
 ];
 
 const REQUIRED_COLUMNS: Record<string, string[]> = {
