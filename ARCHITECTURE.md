@@ -56,7 +56,7 @@ graph TD
 
 ## 3. SQLite Schema & Invariant Enforcement
 
-All dynamic campaign state is maintained in `saves/session.db` using the schema defined in `tools/schema.sql` (audited across 1,961 invariants in nine blocks):
+All dynamic campaign state is maintained in `saves/session.db` using the schema defined in `tools/schema.sql` (audited across 2,307 invariants in nine blocks):
 
 1. **`player_state`**: Tracks attributes (INT, POL, WAR, LDR, DIP, COM, LOG, CRA), current location, liquid cash, safe cash, fixed capital, grain, and net worth.
 2. **`cashflow_ledger`**: Strict double-entry ledger enforcing:
@@ -138,7 +138,7 @@ millisecond.
 ### 6.3 Versioned data migrations
 
 `tools/migrations/` holds idempotent migrations applied inside a transaction and
-recorded in `schema_migrations` (79 migrations, through `079-tool-boat`). New playthrough instances
+recorded in `schema_migrations` (80 migrations, through `080-npc-ledger`). New playthrough instances
 are brought to a known data state with `npm run migrate`; `npm run migrate:status` lists
 pending work. Migrations also own data repairs that SQL cannot express safely at the
 read path: 042 adds `businesses.tier/debt`, 043 repairs legacy text and currency labels.
@@ -153,10 +153,10 @@ not require editing that test.
 | :--- | :--- | :--- |
 | Types | `npm run typecheck` | `strict` TypeScript across `src/`, `tests/`, `vite.config.ts`. |
 | Architecture | `npm run lint` | Ratchet over `tools/arch-baseline.json`; debt may only shrink. |
-| Behaviour | `npm test` | 94 suites (4 legacy + 90 modern); each modern suite runs on an isolated DB copy and projections are restored afterwards. |
+| Behaviour | `npm test` | 95 suites (4 legacy + 91 modern); each modern suite runs on an isolated DB copy and projections are restored afterwards. |
 | API contract | `npm run golden:verify` | 28 read-only endpoints: status code, response shape, behavioural assertions. |
 | Write paths | `npm run smoke:write` | 8 HTTP write paths plus a post-write audit on a sandbox database. |
-| Invariants | `npm run audit` | 1,961 SQLite invariants (ledger parity, inventory conservation, projection sync, world/life-sim/clock blocks). |
+| Invariants | `npm run audit` | 2,307 SQLite invariants (ledger parity, inventory conservation, projection sync, world/life-sim/clock blocks). |
 
 `npm run verify` chains all of them and is the merge gate.
 
@@ -1087,6 +1087,37 @@ applyPlayerDamage(db, playerId, { healthLoss, fatigueGain?, moraleLoss?, reason 
 Test isolation: `tools/test-runner.js` sets a per-suite `SIM_LEGACY_PATH`, so a
 death test cannot overwrite the shared `saves/legacy.json` or change another
 suite's starting cash.
+
+---
+
+## 24. NPC Income and Troop Conservation (1.43.0)
+
+Migration 080 adds `npc_ledger`:
+
+```text
+entry_id, npc_id, game_date, category, counterparty,
+delta_cash, delta_troops, balance_cash, balance_troops, memo_vi
+```
+
+`postNpcEntry` appends one row; `postNpcMutation` updates
+`npc_personal_progression` and appends the resulting balance. Both are the only
+writers of NPC cash and troops. The migration backfills an `OPENING` row for
+every NPC, and the audit checks:
+
+- the latest `balance_cash`/`balance_troops` equals
+  `npc_personal_progression`;
+- the sum of deltas equals the current balance.
+
+The lifecycle no longer mints value:
+
+- `COMMERCE_ARBITRAGE` transfers cash from a named buyer (the richest solvent
+  NPC in the same settlement, then global); if nobody can pay, the turn earns 0.
+- `BANDIT_EXPEDITION` takes bounty from the lair's `plundered_wealth` and
+  recruits from the local `garrison_troops`, leaving at least 50 defenders.
+- A workshop founder records the 1,500 capital contribution.
+
+Market, freight, merchant, loan, dowry, faction-reward and prestige-opening
+writers all go through the same ledger. The audit now reports 2,307 invariants.
 
 
 

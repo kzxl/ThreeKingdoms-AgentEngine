@@ -6,17 +6,17 @@ Baseline HEAD: `c775225` (1.39.0; clean working tree)
 Source analyses: `docs/audit/*`, `docs/*_2026-10-29.md`, `docs/REFACTOR_2026-10.md`,
 `docs/PRESTIGE_SYSTEM.md`, plus the 2026-11-01 supply-chain re-check.
 
-Baseline gate after Wave 0, Wave 1 (except W1-5) and W2-2:
+Baseline gate after Wave 0, Wave 1 (except W1-5) and W2-1/W2-2:
 
 | Gate | Result |
 | :--- | :--- |
-| `npm run verify` | 94/94 suites, 28/28 API contracts, 8/8 write smokes |
-| `npm run audit` | 1,961 invariants, 0 discrepancies |
+| `npm run verify` | 95/95 suites, 28/28 API contracts, 8/8 write smokes |
+| `npm run audit` | 2,307 invariants, 0 discrepancies |
 | Route shadow report | 48 live legacy handlers, 0 shadowed |
 
 Wave 0 (`c775225`), W1-1/W1-2/W1-6 (`43f22da`, `5346294`), W1-4 (`ea945f9`),
-W1-3 (`e4bb051`), the W1-7 warehouse/boat part (`d4228d9`) and W2-2 (`6ed8c5f`)
-are complete. W1-5, multi-item routes and W2-1/W2-3/W2-4 remain.
+W1-3 (`e4bb051`), the W1-7 warehouse/boat part (`d4228d9`), W2-2 (`6ed8c5f`) and
+W2-1 (`e106118`) are complete. W1-5, multi-item routes, W2-3 and W2-4 remain.
 The rule for every item below: one feature per commit, `npm run verify` and
 `npm run audit` green before the commit, only task-scoped files staged.
 
@@ -226,21 +226,15 @@ Remaining order inside Wave 1: W1-5 → multi-item routes.
 
 ## 5. Wave 2 — World conservation and failure consistency (4–6 days)
 
-### W2-1 NPC income conservation
+### W2-1 NPC income conservation — DONE (`e106118`)
 
-`npc-lifecycle.module.ts:294-305` still adds `earned` cash with no counterparty,
-and `:258-276` adds troops without a population source. BANDIT_EXPEDITION already
-debits `bandit_strongholds.plundered_wealth`; mirror that pattern:
-- COMMERCE_ARBITRAGE debits the local market/settlement or a named buyer;
-- recruitment draws from settlement population or a faction muster pool;
-- every NPC cash/troop mutation gets an entry in `faction_ledger`,
-  `settlement_ledger`, or a new append-only `npc_ledger`.
+Migration 080 adds `npc_ledger`; `postNpcEntry`/`postNpcMutation` are the only
+writers of NPC cash/troops. Commerce transfers cash from a named buyer, a bandit
+raid takes bounty from the lair and recruits from the local garrison, and every
+market/freight/loan/dowry/faction-reward writer appends an entry. The audit
+checks the latest balance and the sum of deltas: 2,307 invariants.
 
-**Files:** `npc-lifecycle.module.ts`, `src/shared/faction-ledger.ts`,
-`src/shared/settlement-ledger.ts`, `tools/sim-audit.js`.
-**Test:** `tests/verify-npc-conservation.ts` — sum of NPC cash + settlement cash +
-faction treasury is unchanged by a simulated NPC turn except for explicit
-production/consumption.
+The original finding is kept below for history:
 
 ### W2-2 One health/death rule — DONE (`6ed8c5f`)
 
@@ -455,9 +449,8 @@ both counts down.
 - Era guard: `engine/gameplay-manager.js:342-343` hard-stops at year 300. Decide
   between a soft warning and an extended calendar before long campaigns are tested.
 - Remaining `Lượt` labels in panels (DAY_UNIT P4).
-- Documentation sync: `HANDOFF.md` still claims 20 tests / 63 invariants and
-  `PROGRESS.md` still claims 20/20 tests; both are far behind the 86/86 and
-  1,961 gate and should be rewritten or marked historical.
+- Documentation sync is done: `HANDOFF.md` and `PROGRESS.md` now point at the
+  current 95-suite / 2,307-invariant gate instead of the 20-test snapshot.
 
 ---
 
@@ -480,14 +473,16 @@ both counts down.
 
 Wave 1 is complete except the per-city bag and multi-item routes. Continue with:
 
-1. `W1-5 per-city bag` — make `inventory_items.location` authoritative per
+1. `W2-3 NPC-owned business succession` — an NPC owner death transfers the
+   enterprise to an heir, senior foreman or liquidation.
+2. `W2-4 defeat/victory consistency` — one month-close check for DEFEATED,
+   BANKRUPT and VICTORIOUS, and block player mutations in a terminal campaign.
+3. `W1-5 per-city bag` — make `inventory_items.location` authoritative per
    settlement, move stock on travel, and update trade/stall/warehouse queries.
-   This is the last transport-loop gap and needs its own migration + suite.
-2. `multi-item merchant routes` — allow one route to carry a basket instead of a
+4. `multi-item merchant routes` — allow one route to carry a basket instead of a
    single `item_code`; extend `merchant_route_stock` and the UI.
-3. Then continue **Wave 2** with `W2-1 NPC income conservation`,
-   `W2-3 NPC-owned business succession` and `W2-4 defeat/victory consistency`
-   (`W2-2` is done).
+
+`W2-1` and `W2-2` are done.
 
 New features should follow `docs/FEATURE_MODULE_STANDARD.md` and start from
 `npm run scaffold:feature <name> --domain=<domain>`.

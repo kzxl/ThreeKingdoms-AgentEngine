@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.43.0] - 2026-11-01
+
+NPC income and troop conservation through one ledger.
+
+### Added
+- Migration 080 adds `npc_ledger` and backfills opening balances for every NPC.
+- `postNpcEntry` / `postNpcMutation` are the only writers of NPC cash and
+  troops. Stall sales, NPC market offers, freight fees/penalties, merchant route
+  purchases, loans, dowries, faction rewards and prestige openings all append an
+  entry.
+- A commerce turn now transfers cash from a named local buyer instead of
+  minting it; a bandit expedition takes bounty from the lair and recruits from
+  the local garrison (leaving a minimum defence).
+- Audit checks the latest ledger balance and the sum of deltas against
+  `npc_personal_progression`: 2,307 invariants.
+- `verify-npc-conservation.ts`.
+
+### Verification
+`npm run verify` green: 95/95 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 2,307 invariants, 0 discrepancies.
+
+---
+
 ## [1.42.0] - 2026-11-01
 
 One player damage path and one zero-health transition.

@@ -503,3 +503,13 @@ This document records the architectural choices, rationale, and alternatives con
 - **Consequences**:
   - Positive: One rule for immortality, death and succession; every path is testable through the same helper.
   - Negative: Combat balance can now actually kill the protagonist; heirs become a real progression requirement rather than a optional feature.
+
+---
+
+## ADR-048: NPC Value Is Conserved Through One Ledger (2026-11-01)
+
+- **Context**: `npc-lifecycle` added commerce income and recruited troops without a counterparty, while market, freight and loan services updated `personal_cash` directly. NPC wealth and troops were not auditable.
+- **Decision**: Migration 080 adds `npc_ledger`. `postNpcEntry` appends an entry and `postNpcMutation` updates the progression row plus its balance. Commerce transfers cash from a named buyer; bandit bounty comes from the lair and recruits come from the local garrison (minimum 50 left). The audit checks the latest balance and the sum of deltas against `npc_personal_progression`.
+- **Consequences**:
+  - Positive: NPC cash/troop changes are explainable and conserved; the whole NPC economy is covered by the 2,307-invariant audit.
+  - Negative: Every new NPC writer must use the ledger helper; a direct SQL update will fail the audit.
