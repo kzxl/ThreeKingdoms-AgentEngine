@@ -32,6 +32,7 @@ import { DailyInteractionEngine } from '../modules/social-kizuna/daily-interacti
 import { ContextActionEngine } from '../modules/contextual-actions/context-action.engine';
 import { registerFactionReadRoutes } from '../modules/faction-politics/faction.controller';
 import { registerLifeRoutes } from '../modules/life/life.controller';
+import { registerMarketStallRoutes } from '../modules/market/market-stall.controller';
 import { CaravanLogisticsService } from '../modules/ecology-logistics/caravan-logistics.service';
 
 // Resolve database path
@@ -98,6 +99,7 @@ export function createGrandStrategyRouter(): Router {
   registerSpecialistWorkforceRoutes(router);
   registerFactionReadRoutes(router);
   registerLifeRoutes(router);
+  registerMarketStallRoutes(router);
   return router;
 }
 

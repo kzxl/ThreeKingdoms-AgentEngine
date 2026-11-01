@@ -241,6 +241,16 @@ function advanceCampaignDays(dbPath, rawDays, options = {}) {
     }
   }
 
+  let stallResult = null;
+  if (advancedDays > 0) {
+    try {
+      const { advanceByDays: advanceStallsByDays } = require('./stall-bridge');
+      stallResult = advanceStallsByDays(dbPath, advancedDays, nextDate);
+    } catch (error) {
+      stallResult = { sales: [], totalCash: 0, error: error.message };
+    }
+  }
+
   const tasks = advancedDays > 0 ? progressTasks(dbPath, advancedDays, nextDate) : [];
 
   // Publish after the write so subscribers observe the new calendar day.
@@ -265,6 +275,7 @@ function advanceCampaignDays(dbPath, rawDays, options = {}) {
     caravans: caravanResult,
     expeditions: expeditionResult,
     sieges: siegeResult,
+    stalls: stallResult,
     activeTasks: tasks.filter(task => task.status === 'IN_PROGRESS')
   };
 }

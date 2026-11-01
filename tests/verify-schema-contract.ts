@@ -38,7 +38,14 @@ const REQUIRED_TABLES = [
   'player_life_state',
   'resource_node_rules',
   'gathering_node_state',
-  'resource_yield_variants'
+  'resource_yield_variants',
+  'tool_rules',
+  'character_tool_uses',
+  'player_stalls',
+  'stall_listings',
+  'stall_sales',
+  'npc_market_offers',
+  'npc_market_sales'
 ];
 
 const REQUIRED_COLUMNS: Record<string, string[]> = {
