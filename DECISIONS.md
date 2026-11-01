@@ -323,3 +323,13 @@ This document records the architectural choices, rationale, and alternatives con
 - **Consequences**:
   - Positive: A new fish, timber, game or crop is a seed-data change (rule + node + optional tool), not a new code path; every direction already shares time, idempotency, ledger and audit.
   - Negative: The first pass still shares one gather UI and one item per node; species-specific quality grades, boats, replanting and NPC labour are later phases.
+
+---
+
+## ADR-030: Species and Processing Are Data, Not Branches (2026-10-31)
+
+- **Context**: After the node rules, one fishing node still produced one generic fish, one hunting node one generic meat, and one forest one generic timber. Recipes could not use the outputs because no fish/game processing existed.
+- **Decision**: Migration 056 adds `resource_yield_variants` (weighted item, min skill tier, season, quality, quantity multiplier, optional byproduct) and five processing recipes. Gather picks a variant from the deterministic `resource-variant` stream, writes byproducts as their own stock movements, and returns quality/byproduct fields. Craft enforces `required_skill_code`/`required_skill_tier` and awards EXP to the recipe skill.
+- **Consequences**:
+  - Positive: A new species or processed good is one row plus its item/recipe; fish, game and timber now have distinct economic identities and sinks.
+  - Negative: Rare variants need balance monitoring; recipes still consume only the base common item, so variant-specific cuisine remains a later content pass.

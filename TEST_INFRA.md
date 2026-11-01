@@ -122,6 +122,7 @@ primary truth:
 | `tests/verify-life-wiring.ts` | Life: Wiring | — | Mentorship EXP, growth focus, spouse roles, virtue discount |
 | `tests/verify-life-layer.ts` | Life: Daily loop | — | Needs, phases, six actions, skill EXP, upkeep ledger, replay |
 | `tests/verify-livelihood-depth.ts` | Livelihood: Depth | — | Node stock/regrowth, tool penalty, skill yield, rent/soil/rotation |
+| `tests/verify-resource-variants.ts` | Livelihood: Variants | — | Season/skill weights, byproducts, fish/hide/timber processing gates |
 | `tools/sim-audit.js` | System: Autonomous Invariant Auditor | 1,546 | Eight blocks: accounting, inventory, journal, projection, enterprise, strategy, life-sim, clock |
 
 ---
@@ -139,7 +140,7 @@ npx tsx tests/verify-rotk-duels.ts
 
 ### Full Verification Pipeline
 ```bash
-# Single gate: typecheck → arch ratchet → 74 suites → API contract → write smoke
+# Single gate: typecheck → arch ratchet → 75 suites → API contract → write smoke
 npm run verify
 
 # Individually:
@@ -150,7 +151,7 @@ npm run lint:ui        # UI debt ratchet (button classes, inline styles, native 
 npm run lint:slop      # anti-slop laws: emoji, gradients, glow shadows, font families
 npm run lint:api       # client /api/* paths must exist or be allowlisted with a reason
 npm run routes:shadow  # fails if a legacy route is already served by the Router
-npm test               # 4 legacy + 70 verify-*.ts suites, isolated DB per suite
+npm test               # 4 legacy + 71 verify-*.ts suites, isolated DB per suite
 npm run golden:verify  # 28 read-only endpoint contracts
 npm run smoke:write    # 8 HTTP write paths + post-write audit
 npm run audit          # 1,546 SQLite invariants in eight blocks

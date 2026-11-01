@@ -153,7 +153,7 @@ not require editing that test.
 | :--- | :--- | :--- |
 | Types | `npm run typecheck` | `strict` TypeScript across `src/`, `tests/`, `vite.config.ts`. |
 | Architecture | `npm run lint` | Ratchet over `tools/arch-baseline.json`; debt may only shrink. |
-| Behaviour | `npm test` | 74 suites (4 legacy + 70 modern); each modern suite runs on an isolated DB copy and projections are restored afterwards. |
+| Behaviour | `npm test` | 75 suites (4 legacy + 71 modern); each modern suite runs on an isolated DB copy and projections are restored afterwards. |
 | API contract | `npm run golden:verify` | 28 read-only endpoints: status code, response shape, behavioural assertions. |
 | Write paths | `npm run smoke:write` | 8 HTTP write paths plus a post-write audit on a sandbox database. |
 | Invariants | `npm run audit` | 1,546 SQLite invariants (ledger parity, inventory conservation, projection sync, world/life-sim/clock blocks). |
@@ -657,6 +657,34 @@ The response carries `skillCode`, `skillTier`, `skillBonus`, `toolMultiplier`,
   `previousCropCode`.
 
 Gate: `tests/verify-livelihood-depth.ts`.
+
+### 16.4 Resource variants and processing (1.33.0)
+
+`resource_yield_variants` turns one resource type into a weighted table filtered
+by skill tier and season. The current families:
+
+| Type | Variants | Byproducts |
+| :--- | :--- | :--- |
+| FISH | river fish, carp, summer shrimp, autumn sturgeon | sturgeon roe |
+| GAME | wild meat, venison, autumn antler | hide / antler |
+| TIMBER | oak, pine, ebony | — |
+
+Gather picks one variant with the deterministic `resource-variant` stream,
+scales output by `quantity_multiplier`, writes the byproduct as its own stock
+movement (`GATHERING_BYPRODUCT`), and returns `variant.quality` plus
+`byproductItemCode`/`byproductQuantity`.
+
+Processing recipes (`FOOD_PROCESSING`, `LEATHERWORK`, `WOODWORK`) use the common
+outputs: dried fish, fish sauce, game jerky, cured hide and sawn planks.
+`required_skill_code` and `required_skill_tier` are enforced by `/api/professions/craft`,
+and a successful craft awards EXP to that recipe skill instead of a generic
+category skill.
+
+Adding a new species or processed good is still data: one variant row (or one
+recipe + items), no gather/craft code change.
+
+Gate: `tests/verify-resource-variants.ts`.
+
 
 
 

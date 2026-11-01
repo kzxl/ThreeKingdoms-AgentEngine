@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.33.0] - 2026-10-31
+
+Species variants and processing chains for fishing, hunting and forestry.
+
+### Added
+- Migration 056 adds `resource_yield_variants`: weighted item, minimum skill
+  tier, season, quality, quantity multiplier and optional byproduct.
+- Fish variants: river fish, carp, summer shrimp, autumn sturgeon (+ roe).
+  Game variants: wild meat, venison, autumn antler (+ hide). Timber variants:
+  oak, pine, ebony.
+- Gather picks a variant from the deterministic `resource-variant` stream,
+  scales output, writes `GATHERING_BYPRODUCT` stock movements and returns
+  `variant.quality`, `byproductItemCode` and `byproductQuantity`.
+- Five processing recipes: dried fish, fish sauce, game jerky, cured hide and
+  sawn planks. `required_skill_code`/`required_skill_tier` are enforced and the
+  recipe skill receives the craft EXP.
+- `tests/verify-resource-variants.ts` covers season/skill weighting, byproducts
+  and processing skill gates.
+
+### Verification
+`npm run verify` green: 75/75 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,546 invariants, 0 discrepancies.
+
+---
+
 ## [1.32.0] - 2026-10-31
 
 Livelihood depth foundation: agriculture, forestry, fishing and hunting now
