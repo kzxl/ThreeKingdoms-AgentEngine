@@ -1799,7 +1799,7 @@ var G = new class {
 				let n = (e.availableCrops || []).filter((e) => e.inSeason);
 				r = n.length > 0 ? n.map((n) => `<button class="quest-action" onclick="QuestUI.plantCrop('${U(e.parcelId)}','${U(n.cropCode)}')">${t ? `Plant ${n.nameEn}` : `Trồng ${n.nameVi}`}</button>`).join(" ") : `<span class="quest-badge">${t ? "Out of season" : "Trái mùa"}</span>`;
 			} else e.status === "GROWING" && e.crop && (r = `<button class="quest-action ${e.crop.daysRemaining <= 0 ? "is-primary" : ""}" onclick="QuestUI.harvestFarm('${U(e.parcelId)}')">${t ? "Harvest" : "Thu hoạch"}</button>`);
-			let i = e.crop ? `${U(e.crop.nameVi)} • ${t ? "harvest" : "thu"} ${U(e.crop.harvestDate)} • ${e.crop.daysRemaining}${t ? "d" : " ngày"}` : `${e.areaMu} ${t ? "mu" : "mẫu"} • ${t ? "rent" : "tô"} ${e.rentCash} Quan`;
+			let i = e.crop ? `${U(e.crop.nameVi)} • ${t ? "harvest" : "thu"} ${U(e.crop.harvestDate)} • ${e.crop.daysRemaining}${t ? "d" : " ngày"} • ${t ? "yield" : "dự kiến"} ${e.crop.expectedYield}` : `${e.areaMu} ${t ? "mu" : "mẫu"} • ${t ? "soil" : "đất"} ${e.soilQuality.toFixed(2)} • ${t ? "rent" : "tô"} ${e.rentCash} Quan${e.rentDiscount > 0 ? ` (-${e.rentDiscount}%)` : ""}`;
 			return `
         <div class="quest-item">
           <div class="quest-head">
