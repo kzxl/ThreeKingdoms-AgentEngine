@@ -13,6 +13,7 @@
 import { DatabaseService } from '../../core/database';
 import { nextSequentialId } from '../../shared/id-generator';
 import { applyPlayerDamage } from './player-vitals';
+import { resolveBusinessSuccession } from '../../shared/business-succession';
 
 export type InjurySeverity = 1 | 2 | 3;
 
@@ -174,6 +175,11 @@ export class ConditionService {
     );
     if (!npc) return false;
     this.db.transaction(() => {
+      try {
+        resolveBusinessSuccession(this.db, npcId, this.currentDate());
+      } catch (error) {
+        console.warn('[ConditionService] business succession failed:', (error as Error).message);
+      }
       this.db.execute(
         `UPDATE npc_state
          SET is_alive = 0, assigned_business_id = NULL, assigned_role = 'DECEASED', monthly_wage = 0
