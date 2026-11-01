@@ -720,6 +720,17 @@ function auditTradeAndWarehouses() {
       checksCount++;
       if (Number(row.quantity || 0) < 0) errors.push(`Stall listing ${row.listing_id} has negative quantity`);
       if (Number(row.unit_price || 0) <= 0) errors.push(`Stall listing ${row.listing_id} has non-positive price`);
+      if (row.market_effect !== undefined) {
+        const effect = Number(row.market_effect || 0);
+        const quantity = Number(row.quantity || 0);
+        if (effect < -0.01) errors.push(`Stall listing ${row.listing_id} has negative market effect ${effect}`);
+        if (row.status === 'ACTIVE' && Math.abs(effect - quantity) > 0.01) {
+          errors.push(`Stall listing ${row.listing_id} market effect ${effect} does not match quantity ${quantity}`);
+        }
+        if (row.status !== 'ACTIVE' && Math.abs(effect) > 0.01) {
+          errors.push(`Stall listing ${row.listing_id} is ${row.status} but still holds market effect ${effect}`);
+        }
+      }
     }
   }
   if (tables.has('npc_market_offers')) {

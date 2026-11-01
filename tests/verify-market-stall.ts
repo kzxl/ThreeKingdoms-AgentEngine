@@ -98,6 +98,11 @@ async function run(): Promise<void> {
   assert(open.data.stall.stallId);
   assert.strictEqual(Number(scalar(raw, "SELECT liquid_cash FROM player_state WHERE player_id = 'PLY-0001';").liquid_cash), 9980);
 
+  raw.prepare(
+    'INSERT OR IGNORE INTO settlement_market_state (settlement_id, item_code, stock, demand) VALUES (?, ?, 100, 100);'
+  ).run(SETTLEMENT, 'COM-GRAIN');
+  const stockBeforeListing = Number(scalar(raw, "SELECT stock FROM settlement_market_state WHERE settlement_id = ? AND item_code = 'COM-GRAIN';", [SETTLEMENT]).stock);
+
   const listed = await request(router, 'POST', '/api/stall/list', {
     itemCode: 'COM-GRAIN',
     quantity: 20,
@@ -108,6 +113,11 @@ async function run(): Promise<void> {
   const listing = listed.data.stall.listings.find((row: any) => row.itemCode === 'COM-GRAIN');
   assert(listing && listing.quantity === 20);
   assert.strictEqual(Number(scalar(raw, "SELECT quantity FROM inventory_items WHERE item_code = 'COM-GRAIN';").quantity), 180);
+  assert.strictEqual(
+    Number(scalar(raw, "SELECT stock FROM settlement_market_state WHERE settlement_id = ? AND item_code = 'COM-GRAIN';", [SETTLEMENT]).stock),
+    stockBeforeListing + 20,
+    'listing goods must enter local market stock'
+  );
 
   // 2. Two elapsed days let NPCs buy. Cash and listing quantity move.
   const cashBeforeSales = Number(scalar(raw, "SELECT liquid_cash FROM player_state WHERE player_id = 'PLY-0001';").liquid_cash);
@@ -119,6 +129,11 @@ async function run(): Promise<void> {
   assert(remaining < 20);
   const sold = sales.reduce((sum, row) => sum + Number(row.quantity), 0);
   assert.strictEqual(remaining, 20 - sold);
+  assert.strictEqual(
+    Number(scalar(raw, "SELECT stock FROM settlement_market_state WHERE settlement_id = ? AND item_code = 'COM-GRAIN';", [SETTLEMENT]).stock),
+    stockBeforeListing + 20 - sold,
+    'each stall sale must consume local market stock'
+  );
 
   // 3. NPC offers exist and sit in a band around the local quote.
   const offers = await request(router, 'GET', `/api/market/npc-offers?settlementId=${SETTLEMENT}`);
@@ -171,6 +186,11 @@ async function run(): Promise<void> {
   assert.strictEqual(close.status, 200, JSON.stringify(close.data));
   assert.strictEqual(close.data.result.closed, true);
   assert.strictEqual(scalar(raw, "SELECT status FROM player_stalls WHERE stall_id = ?;", [open.data.stall.stallId]).status, 'CLOSED');
+  assert.strictEqual(
+    Number(scalar(raw, "SELECT stock FROM settlement_market_state WHERE settlement_id = ? AND item_code = 'COM-GRAIN';", [SETTLEMENT]).stock),
+    stockBeforeListing,
+    'closing returns unsold goods and leaves only the consumed quantity'
+  );
 
   raw.close();
   DatabaseService.resetInstance();

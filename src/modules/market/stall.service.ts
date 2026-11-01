@@ -15,6 +15,7 @@ import { ACCOUNT_CODES } from '../../shared/account-codes';
 import { consumeInventoryItem, restoreInventoryItem } from '../../shared/inventory-movement';
 import { getMarketItem } from '../../shared/market-price-book';
 import { RegionalMarketService } from '../economy/regional-market.service';
+import { SettlementMarketService } from '../economy/settlement-market.service';
 import { LOC_TO_NODE_MAP } from '../ecology-logistics/spatial-registry';
 import { npcBidMultiplier } from './npc-pricing';
 import { addGameDays } from '../../shared/game-date';
@@ -256,20 +257,25 @@ export class StallService {
         });
       }
 
+      // The listed goods enter the local market now; a sale consumes them and
+      // closing removes whatever is still unsold.
+      SettlementMarketService.forDatabase(this.db).applyTrade(stall.settlement_id, itemCode, qty);
+
       if (existing) {
         this.db.execute(
           `UPDATE stall_listings
-           SET quantity = quantity + ?, unit_price = ?, status = 'ACTIVE', updated_at = CURRENT_TIMESTAMP
+           SET quantity = quantity + ?, unit_price = ?, market_effect = market_effect + ?,
+               status = 'ACTIVE', updated_at = CURRENT_TIMESTAMP
            WHERE listing_id = ?;`,
-          [qty, price, existing.listing_id]
+          [qty, price, qty, existing.listing_id]
         );
       } else {
         const listingId = nextSequentialId(this.db, 'stall_listings', 'LST', gameDate);
         this.db.execute(
           `INSERT INTO stall_listings
-            (listing_id, stall_id, item_code, quantity, unit_price, status, source_type, warehouse_id)
-           VALUES (?, ?, ?, ?, ?, 'ACTIVE', ?, ?);`,
-          [listingId, stall.stall_id, itemCode, qty, price, sourceType, warehouseId || null]
+            (listing_id, stall_id, item_code, quantity, unit_price, status, source_type, warehouse_id, market_effect)
+           VALUES (?, ?, ?, ?, ?, 'ACTIVE', ?, ?, ?);`,
+          [listingId, stall.stall_id, itemCode, qty, price, sourceType, warehouseId || null, qty]
         );
       }
       return this.getStall(characterId);
@@ -290,7 +296,10 @@ export class StallService {
         [stall.stall_id]
       );
       const returned: any[] = [];
+      const market = SettlementMarketService.forDatabase(this.db);
       for (const row of rows) {
+        // Unsold goods leave the local market before returning to storage.
+        market.applyTrade(stall.settlement_id, row.item_code, -Number(row.quantity));
         if ((row.source_type || 'BAG') === 'WAREHOUSE' && row.warehouse_id) {
           const warehouse = this.db.queryOne<any>(
             'SELECT * FROM warehouses WHERE warehouse_id = ? AND owner_id = ? LIMIT 1;',
@@ -332,7 +341,10 @@ export class StallService {
           returned.push({ itemCode: row.item_code, quantity: Number(row.quantity), sourceType: 'BAG' });
         }
       }
-      this.db.execute("UPDATE stall_listings SET quantity = 0, status = 'SOLD_OUT' WHERE stall_id = ?;", [stall.stall_id]);
+      this.db.execute(
+        "UPDATE stall_listings SET quantity = 0, market_effect = 0, status = 'SOLD_OUT' WHERE stall_id = ?;",
+        [stall.stall_id]
+      );
       this.db.execute("UPDATE player_stalls SET status = 'CLOSED', updated_at = CURRENT_TIMESTAMP WHERE stall_id = ?;", [stall.stall_id]);
       return { closed: true, returned };
     });
@@ -418,9 +430,16 @@ export class StallService {
             [total, buyer.npc_id]
           );
           const remaining = Math.max(0, Number(listing.quantity) - want);
+          SettlementMarketService.forDatabase(this.db).applyTrade(
+            stall.settlement_id,
+            listing.item_code,
+            -want
+          );
           this.db.execute(
-            `UPDATE stall_listings SET quantity = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE listing_id = ?;`,
-            [remaining, remaining > 0 ? 'ACTIVE' : 'SOLD_OUT', listing.listing_id]
+            `UPDATE stall_listings
+             SET quantity = ?, market_effect = market_effect - ?, status = ?, updated_at = CURRENT_TIMESTAMP
+             WHERE listing_id = ?;`,
+            [remaining, want, remaining > 0 ? 'ACTIVE' : 'SOLD_OUT', listing.listing_id]
           );
           this.db.execute(
             `INSERT INTO stall_sales

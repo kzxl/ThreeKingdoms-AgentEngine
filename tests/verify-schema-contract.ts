@@ -70,7 +70,7 @@ const REQUIRED_COLUMNS: Record<string, string[]> = {
   land_parcels: ['last_crop_code'],
   resource_node_rules: ['restore_item_code', 'restore_cash', 'restore_stock', 'restore_skill_code', 'alternate_tool_code'],
   tool_rules: ['repair_cash', 'repair_skill_code', 'repair_min_tier'],
-  stall_listings: ['source_type', 'warehouse_id'],
+  stall_listings: ['source_type', 'warehouse_id', 'market_effect'],
   master_items: ['shelf_life_days', 'spoil_rate_per_day', 'preserve_skill_code', 'preserve_min_tier'],
   freight_shipments: ['initial_quantity', 'total_days', 'spoiled_quantity', 'source_reserved_quantity'],
   merchant_shipments: ['initial_quantity', 'total_days', 'spoiled_quantity'],
