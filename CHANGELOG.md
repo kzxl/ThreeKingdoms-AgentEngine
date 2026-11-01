@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.45.0] - 2026-11-01
+
+NPC hiring pushback and the map evolution decision.
+
+### Added
+- Specialist hiring checks affinity (baseline sentiment + relationship deltas),
+  fame and virtue. A stranger with no standing, or a proud officer with low
+  affinity and fame under 1,000, refuses with `NPC_REFUSED`, `affinity` and a
+  `retryAfterDate` 30 days out.
+- `docs/MAP_EVOLUTION_ANALYSIS_2026-11-01.md`: a node graph vs ROTK XIV-style
+  tile layer analysis. Recommendation: one canonical registry and clickable
+  sub-locations first, then a hybrid terrain/tile layer at local zoom; no full
+  continuous-map rewrite.
+- `verify-npc-refusal.ts`.
+
+### Verification
+`npm run verify` green: 98/98 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 2,313 invariants, 0 discrepancies.
+
+---
+
 ## [1.44.0] - 2026-11-01
 
 NPC business succession and one terminal-state gate.

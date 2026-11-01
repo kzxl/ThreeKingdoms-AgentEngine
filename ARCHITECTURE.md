@@ -56,7 +56,7 @@ graph TD
 
 ## 3. SQLite Schema & Invariant Enforcement
 
-All dynamic campaign state is maintained in `saves/session.db` using the schema defined in `tools/schema.sql` (audited across 2,307 invariants in nine blocks):
+All dynamic campaign state is maintained in `saves/session.db` using the schema defined in `tools/schema.sql` (audited across 2,313 invariants in nine blocks):
 
 1. **`player_state`**: Tracks attributes (INT, POL, WAR, LDR, DIP, COM, LOG, CRA), current location, liquid cash, safe cash, fixed capital, grain, and net worth.
 2. **`cashflow_ledger`**: Strict double-entry ledger enforcing:
@@ -153,10 +153,10 @@ not require editing that test.
 | :--- | :--- | :--- |
 | Types | `npm run typecheck` | `strict` TypeScript across `src/`, `tests/`, `vite.config.ts`. |
 | Architecture | `npm run lint` | Ratchet over `tools/arch-baseline.json`; debt may only shrink. |
-| Behaviour | `npm test` | 97 suites (4 legacy + 93 modern); each modern suite runs on an isolated DB copy and projections are restored afterwards. |
+| Behaviour | `npm test` | 98 suites (4 legacy + 94 modern); each modern suite runs on an isolated DB copy and projections are restored afterwards. |
 | API contract | `npm run golden:verify` | 28 read-only endpoints: status code, response shape, behavioural assertions. |
 | Write paths | `npm run smoke:write` | 8 HTTP write paths plus a post-write audit on a sandbox database. |
-| Invariants | `npm run audit` | 2,307 SQLite invariants (ledger parity, inventory conservation, projection sync, world/life-sim/clock blocks). |
+| Invariants | `npm run audit` | 2,313 SQLite invariants (ledger parity, inventory conservation, projection sync, world/life-sim/clock blocks). |
 
 `npm run verify` chains all of them and is the merge gate.
 
@@ -1144,6 +1144,41 @@ a campaign that becomes `VICTORIOUS` is not downgraded to `BANKRUPT`. A terminal
 status (`VICTORIOUS`, `DEFEATED`, `BANKRUPT`) makes `chargePlayerAction` throw
 `CAMPAIGN_OVER` before any service mutation. `verify-terminal-state.ts` covers
 victory, two-month bankruptcy, and the action guard.
+
+---
+
+## 26. NPC Hiring Pushback (1.45.0)
+
+`SpecialistWorkforceService.hireSpecialist` reads affinity from
+`master_characters.baseline_sentiment_player` plus
+`npc_relationship_deltas`, and uses the same fame/virtue values as the signing
+price. Two deterministic refusals exist:
+
+- a stranger with affinity < 5, fame < 200 and virtue < 30;
+- a proud officer (`Thái Thú`, `Chư Hầu`, `Tướng Quân`, `Hoàng Đế`) with
+  affinity < 20 and fame < 1,000.
+
+Refusal throws `NPC_REFUSED` with `affinity` and `retryAfterDate` (+30 days), so
+the UI can explain the block and the player can build affinity. No silent
+success and no RNG.
+
+---
+
+## 27. Map Evolution: Hybrid Tile Layer, Not a Rewrite (1.45.0)
+
+`docs/MAP_EVOLUTION_ANALYSIS_2026-11-01.md` compares the current 20-node graph
+with a ROTK XIV-style continuous tile map. The decision:
+
+- The immediate defect is four competing map data sources and 133 sub-locations
+  that are not reachable, not the absence of tiles.
+- First make the DB the single registry and make every sub-location/POI clickable.
+- Add a `map_tiles` terrain layer at local zoom for movement cost, supply,
+  ambush and fog; keep the 20-node strategic graph for cities and routes.
+- Do not replace the strategic map with a full continuous tile map until field
+  movement and terrain combat are core loops.
+
+This decision is ADR-052; the work belongs to Wave 5 (Level 4–5) and the
+profession Phase 2–3 plan.
 
 
 

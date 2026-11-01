@@ -18,7 +18,7 @@ The **ThreeKingdoms-AgentEngine** test infrastructure provides an autonomous, mu
 ```
 +-------------------------------------------------------------------------+
 |                  TIER 4: State & Audit Invariant Layer                  |
-|          tools/sim-audit.js (2,307 invariants, 9 blocks)                 |
+|          tools/sim-audit.js (2,313 invariants, 9 blocks)                 |
 +------------------------------------+------------------------------------+
                                      |
 +------------------------------------+------------------------------------+
@@ -71,7 +71,7 @@ The **ThreeKingdoms-AgentEngine** test infrastructure provides an autonomous, mu
 - **Schema Contract (`tests/verify-schema-contract.ts`)**: A fresh schema + migrations database has the 45 runtime tables and required business/NPC columns.
 
 ### Tier 4: Invariant & State Conservation Auditor (`tools/sim-audit.js`)
-The auditor verifies **2,307 invariants across nine blocks** against SQLite as the
+The auditor verifies **2,313 invariants across nine blocks** against SQLite as the
 primary truth:
 1. Cashflow ledger sequence and player cash parity.
 2. Physical inventory non-negativity and movement balance.
@@ -145,7 +145,8 @@ primary truth:
 | `tests/verify-npc-conservation.ts` | NPC: Income/troop ledger | — | Commerce transfers cash, raid draws lair/garrison, ledger balances match |
 | `tests/verify-npc-business-succession.ts` | NPC: Business succession | — | Heir, foreman trustee, settlement liquidation, applyNpcDeath wiring |
 | `tests/verify-terminal-state.ts` | Campaign: Terminal state | — | Victory before bankruptcy, two-month bankrupt, CAMPAIGN_OVER guard |
-| `tools/sim-audit.js` | System: Autonomous Invariant Auditor | 2,307 | Nine blocks: accounting, inventory, journal, projection, enterprise, strategy, life-sim, clock, trade/warehouse/shipment |
+| `tests/verify-npc-refusal.ts` | Social: Hire refusal | — | Low-standing refusal, retry date, affinity-gated success |
+| `tools/sim-audit.js` | System: Autonomous Invariant Auditor | 2,313 | Nine blocks: accounting, inventory, journal, projection, enterprise, strategy, life-sim, clock, trade/warehouse/shipment |
 
 ---
 
@@ -162,7 +163,7 @@ npx tsx tests/verify-rotk-duels.ts
 
 ### Full Verification Pipeline
 ```bash
-# Single gate: typecheck → arch ratchet → 97 suites → API contract → write smoke
+# Single gate: typecheck → arch ratchet → 98 suites → API contract → write smoke
 npm run verify
 
 # Individually:
@@ -176,7 +177,7 @@ npm run routes:shadow  # fails if a legacy route is already served by the Router
 npm test               # 4 legacy + 82 verify-*.ts suites, isolated DB per suite
 npm run golden:verify  # 28 read-only endpoint contracts
 npm run smoke:write    # 8 HTTP write paths + post-write audit
-npm run audit          # 2,307 SQLite invariants in nine blocks
+npm run audit          # 2,313 SQLite invariants in nine blocks
 ```
 
 ### Per-Feature Refactor Protocol
@@ -224,7 +225,7 @@ To guarantee that test execution never corrupts active session data or causes in
        ▼
 [4. AUDIT GATE]
   Execute node tools/sim-audit.js.
-  Assert 2,307 invariants verified with 0 discrepancies.
+  Assert 2,313 invariants verified with 0 discrepancies.
 ```
 
 ---

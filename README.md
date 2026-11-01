@@ -1,6 +1,6 @@
 # ThreeKingdoms-AgentEngine
 
-[![Audit Status](https://img.shields.io/badge/Audit-2%2C307%2F2%2C307%20Passed-emerald.svg)](tools/sim-audit.js)
+[![Audit Status](https://img.shields.io/badge/Audit-2%2C313%2F2%2C313%20Passed-emerald.svg)](tools/sim-audit.js)
 [![Architecture](https://img.shields.io/badge/Architecture-Universe%20v4.0%20Modular-blueviolet.svg)](src/core/module-registry.ts)
 [![Stack](https://img.shields.io/badge/Stack-TypeScript%20%7C%20Vite%20%7C%20SQLite%20%7C%20MCP-blue.svg)](package.json)
 [![License](https://img.shields.io/badge/License-MIT-gray.svg)](LICENSE)
@@ -20,7 +20,7 @@ An autonomous, deterministic grand strategy simulation engine and character-driv
 7. [Interactive Historical Event Engine](#interactive-historical-event-engine)
 8. [Model Context Protocol (MCP) Integration](#model-context-protocol-mcp-integration)
 9. [Getting Started & Operational Commands](#getting-started--operational-commands)
-10. [Auditing & Zero-Drift Invariants (2,307)](#auditing--zero-drift-invariants-2307-checks)
+10. [Auditing & Zero-Drift Invariants (2,313)](#auditing--zero-drift-invariants-2313-checks)
 11. [Mathematical & Economic Formulas](#mathematical--economic-formulas)
 
 ---
@@ -105,7 +105,7 @@ ThreeKingdoms-AgentEngine/
 ├── tools/                             # Deterministic CLI Verification & Audit Layer
 │   ├── schema.sql                     # Active session database schema (ACID tables)
 │   ├── schema-master.sql              # Immutable historical master catalog schema
-│   ├── sim-audit.js                   # Independent auditor (2,307 invariants in 9 blocks)
+│   ├── sim-audit.js                   # Independent auditor (2,313 invariants in 9 blocks)
 │   ├── sim-db.js                      # Fast SQLite CLI bridge & progress exporter
 │   └── sim-web.js                     # High-performance HTTP server
 │
@@ -283,7 +283,7 @@ The project includes a native **Model Context Protocol (MCP)** server operating 
 | `sim_get_kizuna` | `{ charA: string, charB: string }` | Query 2-axis social relations (Affinity, Respect), Sworn Brotherhood, and Hooks. |
 | `sim_record_memory` | `{ npcId: string, topic: string, lessonLearned: string, emotionalValence?: string }` | Record episodic memory reflections for continuous NPC self-learning. |
 | `sim_get_npc_journey` | `{ npcId?: string, limit?: number }` | Retrieve autonomous progression state, ambition, prestige, and journey chronicle. |
-| `sim_audit_invariants` | `{}` | Execute independent verification of all 2,307 database invariants. |
+| `sim_audit_invariants` | `{}` | Execute independent verification of all 2,313 database invariants. |
 
 ### Connecting AI Agents
 
@@ -344,19 +344,19 @@ against a live save without a backup. `sim-db init` applies migrations automatic
 
 | Command | Action | Description |
 | :--- | :--- | :--- |
-| `npm run verify` | **Full Gate** | Runs typecheck → architecture guard → client syntax → UI ratchet → anti-slop lint → client API contract → route-shadow report → 97 verification suites → API contract check → write-path smoke. |
+| `npm run verify` | **Full Gate** | Runs typecheck → architecture guard → client syntax → UI ratchet → anti-slop lint → client API contract → route-shadow report → 98 verification suites → API contract check → write-path smoke. |
 | `npm run lint:api` | Architecture | Fails when the TS client calls an `/api/*` path that neither the Router nor the gateway serves (known gaps are reasoned in `tools/client-api-allowlist.json`). |
 | `npm run lint:slop` | Architecture | Enforces AS-05 (no emoji), AS-06 (no gradients), neutral elevation, two font families; ratchets the font-size scale. |
 | `npm run lint:ui` | Architecture | Ratchets legacy UI debt (button classes, class usages, inline styles, native confirms); new surfaces should use `src/client/core/ui` (`window.UI`). |
 | `npm run lint:client` | Architecture | Parses every classic client script (`public/app.js`, `public/js/*.js`); one parse error disables a whole UI file. |
 | `npm run routes:shadow` | Architecture | Fails if any legacy `sim-web.js` handler is already served by the modular Router (dead code). |
-| `npm test` | Verification | Runs all 97 suites (4 legacy self-sandboxed + 93 TypeScript `verify-*.ts`) against isolated DB copies. |
+| `npm test` | Verification | Runs all 98 suites (4 legacy self-sandboxed + 94 TypeScript `verify-*.ts`) against isolated DB copies. |
 | `npm run smoke:write` | Verification | Boots the app on a sandbox DB and exercises 8 write paths (trade, loans, equip/unequip, idempotency, input rejection, post-write audit). |
 | `npm run lint` | Architecture | Ratcheting guard over `tools/arch-baseline.json`: SQLite-CLI spawns, SQL interpolation, unseeded RNG, silent catches, the `current_date` keyword trap, legacy UI growth. |
 | `npm run golden:verify` | API Contract | Boots the real composition root and diffs 28 read-only endpoints against `tests/golden/api-shape.json`. |
 | `npm run perf:record` | Performance | Captures p95 latency and a normalised body fingerprint per endpoint, plus `tests/perf/fixture.db`. |
 | `npm run perf:compare` | Performance | Re-measures against the fixture and fails on logic drift or p95 regression. |
-| `npm run audit` | Verification | Executes independent verification of all 2,307 SQLite invariants across nine blocks. |
+| `npm run audit` | Verification | Executes independent verification of all 2,313 SQLite invariants across nine blocks. |
 | `npm run migrate` | Data | Applies versioned, idempotent data migrations to the active session database. |
 | `npm run scaffold:feature` | Tooling | Creates `src/modules/<domain>/<feature>/` and a smoke suite following `docs/FEATURE_MODULE_STANDARD.md`. |
 | `npm run typecheck` | TypeScript | Performs compile-time strict type-checking across all `.ts` files. |
@@ -369,7 +369,7 @@ against a live save without a backup. `sim-db init` applies migrations automatic
 
 ---
 
-## Auditing & Zero-Drift Invariants (2,307 checks)
+## Auditing & Zero-Drift Invariants (2,313 checks)
 
 The engine enforces strict conservation laws across every transaction:
 

@@ -6,18 +6,22 @@ Baseline HEAD: `c775225` (1.39.0; clean working tree)
 Source analyses: `docs/audit/*`, `docs/*_2026-10-29.md`, `docs/REFACTOR_2026-10.md`,
 `docs/PRESTIGE_SYSTEM.md`, plus the 2026-11-01 supply-chain re-check.
 
-Baseline gate after Wave 0, Wave 1 (except W1-5) and Wave 2:
+Baseline gate after Wave 0–2 and W3-1:
 
 | Gate | Result |
 | :--- | :--- |
-| `npm run verify` | 97/97 suites, 28/28 API contracts, 8/8 write smokes |
-| `npm run audit` | 2,307 invariants, 0 discrepancies |
+| `npm run verify` | 98/98 suites, 28/28 API contracts, 8/8 write smokes |
+| `npm run audit` | 2,313 invariants, 0 discrepancies |
 | Route shadow report | 48 live legacy handlers, 0 shadowed |
 
 Wave 0 (`c775225`), W1-1/W1-2/W1-6 (`43f22da`, `5346294`), W1-4 (`ea945f9`),
 W1-3 (`e4bb051`), the W1-7 warehouse/boat part (`d4228d9`), W2-1 (`e106118`),
-W2-2 (`6ed8c5f`), W2-3 (`71a3d5d`) and W2-4 (`3ca03b2`) are complete.
-W1-5 and multi-item routes remain.
+W2-2 (`6ed8c5f`), W2-3 (`71a3d5d`), W2-4 (`3ca03b2`) and W3-1 (`08f2ec4`) are
+complete. W1-5, multi-item routes and W3-2–W3-7 remain.
+
+Map direction: `docs/MAP_EVOLUTION_ANALYSIS_2026-11-01.md` recommends one
+canonical registry and clickable sub-locations first, then a hybrid tile layer;
+it does not change the Wave 5 ordering.
 The rule for every item below: one feature per commit, `npm run verify` and
 `npm run audit` green before the commit, only task-scoped files staged.
 
@@ -275,8 +279,8 @@ Month close checks victory before bankruptcy, and a terminal status
 
 | ID | Task | Design | Test |
 | :--- | :--- | :--- | :--- |
-| W3-1 | NPC hire refusal | Reuse `npc_pricing` affinity + ambition + loyalty; a refusal returns a reason and a retry-after date; no silent success | `verify-npc-refusal.ts` |
-| W3-2 | NPC counter-bid | When the player buys the last units of a scarce item, a nearby NPC with cash and need bids; resolve by price/priority and re-plan the loser | `verify-npc-competition.ts` |
+| W3-1 | ✅ **Done (`08f2ec4`).** Hiring reads baseline affinity + deltas, fame and virtue; low-standing strangers and proud officers refuse with `NPC_REFUSED` + 30-day retry date. | `verify-npc-refusal.ts` |
+| W3-2 | NPC counter-bid: when the player buys the last units of a scarce item, a nearby NPC with cash and need bids; resolve by price/priority and re-plan the loser | `verify-npc-competition.ts` |
 | W3-3 | Player defection | New action `JOIN_FACTION`/`DEFECT`; validate faction exists, reputation gate, transfer officers/enterprises, update `player_state.faction_id` | `verify-player-defection.ts` |
 | W3-4 | Diplomacy HTTP route | Wrap `FactionPoliticsModule.getDiplomacyRelations()` as `GET /api/factions/diplomacy`; map diplomacy mode consumes it | `lint:api` contract |
 | W3-5 | Delegated garrison/caravan | Appoint a marshal/master with a delegation level, like enterprise managers; monthly autonomous orders | `verify-delegation.ts` |
@@ -450,7 +454,7 @@ both counts down.
   between a soft warning and an extended calendar before long campaigns are tested.
 - Remaining `Lượt` labels in panels (DAY_UNIT P4).
 - Documentation sync is done: `HANDOFF.md` and `PROGRESS.md` now point at the
-  current 95-suite / 2,307-invariant gate instead of the 20-test snapshot.
+  current 98-suite / 2,313-invariant gate instead of the 20-test snapshot.
 
 ---
 
@@ -471,16 +475,16 @@ both counts down.
 
 ## 13. Recommended next slice
 
-Wave 2 is complete. Continue with:
+Wave 2 is complete and W3-1 (hire refusal) is done. Continue with:
 
-1. `W1-5 per-city bag` — make `inventory_items.location` authoritative per
-   settlement, move stock on travel, and update trade/stall/warehouse queries.
-2. `multi-item merchant routes` — allow one route to carry a basket instead of a
-   single `item_code`; extend `merchant_route_stock` and the UI.
-3. Start **Wave 3** with NPC hire refusal and counter-bidding, then player
-   defection and the `ExecutionContext` ratchet.
+1. `W3-2 NPC counter-bid` — a nearby NPC competes for scarce stock.
+2. `W3-3 player defection` — join/leave a faction with reputation and asset rules.
+3. `W3-4 diplomacy HTTP route`, `W3-5 delegated garrison/caravan`,
+   `W3-6 ExecutionContext` ratchet, `W3-7 intent planner`.
+4. `W1-5 per-city bag` and multi-item merchant routes when transport is the
+   active focus.
 
-`W2-1` through `W2-4` are done.
+`W2-1` through `W2-4` and `W3-1` are done.
 
 New features should follow `docs/FEATURE_MODULE_STANDARD.md` and start from
 `npm run scaffold:feature <name> --domain=<domain>`.

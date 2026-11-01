@@ -533,3 +533,23 @@ This document records the architectural choices, rationale, and alternatives con
 - **Consequences**:
   - Positive: One precedence rule: victory > bankruptcy > active; terminal state is enforced at the action boundary.
   - Negative: A player who is technically bankrupt but fulfils the victory condition in the same close wins that close.
+
+---
+
+## ADR-051: NPCs Can Refuse a Hire Offer (2026-11-01)
+
+- **Context**: Paying the signing bonus always succeeded; specialists had no agency and a penniless stranger could hire a famous officer if fame passed the gate.
+- **Decision**: Hiring reads the same affinity as the social screen (baseline sentiment + deltas), plus fame and virtue. A stranger with affinity < 5, fame < 200 and virtue < 30 is refused; a proud officer is refused below affinity 20 and fame 1,000. The error is `NPC_REFUSED` with `affinity` and a 30-day `retryAfterDate`.
+- **Consequences**:
+  - Positive: Relationship building has a concrete economic payoff; no silent success.
+  - Negative: The player must sometimes travel, gift or socialise before hiring; existing saves with no relationship deltas can see refusals at low fame.
+
+---
+
+## ADR-052: Hybrid Tile Layer, Not a Full ROTK XIV Rewrite (2026-11-01)
+
+- **Context**: The map is a 20-node strategic graph with 24 routes; 133 sub-locations, 132 POI scenes and 23 resource nodes are not fully reachable. A ROTK XIV-style continuous tile map would add spatial mechanics but is a large art/data rewrite.
+- **Decision**: Keep the 20-node strategic graph and add a tile/terrain layer at local zoom for movement cost, supply, ambush and fog. First make SQLite the single map registry and make every sub-location/POI clickable. Do not replace the strategic map with a continuous tile map until field movement and terrain combat are core loops.
+- **Consequences**:
+  - Positive: The known four-source map defect is fixed first; tile mechanics can be added incrementally.
+  - Negative: The map will not look like ROTK XIV's continuous terrain in this phase; local zoom is the only tile surface.
