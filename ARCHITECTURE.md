@@ -153,7 +153,7 @@ not require editing that test.
 | :--- | :--- | :--- |
 | Types | `npm run typecheck` | `strict` TypeScript across `src/`, `tests/`, `vite.config.ts`. |
 | Architecture | `npm run lint` | Ratchet over `tools/arch-baseline.json`; debt may only shrink. |
-| Behaviour | `npm test` | 75 suites (4 legacy + 71 modern); each modern suite runs on an isolated DB copy and projections are restored afterwards. |
+| Behaviour | `npm test` | 76 suites (4 legacy + 72 modern); each modern suite runs on an isolated DB copy and projections are restored afterwards. |
 | API contract | `npm run golden:verify` | 28 read-only endpoints: status code, response shape, behavioural assertions. |
 | Write paths | `npm run smoke:write` | 8 HTTP write paths plus a post-write audit on a sandbox database. |
 | Invariants | `npm run audit` | 1,546 SQLite invariants (ledger parity, inventory conservation, projection sync, world/life-sim/clock blocks). |
@@ -684,6 +684,30 @@ Adding a new species or processed good is still data: one variant row (or one
 recipe + items), no gather/craft code change.
 
 Gate: `tests/verify-resource-variants.ts`.
+
+### 16.5 Rare recipes and active restoration (1.34.0)
+
+Rare variants now have sinks of their own:
+
+- Carp → fine dried carp (`REC-FISH-DRY-CARP`).
+- Sturgeon roe → caviar (`REC-CAVIAR`, fish skill tier 3).
+- Summer shrimp → shrimp paste (`REC-SHRIMP-PASTE`).
+- Venison → venison jerky (`REC-VENISON-JERKY`).
+- Antler → antler tonic (`REC-ANTLER-TONIC`, herb preparation tier 2).
+- Pine → pine board (`REC-PINE-PLANK`); ebony → ebony board
+  (`REC-EBONY-BOARD`, survival tier 3).
+
+`resource_node_rules` gains `restore_item_code`, `restore_cash`,
+`restore_stock`, `restore_days`, `restore_skill_code` and `restore_min_tier`.
+`POST /api/professions/nodes/restore` charges one `RESTORE_NODE` day, consumes
+one fry/sapling/salt-lick/seedling, pays the labour fee through
+`postDoubleEntry` (`Livelihood/NodeRestore`), refills the node up to its cap and
+awards the restoration skill. The legacy gather screen shows live stock, tool /
+skill requirement, a disabled button when the node is empty, the restore button,
+and the variant quality/byproduct in the harvest toast.
+
+Gate: `tests/verify-node-restoration.ts`.
+
 
 
 

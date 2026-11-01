@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.34.0] - 2026-10-31
+
+Rare-variant sinks and active resource restoration.
+
+### Added
+- Seven rare-variant recipes: fine dried carp, sturgeon caviar, shrimp paste,
+  venison jerky, antler tonic, pine board and ebony board.
+- `resource_node_rules` gains `restore_item_code`, `restore_cash`,
+  `restore_stock`, `restore_days`, `restore_skill_code`, `restore_min_tier`.
+- Four restoration inputs (fish fry, sapling, salt lick, herb seedling).
+- `POST /api/professions/nodes/restore` charges one `RESTORE_NODE` day, consumes
+  one input, pays the cash fee through `postDoubleEntry`, refills the node and
+  awards the restoration skill.
+- Legacy gather screen shows live stock, tool/skill requirement, empty-state
+  disable, restore button, variant quality and byproduct in the toast.
+- `tests/verify-node-restoration.ts` plus rare-recipe coverage in
+  `verify-resource-variants.ts`.
+
+### Verification
+`npm run verify` green: 76/76 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,546 invariants, 0 discrepancies.
+
+---
+
 ## [1.33.0] - 2026-10-31
 
 Species variants and processing chains for fishing, hunting and forestry.

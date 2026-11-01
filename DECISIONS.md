@@ -333,3 +333,13 @@ This document records the architectural choices, rationale, and alternatives con
 - **Consequences**:
   - Positive: A new species or processed good is one row plus its item/recipe; fish, game and timber now have distinct economic identities and sinks.
   - Negative: Rare variants need balance monitoring; recipes still consume only the base common item, so variant-specific cuisine remains a later content pass.
+
+---
+
+## ADR-031: Depleted Nodes Are Restored by Players, Not Only Time (2026-10-31)
+
+- **Context**: Lazy stock regeneration made nodes finite, but the player could only wait. Rare variants and processing added demand, while forestry/fishing had no active way to invest in their resource base.
+- **Decision**: Migration 058 adds restoration columns to `resource_node_rules` and four stock items (fish fry, sapling, salt lick, herb seedling). `POST /api/professions/nodes/restore` charges one `RESTORE_NODE` day, consumes one stock item, pays a cash fee through `postDoubleEntry` (`Livelihood/NodeRestore`), refills stock up to the cap and awards the restoration skill. The legacy gather screen shows stock, tool/skill requirements, a disabled empty state and a restore button.
+- **Consequences**:
+  - Positive: Fishing, forestry, hunting and herb gathering now have an input → restoration → output loop; restoration costs are real and auditable.
+  - Negative: Restoration is per-node and manual; NPC-driven restoration and per-warehouse transport remain later phases.
