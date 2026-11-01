@@ -303,3 +303,13 @@ This document records the architectural choices, rationale, and alternatives con
 - **Consequences**:
   - Positive: A retried request cannot double a loan, a crafted batch, a banquet, a quest step, a duel round, a mentorship session or a succession transfer; the `action_log` records each successful mutation once.
   - Negative: Every new mutation must decide its time cost and key policy; repeatable actions must omit the key deliberately.
+
+---
+
+## ADR-028: Life Layer Uses Existing Needs, One Service (2026-10-31)
+
+- **Context**: Life-sim content existed but was disconnected: kizuna mentorship computed `expGained` without persisting it, three of four household roles were descriptive, `growth_focus` was inert, and there was no LIFE skill domain or daily routine.
+- **Decision**: Add `player_life_state` (stress, meal/rest dates, upkeep month) and nine `LIFE` skills. `LifeService` owns six actions (eat, sleep, tea, upkeep, study, leisure); `POST /api/life/act` charges one phase or one day, requires an idempotency key, and routes every money move through `postDoubleEntry`. The Personal Journal gains a `Gia Đạo` tab. Existing `fatigue`, `morale` and `health` remain the needs; only `stress` is new.
+- **Consequences**:
+  - Positive: Daily phases now have a life-sim sink; social, household and self-care actions train real skills and the four spouse roles apply real bonuses.
+  - Negative: The life loop is deliberately small (three needs, six actions); festivals, illness, child skills and the twelve livelihood skills remain later phases.

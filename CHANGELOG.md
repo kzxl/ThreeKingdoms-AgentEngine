@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.31.0] - 2026-10-31
+
+Life-sim systems now feed a real skill domain and a daily loop.
+
+### Added
+- Migration 054 adds `player_life_state` (stress, last meal/rest, monthly upkeep)
+  and nine `LIFE` skills with tiered effects and perks: cooking, tea ceremony,
+  etiquette, household stewardship, family instruction, medicine, music/chess,
+  restraint and civic duty.
+- `LifeService` and `POST /api/life/act` expose six actions: eat, sleep, tea,
+  household upkeep, study and leisure. Each action charges one phase (sleep one
+  day), accepts an idempotency key and awards the matching LIFE skill EXP.
+- Household upkeep is a real `postDoubleEntry` cashflow (`Life/HouseholdUpkeep`).
+- Personal Journal gains a `Gia Đạo` tab with four needs, phase, household
+  summary and action buttons.
+- `tests/verify-life-layer.ts` covers needs, phases, skill EXP, upkeep ledger and
+  replay.
+
+### Fixed
+- Kizuna `LEARN_MENTOR` now persists its `expGained` to `SKL-WAR-DUEL` or
+  `SKL-TAC-STRAT` and uses `postDoubleEntry` instead of a manual journal pair.
+- Household roles are wired: `ENTERPRISE_SUPERVISOR` (+15% player business
+  efficiency), `MILITARY_DEFENDER` (+25% effective caravan guards), while
+  `STRATEGIC_ADVISOR` keeps its mentorship bonus.
+- `growth_focus` now applies +25% to the matching mentorship stats; `virtue`
+  lowers specialist signing bonuses by up to 10%.
+- `tests/verify-life-wiring.ts` covers all four wirings.
+
+### Verification
+`npm run verify` green: 73/73 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,546 invariants, 0 discrepancies.
+
+---
+
 ## [1.30.0] - 2026-10-31
 
 Core contracts now cover the extended feature groups, not only the original

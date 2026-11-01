@@ -153,7 +153,7 @@ not require editing that test.
 | :--- | :--- | :--- |
 | Types | `npm run typecheck` | `strict` TypeScript across `src/`, `tests/`, `vite.config.ts`. |
 | Architecture | `npm run lint` | Ratchet over `tools/arch-baseline.json`; debt may only shrink. |
-| Behaviour | `npm test` | 71 suites (4 legacy + 67 modern); each modern suite runs on an isolated DB copy and projections are restored afterwards. |
+| Behaviour | `npm test` | 73 suites (4 legacy + 69 modern); each modern suite runs on an isolated DB copy and projections are restored afterwards. |
 | API contract | `npm run golden:verify` | 28 read-only endpoints: status code, response shape, behavioural assertions. |
 | Write paths | `npm run smoke:write` | 8 HTTP write paths plus a post-write audit on a sandbox database. |
 | Invariants | `npm run audit` | 1,546 SQLite invariants (ledger parity, inventory conservation, projection sync, world/life-sim/clock blocks). |
@@ -519,5 +519,77 @@ Each group has a dedicated gate: `verify-loan-contracts`, `verify-ecology-contra
 `verify-profession-contracts`, `verify-social-contracts`,
 `verify-progression-contracts`, `verify-duel-contracts` and
 `verify-lineage-contracts`.
+
+---
+
+## 15. Life Layer (1.31.0)
+
+The life systems (kizuna, lineage, banquets, farmland) predate the skill
+catalog. Section 14.10 closed their mutation contracts; this section connects
+them to a real skill domain and a daily loop.
+
+### 15.1 LIFE domain
+
+Migration 054 adds nine skills under `domain = 'LIFE'`:
+
+| Code | Skill | Attribute | Effect type |
+| :--- | :--- | :--- | :--- |
+| `SKL-LIF-COOK` | Kitchen & Household Feasts | CRA + INT | `MORALE_RECOVERY` |
+| `SKL-LIF-TEA` | Tea Ceremony & Hospitality | DIP + POL | `SOCIAL_GAIN` |
+| `SKL-LIF-ETIQ` | Etiquette & Household Rules | POL + DIP | `CREDIBILITY_GAIN` |
+| `SKL-LIF-HOUSE` | Household Stewardship | POL + LOG | `UPKEEP_DISCOUNT` |
+| `SKL-LIF-PARENT` | Family Instruction & Upbringing | INT + POL | `CHILD_GROWTH` |
+| `SKL-LIF-MED` | Medicine & Convalescence | CRA + INT | `HEAL_RATE` |
+| `SKL-LIF-MUSIC` | Music, Chess & Letters | CRA + INT | `LEISURE_GAIN` |
+| `SKL-LIF-AUSTERE` | Restraint & Vitality | LOG + INT | `FATIGUE_RECOVERY` |
+| `SKL-LIF-CIVIC` | Civic Duty & Local Standing | POL + LDR | `VIRTUE_GAIN` |
+
+Each skill has tiered `master_skill_effects` and two `master_perks` (tiers 3
+and 5). Effects are read through `SkillService.getEffectTotal`, so caps live in
+the service that consumes them, not in the master row.
+
+### 15.2 Daily loop
+
+`player_life_state` (migration 054) stores `stress`, `last_meal_date`,
+`last_rest_date`, `last_upkeep_month` and `routine_streak` per character.
+
+`LifeService` owns six actions:
+
+| Action | Time | Effect |
+| :--- | :--- | :--- |
+| `EAT_MEAL` | 1 phase | 0.1 grain, +morale (COOK), -stress |
+| `SLEEP` | 1 day | fatigue recovery (AUSTERE), +morale, -stress |
+| `TEA_WITH_NPC` | 1 phase | kizuna TEA_CONVERSE + TEA affinity bonus |
+| `HOUSEHOLD_UPKEEP` | 1 phase | monthly household bill through `postDoubleEntry` (HOUSE discount) |
+| `STUDY_TRAIN` | 1 phase | +20 skill EXP to any catalog skill |
+| `LEISURE` | 1 phase | +morale (MUSIC), -stress, MUSIC EXP |
+
+`POST /api/life/act` validates the action before charging, uses the shared
+`action-journal` key, and records every success. `GET /api/life/status` returns
+the four needs (`fatigue`, `morale`, `stress`, `health`), the current phase,
+household summary, learned LIFE skills and available actions.
+
+### 15.3 Household wiring (1.31.0)
+
+The four spouse roles now have real consumers:
+
+- `HOUSEKEEPER`: +45 fatigue recovery on spouse rest.
+- `ENTERPRISE_SUPERVISOR`: +15% efficiency for player-owned businesses at month
+  close (`engine/business-economics.js`).
+- `STRATEGIC_ADVISOR`: +25% INT/POL gains in mentorship.
+- `MILITARY_DEFENDER`: +25% effective guards when a player caravan is ambushed.
+
+`growth_focus` now multiplies the matching mentorship stats by 1.25
+(`WARFARE` → WAR/LDR, `INTELLECT` → INT/POL, `COMMERCE` → COM/LOG). `virtue`
+reduces specialist signing bonuses by up to 10% (`specialist-workforce`).
+
+### 15.4 UI
+
+The Personal Journal gains a `Gia Đạo` tab: four need bars, current phase,
+household summary, six action buttons and the learned LIFE skills. It calls the
+life API directly; no new legacy script or contextual-action switch is added.
+
+Gates: `tests/verify-life-layer.ts` and `tests/verify-life-wiring.ts`.
+
 
 
