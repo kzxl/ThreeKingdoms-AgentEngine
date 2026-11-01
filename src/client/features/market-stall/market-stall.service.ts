@@ -64,6 +64,44 @@ export interface WarehouseView {
   status: string;
 }
 
+export interface FreightContractView {
+  contractId: string;
+  fromSettlementId: string;
+  toSettlementId: string;
+  itemCode: string;
+  quantity: number;
+  rewardCash: number;
+  deadline: string;
+  daysLeft: number;
+  travelDays: number;
+  status: string;
+}
+
+export interface FreightShipmentView {
+  shipmentId: string;
+  contractId: string;
+  itemCode: string;
+  quantity: number;
+  daysRemaining: number;
+  status: string;
+  rewardCash: number;
+  guardTier: string;
+  insured: boolean;
+  ambushLossQuantity: number;
+}
+
+export interface MerchantRouteView {
+  routeId: string;
+  nameVi: string;
+  itemCode: string;
+  fromSettlementId: string;
+  toSettlementId: string;
+  status: string;
+  quantityPerRun: number;
+  frequencyDays: number;
+  nextRunDate: string;
+}
+
 export class MarketStallService {
   private static instance: MarketStallService;
 
@@ -142,19 +180,19 @@ export class MarketStallService {
     });
   }
 
-  public async getFreightContracts(settlementId?: string): Promise<any[]> {
+  public async getFreightContracts(settlementId?: string): Promise<FreightContractView[]> {
     const res = await apiClient.get('/api/freight/contracts', settlementId ? { settlementId } : undefined);
     return (res as any).contracts || [];
   }
 
-  public async getFreightShipments(): Promise<any[]> {
+  public async getFreightShipments(): Promise<FreightShipmentView[]> {
     const res = await apiClient.get('/api/freight/shipments');
     return (res as any).shipments || [];
   }
 
-  public async acceptFreight(contractId: string, guardTier = 'VETERAN'): Promise<any> {
+  public async acceptFreight(contractId: string, guardTier = 'VETERAN', insurance = false): Promise<any> {
     return apiClient.post('/api/freight/accept', {
-      contractId, guardTier, idempotencyKey: `freight-accept-${contractId}-${Date.now()}`
+      contractId, guardTier, insurance, idempotencyKey: `freight-accept-${contractId}-${Date.now()}`
     });
   }
 
@@ -164,7 +202,7 @@ export class MarketStallService {
     });
   }
 
-  public async getMerchantRoutes(): Promise<any[]> {
+  public async getMerchantRoutes(): Promise<MerchantRouteView[]> {
     const res = await apiClient.get('/api/merchant/routes');
     return (res as any).routes || [];
   }
@@ -172,6 +210,12 @@ export class MarketStallService {
   public async getMerchantEvents(): Promise<any[]> {
     const res = await apiClient.get('/api/merchant/events');
     return (res as any).events || [];
+  }
+
+  public async setMerchantRouteStatus(routeId: string, status: 'ACTIVE' | 'PAUSED'): Promise<any> {
+    return apiClient.post(`/api/merchant/routes/${routeId}/status`, {
+      status, idempotencyKey: `merchant-route-${routeId}-${status}-${Date.now()}`
+    });
   }
 }
 

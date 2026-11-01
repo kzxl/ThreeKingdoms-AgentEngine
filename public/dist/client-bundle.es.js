@@ -1979,10 +1979,11 @@ var W = new class {
 	async getFreightShipments() {
 		return (await v.get("/api/freight/shipments")).shipments || [];
 	}
-	async acceptFreight(e, t = "VETERAN") {
+	async acceptFreight(e, t = "VETERAN", n = !1) {
 		return v.post("/api/freight/accept", {
 			contractId: e,
 			guardTier: t,
+			insurance: n,
 			idempotencyKey: `freight-accept-${e}-${Date.now()}`
 		});
 	}
@@ -1998,6 +1999,12 @@ var W = new class {
 	async getMerchantEvents() {
 		return (await v.get("/api/merchant/events")).events || [];
 	}
+	async setMerchantRouteStatus(e, t) {
+		return v.post(`/api/merchant/routes/${e}/status`, {
+			status: t,
+			idempotencyKey: `merchant-route-${e}-${t}-${Date.now()}`
+		});
+	}
 }.getInstance();
 // src/client/features/market-stall/market-stall.modal.ts
 function K(e) {
@@ -2011,6 +2018,9 @@ var J = new class {
 	stall = null;
 	offers = [];
 	warehouses = [];
+	freightContracts = [];
+	freightShipments = [];
+	merchantRoutes = [];
 	constructor() {
 		this.modal = i({
 			id: "market-stall-modal",
@@ -2033,6 +2043,11 @@ var J = new class {
 					id: "warehouse",
 					label: "Kho Thành",
 					seal: "倉"
+				},
+				{
+					id: "logistics",
+					label: "Vận Chuyển",
+					seal: "運"
 				}
 			],
 			activeTabId: "stall",
@@ -2052,10 +2067,16 @@ var J = new class {
 	}
 	async refresh() {
 		this.stall = await G.getStall("PLY-0001"), this.offers = await G.getOffers(this.stall?.settlementId), this.warehouses = await G.getWarehouses();
+		let [e, t, n] = await Promise.all([
+			G.getFreightContracts(this.stall?.settlementId).catch(() => []),
+			G.getFreightShipments().catch(() => []),
+			G.getMerchantRoutes().catch(() => [])
+		]);
+		this.freightContracts = e, this.freightShipments = t, this.merchantRoutes = n;
 	}
 	render() {
 		let e = this.modal.activeTab || "stall";
-		e === "offers" ? this.modal.setContent(this.renderOffers()) : e === "warehouse" ? this.modal.setContent(this.renderWarehouses()) : this.modal.setContent(this.renderStall()), this.bind();
+		e === "offers" ? this.modal.setContent(this.renderOffers()) : e === "warehouse" ? this.modal.setContent(this.renderWarehouses()) : e === "logistics" ? this.modal.setContent(this.renderLogistics()) : this.modal.setContent(this.renderStall()), this.bind();
 	}
 	renderStall() {
 		if (!this.stall) return "\n        <div class=\"journal-modal-content\">\n          <div class=\"spatial-banner-lead\">\n            <div class=\"lead-seal\">市</div>\n            <div class=\"lead-text\">\n              <h3>Chưa Có Quầy</h3>\n              <div class=\"text-muted text-sm\">Mở quầy tại thành đang đứng (phí 20 Quan) để NPC trong thành mua hàng mỗi ngày.</div>\n            </div>\n          </div>\n          <button class=\"ui-btn ui-btn--primary\" data-stall-action=\"open\">Mở Quầy</button>\n        </div>\n      ";
@@ -2182,6 +2203,70 @@ var J = new class {
       </div>
     `;
 	}
+	renderLogistics() {
+		return `
+      <div class="journal-modal-content">
+        <div class="spatial-banner-lead">
+          <div class="lead-seal">運</div>
+          <div class="lead-text">
+            <h3>Vận Chuyển & Thương Lộ</h3>
+            <div class="text-muted text-sm">Hợp đồng freight trả phí theo chuyến; thương lộ tự động mua – chở – bán giữa hai kho. Hộ vệ yếu có thể bị ổ phỉ phục kích.</div>
+          </div>
+        </div>
+
+        <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800 mb-3">
+          <div class="text-xs font-bold text-amber-200 mb-2">Hợp Đồng Vận Chuyển</div>
+          ${this.freightContracts.length > 0 ? this.freightContracts.map((e) => `
+        <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800 mb-2">
+          <div class="flex justify-between items-start gap-3">
+            <div>
+              <div class="text-sm font-bold text-slate-200">${K(e.itemCode)} × ${e.quantity}</div>
+              <div class="text-[11px] text-muted">${K(e.fromSettlementId)} → ${K(e.toSettlementId)} • thưởng ${e.rewardCash} Quan • còn ${e.daysLeft} ngày • đi ${e.travelDays} ngày</div>
+            </div>
+            <label class="text-[10px] text-slate-300 flex items-center gap-1">
+              <input type="checkbox" data-freight-insurance="${K(e.contractId)}" /> Bảo hiểm +4%
+            </label>
+          </div>
+          <div class="flex gap-1 mt-2">
+            <button class="ui-btn ui-btn--ghost ui-btn--sm" data-freight-accept data-contract-id="${K(e.contractId)}" data-guard-tier="MILITIA">Dân Dũng</button>
+            <button class="ui-btn ui-btn--primary ui-btn--sm" data-freight-accept data-contract-id="${K(e.contractId)}" data-guard-tier="VETERAN">Thiện Chiến</button>
+            <button class="ui-btn ui-btn--ghost ui-btn--sm" data-freight-accept data-contract-id="${K(e.contractId)}" data-guard-tier="ELITE_RETINUE">Tinh Nhuệ</button>
+          </div>
+        </div>
+      `).join("") : "<div class=\"text-muted text-sm mb-2\">Thành này chưa có hợp đồng vận chuyển.</div>"}
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800">
+            <div class="text-xs font-bold text-amber-200 mb-2">Chuyến Hàng Của Ta</div>
+            ${this.freightShipments.length > 0 ? this.freightShipments.map((e) => `
+        <div class="flex justify-between items-center text-[11px] border-b border-slate-800 py-1.5 gap-2">
+          <div>
+            <div class="text-slate-200">${K(e.itemCode)} × ${e.quantity} • ${K(e.status)}</div>
+            <div class="text-muted">${e.status === "ARRIVED" ? "Đã đến đích" : `Còn ${e.daysRemaining} ngày`} • ${K(e.guardTier)}${e.insured ? " • có bảo hiểm" : ""}${e.ambushLossQuantity > 0 ? ` • mất ${e.ambushLossQuantity} do phục kích` : ""}</div>
+          </div>
+          ${e.status === "ARRIVED" ? `<button class="ui-btn ui-btn--primary ui-btn--sm" data-freight-deliver="${K(e.shipmentId)}">Giao hàng</button>` : ""}
+        </div>
+      `).join("") : "<div class=\"text-muted text-sm mb-2\">Không có chuyến hàng đang chạy.</div>"}
+          </div>
+          <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800">
+            <div class="text-xs font-bold text-amber-200 mb-2">Thương Lộ Tự Động</div>
+            ${this.merchantRoutes.length > 0 ? this.merchantRoutes.map((e) => `
+        <div class="flex justify-between items-center text-[11px] border-b border-slate-800 py-1.5 gap-2">
+          <div>
+            <div class="text-slate-200">${K(e.nameVi)} • ${K(e.itemCode)} × ${e.quantityPerRun}</div>
+            <div class="text-muted">${K(e.fromSettlementId)} → ${K(e.toSettlementId)} • ${K(e.status)} • mỗi ${e.frequencyDays} ngày</div>
+          </div>
+          <button class="ui-btn ui-btn--ghost ui-btn--sm" data-route-status data-route-id="${K(e.routeId)}" data-next-status="${e.status === "ACTIVE" ? "PAUSED" : "ACTIVE"}">
+            ${e.status === "ACTIVE" ? "Tạm Dừng" : "Tiếp Tục"}
+          </button>
+        </div>
+      `).join("") : "<div class=\"text-muted text-sm\">Chưa có thương lộ tự động. Tạo route từ API hoặc màn hình thương đoàn.</div>"}
+          </div>
+        </div>
+      </div>
+    `;
+	}
 	bind() {
 		let e = this.modal.getBodyElement();
 		e && (e.querySelectorAll("[data-stall-action]").forEach((t) => {
@@ -2217,6 +2302,36 @@ var J = new class {
 					n === "rent" ? (await G.rentWarehouse(), q("Đã thuê kho tại thành hiện tại.")) : n === "buy" ? (await G.buyWarehouse(), q("Đã mua kho tại thành hiện tại.")) : n === "deposit" ? (await G.deposit(r, i, a), q(`Đã nạp ${a} ${i} vào kho.`)) : (await G.withdraw(r, i, a), q(`Đã rút ${a} ${i} khỏi kho.`)), await this.refresh(), this.render();
 				} catch (e) {
 					t.removeAttribute("disabled"), q(e.message || "Thao tác kho thất bại.", !0);
+				}
+			});
+		}), e.querySelectorAll("[data-freight-accept]").forEach((t) => {
+			t.addEventListener("click", async () => {
+				let n = t.dataset.contractId || "", r = t.dataset.guardTier || "VETERAN", i = e.querySelector(`[data-freight-insurance="${n}"]`)?.checked === !0;
+				t.setAttribute("disabled", "true");
+				try {
+					await G.acceptFreight(n, r, i), q(i ? "Đã nhận chuyến và mua bảo hiểm." : "Đã nhận chuyến hàng."), await this.refresh(), this.render();
+				} catch (e) {
+					t.removeAttribute("disabled"), q(e.message || "Nhận chuyến thất bại.", !0);
+				}
+			});
+		}), e.querySelectorAll("[data-freight-deliver]").forEach((e) => {
+			e.addEventListener("click", async () => {
+				let t = e.dataset.freightDeliver || "";
+				e.setAttribute("disabled", "true");
+				try {
+					await G.deliverFreight(t), q("Đã giao hàng và nhận phí vận chuyển."), await this.refresh(), this.render();
+				} catch (t) {
+					e.removeAttribute("disabled"), q(t.message || "Giao hàng thất bại.", !0);
+				}
+			});
+		}), e.querySelectorAll("[data-route-status]").forEach((e) => {
+			e.addEventListener("click", async () => {
+				let t = e.dataset.routeId || "", n = e.dataset.nextStatus || "PAUSED";
+				e.setAttribute("disabled", "true");
+				try {
+					await G.setMerchantRouteStatus(t, n), q(n === "ACTIVE" ? "Đã tiếp tục thương lộ." : "Đã tạm dừng thương lộ."), await this.refresh(), this.render();
+				} catch (t) {
+					e.removeAttribute("disabled"), q(t.message || "Đổi trạng thái thương lộ thất bại.", !0);
 				}
 			});
 		}));

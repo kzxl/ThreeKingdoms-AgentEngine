@@ -3,7 +3,15 @@
  */
 
 import { createModalShell, ModalShellInstance } from '../../core/modal-shell';
-import { marketStallService, NpcOffer, StallView, WarehouseView } from './market-stall.service';
+import {
+  marketStallService,
+  FreightContractView,
+  FreightShipmentView,
+  MerchantRouteView,
+  NpcOffer,
+  StallView,
+  WarehouseView
+} from './market-stall.service';
 
 function esc(value: unknown): string {
   return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -18,6 +26,9 @@ export class MarketStallModal {
   private stall: StallView | null = null;
   private offers: NpcOffer[] = [];
   private warehouses: WarehouseView[] = [];
+  private freightContracts: FreightContractView[] = [];
+  private freightShipments: FreightShipmentView[] = [];
+  private merchantRoutes: MerchantRouteView[] = [];
 
   constructor() {
     this.modal = createModalShell({
@@ -29,7 +40,8 @@ export class MarketStallModal {
       tabs: [
         { id: 'stall', label: 'Quầy Của Ta', seal: '攤' },
         { id: 'offers', label: 'Hàng NPC Bán', seal: '貨' },
-        { id: 'warehouse', label: 'Kho Thành', seal: '倉' }
+        { id: 'warehouse', label: 'Kho Thành', seal: '倉' },
+        { id: 'logistics', label: 'Vận Chuyển', seal: '運' }
       ],
       activeTabId: 'stall',
       onOpen: async () => {
@@ -54,12 +66,21 @@ export class MarketStallModal {
     this.stall = await marketStallService.getStall('PLY-0001');
     this.offers = await marketStallService.getOffers(this.stall?.settlementId);
     this.warehouses = await marketStallService.getWarehouses();
+    const [contracts, shipments, routes] = await Promise.all([
+      marketStallService.getFreightContracts(this.stall?.settlementId).catch(() => []),
+      marketStallService.getFreightShipments().catch(() => []),
+      marketStallService.getMerchantRoutes().catch(() => [])
+    ]);
+    this.freightContracts = contracts;
+    this.freightShipments = shipments;
+    this.merchantRoutes = routes;
   }
 
   private render(): void {
     const tab = this.modal.activeTab || 'stall';
     if (tab === 'offers') this.modal.setContent(this.renderOffers());
     else if (tab === 'warehouse') this.modal.setContent(this.renderWarehouses());
+    else if (tab === 'logistics') this.modal.setContent(this.renderLogistics());
     else this.modal.setContent(this.renderStall());
     this.bind();
   }
@@ -227,6 +248,85 @@ export class MarketStallModal {
     `;
   }
 
+  private renderLogistics(): string {
+    const contracts = this.freightContracts.length > 0
+      ? this.freightContracts.map(contract => `
+        <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800 mb-2">
+          <div class="flex justify-between items-start gap-3">
+            <div>
+              <div class="text-sm font-bold text-slate-200">${esc(contract.itemCode)} × ${contract.quantity}</div>
+              <div class="text-[11px] text-muted">${esc(contract.fromSettlementId)} → ${esc(contract.toSettlementId)} • thưởng ${contract.rewardCash} Quan • còn ${contract.daysLeft} ngày • đi ${contract.travelDays} ngày</div>
+            </div>
+            <label class="text-[10px] text-slate-300 flex items-center gap-1">
+              <input type="checkbox" data-freight-insurance="${esc(contract.contractId)}" /> Bảo hiểm +4%
+            </label>
+          </div>
+          <div class="flex gap-1 mt-2">
+            <button class="ui-btn ui-btn--ghost ui-btn--sm" data-freight-accept data-contract-id="${esc(contract.contractId)}" data-guard-tier="MILITIA">Dân Dũng</button>
+            <button class="ui-btn ui-btn--primary ui-btn--sm" data-freight-accept data-contract-id="${esc(contract.contractId)}" data-guard-tier="VETERAN">Thiện Chiến</button>
+            <button class="ui-btn ui-btn--ghost ui-btn--sm" data-freight-accept data-contract-id="${esc(contract.contractId)}" data-guard-tier="ELITE_RETINUE">Tinh Nhuệ</button>
+          </div>
+        </div>
+      `).join('')
+      : '<div class="text-muted text-sm mb-2">Thành này chưa có hợp đồng vận chuyển.</div>';
+
+    const shipments = this.freightShipments.length > 0
+      ? this.freightShipments.map(shipment => `
+        <div class="flex justify-between items-center text-[11px] border-b border-slate-800 py-1.5 gap-2">
+          <div>
+            <div class="text-slate-200">${esc(shipment.itemCode)} × ${shipment.quantity} • ${esc(shipment.status)}</div>
+            <div class="text-muted">${shipment.status === 'ARRIVED' ? 'Đã đến đích' : `Còn ${shipment.daysRemaining} ngày`} • ${esc(shipment.guardTier)}${shipment.insured ? ' • có bảo hiểm' : ''}${shipment.ambushLossQuantity > 0 ? ` • mất ${shipment.ambushLossQuantity} do phục kích` : ''}</div>
+          </div>
+          ${shipment.status === 'ARRIVED'
+            ? `<button class="ui-btn ui-btn--primary ui-btn--sm" data-freight-deliver="${esc(shipment.shipmentId)}">Giao hàng</button>`
+            : ''}
+        </div>
+      `).join('')
+      : '<div class="text-muted text-sm mb-2">Không có chuyến hàng đang chạy.</div>';
+
+    const routes = this.merchantRoutes.length > 0
+      ? this.merchantRoutes.map(route => `
+        <div class="flex justify-between items-center text-[11px] border-b border-slate-800 py-1.5 gap-2">
+          <div>
+            <div class="text-slate-200">${esc(route.nameVi)} • ${esc(route.itemCode)} × ${route.quantityPerRun}</div>
+            <div class="text-muted">${esc(route.fromSettlementId)} → ${esc(route.toSettlementId)} • ${esc(route.status)} • mỗi ${route.frequencyDays} ngày</div>
+          </div>
+          <button class="ui-btn ui-btn--ghost ui-btn--sm" data-route-status data-route-id="${esc(route.routeId)}" data-next-status="${route.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE'}">
+            ${route.status === 'ACTIVE' ? 'Tạm Dừng' : 'Tiếp Tục'}
+          </button>
+        </div>
+      `).join('')
+      : '<div class="text-muted text-sm">Chưa có thương lộ tự động. Tạo route từ API hoặc màn hình thương đoàn.</div>';
+
+    return `
+      <div class="journal-modal-content">
+        <div class="spatial-banner-lead">
+          <div class="lead-seal">運</div>
+          <div class="lead-text">
+            <h3>Vận Chuyển & Thương Lộ</h3>
+            <div class="text-muted text-sm">Hợp đồng freight trả phí theo chuyến; thương lộ tự động mua – chở – bán giữa hai kho. Hộ vệ yếu có thể bị ổ phỉ phục kích.</div>
+          </div>
+        </div>
+
+        <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800 mb-3">
+          <div class="text-xs font-bold text-amber-200 mb-2">Hợp Đồng Vận Chuyển</div>
+          ${contracts}
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800">
+            <div class="text-xs font-bold text-amber-200 mb-2">Chuyến Hàng Của Ta</div>
+            ${shipments}
+          </div>
+          <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800">
+            <div class="text-xs font-bold text-amber-200 mb-2">Thương Lộ Tự Động</div>
+            ${routes}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
   private bind(): void {
     const body = this.modal.getBodyElement();
     if (!body) return;
@@ -304,6 +404,59 @@ export class MarketStallModal {
         } catch (error: any) {
           button.removeAttribute('disabled');
           toast(error.message || 'Thao tác kho thất bại.', true);
+        }
+      });
+    });
+
+    body.querySelectorAll<HTMLElement>('[data-freight-accept]').forEach(button => {
+      button.addEventListener('click', async () => {
+        const contractId = button.dataset.contractId || '';
+        const guardTier = button.dataset.guardTier || 'VETERAN';
+        const insured = body.querySelector<HTMLInputElement>(
+          `[data-freight-insurance="${contractId}"]`
+        )?.checked === true;
+        button.setAttribute('disabled', 'true');
+        try {
+          await marketStallService.acceptFreight(contractId, guardTier, insured);
+          toast(insured ? 'Đã nhận chuyến và mua bảo hiểm.' : 'Đã nhận chuyến hàng.');
+          await this.refresh();
+          this.render();
+        } catch (error: any) {
+          button.removeAttribute('disabled');
+          toast(error.message || 'Nhận chuyến thất bại.', true);
+        }
+      });
+    });
+
+    body.querySelectorAll<HTMLElement>('[data-freight-deliver]').forEach(button => {
+      button.addEventListener('click', async () => {
+        const shipmentId = button.dataset.freightDeliver || '';
+        button.setAttribute('disabled', 'true');
+        try {
+          await marketStallService.deliverFreight(shipmentId);
+          toast('Đã giao hàng và nhận phí vận chuyển.');
+          await this.refresh();
+          this.render();
+        } catch (error: any) {
+          button.removeAttribute('disabled');
+          toast(error.message || 'Giao hàng thất bại.', true);
+        }
+      });
+    });
+
+    body.querySelectorAll<HTMLElement>('[data-route-status]').forEach(button => {
+      button.addEventListener('click', async () => {
+        const routeId = button.dataset.routeId || '';
+        const status = (button.dataset.nextStatus || 'PAUSED') as 'ACTIVE' | 'PAUSED';
+        button.setAttribute('disabled', 'true');
+        try {
+          await marketStallService.setMerchantRouteStatus(routeId, status);
+          toast(status === 'ACTIVE' ? 'Đã tiếp tục thương lộ.' : 'Đã tạm dừng thương lộ.');
+          await this.refresh();
+          this.render();
+        } catch (error: any) {
+          button.removeAttribute('disabled');
+          toast(error.message || 'Đổi trạng thái thương lộ thất bại.', true);
         }
       });
     });

@@ -103,6 +103,10 @@ export class FreightService {
       guardFee: Number(row.guard_fee),
       initialQuantity: Number(row.initial_quantity || row.quantity),
       spoiledQuantity: Number(row.spoiled_quantity || 0),
+      insured: Number(row.insured || 0) === 1,
+      insurancePremium: Number(row.insurance_premium || 0),
+      insuranceClaim: Number(row.insurance_claim || 0),
+      ambushLossQuantity: Number(row.ambush_loss_quantity || 0),
       deadline: row.deadline
     }));
   }
