@@ -104,7 +104,13 @@ export function registerSpecialistWorkforceRoutes(router: Router): void {
       });
       sendJson(res, 200, { ...response, idempotent: false });
     } catch (err: any) {
-      sendJson(res, err.statusCode || 400, { success: false, error: err.message, code: err.code });
+      sendJson(res, err.statusCode || 400, {
+        success: false,
+        error: err.message,
+        code: err.code,
+        affinity: err.affinity,
+        retryAfterDate: err.retryAfterDate
+      });
     }
   });
 }

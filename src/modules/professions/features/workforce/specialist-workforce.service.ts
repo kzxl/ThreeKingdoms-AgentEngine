@@ -12,6 +12,8 @@ import { DatabaseService } from '../../../../core/database';
 import { recordFinancialTransaction } from '../../../../shared/financial-transaction';
 import { PrestigeService } from '../../../progression/prestige.service';
 import { fameEffects } from '../../../../shared/prestige';
+import { addGameDays } from '../../../../shared/game-date';
+import { getGameDate } from '../../../../shared/game-clock';
 
 export interface SpecialistCandidate {
   npcId: string;
@@ -215,6 +217,22 @@ export class SpecialistWorkforceService {
   }
 
   /**
+   * Affinity = baseline sentiment plus every relationship delta. The hiring
+   * gate uses the same number the social screen shows.
+   */
+  private getNpcAffinity(npcId: string): number {
+    const base = this.db.queryOne<{ baseline_sentiment_player: number }>(
+      'SELECT baseline_sentiment_player FROM master_characters WHERE npc_id = ? LIMIT 1;',
+      [npcId]
+    );
+    const delta = this.db.queryOne<{ total: number }>(
+      'SELECT COALESCE(SUM(sentiment_delta), 0) AS total FROM npc_relationship_deltas WHERE npc_id = ? LIMIT 1;',
+      [npcId]
+    );
+    return Math.max(0, Math.min(100, Number(base?.baseline_sentiment_player || 0) + Number(delta?.total || 0)));
+  }
+
+  /**
    * Resolves a candidate by either exact NPC id or partial Vietnamese name.
    */
   public resolveCandidateByName(nameOrPattern: string): { npcId: string; nameVi: string } | null {
@@ -298,6 +316,27 @@ export class SpecialistWorkforceService {
       throw new Error(
         `Danh vọng chưa đủ để chiêu mộ ${masterChar.name_vi}: cần ${profile.minFame}, hiện có ${fame}.`
       );
+    }
+
+    // A proud officer or a stranger with no standing can refuse. The check is
+    // deterministic and returns a retry date instead of silently succeeding.
+    const affinity = this.getNpcAffinity(masterChar.npc_id);
+    const virtue = Number(this.db.queryOne<{ virtue: number }>(
+      'SELECT virtue FROM player_state WHERE player_id = ? LIMIT 1;',
+      [characterId]
+    )?.virtue ?? 50);
+    const highAmbition = /Thái Thú|Chư Hầu|Tướng Quân|Hoàng Đế/i.test(String(masterChar.baseline_position_vi || ''));
+    const lowStanding = affinity < 5 && fame < 200 && virtue < 30;
+    const proudRefusal = highAmbition && affinity < 20 && fame < 1000;
+    if (lowStanding || proudRefusal) {
+      const error: any = new Error(
+        `${masterChar.name_vi} từ chối lời mời: thiện cảm ${affinity}/100, danh vọng ${fame}, đức độ ${virtue}. Hãy vun đắp quan hệ hoặc tăng danh vọng rồi thử lại.`
+      );
+      error.code = 'NPC_REFUSED';
+      error.statusCode = 400;
+      error.affinity = affinity;
+      error.retryAfterDate = addGameDays(getGameDate(this.db), 30);
+      throw error;
     }
     const baseSigningBonus = profile.signingBonus;
     const signingBonus = input.waiveSigningBonus ? 0 : this.applyFameDiscount(baseSigningBonus, discount);
