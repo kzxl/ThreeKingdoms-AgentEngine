@@ -20,6 +20,7 @@ import { LOC_TO_NODE_MAP } from '../ecology-logistics/spatial-registry';
 import { npcBidMultiplier } from './npc-pricing';
 import { addGameDays } from '../../shared/game-date';
 import { hasProcessedDay, markProcessedDay } from '../../shared/day-ledger';
+import { postNpcMutation } from '../npc-lifecycle/npc-ledger';
 
 const OPEN_FEE = 20;
 
@@ -425,10 +426,14 @@ export class StallService {
             debitAccount: ACCOUNT_CODES.cashMobile,
             creditAccount: ACCOUNT_CODES.salesRevenue
           });
-          this.db.execute(
-            'UPDATE npc_personal_progression SET personal_cash = MAX(0, personal_cash - ?) WHERE npc_id = ?;',
-            [total, buyer.npc_id]
-          );
+          postNpcMutation(this.db, {
+            npcId: buyer.npc_id,
+            gameDate,
+            category: 'STALL_PURCHASE',
+            counterparty: stall.owner_id,
+            deltaCash: -total,
+            memoVi: `Mua ${want} ${listing.item_code} tại quầy`
+          });
           const remaining = Math.max(0, Number(listing.quantity) - want);
           SettlementMarketService.forDatabase(this.db).applyTrade(
             stall.settlement_id,

@@ -9,6 +9,8 @@
 
 import { DatabaseService } from '../../core/database';
 import { nextId } from '../../shared/id-generator';
+import { getGameDate } from '../../shared/game-clock';
+import { postNpcEntry } from '../npc-lifecycle/npc-ledger';
 import {
   applyFameDecay,
   effectiveFameGain,
@@ -127,6 +129,16 @@ export class PrestigeService {
       `INSERT INTO npc_personal_progression (npc_id, prestige) VALUES (?, ?);`,
       [characterId, fame]
     );
+    postNpcEntry(this.db, {
+      npcId: characterId,
+      gameDate: getGameDate(this.db),
+      category: 'OPENING',
+      deltaCash: 0,
+      deltaTroops: 0,
+      balanceCash: 0,
+      balanceTroops: 0,
+      memoVi: 'Số dư đầu kỳ'
+    });
   }
 
   private writeEvent(

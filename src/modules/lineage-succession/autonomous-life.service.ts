@@ -16,6 +16,7 @@ import { RngService } from '../../core/rng';
 import { nextId } from '../../shared/id-generator';
 import { getGameDate } from '../../shared/game-clock';
 import { AutonomousMarriageResult, AutonomousChildbirthResult } from './lineage-types';
+import { postNpcMutation } from '../npc-lifecycle/npc-ledger';
 import { CourtshipBetrothalService } from './courtship-betrothal.service';
 import { ReproductionGeneticsService } from './reproduction-genetics.service';
 
@@ -85,10 +86,14 @@ export class AutonomousLifeService {
         // Execute autonomous marriage
         const dowryCash = Number(maiden.dowry_cash);
         if (prog) {
-          this.db.execute(
-            'UPDATE npc_personal_progression SET personal_cash = personal_cash - ? WHERE npc_id = ?;',
-            [dowryCash, npcId]
-          );
+          postNpcMutation(this.db, {
+            npcId,
+            gameDate: getGameDate(this.db),
+            category: 'DOWRY',
+            counterparty: maiden.maiden_id,
+            deltaCash: -dowryCash,
+            memoVi: `Sính lễ cho ${maiden.name_vi || maiden.maiden_id}`
+          });
         }
 
         this.db.execute(

@@ -20,6 +20,7 @@ import { computeSpoilage, freightDiscountPct } from './spoilage';
 import { addGameDays } from '../../shared/game-date';
 import { hasProcessedDay, markProcessedDay } from '../../shared/day-ledger';
 import { resolveLogisticsAmbush } from '../../shared/logistics-risk';
+import { postNpcMutation } from '../npc-lifecycle/npc-ledger';
 
 export class MerchantCompanyService {
   constructor(private readonly db: DatabaseService) {}
@@ -449,10 +450,14 @@ export class MerchantCompanyService {
           debitAccount: ACCOUNT_CODES.inventory,
           creditAccount: ACCOUNT_CODES.cashMobile
         });
-        this.db.execute(
-          'UPDATE npc_personal_progression SET personal_cash = personal_cash + ? WHERE npc_id = ?;',
-          [total, offer.npc_id]
-        );
+        postNpcMutation(this.db, {
+          npcId: offer.npc_id,
+          gameDate: date,
+          category: 'MERCHANT_ROUTE_PURCHASE',
+          counterparty: route.owner_id,
+          deltaCash: total,
+          memoVi: `Công ty mua ${qty} ${route.item_code}`
+        });
         const remaining = Math.max(0, Number(offer.quantity) - qty);
         this.db.execute(
           'UPDATE npc_market_offers SET quantity = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE offer_id = ?;',

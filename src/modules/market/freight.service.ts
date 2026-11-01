@@ -25,6 +25,7 @@ import { computeSpoilage, freightDiscountPct } from './spoilage';
 import { addGameDays, gameDayOrdinal } from '../../shared/game-date';
 import { hasProcessedDay, markProcessedDay } from '../../shared/day-ledger';
 import { resolveLogisticsAmbush } from '../../shared/logistics-risk';
+import { postNpcMutation } from '../npc-lifecycle/npc-ledger';
 
 export class FreightService {
   constructor(private readonly db: DatabaseService) {}
@@ -460,10 +461,14 @@ export class FreightService {
         debitAccount: ACCOUNT_CODES.cashMobile,
         creditAccount: ACCOUNT_CODES.laborIncome
       });
-      this.db.execute(
-        'UPDATE npc_personal_progression SET personal_cash = MAX(0, personal_cash - ?) WHERE npc_id = ?;',
-        [reward, contract.issuer_npc_id]
-      );
+      postNpcMutation(this.db, {
+        npcId: contract.issuer_npc_id,
+        gameDate,
+        category: 'FREIGHT_FEE',
+        counterparty: ownerId,
+        deltaCash: -reward,
+        memoVi: `Trả phí vận chuyển ${contract.contract_id}`
+      });
       this.db.execute(
         "UPDATE freight_shipments SET status = 'DELIVERED', source_reserved_quantity = 0 WHERE shipment_id = ?;",
         [shipmentId]
@@ -517,10 +522,14 @@ export class FreightService {
           debitAccount: ACCOUNT_CODES.operatingExpense,
           creditAccount: ACCOUNT_CODES.cashMobile
         });
-        this.db.execute(
-          'UPDATE npc_personal_progression SET personal_cash = personal_cash + ? WHERE npc_id = ?;',
-          [penalty, contract.issuer_npc_id]
-        );
+        postNpcMutation(this.db, {
+          npcId: contract.issuer_npc_id,
+          gameDate,
+          category: 'FREIGHT_PENALTY',
+          counterparty: shipment.owner_id,
+          deltaCash: penalty,
+          memoVi: `Nhận phạt trễ hạn ${contract.contract_id}`
+        });
       }
       // Return the unspoiled cargo that was reserved at accept time. Spoiled
       // units are a real loss, not goods that reappear at the source.

@@ -56,6 +56,7 @@ const REQUIRED_TABLES = [
   'merchant_events',
   'merchant_day_ledger',
   'world_day_ledger',
+  'npc_ledger',
   'merchant_route_stock',
   'settlement_item_endowment',
   'settlement_consumption',

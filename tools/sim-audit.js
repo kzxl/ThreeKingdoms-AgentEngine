@@ -264,9 +264,52 @@ function auditNpcAndBusinesses() {
     }
   }
 
+  const ledgerTable = runSqlJson(
+    `SELECT name FROM sqlite_master WHERE type='table' AND name='npc_ledger';`
+  );
+  if (ledgerTable && ledgerTable.length > 0) {
+    const rows = runSqlJson(`
+      SELECT p.npc_id, p.personal_cash, p.personal_troops,
+             l.entry_id, l.balance_cash, l.balance_troops
+      FROM npc_personal_progression p
+      LEFT JOIN npc_ledger l ON l.rowid = (
+        SELECT rowid FROM npc_ledger WHERE npc_id = p.npc_id ORDER BY rowid DESC LIMIT 1
+      );
+    `);
+    for (const row of rows) {
+      checksCount++;
+      if (!row.entry_id) {
+        errors.push(`NPC ${row.npc_id} has no npc_ledger entry`);
+        continue;
+      }
+      if (Math.abs(Number(row.balance_cash) - Number(row.personal_cash)) > 0.01) {
+        errors.push(`NPC ${row.npc_id} ledger cash ${row.balance_cash} != progression ${row.personal_cash}`);
+      }
+      if (Number(row.balance_troops) !== Number(row.personal_troops)) {
+        errors.push(`NPC ${row.npc_id} ledger troops ${row.balance_troops} != progression ${row.personal_troops}`);
+      }
+    }
+    const sums = runSqlJson(`
+      SELECT npc_id, SUM(delta_cash) AS cash, SUM(delta_troops) AS troops
+      FROM npc_ledger GROUP BY npc_id;
+    `);
+    for (const sum of sums) {
+      checksCount++;
+      const progression = runSqlJson(
+        `SELECT personal_cash, personal_troops FROM npc_personal_progression WHERE npc_id = '${String(sum.npc_id).replace(/'/g, "''")}';`
+      )[0];
+      if (!progression) continue;
+      if (Math.abs(Number(sum.cash) - Number(progression.personal_cash)) > 0.01) {
+        errors.push(`NPC ${sum.npc_id} ledger deltas do not sum to personal_cash`);
+      }
+      if (Number(sum.troops) !== Number(progression.personal_troops)) {
+        errors.push(`NPC ${sum.npc_id} ledger deltas do not sum to personal_troops`);
+      }
+    }
+  }
+
   const skillTable = runSqlJson(`SELECT name FROM sqlite_master WHERE type='table' AND name='npc_skills';`);
-  if (skillTable && skillTable.length > 0) {
-    const skills = runSqlJson(`SELECT * FROM npc_skills;`);
+  if (skillTable && skillTable.length > 0) {    const skills = runSqlJson(`SELECT * FROM npc_skills;`);
     for (const s of skills) {
       checksCount++;
       if (s.tier < 1 || s.tier > 5) errors.push(`NPC ${s.npc_id} skill ${s.skill_code} tier out of bounds: ${s.tier}`);

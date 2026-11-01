@@ -19,6 +19,7 @@ import { ModuleRegistry } from '../src/core/module-registry';
 import { PromissoryNoteService } from '../src/modules/economy/promissory-note.service';
 import { FactionPoliticsModule } from '../src/modules/faction-politics/faction-politics.module';
 import { NpcLifecycleModule } from '../src/modules/npc-lifecycle/npc-lifecycle.module';
+import { postNpcEntry } from '../src/modules/npc-lifecycle/npc-ledger';
 import { EcologyLogisticsModule } from '../src/modules/ecology-logistics/ecology-logistics.module';
 import { FamilyLineageService } from '../src/modules/lineage-succession/family-lineage.service';
 import { AgentBridgeModule } from '../src/modules/agent-bridge/agent-bridge.module';
@@ -172,6 +173,19 @@ async function verifyHolisticEnhancements(): Promise<void> {
     VALUES (?, 3500, 'MASTER_ARTISAN')
     ON CONFLICT(npc_id) DO UPDATE SET personal_cash = 3500, life_ambition = 'MASTER_ARTISAN';
   `, [rivalNpcId]);
+
+  // The direct fixture write must not leave the NPC ledger behind.
+  db.execute('DELETE FROM npc_ledger WHERE npc_id = ?;', [rivalNpcId]);
+  postNpcEntry(db, {
+    npcId: rivalNpcId,
+    gameDate: activeDate,
+    category: 'OPENING',
+    deltaCash: 3500,
+    deltaTroops: 0,
+    balanceCash: 3500,
+    balanceTroops: 0,
+    memoVi: 'Test opening'
+  });
 
   // Clean up any pre-existing rival business for clean test
   db.execute(`DELETE FROM businesses WHERE business_id = 'BIZ-RIVAL-${rivalNpcId}';`);

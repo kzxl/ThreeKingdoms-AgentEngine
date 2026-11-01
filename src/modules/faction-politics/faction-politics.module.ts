@@ -14,6 +14,7 @@ import { OfficerUnrestConsequence } from './unrest-consequence';
 import { isTurnModuleDone, markTurnModuleDone } from '../../shared/turn-ledger';
 import { nextId } from '../../shared/id-generator';
 import { postFactionEntry, ensureFactionOpening } from '../../shared/faction-ledger';
+import { postNpcMutation } from '../npc-lifecycle/npc-ledger';
 import {
   IFeatureModule,
   ModuleContext,
@@ -949,10 +950,14 @@ export class FactionPoliticsModule implements IFeatureModule {
       });
 
       // Add to personal cash of officer
-      this.db.execute(`
-        INSERT INTO npc_personal_progression (npc_id, personal_cash) VALUES (?, ?)
-        ON CONFLICT(npc_id) DO UPDATE SET personal_cash = personal_cash + excluded.personal_cash;
-      `, [officerId, amount]);
+      postNpcMutation(this.db, {
+        npcId: officerId,
+        gameDate,
+        category: 'OFFICER_REWARD',
+        counterparty: factionId,
+        deltaCash: amount,
+        memoVi: `Thưởng công từ ${factionId}`
+      });
 
       // Increase officer loyalty
       this.db.execute(`

@@ -17,6 +17,7 @@ import { SettlementMarketService } from '../economy/settlement-market.service';
 import { SETTLEMENT_PROFILES, RegionalMarketService } from '../economy/regional-market.service';
 import { LOC_TO_NODE_MAP } from '../ecology-logistics/spatial-registry';
 import { npcAskMultiplier } from './npc-pricing';
+import { postNpcMutation } from '../npc-lifecycle/npc-ledger';
 
 const DEFAULT_POOL = [
   'COM-GRAIN', 'COM-SALT', 'COM-LEATH', 'COM-BAMBOO', 'RAW-HERB-WILD',
@@ -214,10 +215,14 @@ export class NpcMarketService {
         debitAccount: ACCOUNT_CODES.inventory,
         creditAccount: ACCOUNT_CODES.cashMobile
       });
-      this.db.execute(
-        'UPDATE npc_personal_progression SET personal_cash = personal_cash + ? WHERE npc_id = ?;',
-        [total, offer.npc_id]
-      );
+      postNpcMutation(this.db, {
+        npcId: offer.npc_id,
+        gameDate: date,
+        category: 'NPC_MARKET_SALE',
+        counterparty: characterId,
+        deltaCash: total,
+        memoVi: `Bán ${qty} ${offer.item_code} cho ${characterId}`
+      });
       if (storedIn === 'WAREHOUSE') {
         const existingStock = this.db.queryOne<any>(
           'SELECT quantity FROM warehouse_stock WHERE warehouse_id = ? AND item_code = ? LIMIT 1;',
