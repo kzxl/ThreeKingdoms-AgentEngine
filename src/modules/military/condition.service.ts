@@ -12,6 +12,7 @@
 
 import { DatabaseService } from '../../core/database';
 import { nextSequentialId } from '../../shared/id-generator';
+import { applyPlayerDamage } from './player-vitals';
 
 export type InjurySeverity = 1 | 2 | 3;
 
@@ -100,10 +101,10 @@ export class ConditionService {
     );
 
     if (characterId === 'PLY-0001') {
-      this.db.execute(
-        'UPDATE player_state SET health = MAX(1, COALESCE(health, 100) - ?) WHERE player_id = ?;',
-        [level * 8, characterId]
-      );
+      applyPlayerDamage(this.db, characterId, {
+        healthLoss: level * 8,
+        reason: 'INJURY_DEATH'
+      });
     } else {
       this.db.execute(
         'UPDATE npc_state SET morale = MAX(0, COALESCE(morale, 80) - ?) WHERE npc_id = ?;',

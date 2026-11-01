@@ -12,6 +12,7 @@ import { isTurnModuleDone, markTurnModuleDone } from '../../shared/turn-ledger';
 import { postDoubleEntry } from '../../shared/ledger';
 import { ACCOUNT_CODES } from '../../shared/account-codes';
 import { nextSequentialId } from '../../shared/id-generator';
+import { applyPlayerDamage } from '../military/player-vitals';
 import {
   IFeatureModule,
   ModuleContext,
@@ -336,10 +337,11 @@ export class EcologyLogisticsModule implements IFeatureModule {
         message: `Đại thắng! Thống lĩnh quân sĩ phá tan ${stronghold.name_vi}, trảm tướng cướp ${stronghold.bandit_chief_name}, thu hồi ${lootCash} quan của thương đoàn bị cướp và lĩnh thưởng ${bounty} quan quân công triều đình!`
       };
     } else {
-      this.db.execute(
-        `UPDATE player_state SET health = MAX(0, health - 20), fatigue = MIN(100, fatigue + 40) WHERE player_id = ?;`,
-        [characterId]
-      );
+      applyPlayerDamage(this.db, characterId, {
+        healthLoss: 20,
+        fatigueGain: 40,
+        reason: 'BANDIT_ASSAULT_DEFEAT'
+      });
 
       return {
         success: false,

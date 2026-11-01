@@ -30,6 +30,7 @@ import { nextSequentialId } from '../../shared/id-generator';
 import { postCashflowEntry } from '../../shared/ledger';
 import { PrestigeService } from '../progression/prestige.service';
 import { SkillService } from '../progression/skill.service';
+import { applyPlayerDamage } from './player-vitals';
 import { ConditionService } from './condition.service';
 import { NpcSkillService } from '../progression/npc-skill.service';
 
@@ -1363,10 +1364,11 @@ export class SingleCombatDuelService {
           ProgressionExpService.awardAttributeExp(playerId, 'ldr', 25);
         } else {
           // Defeat penalty
-          this.db.execute(
-            `UPDATE player_state SET health = MAX(20, health - 10), fatigue = MIN(100, fatigue + 20) WHERE player_id = ?;`,
-            [playerId]
-          );
+          applyPlayerDamage(this.db, playerId, {
+            healthLoss: 10,
+            fatigueGain: 20,
+            reason: 'CARAVAN_AMBUSH_DEFEAT'
+          });
         }
       });
     } catch {

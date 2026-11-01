@@ -16,6 +16,7 @@ import {
   TroopUnitComposition
 } from './tactical-battle';
 import { BattleDuelService, PreBattleResult } from './battle-duel.service';
+import { applyPlayerDamage } from './player-vitals';
 import { NODE_TO_LOC_MAP } from '../ecology-logistics/spatial-registry';
 
 export * from './tactical-battle';
@@ -504,15 +505,13 @@ export class MilitaryModule implements IFeatureModule {
             );
           });
         } else {
-          // Attacker Defeat / Tactical Retreat penalty
-          this.db.execute(
-            `UPDATE player_state
-             SET health = MAX(25, health - 15),
-                 fatigue = MIN(100, fatigue + 35),
-                 morale = MAX(10, morale - 20)
-             WHERE player_id = ?;`,
-            [characterId]
-          );
+          // Attacker Defeat / Tactical Retreat penalty.
+          applyPlayerDamage(this.db!, characterId, {
+            healthLoss: 15,
+            fatigueGain: 35,
+            moraleLoss: 20,
+            reason: 'ASSAULT_DEFEAT'
+          });
         }
       } catch (err) {
         console.error('Error committing tactical assault transaction to SQLite:', err);

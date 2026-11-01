@@ -16,6 +16,7 @@ import { MilitaryModule } from './military.module';
 import { EcologyLogisticsModule } from '../ecology-logistics/ecology-logistics.module';
 import { NODE_TO_LOC_MAP } from '../ecology-logistics/spatial-registry';
 import { SiegeService } from './siege.service';
+import { applyPlayerDamage } from './player-vitals';
 import { SpatialGuardService } from '../progression/spatial-guard.service';
 import { recordFinancialTransaction } from '../../shared/financial-transaction';
 import { chargePlayerAction } from '../../shared/action-time';
@@ -718,9 +719,11 @@ export function registerMilitaryRoutes(router: Router): void {
             newDefense,
             targetSettlementId
           ]);
-          db.execute('UPDATE player_state SET health = MAX(20, health - 15), fatigue = MIN(100, fatigue + 40) WHERE player_id = ?', [
-            commanderId
-          ]);
+          applyPlayerDamage(db, commanderId, {
+            healthLoss: 15,
+            fatigueGain: 40,
+            reason: 'SIEGE_DEFEAT'
+          });
         }
 
         return {

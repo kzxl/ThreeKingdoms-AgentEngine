@@ -5,9 +5,14 @@
 
 import assert from 'assert';
 import fs from 'fs';
+import os from 'os';
 import path from 'path';
 import Database from 'better-sqlite3';
 import { InstanceManagerService } from '../src/modules/instances/instances.service';
+
+// A stale NG+ profile must not change the archetype's starting cash.
+process.env.SIM_LEGACY_PATH = path.join(os.tmpdir(), `sim-instance-legacy-${process.pid}.json`);
+try { fs.rmSync(process.env.SIM_LEGACY_PATH, { force: true }); } catch { /* best effort */ }
 
 async function runInstanceTests() {
   console.log('======================================================================');
