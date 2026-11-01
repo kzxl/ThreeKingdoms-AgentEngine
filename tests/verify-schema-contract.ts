@@ -34,12 +34,14 @@ const REQUIRED_TABLES = [
   'master_crops',
   'land_parcels',
   'faction_ledger',
-  'settlement_ledger'
+  'settlement_ledger',
+  'player_life_state'
 ];
 
 const REQUIRED_COLUMNS: Record<string, string[]> = {
   businesses: ['tier', 'debt', 'business_type', 'owner_character_id', 'daily_revenue', 'accumulated_profit'],
-  npc_state: ['int_exp', 'war_exp', 'ldr_exp', 'pol_exp', 'dip_exp', 'com_exp', 'log_exp', 'cra_exp']
+  npc_state: ['int_exp', 'war_exp', 'ldr_exp', 'pol_exp', 'dip_exp', 'com_exp', 'log_exp', 'cra_exp'],
+  player_life_state: ['stress', 'last_meal_date', 'last_rest_date', 'last_upkeep_month', 'routine_streak']
 };
 
 function buildFresh(): Database.Database {

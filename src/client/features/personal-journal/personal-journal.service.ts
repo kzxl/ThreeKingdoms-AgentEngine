@@ -4,7 +4,7 @@
  */
 
 import { apiClient } from '../../core/api/client-api';
-import { CareerPathProgress, JournalMilestone } from './personal-journal.types';
+import { CareerPathProgress, JournalMilestone, LifeStatusView } from './personal-journal.types';
 
 export class PersonalJournalService {
   private static instance: PersonalJournalService;
@@ -83,6 +83,27 @@ export class PersonalJournalService {
       paths: res.paths || defaultPaths,
       milestones: res.milestones || []
     };
+  }
+  public async getLifeStatus(characterId = 'PLY-0001'): Promise<LifeStatusView | null> {
+    try {
+      const res = await apiClient.get('/api/life/status', { characterId });
+      return (res as any).status || null;
+    } catch {
+      return null;
+    }
+  }
+
+  public async performLifeAction(payload: {
+    characterId?: string;
+    actionCode: string;
+    npcId?: string;
+    skillCode?: string;
+    leisureType?: string;
+  }): Promise<any> {
+    return apiClient.post('/api/life/act', {
+      idempotencyKey: `life-${payload.actionCode}-${Date.now()}`,
+      ...payload
+    });
   }
 }
 

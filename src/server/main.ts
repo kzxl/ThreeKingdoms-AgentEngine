@@ -31,6 +31,7 @@ import { registerSpecialistWorkforceRoutes } from '../modules/professions/featur
 import { DailyInteractionEngine } from '../modules/social-kizuna/daily-interaction.engine';
 import { ContextActionEngine } from '../modules/contextual-actions/context-action.engine';
 import { registerFactionReadRoutes } from '../modules/faction-politics/faction.controller';
+import { registerLifeRoutes } from '../modules/life/life.controller';
 import { CaravanLogisticsService } from '../modules/ecology-logistics/caravan-logistics.service';
 
 // Resolve database path
@@ -96,6 +97,7 @@ export function createGrandStrategyRouter(): Router {
   registerProgressionRoutes(router);
   registerSpecialistWorkforceRoutes(router);
   registerFactionReadRoutes(router);
+  registerLifeRoutes(router);
   return router;
 }
 
