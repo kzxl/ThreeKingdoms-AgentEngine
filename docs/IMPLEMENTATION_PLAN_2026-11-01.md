@@ -6,17 +6,18 @@ Baseline HEAD: `c775225` (1.39.0; clean working tree)
 Source analyses: `docs/audit/*`, `docs/*_2026-10-29.md`, `docs/REFACTOR_2026-10.md`,
 `docs/PRESTIGE_SYSTEM.md`, plus the 2026-11-01 supply-chain re-check.
 
-Baseline gate after Wave 0, Wave 1 (except W1-5) and W2-1/W2-2:
+Baseline gate after Wave 0, Wave 1 (except W1-5) and Wave 2:
 
 | Gate | Result |
 | :--- | :--- |
-| `npm run verify` | 95/95 suites, 28/28 API contracts, 8/8 write smokes |
+| `npm run verify` | 97/97 suites, 28/28 API contracts, 8/8 write smokes |
 | `npm run audit` | 2,307 invariants, 0 discrepancies |
 | Route shadow report | 48 live legacy handlers, 0 shadowed |
 
 Wave 0 (`c775225`), W1-1/W1-2/W1-6 (`43f22da`, `5346294`), W1-4 (`ea945f9`),
-W1-3 (`e4bb051`), the W1-7 warehouse/boat part (`d4228d9`), W2-2 (`6ed8c5f`) and
-W2-1 (`e106118`) are complete. W1-5, multi-item routes, W2-3 and W2-4 remain.
+W1-3 (`e4bb051`), the W1-7 warehouse/boat part (`d4228d9`), W2-1 (`e106118`),
+W2-2 (`6ed8c5f`), W2-3 (`71a3d5d`) and W2-4 (`3ca03b2`) are complete.
+W1-5 and multi-item routes remain.
 The rule for every item below: one feature per commit, `npm run verify` and
 `npm run audit` green before the commit, only task-scoped files staged.
 
@@ -255,19 +256,18 @@ The original clamp table is kept below for history.
 | `military.controller.ts:721` | `MAX(20, ...)` |
 | `single-combat-duel.service.ts:1367` | `MAX(20, ...)` |
 
-### W2-3 NPC-owned business succession
+### W2-3 NPC-owned business succession — DONE (`71a3d5d`)
 
-`checkAndFoundEmergentWorkshop` creates `BIZ-RIVAL-*`, but no death/retirement
-path transfers it. Add `businesses.owner_npc_id`, `heir_npc_id`, and a succession
-step on NPC death: heir first, senior foreman second, liquidation last.
-**Test:** `tests/verify-npc-business-succession.ts`.
+`src/shared/business-succession.ts` resolves every business managed/owned by a
+dead NPC: adult heir → senior foreman trustee → settlement liquidation. The
+successor row is inserted before the foreign-key update, and
+`ConditionService.applyNpcDeath` calls the resolver before clearing the NPC.
 
-### W2-4 Defeat/victory state consistency
+### W2-4 Defeat/victory state consistency — DONE (`3ca03b2`)
 
-`src/shared/victory.ts` and `battle-duel.service.ts` define the states, but check
-every month close and every succession path updates `campaign_meta.status`,
-`defeat_reason` and the UI in one place. Add an invariant that a `DEFEATED` or
-`BANKRUPT` campaign cannot accept player actions.
+Month close checks victory before bankruptcy, and a terminal status
+(`VICTORIOUS`, `DEFEATED`, `BANKRUPT`) makes `chargePlayerAction` throw
+`CAMPAIGN_OVER`. `verify-terminal-state.ts` covers both paths and the guard.
 
 ---
 
@@ -471,18 +471,16 @@ both counts down.
 
 ## 13. Recommended next slice
 
-Wave 1 is complete except the per-city bag and multi-item routes. Continue with:
+Wave 2 is complete. Continue with:
 
-1. `W2-3 NPC-owned business succession` — an NPC owner death transfers the
-   enterprise to an heir, senior foreman or liquidation.
-2. `W2-4 defeat/victory consistency` — one month-close check for DEFEATED,
-   BANKRUPT and VICTORIOUS, and block player mutations in a terminal campaign.
-3. `W1-5 per-city bag` — make `inventory_items.location` authoritative per
+1. `W1-5 per-city bag` — make `inventory_items.location` authoritative per
    settlement, move stock on travel, and update trade/stall/warehouse queries.
-4. `multi-item merchant routes` — allow one route to carry a basket instead of a
+2. `multi-item merchant routes` — allow one route to carry a basket instead of a
    single `item_code`; extend `merchant_route_stock` and the UI.
+3. Start **Wave 3** with NPC hire refusal and counter-bidding, then player
+   defection and the `ExecutionContext` ratchet.
 
-`W2-1` and `W2-2` are done.
+`W2-1` through `W2-4` are done.
 
 New features should follow `docs/FEATURE_MODULE_STANDARD.md` and start from
 `npm run scaffold:feature <name> --domain=<domain>`.

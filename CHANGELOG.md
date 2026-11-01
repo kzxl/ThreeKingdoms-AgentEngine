@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.44.0] - 2026-11-01
+
+NPC business succession and one terminal-state gate.
+
+### Added
+- `resolveBusinessSuccession` passes an NPC-owned enterprise to an adult heir,
+  then a senior foreman as trustee, then liquidates it into the settlement
+  treasury. `applyNpcDeath` runs the resolver before clearing the deceased row.
+- Month close checks victory before bankruptcy; a `VICTORIOUS` campaign cannot be
+  downgraded, and a terminal campaign rejects player actions with `CAMPAIGN_OVER`.
+- `verify-npc-business-succession.ts` and `verify-terminal-state.ts`.
+
+### Verification
+`npm run verify` green: 97/97 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 2,307 invariants, 0 discrepancies.
+
+---
+
 ## [1.43.0] - 2026-11-01
 
 NPC income and troop conservation through one ledger.

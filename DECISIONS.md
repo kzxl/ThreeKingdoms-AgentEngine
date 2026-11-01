@@ -513,3 +513,23 @@ This document records the architectural choices, rationale, and alternatives con
 - **Consequences**:
   - Positive: NPC cash/troop changes are explainable and conserved; the whole NPC economy is covered by the 2,307-invariant audit.
   - Negative: Every new NPC writer must use the ledger helper; a direct SQL update will fail the audit.
+
+---
+
+## ADR-049: NPC Enterprises Pass Heir → Foreman → Treasury (2026-11-01)
+
+- **Context**: `ConditionService.applyNpcDeath` cleared the officer row and business assignment but left `businesses.manager_npc_id` pointing at a dead NPC, so the enterprise froze.
+- **Decision**: `resolveBusinessSuccession` is called before the death row is cleared. An adult heir (age ≥ 16) takes over; otherwise a senior foreman becomes trustee; otherwise the business is `LIQUIDATED` and its safe cash flows into the settlement treasury through `settlement_ledger`.
+- **Consequences**:
+  - Positive: Payroll, safe cash and production continue after an owner dies; no value disappears.
+  - Negative: A minor heir's enterprise is run by a foreman until a later handoff, which is not automated yet.
+
+---
+
+## ADR-050: Month Close Is the Only Terminal-State Gate (2026-11-01)
+
+- **Context**: Victory was checked at conquest, bankruptcy at month close, and defeat on player death. The order could downgrade a victory or leave a terminal campaign accepting writes.
+- **Decision**: Month close checks victory first, then bankruptcy. A terminal status (`VICTORIOUS`, `DEFEATED`, `BANKRUPT`) is authoritative, and `chargePlayerAction` rejects any player mutation with `CAMPAIGN_OVER`.
+- **Consequences**:
+  - Positive: One precedence rule: victory > bankruptcy > active; terminal state is enforced at the action boundary.
+  - Negative: A player who is technically bankrupt but fulfils the victory condition in the same close wins that close.

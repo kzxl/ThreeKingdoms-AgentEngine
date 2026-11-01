@@ -143,6 +143,8 @@ primary truth:
 | `tests/verify-tool-boat.ts` | Livelihood: Fishing boat | — | Item, durability rule, recipe and FISH alternate tool |
 | `tests/verify-defeat-consistency.ts` | Military: One damage path | — | Health reaches 0, one DEFEATED transition, injury uses the same path |
 | `tests/verify-npc-conservation.ts` | NPC: Income/troop ledger | — | Commerce transfers cash, raid draws lair/garrison, ledger balances match |
+| `tests/verify-npc-business-succession.ts` | NPC: Business succession | — | Heir, foreman trustee, settlement liquidation, applyNpcDeath wiring |
+| `tests/verify-terminal-state.ts` | Campaign: Terminal state | — | Victory before bankruptcy, two-month bankrupt, CAMPAIGN_OVER guard |
 | `tools/sim-audit.js` | System: Autonomous Invariant Auditor | 2,307 | Nine blocks: accounting, inventory, journal, projection, enterprise, strategy, life-sim, clock, trade/warehouse/shipment |
 
 ---
@@ -160,7 +162,7 @@ npx tsx tests/verify-rotk-duels.ts
 
 ### Full Verification Pipeline
 ```bash
-# Single gate: typecheck → arch ratchet → 95 suites → API contract → write smoke
+# Single gate: typecheck → arch ratchet → 97 suites → API contract → write smoke
 npm run verify
 
 # Individually:

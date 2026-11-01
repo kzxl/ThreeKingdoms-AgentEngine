@@ -24,7 +24,7 @@ web UI are read models.
 
 | Gate | Result |
 | :--- | :--- |
-| `npm run verify` | 95/95 suites (4 legacy + 91 modern), 28/28 API contracts, 8/8 write smokes |
+| `npm run verify` | 97/97 suites (4 legacy + 93 modern), 28/28 API contracts, 8/8 write smokes |
 | `npm run audit` | 2,307 SQLite invariants, 0 discrepancies |
 | `npm run routes:shadow` | 48 live legacy handlers, 0 shadowed |
 
@@ -34,7 +34,7 @@ its regression suite and the invariant audit are green.
 ## 3. Essential commands
 
 ```bash
-npm run verify          # typecheck, five lints, route shadow, 95 suites, golden, write smokes
+npm run verify          # typecheck, five lints, route shadow, 97 suites, golden, write smokes
 npm run audit           # 2,307 invariants against saves/session.db
 npm run migrate         # apply pending migrations (currently through 080)
 npm run migrate:status  # list applied/pending
@@ -47,7 +47,7 @@ node tools/sim-db.js status
 After a client change, rebuild the bundle and restart the server before a browser
 check; an old server keeps serving the old bundle.
 
-## 4. Current economic rules (1.43.0)
+## 4. Current economic rules (1.44.0)
 
 - **Freight**: `accept` reserves source settlement stock inside the transaction;
   `deliver` credits the destination; `failContract` returns unspoiled cargo.
@@ -64,13 +64,17 @@ check; an old server keeps serving the old bundle.
   the first zero either succeeds an heir or sets `DEFEATED`.
 - **NPC**: every cash/troop change writes `npc_ledger`; commerce transfers from
   a buyer and raids draw bounty from the lair and recruits from the garrison.
+- **Succession**: an NPC owner's enterprise goes to an adult heir, then a senior
+  foreman, then the settlement treasury.
+- **Terminal**: month close checks victory before bankruptcy; a terminal campaign
+  rejects player actions with `CAMPAIGN_OVER`.
 - **Day ledger**: `world_day_ledger(system, game_date)` makes stall, freight,
   merchant and consumption ticks idempotent. Day arithmetic uses
   `src/shared/game-date.ts` (30-day months).
 
 ## 5. Where to look next
 
-- Architecture and gates: `ARCHITECTURE.md` §6.4, §20, §21, §22, §23 and §24.
+- Architecture and gates: `ARCHITECTURE.md` §6.4, §20, §21, §22, §23, §24 and §25.
 - Feature folder contract and scaffold: `docs/FEATURE_MODULE_STANDARD.md`,
   `npm run scaffold:feature`.
 - Decisions: `DECISIONS.md` ADR-040–042.

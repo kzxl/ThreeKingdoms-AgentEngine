@@ -153,7 +153,7 @@ not require editing that test.
 | :--- | :--- | :--- |
 | Types | `npm run typecheck` | `strict` TypeScript across `src/`, `tests/`, `vite.config.ts`. |
 | Architecture | `npm run lint` | Ratchet over `tools/arch-baseline.json`; debt may only shrink. |
-| Behaviour | `npm test` | 95 suites (4 legacy + 91 modern); each modern suite runs on an isolated DB copy and projections are restored afterwards. |
+| Behaviour | `npm test` | 97 suites (4 legacy + 93 modern); each modern suite runs on an isolated DB copy and projections are restored afterwards. |
 | API contract | `npm run golden:verify` | 28 read-only endpoints: status code, response shape, behavioural assertions. |
 | Write paths | `npm run smoke:write` | 8 HTTP write paths plus a post-write audit on a sandbox database. |
 | Invariants | `npm run audit` | 2,307 SQLite invariants (ledger parity, inventory conservation, projection sync, world/life-sim/clock blocks). |
@@ -1118,6 +1118,32 @@ The lifecycle no longer mints value:
 
 Market, freight, merchant, loan, dowry, faction-reward and prestige-opening
 writers all go through the same ledger. The audit now reports 2,307 invariants.
+
+---
+
+## 25. NPC Business Succession and Terminal State (1.44.0)
+
+### 25.1 Succession
+
+`src/shared/business-succession.ts` resolves every `businesses` row whose
+`manager_npc_id` or `owner_character_id` is the deceased NPC:
+
+1. an adult heir (`family_children`, age ≥ 16, not deceased);
+2. otherwise a senior foreman from `npc_state.assigned_business_id`;
+3. otherwise liquidation: `status = 'LIQUIDATED'`, safe cash flows into the
+   settlement treasury through `settlement_ledger` (`BUSINESS_LIQUIDATION`).
+
+The successor row is inserted into `npc_state` before the `businesses`
+foreign-key update. `ConditionService.applyNpcDeath` calls the resolver before
+clearing the deceased row, so payroll and safe cash survive the owner.
+
+### 25.2 Terminal state
+
+Victory and bankruptcy share the month-close gate: victory is checked first, so
+a campaign that becomes `VICTORIOUS` is not downgraded to `BANKRUPT`. A terminal
+status (`VICTORIOUS`, `DEFEATED`, `BANKRUPT`) makes `chargePlayerAction` throw
+`CAMPAIGN_OVER` before any service mutation. `verify-terminal-state.ts` covers
+victory, two-month bankruptcy, and the action guard.
 
 
 
