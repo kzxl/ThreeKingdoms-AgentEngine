@@ -9,6 +9,11 @@
 
 import { DatabaseService } from '../../core/database';
 import { RngService } from '../../core/rng';
+import { consumeInventoryItem } from '../../shared/inventory-movement';
+import { postDoubleEntry } from '../../shared/ledger';
+import { ACCOUNT_CODES } from '../../shared/account-codes';
+import { nextSequentialId } from '../../shared/id-generator';
+import { SkillService } from '../progression/skill.service';
 
 export interface ResourceRule {
   resourceType: string;
@@ -19,6 +24,12 @@ export interface ResourceRule {
   minSkillTier: number;
   qualityGrades: string | null;
   notesVi: string | null;
+  restoreItemCode: string | null;
+  restoreCash: number;
+  restoreStock: number;
+  restoreDays: number;
+  restoreSkillCode: string | null;
+  restoreMinTier: number;
 }
 
 export interface NodeStock {
@@ -71,7 +82,13 @@ export class ResourceNodeService {
       respawnPerDay: Number(row.respawn_per_day || 2),
       minSkillTier: Number(row.min_skill_tier || 0),
       qualityGrades: row.quality_grades || null,
-      notesVi: row.notes_vi || null
+      notesVi: row.notes_vi || null,
+      restoreItemCode: row.restore_item_code || null,
+      restoreCash: Number(row.restore_cash || 0),
+      restoreStock: Number(row.restore_stock || 0),
+      restoreDays: Number(row.restore_days || 1),
+      restoreSkillCode: row.restore_skill_code || null,
+      restoreMinTier: Number(row.restore_min_tier || 0)
     };
   }
 
@@ -181,6 +198,106 @@ export class ResourceNodeService {
       byproductItemCode: picked.byproduct_item_code || null,
       byproductQuantity: Number(picked.byproduct_quantity || 0)
     };
+  }
+
+  /**
+   * Active restoration: consume one fry/sapling/salt-lick/seedling and the
+   * labour fee, then add stock up to the node cap. The cash flow uses the same
+   * double-entry writer as every other mutation.
+   */
+  public restoreNode(nodeId: string, characterId: string, gameDate: string): any {
+    const node = this.db.queryOne<any>(
+      'SELECT node_id, settlement_id, name_vi, resource_type FROM gathering_nodes WHERE node_id = ? LIMIT 1;',
+      [nodeId]
+    );
+    if (!node) throw new Error(`Điểm tài nguyên ${nodeId} không tồn tại.`);
+    const rule = this.getRule(node.resource_type);
+    if (!rule || !rule.restoreItemCode || rule.restoreStock <= 0) {
+      throw new Error(`Loại tài nguyên ${node.resource_type} không thể phục hồi chủ động.`);
+    }
+
+    const skillTier = rule.restoreSkillCode ? this.skillTier(rule.restoreSkillCode) : 0;
+    if (rule.restoreMinTier > 0 && skillTier < rule.restoreMinTier) {
+      throw new Error(
+        `Cần kỹ năng ${rule.restoreSkillCode} bậc ${rule.restoreMinTier} để phục hồi ${node.name_vi} (hiện tại bậc ${skillTier}).`
+      );
+    }
+
+    const stock = this.getStock(nodeId, rule, gameDate);
+    if (stock.stock >= rule.maxStock - 0.01) {
+      throw new Error(`${node.name_vi} đã đầy tài nguyên, chưa cần phục hồi.`);
+    }
+
+    const item = this.db.queryOne<{ quantity: number }>(
+      'SELECT quantity FROM inventory_items WHERE item_code = ? LIMIT 1;',
+      [rule.restoreItemCode]
+    );
+    if (Number(item?.quantity || 0) < 1) {
+      throw new Error(`Cần 1 ${rule.restoreItemCode} trong kho để phục hồi ${node.name_vi}.`);
+    }
+
+    const player = this.db.queryOne<{ liquid_cash: number; safe_cash: number }>(
+      'SELECT liquid_cash, safe_cash FROM player_state WHERE player_id = ? LIMIT 1;',
+      [characterId]
+    );
+    if (!player) throw new Error(`Không tìm thấy nhân vật ${characterId}.`);
+    if (Number(player.liquid_cash || 0) < rule.restoreCash) {
+      throw new Error(`Cần ${rule.restoreCash} Quan chi phí phục hồi ${node.name_vi}.`);
+    }
+
+    return this.db.transaction(() => {
+      consumeInventoryItem(this.db, {
+        itemCode: rule.restoreItemCode!,
+        quantity: 1,
+        reason: 'NODE_RESTORE',
+        gameDate,
+        refTxn: `RESTORE-${nodeId}`,
+        unitCost: 0
+      });
+
+      if (rule.restoreCash > 0) {
+        const newLiquid = Number(player.liquid_cash || 0) - rule.restoreCash;
+        const balance = newLiquid + Number(player.safe_cash || 0);
+        this.db.execute(
+          'UPDATE player_state SET liquid_cash = ? WHERE player_id = ?;',
+          [newLiquid, characterId]
+        );
+        const txnId = nextSequentialId(this.db, 'cashflow_ledger', 'TXN', gameDate);
+        postDoubleEntry(this.db, {
+          txnId,
+          gameDate,
+          counterparty: node.name_vi,
+          category: 'Livelihood/NodeRestore',
+          outflow: rule.restoreCash,
+          balance,
+          memo: `Phục hồi ${node.name_vi}`,
+          debitAccount: ACCOUNT_CODES.operatingExpense,
+          creditAccount: ACCOUNT_CODES.cashMobile
+        });
+      }
+
+      const stockAfter = Math.min(rule.maxStock, stock.stock + rule.restoreStock);
+      this.db.execute(
+        'UPDATE gathering_node_state SET stock = ?, last_respawn_date = ?, updated_at = CURRENT_TIMESTAMP WHERE node_id = ?;',
+        [stockAfter, gameDate, nodeId]
+      );
+      if (rule.restoreSkillCode) {
+        SkillService.forDatabase(this.db).awardExp(rule.restoreSkillCode, 15);
+      }
+
+      return {
+        nodeId,
+        nodeName: node.name_vi,
+        resourceType: node.resource_type,
+        stockBefore: stock.stock,
+        stockAfter: Number(stockAfter.toFixed(1)),
+        maxStock: rule.maxStock,
+        itemConsumed: rule.restoreItemCode,
+        cashPaid: rule.restoreCash,
+        skillCode: rule.restoreSkillCode,
+        skillTier
+      };
+    });
   }
 
   public listNodes(settlementId?: string): any[] {

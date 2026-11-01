@@ -16,6 +16,7 @@ import { SkillService } from '../progression/skill.service';
 import { chargePlayerAction } from '../../shared/action-time';
 import { getCareerModifiers } from '../../../engine/career-paths';
 import { FarmService } from './farm.service';
+import { ResourceNodeService } from './resource-node.service';
 import { requestIdempotencyKey, findIdempotentResult, recordAction } from '../../shared/action-journal';
 
 import { WageLaborController } from './features/wage-labor/wage-labor.controller';
@@ -353,6 +354,39 @@ export function registerProfessionsRoutes(router: Router): void {
   };
 
   router.post('/api/professions/craft', handleCraft);
+
+  // -------------------------------------------------------------
+  // 4a. Restoration: replant forest / restock fishing ground / herd game
+  // -------------------------------------------------------------
+  router.post('/api/professions/nodes/restore', async (_req: any, res: any, ctx: RouteContext) => {
+    try {
+      const { nodeId, characterId = 'PLY-0001' } = ctx.body || {};
+      if (!nodeId) {
+        sendJson(res, 400, { success: false, error: 'nodeId is required.' });
+        return;
+      }
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
+
+      const time = chargePlayerAction(db.path, 'RESTORE_NODE', null, `Restore ${nodeId}`);
+      const meta = getCampaignMeta(db);
+      const result = ResourceNodeService.forDatabase(db).restoreNode(nodeId, characterId, meta.currentDate);
+      const response = { result, time };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'NODE_RESTORE',
+        payload: { nodeId, characterId },
+        result: response
+      });
+      sendJson(res, 200, { success: true, ...response, idempotent: false });
+    } catch (err: any) {
+      sendJson(res, err.statusCode || 400, { success: false, error: err.message, code: err.code });
+    }
+  });
 
   // -------------------------------------------------------------
   // 4b. Farmland: list parcels, rent, plant, harvest

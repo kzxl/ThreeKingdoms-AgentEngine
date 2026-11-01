@@ -167,7 +167,11 @@ export class ProfessionsModule implements IFeatureModule {
         maxStock: stock?.maxStock ?? null,
         skillCode: row.rule_skill_code || null,
         requiredToolCode: row.rule_tool_code || null,
-        minSkillTier: Number(row.min_skill_tier || 0)
+        minSkillTier: Number(row.min_skill_tier || 0),
+        restoreItemCode: rule?.restoreItemCode || null,
+        restoreCash: rule?.restoreCash || 0,
+        restoreStock: rule?.restoreStock || 0,
+        restoreSkillCode: rule?.restoreSkillCode || null
       } as GatheringNode;
     });
   }

@@ -318,6 +318,17 @@ async function apiGatherResource(characterId, nodeId) {
   return data;
 }
 
+async function apiRestoreNode(characterId, nodeId) {
+  const res = await fetch(`${API_BASE}/api/professions/nodes/restore`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ characterId, nodeId })
+  });
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Failed to restore node');
+  return data;
+}
+
 async function apiSynthesizeBreakthrough(characterId = 'PLY-0001') {
   const res = await fetch(`${API_BASE}/api/professions/synthesize`, {
     method: 'POST',
@@ -618,6 +629,7 @@ window.apiFetchGatheringNodes = apiFetchGatheringNodes;
 window.apiFetchCharacterProfessions = apiFetchCharacterProfessions;
 window.apiFetchInnovations = apiFetchInnovations;
 window.apiGatherResource = apiGatherResource;
+window.apiRestoreNode = apiRestoreNode;
 window.apiSynthesizeBreakthrough = apiSynthesizeBreakthrough;
 window.apiFetchCrises = apiFetchCrises;
 window.apiFetchCaravans = apiFetchCaravans;

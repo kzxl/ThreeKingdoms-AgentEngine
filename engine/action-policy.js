@@ -44,6 +44,7 @@ const ACTION_TIME_POLICY = {
   COMBAT_ENCOUNTER: { days: 1, fatigue: 0, labelVi: 'Giao chiến', labelEn: 'Combat encounter' },
   // Gathering services already charge fatigue per node.
   GATHER_NODE: { days: 1, fatigue: 0, labelVi: 'Khai thác', labelEn: 'Gather' },
+  RESTORE_NODE: { days: 1, fatigue: 3, labelVi: 'Phục hồi tài nguyên', labelEn: 'Restore resource' },
   // Farming: rent paperwork is quick; planting and harvest are field work.
   FARM_RENT: { days: 1, fatigue: 3, labelVi: 'Thuê ruộng', labelEn: 'Lease land' },
   FARM_PLANT: { days: 2, fatigue: 6, labelVi: 'Gieo trồng', labelEn: 'Plant crop' },
