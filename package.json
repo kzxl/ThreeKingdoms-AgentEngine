@@ -7,6 +7,7 @@
     "audit": "node tools/sim-audit.js",
     "migrate": "node tools/migrations/run.js",
     "migrate:status": "node tools/migrations/run.js --status",
+    "scaffold:feature": "node tools/scaffold-feature.js",
     "dev:server": "tsx watch src/server/main.ts",
     "dev:client": "vite",
     "dev": "tsx watch src/server/main.ts",
