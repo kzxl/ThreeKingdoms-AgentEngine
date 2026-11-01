@@ -739,6 +739,13 @@ function auditTradeAndWarehouses() {
       if (quantity < 0) errors.push(`${table} ${row.shipment_id} has negative quantity`);
       if (spoiled < 0) errors.push(`${table} shipment has negative spoiled quantity`);
       if (initial + 0.01 < quantity) errors.push(`${table} shipment delivered ${quantity} above initial ${initial}`);
+      if (table === 'freight_shipments' && row.source_reserved_quantity !== undefined) {
+        const reserved = Number(row.source_reserved_quantity || 0);
+        if (reserved < 0) errors.push(`${table} ${row.shipment_id} has negative source reservation`);
+        if (reserved > initial + 0.01) {
+          errors.push(`${table} ${row.shipment_id} reserved ${reserved} above initial ${initial}`);
+        }
+      }
     }
   }
   if (tables.has('merchant_routes')) {

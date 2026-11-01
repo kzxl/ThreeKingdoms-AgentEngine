@@ -22,17 +22,8 @@ import {
 import { GUARD_TIER_CONFIGS, CARAVAN_DAILY_LI } from '../ecology-logistics/caravan-logistics.service';
 import { LOC_TO_NODE_MAP } from '../ecology-logistics/spatial-registry';
 import { computeSpoilage, freightDiscountPct } from './spoilage';
-
-function addDays(date: string, days: number): string {
-  const [year, month, day] = String(date || '184-05-02').split('-').map(Number);
-  const next = new Date(Date.UTC(year || 184, (month || 5) - 1, (day || 2) + days));
-  return `${next.getUTCFullYear()}-${String(next.getUTCMonth() + 1).padStart(2, '0')}-${String(next.getUTCDate()).padStart(2, '0')}`;
-}
-
-function dayNumber(date: string): number {
-  const [year, month, day] = String(date || '184-05-02').split('-').map(Number);
-  return Math.floor(Date.UTC(year || 184, (month || 5) - 1, day || 2) / 86400000);
-}
+import { addGameDays, gameDayOrdinal } from '../../shared/game-date';
+import { hasProcessedDay, markProcessedDay } from '../../shared/day-ledger';
 
 export class FreightService {
   constructor(private readonly db: DatabaseService) {}
@@ -128,7 +119,7 @@ export class FreightService {
       rewardCash: Number(row.reward_cash),
       penaltyCash: Number(row.penalty_cash),
       deadline: row.deadline,
-      daysLeft: Math.max(0, dayNumber(row.deadline) - dayNumber(date)),
+      daysLeft: Math.max(0, gameDayOrdinal(row.deadline) - gameDayOrdinal(date)),
       distanceLi: distance,
       travelDays: this.travelDays(row.from_settlement_id, row.to_settlement_id, 'PLY-0001'),
       status: row.status
@@ -193,7 +184,7 @@ export class FreightService {
       );
       if (reward > issuerCash) continue;
       issuerCash -= reward;
-      const deadline = addDays(date, Math.max(3, Math.ceil(distance / CARAVAN_DAILY_LI) + 3));
+      const deadline = addGameDays(date, Math.max(3, Math.ceil(distance / CARAVAN_DAILY_LI) + 3));
       const contractId = nextSequentialId(this.db, 'freight_contracts', 'FRT', date);
       this.db.execute(
         `INSERT INTO freight_contracts
@@ -243,7 +234,19 @@ export class FreightService {
 
     const shipmentId = nextSequentialId(this.db, 'freight_shipments', 'SHP', gameDate);
     const days = this.travelDays(contract.from_settlement_id, contract.to_settlement_id, ownerId);
+    const quantity = Number(contract.quantity);
     return this.db.transaction(() => {
+      const market = SettlementMarketService.forDatabase(this.db);
+      const source = market.getState(contract.from_settlement_id, contract.item_code);
+      if (Number(source.stock) + 0.001 < quantity) {
+        throw new Error(
+          `Kho ${contract.from_settlement_id} chỉ còn ${source.stock} ${contract.item_code}, không đủ ${quantity} cho hợp đồng ${contractId}.`
+        );
+      }
+      // Reserve the cargo at the source. Without this, delivery credits the
+      // destination with goods that were never removed from anywhere.
+      market.applyTrade(contract.from_settlement_id, contract.item_code, -quantity);
+
       const newLiquid = Number(player.liquid_cash || 0) - guardFee;
       this.db.execute('UPDATE player_state SET liquid_cash = ? WHERE player_id = ?;', [newLiquid, ownerId]);
       const txnId = nextSequentialId(this.db, 'cashflow_ledger', 'TXN', gameDate);
@@ -266,8 +269,9 @@ export class FreightService {
         `INSERT INTO freight_shipments
           (shipment_id, contract_id, owner_id, from_settlement_id, to_settlement_id,
            item_code, quantity, days_remaining, status, reward_cash, penalty_cash,
-           guard_tier, guard_fee, created_date, initial_quantity, total_days, spoiled_quantity)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'EN_ROUTE', ?, ?, ?, ?, ?, ?, ?, 0);`,
+           guard_tier, guard_fee, created_date, initial_quantity, total_days, spoiled_quantity,
+           source_reserved_quantity)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'EN_ROUTE', ?, ?, ?, ?, ?, ?, ?, 0, ?);`,
         [
           shipmentId,
           contractId,
@@ -275,15 +279,16 @@ export class FreightService {
           contract.from_settlement_id,
           contract.to_settlement_id,
           contract.item_code,
-          Number(contract.quantity),
+          quantity,
           days,
           Number(contract.reward_cash),
           Number(contract.penalty_cash),
           guard.tier,
           guardFee,
           gameDate,
-          Number(contract.quantity),
-          days
+          quantity,
+          days,
+          quantity
         ]
       );
       return {
@@ -292,7 +297,7 @@ export class FreightService {
         fromSettlementId: contract.from_settlement_id,
         toSettlementId: contract.to_settlement_id,
         itemCode: contract.item_code,
-        quantity: Number(contract.quantity),
+        quantity,
         daysRemaining: days,
         rewardCash: Number(contract.reward_cash),
         guardFee,
@@ -355,7 +360,10 @@ export class FreightService {
         'UPDATE npc_personal_progression SET personal_cash = MAX(0, personal_cash - ?) WHERE npc_id = ?;',
         [reward, contract.issuer_npc_id]
       );
-      this.db.execute("UPDATE freight_shipments SET status = 'DELIVERED' WHERE shipment_id = ?;", [shipmentId]);
+      this.db.execute(
+        "UPDATE freight_shipments SET status = 'DELIVERED', source_reserved_quantity = 0 WHERE shipment_id = ?;",
+        [shipmentId]
+      );
       this.db.execute(
         "UPDATE freight_contracts SET status = 'DELIVERED', delivered_date = ?, updated_at = CURRENT_TIMESTAMP WHERE contract_id = ?;",
         [gameDate, contract.contract_id]
@@ -381,84 +389,113 @@ export class FreightService {
   }
 
   private failContract(shipment: any, contract: any, gameDate: string): void {
-    const player = this.db.queryOne<{ liquid_cash: number; safe_cash: number }>(
-      'SELECT liquid_cash, safe_cash FROM player_state WHERE player_id = ? LIMIT 1;',
-      [shipment.owner_id]
-    );
-    const penalty = Math.min(
-      Math.max(0, Number(contract.penalty_cash || 0)),
-      Math.max(0, Number(player?.liquid_cash || 0))
-    );
-    if (penalty > 0) {
-      const newLiquid = Number(player?.liquid_cash || 0) - penalty;
-      this.db.execute('UPDATE player_state SET liquid_cash = ? WHERE player_id = ?;', [newLiquid, shipment.owner_id]);
-      const txnId = nextSequentialId(this.db, 'cashflow_ledger', 'TXN', gameDate);
-      postDoubleEntry(this.db, {
-        txnId,
-        gameDate,
-        counterparty: contract.issuer_name_vi,
-        category: 'Logistics/FreightPenalty',
-        outflow: penalty,
-        balance: newLiquid + Number(player?.safe_cash || 0),
-        memo: `Phạt trễ hạn hợp đồng ${contract.contract_id}`,
-        debitAccount: ACCOUNT_CODES.operatingExpense,
-        creditAccount: ACCOUNT_CODES.cashMobile
-      });
-      this.db.execute(
-        'UPDATE npc_personal_progression SET personal_cash = personal_cash + ? WHERE npc_id = ?;',
-        [penalty, contract.issuer_npc_id]
+    this.db.transaction(() => {
+      const player = this.db.queryOne<{ liquid_cash: number; safe_cash: number }>(
+        'SELECT liquid_cash, safe_cash FROM player_state WHERE player_id = ? LIMIT 1;',
+        [shipment.owner_id]
       );
-    }
-    this.db.execute("UPDATE freight_shipments SET status = 'FAILED' WHERE shipment_id = ?;", [shipment.shipment_id]);
-    this.db.execute("UPDATE freight_contracts SET status = 'FAILED' WHERE contract_id = ?;", [contract.contract_id]);
+      const penalty = Math.min(
+        Math.max(0, Number(contract.penalty_cash || 0)),
+        Math.max(0, Number(player?.liquid_cash || 0))
+      );
+      if (penalty > 0) {
+        const newLiquid = Number(player?.liquid_cash || 0) - penalty;
+        this.db.execute('UPDATE player_state SET liquid_cash = ? WHERE player_id = ?;', [newLiquid, shipment.owner_id]);
+        const txnId = nextSequentialId(this.db, 'cashflow_ledger', 'TXN', gameDate);
+        postDoubleEntry(this.db, {
+          txnId,
+          gameDate,
+          counterparty: contract.issuer_name_vi,
+          category: 'Logistics/FreightPenalty',
+          outflow: penalty,
+          balance: newLiquid + Number(player?.safe_cash || 0),
+          memo: `Phạt trễ hạn hợp đồng ${contract.contract_id}`,
+          debitAccount: ACCOUNT_CODES.operatingExpense,
+          creditAccount: ACCOUNT_CODES.cashMobile
+        });
+        this.db.execute(
+          'UPDATE npc_personal_progression SET personal_cash = personal_cash + ? WHERE npc_id = ?;',
+          [penalty, contract.issuer_npc_id]
+        );
+      }
+      // Return the unspoiled cargo that was reserved at accept time. Spoiled
+      // units are a real loss, not goods that reappear at the source.
+      const held = Math.min(
+        Math.max(0, Number(shipment.quantity || 0)),
+        Math.max(0, Number(shipment.source_reserved_quantity || 0))
+      );
+      if (held > 0) {
+        SettlementMarketService.forDatabase(this.db).applyTrade(
+          shipment.from_settlement_id,
+          shipment.item_code,
+          held
+        );
+      }
+      this.db.execute(
+        "UPDATE freight_shipments SET status = 'FAILED', source_reserved_quantity = 0 WHERE shipment_id = ?;",
+        [shipment.shipment_id]
+      );
+      this.db.execute("UPDATE freight_contracts SET status = 'FAILED' WHERE contract_id = ?;", [contract.contract_id]);
+    });
   }
 
   public advanceByDays(days: number, gameDate?: string): { advanced: number; arrived: string[] } {
     const dayCount = Math.max(0, Math.floor(Number(days) || 0));
     if (dayCount === 0) return { advanced: 0, arrived: [] };
     const date = gameDate || this.currentDate();
-    const shipments = this.db.query<any>(
-      "SELECT * FROM freight_shipments WHERE status = 'EN_ROUTE';"
-    );
-    const arrived: string[] = [];
-    for (const shipment of shipments) {
-      const remaining = Math.max(0, Number(shipment.days_remaining) - dayCount);
-      const status = remaining === 0 ? 'ARRIVED' : 'EN_ROUTE';
-      if (status === 'ARRIVED') {
-        const totalDays = Number(shipment.total_days) || Number(shipment.days_remaining) || 1;
-        const spoil = computeSpoilage(
-          this.db,
-          shipment.item_code,
-          Number(shipment.initial_quantity || shipment.quantity),
-          Math.max(1, totalDays)
+    const startDate = addGameDays(date, -(dayCount - 1));
+    const arrived = new Set<string>();
+    let advanced = 0;
+
+    for (let day = 0; day < dayCount; day += 1) {
+      const dayDate = addGameDays(startDate, day);
+      if (hasProcessedDay(this.db, 'freight', dayDate)) continue;
+      this.db.transaction(() => {
+        const shipments = this.db.query<any>(
+          "SELECT * FROM freight_shipments WHERE status = 'EN_ROUTE';"
         );
+        advanced = Math.max(advanced, shipments.length);
+        for (const shipment of shipments) {
+          const remaining = Math.max(0, Number(shipment.days_remaining) - 1);
+          const status = remaining === 0 ? 'ARRIVED' : 'EN_ROUTE';
+          if (status === 'ARRIVED') {
+            const totalDays = Number(shipment.total_days) || Number(shipment.days_remaining) || 1;
+            const spoil = computeSpoilage(
+              this.db,
+              shipment.item_code,
+              Number(shipment.initial_quantity || shipment.quantity),
+              Math.max(1, totalDays)
+            );
+            this.db.execute(
+              'UPDATE freight_shipments SET days_remaining = ?, status = ?, quantity = ?, spoiled_quantity = ?, updated_at = CURRENT_TIMESTAMP WHERE shipment_id = ?;',
+              [remaining, status, spoil.quantity, spoil.lost, shipment.shipment_id]
+            );
+            arrived.add(shipment.shipment_id);
+          } else {
+            this.db.execute(
+              'UPDATE freight_shipments SET days_remaining = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE shipment_id = ?;',
+              [remaining, status, shipment.shipment_id]
+            );
+          }
+        }
+        // Expire open contracts and fail accepted shipments past their deadline.
+        const overdue = this.db.query<any>(
+          `SELECT s.*, c.deadline, c.penalty_cash, c.issuer_npc_id, c.issuer_name_vi, c.contract_id
+           FROM freight_shipments s
+           JOIN freight_contracts c ON c.contract_id = s.contract_id
+           WHERE s.status IN ('EN_ROUTE','ARRIVED') AND c.deadline < ?;`,
+          [dayDate]
+        );
+        for (const row of overdue) {
+          this.failContract(row, row, dayDate);
+        }
         this.db.execute(
-          'UPDATE freight_shipments SET days_remaining = ?, status = ?, quantity = ?, spoiled_quantity = ?, updated_at = CURRENT_TIMESTAMP WHERE shipment_id = ?;',
-          [remaining, status, spoil.quantity, spoil.lost, shipment.shipment_id]
+          "UPDATE freight_contracts SET status = 'EXPIRED', updated_at = CURRENT_TIMESTAMP WHERE status = 'OPEN' AND deadline < ?;",
+          [dayDate]
         );
-      } else {
-        this.db.execute(
-          'UPDATE freight_shipments SET days_remaining = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE shipment_id = ?;',
-          [remaining, status, shipment.shipment_id]
-        );
-      }
-      if (status === 'ARRIVED') arrived.push(shipment.shipment_id);
+        markProcessedDay(this.db, 'freight', dayDate, { shipments: shipments.length });
+      });
     }
-    // Expire open contracts and fail accepted shipments past their deadline.
-    const overdue = this.db.query<any>(
-      `SELECT s.*, c.deadline, c.penalty_cash, c.issuer_npc_id, c.issuer_name_vi, c.contract_id
-       FROM freight_shipments s
-       JOIN freight_contracts c ON c.contract_id = s.contract_id
-       WHERE s.status IN ('EN_ROUTE','ARRIVED') AND c.deadline < ?;`,
-      [date]
-    );
-    for (const row of overdue) {
-      this.failContract(row, row, date);
-    }
-    this.db.execute(
-      "UPDATE freight_contracts SET status = 'EXPIRED', updated_at = CURRENT_TIMESTAMP WHERE status = 'OPEN' AND deadline < ?;",
-      [date]
-    );
-    return { advanced: shipments.length, arrived };
+    return { advanced, arrived: [...arrived] };
   }
 }

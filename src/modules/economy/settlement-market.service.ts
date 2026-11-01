@@ -11,6 +11,7 @@ import { DatabaseService } from '../../core/database';
 import { RngService } from '../../core/rng';
 import { SETTLEMENT_PROFILES } from './regional-market.service';
 import { nextId } from '../../shared/id-generator';
+import { hasProcessedDay, markProcessedDay } from '../../shared/day-ledger';
 
 export interface SettlementMarketState {
   settlementId: string;
@@ -68,11 +69,36 @@ export class SettlementMarketService {
     return Math.max(0.5, Math.min(2, Math.sqrt(ratio)));
   }
 
+  public getEndowmentMultiplier(settlementId: string, itemCode: string): number {
+    let endowment: { supply_score: number; demand_score: number } | undefined;
+    try {
+      endowment = this.db.queryOne<{ supply_score: number; demand_score: number }>(
+        'SELECT supply_score, demand_score FROM settlement_item_endowment WHERE settlement_id = ? AND item_code = ? LIMIT 1;',
+        [settlementId, itemCode]
+      );
+    } catch {
+      // Legacy/minimal databases before migration 073 have no endowment table.
+      return 1;
+    }
+    if (!endowment) return 1;
+    const ratio = Number(endowment.demand_score) / Math.max(1, Number(endowment.supply_score));
+    return Math.max(0.6, Math.min(1.6, Math.sqrt(ratio)));
+  }
+
+  /**
+   * The single local multiplier: specialisation × stock pressure × regional
+   * endowment. `RegionalMarketService.calculateSettlementPrice` and every quote
+   * consumer use this method so a fish-rich settlement is cheap everywhere,
+   * not only on the stall screen.
+   */
   public getLocalMultiplier(settlementId: string, itemCode: string): number {
     const specialization = SETTLEMENT_PROFILES[settlementId]
       ? this.specializationMultiplier(settlementId, itemCode)
       : 1;
-    return Math.max(0.5, Math.min(2, specialization * this.getStockMultiplier(settlementId, itemCode)));
+    const local = specialization
+      * this.getStockMultiplier(settlementId, itemCode)
+      * this.getEndowmentMultiplier(settlementId, itemCode);
+    return Math.max(0.5, Math.min(2, local));
   }
 
   /**
@@ -88,7 +114,7 @@ export class SettlementMarketService {
   ): SettlementMarketState & { stockMultiplier: number } {
     const state = this.getState(settlementId, itemCode);
     const delta = Number(stockDelta) || 0;
-    const stock = Number(Math.max(1, Math.min(100000, state.stock + delta)).toFixed(1));
+    const stock = Number(Math.max(0, Math.min(100000, state.stock + delta)).toFixed(1));
     this.db.execute(
       'UPDATE settlement_market_state SET stock = ?, updated_at = CURRENT_TIMESTAMP WHERE settlement_id = ? AND item_code = ?;',
       [stock, settlementId, itemCode]
@@ -142,7 +168,7 @@ export class SettlementMarketService {
               Number(stock.toFixed(1)),
               Number(demand.toFixed(1)),
               Number(stockMultiplier.toFixed(3)),
-              Number((this.specializationMultiplier(settlementId, row.item_code) * stockMultiplier).toFixed(3))
+              Number((this.getLocalMultiplier(settlementId, row.item_code)).toFixed(3))
             ]
           );
         }
@@ -157,6 +183,7 @@ export class SettlementMarketService {
    */
   public consumeEssentials(gameDate?: string): any[] {
     const date = gameDate || this.currentDate();
+    if (hasProcessedDay(this.db, 'consumption', date)) return [];
     const rows = this.db.query<any>(
       `SELECT settlement_id, item_code, monthly_demand
        FROM settlement_consumption WHERE monthly_demand > 0;`
@@ -188,6 +215,7 @@ export class SettlementMarketService {
         );
         events.push({ settlementId: row.settlement_id, itemCode: row.item_code, demand, consumed, shortage });
       }
+      markProcessedDay(this.db, 'consumption', date, { events: events.length });
     });
     return events;
   }
@@ -208,7 +236,7 @@ export class SettlementMarketService {
         stock: Number(state.stock),
         demand: Number(state.demand),
         stockMultiplier: Number(stockMultiplier.toFixed(3)),
-        localMultiplier: Number((this.specializationMultiplier(settlementId, state.item_code) * stockMultiplier).toFixed(3)),
+        localMultiplier: Number(this.getLocalMultiplier(settlementId, state.item_code).toFixed(3)),
         pressure: state.stock < state.demand * 0.7 ? 'SCARCE' : state.stock > state.demand * 1.3 ? 'SURPLUS' : 'NORMAL',
         history
       };

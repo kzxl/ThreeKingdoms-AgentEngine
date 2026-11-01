@@ -536,18 +536,27 @@ export class RegionalMarketService {
     const stock = Number(state?.stock || 100);
     const demand = Number(state?.demand || 100);
     const stockMultiplier = Math.max(0.5, Math.min(2, Math.sqrt(demand / Math.max(1, stock))));
-    const endowment = this.db.queryOne<{ supply_score: number; demand_score: number }>(
-      'SELECT supply_score, demand_score FROM settlement_item_endowment WHERE settlement_id = ? AND item_code = ? LIMIT 1;',
-      [settlementId, itemCode]
-    );
+    let endowment: { supply_score: number; demand_score: number } | undefined;
+    try {
+      endowment = this.db.queryOne<{ supply_score: number; demand_score: number }>(
+        'SELECT supply_score, demand_score FROM settlement_item_endowment WHERE settlement_id = ? AND item_code = ? LIMIT 1;',
+        [settlementId, itemCode]
+      );
+    } catch {
+      // Minimal databases before migration 073 have no endowment table.
+      endowment = undefined;
+    }
     const endowmentMultiplier = endowment
       ? Math.max(0.6, Math.min(1.6, Math.sqrt(Number(endowment.demand_score) / Math.max(1, Number(endowment.supply_score)))))
       : 1;
-    const worldMultiplier = worldPriceMultiplier(this.db, itemCode, date, settlementId);
-    return Math.max(
-      1,
-      Math.round(basePrice * specializationMultiplier * stockMultiplier * endowmentMultiplier * worldMultiplier)
+    // Same clamp and composition as SettlementMarketService.getLocalMultiplier;
+    // verify-market-price-parity pins the two together.
+    const localMultiplier = Math.max(
+      0.5,
+      Math.min(2, specializationMultiplier * stockMultiplier * endowmentMultiplier)
     );
+    const worldMultiplier = worldPriceMultiplier(this.db, itemCode, date, settlementId);
+    return Math.max(1, Math.round(basePrice * localMultiplier * worldMultiplier));
   }
 
   /**

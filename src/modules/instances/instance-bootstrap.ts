@@ -99,6 +99,7 @@ const HISTORY_TABLES = [
   'merchant_shipments',
   'merchant_events',
   'merchant_day_ledger',
+  'world_day_ledger',
   'merchant_route_stock',
   'settlement_consumption_log'
 ];

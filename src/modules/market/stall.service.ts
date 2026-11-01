@@ -17,6 +17,8 @@ import { getMarketItem } from '../../shared/market-price-book';
 import { RegionalMarketService } from '../economy/regional-market.service';
 import { LOC_TO_NODE_MAP } from '../ecology-logistics/spatial-registry';
 import { npcBidMultiplier } from './npc-pricing';
+import { addGameDays } from '../../shared/game-date';
+import { hasProcessedDay, markProcessedDay } from '../../shared/day-ledger';
 
 const OPEN_FEE = 20;
 
@@ -453,10 +455,18 @@ export class StallService {
       "SELECT * FROM player_stalls WHERE status = 'OPEN';"
     );
     const sales: any[] = [];
+    const startDate = addGameDays(date, -(dayCount - 1));
     for (let day = 0; day < dayCount; day += 1) {
-      for (const stall of stalls) {
-        sales.push(...this.simulateDay(stall, date));
-      }
+      const dayDate = addGameDays(startDate, day);
+      if (hasProcessedDay(this.db, 'stall', dayDate)) continue;
+      const daySales: any[] = [];
+      this.db.transaction(() => {
+        for (const stall of stalls) {
+          daySales.push(...this.simulateDay(stall, dayDate));
+        }
+        markProcessedDay(this.db, 'stall', dayDate, { sales: daySales.length });
+      });
+      sales.push(...daySales);
     }
     const totalCash = sales.reduce((sum, sale) => sum + Number(sale.totalCash || 0), 0);
     return { sales, totalCash };

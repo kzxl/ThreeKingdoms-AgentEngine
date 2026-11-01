@@ -17,12 +17,8 @@ import { RegionalMarketService, calculateDistanceLi } from '../economy/regional-
 import { GUARD_TIER_CONFIGS, CARAVAN_DAILY_LI } from '../ecology-logistics/caravan-logistics.service';
 import { NpcMarketService } from './npc-market.service';
 import { computeSpoilage, freightDiscountPct } from './spoilage';
-
-function addDays(date: string, days: number): string {
-  const [year, month, day] = String(date || '184-05-02').split('-').map(Number);
-  const next = new Date(Date.UTC(year || 184, (month || 5) - 1, (day || 2) + days));
-  return `${next.getUTCFullYear()}-${String(next.getUTCMonth() + 1).padStart(2, '0')}-${String(next.getUTCDate()).padStart(2, '0')}`;
-}
+import { addGameDays } from '../../shared/game-date';
+import { hasProcessedDay, markProcessedDay } from '../../shared/day-ledger';
 
 export class MerchantCompanyService {
   constructor(private readonly db: DatabaseService) {}
@@ -479,7 +475,7 @@ export class MerchantCompanyService {
       );
       this.db.execute(
         'UPDATE merchant_routes SET next_run_date = ?, updated_at = CURRENT_TIMESTAMP WHERE route_id = ?;',
-        [addDays(date, Number(route.frequency_days)), route.route_id]
+        [addGameDays(date, Number(route.frequency_days)), route.route_id]
       );
       this.event(route.route_id, date, 'DISPATCH', route.item_code, qty, guardFee, `Xuất chuyến ${qty} ${route.item_code} ${route.from_settlement} → ${route.to_settlement}.`);
     }
@@ -495,12 +491,8 @@ export class MerchantCompanyService {
 
     for (let day = 0; day < count; day += 1) {
       // `gameDate` is the date after the full span; walk the intermediate days.
-      const dayDate = addDays(date, day - count + 1);
-      const already = this.db.queryOne(
-        'SELECT 1 AS ok FROM merchant_day_ledger WHERE game_date = ? LIMIT 1;',
-        [dayDate]
-      );
-      if (already) continue;
+      const dayDate = addGameDays(date, day - count + 1);
+      if (hasProcessedDay(this.db, 'merchant', dayDate)) continue;
 
       const beforeEvents = Number(this.db.queryOne<{ c: number }>('SELECT COUNT(*) AS c FROM merchant_events;')?.c || 0);
       this.db.transaction(() => {
@@ -510,11 +502,10 @@ export class MerchantCompanyService {
         this.procure(dayDate);
         this.dispatchDue(dayDate);
         const afterEvents = Number(this.db.queryOne<{ c: number }>('SELECT COUNT(*) AS c FROM merchant_events;')?.c || 0);
-        this.db.execute(
-          `INSERT INTO merchant_day_ledger (game_date, routes_processed, events_written, result_json)
-           VALUES (?, ?, ?, ?);`,
-          [dayDate, routes, afterEvents - beforeEvents, JSON.stringify({ routes, events: afterEvents - beforeEvents })]
-        );
+        markProcessedDay(this.db, 'merchant', dayDate, {
+          routes,
+          events: afterEvents - beforeEvents
+        });
         daysProcessed += 1;
         eventsWritten += afterEvents - beforeEvents;
       });
