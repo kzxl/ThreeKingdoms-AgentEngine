@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.55.1] - 2026-11-02
+
+### Fixed
+- Creating or selecting a non-startup instance no longer drops the player into
+  the `INSTANCE_NOT_ACTIVE` 409. The title screen detects `restartRequired`,
+  keeps the gate open, shows the exact `SIM_DB_PATH=...` command with a copy
+  button and a "server restarted" retry, and only marks the instance active
+  after the server is running that database.
+- `/api/instances` now marks the current instance from the server's startup
+  database instead of the per-request `x-instance-id` header, so the "Đang Chơi"
+  badge is correct after a restart.
+- `/api/instances/new` and `/api/instances/select` return `dbPath` and
+  `restartRequired` explicitly.
+
+`verify-instance-restart-ux.ts` locks the client guard order and the server
+response fields. True in-process hot-swapping remains the larger W6-0
+multi-instance refactor; this change makes the existing restart path explicit
+and safe.
+
+---
+
 ## [1.55.0] - 2026-11-02
 
 ### Changed

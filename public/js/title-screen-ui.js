@@ -16,6 +16,21 @@
   let cachedArchetypes = [];
   let selectedArchetypeId = 'ARCH-COMMONER-YOUTH';
   let activeInstanceId = 'default';
+  let pendingRestart = null;
+
+  function escapeHtml(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function buildRestartCommand(dbPath) {
+    const safePath = String(dbPath || '').replace(/'/g, "''");
+    return `$env:SIM_DB_PATH='${safePath}'; npm run dev`;
+  }
 
   function isEnglish() {
     return typeof window.currentLang !== 'undefined' && window.currentLang === 'en';
@@ -150,8 +165,42 @@
       attributes: { war: 55, ldr: 50, int: 60, pol: 45, dip: 50, com: 52, log: 52, cra: 58 }
     };
 
+    const restartNotice = pendingRestart ? `
+      <div class="title-restart-notice" role="alert">
+        <div class="title-restart-head">
+          <span class="title-restart-seal">!</span>
+          <div>
+            <strong>${isEn ? 'Session created, server restart required' : 'Phiên đã tạo, cần khởi động lại server'}</strong>
+            <div class="title-restart-sub">
+              ${isEn
+                ? `The server is still serving its startup campaign, so module routes would write the wrong database. Stop the server and run the command below.`
+                : `Server vẫn đang phục vụ campaign khởi động, nên các API mô-đun sẽ ghi nhầm database. Dừng server và chạy lệnh dưới đây.`}
+            </div>
+          </div>
+        </div>
+        <div class="title-restart-target">
+          ${isEn ? 'Target session' : 'Phiên cần kích hoạt'}: <strong>${escapeHtml(pendingRestart.name || pendingRestart.instanceId)}</strong>
+        </div>
+        <code class="title-restart-command" id="title-restart-command">${escapeHtml(pendingRestart.command)}</code>
+        <div class="title-restart-hint">
+          ${isEn
+            ? 'Git Bash: SIM_DB_PATH="..." npm run dev · CMD: set SIM_DB_PATH=... && npm run dev'
+            : 'Git Bash: SIM_DB_PATH="..." npm run dev · CMD: set SIM_DB_PATH=... && npm run dev'}
+        </div>
+        <div class="title-restart-actions">
+          <button class="ui-btn ui-btn--primary ui-btn--sm" onclick="TitleScreenUI.copyRestartCommand()">
+            ${isEn ? 'Copy command' : 'Sao chép lệnh'}
+          </button>
+          <button class="ui-btn ui-btn--ghost ui-btn--sm" onclick="TitleScreenUI.retryAfterRestart()">
+            ${isEn ? 'I restarted the server' : 'Đã khởi động lại server'}
+          </button>
+        </div>
+      </div>
+    ` : '';
+
     container.innerHTML = `
       <div class="title-screen-grid">
+        ${restartNotice}
         <!-- COLUMN 1: NEW CAMPAIGN FACTORY -->
         <div class="title-panel title-panel--new">
           <div class="title-panel-header">
@@ -234,7 +283,7 @@
                 <p>${isEn ? 'No saved instances found. Start a new campaign on the left!' : 'Chưa có phiên lưu nào. Hãy bắt đầu chiến dịch mới ở cột bên trái!'}</p>
               </div>
             ` : cachedInstances.map(inst => {
-              const isCur = inst.id === activeInstanceId;
+              const isCur = Boolean(inst.isCurrent) || inst.id === activeInstanceId;
               const dateStr = new Date(inst.updatedAt).toLocaleDateString('vi-VN', {
                 hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric'
               });
@@ -334,8 +383,28 @@
       const data = await res.json();
       if (!data.success) throw new Error(data.error || 'Failed to select instance');
 
+      if (data.restartRequired) {
+        const dbPath = data.dbPath || data.instance?.filepath || '';
+        pendingRestart = {
+          instanceId,
+          name: data.instance?.name || instanceId,
+          dbPath,
+          command: buildRestartCommand(dbPath)
+        };
+        showToast(
+          isEnglish()
+            ? 'The session is ready, but the server must restart with its SIM_DB_PATH before it can be played.'
+            : 'Phiên đã sẵn sàng, nhưng phải khởi động lại server với SIM_DB_PATH của phiên này mới chơi được.',
+          true
+        );
+        await fetchInstancesAndArchetypes();
+        renderTitleScreenContent();
+        return;
+      }
+
       activeInstanceId = instanceId;
       localStorage.setItem('current_instance_id', instanceId);
+      pendingRestart = null;
 
       showToast(data.messageVi || `Đã chuyển sang phiên chơi [${instanceId}]!`);
       closeTitleScreen();
@@ -349,6 +418,32 @@
     } catch (err) {
       showToast(`[LỖI] ${err.message}`, true);
     }
+  }
+
+  async function copyRestartCommand() {
+    if (!pendingRestart || !pendingRestart.command) return;
+    try {
+      await navigator.clipboard.writeText(pendingRestart.command);
+      showToast(isEnglish() ? 'Restart command copied.' : 'Đã sao chép lệnh khởi động lại.');
+    } catch {
+      showToast(
+        isEnglish()
+          ? 'Could not copy automatically. Select the command above and copy it manually.'
+          : 'Không sao chép tự động được. Hãy bôi chọn lệnh phía trên và sao chép tay.',
+        true
+      );
+    }
+  }
+
+  async function retryAfterRestart() {
+    pendingRestart = null;
+    await fetchInstancesAndArchetypes();
+    renderTitleScreenContent();
+    showToast(
+      isEnglish()
+        ? 'Instance list refreshed. Pick the session marked as current.'
+        : 'Đã làm mới danh sách phiên. Hãy chọn phiên đang được đánh dấu là phiên hiện tại.'
+    );
   }
 
   /**
@@ -446,6 +541,8 @@
     selectArchetype,
     createInstance,
     selectInstance,
+    copyRestartCommand,
+    retryAfterRestart,
     deleteInstance,
     cloneInstance,
     getActiveInstanceId: () => activeInstanceId

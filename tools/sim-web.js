@@ -295,7 +295,14 @@ const server = http.createServer(async (req, res) => {
       sendJson(res, 500, { success: false, error: 'InstanceManagerService unavailable' });
       return;
     }
-    const currentId = req.headers['x-instance-id'] || parsedUrl.query.instanceId || (currentActiveDbPath === DB_PATH ? 'default' : path.basename(currentActiveDbPath, '.db'));
+    // The "currently playing" marker reflects the campaign this process was
+    // started with. The per-request `x-instance-id` header only selects the DB
+    // for that request; it must not relabel another instance as active.
+    const startupDbPath = path.resolve(DB_PATH);
+    const defaultDbPath = path.resolve(path.join(SAVES_DIR, 'session.db'));
+    const currentId = startupDbPath === defaultDbPath
+      ? 'default'
+      : path.basename(startupDbPath, '.db');
     const list = instSvc.listInstances(currentId);
     let archetypes = [];
     try {
@@ -330,6 +337,8 @@ const server = http.createServer(async (req, res) => {
           success: true,
           instanceId: newInst.id,
           instance: newInst,
+          dbPath: newInst.filepath,
+          restartRequired: path.resolve(newInst.filepath) !== path.resolve(DB_PATH),
           messageVi: `Khởi tạo thành công phiên chơi mới [${newInst.name}] (${newInst.archetypeNameVi})!`
         });
       } catch (err) {
@@ -361,6 +370,7 @@ const server = http.createServer(async (req, res) => {
           success: true,
           instanceId: instId,
           instance,
+          dbPath,
           restartRequired,
           messageVi: restartRequired
             ? `Đã chọn phiên [${instance?.name || instId}]. Server đang chạy phiên khởi động; khởi động lại với SIM_DB_PATH=${dbPath} để dùng các tính năng mô-đun.`
