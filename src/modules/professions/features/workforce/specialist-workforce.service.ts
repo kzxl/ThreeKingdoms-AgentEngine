@@ -47,6 +47,29 @@ export interface SpecialistCandidate {
   recommendedRole: string;
 }
 
+export interface HireQuote {
+  npcId: string;
+  candidateName: string;
+  businessId: string;
+  businessName: string;
+  recommendedRole: string;
+  signingBonus: number;
+  baseSigningBonus: number;
+  fameDiscount: number;
+  virtueDiscount: number;
+  monthlyWage: number;
+  efficiencyBonus: number;
+  minFame: number;
+  fame: number;
+  virtue: number;
+  affinity: number;
+  canHire: boolean;
+  refusalReasonVi: string;
+  retryAfterDate: string | null;
+  alreadyHired: boolean;
+  assignedBusinessName: string | null;
+}
+
 export interface HireSpecialistInput {
   characterId?: string;
   npcId: string;
@@ -233,6 +256,128 @@ export class SpecialistWorkforceService {
   }
 
   /**
+   * One pricing/refusal calculation shared by the quote endpoint and the hire
+   * transaction, so the modal can never show a price the server will not charge.
+   */
+  private assessHire(masterChar: any, characterId: string): {
+    fame: number;
+    virtue: number;
+    affinity: number;
+    fameDiscount: number;
+    virtueDiscount: number;
+    discount: number;
+    profile: ReturnType<SpecialistWorkforceService['deriveRoleProfile']>;
+    baseSigningBonus: number;
+    signingBonus: number;
+    minFame: number;
+    refused: boolean;
+    refusalReasonVi: string;
+    retryAfterDate: string | null;
+  } {
+    const prestige = PrestigeService.forDatabase(this.db);
+    const fame = prestige.getFame(characterId);
+    const fameDiscount = fameEffects(fame).hireDiscount;
+    const virtueDiscount = this.getVirtueDiscount(characterId);
+    const discount = Math.min(0.5, fameDiscount + virtueDiscount);
+    const profile = this.deriveRoleProfile(String(masterChar.baseline_position_vi || ''));
+    const affinity = this.getNpcAffinity(masterChar.npc_id);
+    const virtue = Number(this.db.queryOne<{ virtue: number }>(
+      'SELECT virtue FROM player_state WHERE player_id = ? LIMIT 1;',
+      [characterId]
+    )?.virtue ?? 50);
+    const highAmbition = /Thái Thú|Chư Hầu|Tướng Quân|Hoàng Đế/i.test(String(masterChar.baseline_position_vi || ''));
+    const lowStanding = affinity < 5 && fame < 200 && virtue < 30;
+    const proudRefusal = highAmbition && affinity < 20 && fame < 1000;
+    const refused = lowStanding || proudRefusal;
+    return {
+      fame,
+      virtue,
+      affinity,
+      fameDiscount,
+      virtueDiscount,
+      discount,
+      profile,
+      baseSigningBonus: profile.signingBonus,
+      signingBonus: this.applyFameDiscount(profile.signingBonus, discount),
+      minFame: profile.minFame,
+      refused,
+      refusalReasonVi: refused
+        ? `${masterChar.name_vi} từ chối lời mời: thiện cảm ${affinity}/100, danh vọng ${fame}, đức độ ${virtue}. Hãy vun đắp quan hệ hoặc tăng danh vọng rồi thử lại.`
+        : '',
+      retryAfterDate: refused ? addGameDays(getGameDate(this.db), 30) : null
+    };
+  }
+
+  /**
+   * Returns the server-owned hire price, affinity, fame, virtue and refusal
+   * window before the player commits. No cash or state changes.
+   */
+  public getHireQuote(input: {
+    characterId?: string;
+    npcId?: string;
+    candidateName?: string;
+    businessId?: string;
+  }): HireQuote {
+    const characterId = input.characterId || 'PLY-0001';
+    const npcId = input.npcId
+      || (input.candidateName ? this.resolveCandidateByName(input.candidateName)?.npcId : null);
+    if (!npcId) throw new Error('npcId hoặc candidateName là bắt buộc.');
+
+    const masterChar = this.db.queryOne<any>(
+      'SELECT * FROM master_characters WHERE npc_id = ? LIMIT 1;',
+      [npcId]
+    );
+    if (!masterChar) throw new Error(`Nhân sự ${npcId} không tồn tại trong danh bộ nhân vật.`);
+
+    const businessId = input.businessId || this.getPlayerBusinesses(characterId)[0]?.businessId;
+    if (!businessId) throw new Error('Không tìm thấy sản nghiệp khả dụng để phân bổ nhân sự.');
+    const business = this.db.queryOne<any>(
+      'SELECT business_id, name FROM businesses WHERE business_id = ? LIMIT 1;',
+      [businessId]
+    );
+    if (!business) throw new Error(`Sản nghiệp ${businessId} không tồn tại.`);
+
+    const existing = this.db.queryOne<any>(
+      'SELECT assigned_business_id FROM npc_state WHERE npc_id = ? LIMIT 1;',
+      [npcId]
+    );
+    const assignedBusinessName = existing?.assigned_business_id
+      ? this.db.queryOne<{ name: string }>(
+        'SELECT name FROM businesses WHERE business_id = ? LIMIT 1;',
+        [existing.assigned_business_id]
+      )?.name || String(existing.assigned_business_id)
+      : null;
+
+    const assessed = this.assessHire(masterChar, characterId);
+    const blockedByFame = assessed.fame < assessed.minFame;
+    const refusalReasonVi = blockedByFame
+      ? `Danh vọng chưa đủ để chiêu mộ ${masterChar.name_vi}: cần ${assessed.minFame}, hiện có ${assessed.fame}.`
+      : assessed.refusalReasonVi;
+    return {
+      npcId: String(masterChar.npc_id),
+      candidateName: String(masterChar.name_vi),
+      businessId: String(business.business_id),
+      businessName: String(business.name),
+      recommendedRole: assessed.profile.recommendedRole,
+      signingBonus: assessed.signingBonus,
+      baseSigningBonus: assessed.baseSigningBonus,
+      fameDiscount: assessed.fameDiscount,
+      virtueDiscount: assessed.virtueDiscount,
+      monthlyWage: assessed.profile.monthlyWage,
+      efficiencyBonus: assessed.profile.efficiencyBonus,
+      minFame: assessed.minFame,
+      fame: assessed.fame,
+      virtue: assessed.virtue,
+      affinity: assessed.affinity,
+      canHire: !assessed.refused && !blockedByFame && !assignedBusinessName,
+      refusalReasonVi,
+      retryAfterDate: assessed.retryAfterDate,
+      alreadyHired: Boolean(assignedBusinessName),
+      assignedBusinessName
+    };
+  }
+
+  /**
    * Resolves a candidate by either exact NPC id or partial Vietnamese name.
    */
   public resolveCandidateByName(nameOrPattern: string): { npcId: string; nameVi: string } | null {
@@ -306,12 +451,8 @@ export class SpecialistWorkforceService {
 
     // The server owns the signing price; a client-supplied value is ignored.
     // Fame and virtue lower it by up to 10% each, never to zero.
-    const prestige = PrestigeService.forDatabase(this.db);
-    const fame = prestige.getFame(characterId);
-    const fameDiscount = fameEffects(fame).hireDiscount;
-    const virtueDiscount = this.getVirtueDiscount(characterId);
-    const discount = Math.min(0.5, fameDiscount + virtueDiscount);
-    const profile = this.deriveRoleProfile(masterChar.baseline_position_vi);
+    const assessed = this.assessHire(masterChar, characterId);
+    const { fame, fameDiscount, discount, profile, baseSigningBonus } = assessed;
     if (fame < profile.minFame) {
       throw new Error(
         `Danh vọng chưa đủ để chiêu mộ ${masterChar.name_vi}: cần ${profile.minFame}, hiện có ${fame}.`
@@ -320,26 +461,16 @@ export class SpecialistWorkforceService {
 
     // A proud officer or a stranger with no standing can refuse. The check is
     // deterministic and returns a retry date instead of silently succeeding.
-    const affinity = this.getNpcAffinity(masterChar.npc_id);
-    const virtue = Number(this.db.queryOne<{ virtue: number }>(
-      'SELECT virtue FROM player_state WHERE player_id = ? LIMIT 1;',
-      [characterId]
-    )?.virtue ?? 50);
-    const highAmbition = /Thái Thú|Chư Hầu|Tướng Quân|Hoàng Đế/i.test(String(masterChar.baseline_position_vi || ''));
-    const lowStanding = affinity < 5 && fame < 200 && virtue < 30;
-    const proudRefusal = highAmbition && affinity < 20 && fame < 1000;
-    if (lowStanding || proudRefusal) {
-      const error: any = new Error(
-        `${masterChar.name_vi} từ chối lời mời: thiện cảm ${affinity}/100, danh vọng ${fame}, đức độ ${virtue}. Hãy vun đắp quan hệ hoặc tăng danh vọng rồi thử lại.`
-      );
+    if (assessed.refused) {
+      const error: any = new Error(assessed.refusalReasonVi);
       error.code = 'NPC_REFUSED';
       error.statusCode = 400;
-      error.affinity = affinity;
-      error.retryAfterDate = addGameDays(getGameDate(this.db), 30);
+      error.affinity = assessed.affinity;
+      error.retryAfterDate = assessed.retryAfterDate;
       throw error;
     }
-    const baseSigningBonus = profile.signingBonus;
     const signingBonus = input.waiveSigningBonus ? 0 : this.applyFameDiscount(baseSigningBonus, discount);
+    const prestige = PrestigeService.forDatabase(this.db);
 
     // 4. Execute atomic transaction
     return this.db.transaction(() => {

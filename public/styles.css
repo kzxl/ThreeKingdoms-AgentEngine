@@ -10194,3 +10194,45 @@ textarea {
   font-size: 0.68rem;
   color: #94a3b8;
 }
+
+/* Workforce hire: server quote and refusal details */
+.hire-quote-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 0.5rem;
+}
+
+.hire-quote-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid rgba(120, 90, 40, 0.35);
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.55);
+}
+
+.hire-quote-cell span {
+  font-size: 0.7rem;
+  color: #94a3b8;
+}
+
+.hire-quote-cell strong {
+  font-size: 0.9rem;
+  color: #fbbf24;
+}
+
+.hire-refusal {
+  margin-top: 0.75rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid rgba(248, 113, 113, 0.45);
+  border-radius: 8px;
+  background: rgba(60, 15, 15, 0.45);
+}
+
+.hire-refusal-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #fca5a5;
+  margin-bottom: 0.2rem;
+}

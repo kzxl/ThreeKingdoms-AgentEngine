@@ -2145,70 +2145,15 @@ async function promptSiegeAssault(settlementId) {
 /**
  * Strategic Action: Recruit Auxiliary Specialist
  */
-async function hireSpecialistPrompt(candidateName, nodeId) {
-  const isEn = (currentLang === 'en');
-  const confirmMsg = isEn
-    ? `Sign employment contract with [${candidateName}]?\nSigning Bonus (Bond): 250 quan\nAssigned to: Liang Clan Enterprise (+15% to +25% Efficiency boost)\nConfirm recruitment?`
-    : `Ký kết khế ước chiêu mộ nhân sĩ [${candidateName}]?\nTiền thưởng ký kết (Ký quỹ): 250 Quan\nPhân bổ vào: Sản nghiệp Lương Gia (+15% đến +25% Hiệu suất vận hành)\nXác nhận chiêu mộ?`;
-
-  if (!confirm(confirmMsg)) return;
-
-  try {
-    if (typeof setProcessingLock === 'function') setProcessingLock(true, isEn ? 'Signing contract...' : 'Đang ký kết khế ước chiêu mộ...');
-
-    const res = await fetch('/api/workforce/hire', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ candidateName, signingBonus: 250, characterId: 'PLY-0001' })
-    });
-    const data = await res.json();
-    if (!data.success) {
-      throw new Error(data.error || 'Recruitment failed');
-    }
-
-    if (typeof window.apiSpendActionTime === 'function') {
-      try {
-        await window.apiSpendActionTime('WORKFORCE_HIRE', null, `Chiêu mộ ${candidateName}`);
-      } catch (timeErr) {
-        if (typeof showToast === 'function') showToast(timeErr.message, true);
-      }
-    }
-
-    const narrativeVi = `Lương Diễn đích thân yết kiến, trao tặng **${data.signingBonusPaid} quan** chiêu mộ **${data.nameVi}** gia nhập sản nghiệp **${data.businessName}**. Đảm nhận cương vị **${data.assignedRole}**, thúc đẩy hiệu suất sản xuất và quản trị tăng vọt lên **${(data.newEfficiencyMultiplier * 100).toFixed(0)}%**!`;
-    const narrativeEn = `Liang Yan personally extends invitations and grants **${data.signingBonusPaid} quan** signing bonus to recruit **${data.nameVi}** into **${data.businessName}**. Serving as **${data.assignedRole}**, boosting enterprise operational efficiency to **${(data.newEfficiencyMultiplier * 100).toFixed(0)}%**!`;
-
-    if (typeof appendStoryTurn === 'function') {
-      appendStoryTurn({
-        type: 'player',
-        speaker: isEn ? 'Liang Yan (Workforce Recruitment)' : 'Lương Diễn (Chiêu Mộ Nhân Tài)',
-        title: isEn ? 'Retainer Contract Signed' : 'Ký Kết Khế Ước Gia Thần',
-        avatar: 'Diễn',
-        text: isEn ? narrativeEn : narrativeVi,
-        deltas: {
-          recruit: data.nameVi,
-          business: data.businessName,
-          role: data.assignedRole,
-          bonus: `-${data.signingBonusPaid} Quan`,
-          efficiency: `${(data.newEfficiencyMultiplier * 100).toFixed(0)}%`
-        }
-      });
-    }
-
-    if (typeof showToast === 'function') {
-      showToast(isEn ? `Recruited ${data.nameVi} into ${data.businessName}!` : `Đã chiêu mộ ${data.nameVi} gia nhập ${data.businessName}!`);
-    }
-
-    if (typeof renderWorldMapIntel === 'function') renderWorldMapIntel(nodeId);
-    if (typeof loadStatus === 'function') loadStatus();
-    if (typeof loadDeckNpcs === 'function') loadDeckNpcs();
-    if (typeof loadDeckLedger === 'function') loadDeckLedger();
-
-  } catch (err) {
-    console.error('Recruitment failed:', err);
-    if (typeof showToast === 'function') showToast(`Lỗi chiêu mộ: ${err.message}`, true);
-    else alert(`Lỗi chiêu mộ: ${err.message}`);
-  } finally {
-    if (typeof setProcessingLock === 'function') setProcessingLock(false, null);
+function hireSpecialistPrompt(candidateName, nodeId) {
+  // The quote/hire flow lives in the TS workforce slice; this legacy entry point
+  // only forwards the candidate name so there is a single renderer.
+  if (window.WorkforceHireUI && typeof window.WorkforceHireUI.open === 'function') {
+    window.WorkforceHireUI.open(candidateName);
+    return;
+  }
+  if (typeof showToast === 'function') {
+    showToast(currentLang === 'en' ? 'Hire dialog is loading, please retry.' : 'Hộp thoại chiêu mộ chưa sẵn sàng, thử lại sau.', true);
   }
 }
 

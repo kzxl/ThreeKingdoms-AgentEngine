@@ -46,6 +46,21 @@ export function registerSpecialistWorkforceRoutes(router: Router): void {
     }
   });
 
+  // 1c. GET /api/workforce/quote
+  router.get('/api/workforce/quote', async (_req: any, res: any, ctx: RouteContext) => {
+    try {
+      const quote = service.getHireQuote({
+        characterId: (ctx.query.characterId as string) || 'PLY-0001',
+        npcId: (ctx.query.npcId as string) || undefined,
+        candidateName: (ctx.query.candidateName as string) || undefined,
+        businessId: (ctx.query.businessId as string) || undefined
+      });
+      sendJson(res, 200, { success: true, quote });
+    } catch (err: any) {
+      sendJson(res, err.statusCode || 400, { success: false, error: err.message });
+    }
+  });
+
   // 2. POST /api/workforce/hire
   router.post('/api/workforce/hire', async (_req: any, res: any, ctx: RouteContext) => {
     try {
