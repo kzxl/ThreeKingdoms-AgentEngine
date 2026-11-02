@@ -29,6 +29,28 @@ with 0 discrepancies.
 
 ---
 
+## [1.52.1] - 2026-11-02
+
+Readable action logs and a wage-ledger balance fix.
+
+### Fixed
+- The time timeline and turn report showed raw action codes such as
+  `ENTERPRISE_WORK`, `ENTERPRISE_SAFE_CASH`, `MONTH_CLOSE` and `EXPLORE_POI`.
+  `TURN_ACTION_LABELS` now covers the full action catalog and unknown codes are
+  humanized instead of printed verbatim.
+- `performLaborShift` did not select `safe_cash`, so `LABOR_WAGE` ledger entries
+  recorded liquid cash only and were 3,000 Quan short whenever the personal safe
+  held a reserve. The balance now equals liquid + safe, matching `newBalance`.
+- Market tests no longer force `current_date` to a date earlier than the save's
+  latest ledger entry; they use `MAX(game_date)` so real player progress does not
+  produce false INVALID_PARAMS failures.
+
+### Verification
+`npm run verify` green: 110/110 suites. `npm run audit` passed 2,441 invariants
+with 0 discrepancies.
+
+---
+
 ## [1.52.0] - 2026-11-02
 
 Reworked the campaign time panel for readability.
