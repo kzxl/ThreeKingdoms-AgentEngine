@@ -21,6 +21,7 @@ import { registerEconomyRoutes } from '../modules/economy/economy.controller';
 import { registerMilitaryRoutes } from '../modules/military/military.controller';
 import { registerProfessionsRoutes } from '../modules/professions/professions.controller';
 import { registerEcologyRoutes } from '../modules/ecology-logistics/ecology.controller';
+import { registerMapRoutes } from '../modules/ecology-logistics/map.controller';
 import { registerKizunaRoutes } from '../modules/social-kizuna/kizuna.controller';
 import { registerBlacksmithForgeRoutes } from '../modules/professions/blacksmith-forge.service';
 import { registerLineageRoutes } from '../modules/lineage-succession/lineage.controller';
@@ -31,6 +32,11 @@ import { registerSpecialistWorkforceRoutes } from '../modules/professions/featur
 import { DailyInteractionEngine } from '../modules/social-kizuna/daily-interaction.engine';
 import { ContextActionEngine } from '../modules/contextual-actions/context-action.engine';
 import { registerFactionReadRoutes } from '../modules/faction-politics/faction.controller';
+import { registerLifeRoutes } from '../modules/life/life.controller';
+import { registerMarketStallRoutes } from '../modules/market/market-stall.controller';
+import { registerFreightRoutes } from '../modules/market/freight.controller';
+import { registerMerchantCompanyRoutes } from '../modules/market/merchant-company.controller';
+import { registerWarehouseRoutes } from '../modules/market/warehouse.controller';
 import { CaravanLogisticsService } from '../modules/ecology-logistics/caravan-logistics.service';
 
 // Resolve database path
@@ -88,6 +94,7 @@ export function createGrandStrategyRouter(): Router {
   registerMilitaryRoutes(router);
   registerProfessionsRoutes(router);
   registerEcologyRoutes(router);
+  registerMapRoutes(router);
   registerKizunaRoutes(router);
   registerBlacksmithForgeRoutes(router);
   registerLineageRoutes(router);
@@ -96,6 +103,11 @@ export function createGrandStrategyRouter(): Router {
   registerProgressionRoutes(router);
   registerSpecialistWorkforceRoutes(router);
   registerFactionReadRoutes(router);
+  registerLifeRoutes(router);
+  registerMarketStallRoutes(router);
+  registerWarehouseRoutes(router);
+  registerFreightRoutes(router);
+  registerMerchantCompanyRoutes(router);
   return router;
 }
 

@@ -89,6 +89,44 @@ export function postCashflowEntry(db: DatabaseService, input: CashflowEntryInput
   return balance;
 }
 
+export interface DoubleEntryInput extends CashflowEntryInput {
+  debitAccount: string;
+  creditAccount: string;
+}
+
+/**
+ * Posts one player transaction as a complete double entry: the cashflow row and
+ * the matching debit/credit journal pair share the same `txn_id`. Every new
+ * money path should use this instead of `postCashflowEntry` alone, otherwise
+ * the cashflow ledger has rows the journal cannot explain.
+ */
+export function postDoubleEntry(db: DatabaseService, input: DoubleEntryInput): number {
+  return db.transaction(() => {
+    const balance = postCashflowEntry(db, input);
+    const existing = db.queryOne<{ ok: number }>(
+      'SELECT 1 AS ok FROM account_journal WHERE txn_id = ? LIMIT 1;',
+      [input.txnId]
+    );
+    if (existing) return balance;
+
+    const campaign = db.queryOne<{ campaign_id: string }>(
+      'SELECT campaign_id FROM campaign_meta LIMIT 1;'
+    );
+    const amount = normalizeFlow(input.inflow) || normalizeFlow(input.outflow);
+    db.execute(
+      `INSERT INTO account_journal (txn_id, campaign_id, game_date, account_code, debit, credit, memo)
+       VALUES (?, ?, ?, ?, ?, 0, ?), (?, ?, ?, ?, 0, ?, ?);`,
+      [
+        input.txnId, campaign?.campaign_id || null, input.gameDate, input.debitAccount, amount,
+        input.memo,
+        input.txnId, campaign?.campaign_id || null, input.gameDate, input.creditAccount, amount,
+        input.memo
+      ]
+    );
+    return balance;
+  });
+}
+
 /**
  * Same writer for raw better-sqlite3 connections (instance bootstrap, engine
  * tools). The caller supplies the explicit closing balance.

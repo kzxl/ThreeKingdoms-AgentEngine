@@ -17,7 +17,6 @@ export * from './features/lineage-family';
 export * from './features/equipment-forge';
 export * from './features/enterprise-workshop';
 export * from './features/caravan-logistics';
-export * from './features/dossiers';
 export * from './features/trade-quick';
 export * from './features/tactical-battle';
 export * from './features/title-screen';

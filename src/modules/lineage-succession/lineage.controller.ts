@@ -23,6 +23,9 @@ import {
   ChildGrowthFocus
 } from './family-lineage.service';
 import { SpatialGuardService } from '../progression/spatial-guard.service';
+import { DatabaseService } from '../../core/database';
+import { chargePlayerAction } from '../../shared/action-time';
+import { requestIdempotencyKey, findIdempotentResult, recordAction } from '../../shared/action-journal';
 
 export function registerLineageRoutes(router: Router): void {
   const service = FamilyLineageService.getInstance();
@@ -83,8 +86,27 @@ export function registerLineageRoutes(router: Router): void {
         body.bypassSpatialGuard || body.bypassProgressionGate
       );
 
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(DatabaseService.getInstance(), idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
+      const time = chargePlayerAction(
+        DatabaseService.getInstance().path,
+        'COURTSHIP',
+        null,
+        `Courtship proposal ${params.spouseNpcId || params.wifeNpcId || ''}`.trim()
+      );
       const result = service.proposeMarriage(params);
-      sendJson(res, 200, result);
+      const response = { ...result, time };
+      recordAction(DatabaseService.getInstance(), {
+        key: idempotencyKey,
+        actionType: 'COURTSHIP_PROPOSE',
+        payload: params,
+        result: response
+      });
+      sendJson(res, 200, { ...response, idempotent: false });
     } catch (err: any) {
       sendJson(res, 400, { success: false, error: err.message });
     }
@@ -102,11 +124,19 @@ export function registerLineageRoutes(router: Router): void {
       const body = ctx.body || {};
       const marriageId = body.marriageId;
       const role = body.role as HouseholdRole;
+      const playerId = body.playerId || 'PLY-0001';
 
       if (!marriageId || !role) {
         sendJson(res, 400, { success: false, error: 'Thiếu marriageId hoặc role' });
         return;
       }
+
+      guard.assertStage(
+        playerId,
+        2,
+        'Bàn Giấy Gia Thất',
+        body.bypassProgressionGate || body.bypassSpatialGuard
+      );
 
       service.assignHouseholdRole(marriageId, role);
       sendJson(res, 200, {
@@ -114,7 +144,7 @@ export function registerLineageRoutes(router: Router): void {
         message: `Đã phân bổ chức vụ [${role}] cho hôn phối ${marriageId}.`
       });
     } catch (err: any) {
-      sendJson(res, 400, { success: false, error: err.message });
+      sendJson(res, err.statusCode || 400, { success: false, error: err.message });
     }
   };
 
@@ -143,8 +173,27 @@ export function registerLineageRoutes(router: Router): void {
         body.bypassSpatialGuard
       );
 
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(DatabaseService.getInstance(), idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
+      const time = chargePlayerAction(
+        DatabaseService.getInstance().path,
+        'REST_RECOVERY',
+        null,
+        'Rest with spouse'
+      );
       const result = service.restWithSpouse(marriageId);
-      sendJson(res, 200, result);
+      const response = { ...result, time };
+      recordAction(DatabaseService.getInstance(), {
+        key: idempotencyKey,
+        actionType: 'REST_WITH_SPOUSE',
+        payload: { marriageId },
+        result: response
+      });
+      sendJson(res, 200, { ...response, idempotent: false });
     } catch (err: any) {
       sendJson(res, 400, { success: false, error: err.message });
     }
@@ -159,8 +208,22 @@ export function registerLineageRoutes(router: Router): void {
   const handlePregnancyTick = (req: any, res: any, ctx: RouteContext) => {
     try {
       const body = ctx.body || {};
+      const db = DatabaseService.getInstance();
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
       service.advancePregnancyTick(body.turn, body.gameDate);
-      sendJson(res, 200, { success: true, message: 'Đã tiến chuyển chu kỳ thai nghén.' });
+      const response = { message: 'Đã tiến chuyển chu kỳ thai nghén.' };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'PREGNANCY_TICK',
+        payload: { turn: body.turn ?? null, gameDate: body.gameDate ?? null },
+        result: response
+      });
+      sendJson(res, 200, { success: true, ...response, idempotent: false });
     } catch (err: any) {
       sendJson(res, 500, { success: false, error: err.message });
     }
@@ -188,8 +251,22 @@ export function registerLineageRoutes(router: Router): void {
         gender: body.gender
       };
 
+      const db = DatabaseService.getInstance();
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
+
       const result = service.birthChild(params);
-      sendJson(res, 200, { success: true, ...result });
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'CHILD_BIRTH',
+        payload: params,
+        result
+      });
+      sendJson(res, 200, { success: true, ...result, idempotent: false });
     } catch (err: any) {
       sendJson(res, 400, { success: false, error: err.message });
     }
@@ -282,8 +359,22 @@ export function registerLineageRoutes(router: Router): void {
         body.bypassSpatialGuard
       );
 
+      const db = DatabaseService.getInstance();
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
+
       const result = service.executeMentorshipTurn(childId);
-      sendJson(res, 200, { success: true, ...result });
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'MENTORSHIP_TURN',
+        payload: { childId },
+        result
+      });
+      sendJson(res, 200, { success: true, ...result, idempotent: false });
     } catch (err: any) {
       sendJson(res, 400, { success: false, error: err.message });
     }
@@ -329,8 +420,23 @@ export function registerLineageRoutes(router: Router): void {
         return;
       }
 
+      const db = DatabaseService.getInstance();
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
+
       service.ageChild(childId, years);
-      sendJson(res, 200, { success: true, message: `Đã tăng niên kỷ cho hài nhi thêm ${years} tuổi.` });
+      const response = { message: `Đã tăng niên kỷ cho hài nhi thêm ${years} tuổi.` };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'CHILD_AGE',
+        payload: { childId, years },
+        result: response
+      });
+      sendJson(res, 200, { success: true, ...response, idempotent: false });
     } catch (err: any) {
       sendJson(res, 400, { success: false, error: err.message });
     }
@@ -352,11 +458,27 @@ export function registerLineageRoutes(router: Router): void {
         return;
       }
 
+      const db = DatabaseService.getInstance();
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
+
       const result = service.executeSuccession({
         heirId,
         reason: body.reason || 'VOLUNTARY_RETIREMENT'
       });
-      sendJson(res, 200, result);
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'LINEAGE_SUCCESSION',
+        payload: { heirId, reason: body.reason || 'VOLUNTARY_RETIREMENT' },
+        result
+      });
+      const response: any = { ...result, idempotent: false };
+      if (response.success === undefined) response.success = true;
+      sendJson(res, 200, response);
     } catch (err: any) {
       sendJson(res, 400, { success: false, error: err.message });
     }

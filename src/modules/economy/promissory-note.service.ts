@@ -9,6 +9,7 @@
 import { DatabaseService } from '../../core/database';
 import { nextSequenceValue } from '../../shared/id-generator';
 import { postCashflowEntry } from '../../shared/ledger';
+import { postNpcMutation } from '../npc-lifecycle/npc-ledger';
 
 export interface PromissoryNote {
   noteId: string;
@@ -105,11 +106,14 @@ export class PromissoryNoteService {
         this.db.execute(`UPDATE player_state SET liquid_cash = ? WHERE player_id = 'PLY-0001';`, [newLiquidCash]);
       } else {
         // NPC or Faction lender
-        this.db.execute(`
-          UPDATE npc_personal_progression 
-          SET personal_cash = MAX(0, personal_cash - ?) 
-          WHERE npc_id = ?;
-        `, [principalAmount, lenderId]);
+        postNpcMutation(this.db, {
+          npcId: lenderId,
+          gameDate,
+          category: 'LOAN_LEND',
+          counterparty: borrowerId,
+          deltaCash: -principalAmount,
+          memoVi: `Cho ${borrowerId} vay`
+        });
       }
 
       // Credit borrower
@@ -142,10 +146,14 @@ export class PromissoryNoteService {
 
         this.db.execute(`UPDATE player_state SET liquid_cash = ? WHERE player_id = 'PLY-0001';`, [newLiquidCash]);
       } else {
-        this.db.execute(`
-          INSERT INTO npc_personal_progression (npc_id, personal_cash) VALUES (?, ?)
-          ON CONFLICT(npc_id) DO UPDATE SET personal_cash = personal_cash + excluded.personal_cash;
-        `, [borrowerId, principalAmount]);
+        postNpcMutation(this.db, {
+          npcId: borrowerId,
+          gameDate,
+          category: 'LOAN_BORROW',
+          counterparty: lenderId,
+          deltaCash: principalAmount,
+          memoVi: `Vay từ ${lenderId}`
+        });
       }
 
       // 2. Persist Note Contract

@@ -1,6 +1,7 @@
 # Currency Unit Standard
 
-Date: 2026-10-29. Applies to every UI surface, narration, report and log in the Simulation.
+Date: 2026-10-29; database repair added 2026-10-31. Applies to every UI surface,
+narration, report and log in the Simulation.
 
 ## 1. Decision
 
@@ -51,3 +52,9 @@ Date: 2026-10-29. Applies to every UI surface, narration, report and log in the 
 - 500+ labels across 39 files were converted (context actions, sim-web narration, caravans,
   journal, NPC dossier, enterprise, world map, trade modal, PROGRESS.md and its parsers). The
   client bundle was rebuilt afterwards.
+- **Database rows:** source lint cannot see `saves/session.db`. Migration 043
+  (`tools/migrations/043-text-cleanup.js`) rewrites numeric legacy labels in
+  `session_events`, `master_events`, `chat_chronicle`, `turn_log`, `master_quests`
+  and `master_quest_steps`. It only matches a number followed by the old unit,
+  so prose such as `tiền mặt` is preserved. `tests/verify-data-cleanup.ts` covers
+  the repair and its idempotency.

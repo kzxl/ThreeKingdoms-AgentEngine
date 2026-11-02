@@ -12,6 +12,9 @@ import { fameRatio } from '../../shared/prestige';
 import { UnrestService } from './unrest.service';
 import { OfficerUnrestConsequence } from './unrest-consequence';
 import { isTurnModuleDone, markTurnModuleDone } from '../../shared/turn-ledger';
+import { nextId } from '../../shared/id-generator';
+import { postFactionEntry, ensureFactionOpening } from '../../shared/faction-ledger';
+import { postNpcMutation } from '../npc-lifecycle/npc-ledger';
 import {
   IFeatureModule,
   ModuleContext,
@@ -377,11 +380,13 @@ export class FactionPoliticsModule implements IFeatureModule {
             [eventId, turnNumber, gameDate, off.faction_id, off.officer_id, titleVi, narrativeVi, JSON.stringify(consequences)]
           );
 
-          // 1. Establish new rebel warlord faction in session_factions
+          // 1. Establish new rebel warlord faction in session_factions. OR IGNORE
+          //    avoids resetting an existing rebel treasury on a repeated event.
           this.db.execute(`
-            INSERT OR REPLACE INTO session_factions (faction_id, name_vi, name_en, leader_id, capital_settlement_id, treasury_cash, granary_grain, military_power, prestige, ideology, color_hex)
+            INSERT OR IGNORE INTO session_factions (faction_id, name_vi, name_en, leader_id, capital_settlement_id, treasury_cash, granary_grain, military_power, prestige, ideology, color_hex)
             VALUES (?, ?, ?, ?, ?, 8000, 300.0, 450, 120, 'WARLORD', '#f97316');
           `, [rebelFactionId, rebelNameVi, rebelNameEn, off.officer_id, off.appointed_settlement_id]);
+          ensureFactionOpening(this.db, rebelFactionId, gameDate);
 
           // 2. Transfer territorial sovereignty of settlement
           this.db.execute(`
@@ -463,21 +468,31 @@ export class FactionPoliticsModule implements IFeatureModule {
       }
     }
 
-    // Faction economic pulse: collect tax from controlled cities
+    // Faction economic pulse: collect tax from controlled cities. Every treasury
+    // movement goes through the faction ledger so the world economy is auditable.
+    const taxRows = this.db.query<any>(`
+      SELECT f.faction_id, COALESCE(SUM(s.commerce * 10), 500) AS tax
+      FROM session_factions f
+      LEFT JOIN session_settlements s ON s.ruler_faction_id = f.faction_id
+      GROUP BY f.faction_id;
+    `);
+    for (const row of taxRows) {
+      postFactionEntry(this.db, {
+        factionId: row.faction_id,
+        gameDate,
+        category: 'TAX_REVENUE',
+        counterparty: 'Lãnh thổ trực thuộc',
+        inflow: Number(row.tax || 0),
+        memo: `Thuế thương mại lượt ${turnNumber}`
+      });
+    }
     this.db.execute(`
-      UPDATE session_factions 
-      SET 
-        treasury_cash = treasury_cash + (
-          SELECT COALESCE(SUM(s.commerce * 10), 500) 
-          FROM session_settlements s 
-          WHERE s.ruler_faction_id = session_factions.faction_id
-        ),
-        granary_grain = granary_grain + (
-          SELECT COALESCE(SUM(s.agriculture * 0.5), 25.0) 
-          FROM session_settlements s 
-          WHERE s.ruler_faction_id = session_factions.faction_id
-        ),
-        updated_at = CURRENT_TIMESTAMP;
+      UPDATE session_factions
+      SET granary_grain = granary_grain + (
+        SELECT COALESCE(SUM(s.agriculture * 0.5), 25.0)
+        FROM session_settlements s
+        WHERE s.ruler_faction_id = session_factions.faction_id
+      ), updated_at = CURRENT_TIMESTAMP;
     `);
 
     // Settlement grain consumption by garrisons & populace
@@ -583,9 +598,21 @@ export class FactionPoliticsModule implements IFeatureModule {
         if (rel.tribute_amount > 0 && rel.relation_state === 'TRUCE') {
           const tribute = Math.min(rel.tribute_amount, fa.treasury_cash);
           if (tribute > 0) {
-            this.db.transaction(() => {
-              this.db.execute(`UPDATE session_factions SET treasury_cash = treasury_cash - ? WHERE faction_id = ?;`, [tribute, fa.faction_id]);
-              this.db.execute(`UPDATE session_factions SET treasury_cash = treasury_cash + ? WHERE faction_id = ?;`, [tribute, fb.faction_id]);
+            postFactionEntry(this.db, {
+              factionId: fa.faction_id,
+              gameDate,
+              category: 'TRIBUTE_PAID',
+              counterparty: fb.name_vi,
+              outflow: tribute,
+              memo: `Cống nạp cho ${fb.name_vi}`
+            });
+            postFactionEntry(this.db, {
+              factionId: fb.faction_id,
+              gameDate,
+              category: 'TRIBUTE_RECEIVED',
+              counterparty: fa.name_vi,
+              inflow: tribute,
+              memo: `Nhận cống nạp từ ${fa.name_vi}`
             });
           }
         }
@@ -666,7 +693,111 @@ export class FactionPoliticsModule implements IFeatureModule {
   }
 
   /**
-   * Action: Appoint Governor to a Settlement
+   * Player-diplomacy: declare war on another faction. War closes supply roads
+   * through that faction's settlements on the next supply check.
+   */
+  public declareWar(targetFactionId: string): any {
+    return this.setWarState(targetFactionId, 'WAR');
+  }
+
+  public makePeace(targetFactionId: string): any {
+    return this.setWarState(targetFactionId, 'TRUCE');
+  }
+
+  private setWarState(targetFactionId: string, state: 'WAR' | 'TRUCE'): any {
+    const player = this.getPlayerFactionId();
+    if (!player) throw new Error('Player faction not found.');
+    if (!targetFactionId || targetFactionId === player) {
+      throw new Error('Không thể thay đổi quan hệ với chính phe mình.');
+    }
+
+    const target = this.db.queryOne<{ faction_id: string; name_vi: string }>(
+      `SELECT faction_id, name_vi FROM session_factions WHERE faction_id = ?;`,
+      [targetFactionId]
+    );
+    if (!target) throw new Error(`Faction ${targetFactionId} not found.`);
+
+    const meta = this.db.queryOne<any>(
+      `SELECT active_turn, "current_date" AS current_date FROM campaign_meta LIMIT 1;`
+    );
+    const turnNumber = Number(meta?.active_turn || 1);
+    const gameDate = meta?.current_date || '184-02-15';
+
+    const existing = this.db.queryOne<any>(
+      `SELECT * FROM faction_diplomacy
+       WHERE (faction_id_a = ? AND faction_id_b = ?) OR (faction_id_a = ? AND faction_id_b = ?)
+       LIMIT 1;`,
+      [player, targetFactionId, targetFactionId, player]
+    );
+    if (state === 'TRUCE' && (!existing || String(existing.relation_state).toUpperCase() !== 'WAR')) {
+      throw new Error('Chỉ có thể cầu hòa khi đang chiến tranh.');
+    }
+
+    const attitude = state === 'WAR' ? -100 : Math.max(0, Number(existing?.diplomatic_attitude || 0));
+    const truceTurns = state === 'TRUCE' ? 12 : 0;
+
+    this.db.transaction(() => {
+      if (existing) {
+        this.db.execute(
+          `UPDATE faction_diplomacy
+           SET relation_state = ?, diplomatic_attitude = ?, truce_turns_remaining = ?,
+               updated_turn = ?, updated_at = CURRENT_TIMESTAMP
+           WHERE id = ?;`,
+          [state, attitude, truceTurns, turnNumber, existing.id]
+        );
+      } else {
+        this.db.execute(
+          `INSERT INTO faction_diplomacy
+             (id, faction_id_a, faction_id_b, relation_state, diplomatic_attitude, truce_turns_remaining, tribute_amount, updated_turn)
+           VALUES (?, ?, ?, ?, ?, ?, 0, ?);`,
+          [`DIP-${player}-${targetFactionId}`, player, targetFactionId, state, attitude, truceTurns, turnNumber]
+        );
+      }
+
+      this.db.execute(
+        `INSERT OR REPLACE INTO faction_political_events
+           (event_id, turn_number, game_date, event_type, source_faction_id, target_faction_id,
+            instigator_officer_id, title_vi, narrative_vi, consequences_json)
+         VALUES (?, ?, ?, ?, ?, ?, 'PLY-0001', ?, ?, ?);`,
+        [
+          nextId(this.db, 'faction-event', 'FPE', gameDate),
+          turnNumber,
+          gameDate,
+          state === 'WAR' ? 'WAR_DECLARED' : 'PEACE_SIGNED',
+          player,
+          targetFactionId,
+          state === 'WAR'
+            ? `Tuyên chiến với ${target.name_vi}`
+            : `Cầu hòa với ${target.name_vi}`,
+          state === 'WAR'
+            ? `Chúa công ban chiếu thảo phạt ${target.name_vi}; các tuyến tiếp vận qua lãnh thổ địch bị phong tỏa.`
+            : `Sứ giả hai bên ký minh ước đình chiến với ${target.name_vi}; tuyến tiếp vận sẽ mở lại.`,
+          JSON.stringify({ relationState: state, truceTurns })
+        ]
+      );
+    });
+
+    return {
+      success: true,
+      factionId: targetFactionId,
+      factionName: target.name_vi,
+      relationState: state,
+      truceTurnsRemaining: truceTurns,
+      message: state === 'WAR'
+        ? `Đã tuyên chiến với ${target.name_vi}.`
+        : `Đã ký hòa ước với ${target.name_vi} (12 lượt).`
+    };
+  }
+
+  private getPlayerFactionId(): string | null {
+    const row = this.db.queryOne<{ faction_id: string }>(
+      `SELECT faction_id FROM session_factions WHERE leader_id = 'PLY-0001' AND is_active = 1 LIMIT 1;`
+    );
+    return row?.faction_id || null;
+  }
+
+  /**
+   * Action: Appoint Governor
    */
   public appointGovernor(settlementId: string, officerId: string, factionId: string, turnNumber = 1, gameDate = '184-02-15'): any {
     // 1. Verify officer belongs to faction
@@ -809,14 +940,24 @@ export class FactionPoliticsModule implements IFeatureModule {
     const loyaltyBoost = Math.min(30, Math.floor(amount / 20));
 
     this.db.transaction(() => {
-      // Deduct from faction treasury
-      this.db.execute(`UPDATE session_factions SET treasury_cash = treasury_cash - ? WHERE faction_id = ?;`, [amount, factionId]);
+      // Deduct from faction treasury through the world ledger.
+      postFactionEntry(this.db, {
+        factionId,
+        category: 'OFFICER_REWARD',
+        counterparty: officerId,
+        outflow: amount,
+        memo: `Thưởng công cho ${officerId}`
+      });
 
       // Add to personal cash of officer
-      this.db.execute(`
-        INSERT INTO npc_personal_progression (npc_id, personal_cash) VALUES (?, ?)
-        ON CONFLICT(npc_id) DO UPDATE SET personal_cash = personal_cash + excluded.personal_cash;
-      `, [officerId, amount]);
+      postNpcMutation(this.db, {
+        npcId: officerId,
+        gameDate,
+        category: 'OFFICER_REWARD',
+        counterparty: factionId,
+        deltaCash: amount,
+        memoVi: `Thưởng công từ ${factionId}`
+      });
 
       // Increase officer loyalty
       this.db.execute(`

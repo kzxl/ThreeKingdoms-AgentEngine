@@ -136,8 +136,13 @@ async function main() {
       const res = await post('/api/trade', { action: 'BUY', itemCode: 'COM-BAMBOO', quantity: 5, unitPrice: 1 });
       assert(res.status === 200, `HTTP ${res.status}: ${JSON.stringify(res.body).slice(0, 160)}`);
       assert(res.body.success === true, `success=false: ${res.body.error}`);
-      // 5 bamboo × 16 quan buy quote (reference 15 + spread − fame discount).
-      assert(res.body.totalAmount === 80, `expected totalAmount 80, got ${res.body.totalAmount}`);
+      // 5 bamboo at the master-quote buy price (reference 15 + spread − fame
+      // discount), then adjusted by the settlement's local specialisation and
+      // the player's trade-margin skill. Zhuo is a bamboo surplus market, so
+      // the honest price is below the flat reference.
+      const unitPrice = Number(res.body.unitPrice);
+      assert(unitPrice >= 5 && unitPrice <= 20, `buy unit price ${unitPrice} outside the master-quote band`);
+      assert(res.body.totalAmount === unitPrice * 5, `expected totalAmount ${unitPrice * 5}, got ${res.body.totalAmount}`);
       assert(String(res.body.txnId).startsWith('TXN-'), `bad txnId ${res.body.txnId}`);
 
       const invAfter = await httpJson(PORT, '/api/inventory');

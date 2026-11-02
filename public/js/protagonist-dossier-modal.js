@@ -18,6 +18,9 @@
   let cachedPlayerData = null;
   let cachedEquipmentData = null;
   let cachedLineageData = null;
+  let cachedSkills = [];
+  let cachedTalents = [];
+  let cachedConditions = [];
 
   function isEnglish() {
     return window.currentLang === 'en';
@@ -36,100 +39,70 @@
   }
 
   function generateRadarChartSvg(stats, buffs, isEn) {
-    const cx = 135;
-    const cy = 110;
-    const r = 68;
+    const cx = 160;
+    const cy = 135;
+    const r = 88;
 
     const axes = [
-      { key: 'ldr', label: isEn ? 'LDR' : 'Thống Soái', angle: -Math.PI / 2, color: '#c084fc' },
-      { key: 'war', label: isEn ? 'WAR' : 'Võ Lực', angle: -Math.PI / 4, color: '#f87171' },
-      { key: 'cra', label: isEn ? 'CRA' : 'Kỹ Nghệ', angle: 0, color: '#34d399' },
-      { key: 'log', label: isEn ? 'LOG' : 'Hậu Cần', angle: Math.PI / 4, color: '#2dd4bf' },
-      { key: 'com', label: isEn ? 'COM' : 'Thương Nghiệp', angle: Math.PI / 2, color: '#fbbf24' },
-      { key: 'dip', label: isEn ? 'DIP' : 'Ngoại Giao', angle: (3 * Math.PI) / 4, color: '#f59e0b' },
-      { key: 'pol', label: isEn ? 'POL' : 'Chính Trị', angle: Math.PI, color: '#60a5fa' },
-      { key: 'int', label: isEn ? 'INT' : 'Trí Lực', angle: (-3 * Math.PI) / 4, color: '#38bdf8' }
+      { key: 'ldr', label: 'LDR', angle: -Math.PI / 2, color: '#c084fc' },
+      { key: 'war', label: 'WAR', angle: -Math.PI / 4, color: '#f87171' },
+      { key: 'cra', label: 'CRA', angle: 0, color: '#34d399' },
+      { key: 'log', label: 'LOG', angle: Math.PI / 4, color: '#2dd4bf' },
+      { key: 'com', label: 'COM', angle: Math.PI / 2, color: '#fbbf24' },
+      { key: 'dip', label: 'DIP', angle: (3 * Math.PI) / 4, color: '#f59e0b' },
+      { key: 'pol', label: 'POL', angle: Math.PI, color: '#60a5fa' },
+      { key: 'int', label: 'INT', angle: (-3 * Math.PI) / 4, color: '#38bdf8' }
     ];
 
-    const rings = [0.25, 0.5, 0.75, 1.0];
-    const ringPolygons = rings
-      .map((scale) => {
-        const pts = axes
-          .map((a) => {
-            const x = cx + r * scale * Math.cos(a.angle);
-            const y = cy + r * scale * Math.sin(a.angle);
-            return `${x.toFixed(1)},${y.toFixed(1)}`;
-          })
-          .join(' ');
-        return `<polygon points="${pts}" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>`;
-      })
-      .join('');
-
-    const axisLines = axes
-      .map((a) => {
-        const x = cx + r * Math.cos(a.angle);
-        const y = cy + r * Math.sin(a.angle);
-        return `<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>`;
-      })
-      .join('');
-
-    // Base stat polygon (gold outline)
-    const basePts = axes
-      .map((a) => {
-        const val = Math.min(100, Math.max(10, Number(stats[a.key] || 50)));
-        const scale = val / 100;
+    const ringPolygons = [0.25, 0.5, 0.75, 1.0].map((scale) => {
+      const pts = axes.map((a) => {
         const x = cx + r * scale * Math.cos(a.angle);
         const y = cy + r * scale * Math.sin(a.angle);
         return `${x.toFixed(1)},${y.toFixed(1)}`;
-      })
-      .join(' ');
+      }).join(' ');
+      return `<polygon points="${pts}" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>`;
+    }).join('');
 
-    // Effective stat polygon (buffs included, glowing cyan)
-    const effPts = axes
-      .map((a) => {
-        const base = Number(stats[a.key] || 50);
-        const buff = Number(buffs[a.key] || 0);
-        const val = Math.min(110, Math.max(10, base + buff));
-        const scale = val / 100;
-        const x = cx + r * scale * Math.cos(a.angle);
-        const y = cy + r * scale * Math.sin(a.angle);
-        return `${x.toFixed(1)},${y.toFixed(1)}`;
-      })
-      .join(' ');
+    const axisLines = axes.map((a) => {
+      const x = cx + r * Math.cos(a.angle);
+      const y = cy + r * Math.sin(a.angle);
+      return `<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>`;
+    }).join('');
 
-    const labels = axes
-      .map((a) => {
-        const labelR = r + 16;
-        const x = cx + labelR * Math.cos(a.angle);
-        const y = cy + labelR * Math.sin(a.angle);
-        const val = Number(stats[a.key] || 50);
-        const buff = Number(buffs[a.key] || 0);
-        const total = val + buff;
-        return `
-          <text x="${x.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="middle" dominant-baseline="middle" font-size="9" font-family="'JetBrains Mono', monospace" fill="${a.color}" font-weight="bold">
-            ${a.label.slice(0, 3)} ${total}
-          </text>
-        `;
-      })
-      .join('');
+    const basePts = axes.map((a) => {
+      const val = Math.min(100, Math.max(10, Number(stats[a.key] || 50)));
+      const scale = val / 100;
+      const x = cx + r * scale * Math.cos(a.angle);
+      const y = cy + r * scale * Math.sin(a.angle);
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    }).join(' ');
+
+    const effectivePoints = axes.map((a) => {
+      const base = Number(stats[a.key] || 50);
+      const buff = Number(buffs[a.key] || 0);
+      const val = Math.min(110, Math.max(10, base + buff));
+      const scale = val / 100;
+      return {
+        x: cx + r * scale * Math.cos(a.angle),
+        y: cy + r * scale * Math.sin(a.angle)
+      };
+    });
+    const effPts = effectivePoints.map(point => `${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(' ');
+
+    const labels = axes.map((a) => {
+      const labelR = r + 22;
+      const x = cx + labelR * Math.cos(a.angle);
+      const y = cy + labelR * Math.sin(a.angle);
+      return `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="middle" dominant-baseline="middle" font-size="10" font-family="'JetBrains Mono', monospace" fill="${a.color}" font-weight="bold">${a.label}</text>`;
+    }).join('');
 
     return `
-      <svg viewBox="0 0 270 220" width="100%" height="220" style="display: block; margin: 0 auto; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.5));">
+      <svg class="dossier-radar-svg" viewBox="0 0 320 270" role="img" aria-label="${isEn ? 'Eight-axis strategic radar' : 'Bát hướng quân cơ đồ'}">
         ${ringPolygons}
         ${axisLines}
-        <polygon points="${basePts}" fill="rgba(245, 158, 11, 0.2)" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="2,2" />
-        <polygon points="${effPts}" fill="rgba(56, 189, 248, 0.28)" stroke="#38bdf8" stroke-width="2" />
-        ${axes
-          .map((a) => {
-            const base = Number(stats[a.key] || 50);
-            const buff = Number(buffs[a.key] || 0);
-            const val = Math.min(110, Math.max(10, base + buff));
-            const scale = val / 100;
-            const x = cx + r * scale * Math.cos(a.angle);
-            const y = cy + r * scale * Math.sin(a.angle);
-            return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3" fill="#38bdf8" stroke="#0f172a" stroke-width="1"/>`;
-          })
-          .join('')}
+        <polygon points="${basePts}" fill="rgba(245, 158, 11, 0.12)" stroke="#f59e0b" stroke-width="1.3" stroke-dasharray="3,3" />
+        <polygon points="${effPts}" fill="rgba(56, 189, 248, 0.22)" stroke="#38bdf8" stroke-width="2" />
+        ${effectivePoints.map(point => `<circle cx="${point.x.toFixed(1)}" cy="${point.y.toFixed(1)}" r="3" fill="#38bdf8" stroke="#0f172a" stroke-width="1"/>`).join('')}
         ${labels}
       </svg>
     `;
@@ -147,60 +120,57 @@
     }
 
     modalEl.innerHTML = `
-      <div class="modal-box modal-box--large" style="max-width: 880px; max-height: 92vh; display: flex; flex-direction: column;">
-        <div class="modal-header" style="background: rgba(15, 23, 42, 0.95); border-bottom: 1px solid rgba(245, 158, 11, 0.3);">
-          <div style="display: flex; align-items: center; gap: 10px;">
-            <span class="tactical-badge tactical-badge--gold">◆ ${isEn ? 'PROTAGONIST DOSSIER' : 'HỒ SƠ ĐẠI BẢN DOANH'}</span>
-            <div class="modal-title" style="letter-spacing: 0.05em; font-size: 14px; font-weight: 700; color: #fbbf24;">
-              ${isEn ? 'Commander Profile & 8-Axis Strategic Aptitude' : 'Tổng Hành Dinh • Bát Vị Quân Lược & Hành Trình Cuộc Đời'}
-            </div>
+      <div class="modal-box modal-box--large dossier-modal">
+        <div class="modal-header dossier-modal-header">
+          <div class="dossier-modal-title-row">
+            <span class="tactical-badge tactical-badge--primary">${isEn ? '[PROTAGONIST DOSSIER]' : '[HỒ SƠ ĐẠI BẢN DOANH]'}</span>
+            <div class="modal-title dossier-modal-title">${isEn ? 'Commander Profile & Eight-Axis Aptitude' : 'Tổng Hành Dinh • Bát Vị Quân Lược'}</div>
           </div>
-          <button class="btn-modal-close" onclick="closeProtagonistDossierModal()">&times;</button>
+          <button class="btn-modal-close" onclick="closeProtagonistDossierModal()" title="${isEn ? 'Close' : 'Đóng'}">&times;</button>
         </div>
-        <div class="modal-body" style="padding: 40px; text-align: center; color: var(--text-muted);">
-          <div style="display: inline-block; width: 28px; height: 28px; border: 2px solid #f59e0b; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 12px;"></div>
-          <div>${isEn ? 'Compiling strategic dossiers from SQLite ACID single source of truth...' : 'Đang tập hợp hồ sơ chiến lược từ cơ sở dữ liệu SQLite...'}</div>
+        <div class="modal-body dossier-body">
+          <div class="text-center py-8 text-muted">
+            <div class="dossier-loading-spinner" aria-hidden="true"></div>
+            <div>${isEn ? 'Compiling strategic dossiers from SQLite ACID single source of truth...' : 'Đang tập hợp hồ sơ chiến lược từ cơ sở dữ liệu SQLite...'}</div>
+          </div>
         </div>
       </div>
     `;
+    if (typeof nextModalZIndex === 'function') {
+      modalEl.style.zIndex = String(nextModalZIndex());
+    }
     modalEl.classList.remove('hidden');
 
     try {
-      const [statusRes, eqRes, linRes] = await Promise.all([
+      const [statusRes, eqRes, linRes, skillRes, conditionRes] = await Promise.all([
         fetch('/api/status').then((r) => r.json()),
         fetch('/api/equipment?characterId=PLY-0001').then((r) => r.json()).catch(() => ({})),
-        fetch('/api/lineage/status').then((r) => r.json()).catch(() => ({}))
+        fetch('/api/lineage/status').then((r) => r.json()).catch(() => ({})),
+        fetch('/api/skills').then((r) => r.json()).catch(() => ({})),
+        fetch('/api/conditions?characterId=PLY-0001').then((r) => r.json()).catch(() => ({}))
       ]);
 
       cachedPlayerData = statusRes.player || {};
       cachedEquipmentData = eqRes.overview || { slots: {}, effectiveAttributes: {}, equipmentBuffs: {} };
       cachedLineageData = linRes.overview || {};
+      cachedSkills = skillRes.skills || [];
+      cachedTalents = skillRes.talents || [];
+      cachedConditions = conditionRes.conditions || [];
 
       renderModalContent(modalEl);
     } catch (err) {
       modalEl.innerHTML = `
-        <div class="modal-box" style="max-width: 500px;">
-          <div class="modal-header">
+        <div class="modal-box dossier-modal">
+          <div class="modal-header dossier-modal-header">
             <span class="tactical-badge tactical-badge--danger">[LỖI]</span>
             <button class="btn-modal-close" onclick="closeProtagonistDossierModal()">&times;</button>
           </div>
-          <div class="modal-body" style="padding: 20px; color: #f87171;">
+          <div class="modal-body dossier-body text-red-300">
             ${err.message}
           </div>
         </div>
       `;
     }
-  }
-
-  function closeProtagonistDossierModal() {
-    const modalEl = document.getElementById('protagonist-dossier-modal');
-    if (modalEl) modalEl.classList.add('hidden');
-  }
-
-  function switchDossierTab(tabKey) {
-    activeTabKey = tabKey;
-    const modalEl = document.getElementById('protagonist-dossier-modal');
-    if (modalEl) renderModalContent(modalEl);
   }
 
   function renderModalContent(modalEl) {
@@ -232,106 +202,110 @@
     const buffs = eq.equipmentBuffs || {};
 
     modalEl.innerHTML = `
-      <div class="modal-box modal-box--large" style="max-width: 900px; max-height: 92vh; display: flex; flex-direction: column;">
-        <!-- Header -->
-        <div class="modal-header" style="background: rgba(15, 23, 42, 0.98); border-bottom: 1px solid rgba(245, 158, 11, 0.3); padding: 14px 20px;">
-          <div style="display: flex; align-items: center; gap: 14px;">
-            <div style="width: 48px; height: 48px; border-radius: 8px; background: linear-gradient(135deg, #b45309, #78350f); border: 2px solid #fbbf24; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 900; color: #fef08a; text-shadow: 0 2px 4px rgba(0,0,0,0.6);">
-              梁
+      <div class="modal-box modal-box--large dossier-modal">
+        <div class="modal-header dossier-modal-header">
+          <div class="dossier-modal-title-row">
+            <span class="tactical-badge tactical-badge--primary">${isEn ? '[PROTAGONIST DOSSIER]' : '[HỒ SƠ ĐẠI BẢN DOANH]'}</span>
+            <div class="modal-title dossier-modal-title">${p.name || 'Lương Diễn'} • ${p.style_name || 'Chí Viễn'}</div>
+          </div>
+          <button class="btn-modal-close" onclick="closeProtagonistDossierModal()" title="${isEn ? 'Close' : 'Đóng'}">&times;</button>
+        </div>
+
+        <div class="modal-body dossier-body">
+          <div class="dossier-header">
+            <div class="dossier-portrait-frame ${p.portrait_url ? 'is-unlocked' : ''}">
+              ${p.portrait_url
+                ? `<img class="dossier-portrait-img" src="${p.portrait_url}" alt="${p.name || 'Lương Diễn'}" loading="lazy" />`
+                : `<span class="dossier-portrait-seal">梁</span>`}
             </div>
-            <div>
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <h3 style="margin: 0; font-size: 17px; color: #f8fafc; font-weight: 800;">
-                  ${p.name || 'Lương Diễn'} <span style="font-size: 13px; color: #94a3b8; font-weight: 400;">(${p.style_name || 'Chí Viễn'})</span>
-                </h3>
-                <span class="tactical-badge tactical-badge--gold">${p.age || 21} ${isEn ? 'Years Old' : 'Tuổi'}</span>
-                <span class="tactical-badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3);">
-                  ${p.title || (isEn ? 'Penniless Commoner' : 'Bố Y Thường Dân • Khởi Đầu Tay Trắng')}
-                </span>
+
+            <div class="dossier-identity">
+              <div class="dossier-name-row">
+                <span class="dossier-name">${p.name || 'Lương Diễn'}</span>
+                <span class="dossier-name-han">(${p.style_name || 'Chí Viễn'})</span>
               </div>
-              <div style="font-size: 11px; color: var(--text-muted); margin-top: 3px;">
-                所 ${isEn ? 'Current Base:' : 'Bản Doanh:'} <strong style="color: #cbd5e1;">${p.permanent_base || 'LOC-0001 (Trác Huyện)'}</strong> •
-                ${isEn ? 'Location:' : 'Vị Trí:'} <strong style="color: #38bdf8;">${p.current_location || 'LOC-0001 (Vườn Đào)'}</strong>
+              <div class="dossier-meta">${p.title || (isEn ? 'Penniless Commoner' : 'Bố Y Thường Dân • Khởi Đầu Tay Trắng')}</div>
+              <div class="dossier-chip-row">
+                <span class="dossier-chip">${p.current_location || 'LOC-0001 (Vườn Đào)'}</span>
+                <span class="dossier-chip dossier-chip--muted">${isEn ? 'Base' : 'Bản doanh'}: ${p.permanent_base || 'LOC-0001 (Trác Huyện)'}</span>
+                <span class="dossier-pill-badge dossier-pill-badge--gold">${p.age || 21} ${isEn ? 'yrs' : 'tuổi'}</span>
+              </div>
+            </div>
+
+            <div class="dossier-kizuna">
+              <div class="dossier-meter">
+                <div class="dossier-meter-head">
+                  <span>${isEn ? 'Health' : 'Sinh lực'}</span>
+                  <strong class="is-affinity">${p.health || 100}/100</strong>
+                </div>
+                <div class="dossier-meter-track">
+                  <div class="dossier-meter-fill is-affinity" style="width: ${Math.max(0, Math.min(100, Number(p.health || 100)))}%;"></div>
+                </div>
+              </div>
+
+              <div class="dossier-meter">
+                <div class="dossier-meter-head">
+                  <span>${isEn ? 'Stamina' : 'Thể lực'}</span>
+                  <strong class="is-stamina">${staminaProfile.currentStamina}/${staminaProfile.maxStamina}</strong>
+                </div>
+                <div class="dossier-meter-track">
+                  <div class="dossier-meter-fill is-stamina" style="width: ${Math.max(0, Math.min(100, staminaProfile.staminaPct))}%;"></div>
+                </div>
+              </div>
+
+              <div class="dossier-meter">
+                <div class="dossier-meter-head">
+                  <span>${isEn ? 'Morale' : 'Sĩ khí'}</span>
+                  <strong class="is-morale">${p.morale || 100}%</strong>
+                </div>
+                <div class="dossier-meter-track">
+                  <div class="dossier-meter-fill is-morale" style="width: ${Math.max(0, Math.min(100, Number(p.morale || 100)))}%;"></div>
+                </div>
               </div>
             </div>
           </div>
-          <button class="btn-modal-close" onclick="closeProtagonistDossierModal()">&times;</button>
-        </div>
 
-        <!-- Vitals Telemetry Row -->
-        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 12px 20px; background: rgba(0,0,0,0.3); border-bottom: 1px solid rgba(255,255,255,0.06);">
-          <div style="background: rgba(15, 23, 42, 0.6); padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(34, 197, 94, 0.2);">
-            <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px;">
-              <span style="color: #86efac;">血 ${isEn ? 'Health' : 'Sinh Lực'}</span>
-              <strong style="color: #22c55e;">${p.health || 100}/100</strong>
-            </div>
-            <div class="tactical-progress-track" style="height: 5px;">
-              <div class="tactical-progress-bar" style="width: ${p.health || 100}%; background: #22c55e;"></div>
-            </div>
-          </div>
+          ${typeof renderConditionChips === 'function' ? renderConditionChips(cachedConditions, isEn) : ''}
 
-          <div style="background: rgba(15, 23, 42, 0.6); padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(56, 189, 248, 0.2);">
-            <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px;">
-              <span style="color: #7dd3fc;">雷 ${isEn ? 'Stamina' : 'Thể Lực'}</span>
-              <strong style="color: #38bdf8;">${staminaProfile.currentStamina}/${staminaProfile.maxStamina}</strong>
-            </div>
-            <div class="tactical-progress-track" style="height: 5px;">
-              <div class="tactical-progress-bar" style="width: ${staminaProfile.staminaPct}%; background: ${staminaProfile.staminaPct > 45 ? '#38bdf8' : staminaProfile.staminaPct > 20 ? '#fbbf24' : '#ef4444'};"></div>
-            </div>
-          </div>
+          ${p.illustration_url
+            ? `<div class="dossier-illustration-frame is-inset">
+                 <img class="dossier-illustration-img" src="${p.illustration_url}" alt="${p.name || 'Lương Diễn'}" loading="lazy" />
+               </div>`
+            : ''}
 
-          <div style="background: rgba(15, 23, 42, 0.6); padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(245, 158, 11, 0.2);">
-            <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px;">
-              <span style="color: #fde047;">火 ${isEn ? 'Morale' : 'Sĩ Khí'}</span>
-              <strong style="color: #fbbf24;">${p.morale || 100}%</strong>
-            </div>
-            <div class="tactical-progress-track" style="height: 5px;">
-              <div class="tactical-progress-bar" style="width: ${p.morale || 100}%; background: #fbbf24;"></div>
-            </div>
-          </div>
-
-          <div style="background: rgba(15, 23, 42, 0.6); padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(168, 85, 247, 0.2);">
-            <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px;">
-              <span style="color: #d8b4fe;">息 ${isEn ? 'Fatigue' : 'Mệt Mỏi'}</span>
-              <strong style="color: ${staminaProfile.fatigue > 70 ? '#ef4444' : '#c084fc'};">${staminaProfile.fatigue}/100</strong>
-            </div>
-            <div class="tactical-progress-track" style="height: 5px;">
-              <div class="tactical-progress-bar" style="width: ${staminaProfile.fatigue}%; background: ${staminaProfile.fatigue > 70 ? '#ef4444' : '#a855f7'};"></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Tab Navigation -->
-        <div class="grand-hub-subnav" style="padding: 10px 20px 0; background: rgba(15, 23, 42, 0.9);">
-          <button class="grand-hub-subnav-btn ${activeTabKey === 'attributes' ? 'active' : ''}" onclick="window.ProtagonistDossierModal.switchTab('attributes')">
-            <span class="hub-subnav-seal">八</span> ${isEn ? '8-Axis Aptitude & Radar' : 'Bát Hướng Thuộc Tính & Radar'}
-          </button>
-          <button class="grand-hub-subnav-btn ${activeTabKey === 'armaments' ? 'active' : ''}" onclick="window.ProtagonistDossierModal.switchTab('armaments')">
-            <span class="hub-subnav-seal">武</span> ${isEn ? 'Armaments & Master Gear' : 'Quân Trang & Thần Binh'}
-          </button>
-          <button class="grand-hub-subnav-btn ${activeTabKey === 'wealth' ? 'active' : ''}" onclick="window.ProtagonistDossierModal.switchTab('wealth')">
-            <span class="hub-subnav-seal">業</span> ${isEn ? 'Enterprises & Treasury' : 'Sản Nghiệp & Ngân Khố'}
-          </button>
-          <button class="grand-hub-subnav-btn ${activeTabKey === 'lineage' ? 'active' : ''}" onclick="window.ProtagonistDossierModal.switchTab('lineage')">
-            <span class="hub-subnav-seal">家</span> ${isEn ? 'Clan & Life Destiny' : 'Gia Tộc & Phẩm Lộ'}
-          </button>
-        </div>
-
-        <!-- Tab Content Body -->
-        <div class="modal-body" style="padding: 18px 20px; overflow-y: auto; flex: 1;">
-          ${renderActiveTabBody(activeTabKey, p, stats, buffs, eq, lin, isEn)}
-        </div>
-
-        <!-- Footer -->
-        <div class="modal-footer" style="padding: 12px 20px; background: rgba(15, 23, 42, 0.95); border-top: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center;">
-          <div style="font-size: 11.5px; color: var(--text-muted);">
-            ${isEn ? 'ACID Verified: Single transactional truth maintained in SQLite.' : 'Dữ liệu chuẩn hóa 100% theo sổ cái SQLite ACID.'}
-          </div>
-          <div style="display: flex; gap: 10px;">
-            <button class="ui-btn ui-btn--sm" onclick="closeProtagonistDossierModal(); if(window.GrandCommandHubUI){GrandCommandHubUI.open('career');}">
-              府 ${isEn ? 'Enter Command Hub' : 'Vào Đại Bản Doanh'} →
+          <div class="dossier-tab-bar dossier-tab-bar--sticky">
+            <button class="dossier-tab-btn ${activeTabKey === 'attributes' ? 'active' : ''}" onclick="window.ProtagonistDossierModal.switchTab('attributes')">
+              ${isEn ? 'Eight Axes' : 'Bát Vị'}
             </button>
-            <button class="btn btn-outline" onclick="closeProtagonistDossierModal()">${isEn ? 'Close' : 'Đóng'}</button>
+            <button class="dossier-tab-btn ${activeTabKey === 'armaments' ? 'active' : ''}" onclick="window.ProtagonistDossierModal.switchTab('armaments')">
+              ${isEn ? 'Armaments' : 'Quân Trang'}
+            </button>
+            <button class="dossier-tab-btn ${activeTabKey === 'wealth' ? 'active' : ''}" onclick="window.ProtagonistDossierModal.switchTab('wealth')">
+              ${isEn ? 'Assets' : 'Sản Nghiệp'}
+            </button>
+            <button class="dossier-tab-btn ${activeTabKey === 'lineage' ? 'active' : ''}" onclick="window.ProtagonistDossierModal.switchTab('lineage')">
+              ${isEn ? 'Lineage' : 'Gia Tộc'}
+            </button>
+            <button class="dossier-tab-btn ${activeTabKey === 'skills' ? 'active' : ''}" onclick="window.ProtagonistDossierModal.switchTab('skills')">
+              ${isEn ? 'Skills' : 'Kỹ Năng'}
+            </button>
+          </div>
+
+          <div class="dossier-tab-content">
+            ${renderActiveTabBody(activeTabKey, p, stats, buffs, eq, lin, isEn)}
+          </div>
+
+          <div class="dossier-action-footer">
+            <div class="dossier-action-copy">
+              <div class="dossier-action-title">${isEn ? 'SQLite single source of truth' : 'Sổ cái SQLite ACID'}</div>
+              <div class="dossier-action-sub">${isEn ? 'Every number comes from the authoritative session database.' : 'Mọi số liệu lấy từ cơ sở dữ liệu phiên chơi chuẩn.'}</div>
+            </div>
+            <div class="dossier-action-buttons">
+              <button class="ui-btn ui-btn--primary ui-btn--sm" onclick="closeProtagonistDossierModal(); if(window.GrandCommandHubUI){GrandCommandHubUI.open('career');}">
+                ${isEn ? 'Command Hub' : 'Đại Bản Doanh'}
+              </button>
+              <button class="ui-btn ui-btn--ghost ui-btn--sm" onclick="closeProtagonistDossierModal()">${isEn ? 'Close' : 'Đóng'}</button>
+            </div>
           </div>
         </div>
       </div>
@@ -341,63 +315,52 @@
   function renderActiveTabBody(tabKey, p, stats, buffs, eq, lin, isEn) {
     if (tabKey === 'attributes') {
       const statConfigs = [
+        { key: 'ldr', nameVi: 'Thống Soái', nameEn: 'Command', descVi: 'Chỉ huy quân đoàn, sĩ khí ba quân' },
+        { key: 'war', nameVi: 'Võ Lực', nameEn: 'Warfare', descVi: 'Đơn đả độc đấu, quyết định thể lực tối đa' },
+        { key: 'cra', nameVi: 'Kỹ Nghệ', nameEn: 'Crafting', descVi: 'Đoán tạo thần binh, chế tác đồ dùng' },
         { key: 'int', nameVi: 'Trí Lực', nameEn: 'Intelligence', descVi: 'Mưu lược sách lược, bào chế dược liệu' },
         { key: 'pol', nameVi: 'Chính Trị', nameEn: 'Politics', descVi: 'Nội trị điền địa, phủ dụ nhân tâm' },
-        { key: 'war', nameVi: 'Võ Lực', nameEn: 'Warfare', descVi: 'Đơn đả độc đấu, quyết định thể lực tối đa' },
-        { key: 'ldr', nameVi: 'Thống Soái', nameEn: 'Command', descVi: 'Chỉ huy quân đoàn, sĩ khí ba quân' },
         { key: 'dip', nameVi: 'Ngoại Giao', nameEn: 'Diplomacy', descVi: 'Thuyết khách du thuyết, liên minh chư hầu' },
         { key: 'com', nameVi: 'Thương Nghiệp', nameEn: 'Commerce', descVi: 'Buôn chuyến thương đoàn, thặng dư lợi nhuận' },
-        { key: 'log', nameVi: 'Hậu Cần', nameEn: 'Logistics', descVi: 'Vận chuyển quân lương, lộ trình hành quân' },
-        { key: 'cra', nameVi: 'Kỹ Nghệ', nameEn: 'Crafting', descVi: 'Đoán tạo thần binh, chế tác đồ dùng' }
+        { key: 'log', nameVi: 'Hậu Cần', nameEn: 'Logistics', descVi: 'Vận chuyển quân lương, lộ trình hành quân' }
       ];
 
       return `
-        <div style="display: grid; grid-template-columns: 290px 1fr; gap: 18px; align-items: start;">
-          <!-- Left: Radar Chart -->
-          <div class="tactical-card" style="padding: 14px; text-align: center;">
-            <div style="font-size: 12px; font-weight: 700; color: #fbbf24; margin-bottom: 4px;">
-              ${isEn ? '8-AXIS STRATEGIC RADAR' : 'BÁT HƯỚNG QUÂN CƠ ĐỒ'}
-            </div>
-            <div style="font-size: 10px; color: var(--text-muted); margin-bottom: 6px;">
-              <span style="color: #f59e0b;">- -</span> ${isEn ? 'Base' : 'Căn Bản'} • <span style="color: #38bdf8;">—</span> ${isEn ? 'With Gear' : 'Kèm Binh Khí'}
-            </div>
+        <div class="dossier-stats-layout">
+          <section class="dossier-radar-card">
+            <div class="dossier-section-title">${isEn ? 'EIGHT-AXIS STRATEGIC RADAR' : 'BÁT VỊ QUÂN LƯỢC'}</div>
             ${generateRadarChartSvg(stats, buffs, isEn)}
-          </div>
+            <div class="dossier-radar-note">
+              <span style="color: #f59e0b;">- -</span> ${isEn ? 'Base' : 'Căn bản'} •
+              <span style="color: #38bdf8;">—</span> ${isEn ? 'With gear' : 'Kèm binh khí'}
+            </div>
+          </section>
 
-          <!-- Right: Detailed Attribute Cards Grid -->
-          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+          <section class="dossier-stat-grid" aria-label="${isEn ? 'Eight attributes' : 'Bát vị quân lược'}">
             ${statConfigs.map(c => {
               const baseVal = Number(stats[c.key] || 50);
               const buffVal = Number(buffs[c.key] || 0);
               const totalVal = baseVal + buffVal;
               const expVal = Number(p[`${c.key}_exp`] || 0);
               const rank = getStatRank(totalVal);
+              const width = Math.max(0, Math.min(100, totalVal));
               return `
-                <div class="tactical-card" style="padding: 10px 12px;">
-                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                    <div>
-                      <strong style="font-size: 13px; color: #f1f5f9;">${isEn ? c.nameEn : c.nameVi}</strong>
-                      <span style="font-size: 10px; color: ${rank.color}; margin-left: 4px;">[${isEn ? rank.en : rank.vi}]</span>
-                    </div>
-                    <div>
-                      <span style="font-size: 14px; font-weight: 800; color: #38bdf8;">${totalVal}</span>
-                      ${buffVal > 0 ? `<span style="font-size: 10.5px; color: #4ade80;"> (+${buffVal})</span>` : ''}
-                    </div>
+                <div class="dossier-stat-row" role="group" aria-label="${isEn ? c.nameEn : c.nameVi}: ${totalVal}" title="${c.descVi}">
+                  <span class="dossier-stat-name">
+                    ${isEn ? c.nameEn : c.nameVi}
+                    <small class="dossier-stat-exp">EXP ${expVal}/100</small>
+                  </span>
+                  <span class="dossier-stat-val" style="color: ${rank.color};">
+                    ${totalVal}${buffVal > 0 ? `<small class="dossier-stat-buff">+${buffVal}</small>` : ''}
+                  </span>
+                  <div class="dossier-stat-bar-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${width}">
+                    <div class="dossier-stat-bar-fill" style="width: ${width}%; background-color: ${rank.color};"></div>
                   </div>
-                  <div style="font-size: 10px; color: var(--text-muted); margin-bottom: 6px;">
-                    ${c.descVi}
-                  </div>
-                  <div style="display: flex; justify-content: space-between; font-size: 9.5px; color: var(--text-muted); margin-bottom: 2px;">
-                    <span>EXP Tiến Cấp:</span>
-                    <span>${expVal}/100</span>
-                  </div>
-                  <div class="tactical-progress-track" style="height: 4px;">
-                    <div class="tactical-progress-bar" style="width: ${expVal}%; background: #38bdf8;"></div>
-                  </div>
+                  <span class="dossier-stat-rank">${isEn ? rank.en : rank.vi}</span>
                 </div>
               `;
             }).join('')}
-          </div>
+          </section>
         </div>
       `;
     }
@@ -512,6 +475,58 @@
       `;
     }
 
+    if (tabKey === 'skills') {
+      const effectLabel = (effect) => {
+        const value = Number(effect.value || 0);
+        switch (effect.effectType) {
+          case 'CHECK_BONUS': return `${isEn ? 'Check' : 'Kiểm tra'} +${value}`;
+          case 'TRADE_MARGIN': return `${isEn ? 'Trade margin' : 'Biên thương vụ'} +${Math.round(value * 100)}%`;
+          case 'DEFECT_REDUCTION': return `${isEn ? 'Defect' : 'Phế phẩm'} -${Math.round(value * 100)}%`;
+          case 'TRAVEL_SPEED': return `${isEn ? 'Travel speed' : 'Tốc độ đi'} +${Math.round(value * 100)}%`;
+          case 'DUEL_POWER': return `${isEn ? 'Duel power' : 'Uy lực đơn đả'} +${value}`;
+          case 'SIEGE_POWER': return `${isEn ? 'Siege power' : 'Uy lực công thành'} +${value}`;
+          case 'MORALE_BONUS': return `${isEn ? 'Morale' : 'Sĩ khí'} +${value}`;
+          default: return `${effect.effectType} +${value}`;
+        }
+      };
+      const talentHtml = (cachedTalents || []).map((talent) => {
+        const effects = (talent.effects && talent.effects.length > 0 ? talent.effects : [talent])
+          .map(effectLabel)
+          .join(' • ');
+        const description = String((isEn ? talent.descriptionEn : talent.descriptionVi) || '').replace(/"/g, '&quot;');
+        const rarity = talent.rarity ? `${talent.rarity} · ` : '';
+        return `<span class="dossier-skill-perk is-chosen" title="${description}">${rarity}${isEn ? talent.nameEn : talent.nameVi} · ${effects}</span>`;
+      }).join('');
+      const talentRow = talentHtml
+        ? `<div class="dossier-skill-row"><div class="dossier-skill-head"><strong>${isEn ? 'Innate Talents' : 'Thiên Phú Bẩm Sinh'}</strong></div><div class="dossier-skill-perks">${talentHtml}</div></div>`
+        : '';
+      const rows = cachedSkills.map((skill) => {
+        const pct = Math.min(100, Math.round((Number(skill.currentExp || 0) / Math.max(1, Number(skill.maxExp || 1))) * 100));
+        const effects = (skill.effects || []).map(effectLabel).join(' • ');
+        const perks = (skill.perks || []).map((perk) => {
+          const label = `T${perk.tier} · ${isEn ? perk.nameEn : perk.nameVi}`;
+          if (perk.chosen) return `<span class="dossier-skill-perk is-chosen">${label}</span>`;
+          if (perk.tier <= skill.tier) {
+            return `<button class="dossier-skill-perk is-ready" onclick="window.ProtagonistDossierModal.choosePerk('${perk.perkCode}')">${isEn ? 'Choose' : 'Chọn'} ${label}</button>`;
+          }
+          return `<span class="dossier-skill-perk is-locked">${label}</span>`;
+        }).join('');
+        return `
+          <div class="dossier-skill-row">
+            <div class="dossier-skill-head">
+              <strong>${isEn ? skill.nameEn : skill.nameVi}</strong>
+              <span class="dossier-skill-tier">T${skill.tier}</span>
+            </div>
+            <div class="dossier-skill-meta">${skill.domain} • ${skill.primaryAttr} • ${skill.currentExp}/${skill.maxExp} EXP</div>
+            <progress class="dossier-skill-progress" value="${pct}" max="100"></progress>
+            <div class="dossier-skill-effects">${effects || (isEn ? 'No active effect yet' : 'Chưa có hiệu ứng')}</div>
+            <div class="dossier-skill-perks">${perks}</div>
+          </div>
+        `;
+      }).join('');
+      return `<div class="dossier-skill-list">${talentRow}${rows || `<div class="quest-empty">${isEn ? 'No skills learned yet.' : 'Chưa học kỹ năng nào.'}</div>`}</div>`;
+    }
+
     if (tabKey === 'lineage') {
       const clan = lin.clan || {};
       const spouses = lin.spouses || [];
@@ -559,10 +574,20 @@
     return '';
   }
 
+  document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape' && event.keyCode !== 27) return;
+    const modalEl = document.getElementById('protagonist-dossier-modal');
+    if (!modalEl || modalEl.classList.contains('hidden')) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    closeProtagonistDossierModal();
+  }, true);
+
   window.ProtagonistDossierModal = {
     open: openProtagonistDossierModal,
     close: closeProtagonistDossierModal,
-    switchTab: switchDossierTab
+    switchTab: switchDossierTab,
+    choosePerk
   };
 
   window.openProtagonistDossierModal = openProtagonistDossierModal;

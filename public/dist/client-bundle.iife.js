@@ -28,7 +28,7 @@ var SimulationClient=(function(e){Object.defineProperty(e,Symbol.toStringTag,{va
            ${c({label:e.cancelLabel||`Hủy`,variant:`ghost`,size:`sm`})}
            ${c({label:e.confirmLabel||`Xác nhận`,variant:e.danger?`danger`:`primary`,size:`sm`})}
          </div>
-       </div>`);let o=i.getBodyElement()?.querySelectorAll(`.ui-confirm__actions .ui-btn`);o&&o.length===2&&(o[0].addEventListener(`click`,()=>void i.close()),o[1].addEventListener(`click`,()=>{r(!0),i.close()})),i.open()})}var _={version:`1.0.0`,button:{html:c,create:l},badge:{html:d,create:f},toast:m,confirm:g},v=class e{static instance;static getInstance(){return e.instance||=new e,e.instance}async get(e,t){let n=e;if(t){let e=new URLSearchParams;for(let[n,r]of Object.entries(t))r!=null&&e.append(n,String(r));let r=e.toString();r&&(n+=(n.includes(`?`)?`&`:`?`)+r)}let r=await fetch(n);if(!r.ok){let e=await r.json().catch(()=>({}));throw Error(e.error||`HTTP error ${r.status}: ${r.statusText}`)}return r.json()}async post(e,t){let n=await fetch(e,{method:`POST`,headers:{"Content-Type":`application/json`},body:t?JSON.stringify(t):void 0}),r=await n.json().catch(()=>({}));if(!n.ok||r&&r.success===!1)throw Error(r.error||`HTTP error ${n.status}: ${n.statusText}`);return r}},y=v.getInstance(),b=class e{static instance;static getInstance(){return e.instance||=new e,e.instance}async getOverview(){let e=await y.get(`/api/lineage/status`);return e.overview||e}async getCourtshipCandidates(){return(await y.get(`/api/lineage/courtship-candidates`)).candidates||[]}async proposeMarriage(e){return y.post(`/api/lineage/courtship/propose`,{spouseNpcId:e})}async restAndCohabit(e){return y.post(`/api/lineage/household/rest`,{marriageId:e})}async assignHouseholdRole(e,t){return y.post(`/api/lineage/household/set-role`,{marriageId:e,role:t})}async assignMentor(e,t){return y.post(`/api/lineage/children/assign-mentor`,{childId:e,mentorNpcId:t})}async designateHeir(e){return y.post(`/api/lineage/children/designate-heir`,{childId:e})}async executeSuccession(e){return y.post(`/api/lineage/succession/execute`,{heirChildId:e})}},x=b.getInstance(),S=class{modal;overview=null;candidates=[];selectedStratumFilter=`ALL`;constructor(){this.modal=a({id:`standard-lineage-family-modal`,title:`Gia Thất & Thế Gia Vọng Tộc`,subtitle:`Cầu hôn giai nhân, bồi dưỡng thế tử kế nghiệp, kiến lập gia tộc ngàn đời`,seal:`家`,size:`xl`,tabs:[{id:`courtship`,label:`Cầu Hôn & Thê Thiếp`,seal:`姻`},{id:`heirs`,label:`Hậu Duệ & Thụ Giáo`,seal:`嗣`},{id:`tree`,label:`Gia Phả Dòng Họ`,seal:`譜`},{id:`succession`,label:`Tông Miếu & Thừa Kế`,seal:`繼`}],activeTabId:`courtship`,onOpen:async()=>{await this.refreshData(),await this.renderActiveTab()},onTabChange:async e=>{await this.renderActiveTab()}})}async open(e=`courtship`){await this.modal.open(e)}async close(){await this.modal.close()}async refreshData(){try{let[e,t]=await Promise.all([x.getOverview().catch(()=>null),x.getCourtshipCandidates().catch(()=>[])]);this.overview=e,this.candidates=t;let n=e?.spouses?.length||0,r=e?.children?.length||0;this.modal.updateTabBadge(`courtship`,n>0?n:void 0),this.modal.updateTabBadge(`heirs`,r>0?r:void 0)}catch(e){console.error(`[LineageFamilyModal] Error refreshing data:`,e)}}async renderActiveTab(){switch(this.modal.activeTab||`courtship`){case`courtship`:this.renderCourtshipTab();break;case`heirs`:this.renderHeirsTab();break;case`tree`:this.renderTreeTab();break;case`succession`:this.renderSuccessionTab();break;default:this.renderCourtshipTab()}}renderCourtshipTab(){let e=this.overview?.spouses||[],t=e.length>0,n=this.candidates;this.selectedStratumFilter!==`ALL`&&(n=this.candidates.filter(e=>e.socialStratum===this.selectedStratumFilter));let r=`
+       </div>`);let o=i.getBodyElement()?.querySelectorAll(`.ui-confirm__actions .ui-btn`);o&&o.length===2&&(o[0].addEventListener(`click`,()=>void i.close()),o[1].addEventListener(`click`,()=>{r(!0),i.close()})),i.open()})}var _={version:`1.0.0`,button:{html:c,create:l},badge:{html:d,create:f},toast:m,confirm:g},v=class e{static instance;static getInstance(){return e.instance||=new e,e.instance}async get(e,t){let n=e;if(t){let e=new URLSearchParams;for(let[n,r]of Object.entries(t))r!=null&&e.append(n,String(r));let r=e.toString();r&&(n+=(n.includes(`?`)?`&`:`?`)+r)}let r=await fetch(n);if(!r.ok){let e=await r.json().catch(()=>({}));throw Error(e.error||`HTTP error ${r.status}: ${r.statusText}`)}return r.json()}async post(e,t){let n=await fetch(e,{method:`POST`,headers:{"Content-Type":`application/json`},body:t?JSON.stringify(t):void 0}),r=await n.json().catch(()=>({}));if(!n.ok||r&&r.success===!1)throw Error(r.error||`HTTP error ${n.status}: ${n.statusText}`);return r}},y=v.getInstance(),ee=class e{static instance;static getInstance(){return e.instance||=new e,e.instance}async getOverview(){let e=await y.get(`/api/lineage/status`);return e.overview||e}async getCourtshipCandidates(){return(await y.get(`/api/lineage/courtship-candidates`)).candidates||[]}async proposeMarriage(e){return y.post(`/api/lineage/courtship/propose`,{spouseNpcId:e})}async restAndCohabit(e){return y.post(`/api/lineage/household/rest`,{marriageId:e})}async assignHouseholdRole(e,t){return y.post(`/api/lineage/household/set-role`,{marriageId:e,role:t})}async assignMentor(e,t){return y.post(`/api/lineage/children/assign-mentor`,{childId:e,mentorNpcId:t})}async designateHeir(e){return y.post(`/api/lineage/children/designate-heir`,{childId:e})}async executeSuccession(e){return y.post(`/api/lineage/succession/execute`,{heirChildId:e})}},b=ee.getInstance(),x=class{modal;overview=null;candidates=[];selectedStratumFilter=`ALL`;constructor(){this.modal=a({id:`standard-lineage-family-modal`,title:`Gia Thất & Thế Gia Vọng Tộc`,subtitle:`Cầu hôn giai nhân, bồi dưỡng thế tử kế nghiệp, kiến lập gia tộc ngàn đời`,seal:`家`,size:`xl`,tabs:[{id:`courtship`,label:`Cầu Hôn & Thê Thiếp`,seal:`姻`},{id:`heirs`,label:`Hậu Duệ & Thụ Giáo`,seal:`嗣`},{id:`tree`,label:`Gia Phả Dòng Họ`,seal:`譜`},{id:`succession`,label:`Tông Miếu & Thừa Kế`,seal:`繼`}],activeTabId:`courtship`,onOpen:async()=>{await this.refreshData(),await this.renderActiveTab()},onTabChange:async e=>{await this.renderActiveTab()}})}async open(e=`courtship`){await this.modal.open(e)}async close(){await this.modal.close()}async refreshData(){try{let[e,t]=await Promise.all([b.getOverview().catch(()=>null),b.getCourtshipCandidates().catch(()=>[])]);this.overview=e,this.candidates=t;let n=e?.spouses?.length||0,r=e?.children?.length||0;this.modal.updateTabBadge(`courtship`,n>0?n:void 0),this.modal.updateTabBadge(`heirs`,r>0?r:void 0)}catch(e){console.error(`[LineageFamilyModal] Error refreshing data:`,e)}}async renderActiveTab(){switch(this.modal.activeTab||`courtship`){case`courtship`:this.renderCourtshipTab();break;case`heirs`:this.renderHeirsTab();break;case`tree`:this.renderTreeTab();break;case`succession`:this.renderSuccessionTab();break;default:this.renderCourtshipTab()}}renderCourtshipTab(){let e=this.overview?.spouses||[],t=e.length>0,n=this.candidates;this.selectedStratumFilter!==`ALL`&&(n=this.candidates.filter(e=>e.socialStratum===this.selectedStratumFilter));let r=`
       <div class="lineage-modal-content">
         <!-- Clan Banner -->
         <div class="spatial-banner-lead">
@@ -244,7 +244,7 @@ var SimulationClient=(function(e){Object.defineProperty(e,Symbol.toStringTag,{va
           </div>
         `}
       </div>
-    `;this.modal.setContent(t)}setFilter(e){this.selectedStratumFilter=e,this.renderCourtshipTab()}async proposeMarriage(e){try{let t=await x.proposeMarriage(e);typeof window.showToast==`function`&&window.showToast(t.narrativeVi||`Kết tóc se duyên thành công!`),await this.refreshData(),await this.renderActiveTab()}catch(e){typeof window.showToast==`function`&&window.showToast(e.message||`Cầu hôn thất bại!`,!0)}}async restCohabit(e){try{let t=await x.restAndCohabit(e);typeof window.showToast==`function`&&window.showToast(t.narrativeVi||`Đồng tẩm nghỉ ngơi tĩnh dưỡng thành công!`),await this.refreshData(),await this.renderActiveTab()}catch(e){typeof window.showToast==`function`&&window.showToast(e.message||`Không thể nghỉ ngơi lúc này!`,!0)}}async assignRole(e,t){try{await x.assignHouseholdRole(e,t),typeof window.showToast==`function`&&window.showToast(`Đã phân công trọng trách nội trạch thành công!`),await this.refreshData()}catch(e){typeof window.showToast==`function`&&window.showToast(e.message||`Lỗi phân công trọng trách!`,!0)}}async designateHeir(e){try{await x.designateHeir(e),typeof window.showToast==`function`&&window.showToast(`Đã chỉ định đích tử kế vị gia tộc!`),await this.refreshData(),await this.renderActiveTab()}catch(e){typeof window.showToast==`function`&&window.showToast(e.message||`Không thể lập thế tử!`,!0)}}async assignMentorDialog(e){let t=prompt(`Nhập ID danh sư thụ giáo (ví dụ: NPC-0003 cho Quan Vũ, NPC-0001 cho Lư Thực):`,`NPC-0003`);if(t)try{await x.assignMentor(e,t),typeof window.showToast==`function`&&window.showToast(`Đã bái kiến danh sư thụ giáo thành công!`),await this.refreshData(),await this.renderActiveTab()}catch(e){typeof window.showToast==`function`&&window.showToast(e.message||`Lỗi chỉ định danh sư!`,!0)}}async executeSuccession(){if(confirm(`Bạn có chắc chắn muốn chuyển giao quyền lực sang Thế tử kế thừa không?`))try{let e=this.overview?.activeHeir?.child_id;if(!e)throw Error(`Chưa chỉ định Thế tử kế vị.`);let t=await x.executeSuccession(e);typeof window.showToast==`function`&&window.showToast(t.narrativeVi||`Đại điển kế thừa tông miếu hoàn tất!`),await this.refreshData(),await this.renderActiveTab()}catch(e){typeof window.showToast==`function`&&window.showToast(e.message||`Kế thừa thất bại!`,!0)}}},C=new S,w=class e{static instance;static getInstance(){return e.instance||=new e,e.instance}async getOverview(e=`PLY-0001`){let t=await y.get(`/api/equipment`,{characterId:e});return t.overview||t}async equipItem(e,t,n){return y.post(`/api/equipment/equip`,{characterId:e,slot:t,itemCode:n})}async unequipItem(e,t){return y.post(`/api/equipment/unequip`,{characterId:e,slot:t})}async forgeBespokeWeapon(e){return y.post(`/api/professions/forge/bespoke`,e)}},T=w.getInstance(),E=class{modal;currentCharacterId=`PLY-0001`;overview=null;constructor(){this.modal=a({id:`equipment-forge-modal`,title:`Vũ Khố & Lò Rèn Thiết Điếm`,subtitle:`Quản lý 4 ô chiến bị truyền quốc và đúc rèn thần binh độc bản`,seal:`武`,size:`xl`,tabs:[{id:`gear`,label:`Binh Khí & Giáp Trụ`,seal:`武`},{id:`forge_bespoke`,label:`Đúc Rèn Thần Binh`,seal:`鍛`},{id:`inventory`,label:`Kho Binh Khí`,seal:`貨`}],activeTabId:`gear`,onOpen:async()=>{await this.refreshData(),await this.renderActiveTab()},onTabChange:async()=>{await this.renderActiveTab()}})}async open(e=`PLY-0001`,t=`gear`){this.currentCharacterId=e,await this.modal.open(t)}async close(){await this.modal.close()}async refreshData(){try{this.overview=await T.getOverview(this.currentCharacterId)}catch(e){console.error(`[EquipmentForgeModal] Error refreshing data:`,e)}}async renderActiveTab(){switch(this.modal.activeTab||`gear`){case`gear`:this.renderGearTab();break;case`forge_bespoke`:this.renderForgeBespokeTab();break;case`inventory`:this.renderInventoryTab()}}renderGearTab(){if(!this.overview)return;let e=this.overview.slots,t=this.overview.effectiveStats||{},n=this.overview.baseStats||{},r=`
+    `;this.modal.setContent(t)}setFilter(e){this.selectedStratumFilter=e,this.renderCourtshipTab()}async proposeMarriage(e){try{let t=await b.proposeMarriage(e);typeof window.showToast==`function`&&window.showToast(t.narrativeVi||`Kết tóc se duyên thành công!`),await this.refreshData(),await this.renderActiveTab()}catch(e){typeof window.showToast==`function`&&window.showToast(e.message||`Cầu hôn thất bại!`,!0)}}async restCohabit(e){try{let t=await b.restAndCohabit(e);typeof window.showToast==`function`&&window.showToast(t.narrativeVi||`Đồng tẩm nghỉ ngơi tĩnh dưỡng thành công!`),await this.refreshData(),await this.renderActiveTab()}catch(e){typeof window.showToast==`function`&&window.showToast(e.message||`Không thể nghỉ ngơi lúc này!`,!0)}}async assignRole(e,t){try{await b.assignHouseholdRole(e,t),typeof window.showToast==`function`&&window.showToast(`Đã phân công trọng trách nội trạch thành công!`),await this.refreshData()}catch(e){typeof window.showToast==`function`&&window.showToast(e.message||`Lỗi phân công trọng trách!`,!0)}}async designateHeir(e){try{await b.designateHeir(e),typeof window.showToast==`function`&&window.showToast(`Đã chỉ định đích tử kế vị gia tộc!`),await this.refreshData(),await this.renderActiveTab()}catch(e){typeof window.showToast==`function`&&window.showToast(e.message||`Không thể lập thế tử!`,!0)}}async assignMentorDialog(e){let t=prompt(`Nhập ID danh sư thụ giáo (ví dụ: NPC-0003 cho Quan Vũ, NPC-0001 cho Lư Thực):`,`NPC-0003`);if(t)try{await b.assignMentor(e,t),typeof window.showToast==`function`&&window.showToast(`Đã bái kiến danh sư thụ giáo thành công!`),await this.refreshData(),await this.renderActiveTab()}catch(e){typeof window.showToast==`function`&&window.showToast(e.message||`Lỗi chỉ định danh sư!`,!0)}}async executeSuccession(){if(await g({title:`Chuyển giao quyền lực`,message:`Bạn có chắc chắn muốn chuyển giao quyền lực sang Thế tử kế thừa không?`,confirmLabel:`Kế vị`,danger:!0}))try{let e=this.overview?.activeHeir?.child_id;if(!e)throw Error(`Chưa chỉ định Thế tử kế vị.`);let t=await b.executeSuccession(e);typeof window.showToast==`function`&&window.showToast(t.narrativeVi||`Đại điển kế thừa tông miếu hoàn tất!`),await this.refreshData(),await this.renderActiveTab()}catch(e){typeof window.showToast==`function`&&window.showToast(e.message||`Kế thừa thất bại!`,!0)}}},S=new x,te=class e{static instance;static getInstance(){return e.instance||=new e,e.instance}async getOverview(e=`PLY-0001`){let t=await y.get(`/api/equipment`,{characterId:e});return t.overview||t}async equipItem(e,t,n){return y.post(`/api/equipment/equip`,{characterId:e,slot:t,itemCode:n})}async unequipItem(e,t){return y.post(`/api/equipment/unequip`,{characterId:e,slot:t})}async forgeBespokeWeapon(e){return y.post(`/api/professions/forge/bespoke`,e)}async getTools(e=`PLY-0001`){return(await y.get(`/api/professions/tools`,{characterId:e})).tools||[]}async repairTool(e,t){return y.post(`/api/professions/tools/repair`,{characterId:e,itemCode:t,idempotencyKey:`tool-repair-${e}-${t}-${Date.now()}`})}},C=te.getInstance();function w(e){return String(e??``).replace(/&/g,`&amp;`).replace(/</g,`&lt;`).replace(/>/g,`&gt;`).replace(/"/g,`&quot;`)}var ne=class{modal;currentCharacterId=`PLY-0001`;overview=null;tools=[];constructor(){this.modal=a({id:`equipment-forge-modal`,title:`Vũ Khố & Lò Rèn Thiết Điếm`,subtitle:`Quản lý 4 ô chiến bị truyền quốc và đúc rèn thần binh độc bản`,seal:`武`,size:`xl`,tabs:[{id:`gear`,label:`Binh Khí & Giáp Trụ`,seal:`武`},{id:`forge_bespoke`,label:`Đúc Rèn Thần Binh`,seal:`鍛`},{id:`inventory`,label:`Kho Binh Khí`,seal:`貨`},{id:`tools`,label:`Công Cụ & Sửa Chữa`,seal:`器`}],activeTabId:`gear`,onOpen:async()=>{await this.refreshData(),await this.renderActiveTab()},onTabChange:async()=>{await this.renderActiveTab()}})}async open(e=`PLY-0001`,t=`gear`){this.currentCharacterId=e,await this.modal.open(t)}async close(){await this.modal.close()}async refreshData(){let[e,t]=await Promise.all([C.getOverview(this.currentCharacterId).catch(e=>(console.error(`[EquipmentForgeModal] Error refreshing overview:`,e),null)),C.getTools(this.currentCharacterId).catch(e=>(console.error(`[EquipmentForgeModal] Error refreshing tools:`,e),[]))]);this.overview=e,this.tools=t}async renderActiveTab(){switch(this.modal.activeTab||`gear`){case`gear`:this.renderGearTab();break;case`forge_bespoke`:this.renderForgeBespokeTab();break;case`inventory`:this.renderInventoryTab();break;case`tools`:this.renderToolsTab()}}renderGearTab(){if(!this.overview)return;let e=this.overview.slots,t=this.overview.effectiveStats||{},n=this.overview.baseStats||{},r=`
       <div class="equipment-modal-content">
         <!-- Lead Banner -->
         <div class="spatial-banner-lead">
@@ -380,133 +380,176 @@ var SimulationClient=(function(e){Object.defineProperty(e,Symbol.toStringTag,{va
           </div>
         `}
       </div>
-    `;this.modal.setContent(t)}async equip(e,t,n){try{await T.equipItem(e,t,n),typeof window.showToast==`function`&&window.showToast(`Đã trang bị thành công!`),await this.refreshData(),await this.renderActiveTab()}catch(e){typeof window.showToast==`function`&&window.showToast(e.message||`Lỗi trang bị!`,!0)}}async unequip(e,t){try{await T.unequipItem(e,t),typeof window.showToast==`function`&&window.showToast(`Đã tháo trang bị về kho!`),await this.refreshData(),await this.renderActiveTab()}catch(e){typeof window.showToast==`function`&&window.showToast(e.message||`Lỗi tháo trang bị!`,!0)}}async executeForge(){let e=document.getElementById(`forge-weapon-name`),t=document.getElementById(`forge-weapon-cat`),n=document.getElementById(`forge-material-tier`),r=document.getElementById(`forge-destination`),i={characterId:this.currentCharacterId,weaponNameVi:e?.value||`Thần Binh Trác Huyện`,weaponCategory:t?.value||`BLADE`,targetAttr:`war`,materialTier:n?.value||`STANDARD`,destination:r?.value||`EQUIP`};try{let e=await T.forgeBespokeWeapon(i);typeof window.showToast==`function`&&window.showToast(e.narrativeVi||`Đúc rèn thần binh thành công!`),await this.refreshData(),await this.modal.switchTab(`gear`)}catch(e){typeof window.showToast==`function`&&window.showToast(e.message||`Đúc rèn thất bại!`,!0)}}},D=new E,O=class e{static instance;static getInstance(){return e.instance||=new e,e.instance}async getStatus(e=`PLY-0001`){let t=await y.get(`/api/enterprise/status`,{characterId:e});return t.status||t}async manageSafeCash(e,t,n){return y.post(`/api/enterprise/manage-safe-cash`,{enterpriseId:e,action:t,amount:n})}async executeLaborShift(e,t){return y.post(`/api/enterprise/work`,{shiftId:e})}},k=O.getInstance(),A=class{modal;enterprises=[];laborOptions=[];constructor(){this.modal=a({id:`enterprise-modal`,title:`Sản Nghiệp & Phường Xưởng Bách Nghệ`,subtitle:`Quản lý xưởng dệt, xưởng rèn, đi làm thuê công nhật tích lũy ngân lượng`,seal:`業`,size:`xl`,tabs:[{id:`owner`,label:`Sản Nghiệp Gia Tộc`,seal:`坊`},{id:`work`,label:`Đi Làm Thuê Thời Vụ`,seal:`工`}],activeTabId:`owner`,onOpen:async()=>{await this.refreshData(),await this.renderActiveTab()},onTabChange:async()=>{await this.renderActiveTab()}})}async open(e=`owner`){await this.modal.open(e)}async close(){await this.modal.close()}async refreshData(){try{let e=await k.getStatus(`PLY-0001`);this.enterprises=e?.ownedBusinesses||e?.activeEnterprises||[],this.laborOptions=e?.laborOptions||[]}catch(e){console.error(`[EnterpriseWorkshopModal] Error refreshing data:`,e)}}async renderActiveTab(){(this.modal.activeTab||`owner`)===`owner`?this.renderOwnerTab():this.renderWorkTab()}renderOwnerTab(){let e=`
+    `;this.modal.setContent(t)}renderToolsTab(){let e=this.tools,t=e.length>0?e.map(e=>{let t=e.kind===`DURABLE`?`Bền`:`Tiêu hao`,n=e.repairSkillCode?`${e.repairSkillCode} bậc ${e.repairMinTier}`:`Không yêu cầu kỹ năng`,r=e.kind===`CONSUMABLE`?`Vật phẩm tiêu hao — mua mới thay vì sửa.`:e.needsRepair?e.canRepair?`Sửa tốn ${e.repairCash} Quan, hồi đầy ${e.maxUses} lượt.`:`Cần ${n} (hiện bậc ${e.skillTier}).`:`Đang ở độ bền tối đa.`,i=e.needsRepair&&e.canRepair;return`
+          <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800">
+            <div class="flex justify-between items-start gap-3">
+              <div>
+                <div class="font-bold text-amber-200 text-sm">${w(e.nameVi)}</div>
+                <div class="text-xs text-muted">${w(e.itemCode)} • ${t} • SL: ${e.quantity}</div>
+              </div>
+              <button class="ui-btn ui-btn--primary ui-btn--sm" ${i?``:`disabled`}
+                onclick="window.EquipmentUI.repairTool('${w(e.itemCode)}')">Sửa Chữa</button>
+            </div>
+            <div class="text-[11px] text-slate-300 mt-2">
+              Độ bền: ${e.usesLeft}/${e.maxUses} lượt
+              <progress class="tool-durability-bar" max="${e.maxUses}" value="${e.usesLeft}"></progress>
+            </div>
+            <div class="text-[11px] text-muted mt-1">${w(r)}</div>
+          </div>
+        `}).join(``):`<div class="text-center py-8 text-muted">
+          Kho chưa có công cụ nào. Chế tác tại Lò Rèn hoặc mua từ chợ phiên.
+        </div>`;this.modal.setContent(`
+      <div class="equipment-modal-content">
+        <div class="spatial-banner-lead">
+          <div class="lead-seal">器</div>
+          <div class="lead-text">
+            <h3>Công Cụ Nghề Nghiệp</h3>
+            <div class="text-muted text-sm">Công cụ bền mất lượt khi thu hoạch; sửa chữa hồi đầy độ bền nhưng tốn Quan và có thể cần kỹ năng.</div>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">${t}</div>
+      </div>
+    `)}async repairTool(e){try{let t=await C.repairTool(this.currentCharacterId,e),n=t?.result||t;typeof window.showToast==`function`&&window.showToast(`Đã sửa ${e}: ${n?.usesBefore??`?`} → ${n?.usesAfter??`?`} lượt (${n?.cashPaid??0} Quan).`),await this.refreshData(),await this.renderActiveTab()}catch(e){typeof window.showToast==`function`&&window.showToast(e.message||`Sửa công cụ thất bại!`,!0)}}async equip(e,t,n){try{await C.equipItem(e,t,n),typeof window.showToast==`function`&&window.showToast(`Đã trang bị thành công!`),await this.refreshData(),await this.renderActiveTab()}catch(e){typeof window.showToast==`function`&&window.showToast(e.message||`Lỗi trang bị!`,!0)}}async unequip(e,t){try{await C.unequipItem(e,t),typeof window.showToast==`function`&&window.showToast(`Đã tháo trang bị về kho!`),await this.refreshData(),await this.renderActiveTab()}catch(e){typeof window.showToast==`function`&&window.showToast(e.message||`Lỗi tháo trang bị!`,!0)}}async executeForge(){let e=document.getElementById(`forge-weapon-name`),t=document.getElementById(`forge-weapon-cat`),n=document.getElementById(`forge-material-tier`),r=document.getElementById(`forge-destination`),i={characterId:this.currentCharacterId,weaponNameVi:e?.value||`Thần Binh Trác Huyện`,weaponCategory:t?.value||`BLADE`,targetAttr:`war`,materialTier:n?.value||`STANDARD`,destination:r?.value||`EQUIP`};try{let e=await C.forgeBespokeWeapon(i);typeof window.showToast==`function`&&window.showToast(e.narrativeVi||`Đúc rèn thần binh thành công!`),await this.refreshData(),await this.modal.switchTab(`gear`)}catch(e){typeof window.showToast==`function`&&window.showToast(e.message||`Đúc rèn thất bại!`,!0)}}},T=new ne,re=class e{static instance;static getInstance(){return e.instance||=new e,e.instance}async getStatus(e=`PLY-0001`){let t=await y.get(`/api/enterprise/status`,{characterId:e});return t.status||t}async manageSafeCash(e,t,n){return y.post(`/api/enterprise/manage-safe-cash`,{businessId:e,action:t,amount:n,idempotencyKey:`enterprise-cash-${e}-${t}-${Date.now()}`})}async executeLaborShift(e){return y.post(`/api/enterprise/work`,{shiftId:e,idempotencyKey:`enterprise-work-${e}-${Date.now()}`})}async collectProfits(e,t){return y.post(`/api/enterprise/collect`,{businessId:e,amount:t,idempotencyKey:`enterprise-collect-${e}-${Date.now()}`})}async openEnterprise(e,t=!0,n){return y.post(`/api/enterprise/open`,{businessType:e,turnkey:t,customName:n,idempotencyKey:`enterprise-open-${e}-${Date.now()}`})}},E=re.getInstance();function D(e){return String(e??``).replace(/&/g,`&amp;`).replace(/</g,`&lt;`).replace(/>/g,`&gt;`).replace(/"/g,`&quot;`)}function O(e){return Number(e||0).toLocaleString(`vi-VN`)}var ie={cra:`Kỹ Nghệ`,com:`Thương Nghiệp`,int:`Trí Lực`,log:`Hậu Cần`,war:`Võ Lực`,ldr:`Thống Soái`},ae={CLOSED:`Đóng cửa`,DISTRESSED:`Nợ xấu`,PROFITABLE:`Có lời`,BREAK_EVEN:`Hòa vốn`,PAUSED:`Tạm dừng`},oe={FOREMAN:`Thợ cả`,CARPENTER:`Thợ mộc`,CRAFTSMAN:`Thợ thủ công`,MANAGER:`Quản lý`,CHIEF_ARTISAN_PARTNER:`Thợ cả đồng sáng lập`,ACCOUNTANT_MANAGER:`Quản lý kế toán`,APPRENTICE_CARPENTER:`Thợ mộc học việc`,APPRENTICE_WEAVER:`Thợ dệt học việc`,SPECIALIST_OPERATOR:`Chuyên viên vận hành`,CARAVAN_ESCORT_CHIEF:`Đội trưởng hộ tống`,MASTER_BLACKSMITH:`Thợ rèn bậc thầy`,FOUNDRY_MASTER:`Chủ lò đúc`,ASSISTANT_WORKER:`Phụ thợ`};function k(e){return oe[String(e||``).toUpperCase()]||String(e||`Nhân công`).replace(/_/g,` `)}var A={WORKSHOP:`Xưởng thủ công`,TAVERN:`Tửu điếm`,APOTHECARY:`Dược đường`,FORGE:`Lò rèn`,BLACKSMITH:`Lò rèn`},j=class{modal;status=null;constructor(){this.modal=a({id:`enterprise-modal`,title:`Sản Nghiệp & Phường Xưởng Bách Nghệ`,subtitle:`Quản lý xưởng, lao động thời vụ và mở cơ sở mới`,seal:`業`,size:`xl`,tabs:[{id:`owner`,label:`Sản Nghiệp Gia Tộc`,seal:`坊`},{id:`work`,label:`Đi Làm Thuê Thời Vụ`,seal:`工`}],activeTabId:`owner`,onOpen:async()=>{await this.refreshData(),await this.renderActiveTab()},onTabChange:async()=>{await this.renderActiveTab()}})}async open(e=`owner`){await this.modal.open(e)}async close(){await this.modal.close()}async refreshData(){try{this.status=await E.getStatus(`PLY-0001`)}catch(e){console.error(`[EnterpriseWorkshopModal] Error refreshing data:`,e),this.status=null}}async renderActiveTab(){(this.modal.activeTab||`owner`)===`owner`?this.renderOwnerTab():this.renderWorkTab()}renderSummary(){let e=this.status;return e?`
+      <div class="enterprise-summary-grid">
+        ${[{label:`Tiền mặt`,value:`${O(e.playerCash)} Quan`,tone:``},{label:`Quỹ an toàn xưởng`,value:`${O(e.totalSafeCash)} Quan`,tone:`is-gold`},{label:`Nợ xưởng`,value:`${O(e.totalDebt)} Quan`,tone:e.totalDebt>0?`is-danger`:``},{label:`Lương tháng`,value:`${O(e.totalStaffWages)} Quan`,tone:``},{label:`Thuê xưởng`,value:`${O(e.totalMonthlyRent)} Quan`,tone:``},{label:`Lợi nhuận tích lũy`,value:`${O(e.totalAccumulatedProfit)} Quan`,tone:e.totalAccumulatedProfit>0?`is-positive`:``}].map(e=>`
+          <div class="enterprise-summary-card ${e.tone}">
+            <span>${e.label}</span>
+            <strong>${e.value}</strong>
+          </div>
+        `).join(``)}
+      </div>
+    `:``}renderOwnerTab(){let e=this.status;if(!e){this.modal.setContent(`<div class="journal-modal-content"><div class="text-muted text-sm">Không tải được sản nghiệp.</div></div>`);return}let t=e.ownedBusinesses||[],n=e.openableTypes||[],r=t.length>0?t.map(e=>this.renderEnterpriseCard(e)).join(``):`<div class="enterprise-empty">Chưa sở hữu cơ sở nào. Chọn một loại hình bên dưới để mở.</div>`,i=n.length>0?n.map(e=>this.renderOpenableCard(e)).join(``):`<div class="enterprise-empty">Danh mục mở cơ sở chưa sẵn sàng.</div>`;this.modal.setContent(`
       <div class="enterprise-modal-content">
         <div class="spatial-banner-lead">
           <div class="lead-seal">業</div>
           <div class="lead-text">
-            <h3>Sản Nghiệp Sở Hữu (${this.enterprises.length} Cơ Sở)</h3>
-            <div class="text-muted text-sm">Các xưởng chế tác tự động vận hành chu kỳ sản xuất hàng tháng và tích lũy doanh thu vào Quỹ an toàn.</div>
+            <h3>Phường Xưởng Lương Gia</h3>
+            <div class="text-muted text-sm">Xưởng tự vận hành theo tháng. Lợi nhuận trả nợ trước, phần còn lại vào quỹ an toàn; thiếu nhân công thì sản lượng giảm.</div>
           </div>
         </div>
+        ${this.renderSummary()}
 
-        ${this.enterprises.length===0?`
-          <div class="text-center py-10 text-muted">
-            Hiện tại bạn chưa sở hữu sản nghiệp nào. Hãy tích lũy tiền tệ hoặc làm thuê để mua lại xưởng mộc, xưởng rèn tại Trác Huyện.
+        <section class="enterprise-section">
+          <div class="enterprise-section-title">
+            Cơ sở đang sở hữu <span>${t.length}</span>
           </div>
-        `:`
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            ${this.enterprises.map(e=>`
-              <div class="tactical-card p-4 bg-slate-900 rounded border border-slate-800">
-                <div class="flex justify-between items-start mb-2">
-                  <h4 class="text-amber-200 font-bold m-0 text-base">${e.name_vi}</h4>
-                  <span class="badge badge-success text-xs">${e.status||`VẬN HÀNH`}</span>
-                </div>
-                <div class="text-xs text-muted mb-3">Địa điểm: ${e.settlement_id} • Thợ xưởng: ${e.worker_count||1}/${e.max_workers||5}</div>
+          <div class="enterprise-grid">${r}</div>
+        </section>
 
-                <div class="bg-slate-950/70 p-2.5 rounded font-mono text-xs mb-3 space-y-1">
-                  <div class="flex justify-between">
-                    <span class="text-muted">Quỹ An Toàn:</span>
-                    <span class="text-amber-400 font-bold">${Number(e.safe_cash||0).toLocaleString()} Quan</span>
-                  </div>
-                  <div class="flex justify-between">
-                    <span class="text-muted">Chi Phí Tháng:</span>
-                    <span class="text-red-400 font-bold">${Number(e.monthly_overhead||0).toLocaleString()} Quan</span>
-                  </div>
-                </div>
-
-                <div class="flex gap-2">
-                  <button class="ui-btn ui-btn--primary ui-btn--sm flex-1" onclick="window.EnterpriseUI.depositSafeCash('${e.enterprise_id}')">Nạp Quỹ</button>
-                  <button class="ui-btn ui-btn--ghost ui-btn--sm flex-1" onclick="window.EnterpriseUI.withdrawSafeCash('${e.enterprise_id}')">Rút Quan</button>
-                </div>
-              </div>
-            `).join(``)}
+        <section class="enterprise-section">
+          <div class="enterprise-section-title">
+            Mở cơ sở mới <span>${n.length}</span>
           </div>
-        `}
+          <div class="enterprise-open-grid">${i}</div>
+        </section>
       </div>
-    `;this.modal.setContent(e)}renderWorkTab(){this.modal.setContent(`
+    `),this.bindOwnerActions()}renderEnterpriseCard(e){let t=e.health||(e.status===`ACTIVE`?`BREAK_EVEN`:`PAUSED`),n=Number(e.accumulated_profit||0),r=Number(e.safe_cash||0),i=n>0||r>0,a=e.staff_members||[],o=Number(e.staff_wages||0),s=a.length>0?a.map(e=>`
+          <div class="enterprise-payroll-row">
+            <span class="enterprise-payroll-name" title="${D(`${e.name} (${e.npc_id})`)}">
+              ${D(e.name)} <span class="enterprise-payroll-role">• ${D(k(e.role))}</span>
+            </span>
+            <span class="enterprise-payroll-wage">${O(e.monthly_wage)} Quan/tháng</span>
+          </div>
+        `).join(``):`<div class="enterprise-payroll-empty">Chưa bổ nhiệm gia nhân nào vào cơ sở này.</div>`;return`
+      <div class="enterprise-card">
+        <div class="enterprise-card-head">
+          <div class="enterprise-icon">${e.business_type===`FORGE`||e.business_type===`BLACKSMITH`?`鍛`:e.business_type===`TAVERN`?`酒`:e.business_type===`APOTHECARY`?`藥`:`工`}</div>
+          <div class="enterprise-name-wrap">
+            <div class="enterprise-name">${D(e.name)}</div>
+            <div class="enterprise-meta">${A[e.business_type]||e.business_type} • ${D(e.location_id)} • Tier ${e.tier||1}</div>
+          </div>
+          <span class="enterprise-health is-${t.toLowerCase()}">${ae[t]||t}</span>
+        </div>
+
+        <div class="enterprise-meta mt-1">Quản lý: ${D(e.manager_name||e.manager_npc_id)} • Hiệu suất ${Math.round(Number(e.efficiency_multiplier||0)*100)}% • ${e.auto_procure?`Tự mua nguyên liệu`:`Mua tay`}</div>
+
+        <div class="enterprise-stats">
+          <div class="enterprise-stat"><span>Quỹ an toàn</span><strong>${O(r)}</strong></div>
+          <div class="enterprise-stat"><span>Nợ</span><strong class="${Number(e.debt||0)>0?`is-danger`:``}">${O(e.debt)}</strong></div>
+          <div class="enterprise-stat"><span>Doanh thu/ngày</span><strong>${O(e.daily_revenue)}</strong></div>
+          <div class="enterprise-stat"><span>Lợi nhuận tích lũy</span><strong class="${n>0?`is-positive`:``}">${O(n)}</strong></div>
+          <div class="enterprise-stat"><span>Nhân sự</span><strong>${e.staff_count??0}/${e.current_workforce??0}</strong></div>
+          <div class="enterprise-stat"><span>Lương nhân công</span><strong>${O(o)}</strong></div>
+          <div class="enterprise-stat"><span>Lương + thuê</span><strong>${O(e.monthly_overhead)}</strong></div>
+        </div>
+
+        <div class="enterprise-payroll">
+          <div class="enterprise-payroll-head">
+            <span>Bảng lương nhân công</span>
+            <strong>${a.length} người • ${O(o)} Quan/tháng</strong>
+          </div>
+          <div class="enterprise-payroll-list">${s}</div>
+        </div>
+
+        <div class="enterprise-cash-row">
+          <input class="enterprise-cash-input" id="enterprise-cash-${D(e.business_id)}" type="number" min="1" step="50" value="500" aria-label="Số tiền nạp hoặc rút" />
+          <button class="ui-btn ui-btn--primary ui-btn--sm" data-enterprise-cash="DEPOSIT" data-business-id="${D(e.business_id)}">Nạp quỹ</button>
+          <button class="ui-btn ui-btn--ghost ui-btn--sm" data-enterprise-cash="WITHDRAW" data-business-id="${D(e.business_id)}">Rút quỹ</button>
+          <button class="ui-btn ui-btn--accent ui-btn--sm" data-enterprise-collect="${D(e.business_id)}" ${i?``:`disabled`}>Thu lợi nhuận</button>
+        </div>
+      </div>
+    `}renderOpenableCard(e){let t=Number(e.startupCash||0)+Number(e.effectiveTurnkeyCost||0),n=(e.requiredMaterials||[]).map(e=>`
+      <span class="enterprise-material ${e.hasEnough?`is-ready`:`is-missing`}" title="${e.available}/${e.quantity}">
+        ${D(e.itemNameVi)} ${e.available}/${e.quantity}
+      </span>
+    `).join(``);return`
+      <div class="enterprise-open-card">
+        <div class="enterprise-card-head">
+          <div class="enterprise-icon">${e.icon||`業`}</div>
+          <div class="enterprise-name-wrap">
+            <div class="enterprise-name">${D(e.titleVi)}</div>
+            <div class="enterprise-meta">Thuê ${O(e.monthlyRent)}/tháng • ${e.baseWorkforce} nhân sự • ${O(e.projectedDailyRevenueMin)}–${O(e.projectedDailyRevenueMax)}/ngày</div>
+          </div>
+        </div>
+        <div class="enterprise-open-desc">${D(e.descriptionVi)}</div>
+        <div class="enterprise-materials">${n||`<span class="enterprise-material is-ready">Không cần nguyên liệu</span>`}</div>
+        <div class="enterprise-open-actions">
+          <button class="ui-btn ui-btn--ghost ui-btn--sm" data-open-enterprise="${D(e.typeId)}" data-turnkey="false" ${e.canAffordCash?``:`disabled`}>
+            Mở chuẩn · ${O(e.startupCash)}
+          </button>
+          <button class="ui-btn ui-btn--primary ui-btn--sm" data-open-enterprise="${D(e.typeId)}" data-turnkey="true" ${e.canAffordTurnkey?``:`disabled`}>
+            Mở turnkey · ${O(t)}
+          </button>
+        </div>
+      </div>
+    `}bindOwnerActions(){let e=this.modal.getBodyElement();e&&(e.querySelectorAll(`[data-enterprise-cash]`).forEach(e=>{e.addEventListener(`click`,async()=>{let t=e.dataset.businessId||``,n=e.dataset.enterpriseCash||`DEPOSIT`,r=document.getElementById(`enterprise-cash-${t}`),i=Number(r?.value||0);if(!Number.isFinite(i)||i<=0)this.toast(`Số tiền phải lớn hơn 0.`,!0);else{e.setAttribute(`disabled`,`true`);try{await E.manageSafeCash(t,n,Math.round(i)),this.toast(n===`DEPOSIT`?`Đã nạp tiền vào quỹ an toàn.`:`Đã rút tiền về ngân khố.`),await this.refreshData(),await this.renderActiveTab()}catch(t){e.removeAttribute(`disabled`),this.toast(t.message||`Thao tác quỹ thất bại.`,!0)}}})}),e.querySelectorAll(`[data-enterprise-collect]`).forEach(e=>{e.addEventListener(`click`,async()=>{let t=e.dataset.enterpriseCollect||``;e.setAttribute(`disabled`,`true`);try{let e=await E.collectProfits(t);this.toast(e.message||`Đã thu ${O(e.collectedAmount)} Quan lợi nhuận.`,e.success===!1),await this.refreshData(),await this.renderActiveTab()}catch(t){e.removeAttribute(`disabled`),this.toast(t.message||`Thu lợi nhuận thất bại.`,!0)}})}),e.querySelectorAll(`[data-open-enterprise]`).forEach(e=>{e.addEventListener(`click`,async()=>{let t=e.dataset.openEnterprise||``,n=e.dataset.turnkey===`true`,r=(this.status?.openableTypes||[]).find(e=>e.typeId===t);if(!r)return;let i=n?Number(r.startupCash)+Number(r.effectiveTurnkeyCost):Number(r.startupCash);if(await g({title:`Mở cơ sở mới`,message:`Mở ${r.titleVi} với chi phí ${O(i)} Quan${n?` (turnkey, mua bù nguyên liệu thiếu)`:``}? Mỗi lần mở tốn 2 ngày.`,confirmLabel:`Mở cơ sở`,danger:!0})){e.setAttribute(`disabled`,`true`);try{await E.openEnterprise(t,n),this.toast(`Đã mở ${r.titleVi}.`),await this.refreshData(),await this.renderActiveTab()}catch(t){e.removeAttribute(`disabled`),this.toast(t.message||`Mở cơ sở thất bại.`,!0)}}})}))}renderWorkTab(){let e=this.status,t=e?.laborShifts||[],n=Number(e?.playerFatigue||0),r=t.filter(e=>n+Number(e.fatigueCost||0)<=100),i=t.reduce((e,t)=>Number(t.wage)>Number(e?.wage||0)?t:e,t[0]),a=t.reduce((e,t)=>Number(t.wage)/Math.max(1,Number(t.fatigueCost||1))>(e?Number(e.wage)/Math.max(1,Number(e.fatigueCost||1)):0)?t:e,t[0]),o=`
+      <div class="work-summary-grid">
+        <div class="work-summary-card"><span>Mệt mỏi</span><strong>${n}/100</strong></div>
+        <div class="work-summary-card"><span>Ca khả dụng</span><strong>${r.length}/${t.length}</strong></div>
+        <div class="work-summary-card"><span>Lương cao nhất</span><strong>${i?`${O(i.wage)} Quan`:`—`}</strong></div>
+        <div class="work-summary-card"><span>Hiệu quả nhất</span><strong>${a?`${O(a.wage)} / ${a.fatigueCost} thể lực`:`—`}</strong></div>
+      </div>
+    `,s=t.length>0?[...t].sort((e,t)=>Number(t.wage)-Number(e.wage)).map(e=>{let t=Number(e.fatigueCost??e.staminaCost??0),r=n+t>100,i=ie[String(e.attributeTarget||`cra`)]||String(e.attributeTarget||``).toUpperCase();return`
+          <div class="work-card ${r?`is-blocked`:``}">
+            <div class="work-card-head">
+              <span class="enterprise-icon">${e.icon||`工`}</span>
+              <div>
+                <div class="enterprise-name">${D(e.titleVi)}</div>
+                <div class="enterprise-meta">${D(e.workplaceVi)} • ${D(e.professionNameVi)}</div>
+              </div>
+            </div>
+            <div class="work-wage">${O(e.wage)} <span>Quan / ca</span></div>
+            <div class="work-meta">
+              <span>${t} thể lực</span>
+              <span>+${e.expGain} EXP nghề</span>
+              <span>+${e.attributeExp} EXP ${i}</span>
+            </div>
+            <div class="work-note">${r?`Cần nghỉ ngơi: đang mệt ${n}/100, ca này tốn ${t}.`:D(e.narrativeVi)}</div>
+            <button class="ui-btn ui-btn--primary ui-btn--sm w-full" data-work-shift="${D(e.shiftId)}" ${r?`disabled`:``}>Nhận việc · 1 ngày</button>
+          </div>
+        `}).join(``):`<div class="enterprise-empty md:col-span-3">Chưa tải được danh mục ca làm việc.</div>`;this.modal.setContent(`
       <div class="enterprise-modal-content">
         <div class="spatial-banner-lead">
           <div class="lead-seal">工</div>
           <div class="lead-text">
             <h3>Lao Động Làm Thuê Thời Vụ</h3>
-            <div class="text-muted text-sm">Đi làm thuê tại các xưởng nghề, đồn điền nông nghiệp để kiếm tiền trang trải và rèn luyện kỹ năng.</div>
+            <div class="text-muted text-sm">Mỗi ca tốn 1 ngày, trả tiền mặt ngay và tăng EXP nghề/thuộc tính. Mệt mỏi từ 100 trở lên sẽ chặn nhận ca.</div>
           </div>
         </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800 text-center">
-            <h4 class="text-amber-300 font-bold text-sm mb-1">Đốn Củi & Tiêu Xa</h4>
-            <div class="text-xs text-muted mb-2">Tiêu hao 15 Thể lực • Kiếm 40 Quan • Tăng EXP Võ/Thống</div>
-            <button class="ui-btn ui-btn--primary ui-btn--sm w-full" onclick="window.EnterpriseUI.executeWork('WOODCUT')">Nhận Việc</button>
-          </div>
-          <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800 text-center">
-            <h4 class="text-amber-300 font-bold text-sm mb-1">Đan Lát Chiếu Trúc</h4>
-            <div class="text-xs text-muted mb-2">Tiêu hao 12 Thể lực • Kiếm 50 Quan • Tăng EXP Kỹ Nghệ</div>
-            <button class="ui-btn ui-btn--primary ui-btn--sm w-full" onclick="window.EnterpriseUI.executeWork('WEAVE_MAT')">Nhận Việc</button>
-          </div>
-          <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800 text-center">
-            <h4 class="text-amber-300 font-bold text-sm mb-1">Phụ Lò Rèn Thiết Điếm</h4>
-            <div class="text-xs text-muted mb-2">Tiêu hao 20 Thể lực • Kiếm 65 Quan • Tăng EXP Kỹ Nghệ/Võ</div>
-            <button class="ui-btn ui-btn--accent ui-btn--sm w-full" onclick="window.EnterpriseUI.executeWork('SMITH_ASSIST')">Nhận Việc</button>
-          </div>
-        </div>
+        ${o}
+        <div class="work-grid">${s}</div>
       </div>
-    `)}async depositSafeCash(e){let t=prompt(`Nhập số tiền muốn nạp vào quỹ an toàn:`,`500`);if(!t)return;let n=parseInt(t,10);if(!(isNaN(n)||n<=0))try{await k.manageSafeCash(e,`DEPOSIT`,n),typeof window.showToast==`function`&&window.showToast(`Đã nạp tiền vào Quỹ an toàn!`),await this.refreshData(),await this.renderActiveTab()}catch(e){typeof window.showToast==`function`&&window.showToast(e.message||`Lỗi nạp tiền!`,!0)}}async withdrawSafeCash(e){let t=prompt(`Nhập số tiền muốn rút từ quỹ an toàn:`,`500`);if(!t)return;let n=parseInt(t,10);if(!(isNaN(n)||n<=0))try{await k.manageSafeCash(e,`WITHDRAW`,n),typeof window.showToast==`function`&&window.showToast(`Đã rút tiền từ Quỹ an toàn về ngân khố!`),await this.refreshData(),await this.renderActiveTab()}catch(e){typeof window.showToast==`function`&&window.showToast(e.message||`Lỗi rút tiền!`,!0)}}async executeWork(e){try{let t=await k.executeLaborShift(e);typeof window.showToast==`function`&&window.showToast(t.narrativeVi||`Lao động hoàn tất, nhận tiền công!`),await this.refreshData(),await this.renderActiveTab()}catch(e){typeof window.showToast==`function`&&window.showToast(e.message||`Không thể làm việc lúc này!`,!0)}}},j=new A,M=class e{static instance;static getInstance(){return e.instance||=new e,e.instance}async getProtagonistDossier(){let e=await y.get(`/api/status`),t=e.player||{};return{characterId:t.character_id||`PLY-0001`,nameVi:t.name_vi||`Lương Diễn`,nameEn:t.name_en||`Liang Yan`,styleName:t.style_name||`Chí Viễn`,age:t.age||20,locationVi:e.settlement?.nameVi||`Trác Huyện`,positionVi:t.position_vi||`Thương Gia Tự Do`,personality:`PRAGMATIC`,motivation:`HEGEMONY`,bioVi:`Hậu nhân Lương thị U Châu, thông tuệ thương đạo, ôm chí lớn bình định loạn thế Tam Quốc.`,stats:{war:t.war_attr||50,int:t.int_attr||50,ldr:t.ldr_attr||50,pol:t.pol_attr||50,com:t.com_attr||60,dip:t.dip_attr||50,cra:t.cra_attr||55,log:t.log_attr||50},talents:t.talents?typeof t.talents==`string`?JSON.parse(t.talents):t.talents:[`THƯƠNG_TRÍ`,`KỸ_XẢO`]}}async getNpcDossier(e){let t=await y.get(`/api/npcs/dossier`,{npcId:e});return t.dossier||t}},N=M.getInstance(),P=class{protagonistModal;npcModal;currentProtagonist=null;currentNpc=null;constructor(){this.protagonistModal=a({id:`protagonist-dossier-modal`,title:`Hồ Sơ Nhân Vật Chính • Lương Diễn (Chí Viễn)`,subtitle:`Toàn bộ chỉ số năng lực 8 chiều, danh hiệu và thiên phú bản mệnh`,seal:`主`,size:`lg`,onOpen:async()=>{await this.loadProtagonist()}}),this.npcModal=a({id:`npc-dossier-modal`,title:`Hồ Sơ Nhân Vật • Danh Tướng Tam Quốc`,subtitle:`Tình báo nhân vật, mức độ thân thiện và bí mật sương mù chiến tranh`,seal:`将`,size:`lg`})}async openProtagonist(){await this.protagonistModal.open()}async closeProtagonist(){await this.protagonistModal.close()}async openNpc(e){try{this.currentNpc=await N.getNpcDossier(e),this.npcModal.setTitle(`Hồ Sơ Nhân Vật • ${this.currentNpc.nameVi}`,`Địa điểm: ${this.currentNpc.locationVi||`U Châu`} • Thân phận: ${this.currentNpc.positionVi||`Võ Tướng`}`),this.renderNpcContent(),await this.npcModal.open()}catch(e){console.error(`[DossiersModal] Error loading NPC:`,e)}}async closeNpc(){await this.npcModal.close()}async loadProtagonist(){try{this.currentProtagonist=await N.getProtagonistDossier(),this.renderProtagonistContent()}catch(e){console.error(`[DossiersModal] Error loading protagonist:`,e)}}renderProtagonistContent(){let e=this.currentProtagonist;if(!e)return;let t=e.stats,n=`
-      <div class="dossier-content">
-        <div class="spatial-banner-lead">
-          <div class="lead-seal">主</div>
-          <div class="lead-text">
-            <h3>${e.nameVi} (${e.styleName||`Chí Viễn`}) • Tuổi: ${e.age}</h3>
-            <div class="text-muted text-sm">${e.positionVi} • Cư ngụ tại ${e.locationVi}</div>
-          </div>
-        </div>
-
-        <div class="tactical-card p-4 bg-slate-900 rounded border border-slate-800 mb-3">
-          <h4 class="text-amber-300 font-bold text-xs uppercase mb-2">Bát Diện Năng Lực (Thuộc Tính Bản Thể):</h4>
-          <div class="grid grid-cols-4 gap-2 font-mono text-xs text-center bg-slate-950 p-3 rounded">
-            <div>VÕ LỰC: <strong class="text-red-400 font-bold">${t.war}</strong></div>
-            <div>MƯU TRÍ: <strong class="text-blue-400 font-bold">${t.int}</strong></div>
-            <div>THỐNG SOÁI: <strong class="text-amber-400 font-bold">${t.ldr}</strong></div>
-            <div>CHÍNH TRỊ: <strong class="text-purple-400 font-bold">${t.pol}</strong></div>
-            <div>THƯƠNG NGHIỆP: <strong class="text-yellow-400 font-bold">${t.com}</strong></div>
-            <div>NGOẠI GIAO: <strong class="text-green-400 font-bold">${t.dip}</strong></div>
-            <div>KỸ NGHỆ: <strong class="text-cyan-400 font-bold">${t.cra}</strong></div>
-            <div>HẬU CẦN: <strong class="text-orange-400 font-bold">${t.log}</strong></div>
-          </div>
-        </div>
-
-        <div class="tactical-card p-4 bg-slate-900 rounded border border-slate-800">
-          <h4 class="text-amber-300 font-bold text-xs uppercase mb-1">Tiểu Sử & Chí Hướng:</h4>
-          <p class="text-xs text-slate-300 leading-relaxed">${e.bioVi}</p>
-        </div>
-      </div>
-    `;this.protagonistModal.setContent(n)}renderNpcContent(){let e=this.currentNpc;if(!e)return;let t=e.stats||{war:50,int:50,ldr:50,pol:50,com:50,dip:50,cra:50,log:50},n=`
-      <div class="dossier-content">
-        <div class="spatial-banner-lead">
-          <div class="lead-seal">将</div>
-          <div class="lead-text">
-            <h3>${e.nameVi} • Tính Cách: ${e.personality}</h3>
-            <div class="text-muted text-sm">Động cơ: ${e.motivation} • Thân phận: ${e.positionVi}</div>
-          </div>
-        </div>
-
-        <div class="tactical-card p-4 bg-slate-900 rounded border border-slate-800 mb-3">
-          <h4 class="text-amber-300 font-bold text-xs uppercase mb-2">Chỉ Số Năng Lực Nổi Trội:</h4>
-          <div class="grid grid-cols-4 gap-2 font-mono text-xs text-center bg-slate-950 p-3 rounded">
-            <div>VÕ: <strong class="text-red-400 font-bold">${t.war}</strong></div>
-            <div>TRÍ: <strong class="text-blue-400 font-bold">${t.int}</strong></div>
-            <div>SOÁI: <strong class="text-amber-400 font-bold">${t.ldr}</strong></div>
-            <div>CHÍNH: <strong class="text-purple-400 font-bold">${t.pol}</strong></div>
-          </div>
-        </div>
-
-        <div class="tactical-card p-4 bg-slate-900 rounded border border-slate-800">
-          <h4 class="text-amber-300 font-bold text-xs uppercase mb-1">Hành Trạng Lịch Sử:</h4>
-          <p class="text-xs text-slate-300 leading-relaxed">${e.bioVi||`Nhân tài hào kiệt uy chấn phương bắc.`}</p>
-        </div>
-      </div>
-    `;this.npcModal.setContent(n)}},F=new P,I=class{modal;currentMode=`BUY`;currentItemCode=`COM-GRAIN`;currentPrice=50;constructor(){this.modal=a({id:`standard-trade-modal`,title:`Giao Dịch Hàng Hóa Chợ Phiên`,subtitle:`Thực thi giao thương hàng hóa, cân bằng sổ cái kép kế toán ACID`,seal:`貿`,size:`sm`})}async open(e,t,n=1,r=50){this.currentMode=e,this.currentItemCode=t,this.currentPrice=r,this.modal.setTitle(e===`BUY`?`Thu Mua Vật Phẩm`:`Xuất Bán Hàng Hóa`,`Mã vật phẩm: ${t} • Đơn giá hiện tại: ${r} Quan`,e===`BUY`?`買`:`賣`),this.renderForm(n),await this.modal.open()}async close(){await this.modal.close()}renderForm(e){let t=`
+    `),this.modal.getBodyElement()?.querySelectorAll(`[data-work-shift]`).forEach(e=>{e.addEventListener(`click`,async()=>{let t=e.dataset.workShift||``;e.setAttribute(`disabled`,`true`),await this.executeWork(t),e.removeAttribute(`disabled`)})})}toast(e,t=!1){typeof window.showToast==`function`&&window.showToast(e,t)}async depositSafeCash(e){let t=document.getElementById(`enterprise-cash-${e}`),n=Number(t?.value||0);!Number.isFinite(n)||n<=0||(await E.manageSafeCash(e,`DEPOSIT`,Math.round(n)),this.toast(`Đã nạp tiền vào Quỹ an toàn.`),await this.refreshData(),await this.renderActiveTab())}async withdrawSafeCash(e){let t=document.getElementById(`enterprise-cash-${e}`),n=Number(t?.value||0);!Number.isFinite(n)||n<=0||(await E.manageSafeCash(e,`WITHDRAW`,Math.round(n)),this.toast(`Đã rút tiền từ Quỹ an toàn về ngân khố.`),await this.refreshData(),await this.renderActiveTab())}async executeWork(e){try{let t=await E.executeLaborShift(e);this.toast(t.messageVi||t.message||t.narrativeVi||`Lao động hoàn tất, nhận tiền công!`),await this.refreshData(),await this.renderActiveTab()}catch(e){this.toast(e.message||`Không thể làm việc lúc này!`,!0)}}},M=new j,N=class{modal;currentMode=`BUY`;currentItemCode=`COM-GRAIN`;currentPrice=50;constructor(){this.modal=a({id:`standard-trade-modal`,title:`Giao Dịch Hàng Hóa Chợ Phiên`,subtitle:`Thực thi giao thương hàng hóa, cân bằng sổ cái kép kế toán ACID`,seal:`貿`,size:`sm`})}async open(e,t,n=1,r=50){this.currentMode=e,this.currentItemCode=t,this.currentPrice=r,this.modal.setTitle(e===`BUY`?`Thu Mua Vật Phẩm`:`Xuất Bán Hàng Hóa`,`Mã vật phẩm: ${t} • Đơn giá hiện tại: ${r} Quan`,e===`BUY`?`買`:`賣`),this.renderForm(n),await this.modal.open()}async close(){await this.modal.close()}renderForm(e){let t=`
       <div class="space-y-3 p-1">
         <div>
           <label class="block text-xs font-bold text-slate-300 mb-1">Mã Vật Phẩm:</label>
@@ -528,7 +571,7 @@ var SimulationClient=(function(e){Object.defineProperty(e,Symbol.toStringTag,{va
           Xác Nhận ${this.currentMode===`BUY`?`Thu Mua`:`Bán Hàng`}
         </button>
       </div>
-    `;this.modal.setContent(t)}updateTotal(){let e=document.getElementById(`quick-trade-qty`),t=document.getElementById(`quick-trade-total`);e&&t&&(t.textContent=`${((parseFloat(e.value)||0)*this.currentPrice).toLocaleString()} Quan`)}async submit(){let e=document.getElementById(`quick-trade-qty`),t=parseFloat(e?.value||`1`);if(isNaN(t)||t<=0)return;let n={type:this.currentMode===`BUY`?`TRADE_BUY`:`TRADE_SELL`,item_code:this.currentItemCode,quantity:t,unit_price:this.currentPrice,counterparty:`Thương Khách Chợ Phiên`,idempotency_key:`TSQUICK_${this.currentMode}_${this.currentItemCode}_${Date.now()}`};try{let e=window.dispatchDirectAction,t=e?await e(n):await y.post(`/api/action`,n);if(t&&t.success===!1){typeof window.showToast==`function`&&window.showToast(`Bị từ chối: ${t.error||`Giao dịch thất bại`}`,!0);return}await this.modal.close(),typeof window.loadStatus==`function`&&await window.loadStatus(),typeof window.loadDeckInventory==`function`&&await window.loadDeckInventory()}catch(e){typeof window.showToast==`function`&&window.showToast(e.message||`Giao dịch thất bại!`,!0)}}},L=new I,R=class e{static instance;static getInstance(){return e.instance||=new e,e.instance}async getBanquetStatus(){return y.get(`/api/banquet/status`)}async drinkWine(){return y.post(`/api/banquet/drink`,{})}async hostBanquet(e){return y.post(`/api/banquet/host`,{tierId:e})}async swearBrotherhood(e){return y.post(`/api/banquet/brotherhood`,{targetNpcId:e})}async getArenaRoster(){return y.get(`/api/arena/roster`)}async startDuel(e){return y.post(`/api/arena/duel/start`,{opponentId:e})}async executeDuelRound(e,t){return y.post(`/api/arena/duel/round`,{duelId:e,action:t})}async restAtResidence(e=1){return y.post(`/api/character/rest`,{days:e})}}.getInstance(),z=class{modal;currentDuelId=null;duelState=null;constructor(){this.modal=a({id:`tactical-battle-modal`,title:`Quyết Đấu Sa Trường • Đơn Đả Độc Đấu 1v1`,subtitle:`Tương tác chiến thuật 4 lệnh (Công Kích, Phòng Ngự, Tuyệt Kỹ, Tụ Khí)`,seal:`斗`,size:`lg`})}async startDuel(e){try{let t=await R.startDuel(e);this.currentDuelId=t.duelId,this.duelState=t.state,this.renderDuel(),await this.modal.open()}catch(e){typeof window.showToast==`function`&&window.showToast(e.message||`Lỗi khởi động giao đấu!`,!0)}}async close(){await this.modal.close()}renderDuel(){let e=this.duelState;if(!e)return;let t=`
+    `;this.modal.setContent(t)}updateTotal(){let e=document.getElementById(`quick-trade-qty`),t=document.getElementById(`quick-trade-total`);e&&t&&(t.textContent=`${((parseFloat(e.value)||0)*this.currentPrice).toLocaleString()} Quan`)}async submit(){let e=document.getElementById(`quick-trade-qty`),t=parseFloat(e?.value||`1`);if(isNaN(t)||t<=0)return;let n={type:this.currentMode===`BUY`?`TRADE_BUY`:`TRADE_SELL`,item_code:this.currentItemCode,quantity:t,unit_price:this.currentPrice,counterparty:`Thương Khách Chợ Phiên`,idempotency_key:`TSQUICK_${this.currentMode}_${this.currentItemCode}_${Date.now()}`};try{let e=window.dispatchDirectAction,t=e?await e(n):await y.post(`/api/action`,n);if(t&&t.success===!1){typeof window.showToast==`function`&&window.showToast(`Bị từ chối: ${t.error||`Giao dịch thất bại`}`,!0);return}await this.modal.close(),typeof window.loadStatus==`function`&&await window.loadStatus(),typeof window.loadDeckInventory==`function`&&await window.loadDeckInventory()}catch(e){typeof window.showToast==`function`&&window.showToast(e.message||`Giao dịch thất bại!`,!0)}}},P=new N,F=class e{static instance;static getInstance(){return e.instance||=new e,e.instance}async getBanquetStatus(){return y.get(`/api/banquet/status`)}async drinkWine(){return y.post(`/api/action`,{type:`PERSONAL_GROWTH`,sub_type:`REST_RECOVERY`,fatigue_delta:25,morale_delta:5,memo:`Thưởng thức rượu tại tửu quán`,idempotencyKey:`tavern-drink-${Date.now()}`})}async hostBanquet(e){return y.post(`/api/banquet/host`,{tier:e,idempotencyKey:`banquet-host-${e}-${Date.now()}`})}async swearBrotherhood(e){return y.post(`/api/banquet/brotherhood`,{npcId:e,idempotencyKey:`banquet-brotherhood-${e}-${Date.now()}`})}async getArenaRoster(){let e=await y.get(`/api/duel/arena/roster`);return{opponents:(Array.isArray(e.roster)?e.roster:[]).map(e=>({id:String(e.opponentId||e.id),nameVi:String(e.nameVi||e.name||e.opponentId),titleVi:String(e.titleVi||e.tierTitleVi||``),tier:e.tier===3||e.tierKey===`TIER_3`?`CHAMPION`:e.tier===2||e.tierKey===`TIER_2`?`VETERAN`:`NOVICE`,warAttr:Number(e.war||e.warAttr||50),weaponVi:String(e.descriptionVi||e.weaponVi||``),rewardQian:Number(e.prizeCash||e.rewardQian||0),rewardExp:Number(e.warExpReward||e.rewardExp||0)}))}}async startDuel(e){let t=(await y.post(`/api/duel/initiate`,{opponentId:e,context:`TOURNAMENT_ARENA`,maxRounds:5,idempotencyKey:`duel-initiate-${e}-${Date.now()}`})).duel||{};return{duelId:String(t.duelId||``),state:t}}async executeDuelRound(e,t){let n=await y.post(`/api/duel/round`,{duelId:e,action:t,idempotencyKey:`duel-round-${e}-${t}-${Date.now()}`});return n.duel||n}async restAtResidence(e=1){return y.post(`/api/life/act`,{actionCode:`SLEEP`,days:e,idempotencyKey:`residence-sleep-${Date.now()}`})}}.getInstance(),I=class{modal;currentDuelId=null;duelState=null;constructor(){this.modal=a({id:`tactical-battle-modal`,title:`Quyết Đấu Sa Trường • Đơn Đả Độc Đấu 1v1`,subtitle:`Tương tác chiến thuật 4 lệnh (Công Kích, Phòng Ngự, Tuyệt Kỹ, Tụ Khí)`,seal:`斗`,size:`lg`})}async startDuel(e){try{let t=await F.startDuel(e);this.currentDuelId=t.duelId,this.duelState=t.state,this.renderDuel(),await this.modal.open()}catch(e){typeof window.showToast==`function`&&window.showToast(e.message||`Lỗi khởi động giao đấu!`,!0)}}async close(){await this.modal.close()}renderDuel(){let e=this.duelState;if(!e)return;let t=`
       <div class="tactical-battle-content">
         <div class="p-3 bg-slate-950/80 rounded border border-amber-900/40 mb-3">
           <div class="flex justify-between items-center mb-3">
@@ -573,7 +616,7 @@ var SimulationClient=(function(e){Object.defineProperty(e,Symbol.toStringTag,{va
           ${e.combatLogs.map(e=>`<div>${e}</div>`).join(``)}
         </div>
       </div>
-    `;this.modal.setContent(t)}async executeAction(e){if(this.currentDuelId)try{this.duelState=await R.executeDuelRound(this.currentDuelId,e),this.renderDuel()}catch(e){typeof window.showToast==`function`&&window.showToast(e.message||`Lỗi hiệp đấu!`,!0)}}},B=new z,V=class{travelModal;turnModal;constructor(){this.travelModal=a({id:`travel-transit-modal`,title:`Lộ Trình Viễn Chinh • Dặm Trường Phong Vân`,subtitle:`Hành quân liên châu, khảo sát địa hình và ứng biến trước hiểm họa dọc đường`,seal:`行`,size:`md`}),this.turnModal=a({id:`turn-advance-modal`,title:`Quyết Toán Tháng • Luân Chuyển Chiến Cục`,subtitle:`Kết thúc tháng hiện tại, kết toán tài chính, sản nghiệp và mô phỏng thế giới sống động`,seal:`歲`,size:`md`})}async showTravelTransit(e,t,n,r){this.travelModal.setTitle(`Hành Trình Viễn Chinh`,`Từ ${e} → Đến ${t} (${n} ngày đường)`),this.travelModal.setContent(`
+    `;this.modal.setContent(t)}async executeAction(e){if(this.currentDuelId)try{this.duelState=await F.executeDuelRound(this.currentDuelId,e),this.renderDuel()}catch(e){typeof window.showToast==`function`&&window.showToast(e.message||`Lỗi hiệp đấu!`,!0)}}},L=new I,R=class{travelModal;turnModal;constructor(){this.travelModal=a({id:`travel-transit-modal`,title:`Lộ Trình Viễn Chinh • Dặm Trường Phong Vân`,subtitle:`Hành quân liên châu, khảo sát địa hình và ứng biến trước hiểm họa dọc đường`,seal:`行`,size:`md`}),this.turnModal=a({id:`turn-advance-modal`,title:`Ngày Tiếp Theo • Dòng Thời Gian`,subtitle:`Tiến một ngày, chi dùng hằng ngày và tự động chốt tháng khi sang mùng 1`,seal:`歲`,size:`md`})}async showTravelTransit(e,t,n,r){this.travelModal.setTitle(`Hành Trình Viễn Chinh`,`Từ ${e} → Đến ${t} (${n} ngày đường)`),this.travelModal.setContent(`
       <div class="travel-transit-body p-2 space-y-3">
         <div class="p-3 bg-slate-950 rounded border border-slate-800 text-xs font-mono">
           ${r||`<div>Xe ngựa lăn bánh trên quan đạo phương bắc... An toàn đến nơi!</div>`}
@@ -582,20 +625,530 @@ var SimulationClient=(function(e){Object.defineProperty(e,Symbol.toStringTag,{va
           Nhập Thành
         </button>
       </div>
-    `),await this.travelModal.open()}async openTravelTransitModal(){await this.travelModal.open()}async closeTravelTransitModal(){await this.travelModal.close()}async closeTravel(){await this.travelModal.close()}async showTurnAdvance(e,t,n){this.turnModal.setTitle(`Quyết Toán Lượt Thứ ${e}`,`Thời gian: ${t} • Thiên thời địa lợi`),this.turnModal.setContent(`
+    `),await this.travelModal.open()}async openTravelTransitModal(){await this.travelModal.open()}async closeTravelTransitModal(){await this.travelModal.close()}async closeTravel(){await this.travelModal.close()}async showTurnAdvance(e,t,n){this.turnModal.setTitle(`Ngày ${t}`,`Nhịp thời gian: ngày ${e} • Chi dùng và tiến trình tự động`),this.turnModal.setContent(`
       <div class="turn-advance-body p-2 space-y-3">
         <div class="p-3 bg-slate-950 rounded border border-slate-800 text-xs font-mono space-y-1">
           ${n||`
-            <div class="text-green-400">◆ Hoàn tất chu kỳ sản xuất hàng tháng của các xưởng.</div>
-            <div class="text-amber-300">◆ Kết toán sổ cái kép thu chi tài chính.</div>
-            <div class="text-blue-300">◆ Cập nhật tiến độ thai kỳ và bồi dưỡng thế hệ gia tộc.</div>
+            <div class="text-green-400">◆ Một ngày trôi qua: lương thảo tiêu hao, thể lực hồi phục.</div>
+            <div class="text-amber-300">◆ Công việc dài ngày và thương đoàn tiếp tục tiến.</div>
+            <div class="text-blue-300">◆ Sang mùng 1, tháng tự động kết toán sản nghiệp và thế giới.</div>
           `}
         </div>
         <button class="ui-btn ui-btn--accent w-full py-2 font-bold" onclick="window.TurnAdvanceUI.close()">
           Tiếp Tục Mô Phỏng
         </button>
       </div>
-    `),await this.turnModal.open()}async closeTurn(){await this.turnModal.close()}async openTurnAdvanceModal(){await this.turnModal.open()}async closeTurnAdvanceModal(){await this.turnModal.close()}},H=new V,U=class{modal;constructor(){this.modal=a({id:`world-map-modal`,title:`Dư Đồ Tam Quốc • Khởi Nghĩa Khăn Vàng (184 SCN)`,subtitle:`Khảo sát 24 châu quận, phân bố thế lực chư hầu và dịch trạm liên thành`,seal:`圖`,size:`xl`,dialogClass:`world-map-dialog`})}async open(){await this.modal.open();let e=window.refreshWorldMapView;typeof e==`function`?e():typeof window.renderWorldMapSvg==`function`&&window.renderWorldMapSvg()}async close(){await this.modal.close()}},W=new U,G={wu_wei:`xi_liang`,he_fei:`shou_chun`,pu_yang:`ye_cheng`,wu_ling:`jiang_ling`},K=new class{ALIASES=G;state={status:`idle`,fetchedAt:0,bySettlement:{},byMapNode:{},activeExpeditions:[],player:null,playerFaction:null,factionsById:{},banditsByNode:{},crisesByNode:{},npcsByName:{},npcsById:{},playerCash:0,inventory:{},specialistsByName:{},specialistsByMapNode:{},businesses:[],guardTiers:[],routesByKey:{},locationsById:{},locToMapNode:{},caravans:[],expeditions:[],resourcesByNode:{},resourceTotals:{},errors:[]};resolveMapNodeId(e){return G[e]||e}mergeRecord(e,t){return Object.assign({},e||{},t||{})}async readJson(e){let t=await fetch(e,{headers:{Accept:`application/json`}});if(!t.ok)throw Error(`${e} returned ${t.status}`);return t.json()}async load(e=!1){if(!e&&this.state.status===`ready`&&Date.now()-this.state.fetchedAt<1e4)return this.state;this.state.status=`loading`,this.state.errors=[];let[t,n,r,i,a,o,s,c,l,u,d,f,p,m,h,g,_]=await Promise.allSettled([this.readJson(`/api/garrisons`),this.readJson(`/api/factions/settlements`),this.readJson(`/api/factions`),this.readJson(`/api/military/status`),this.readJson(`/api/logistics/strongholds`),this.readJson(`/api/ecology/crises`),this.readJson(`/api/npcs`),this.readJson(`/api/status`),this.readJson(`/api/inventory`),this.readJson(`/api/workforce/specialists`),this.readJson(`/api/workforce/businesses`),this.readJson(`/api/caravans/guard-tiers`),this.readJson(`/api/military/routes`),this.readJson(`/api/locations`),this.readJson(`/api/logistics/caravans`),this.readJson(`/api/expeditions`),this.readJson(`/api/professions/nodes`)]),v=t.status===`fulfilled`&&t.value.success&&t.value.garrisons||[],y=n.status===`fulfilled`&&n.value.success&&n.value.settlements||[],b=r.status===`fulfilled`&&r.value.success&&r.value.factions||[],x=i.status===`fulfilled`&&i.value.success?i.value:null,S=a.status===`fulfilled`&&a.value.success&&a.value.strongholds||[],C=o.status===`fulfilled`&&o.value.success&&o.value.crises||[],w=s.status===`fulfilled`&&s.value.success&&s.value.npcs||[],T=c.status===`fulfilled`&&c.value.success?c.value:null,E=l.status===`fulfilled`&&l.value.success&&l.value.items||[],D=u.status===`fulfilled`&&u.value.success&&u.value.specialists||[],O=d.status===`fulfilled`&&d.value.success&&d.value.businesses||[],k=f.status===`fulfilled`&&f.value.success&&f.value.tiers||[],A=p.status===`fulfilled`&&p.value.success&&p.value.routes||[],j=m.status===`fulfilled`&&m.value.success&&m.value.locations||[],M=h.status===`fulfilled`&&h.value.success&&h.value.caravans||[],N=g.status===`fulfilled`&&g.value.success&&g.value.expeditions||[],P=_.status===`fulfilled`&&_.value.success&&_.value.nodes||[];t.status===`rejected`&&this.state.errors.push(`garrisons`),n.status===`rejected`&&this.state.errors.push(`factions/settlements`),r.status===`rejected`&&this.state.errors.push(`factions`),i.status===`rejected`&&this.state.errors.push(`military`),a.status===`rejected`&&this.state.errors.push(`strongholds`),o.status===`rejected`&&this.state.errors.push(`crises`),s.status===`rejected`&&this.state.errors.push(`npcs`),c.status===`rejected`&&this.state.errors.push(`status`),l.status===`rejected`&&this.state.errors.push(`inventory`),u.status===`rejected`&&this.state.errors.push(`workforce`),d.status===`rejected`&&this.state.errors.push(`businesses`),f.status===`rejected`&&this.state.errors.push(`guard-tiers`),p.status===`rejected`&&this.state.errors.push(`routes`),m.status===`rejected`&&this.state.errors.push(`locations`),h.status===`rejected`&&this.state.errors.push(`caravans`),g.status===`rejected`&&this.state.errors.push(`expeditions`),_.status===`rejected`&&this.state.errors.push(`resources`);let F={};b.forEach(e=>{let t=e&&e.factionId;t&&(F[t]=e)});let I={};v.forEach(e=>{e&&e.settlementId&&(I[e.settlementId]=this.mergeRecord(I[e.settlementId],e))}),y.forEach(e=>{e&&e.settlementId&&(I[e.settlementId]=this.mergeRecord(I[e.settlementId],e))}),Object.keys(I).forEach(e=>{let t=I[e],n=t.rulerFactionId?F[t.rulerFactionId]:null;if(!n)return;let r=n;t.factionNameVi=r.nameVi,t.factionNameEn=r.nameEn,t.factionColor=r.colorHex,t.factionMilitaryPower=r.militaryPower});let L={};Object.keys(I).forEach(e=>{this.resolveMapNodeId(e)===e&&(L[e]=this.mergeRecord(L[e],{...I[e],sourceSettlementId:e}))}),Object.keys(I).forEach(e=>{let t=this.resolveMapNodeId(e);L[t]||(L[t]=this.mergeRecord(L[t],{...I[e],sourceSettlementId:e}))}),this.state.bySettlement=I,this.state.byMapNode=L,this.state.activeExpeditions=x&&x.activeExpeditions||[],this.state.player=x&&x.commander||null,this.state.playerFaction=b.find(e=>e.leaderId===`PLY-0001`)||null,this.state.factionsById=F;let R={};S.forEach(e=>{let t=e.status,n=e.locationNear;if(t!==`ACTIVE`||!n)return;let r=this.resolveMapNodeId(n);(R[r]||=[]).push(e)});let z={};C.forEach(e=>{let t=e.settlementId;if(!t)return;let n=this.resolveMapNodeId(t);(z[n]||=[]).push(e)}),this.state.banditsByNode=R,this.state.crisesByNode=z;let B={},V={};w.forEach(e=>{let t=e.name,n=e.npc_id||e.npcId;n&&(V[n]=e),t&&(B[this.normalizeName(t)]=e)}),this.state.npcsByName=B,this.state.npcsById=V;let H=Number(T?.player?.liquid_cash)||0,U={};E.forEach(e=>{let t=e.item_code||e.itemCode,n=Number(e.quantity)||0;t&&(U[t]=n)}),this.state.playerCash=H,this.state.inventory=U,this.state.guardTiers=k;let W={};D.forEach(e=>{let t=e.nameVi;t&&(W[this.normalizeName(t)]=e)}),this.state.specialistsByName=W,this.state.caravans=M,this.state.expeditions=N;let G={},K={};P.forEach(e=>{let t=String(e.settlementId||``),n=this.resolveMapNodeId(t),r=String(e.resourceType||``);n&&r&&(G[n]||(G[n]={types:{},nodes:[]}),G[n].types[r]=(G[n].types[r]||0)+1,G[n].nodes.push(e),K[r]=(K[r]||0)+1)}),this.state.resourcesByNode=G,this.state.resourceTotals=K;let q={};j.forEach(e=>{let t=e.locationId;t&&(q[t]=e)}),this.state.locationsById=q;let J={};if(typeof window<`u`){let e=window.SETTLEMENT_LABELS||{};Object.keys(e).forEach(t=>{if(t===`wu_wei`)return;let n=e[t]&&e[t].vi;n&&(J[this.normalizeLocationLabel(n)]=t)})}let Y={};j.forEach(e=>{let t=e.locationId,n=e.nameVi;if(!t||!n)return;let r=J[this.normalizeLocationLabel(n)];r&&(Y[t]=r)}),this.state.locToMapNode=Y;let X={};O.forEach(e=>{let t=e.businessId,n=e.locationId;t&&n&&(X[t]=n)});let Z={};D.forEach(e=>{let t=!!e.isHired,n=e.assignedBusinessId,r=n?X[n]:null,i=e.baselineLocation,a=t&&r?r:i,o=a?Y[a]:null;o&&(Z[o]||=[]).push(e)}),this.state.businesses=O,this.state.specialistsByMapNode=Z;let Q={};return A.forEach(e=>{let t=Y[e.sourceLocationId||``],n=Y[e.targetLocationId||``];if(!t||!n)return;let r=e.descriptionEn?e.descriptionEn.trim():``,i=r&&!/^RT-/i.test(r)&&/^[\x20-\x7E]+$/.test(r)?r:void 0,a={from:t,to:n,distanceLi:e.distanceLi,terrainType:e.terrainType,marchDays:e.standardMarchDays,grainCost:e.grainProvisionCost,ambushRisk:e.ambushRiskLevel,descVi:e.descriptionVi,descEn:i},o=`${t}|${n}`,s=`${n}|${t}`;Q[o]||(Q[o]=a),Q[s]||(Q[s]={...a,from:n,to:t})}),this.state.routesByKey=Q,this.state.status=this.state.errors.length===17?`error`:`ready`,this.state.fetchedAt=Date.now(),this.state}getForMapNode(e){return e&&(this.state.byMapNode[e]||this.state.bySettlement[e])||null}normalizeName(e){return e.normalize(`NFC`).trim().toLowerCase()}normalizeLocationLabel(e){return e.replace(/\s*\(.*?\)/g,``).replace(/\s*&.*/g,``).replace(/Kinh Đô\s*/g,``).replace(/Tây Đô\s*/g,``).replace(/Imperial Capital\s*/gi,``).trim().toLowerCase()}findNpcByName(e){return e&&this.state.npcsByName[this.normalizeName(e)]||null}findSpecialistByName(e){return e&&this.state.specialistsByName[this.normalizeName(e)]||null}getLocIdForNode(e){let t=Object.entries(this.state.locToMapNode).find(([,t])=>t===e);return t?t[0]:null}getSpecialistsForMapNode(e){return[...this.state.specialistsByMapNode[e]||[]].sort((e,t)=>{let n=!!e.isHired;if(n!==!!t.isHired)return n?1:-1;let r=String(e.nameVi||``),i=String(t.nameVi||``);return r.localeCompare(i)})}getRecruitRequirement(e){let t=this.findSpecialistByName(e);if(!t)return{canRecruit:!0,signingBonus:null,isHired:!1,reasonVi:``,reasonEn:``};let n=!!t.isHired,r=Number(t.signingBonus)||0;return n?{canRecruit:!1,signingBonus:r,isHired:n,reasonVi:`Đã được chiêu mộ`,reasonEn:`Already recruited`}:this.state.playerCash<r?{canRecruit:!1,signingBonus:r,isHired:n,reasonVi:`Cần ${r} quan chiêu mộ`,reasonEn:`Need ${r} cash to recruit`}:{canRecruit:!0,signingBonus:r,isHired:n,reasonVi:``,reasonEn:``}}getActionRequirements(){let e=this.state.playerCash,t=Object.values(this.state.inventory).filter(e=>e>0).length,n=this.state.guardTiers.length?Math.min(...this.state.guardTiers.map(e=>Number(e.costQian)||0)):null,r=!0,i=``,a=``;return n==null?(r=!1,i=`Chưa tải được bảng giá hộ vệ`,a=`Guard prices are unavailable`):t===0?(r=!1,i=`Kho không có hàng để xuất`,a=`No cargo in the warehouse`):e<n&&(r=!1,i=`Cần tối thiểu ${n} quan thuê hộ vệ`,a=`Need at least ${n} cash for guards`),{cash:e,cargoKinds:t,minGuardCost:n,canDispatchCaravan:r,reasonVi:i,reasonEn:a}}getRoute(e,t){return this.state.routesByKey[`${e}|${t}`]||null}getLivingEntities(){return{caravans:this.state.caravans.filter(e=>String(e.status).toUpperCase()===`EN_ROUTE`).map(e=>({...e,from:this.resolveMapNodeId(String(e.fromSettlementId||``)),to:this.resolveMapNodeId(String(e.toSettlementId||``)),progress:Number(e.routeProgress)||0})).filter(e=>e.from&&e.to),expeditions:this.state.expeditions.filter(e=>String(e.status).toUpperCase()===`MARCHING`).map(e=>{let t=e;return{...e,from:this.resolveMapNodeId(String(t.origin_settlement_id||t.originSettlementId||``)),to:this.resolveMapNodeId(String(t.target_settlement_id||t.targetSettlementId||``))}}).filter(e=>e.from&&e.to),bandits:Object.entries(this.state.banditsByNode).flatMap(([e,t])=>t.map(t=>({...t,nodeId:e}))),crises:Object.entries(this.state.crisesByNode).flatMap(([e,t])=>t.map(t=>({...t,nodeId:e})))}}getStatusForMapNode(e){let t=this.getForMapNode(e);if(!t)return{key:`unknown`,labelVi:`Chưa rõ`,labelEn:`Unknown`,className:`capital`};let n=this.state.playerFaction?.factionId,r=!!(t.rulerFactionId&&n&&t.rulerFactionId===n),i=Number(t.garrisonTroops??0),a=Number(t.granaryGrain??0),o=Number(t.publicOrder??100);return r?i<200||a<=0||o<30?{key:`strained`,labelVi:`Suy Yếu`,labelEn:`Strained`,className:`battle`}:{key:`stable`,labelVi:`An Định`,labelEn:`Stable`,className:`safe`}:{key:`foreign`,labelVi:`Ngoại Bang`,labelEn:`Foreign Holding`,className:`capital`}}getThreatForMapNode(e){let t=this.getForMapNode(e),n=this.state.banditsByNode[e]||[],r=this.state.crisesByNode[e]||[],i=[],a=[],o=0;if(n.length>0){let e=Math.max(...n.map(e=>Number(e.banditPower)||0));o+=Math.min(3,e/150),i.push(`${n.length} ổ phỉ`),a.push(`${n.length} bandit lair${n.length>1?`s`:``}`)}r.forEach(e=>{let t=Number(e.severityLevel)||1;o+=Math.min(3,t);let n=e.titleVi||`Khủng hoảng`;i.push(n),a.push(n)});let s=t&&Number.isFinite(t.garrisonTroops)?Number(t.garrisonTroops):null,c=t&&Number.isFinite(t.publicOrder)?Number(t.publicOrder):null;s!=null&&s<500&&(o+=1,i.push(`Đồn trú mỏng`),a.push(`Thin garrison`)),c!=null&&c<40&&(o+=1,i.push(`Trật tự thấp`),a.push(`Low public order`));let l=o>=3?`HIGH`:o>=1.5?`MODERATE`:`LOW`;return{level:l,...{LOW:{labelVi:`Thấp`,labelEn:`Low`,color:`#34d399`},MODERATE:{labelVi:`Vừa`,labelEn:`Moderate`,color:`#fbbf24`},HIGH:{labelVi:`Cao`,labelEn:`High`,color:`#f87171`}}[l],reasonsVi:i,reasonsEn:a}}getResourceDistribution(){return{byNode:this.state.resourcesByNode,totals:this.state.resourceTotals,types:Object.keys(this.state.resourceTotals).sort()}}getResourceNodesForMapNode(e){return this.state.resourcesByNode[e]?.nodes||[]}hasArmy(){return Array.isArray(this.state.activeExpeditions)&&this.state.activeExpeditions.length>0}getState(){return this.state}};function q(){if(typeof window>`u`)return;let e=window;e.ModalShellCore={createModalShell:a,modalStack:t},e.UI=_,e.LineageFamilyUI={open:e=>C.open(e),close:()=>C.close(),setFilter:e=>C.setFilter(e),proposeMarriage:e=>C.proposeMarriage(e),restCohabit:e=>C.restCohabit(e),assignRole:(e,t)=>C.assignRole(e,t),designateHeir:e=>C.designateHeir(e),assignMentorDialog:e=>C.assignMentorDialog(e),executeSuccession:()=>C.executeSuccession()},e.EquipmentUI={openEquipmentModal:(e,t)=>D.open(e,t),closeEquipmentModal:()=>D.close(),switchTab:e=>D.modal.switchTab(e),equip:(e,t,n)=>D.equip(e,t,n),unequip:(e,t)=>D.unequip(e,t),executeForge:()=>D.executeForge()},e.EnterpriseUI={openEnterpriseModal:e=>j.open(e),closeEnterpriseModal:()=>j.close(),depositSafeCash:e=>j.depositSafeCash(e),withdrawSafeCash:e=>j.withdrawSafeCash(e),executeWork:e=>j.executeWork(e)},e.ProtagonistDossierModal={open:()=>F.openProtagonist(),close:()=>F.closeProtagonist()},e.NpcDossierModal={open:e=>F.openNpc(e),close:()=>F.closeNpc()},e.QuickTradeModal={open:(e,t,n,r)=>L.open(e,t,n,r),close:()=>L.close(),updateTotal:()=>L.updateTotal(),submit:()=>L.submit()},e.TacticalBattleUI={startDuel:e=>B.startDuel(e),close:()=>B.close(),executeAction:e=>B.executeAction(e)},e.TravelTransitUI={show:(e,t,n,r)=>H.showTravelTransit(e,t,n,r),close:()=>H.closeTravel(),openLegacy:()=>H.openTravelTransitModal(),closeLegacy:()=>H.closeTravelTransitModal()},e.TurnAdvanceUI={show:(e,t,n)=>H.showTurnAdvance(e,t,n),close:()=>H.closeTurn(),openLegacy:()=>H.openTurnAdvanceModal(),closeLegacy:()=>H.closeTurnAdvanceModal()},e.WorldMapUI={open:()=>W.open(),close:()=>W.close()},e.MapLiveService={load:(e=!1)=>K.load(e),getForMapNode:e=>K.getForMapNode(e),getStatusForMapNode:e=>K.getStatusForMapNode(e),getThreatForMapNode:e=>K.getThreatForMapNode(e),findNpcByName:e=>K.findNpcByName(e),findSpecialistByName:e=>K.findSpecialistByName(e),getSpecialistsForMapNode:e=>K.getSpecialistsForMapNode(e),getLocIdForNode:e=>K.getLocIdForNode(e),getRecruitRequirement:e=>K.getRecruitRequirement(e),getActionRequirements:()=>K.getActionRequirements(),getRoute:(e,t)=>K.getRoute(e,t),getLivingEntities:()=>K.getLivingEntities(),getResourceDistribution:()=>K.getResourceDistribution(),getResourceNodesForMapNode:e=>K.getResourceNodesForMapNode(e),resolveMapNodeId:e=>K.resolveMapNodeId(e),hasArmy:()=>K.hasArmy(),getState:()=>K.getState(),ALIASES:K.ALIASES},console.log(`[ThreeKingdoms-AgentEngine] All 14 client feature slices successfully bridged to window.*`)}var J=new class{handlers=new Map;on(e,t){return this.handlers.has(e)||this.handlers.set(e,new Set),this.handlers.get(e).add(t),()=>{this.off(e,t)}}off(e,t){let n=this.handlers.get(e);n&&(n.delete(t),n.size===0&&this.handlers.delete(e))}emit(e,t){let n=this.handlers.get(e);n&&n.forEach(n=>{try{n(t)}catch(t){console.error(`[EventBus] Error handling event ${e}:`,t)}})}},Y=class e{static instance;static getInstance(){return e.instance||=new e,e.instance}async getCaravans(){return(await y.get(`/api/logistics/caravans`)).caravans||[]}async getArbitrageOpportunities(){return(await y.get(`/api/economy/arbitrage`)).routes||[]}async dispatchCaravan(e){return y.post(`/api/caravans/dispatch`,{cargoItemCode:e.commodityCode,cargoQuantity:e.quantity,fromSettlementId:e.originSettlementId,toSettlementId:e.destSettlementId,guardTier:e.escortLevel})}},X=Y.getInstance(),Z=class{modal;caravans=[];routes=[];constructor(){this.modal=a({id:`caravan-modal`,title:`Thương Đoàn Viễn Chinh & Trục Vận Chuyển`,subtitle:`Thiết lập tuyến buôn liên châu, kinh doanh chênh lệch giá và thuê hộ tiêu áp tải`,seal:`商`,size:`xl`,tabs:[{id:`active`,label:`Thương Đoàn Đang Chạy`,seal:`運`},{id:`arbitrage`,label:`Thương Cơ & Chênh Lệch Giá`,seal:`漲`},{id:`dispatch`,label:`Xuất Tiêu Khai Tuyến`,seal:`旗`}],activeTabId:`active`,onOpen:async()=>{await this.refreshData(),await this.renderActiveTab()},onTabChange:async()=>{await this.renderActiveTab()}})}async open(e=`active`){await this.modal.open(e)}async close(){await this.modal.close()}async refreshData(){try{let[e,t]=await Promise.all([X.getCaravans().catch(()=>[]),X.getArbitrageOpportunities().catch(()=>[])]);this.caravans=e,this.routes=t,this.modal.updateTabBadge(`active`,e.length>0?e.length:void 0)}catch(e){console.error(`[CaravanLogisticsModal] Error refreshing data:`,e)}}async renderActiveTab(){switch(this.modal.activeTab||`active`){case`active`:this.renderActiveTabContent();break;case`arbitrage`:this.renderArbitrageTabContent();break;case`dispatch`:this.renderDispatchTabContent()}}renderActiveTabContent(){let e=`
+    `),await this.turnModal.open()}async closeTurn(){await this.turnModal.close()}async openTurnAdvanceModal(){await this.turnModal.open()}async closeTurnAdvanceModal(){await this.turnModal.close()}},z=new R;function B(){return window.currentLang===`en`}function V(e){return String(e??``).replace(/&/g,`&amp;`).replace(/</g,`&lt;`).replace(/>/g,`&gt;`).replace(/"/g,`&quot;`)}function se(e){if(!e||typeof e!=`object`)return``;let t=[];if(e.cash&&t.push(`+${e.cash} Quan`),e.fame&&t.push(`+${e.fame} ${B()?`fame`:`danh vọng`}`),e.exp)for(let[n,r]of Object.entries(e.exp))r&&t.push(`+${r} ${String(n).toUpperCase()} EXP`);if(Array.isArray(e.items))for(let n of e.items)t.push(`${n.quantity}× ${n.code}`);return t.join(` • `)}var H=new class{modal;constructor(){this.modal=a({id:`quest-modal`,title:`Nhật Ký Nhiệm Vụ`,subtitle:`Nhiệm vụ theo từng phẩm lộ, dữ liệu lấy từ DB`,seal:`任`,size:`md`})}async open(){await this.modal.open(),await this.refresh(null)}async close(){await this.modal.close()}async load(){let e=await(await fetch(`/api/quests`)).json();if(!e.success)throw Error(e.error||`Quest log failed`);return e.quests||[]}async loadFarm(){let e=await(await fetch(`/api/farm/parcels`)).json();if(!e.success)throw Error(e.error||`Farm board failed`);return{settlementId:e.settlementId||``,season:e.season||``,parcels:e.parcels||[],summary:e.summary||{idle:0,leased:0,growing:0,nextHarvest:null}}}async loadIntel(){let e=await(await fetch(`/api/intel`)).json();if(!e.success)throw Error(e.error||`Intel board failed`);return e.reports||[]}async loadContracts(){let e=await(await fetch(`/api/contracts`)).json();if(!e.success)throw Error(e.error||`Contract board failed`);return{settlementId:e.settlementId||``,offers:e.offers||[],contracts:e.contracts||[],summary:e.summary||{active:0,overdue:0,rewardAtRisk:0}}}async loadObligations(){let e=await(await fetch(`/api/obligations`)).json();if(!e.success)throw Error(e.error||`Obligation log failed`);return{obligations:e.obligations||[],summary:e.summary||{dueCount:0,overdueCount:0,totalCashDue:0,totalGrainDue:0,nextDueDate:null}}}async refresh(e){try{let[t,n,r,i,a]=await Promise.all([this.load(),this.loadObligations().catch(()=>({obligations:[],summary:{dueCount:0,overdueCount:0,totalCashDue:0,totalGrainDue:0,nextDueDate:null}})),this.loadContracts().catch(()=>({settlementId:``,offers:[],contracts:[],summary:{active:0,overdue:0,rewardAtRisk:0}})),this.loadIntel().catch(()=>[]),this.loadFarm().catch(()=>({settlementId:``,season:``,parcels:[],summary:{idle:0,leased:0,growing:0,nextHarvest:null}}))]);this.modal.setContent(this.render(t,n.obligations,n.summary,r,i,a,e))}catch(e){this.modal.setContent(`<div class="quest-empty">${V(e.message)}</div>`)}}async accept(e){try{let t=await(await fetch(`/api/quests/accept`,{method:`POST`,headers:{"Content-Type":`application/json`},body:JSON.stringify({questId:e})})).json();if(!t.success)throw Error(t.error||`Accept failed`);await this.refresh(null)}catch(e){window.showToast?.(e.message,!0)}}async advance(e){try{let t=await(await fetch(`/api/quests/advance`,{method:`POST`,headers:{"Content-Type":`application/json`},body:JSON.stringify({questId:e})})).json();if(!t.success)throw Error(t.error||`Advance failed`);await this.refresh(t.result),window.loadStatus?.()}catch(e){window.showToast?.(e.message,!0)}}async payObligation(e){try{let t=await(await fetch(`/api/obligations/pay`,{method:`POST`,headers:{"Content-Type":`application/json`},body:JSON.stringify({obligationId:e})})).json();if(!t.success)throw Error(t.error||`Payment failed`);await this.refresh(null),window.loadStatus?.()}catch(e){window.showToast?.(e.message,!0)}}async acceptContract(e){try{let t=await(await fetch(`/api/contracts/accept`,{method:`POST`,headers:{"Content-Type":`application/json`},body:JSON.stringify({offerId:e})})).json();if(!t.success)throw Error(t.error||`Accept contract failed`);await this.refresh(null)}catch(e){window.showToast?.(e.message,!0)}}async rentFarm(e){try{let t=await(await fetch(`/api/farm/rent`,{method:`POST`,headers:{"Content-Type":`application/json`},body:JSON.stringify({parcelId:e})})).json();if(!t.success)throw Error(t.error||`Rent failed`);await this.refresh(null),window.loadStatus?.()}catch(e){window.showToast?.(e.message,!0)}}async plantCrop(e,t){try{let n=await(await fetch(`/api/farm/plant`,{method:`POST`,headers:{"Content-Type":`application/json`},body:JSON.stringify({parcelId:e,cropCode:t})})).json();if(!n.success)throw Error(n.error||`Plant failed`);await this.refresh(null),window.loadStatus?.()}catch(e){window.showToast?.(e.message,!0)}}async harvestFarm(e){try{let t=await(await fetch(`/api/farm/harvest`,{method:`POST`,headers:{"Content-Type":`application/json`},body:JSON.stringify({parcelId:e})})).json();if(!t.success)throw Error(t.error||`Harvest failed`);await this.refresh(null),window.loadStatus?.()}catch(e){window.showToast?.(e.message,!0)}}async verifyIntel(e){try{let t=await(await fetch(`/api/intel/verify`,{method:`POST`,headers:{"Content-Type":`application/json`},body:JSON.stringify({reportId:e})})).json();if(!t.success)throw Error(t.error||`Verify intel failed`);await this.refresh(null),window.loadStatus?.()}catch(e){window.showToast?.(e.message,!0)}}async deliverContract(e){try{let t=await(await fetch(`/api/contracts/deliver`,{method:`POST`,headers:{"Content-Type":`application/json`},body:JSON.stringify({contractId:e})})).json();if(!t.success)throw Error(t.error||`Deliver contract failed`);await this.refresh(null),window.loadStatus?.()}catch(e){window.showToast?.(e.message,!0)}}renderContracts(e,t){let n=e.offers||[],r=(e.contracts||[]).filter(e=>e.status===`ACTIVE`);if(n.length===0&&r.length===0)return`<div class="quest-empty">${t?`No contracts posted.`:`Chưa có hợp đồng.`}</div>`;let i=t?`Contracts • ${e.settlementId} • ${r.length} active`:`Hợp đồng • ${e.settlementId} • ${r.length} đang chạy`,a=n.map(e=>`
+      <div class="quest-item">
+        <div class="quest-head">
+          <div>
+            <div class="quest-title">${V(t?e.itemNameEn:e.itemNameVi)} × ${e.quantity}</div>
+            <div class="quest-path">${V(e.rewardCash)} Quan • +${e.rewardFame} ${t?`fame`:`danh vọng`} • ${t?`by`:`hạn`} ${V(e.expiresDate)}</div>
+          </div>
+          <button class="quest-action" onclick="QuestUI.acceptContract('${V(e.offerId)}')">${t?`Accept`:`Nhận`}</button>
+        </div>
+        <div class="quest-desc">${V(t?e.narrativeEn:e.narrativeVi)}</div>
+      </div>
+    `).join(``),o=r.map(e=>{let n=e.haveQuantity>=e.quantity,r=e.daysRemaining<0;return`
+        <div class="quest-item">
+          <div class="quest-head">
+            <div>
+              <div class="quest-title">${V(t?e.itemNameEn:e.itemNameVi)} ${e.haveQuantity}/${e.quantity}</div>
+              <div class="quest-path">${V(e.rewardCash)} Quan • ${t?`due`:`hạn`} ${V(e.dueDate)}${r?` • ${t?`late`:`quá hạn`}`:``}</div>
+            </div>
+            <button class="quest-action ${n?`is-primary`:``}" onclick="QuestUI.deliverContract('${V(e.contractId)}')">${t?`Deliver`:`Giao`}</button>
+          </div>
+        </div>
+      `}).join(``);return`
+      <div class="quest-section">
+        <div class="quest-section-title">${V(i)}</div>
+        ${o}${a}
+      </div>
+    `}renderFarm(e,t){if(!e.parcels||e.parcels.length===0)return`<div class="quest-empty">${t?`No farmland here.`:`Không có ruộng ở đây.`}</div>`;let n=e.parcels.map(e=>{let n=t?e.nameEn:e.nameVi,r=``;if(e.status===`IDLE`)r=`<button class="quest-action" onclick="QuestUI.rentFarm('${V(e.parcelId)}')">${t?`Rent`:`Thuê`} (${e.rentCash} Quan)</button>`;else if(e.status===`LEASED`){let n=(e.availableCrops||[]).filter(e=>e.inSeason);r=n.length>0?n.map(n=>`<button class="quest-action" onclick="QuestUI.plantCrop('${V(e.parcelId)}','${V(n.cropCode)}')">${t?`Plant ${n.nameEn}`:`Trồng ${n.nameVi}`}</button>`).join(` `):`<span class="quest-badge">${t?`Out of season`:`Trái mùa`}</span>`}else e.status===`GROWING`&&e.crop&&(r=`<button class="quest-action ${e.crop.daysRemaining<=0?`is-primary`:``}" onclick="QuestUI.harvestFarm('${V(e.parcelId)}')">${t?`Harvest`:`Thu hoạch`}</button>`);let i=e.crop?`${V(e.crop.nameVi)} • ${t?`harvest`:`thu`} ${V(e.crop.harvestDate)} • ${e.crop.daysRemaining}${t?`d`:` ngày`} • ${t?`yield`:`dự kiến`} ${e.crop.expectedYield}`:`${e.areaMu} ${t?`mu`:`mẫu`} • ${t?`soil`:`đất`} ${e.soilQuality.toFixed(2)} • ${t?`rent`:`tô`} ${e.rentCash} Quan${(e.rentDiscount||0)>0?` (-${e.rentDiscount}%)`:``}`;return`
+        <div class="quest-item">
+          <div class="quest-head">
+            <div>
+              <div class="quest-title">${V(n)}</div>
+              <div class="quest-path">${i}</div>
+            </div>
+            ${r}
+          </div>
+        </div>
+      `}).join(``);return`
+      <div class="quest-section">
+        <div class="quest-section-title">${t?`Farmland • ${e.season} • ${e.summary.growing} growing`:`Nông Trại • ${e.season} • ${e.summary.growing} vụ`}</div>
+        ${n}
+      </div>
+    `}renderIntel(e,t){if(!e||e.length===0)return`<div class="quest-empty">${t?`No reports this month.`:`Không có tin đồn tháng này.`}</div>`;let n=e.map(e=>{let n=e.subjectType===`PRICE`?t?`${e.claim.price} quan`:`${e.claim.price} Quan`:t?`${e.claim.troops} troops`:`${e.claim.troops} binh`;return`
+        <div class="quest-item">
+          <div class="quest-head">
+            <div>
+              <div class="quest-title">${V(e.subjectName)}</div>
+              <div class="quest-path">${V(e.subjectType)} • ${V(n)} • ${V(e.source)} • ${V(e.confidenceLabel)}</div>
+            </div>
+            <button class="quest-action" onclick="QuestUI.verifyIntel('${V(e.reportId)}')">${t?`Verify (${e.verificationDays}d)`:`Xác minh (${e.verificationDays} ngày)`}</button>
+          </div>
+          <div class="quest-path">${t?`Expires`:`Hết hạn`} ${V(e.expiresDate)}</div>
+        </div>
+      `}).join(``);return`
+      <div class="quest-section">
+        <div class="quest-section-title">${t?`Intel • ${e.length} reports`:`Tin đồn • ${e.length} báo cáo`}</div>
+        ${n}
+      </div>
+    `}renderObligations(e,t,n){let r=e.filter(e=>e.status===`DUE`||e.status===`OVERDUE`);if(r.length===0)return`<div class="quest-empty">${n?`No obligations due.`:`Không có nghĩa vụ đến hạn.`}</div>`;let i=n?`Obligations • ${t.totalCashDue} quan due${t.overdueCount?` • ${t.overdueCount} overdue`:``}`:`Nghĩa vụ • ${t.totalCashDue} Quan đến hạn${t.overdueCount?` • ${t.overdueCount} quá hạn`:``}`,a=r.map(e=>{let t=e.status===`OVERDUE`,r=t?n?`Overdue`:`Quá hạn`:n?`Due`:`Đến hạn`,i=t?n?`${Math.abs(e.daysRemaining)} days late`:`Trễ ${Math.abs(e.daysRemaining)} ngày`:n?`${e.daysRemaining} days left`:`Còn ${e.daysRemaining} ngày`,a=e.amountGrain>0?`${e.amountCash} Quan + ${e.amountGrain} ${n?`piculs`:`Thạch`}`:`${e.amountCash} Quan`;return`
+        <div class="quest-item">
+          <div class="quest-head">
+            <div>
+              <div class="quest-title">${V((n?e.narrativeEn:e.narrativeVi)||e.type)}</div>
+              <div class="quest-path">${V(e.type)} • ${V(e.dueDate)} • ${V(i)}</div>
+            </div>
+            <button class="quest-action ${t?`is-primary`:``}" onclick="QuestUI.payObligation('${V(e.obligationId)}')">${n?`Pay`:`Nộp`}</button>
+          </div>
+          <div class="quest-meta">${V(a)}</div>
+          <div class="quest-path"><span class="quest-badge">${r}</span></div>
+        </div>
+      `}).join(``);return`
+      <div class="quest-section">
+        <div class="quest-section-title">${V(i)}</div>
+        ${a}
+      </div>
+    `}render(e,t,n,r,i,a,o){let s=B(),c=o?`
+      <div class="quest-result ${o.success?`is-success`:`is-failure`}">
+        <strong>${o.success?s?`Step succeeded`:`Bước thành công`:s?`Step failed`:`Bước thất bại`}</strong>
+        <div>${V(s?o.narrativeEn:o.narrative)}</div>
+        <div class="quest-meta">D20 ${o.roll} + ${o.mod} = ${o.total} / DC ${o.dc}</div>
+        <div class="quest-meta">${V(se(o.rewards||{}))}</div>
+      </div>
+    `:``,l=e.map(e=>{let t=e.status===`COMPLETED`?s?`Completed`:`Đã hoàn thành`:e.status===`ACTIVE`?s?`Active`:`Đang làm`:s?`Available`:`Có thể nhận`,n=e.steps.map(t=>`
+        <div class="quest-step ${t.index<e.currentStep?`is-done`:t.index===e.currentStep&&e.status===`ACTIVE`?`is-current`:``}">
+          <span class="quest-step-index">${t.index+1}</span>
+          <span class="quest-step-title">${V(s?t.titleEn:t.titleVi)}</span>
+          <span class="quest-step-check">${V(String(t.stat).toUpperCase())} DC ${t.dc} • ${t.daysCost}${s?`d`:` ngày`}</span>
+        </div>
+      `).join(``),r=e.status===`AVAILABLE`?`<button class="quest-action" onclick="QuestUI.accept('${V(e.questId)}')">${s?`Accept`:`Nhận nhiệm vụ`}</button>`:e.status===`ACTIVE`?`<button class="quest-action is-primary" onclick="QuestUI.advance('${V(e.questId)}')">${s?`Advance step ${e.currentStep+1}`:`Thực hiện bước ${e.currentStep+1}`}</button>`:`<span class="quest-badge">${s?`Completed`:`Hoàn thành`}</span>`;return`
+        <div class="quest-item">
+          <div class="quest-head">
+            <div>
+              <div class="quest-title">${V(s?e.titleEn:e.titleVi)}</div>
+              <div class="quest-path">${V(e.pathCode)} • ${t}</div>
+            </div>
+            ${r}
+          </div>
+          <div class="quest-desc">${V(s?e.descriptionEn:e.descriptionVi)}</div>
+          <div class="quest-steps">${n}</div>
+        </div>
+      `}).join(``);return`<div class="quest-body">${c}${this.renderObligations(t,n,s)}${this.renderContracts(r,s)}${this.renderFarm(a,s)}${this.renderIntel(i,s)}${l||`<div class="quest-empty">${s?`No quests available.`:`Chưa có nhiệm vụ.`}</div>`}</div>`}},U=class e{static instance;static getInstance(){return e.instance||=new e,e.instance}async getStall(e=`PLY-0001`){return(await y.get(`/api/stall`,{characterId:e})).stall||null}async getOffers(e){return(await y.get(`/api/market/npc-offers`,e?{settlementId:e}:void 0)).offers||[]}async getWarehouses(){return(await y.get(`/api/warehouses`,{characterId:`PLY-0001`})).warehouses||[]}async rentWarehouse(e){return y.post(`/api/warehouses/rent`,{settlementId:e,idempotencyKey:`warehouse-rent-${Date.now()}`})}async buyWarehouse(e){return y.post(`/api/warehouses/buy`,{settlementId:e,idempotencyKey:`warehouse-buy-${Date.now()}`})}async deposit(e,t,n){return y.post(`/api/warehouses/deposit`,{warehouseId:e,itemCode:t,quantity:n,idempotencyKey:`warehouse-deposit-${Date.now()}`})}async withdraw(e,t,n){return y.post(`/api/warehouses/withdraw`,{warehouseId:e,itemCode:t,quantity:n,idempotencyKey:`warehouse-withdraw-${Date.now()}`})}async renewWarehouse(e){return y.post(`/api/warehouses/renew`,{warehouseId:e,idempotencyKey:`warehouse-renew-${e}-${Date.now()}`})}async openStall(e){return y.post(`/api/stall/open`,{settlementId:e,idempotencyKey:`stall-open-${Date.now()}`})}async listItem(e,t,n,r=`BAG`,i,a){return y.post(`/api/stall/list`,{itemCode:e,quantity:t,unitPrice:n,source:r,warehouseId:i,stallId:a,idempotencyKey:`stall-list-${e}-${Date.now()}`})}async closeStall(e){return y.post(`/api/stall/close`,{stallId:e,idempotencyKey:`stall-close-${Date.now()}`})}async buyOffer(e,t){return y.post(`/api/market/npc-offers/buy`,{offerId:e,quantity:t,idempotencyKey:`offer-buy-${e}-${Date.now()}`})}async getFreightContracts(e){return(await y.get(`/api/freight/contracts`,e?{settlementId:e}:void 0)).contracts||[]}async getFreightShipments(){return(await y.get(`/api/freight/shipments`)).shipments||[]}async acceptFreight(e,t=`VETERAN`,n=!1){return y.post(`/api/freight/accept`,{contractId:e,guardTier:t,insurance:n,idempotencyKey:`freight-accept-${e}-${Date.now()}`})}async deliverFreight(e){return y.post(`/api/freight/deliver`,{shipmentId:e,idempotencyKey:`freight-deliver-${e}-${Date.now()}`})}async getMerchantRoutes(){return(await y.get(`/api/merchant/routes`)).routes||[]}async getMerchantEvents(){return(await y.get(`/api/merchant/events`)).events||[]}async createMerchantRoute(e){return y.post(`/api/merchant/routes`,{...e,idempotencyKey:`merchant-route-create-${e.fromWarehouseId}-${e.toWarehouseId}-${Date.now()}`})}async setMerchantRouteStatus(e,t){return y.post(`/api/merchant/routes/${e}/status`,{status:t,idempotencyKey:`merchant-route-${e}-${t}-${Date.now()}`})}}.getInstance();function W(e){return String(e??``).replace(/&/g,`&amp;`).replace(/</g,`&lt;`).replace(/>/g,`&gt;`).replace(/"/g,`&quot;`)}function G(e,t=!1){typeof window.showToast==`function`&&window.showToast(e,t)}var K=new class{modal;stall=null;offers=[];warehouses=[];freightContracts=[];freightShipments=[];merchantRoutes=[];merchantEvents=[];constructor(){this.modal=a({id:`market-stall-modal`,title:`Chợ & Quầy Bán`,subtitle:`Niêm yết hàng cho NPC trong thành và mua lại hàng NPC đang bán`,seal:`市`,size:`lg`,tabs:[{id:`stall`,label:`Quầy Của Ta`,seal:`攤`},{id:`offers`,label:`Hàng NPC Bán`,seal:`貨`},{id:`warehouse`,label:`Kho Thành`,seal:`倉`},{id:`logistics`,label:`Vận Chuyển`,seal:`運`}],activeTabId:`stall`,onOpen:async()=>{await this.refresh(),this.render()},onTabChange:async()=>{this.render()}})}async open(e=`stall`){await this.modal.open(e)}async close(){await this.modal.close()}async refresh(){this.stall=await U.getStall(`PLY-0001`),this.offers=await U.getOffers(this.stall?.settlementId),this.warehouses=await U.getWarehouses();let[e,t,n,r]=await Promise.all([U.getFreightContracts(this.stall?.settlementId).catch(()=>[]),U.getFreightShipments().catch(()=>[]),U.getMerchantRoutes().catch(()=>[]),U.getMerchantEvents().catch(()=>[])]);this.freightContracts=e,this.freightShipments=t,this.merchantRoutes=n,this.merchantEvents=r}render(){let e=this.modal.activeTab||`stall`;e===`offers`?this.modal.setContent(this.renderOffers()):e===`warehouse`?this.modal.setContent(this.renderWarehouses()):e===`logistics`?this.modal.setContent(this.renderLogistics()):this.modal.setContent(this.renderStall()),this.bind()}renderStall(){if(!this.stall)return`
+        <div class="journal-modal-content">
+          <div class="spatial-banner-lead">
+            <div class="lead-seal">市</div>
+            <div class="lead-text">
+              <h3>Chưa Có Quầy</h3>
+              <div class="text-muted text-sm">Mở quầy tại thành đang đứng (phí 20 Quan) để NPC trong thành mua hàng mỗi ngày.</div>
+            </div>
+          </div>
+          <button class="ui-btn ui-btn--primary" data-stall-action="open">Mở Quầy</button>
+        </div>
+      `;let e=this.stall.listings.length>0?this.stall.listings.map(e=>{let t=e.marketPrice>0?Math.round((e.unitPrice/e.marketPrice-1)*100):0;return`
+          <div class="flex justify-between items-center text-[11px] border-b border-slate-800 py-1.5">
+            <span class="text-slate-200">${W(e.itemNameVi)} × ${e.quantity}</span>
+            <span class="font-mono text-amber-300">${e.unitPrice} Quan (${t>=0?`+`:``}${t}% chợ)</span>
+          </div>
+        `}).join(``):`<div class="text-muted text-xs">Quầy chưa có hàng.</div>`,t=this.stall.recentSales.length>0?this.stall.recentSales.map(e=>`
+        <div class="flex justify-between text-[11px] py-1">
+          <span class="text-slate-300">${W(e.npcNameVi)} mua ${e.quantity} ${W(e.itemCode)}</span>
+          <span class="font-mono text-green-400">+${e.totalCash} Quan</span>
+        </div>
+      `).join(``):`<div class="text-muted text-xs">Chưa có giao dịch.</div>`;return`
+      <div class="journal-modal-content">
+        <div class="spatial-banner-lead">
+          <div class="lead-seal">攤</div>
+          <div class="lead-text">
+            <h3>${W(this.stall.nameVi)}</h3>
+            <div class="text-muted text-sm">${W(this.stall.settlementId)} • Hàng đang bán: ${this.stall.listings.length} • NPC sẽ mua mỗi ngày nếu giá ≤ 115% giá chợ.</div>
+          </div>
+        </div>
+
+        <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800 mb-3">
+          <div class="text-xs font-bold text-amber-200 mb-2">Niêm Yết Hàng</div>
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-2 text-[11px]">
+            <input id="stall-item-code" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200" placeholder="Mã hàng, vd COM-GRAIN" value="COM-GRAIN" />
+            <input id="stall-item-qty" type="number" min="1" step="1" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200" value="5" />
+            <input id="stall-item-price" type="number" min="1" step="1" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200" value="50" />
+            <button class="ui-btn ui-btn--primary ui-btn--sm" data-stall-action="list">Niêm Yết</button>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-[11px] mt-2">
+            <input id="stall-source" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200" value="BAG" placeholder="BAG hoặc WAREHOUSE" />
+            <input id="stall-warehouse" list="stall-warehouse-list" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200" placeholder="Mã kho (nếu lấy từ kho)" />
+            <datalist id="stall-warehouse-list">
+              ${this.warehouses.filter(e=>e.settlementId===this.stall?.settlementId).map(e=>`<option value="${W(e.warehouseId)}">${W(e.nameVi)} (${e.usedCapacity}/${e.capacity})</option>`).join(``)}
+            </datalist>
+          </div>
+          <div class="text-muted text-[10px] mt-1">Giá thấp hơn 115% giá chợ thì NPC mua nhanh hơn; giá quá cao sẽ không có người mua.</div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800">
+            <div class="text-xs font-bold text-amber-200 mb-2">Hàng Đang Bán</div>
+            ${e}
+            <button class="ui-btn ui-btn--ghost ui-btn--sm mt-2" data-stall-action="close">Đóng Quầy & Trả Hàng</button>
+          </div>
+          <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800">
+            <div class="text-xs font-bold text-amber-200 mb-2">Giao Dịch Gần Đây</div>
+            ${t}
+          </div>
+        </div>
+      </div>
+    `}renderWarehouses(){return`
+      <div class="journal-modal-content">
+        <div class="spatial-banner-lead">
+          <div class="lead-seal">倉</div>
+          <div class="lead-text">
+            <h3>Kho Theo Thành</h3>
+            <div class="text-muted text-sm">Kho tách khỏi túi nhân. Thuê 300 Quan / 90 ngày; mua 2.000 Quan.</div>
+          </div>
+        </div>
+        <div class="flex gap-2 mb-3">
+          <button class="ui-btn ui-btn--primary ui-btn--sm" data-warehouse-action="rent">Thuê kho tại thành hiện tại</button>
+          <button class="ui-btn ui-btn--ghost ui-btn--sm" data-warehouse-action="buy">Mua kho tại thành hiện tại</button>
+        </div>
+        ${this.warehouses.length>0?this.warehouses.map(e=>`
+        <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800 mb-2">
+          <div class="flex justify-between items-center">
+            <div>
+              <div class="text-sm font-bold text-slate-200">${W(e.nameVi)} • ${W(e.ownershipType)}</div>
+              <div class="text-[11px] text-muted">${W(e.settlementId)} • ${e.usedCapacity}/${e.capacity} • ${e.status}${e.leaseUntil?` • hết hạn ${W(e.leaseUntil)}`:``}</div>
+            </div>
+            <div class="flex gap-1">
+              ${e.ownershipType===`RENTED`?`<button class="ui-btn ui-btn--primary ui-btn--sm" data-warehouse-action="renew" data-warehouse-id="${W(e.warehouseId)}" title="Cộng thêm 90 ngày từ hạn hiện tại">Gia hạn</button>`:``}
+              <button class="ui-btn ui-btn--ghost ui-btn--sm" data-warehouse-action="withdraw" data-warehouse-id="${W(e.warehouseId)}">Rút hàng</button>
+            </div>
+          </div>
+        </div>
+      `).join(``):`<div class="text-muted text-sm mb-2">Chưa có kho. Thuê kho tại thành đang đứng để mở kho địa phương.</div>`}
+        <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800">
+          <div class="text-xs font-bold text-amber-200 mb-2">Nạp / Rút Kho</div>
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-2 text-[11px]">
+            <input id="warehouse-id" list="warehouse-id-list" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200" placeholder="Mã kho" />
+            <datalist id="warehouse-id-list">
+              ${this.warehouses.map(e=>`<option value="${W(e.warehouseId)}">${W(e.nameVi)}</option>`).join(``)||`<option value="">Chưa có kho</option>`}
+            </datalist>
+            <input id="warehouse-item" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200" value="COM-GRAIN" placeholder="Mã hàng" />
+            <input id="warehouse-qty" type="number" min="1" step="1" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200" value="10" />
+            <div class="flex gap-2">
+              <button class="ui-btn ui-btn--primary ui-btn--sm flex-1" data-warehouse-action="deposit">Nạp</button>
+              <button class="ui-btn ui-btn--ghost ui-btn--sm flex-1" data-warehouse-action="withdraw-form">Rút</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `}renderOffers(){return this.offers.length===0?`<div class="journal-modal-content"><div class="text-muted text-sm">Thành này chưa có NPC nào đăng bán. Hãy đi sang ngày khác hoặc tới thành khác.</div></div>`:`
+      <div class="journal-modal-content">
+        <div class="spatial-banner-lead">
+          <div class="lead-seal">貨</div>
+          <div class="lead-text">
+            <h3>Hàng NPC Đang Bán</h3>
+            <div class="text-muted text-sm">Giá dao động 85%–125% quanh giá chợ địa phương. Mua xong hàng vào kho, NPC nhận tiền.</div>
+          </div>
+        </div>
+        <div class="space-y-2">
+          ${this.offers.map(e=>`
+            <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800 flex justify-between items-center gap-3">
+              <div>
+                <div class="text-sm font-bold text-slate-200">${W(e.itemNameVi)} × ${e.quantity}</div>
+                <div class="text-[11px] text-muted">${W(e.npcNameVi)} • ${e.unitPrice} Quan (${e.priceDeltaPct>=0?`+`:``}${e.priceDeltaPct}% chợ) • hết hạn ${W(e.expiresDate)}</div>
+              </div>
+              <button class="ui-btn ui-btn--primary ui-btn--sm" data-offer-buy="${W(e.offerId)}">Mua 1</button>
+            </div>
+          `).join(``)}
+        </div>
+      </div>
+    `}renderLogistics(){let e=this.freightContracts.length>0?this.freightContracts.map(e=>`
+        <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800 mb-2">
+          <div class="flex justify-between items-start gap-3">
+            <div>
+              <div class="text-sm font-bold text-slate-200">${W(e.itemCode)} × ${e.quantity}</div>
+              <div class="text-[11px] text-muted">${W(e.fromSettlementId)} → ${W(e.toSettlementId)} • thưởng ${e.rewardCash} Quan • còn ${e.daysLeft} ngày • đi ${e.travelDays} ngày</div>
+            </div>
+            <label class="text-[10px] text-slate-300 flex items-center gap-1">
+              <input type="checkbox" data-freight-insurance="${W(e.contractId)}" /> Bảo hiểm +4%
+            </label>
+          </div>
+          <div class="flex gap-1 mt-2">
+            <button class="ui-btn ui-btn--ghost ui-btn--sm" data-freight-accept data-contract-id="${W(e.contractId)}" data-guard-tier="MILITIA">Dân Dũng</button>
+            <button class="ui-btn ui-btn--primary ui-btn--sm" data-freight-accept data-contract-id="${W(e.contractId)}" data-guard-tier="VETERAN">Thiện Chiến</button>
+            <button class="ui-btn ui-btn--ghost ui-btn--sm" data-freight-accept data-contract-id="${W(e.contractId)}" data-guard-tier="ELITE_RETINUE">Tinh Nhuệ</button>
+          </div>
+        </div>
+      `).join(``):`<div class="text-muted text-sm mb-2">Thành này chưa có hợp đồng vận chuyển.</div>`,t=this.freightShipments.length>0?this.freightShipments.map(e=>`
+        <div class="flex justify-between items-center text-[11px] border-b border-slate-800 py-1.5 gap-2">
+          <div>
+            <div class="text-slate-200">${W(e.itemCode)} × ${e.quantity} • ${W(e.status)}</div>
+            <div class="text-muted">${e.status===`ARRIVED`?`Đã đến đích`:`Còn ${e.daysRemaining} ngày`} • ${W(e.guardTier)}${e.insured?` • có bảo hiểm`:``}${e.ambushLossQuantity>0?` • mất ${e.ambushLossQuantity} do phục kích`:``}</div>
+          </div>
+          ${e.status===`ARRIVED`?`<button class="ui-btn ui-btn--primary ui-btn--sm" data-freight-deliver="${W(e.shipmentId)}">Giao hàng</button>`:``}
+        </div>
+      `).join(``):`<div class="text-muted text-sm mb-2">Không có chuyến hàng đang chạy.</div>`,n=this.merchantRoutes.length>0?this.merchantRoutes.map(e=>{let t=(e.items&&e.items.length>0?e.items:[{itemCode:e.itemCode,quantityPerRun:e.quantityPerRun}]).map(e=>`${W(e.itemCode)}×${e.quantityPerRun}`).join(`, `);return`
+        <div class="flex justify-between items-center text-[11px] border-b border-slate-800 py-1.5 gap-2">
+          <div>
+            <div class="text-slate-200">${W(e.nameVi)} • ${t}</div>
+            <div class="text-muted">${W(e.fromSettlementId)} → ${W(e.toSettlementId)} • ${W(e.status)} • mỗi ${e.frequencyDays} ngày</div>
+          </div>
+          <button class="ui-btn ui-btn--ghost ui-btn--sm" data-route-status data-route-id="${W(e.routeId)}" data-next-status="${e.status===`ACTIVE`?`PAUSED`:`ACTIVE`}">
+            ${e.status===`ACTIVE`?`Tạm Dừng`:`Tiếp Tục`}
+          </button>
+        </div>
+      `}).join(``):`<div class="text-muted text-sm">Chưa có thương lộ tự động.</div>`,r=this.merchantEvents.length>0?this.merchantEvents.slice(0,5).map(e=>`
+        <div class="text-[11px] border-b border-slate-800 py-1">
+          <span class="text-slate-300">${W(e.eventType||e.event_type)}</span>
+          <span class="text-muted"> • ${W(e.gameDate||e.game_date||``)} • ${W(e.itemCode||e.item_code||``)}</span>
+        </div>
+      `).join(``):`<div class="text-muted text-sm">Chưa có biến cố thương lộ.</div>`,i=this.warehouses.map(e=>`<option value="${W(e.warehouseId)}">${W(e.nameVi)} (${W(e.settlementId)})</option>`).join(``),a=this.warehouses.length>=2;return`
+      <div class="journal-modal-content">
+        <div class="spatial-banner-lead">
+          <div class="lead-seal">運</div>
+          <div class="lead-text">
+            <h3>Vận Chuyển & Thương Lộ</h3>
+            <div class="text-muted text-sm">Hợp đồng freight trả phí theo chuyến; thương lộ tự động mua – chở – bán giữa hai kho. Hộ vệ yếu có thể bị ổ phỉ phục kích.</div>
+          </div>
+        </div>
+
+        ${`
+      <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800 mb-3">
+        <div class="text-xs font-bold text-amber-200 mb-2">Mở Thương Lộ Tự Động</div>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-2 text-[11px] mb-2">
+          <select id="route-from" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200">${i}</select>
+          <select id="route-to" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200">${i}</select>
+          <input id="route-freq" type="number" min="1" step="1" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200" value="7" placeholder="Ngày/chuyến" />
+          <select id="route-guard" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200">
+            <option value="MILITIA">Dân Dũng</option>
+            <option value="VETERAN" selected>Thiện Chiến</option>
+            <option value="ELITE_RETINUE">Tinh Nhuệ</option>
+          </select>
+        </div>
+        <div class="route-items-head text-[11px] text-muted mb-1">Mặt hàng · SL/chuyến · Giá mua trần · Giá bán sàn</div>
+        <div id="route-items" class="route-items">
+          <div class="route-item-row">
+            <input data-route-field="item" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200" value="COM-GRAIN" placeholder="Mã hàng" />
+            <input data-route-field="qty" type="number" min="1" step="1" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200" value="10" />
+            <input data-route-field="buy" type="number" min="1" step="1" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200" value="50" placeholder="Mua trần" />
+            <input data-route-field="sell" type="number" min="1" step="1" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200" value="100" placeholder="Bán sàn" />
+            <button class="ui-btn ui-btn--ghost ui-btn--sm" data-route-remove-item title="Xóa mặt hàng">×</button>
+          </div>
+        </div>
+        <button class="ui-btn ui-btn--ghost ui-btn--sm mt-1" data-route-add-item>+ Mặt hàng</button>
+        <div class="flex justify-between items-center mt-2 gap-2">
+          <div class="text-muted text-[11px]">${a?`Kho nguồn và kho đích phải khác thành; giá bán sàn phải cao hơn giá mua trần.`:`Cần ít nhất 2 kho ở hai thành khác nhau.`}</div>
+          <button class="ui-btn ui-btn--primary ui-btn--sm" data-route-create ${a?``:`disabled`}>Mở Thương Lộ</button>
+        </div>
+      </div>
+    `}
+
+        <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800 mb-3">
+          <div class="text-xs font-bold text-amber-200 mb-2">Hợp Đồng Vận Chuyển</div>
+          ${e}
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800">
+            <div class="text-xs font-bold text-amber-200 mb-2">Chuyến Hàng Của Ta</div>
+            ${t}
+          </div>
+          <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800">
+            <div class="text-xs font-bold text-amber-200 mb-2">Thương Lộ Tự Động</div>
+            ${n}
+          </div>
+        </div>
+
+        <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800 mt-3">
+          <div class="text-xs font-bold text-amber-200 mb-2">Biến Cố Gần Đây</div>
+          ${r}
+        </div>
+      </div>
+    `}bind(){let e=this.modal.getBodyElement();if(!e)return;e.querySelectorAll(`[data-stall-action]`).forEach(t=>{t.addEventListener(`click`,async()=>{let n=t.dataset.stallAction;t.setAttribute(`disabled`,`true`);try{if(n===`open`)await U.openStall(),G(`Đã mở quầy.`);else if(n===`list`){let t=e.querySelector(`#stall-item-code`)?.value.trim()||``,n=Number(e.querySelector(`#stall-item-qty`)?.value||0),r=Number(e.querySelector(`#stall-item-price`)?.value||0),i=(e.querySelector(`#stall-source`)?.value||`BAG`).toUpperCase(),a=e.querySelector(`#stall-warehouse`)?.value||void 0;await U.listItem(t,n,r,i,a,this.stall?.stallId),G(`Đã niêm yết ${n} ${t}.`)}else n===`close`&&(await U.closeStall(this.stall?.stallId),G(`Đã đóng quầy và trả hàng về kho.`));await this.refresh(),this.render()}catch(e){t.removeAttribute(`disabled`),G(e.message||`Thao tác quầy thất bại.`,!0)}})}),e.querySelectorAll(`[data-offer-buy]`).forEach(e=>{e.addEventListener(`click`,async()=>{let t=e.dataset.offerBuy||``;e.setAttribute(`disabled`,`true`);try{await U.buyOffer(t,1),G(`Đã mua hàng từ NPC.`),await this.refresh(),this.render()}catch(t){e.removeAttribute(`disabled`),G(t.message||`Mua hàng thất bại.`,!0)}})}),e.querySelectorAll(`[data-warehouse-action]`).forEach(t=>{t.addEventListener(`click`,async()=>{let n=t.dataset.warehouseAction||``,r=t.dataset.warehouseId||e.querySelector(`#warehouse-id`)?.value||``,i=e.querySelector(`#warehouse-item`)?.value.trim()||`COM-GRAIN`,a=Number(e.querySelector(`#warehouse-qty`)?.value||1);t.setAttribute(`disabled`,`true`);try{n===`rent`?(await U.rentWarehouse(),G(`Đã thuê kho tại thành hiện tại.`)):n===`buy`?(await U.buyWarehouse(),G(`Đã mua kho tại thành hiện tại.`)):n===`renew`?G(`Đã gia hạn kho đến ${(await U.renewWarehouse(r))?.result?.leaseUntil||`hạn mới`}.`):n===`deposit`?(await U.deposit(r,i,a),G(`Đã nạp ${a} ${i} vào kho.`)):(await U.withdraw(r,i,a),G(`Đã rút ${a} ${i} khỏi kho.`)),await this.refresh(),this.render()}catch(e){t.removeAttribute(`disabled`),G(e.message||`Thao tác kho thất bại.`,!0)}})}),e.querySelectorAll(`[data-freight-accept]`).forEach(t=>{t.addEventListener(`click`,async()=>{let n=t.dataset.contractId||``,r=t.dataset.guardTier||`VETERAN`,i=e.querySelector(`[data-freight-insurance="${n}"]`)?.checked===!0;t.setAttribute(`disabled`,`true`);try{await U.acceptFreight(n,r,i),G(i?`Đã nhận chuyến và mua bảo hiểm.`:`Đã nhận chuyến hàng.`),await this.refresh(),this.render()}catch(e){t.removeAttribute(`disabled`),G(e.message||`Nhận chuyến thất bại.`,!0)}})}),e.querySelectorAll(`[data-freight-deliver]`).forEach(e=>{e.addEventListener(`click`,async()=>{let t=e.dataset.freightDeliver||``;e.setAttribute(`disabled`,`true`);try{await U.deliverFreight(t),G(`Đã giao hàng và nhận phí vận chuyển.`),await this.refresh(),this.render()}catch(t){e.removeAttribute(`disabled`),G(t.message||`Giao hàng thất bại.`,!0)}})});let t=t=>{t.querySelector(`[data-route-remove-item]`)?.addEventListener(`click`,()=>{e.querySelectorAll(`.route-item-row`).length>1&&t.remove()})};e.querySelectorAll(`.route-item-row`).forEach(t),e.querySelector(`[data-route-add-item]`)?.addEventListener(`click`,()=>{let n=e.querySelector(`#route-items`),r=n?.querySelector(`.route-item-row`);if(!n||!r)return;let i=r.cloneNode(!0);i.querySelectorAll(`input`).forEach(e=>{e.dataset.routeField===`item`&&(e.value=``),e.dataset.routeField===`qty`&&(e.value=`10`),e.dataset.routeField===`buy`&&(e.value=`50`),e.dataset.routeField===`sell`&&(e.value=`100`)}),n.appendChild(i),t(i)}),e.querySelectorAll(`[data-route-create]`).forEach(t=>{t.addEventListener(`click`,async()=>{let n=e.querySelector(`#route-from`)?.value||``,r=e.querySelector(`#route-to`)?.value||``,i=Number(e.querySelector(`#route-freq`)?.value||7),a=e.querySelector(`#route-guard`)?.value||`VETERAN`;if(!n||!r||n===r){G(`Kho nguồn và kho đích phải khác nhau.`,!0);return}let o=Array.from(e.querySelectorAll(`.route-item-row`)).map(e=>{let t=t=>e.querySelector(`[data-route-field="${t}"]`);return{itemCode:t(`item`)?.value.trim()||``,quantityPerRun:Number(t(`qty`)?.value||0),maxBuyPrice:Number(t(`buy`)?.value||0),minSellPrice:Number(t(`sell`)?.value||0)}});if(o.length===0||o.some(e=>!e.itemCode||e.quantityPerRun<=0||e.maxBuyPrice<=0||e.minSellPrice<=e.maxBuyPrice))G(`Kiểm tra từng mặt hàng: mã hàng, số lượng và giá bán sàn > giá mua trần.`,!0);else{t.setAttribute(`disabled`,`true`);try{await U.createMerchantRoute({fromWarehouseId:n,toWarehouseId:r,items:o,frequencyDays:i,guardTier:a}),G(`Đã mở thương lộ tự động.`),await this.refresh(),this.render()}catch(e){t.removeAttribute(`disabled`),G(e.message||`Mở thương lộ thất bại.`,!0)}}})}),e.querySelectorAll(`[data-route-status]`).forEach(e=>{e.addEventListener(`click`,async()=>{let t=e.dataset.routeId||``,n=e.dataset.nextStatus||`PAUSED`;e.setAttribute(`disabled`,`true`);try{await U.setMerchantRouteStatus(t,n),G(n===`ACTIVE`?`Đã tiếp tục thương lộ.`:`Đã tạm dừng thương lộ.`),await this.refresh(),this.render()}catch(t){e.removeAttribute(`disabled`),G(t.message||`Đổi trạng thái thương lộ thất bại.`,!0)}})})}},ce=class{modal;constructor(){this.modal=a({id:`world-map-modal`,title:`Dư Đồ Tam Quốc • Khởi Nghĩa Khăn Vàng (184 SCN)`,subtitle:`Khảo sát 24 châu quận, phân bố thế lực chư hầu và dịch trạm liên thành`,seal:`圖`,size:`xl`,dialogClass:`world-map-dialog`})}async open(){await this.modal.open();let e=window.refreshWorldMapView;typeof e==`function`?e():typeof window.renderWorldMapSvg==`function`&&window.renderWorldMapSvg()}async close(){await this.modal.close()}},le=new ce,ue=class e{static instance;static getInstance(){return e.instance||=new e,e.instance}async get(e){return await y.get(`/api/map/wilderness`,e?{nodeId:e}:void 0)}async travel(e){return y.post(`/api/map/wilderness/travel`,{subLocationId:e,idempotencyKey:`wilderness-travel-${e}-${Date.now()}`})}async gather(e,t=`PLY-0001`){return y.post(`/api/professions/gather`,{characterId:t,nodeId:e,idempotencyKey:`wilderness-gather-${e}-${Date.now()}`})}async getScene(e,t=`PLY-0001`){return y.get(`/api/scene`,{subLocation:e,characterId:t})}async dispatchAction(e){return y.post(`/api/action`,e)}},q=ue.getInstance();function J(e){return String(e??``).replace(/&/g,`&amp;`).replace(/</g,`&lt;`).replace(/>/g,`&gt;`).replace(/"/g,`&quot;`)}function Y(e,t=!1){typeof window.showToast==`function`&&window.showToast(e,t)}var de={mountain:`山`,water:`水`,forest:`林`,lair:`寨`,farm:`田`,wild:`野`},fe=class{modal;view=null;nodeId=null;scene=null;scenePoiName=null;constructor(){this.modal=a({id:`wilderness-map-modal`,title:`Dã Ngoại`,subtitle:`Khảo sát địa hình ngoài thành, điểm tài nguyên và ổ phỉ`,seal:`野`,size:`xl`,onOpen:async()=>{await this.refresh(),this.render()}})}async open(e){this.nodeId=e||null,await this.modal.open()}async close(){await this.modal.close()}async refresh(){this.view=await q.get(this.nodeId||void 0),this.nodeId=this.view.nodeId}render(){if(!this.view){this.modal.setContent(`<div class="journal-modal-content"><div class="text-muted text-sm">Không tải được dã ngoại.</div></div>`),this.bind();return}let{wilderness:e,resources:t,city:n,currentSubLocation:r}=this.view,i=n?.nameVi||this.view.nodeId,a=e.map(e=>this.renderSpot(e,r)),o=t.length,s=this.view.poiScenes.length;this.modal.setContent(`
+      <div class="journal-modal-content">
+        <div class="spatial-banner-lead">
+          <div class="lead-seal">野</div>
+          <div class="lead-text">
+            <h3>${J(i)} • Dã Ngoại</h3>
+            <div class="text-muted text-sm">${e.length} địa danh ngoài thành • ${o} điểm tài nguyên • ${s} POI. Mỗi lần di chuyển tốn 1 ngày và 5 thể lực.</div>
+          </div>
+        </div>
+        <div class="wilderness-map-frame">
+          <svg class="wilderness-map-svg" viewBox="0 0 600 360" role="img" aria-label="Bản đồ dã ngoại ${J(i)}">
+            <rect class="wilderness-map-ground" x="0" y="0" width="600" height="360" rx="8"></rect>
+            <circle class="wilderness-map-ring" cx="300" cy="180" r="130"></circle>
+            <circle class="wilderness-map-ring" cx="300" cy="180" r="72"></circle>
+            <path class="wilderness-map-road" d="M 60 300 C 180 250, 240 200, 300 180 S 460 110, 560 60"></path>
+            ${a.join(``)}
+          </svg>
+        </div>
+        <div class="wilderness-map-legend">
+          <span>Vị trí hiện tại: <strong>${J(r||`Trong thành`)}</strong></span>
+          <span class="text-muted">Chọn một địa danh để đi bộ tới; quay lại thành bằng nút đóng.</span>
+        </div>
+        ${this.renderResourcesPanel(r)}
+        ${this.renderPoiPanel()}
+        ${this.renderScenePanel()}
+      </div>
+    `),this.bind()}isInWilderness(e){return!!e&&(this.view?.wilderness||[]).some(t=>t.nameVi===e)}renderResourcesPanel(e){let t=this.view?.resources||[];if(t.length===0)return``;let n=this.isInWilderness(e);return`
+      <div class="wilderness-action-panel">
+        <div class="flex justify-between items-center gap-3 mb-2">
+          <div class="text-xs font-bold text-amber-200">Điểm Tài Nguyên</div>
+          <div class="text-[11px] text-muted">${n?`Đang ở ${J(e||``)} — có thể khai thác.`:`Hãy đi tới một địa danh dã ngoại trước khi khai thác.`}</div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+          ${t.map(e=>`
+            <div class="flex justify-between items-center gap-2 rounded border border-slate-800 bg-slate-900/70 p-2">
+              <div>
+                <div class="text-sm text-slate-200">${J(e.nameVi)}</div>
+                <div class="text-[11px] text-muted">${J(e.resourceType)} • ${J(e.resourceNodeId)}</div>
+              </div>
+              <button class="ui-btn ui-btn--primary ui-btn--sm" data-wilderness-gather="${J(e.resourceNodeId)}" ${n?``:`disabled`}>
+                Khai Thác
+              </button>
+            </div>
+          `).join(``)}
+        </div>
+      </div>
+    `}renderPoiPanel(){let e=this.view?.poiScenes||[];return e.length===0?``:`
+      <div class="wilderness-action-panel">
+        <div class="text-xs font-bold text-amber-200 mb-2">Khảo Sát Địa Điểm</div>
+        <div class="flex flex-wrap gap-2">
+          ${e.map(e=>`
+            <button class="ui-btn ui-btn--ghost ui-btn--sm" data-poi-scene="${J(e.poiName)}">
+              ${J(e.poiName)}
+            </button>
+          `).join(``)}
+        </div>
+      </div>
+    `}renderScenePanel(){if(!this.scene)return``;let e=Array.isArray(this.scene.options)?this.scene.options:[];return`
+      <div class="wilderness-scene-card">
+        <div class="flex justify-between items-start gap-3">
+          <div>
+            <div class="text-xs font-bold text-amber-200">${J(this.scenePoiName||this.scene.npc?.name||`Khảo sát`)}</div>
+            <div class="text-[11px] text-muted">${J(this.scene.npc?.name||``)}${this.scene.npc?.title?` • ${J(this.scene.npc.title)}`:``}</div>
+          </div>
+          <button class="ui-btn ui-btn--ghost ui-btn--sm" data-scene-close>Đóng</button>
+        </div>
+        <p class="text-sm text-slate-300 mt-2">${J(this.scene.narrative||``)}</p>
+        <div class="grid grid-cols-1 gap-2 mt-2">
+          ${e.map((e,t)=>`
+            <button class="ui-btn ui-btn--ghost ui-btn--sm text-left" data-scene-option="${t}" ${e.disabled?`disabled`:``}>
+              <strong>${J(e.title||e.id||`Lựa chọn ${t+1}`)}</strong>
+              ${e.desc?`<span class="block text-[11px] text-muted">${J(e.desc)}</span>`:``}
+            </button>
+          `).join(``)}
+        </div>
+      </div>
+    `}renderSpot(e,t){let n=40+Number(e.localX??.5)*520,r=30+Number(e.localY??.5)*300,i=e.nameVi===t,a=de[e.iconKey]||`野`;return`
+      <g class="wilderness-node${i?` is-current`:``}" data-wilderness-travel="${J(e.subLocationId)}" tabindex="0" role="button" aria-label="${J(e.nameVi)}">
+        <circle class="wilderness-node-halo" cx="${n.toFixed(1)}" cy="${r.toFixed(1)}" r="22"></circle>
+        <circle class="wilderness-node-dot" cx="${n.toFixed(1)}" cy="${r.toFixed(1)}" r="14"></circle>
+        <text class="wilderness-node-seal" x="${n.toFixed(1)}" y="${(r+5).toFixed(1)}" text-anchor="middle">${a}</text>
+        <text class="wilderness-node-label" x="${n.toFixed(1)}" y="${(r+33).toFixed(1)}" text-anchor="middle">${J(e.nameVi)}</text>
+      </g>
+    `}bind(){let e=this.modal.getBodyElement();e&&(e.querySelectorAll(`[data-wilderness-travel]`).forEach(e=>{let t=async()=>{let t=e.dataset.wildernessTravel||``;try{let e=await q.travel(t),n=Number(e?.time?.advancedDays||1);Y(`Đã tới ${e?.result?.nameVi||`địa danh`} sau ${n} ngày.`),await this.refresh(),this.render()}catch(e){Y(e.message||`Không thể di chuyển.`,!0)}};e.addEventListener(`click`,t),e.addEventListener(`keydown`,e=>{(e.key===`Enter`||e.key===` `)&&(e.preventDefault(),t())})}),e.querySelectorAll(`[data-wilderness-gather]`).forEach(e=>{e.addEventListener(`click`,async()=>{let t=e.dataset.wildernessGather||``;e.setAttribute(`disabled`,`true`);try{let e=await q.gather(t),n=e?.result||e,r=n?.itemNameVi||n?.itemCode||`tài nguyên`,i=Number(n?.quantity||n?.yieldQuantity||0);Y(i>0?`Khai thác được ${i} ${r}.`:`Khai thác thành công.`),await this.refresh(),this.render()}catch(t){e.removeAttribute(`disabled`),Y(t.message||`Khai thác thất bại.`,!0)}})}),e.querySelectorAll(`[data-poi-scene]`).forEach(e=>{e.addEventListener(`click`,async()=>{let t=e.dataset.poiScene||``;e.setAttribute(`disabled`,`true`);try{this.scene=await q.getScene(t),this.scenePoiName=t,this.render()}catch(t){e.removeAttribute(`disabled`),Y(t.message||`Không mở được địa điểm.`,!0)}})}),e.querySelectorAll(`[data-scene-close]`).forEach(e=>{e.addEventListener(`click`,()=>{this.scene=null,this.scenePoiName=null,this.render()})}),e.querySelectorAll(`[data-scene-option]`).forEach(e=>{e.addEventListener(`click`,async()=>{let t=Number(e.dataset.sceneOption||-1),n=this.scene?.options?.[t];if(n?.action){e.setAttribute(`disabled`,`true`);try{Y((await q.dispatchAction(n.action))?.message||`Đã thực hiện lựa chọn.`),this.scene=null,this.scenePoiName=null,await this.refresh(),this.render()}catch(t){e.removeAttribute(`disabled`),Y(t.message||`Hành động thất bại.`,!0)}}})}))}},pe=new fe,me=class e{static instance;static getInstance(){return e.instance||=new e,e.instance}async get(e){return await y.get(`/api/map/city`,e?{nodeId:e}:void 0)}async enter(e){return y.post(`/api/map/city/enter`,{subLocationId:e,idempotencyKey:`city-enter-${e}-${Date.now()}`})}async getScene(e,t=`PLY-0001`){return y.get(`/api/scene`,{subLocation:e,characterId:t})}async dispatchAction(e){return y.post(`/api/action`,e)}},X=me.getInstance();function Z(e){return String(e??``).replace(/&/g,`&amp;`).replace(/</g,`&lt;`).replace(/>/g,`&gt;`).replace(/"/g,`&quot;`)}function he(e,t=!1){typeof window.showToast==`function`&&window.showToast(e,t)}var ge={government:`府`,residence:`宅`,market:`市`,forge:`鍛`,tavern:`酒`,arena:`武`,city:`城`,temple:`寺`,gate:`門`,workshop:`坊`},_e=class{modal;view=null;nodeId=null;scene=null;sceneSpotName=null;constructor(){this.modal=a({id:`city-map-modal`,title:`Nội Thành`,subtitle:`Đi lại giữa các địa điểm trong thành và khảo sát tại chỗ`,seal:`城`,size:`xl`,onOpen:async()=>{await this.refresh(),this.render()}})}async open(e){this.nodeId=e||null,await this.modal.open()}async close(){await this.modal.close()}async refresh(){this.view=await X.get(this.nodeId||void 0),this.nodeId=this.view.nodeId}render(){if(!this.view){this.modal.setContent(`<div class="journal-modal-content"><div class="text-muted text-sm">Không tải được nội thành.</div></div>`),this.bind();return}let{citySpots:e,city:t,currentSubLocation:n,poiScenes:r}=this.view,i=t?.nameVi||this.view.nodeId,a=e.find(e=>e.nameVi===n);this.modal.setContent(`
+      <div class="journal-modal-content">
+        <div class="spatial-banner-lead">
+          <div class="lead-seal">城</div>
+          <div class="lead-text">
+            <h3>${Z(i)} • Nội Thành</h3>
+            <div class="text-muted text-sm">${e.length} địa điểm trong thành • ${r.length} POI. Đi lại nội thành không tốn ngày; mỗi địa điểm mở một cảnh ngữ cảnh.</div>
+          </div>
+        </div>
+        <div class="wilderness-map-legend">
+          <span>Vị trí hiện tại: <strong>${Z(a?.nameVi||n||`Cổng thành`)}</strong></span>
+          <span class="text-muted">Chọn một địa điểm để vào và khảo sát.</span>
+        </div>
+        <div class="city-map-grid">
+          ${e.map(e=>this.renderSpot(e,n)).join(``)}
+        </div>
+        ${this.renderScenePanel()}
+      </div>
+    `),this.bind()}renderSpot(e,t){let n=ge[e.iconKey]||`城`,r=e.nameVi===t;return`
+      <button class="city-spot-card${r?` is-current`:``}" data-city-enter="${Z(e.subLocationId)}">
+        <span class="city-spot-seal">${n}</span>
+        <span class="city-spot-name">${Z(e.nameVi)}</span>
+        <span class="city-spot-kind">${Z(e.kind)}${r?` • đang ở đây`:``}</span>
+      </button>
+    `}renderScenePanel(){if(!this.scene)return``;let e=Array.isArray(this.scene.options)?this.scene.options:[];return`
+      <div class="wilderness-scene-card">
+        <div class="flex justify-between items-start gap-3">
+          <div>
+            <div class="text-xs font-bold text-amber-200">${Z(this.sceneSpotName||this.scene.npc?.name||`Khảo sát`)}</div>
+            <div class="text-[11px] text-muted">${Z(this.scene.npc?.name||``)}${this.scene.npc?.title?` • ${Z(this.scene.npc.title)}`:``}</div>
+          </div>
+          <button class="ui-btn ui-btn--ghost ui-btn--sm" data-scene-close>Đóng</button>
+        </div>
+        <p class="text-sm text-slate-300 mt-2">${Z(this.scene.narrative||``)}</p>
+        <div class="grid grid-cols-1 gap-2 mt-2">
+          ${e.map((e,t)=>`
+            <button class="ui-btn ui-btn--ghost ui-btn--sm text-left" data-scene-option="${t}" ${e.disabled?`disabled`:``}>
+              <strong>${Z(e.title||e.id||`Lựa chọn ${t+1}`)}</strong>
+              ${e.desc?`<span class="block text-[11px] text-muted">${Z(e.desc)}</span>`:``}
+            </button>
+          `).join(``)}
+        </div>
+      </div>
+    `}bind(){let e=this.modal.getBodyElement();e&&(e.querySelectorAll(`[data-city-enter]`).forEach(e=>{e.addEventListener(`click`,async()=>{let t=e.dataset.cityEnter||``;e.setAttribute(`disabled`,`true`);try{let e=(await X.enter(t))?.result?.nameVi||t;this.scene=await X.getScene(e),this.sceneSpotName=e,await this.refresh(),this.render()}catch(t){e.removeAttribute(`disabled`),he(t.message||`Không vào được địa điểm.`,!0)}})}),e.querySelectorAll(`[data-scene-close]`).forEach(e=>{e.addEventListener(`click`,()=>{this.scene=null,this.sceneSpotName=null,this.render()})}),e.querySelectorAll(`[data-scene-option]`).forEach(e=>{e.addEventListener(`click`,async()=>{let t=Number(e.dataset.sceneOption||-1),n=this.scene?.options?.[t];if(n?.action){e.setAttribute(`disabled`,`true`);try{he((await X.dispatchAction(n.action))?.message||`Đã thực hiện lựa chọn.`),this.scene=null,this.sceneSpotName=null,await this.refresh(),this.render()}catch(t){e.removeAttribute(`disabled`),he(t.message||`Hành động thất bại.`,!0)}}})}))}},ve=new _e,ye=class e{static instance;static getInstance(){return e.instance||=new e,e.instance}async quote(e,t=`PLY-0001`){return(await y.get(`/api/workforce/quote`,{candidateName:e,characterId:t})).quote}async hire(e,t=`PLY-0001`){return y.post(`/api/workforce/hire`,{candidateName:e,characterId:t,idempotencyKey:`workforce-hire-${e}-${Date.now()}`})}}.getInstance();function Q(e){return String(e??``).replace(/&/g,`&amp;`).replace(/</g,`&lt;`).replace(/>/g,`&gt;`).replace(/"/g,`&quot;`)}function be(e,t=!1){typeof window.showToast==`function`&&window.showToast(e,t)}var xe={ACCOUNTANT_MANAGER:`Chưởng Quỹ`,MASTER_BLACKSMITH:`Thợ Cả Lò Rèn`,CARAVAN_ESCORT_CHIEF:`Tiêu Đầu Hộ Vệ`,MASTER_WEAVER:`Thợ Dệt Cả`,ASSISTANT_WORKER:`Phụ Việc`},Se=new class{modal;candidateName=``;quote=null;error=``;submitting=!1;constructor(){this.modal=a({id:`workforce-hire-modal`,title:`Chiêu Mộ Nhân Sĩ`,subtitle:`Giá ký khế ước do máy chủ quyết định từ danh vọng, đức độ và thiện cảm`,seal:`聘`,size:`lg`,onOpen:async()=>{await this.load(),this.render()}})}async open(e){this.candidateName=e,this.quote=null,this.error=``,await this.modal.open()}async close(){await this.modal.close()}async load(){try{this.quote=await ye.quote(this.candidateName),this.error=``}catch(e){this.quote=null,this.error=e.message||`Không lấy được báo giá chiêu mộ.`}}render(){if(this.error){this.modal.setContent(`
+        <div class="journal-modal-content">
+          <div class="text-sm text-red-300">${Q(this.error)}</div>
+          <button class="ui-btn ui-btn--ghost ui-btn--sm mt-3" data-hire-cancel>Đóng</button>
+        </div>
+      `),this.bind();return}if(!this.quote){this.modal.setContent(`<div class="journal-modal-content"><div class="text-muted text-sm">Đang lấy báo giá...</div></div>`);return}let e=this.quote,t=xe[e.recommendedRole]||e.recommendedRole,n=Math.round((e.fameDiscount+e.virtueDiscount)*100),r=e.canHire?``:`<div class="hire-refusal">
+          <div class="hire-refusal-title">${e.alreadyHired?`Đã có chủ`:`Lời mời bị từ chối`}</div>
+          <div class="text-sm">${Q(e.refusalReasonVi||`Chưa đủ điều kiện chiêu mộ.`)}</div>
+          ${e.retryAfterDate?`<div class="text-sm mt-1">Có thể thử lại sau ngày <strong>${Q(e.retryAfterDate)}</strong>.</div>`:``}
+          ${e.alreadyHired?``:`<div class="text-[11px] text-muted mt-1">Gợi ý: giao tiếp, tặng quà hoặc hoàn thành nhiệm vụ để tăng thiện cảm; danh vọng tăng qua chiến công và uy tín.</div>`}
+        </div>`;this.modal.setContent(`
+      <div class="journal-modal-content">
+        <div class="spatial-banner-lead">
+          <div class="lead-seal">聘</div>
+          <div class="lead-text">
+            <h3>${Q(e.candidateName)}</h3>
+            <div class="text-muted text-sm">${Q(t)} • về ${Q(e.businessName)}</div>
+          </div>
+        </div>
+
+        <div class="hire-quote-grid">
+          <div class="hire-quote-cell"><span>Danh vọng</span><strong>${e.fame}/${e.minFame}</strong></div>
+          <div class="hire-quote-cell"><span>Đức độ</span><strong>${e.virtue}</strong></div>
+          <div class="hire-quote-cell"><span>Thiện cảm</span><strong>${e.affinity}/100</strong></div>
+          <div class="hire-quote-cell"><span>Ký quỹ</span><strong>${e.signingBonus} Quan</strong></div>
+        </div>
+
+        <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800 mt-3">
+          <div class="text-xs text-muted mb-1">Báo giá máy chủ</div>
+          <div class="text-sm text-slate-200">Ký quỹ gốc ${e.baseSigningBonus} Quan${n>0?` • giảm ${n}% nhờ danh vọng/đức độ`:``}</div>
+          <div class="text-sm text-slate-200">Lương tháng ${e.monthlyWage} Quan • hiệu suất +${Math.round(e.efficiencyBonus*100)}%</div>
+        </div>
+
+        ${r}
+
+        <div class="flex justify-end gap-2 mt-4">
+          <button class="ui-btn ui-btn--ghost ui-btn--sm" data-hire-cancel>Hủy</button>
+          <button class="ui-btn ui-btn--primary ui-btn--sm" data-hire-confirm ${e.canHire&&!this.submitting?``:`disabled`}>
+            ${this.submitting?`Đang ký...`:`Ký Khế Ước (${e.signingBonus} Quan)`}
+          </button>
+        </div>
+      </div>
+    `),this.bind()}bind(){let e=this.modal.getBodyElement();e&&(e.querySelectorAll(`[data-hire-cancel]`).forEach(e=>{e.addEventListener(`click`,()=>{this.close()})}),e.querySelectorAll(`[data-hire-confirm]`).forEach(e=>{e.addEventListener(`click`,async()=>{if(!this.submitting){this.submitting=!0,this.render();try{let e=await ye.hire(this.candidateName);be(`Đã chiêu mộ ${e?.nameVi||this.candidateName} vào ${e?.businessName||`sản nghiệp`}.`),await this.close(),typeof window.refreshWorldMapLive==`function`&&window.refreshWorldMapLive()}catch(e){this.submitting=!1,this.error=e.message||`Chiêu mộ thất bại.`,await this.load(),this.render(),be(this.error,!0)}}})}))}},Ce=`sim_onboarding_v1_done`,we=[{seal:`日`,titleVi:`Vòng ngày và tháng`,titleEn:`Day and month loop`,bodyVi:`Mỗi hành động tiêu hao ngày. Khi sang mùng 1, tháng cũ tự chốt: lương, thuế, hao hụt và hồi phục vết thương.`,bodyEn:`Every action spends days. On the first of the month the previous month closes: wages, rent, spoilage and injury recovery.`},{seal:`時`,titleVi:`Chi phí hành động`,titleEn:`Action cost`,bodyVi:`Chip thời gian cạnh nút xác nhận cho biết hành động tốn bao nhiêu ngày và thể lực trước khi bạn cam kết.`,bodyEn:`The time chip beside a confirm button shows the days and stamina an action costs before you commit.`},{seal:`市`,titleVi:`Chợ địa phương`,titleEn:`Local market`,bodyVi:`Giá mua bán theo cung cầu từng thành. Muốn lời, hãy chở hàng tới nơi khan hiếm hoặc mở thương lộ tự động.`,bodyEn:`Prices follow local supply and demand. Profit comes from moving goods to scarce markets or running automated trade routes.`},{seal:`存`,titleVi:`Lưu và tải`,titleEn:`Save and load`,bodyVi:`Mở menu hệ thống để lưu phiên chơi. Dữ liệu nằm trong SQLite; mỗi phiên chơi là một tệp riêng.`,bodyEn:`Open the system menu to save. Data lives in SQLite, and each campaign is its own file.`}],Te=new class{modal;constructor(){this.modal=a({id:`onboarding-modal`,title:`Hướng Dẫn Nhập Môn`,subtitle:`Ba mươi ngày đầu của một thương nhân`,seal:`導`,size:`lg`,onOpen:()=>this.render(),onClose:()=>this.markDone()})}async open(e=!1){(e||!this.isDone())&&await this.modal.open()}async close(){await this.modal.close()}isEnglish(){return window.currentLang===`en`}isDone(){try{return window.localStorage.getItem(Ce)===`1`}catch{return!1}}markDone(){try{window.localStorage.setItem(Ce,`1`)}catch{}}render(){let e=this.isEnglish();this.modal.setContent(`
+      <div class="onboarding-grid">
+        ${we.map(t=>`
+          <div class="onboarding-step">
+            <span class="onboarding-seal">${t.seal}</span>
+            <div>
+              <div class="onboarding-step-title">${e?t.titleEn:t.titleVi}</div>
+              <div class="onboarding-step-body">${e?t.bodyEn:t.bodyVi}</div>
+            </div>
+          </div>
+        `).join(``)}
+      </div>
+      <div class="onboarding-foot">
+        <span class="onboarding-hint">${e?`Press ? in the header to reopen this guide.`:`Bấm nút ? trên thanh công cụ để mở lại hướng dẫn.`}</span>
+        <button class="ui-btn ui-btn--primary" data-onboarding-done>${e?`Begin`:`Bắt đầu`}</button>
+      </div>
+    `),this.modal.getBodyElement()?.querySelectorAll(`[data-onboarding-done]`).forEach(e=>{e.addEventListener(`click`,()=>{this.close()})})}};typeof window<`u`&&window.setTimeout(()=>{Te.open(!1)},900);var Ee={wu_wei:`xi_liang`,he_fei:`shou_chun`,pu_yang:`ye_cheng`,wu_ling:`jiang_ling`};function De(e){return Ee[e]||e}var $=new class{ALIASES=Ee;state={status:`idle`,fetchedAt:0,bySettlement:{},byMapNode:{},activeExpeditions:[],player:null,playerFaction:null,factionsById:{},banditsByNode:{},crisesByNode:{},npcsByName:{},npcsById:{},playerCash:0,inventory:{},specialistsByName:{},specialistsByMapNode:{},businesses:[],guardTiers:[],routesByKey:{},locationsById:{},locToMapNode:{},caravans:[],expeditions:[],resourcesByNode:{},resourceTotals:{},mapRegistry:null,errors:[]};resolveMapNodeId(e){return De(e)}getSubLocationsForNode(e){return this.state.mapRegistry?.subLocationsByNode?.[e]||[]}getPoiScenesForNode(e){return this.state.mapRegistry?.poiScenesByNode?.[e]||[]}mergeRecord(e,t){return Object.assign({},e||{},t||{})}async readJson(e){let t=await fetch(e,{headers:{Accept:`application/json`}});if(!t.ok)throw Error(`${e} returned ${t.status}`);return t.json()}async load(e=!1){if(!e&&this.state.status===`ready`&&Date.now()-this.state.fetchedAt<1e4)return this.state;this.state.status=`loading`,this.state.errors=[];let[t,n,r,i,a,o,s,c,l,u,d,f,p,m,h,g,_,v]=await Promise.allSettled([this.readJson(`/api/garrisons`),this.readJson(`/api/factions/settlements`),this.readJson(`/api/factions`),this.readJson(`/api/military/status`),this.readJson(`/api/logistics/strongholds`),this.readJson(`/api/ecology/crises`),this.readJson(`/api/npcs`),this.readJson(`/api/status`),this.readJson(`/api/inventory`),this.readJson(`/api/workforce/specialists`),this.readJson(`/api/workforce/businesses`),this.readJson(`/api/caravans/guard-tiers`),this.readJson(`/api/military/routes`),this.readJson(`/api/locations`),this.readJson(`/api/logistics/caravans`),this.readJson(`/api/expeditions`),this.readJson(`/api/professions/nodes`),this.readJson(`/api/map/registry`)]),y=t.status===`fulfilled`&&t.value.success&&t.value.garrisons||[],ee=n.status===`fulfilled`&&n.value.success&&n.value.settlements||[],b=r.status===`fulfilled`&&r.value.success&&r.value.factions||[],x=i.status===`fulfilled`&&i.value.success?i.value:null,S=a.status===`fulfilled`&&a.value.success&&a.value.strongholds||[],te=o.status===`fulfilled`&&o.value.success&&o.value.crises||[],C=s.status===`fulfilled`&&s.value.success&&s.value.npcs||[],w=c.status===`fulfilled`&&c.value.success?c.value:null,ne=l.status===`fulfilled`&&l.value.success&&l.value.items||[],T=u.status===`fulfilled`&&u.value.success&&u.value.specialists||[],re=d.status===`fulfilled`&&d.value.success&&d.value.businesses||[],E=f.status===`fulfilled`&&f.value.success&&f.value.tiers||[],D=p.status===`fulfilled`&&p.value.success&&p.value.routes||[],O=m.status===`fulfilled`&&m.value.success&&m.value.locations||[],ie=h.status===`fulfilled`&&h.value.success&&h.value.caravans||[],ae=g.status===`fulfilled`&&g.value.success&&g.value.expeditions||[],oe=_.status===`fulfilled`&&_.value.success&&_.value.nodes||[],k=v.status===`fulfilled`&&v.value.success?v.value:null;v.status===`rejected`&&this.state.errors.push(`map-registry`),t.status===`rejected`&&this.state.errors.push(`garrisons`),n.status===`rejected`&&this.state.errors.push(`factions/settlements`),r.status===`rejected`&&this.state.errors.push(`factions`),i.status===`rejected`&&this.state.errors.push(`military`),a.status===`rejected`&&this.state.errors.push(`strongholds`),o.status===`rejected`&&this.state.errors.push(`crises`),s.status===`rejected`&&this.state.errors.push(`npcs`),c.status===`rejected`&&this.state.errors.push(`status`),l.status===`rejected`&&this.state.errors.push(`inventory`),u.status===`rejected`&&this.state.errors.push(`workforce`),d.status===`rejected`&&this.state.errors.push(`businesses`),f.status===`rejected`&&this.state.errors.push(`guard-tiers`),p.status===`rejected`&&this.state.errors.push(`routes`),m.status===`rejected`&&this.state.errors.push(`locations`),h.status===`rejected`&&this.state.errors.push(`caravans`),g.status===`rejected`&&this.state.errors.push(`expeditions`),_.status===`rejected`&&this.state.errors.push(`resources`),this.state.mapRegistry=k?{nodes:k.nodes||[],subLocationsByNode:k.subLocationsByNode||{},poiScenesByNode:k.poiScenesByNode||{},resourcesByNode:k.resourcesByNode||{},orphans:k.orphans||[]}:null;let A={};b.forEach(e=>{let t=e&&e.factionId;t&&(A[t]=e)});let j={};y.forEach(e=>{e&&e.settlementId&&(j[e.settlementId]=this.mergeRecord(j[e.settlementId],e))}),ee.forEach(e=>{e&&e.settlementId&&(j[e.settlementId]=this.mergeRecord(j[e.settlementId],e))}),Object.keys(j).forEach(e=>{let t=j[e],n=t.rulerFactionId?A[t.rulerFactionId]:null;if(!n)return;let r=n;t.factionNameVi=r.nameVi,t.factionNameEn=r.nameEn,t.factionColor=r.colorHex,t.factionMilitaryPower=r.militaryPower});let M={};Object.keys(j).forEach(e=>{this.resolveMapNodeId(e)===e&&(M[e]=this.mergeRecord(M[e],{...j[e],sourceSettlementId:e}))}),Object.keys(j).forEach(e=>{let t=this.resolveMapNodeId(e);M[t]||(M[t]=this.mergeRecord(M[t],{...j[e],sourceSettlementId:e}))}),this.state.bySettlement=j,this.state.byMapNode=M,this.state.activeExpeditions=x&&x.activeExpeditions||[],this.state.player=x&&x.commander||null,this.state.playerFaction=b.find(e=>e.leaderId===`PLY-0001`)||null,this.state.factionsById=A;let N={};S.forEach(e=>{let t=e.status,n=e.locationNear;if(t!==`ACTIVE`||!n)return;let r=this.resolveMapNodeId(n);(N[r]||=[]).push(e)});let P={};te.forEach(e=>{let t=e.settlementId;if(!t)return;let n=this.resolveMapNodeId(t);(P[n]||=[]).push(e)}),this.state.banditsByNode=N,this.state.crisesByNode=P;let F={},I={};C.forEach(e=>{let t=e.name,n=e.npc_id||e.npcId;n&&(I[n]=e),t&&(F[this.normalizeName(t)]=e)}),this.state.npcsByName=F,this.state.npcsById=I;let L=Number(w?.player?.liquid_cash)||0,R={};ne.forEach(e=>{let t=e.item_code||e.itemCode,n=Number(e.quantity)||0;t&&(R[t]=n)}),this.state.playerCash=L,this.state.inventory=R,this.state.guardTiers=E;let z={};T.forEach(e=>{let t=e.nameVi;t&&(z[this.normalizeName(t)]=e)}),this.state.specialistsByName=z,this.state.caravans=ie,this.state.expeditions=ae;let B={},V={};oe.forEach(e=>{let t=String(e.settlementId||``),n=this.resolveMapNodeId(t),r=String(e.resourceType||``);n&&r&&(B[n]||(B[n]={types:{},nodes:[]}),B[n].types[r]=(B[n].types[r]||0)+1,B[n].nodes.push(e),V[r]=(V[r]||0)+1)}),this.state.resourcesByNode=B,this.state.resourceTotals=V;let se={};O.forEach(e=>{let t=e.locationId;t&&(se[t]=e)}),this.state.locationsById=se;let H={};if(typeof window<`u`){let e=window.SETTLEMENT_LABELS||{};Object.keys(e).forEach(t=>{if(t===`wu_wei`)return;let n=e[t]&&e[t].vi;n&&(H[this.normalizeLocationLabel(n)]=t)})}let U={};O.forEach(e=>{let t=e.locationId,n=e.nameVi;if(!t||!n)return;let r=H[this.normalizeLocationLabel(n)];r&&(U[t]=r)}),this.state.locToMapNode=U;let W={};re.forEach(e=>{let t=e.businessId,n=e.locationId;t&&n&&(W[t]=n)});let G={};T.forEach(e=>{let t=!!e.isHired,n=e.assignedBusinessId,r=n?W[n]:null,i=e.baselineLocation,a=t&&r?r:i,o=a?U[a]:null;o&&(G[o]||=[]).push(e)}),this.state.businesses=re,this.state.specialistsByMapNode=G;let K={};return D.forEach(e=>{let t=U[e.sourceLocationId||``],n=U[e.targetLocationId||``];if(!t||!n)return;let r=e.descriptionEn?e.descriptionEn.trim():``,i=r&&!/^RT-/i.test(r)&&/^[\x20-\x7E]+$/.test(r)?r:void 0,a={from:t,to:n,distanceLi:e.distanceLi,terrainType:e.terrainType,marchDays:e.standardMarchDays,grainCost:e.grainProvisionCost,ambushRisk:e.ambushRiskLevel,descVi:e.descriptionVi,descEn:i},o=`${t}|${n}`,s=`${n}|${t}`;K[o]||(K[o]=a),K[s]||(K[s]={...a,from:n,to:t})}),this.state.routesByKey=K,this.state.status=this.state.errors.length===17?`error`:`ready`,this.state.fetchedAt=Date.now(),this.state}getForMapNode(e){return e&&(this.state.byMapNode[e]||this.state.bySettlement[e])||null}normalizeName(e){return e.normalize(`NFC`).trim().toLowerCase()}normalizeLocationLabel(e){return e.replace(/\s*\(.*?\)/g,``).replace(/\s*&.*/g,``).replace(/Kinh Đô\s*/g,``).replace(/Tây Đô\s*/g,``).replace(/Imperial Capital\s*/gi,``).trim().toLowerCase()}findNpcByName(e){return e&&this.state.npcsByName[this.normalizeName(e)]||null}findSpecialistByName(e){return e&&this.state.specialistsByName[this.normalizeName(e)]||null}getLocIdForNode(e){let t=Object.entries(this.state.locToMapNode).find(([,t])=>t===e);return t?t[0]:null}getSpecialistsForMapNode(e){return[...this.state.specialistsByMapNode[e]||[]].sort((e,t)=>{let n=!!e.isHired;if(n!==!!t.isHired)return n?1:-1;let r=String(e.nameVi||``),i=String(t.nameVi||``);return r.localeCompare(i)})}getRecruitRequirement(e){let t=this.findSpecialistByName(e);if(!t)return{canRecruit:!0,signingBonus:null,isHired:!1,reasonVi:``,reasonEn:``};let n=!!t.isHired,r=Number(t.signingBonus)||0;return n?{canRecruit:!1,signingBonus:r,isHired:n,reasonVi:`Đã được chiêu mộ`,reasonEn:`Already recruited`}:this.state.playerCash<r?{canRecruit:!1,signingBonus:r,isHired:n,reasonVi:`Cần ${r} quan chiêu mộ`,reasonEn:`Need ${r} cash to recruit`}:{canRecruit:!0,signingBonus:r,isHired:n,reasonVi:``,reasonEn:``}}getActionRequirements(){let e=this.state.playerCash,t=Object.values(this.state.inventory).filter(e=>e>0).length,n=this.state.guardTiers.length?Math.min(...this.state.guardTiers.map(e=>Number(e.costQian)||0)):null,r=!0,i=``,a=``;return n==null?(r=!1,i=`Chưa tải được bảng giá hộ vệ`,a=`Guard prices are unavailable`):t===0?(r=!1,i=`Kho không có hàng để xuất`,a=`No cargo in the warehouse`):e<n&&(r=!1,i=`Cần tối thiểu ${n} quan thuê hộ vệ`,a=`Need at least ${n} cash for guards`),{cash:e,cargoKinds:t,minGuardCost:n,canDispatchCaravan:r,reasonVi:i,reasonEn:a}}getRoute(e,t){return this.state.routesByKey[`${e}|${t}`]||null}getLivingEntities(){return{caravans:this.state.caravans.filter(e=>String(e.status).toUpperCase()===`EN_ROUTE`).map(e=>({...e,from:this.resolveMapNodeId(String(e.fromSettlementId||``)),to:this.resolveMapNodeId(String(e.toSettlementId||``)),progress:Number(e.routeProgress)||0})).filter(e=>e.from&&e.to),expeditions:this.state.expeditions.filter(e=>[`MARCHING`,`ARRIVED`].includes(String(e.status).toUpperCase())).map(e=>{let t=e;return{...e,from:this.resolveMapNodeId(String(t.origin_settlement_id||t.originSettlementId||``)),to:this.resolveMapNodeId(String(t.target_settlement_id||t.targetSettlementId||``))}}).filter(e=>e.from&&e.to),bandits:Object.entries(this.state.banditsByNode).flatMap(([e,t])=>t.map(t=>({...t,nodeId:e}))),crises:Object.entries(this.state.crisesByNode).flatMap(([e,t])=>t.map(t=>({...t,nodeId:e})))}}getStatusForMapNode(e){let t=this.getForMapNode(e);if(!t)return{key:`unknown`,labelVi:`Chưa rõ`,labelEn:`Unknown`,className:`capital`};let n=this.state.playerFaction?.factionId,r=!!(t.rulerFactionId&&n&&t.rulerFactionId===n),i=Number(t.garrisonTroops??0),a=Number(t.granaryGrain??0),o=Number(t.publicOrder??100);return r?i<200||a<=0||o<30?{key:`strained`,labelVi:`Suy Yếu`,labelEn:`Strained`,className:`battle`}:{key:`stable`,labelVi:`An Định`,labelEn:`Stable`,className:`safe`}:{key:`foreign`,labelVi:`Ngoại Bang`,labelEn:`Foreign Holding`,className:`capital`}}getThreatForMapNode(e){let t=this.getForMapNode(e),n=this.state.banditsByNode[e]||[],r=this.state.crisesByNode[e]||[],i=[],a=[],o=0;if(n.length>0){let e=Math.max(...n.map(e=>Number(e.banditPower)||0));o+=Math.min(3,e/150),i.push(`${n.length} ổ phỉ`),a.push(`${n.length} bandit lair${n.length>1?`s`:``}`)}r.forEach(e=>{let t=Number(e.severityLevel)||1;o+=Math.min(3,t);let n=e.titleVi||`Khủng hoảng`;i.push(n),a.push(n)});let s=t&&Number.isFinite(t.garrisonTroops)?Number(t.garrisonTroops):null,c=t&&Number.isFinite(t.publicOrder)?Number(t.publicOrder):null;s!=null&&s<500&&(o+=1,i.push(`Đồn trú mỏng`),a.push(`Thin garrison`)),c!=null&&c<40&&(o+=1,i.push(`Trật tự thấp`),a.push(`Low public order`));let l=o>=3?`HIGH`:o>=1.5?`MODERATE`:`LOW`;return{level:l,...{LOW:{labelVi:`Thấp`,labelEn:`Low`,color:`#34d399`},MODERATE:{labelVi:`Vừa`,labelEn:`Moderate`,color:`#fbbf24`},HIGH:{labelVi:`Cao`,labelEn:`High`,color:`#f87171`}}[l],reasonsVi:i,reasonsEn:a}}getResourceDistribution(){return{byNode:this.state.resourcesByNode,totals:this.state.resourceTotals,types:Object.keys(this.state.resourceTotals).sort()}}getResourceNodesForMapNode(e){return this.state.resourcesByNode[e]?.nodes||[]}hasArmy(){return Array.isArray(this.state.activeExpeditions)&&this.state.activeExpeditions.length>0}getState(){return this.state}};function Oe(){if(typeof window>`u`)return;let e=window;e.ModalShellCore={createModalShell:a,modalStack:t},e.UI=_,e.LineageFamilyUI={open:e=>S.open(e),close:()=>S.close(),setFilter:e=>S.setFilter(e),proposeMarriage:e=>S.proposeMarriage(e),restCohabit:e=>S.restCohabit(e),assignRole:(e,t)=>S.assignRole(e,t),designateHeir:e=>S.designateHeir(e),assignMentorDialog:e=>S.assignMentorDialog(e),executeSuccession:()=>S.executeSuccession()},e.EquipmentUI={openEquipmentModal:(e,t)=>T.open(e,t),closeEquipmentModal:()=>T.close(),switchTab:e=>T.modal.switchTab(e),equip:(e,t,n)=>T.equip(e,t,n),unequip:(e,t)=>T.unequip(e,t),repairTool:e=>T.repairTool(e),executeForge:()=>T.executeForge()},e.EnterpriseUI={openEnterpriseModal:e=>M.open(e),closeEnterpriseModal:()=>M.close(),depositSafeCash:e=>M.depositSafeCash(e),withdrawSafeCash:e=>M.withdrawSafeCash(e),executeWork:e=>M.executeWork(e)},e.QuickTradeModal={open:(e,t,n,r)=>P.open(e,t,n,r),close:()=>P.close(),updateTotal:()=>P.updateTotal(),submit:()=>P.submit()},e.MarketStallModal={open:(e=`stall`)=>K.open(e),close:()=>K.close()},e.TacticalBattleUI={startDuel:e=>L.startDuel(e),close:()=>L.close(),executeAction:e=>L.executeAction(e)},e.TravelTransitUI={show:(e,t,n,r)=>z.showTravelTransit(e,t,n,r),close:()=>z.closeTravel(),openLegacy:()=>z.openTravelTransitModal(),closeLegacy:()=>z.closeTravelTransitModal()},e.TurnAdvanceUI={show:(e,t,n)=>z.showTurnAdvance(e,t,n),close:()=>z.closeTurn(),openLegacy:()=>z.openTurnAdvanceModal(),closeLegacy:()=>z.closeTurnAdvanceModal()},e.QuestUI={open:()=>H.open(),close:()=>H.close(),accept:e=>H.accept(e),advance:e=>H.advance(e),payObligation:e=>H.payObligation(e),acceptContract:e=>H.acceptContract(e),deliverContract:e=>H.deliverContract(e),verifyIntel:e=>H.verifyIntel(e),rentFarm:e=>H.rentFarm(e),plantCrop:(e,t)=>H.plantCrop(e,t),harvestFarm:e=>H.harvestFarm(e)},e.WorldMapUI={open:()=>le.open(),close:()=>le.close()},e.WildernessMapUI={open:e=>pe.open(e),close:()=>pe.close()},e.CityMapUI={open:e=>ve.open(e),close:()=>ve.close()},e.WorkforceHireUI={open:e=>Se.open(e),close:()=>Se.close()},e.OnboardingUI={open:(e=!1)=>Te.open(e),close:()=>Te.close()},e.MapLiveService={load:(e=!1)=>$.load(e),getForMapNode:e=>$.getForMapNode(e),getSubLocationsForNode:e=>$.getSubLocationsForNode(e),getPoiScenesForNode:e=>$.getPoiScenesForNode(e),getStatusForMapNode:e=>$.getStatusForMapNode(e),getThreatForMapNode:e=>$.getThreatForMapNode(e),findNpcByName:e=>$.findNpcByName(e),findSpecialistByName:e=>$.findSpecialistByName(e),getSpecialistsForMapNode:e=>$.getSpecialistsForMapNode(e),getLocIdForNode:e=>$.getLocIdForNode(e),getRecruitRequirement:e=>$.getRecruitRequirement(e),getActionRequirements:()=>$.getActionRequirements(),getRoute:(e,t)=>$.getRoute(e,t),getLivingEntities:()=>$.getLivingEntities(),getResourceDistribution:()=>$.getResourceDistribution(),getResourceNodesForMapNode:e=>$.getResourceNodesForMapNode(e),resolveMapNodeId:e=>$.resolveMapNodeId(e),hasArmy:()=>$.hasArmy(),getState:()=>$.getState(),ALIASES:$.ALIASES},console.log(`[ThreeKingdoms-AgentEngine] All 14 client feature slices successfully bridged to window.*`)}var ke=new class{handlers=new Map;on(e,t){return this.handlers.has(e)||this.handlers.set(e,new Set),this.handlers.get(e).add(t),()=>{this.off(e,t)}}off(e,t){let n=this.handlers.get(e);n&&(n.delete(t),n.size===0&&this.handlers.delete(e))}emit(e,t){let n=this.handlers.get(e);n&&n.forEach(n=>{try{n(t)}catch(t){console.error(`[EventBus] Error handling event ${e}:`,t)}})}},Ae=class e{static instance;static getInstance(){return e.instance||=new e,e.instance}async getCaravans(){return(await y.get(`/api/logistics/caravans`)).caravans||[]}async getArbitrageOpportunities(){return(await y.get(`/api/economy/arbitrage`)).routes||[]}async dispatchCaravan(e){return y.post(`/api/caravans/dispatch`,{cargoItemCode:e.commodityCode,cargoQuantity:e.quantity,fromSettlementId:e.originSettlementId,toSettlementId:e.destSettlementId,guardTier:e.escortLevel})}},je=Ae.getInstance(),Me=class{modal;caravans=[];routes=[];constructor(){this.modal=a({id:`caravan-modal`,title:`Thương Đoàn Viễn Chinh & Trục Vận Chuyển`,subtitle:`Thiết lập tuyến buôn liên châu, kinh doanh chênh lệch giá và thuê hộ tiêu áp tải`,seal:`商`,size:`xl`,tabs:[{id:`active`,label:`Thương Đoàn Đang Chạy`,seal:`運`},{id:`arbitrage`,label:`Thương Cơ & Chênh Lệch Giá`,seal:`漲`},{id:`dispatch`,label:`Xuất Tiêu Khai Tuyến`,seal:`旗`}],activeTabId:`active`,onOpen:async()=>{await this.refreshData(),await this.renderActiveTab()},onTabChange:async()=>{await this.renderActiveTab()}})}async open(e=`active`){await this.modal.open(e)}async close(){await this.modal.close()}async refreshData(){try{let[e,t]=await Promise.all([je.getCaravans().catch(()=>[]),je.getArbitrageOpportunities().catch(()=>[])]);this.caravans=e,this.routes=t,this.modal.updateTabBadge(`active`,e.length>0?e.length:void 0)}catch(e){console.error(`[CaravanLogisticsModal] Error refreshing data:`,e)}}async renderActiveTab(){switch(this.modal.activeTab||`active`){case`active`:this.renderActiveTabContent();break;case`arbitrage`:this.renderArbitrageTabContent();break;case`dispatch`:this.renderDispatchTabContent()}}renderActiveTabContent(){let e=`
       <div class="caravan-modal-content">
         <div class="spatial-banner-lead">
           <div class="lead-seal">運</div>
@@ -705,7 +1258,7 @@ var SimulationClient=(function(e){Object.defineProperty(e,Symbol.toStringTag,{va
           </button>
         </div>
       </div>
-    `)}async executeDispatch(){let e=document.getElementById(`caravan-dest-id`),t=document.getElementById(`caravan-commodity`),n=document.getElementById(`caravan-qty`),r=document.getElementById(`caravan-escort`),i={originSettlementId:`zhuo_xian`,destSettlementId:e?.value||`ye_cheng`,commodityCode:t?.value||`PROD-MAT`,quantity:parseInt(n?.value||`20`,10),escortLevel:r?.value||`MILITIA`};try{let e=await X.dispatchCaravan(i);typeof window.showToast==`function`&&window.showToast(e.narrativeVi||`Thương đoàn đã xuất phát!`),await this.refreshData(),await this.modal.switchTab(`active`)}catch(e){typeof window.showToast==`function`&&window.showToast(e.message||`Lỗi xuất thương đoàn!`,!0)}}},Q=new Z,$=class{modal;selectedScenario=`184_YELLOW_TURBAN`;constructor(){this.modal=a({id:`title-screen-scenario-modal`,title:`Tam Quốc Diễn Nghĩa • Khởi Tạo Niên Đại & Nhân Vật`,subtitle:`Chọn niên đại lịch sử và thiết lập danh tính nhân vật chính`,seal:`國`,size:`lg`,onOpen:async()=>{this.renderContent()}})}async open(){await this.modal.open()}async close(){await this.modal.close()}renderContent(){let e=`
+    `)}async executeDispatch(){let e=document.getElementById(`caravan-dest-id`),t=document.getElementById(`caravan-commodity`),n=document.getElementById(`caravan-qty`),r=document.getElementById(`caravan-escort`),i={originSettlementId:`zhuo_xian`,destSettlementId:e?.value||`ye_cheng`,commodityCode:t?.value||`PROD-MAT`,quantity:parseInt(n?.value||`20`,10),escortLevel:r?.value||`MILITIA`};try{let e=await je.dispatchCaravan(i);typeof window.showToast==`function`&&window.showToast(e.narrativeVi||`Thương đoàn đã xuất phát!`),await this.refreshData(),await this.modal.switchTab(`active`)}catch(e){typeof window.showToast==`function`&&window.showToast(e.message||`Lỗi xuất thương đoàn!`,!0)}}},Ne=new Me,Pe=class{modal;selectedScenario=`184_YELLOW_TURBAN`;constructor(){this.modal=a({id:`title-screen-scenario-modal`,title:`Tam Quốc Diễn Nghĩa • Khởi Tạo Niên Đại & Nhân Vật`,subtitle:`Chọn niên đại lịch sử và thiết lập danh tính nhân vật chính`,seal:`國`,size:`lg`,onOpen:async()=>{this.renderContent()}})}async open(){await this.modal.open()}async close(){await this.modal.close()}renderContent(){let e=`
       <div class="title-screen-content">
         <div class="spatial-banner-lead">
           <div class="lead-seal">國</div>
@@ -758,5 +1311,5 @@ var SimulationClient=(function(e){Object.defineProperty(e,Symbol.toStringTag,{va
           </button>
         </div>
       </div>
-    `;this.modal.setContent(e)}selectScenario(e){this.selectedScenario=e,this.renderContent()}async startCampaign(){let e=document.getElementById(`ts-player-name`),t=document.getElementById(`ts-player-style`);try{await y.post(`/api/session/new-game`,{scenario:this.selectedScenario,playerName:e?.value||`Lương Diễn`,playerStyle:t?.value||`Chí Viễn`}),typeof window.showToast==`function`&&window.showToast(`Khởi tạo chiến dịch thành công!`),await this.modal.close(),window.location.reload()}catch(e){typeof window.showToast==`function`&&window.showToast(e.message||`Lỗi khởi tạo chiến dịch!`,!0)}}},ee=new $;return q(),e.CaravanLogisticsModal=Z,e.CaravanLogisticsService=Y,e.ClientApiClient=v,e.DossiersModal=P,e.DossiersService=M,e.EnterpriseWorkshopModal=A,e.EnterpriseWorkshopService=O,e.EquipmentForgeModal=E,e.EquipmentForgeService=w,e.LEGACY_OWNED_MODAL_IDS=n,e.LineageFamilyModal=S,e.LineageFamilyService=b,e.ModalShell=i,e.QuickTradeModal=I,e.TacticalBattleModal=z,e.TitleScreenModal=$,e.TransitTurnModals=V,e.WorldMapModal=U,e.apiClient=y,e.caravanLogisticsModal=Q,e.caravanLogisticsService=X,e.createModalShell=a,e.dossiersModal=F,e.dossiersService=N,e.enterpriseWorkshopModal=j,e.enterpriseWorkshopService=k,e.equipmentForgeModal=D,e.equipmentForgeService=T,e.eventBus=J,e.isLegacyOwnedModalId=r,e.lineageFamilyModal=C,e.lineageFamilyService=x,e.modalStack=t,e.quickTradeModal=L,e.tacticalBattleModal=B,e.titleScreenModal=ee,e.transitTurnModals=H,e.worldMapModal=W,e})({});
+    `;this.modal.setContent(e)}selectScenario(e){this.selectedScenario=e,this.renderContent()}async startCampaign(){let e=document.getElementById(`ts-player-name`),t=document.getElementById(`ts-player-style`),n={"184_YELLOW_TURBAN":`SCN-184-ZHOU`,"190_DONG_ZHUO":`SCN-190-DONG`,"200_GUANDU":`SCN-200-GUAN`,"208_CHIBI":`SCN-208-CHIB`};try{await y.post(`/api/game/new`,{scenarioId:n[this.selectedScenario]||`SCN-184-ZHOU`,archetypeId:`ARCH-COMMONER-YOUTH`,customPlayerName:e?.value||`Lương Diễn`,customStyleName:t?.value||`Chí Viễn`,idempotencyKey:`new-game-${this.selectedScenario}-${Date.now()}`}),typeof window.showToast==`function`&&window.showToast(`Khởi tạo chiến dịch thành công!`),await this.modal.close(),window.location.reload()}catch(e){typeof window.showToast==`function`&&window.showToast(e.message||`Lỗi khởi tạo chiến dịch!`,!0)}}},Fe=new Pe;return Oe(),e.CaravanLogisticsModal=Me,e.CaravanLogisticsService=Ae,e.CityMapModal=_e,e.CityMapService=me,e.ClientApiClient=v,e.EnterpriseWorkshopModal=j,e.EnterpriseWorkshopService=re,e.EquipmentForgeModal=ne,e.EquipmentForgeService=te,e.LEGACY_OWNED_MODAL_IDS=n,e.LineageFamilyModal=x,e.LineageFamilyService=ee,e.ModalShell=i,e.QuickTradeModal=N,e.TacticalBattleModal=I,e.TitleScreenModal=Pe,e.TransitTurnModals=R,e.WildernessMapModal=fe,e.WildernessMapService=ue,e.WorldMapModal=ce,e.apiClient=y,e.caravanLogisticsModal=Ne,e.caravanLogisticsService=je,e.cityMapModal=ve,e.cityMapService=X,e.createModalShell=a,e.enterpriseWorkshopModal=M,e.enterpriseWorkshopService=E,e.equipmentForgeModal=T,e.equipmentForgeService=C,e.eventBus=ke,e.isLegacyOwnedModalId=r,e.lineageFamilyModal=S,e.lineageFamilyService=b,e.modalStack=t,e.quickTradeModal=P,e.tacticalBattleModal=L,e.titleScreenModal=Fe,e.transitTurnModals=z,e.wildernessMapModal=pe,e.wildernessMapService=q,e.worldMapModal=le,e})({});
 //# sourceMappingURL=client-bundle.iife.js.map

@@ -12,7 +12,7 @@
 const fs = require('fs');
 const path = require('path');
 const { runSqlJson, runSqlExec, runSqlBatch, escapeSql } = require('./db-adapter');
-const { advanceCampaignDays, getClock, normalizeDays, DAYS_PER_MONTH } = require('./time-manager');
+const { advanceTime } = require('./time-manager');
 const { getActionTimeCost } = require('./action-policy');
 const { SeededRandom } = require('./random');
 
@@ -535,16 +535,12 @@ class TravelManager {
     const meta = runSqlJson(this.dbPath, `SELECT * FROM campaign_meta LIMIT 1;`)[0] || { "current_date": '184-05-02', active_turn: 6 };
 
     // 1. Advance the campaign clock by whole march days. This emits one
-    //    WORLD_DAY_TICK per day and applies travel fatigue; grain upkeep is
+    //    WORLD_DAY_TICK per day, applies travel fatigue, and closes a month
+    //    boundary automatically if the march crosses one. Grain upkeep is
     //    disabled because the route provision cost is charged below.
     const requestedDays = marchDays === null || marchDays === undefined ? daysRequired : marchDays;
-    const clockBeforeMarch = getClock(this.dbPath);
-    if (normalizeDays(requestedDays) > 0 && clockBeforeMarch.dayOfMonth >= DAYS_PER_MONTH) {
-      throw new Error('Đã hết ngày 30. Hãy bấm Qua Tháng trước khi hành quân.');
-    }
-    const time = advanceCampaignDays(this.dbPath, requestedDays, {
+    const time = advanceTime(this.dbPath, requestedDays, {
       reason: `Hành trình tới ${targetNameVi}`,
-      clampToMonthEnd: true,
       grainUpkeepPerDay: 0,
       fatigueDelta: Number(getActionTimeCost('MOVE_LOCATION').fatigue || 0)
     });
@@ -593,7 +589,7 @@ class TravelManager {
         pContent = pContent.replace(/\|\s*\*\*Current Location\*\*\s*\|\s*[^\n|]+\|/i, `| **Current Location** | ${targetSubLoc} |`);
         pContent = pContent.replace(/\|\s*\*\*Strategic Grain\*\*\s*\|\s*\*\*([^*]+)\*\*/i, `| **Strategic Grain** | **${newGrain.toFixed(2)} piculs**`);
         fs.writeFileSync(progressPath, pContent, 'utf8');
-      } catch (e) {}
+      } catch { /* best-effort fallback */ }
     }
 
     return {

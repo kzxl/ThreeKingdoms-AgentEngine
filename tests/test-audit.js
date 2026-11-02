@@ -101,7 +101,11 @@ function testDbConstraintRejectsNegativeInventory() {
     execSync(`sqlite3 "${TEST_DB}" "UPDATE inventory_items SET quantity = -10 WHERE item_code = 'COM-GRAIN';"`, { stdio: 'pipe' });
   } catch (err) {
     caughtError = true;
-    assert.ok(err.stderr.toString().includes('CHECK constraint failed'), 'Error should be a CHECK constraint failure');
+    const message = err.stderr.toString();
+    assert.ok(
+      message.includes('CHECK constraint failed') || message.includes('PLAYER_BAG_INSUFFICIENT'),
+      'Error should be a CHECK constraint or the per-city bag guard'
+    );
   }
 
   assert.ok(caughtError, 'SQLite must prevent setting negative inventory at the database level');

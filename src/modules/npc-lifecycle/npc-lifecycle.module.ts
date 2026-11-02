@@ -11,6 +11,8 @@ import { isTurnModuleDone, markTurnModuleDone } from '../../shared/turn-ledger';
 import { IFeatureModule, ModuleContext, CharacterId, UtilityActionCandidate } from '../../core/types';
 import { ModuleRegistry } from '../../core/module-registry';
 import { UtilityAiModule, UtilityCurveEvaluator } from '../utility-ai/utility-ai.module';
+import { LOC_TO_NODE_MAP } from '../ecology-logistics/spatial-registry';
+import { postNpcEntry, postNpcMutation } from './npc-ledger';
 
 function getTurnDeterministicRoll(turnNumber: number, npcId: string, salt = 0): number {
   let hash = ((turnNumber * 10007) + (salt * 1337)) >>> 0;
@@ -114,16 +116,78 @@ export class NpcLifecycleModule implements IFeatureModule {
             INSERT INTO npc_personal_progression (npc_id, life_ambition, current_focus, personal_cash, prestige, personal_troops, milestone_title)
             VALUES (?, ?, ?, ?, ?, ?, ?);
           `, [b.npcId, b.ambition, b.focus, b.cash, b.prestige, b.troops, b.title]);
+          postNpcEntry(this.db, {
+            npcId: b.npcId,
+            gameDate: getGameDate(this.db),
+            category: 'OPENING',
+            deltaCash: b.cash,
+            deltaTroops: b.troops,
+            balanceCash: b.cash,
+            balanceTroops: b.troops,
+            memoVi: 'Số dư đầu kỳ'
+          });
         }
       }
     });
   }
 
+  private npcSettlementId(npcId: string): string | null {
+    const row = this.db.queryOne<{ location: string }>(
+      'SELECT baseline_location AS location FROM master_characters WHERE npc_id = ? LIMIT 1;',
+      [npcId]
+    );
+    if (!row?.location) return null;
+    return LOC_TO_NODE_MAP[row.location] || row.location;
+  }
+
+  /**
+   * A commerce turn transfers cash from a named local buyer instead of minting
+   * it. The richest solvent NPC in the same settlement is preferred; a global
+   * buyer is the fallback.
+   */
+  private findCommerceBuyer(npcId: string, amount: number): any | null {
+    const settlementId = this.npcSettlementId(npcId);
+    if (settlementId) {
+      const locations = Object.entries(LOC_TO_NODE_MAP)
+        .filter(([, node]) => node === settlementId)
+        .map(([location]) => location);
+      if (locations.length > 0) {
+        const placeholders = locations.map(() => '?').join(',');
+        // arch-guard:allow-sql-interpolation — placeholders only, one per location.
+        const local = this.db.queryOne<any>(
+          `SELECT npp.npc_id, npp.personal_cash, mc.name_vi
+           FROM npc_personal_progression npp
+           JOIN master_characters mc ON mc.npc_id = npp.npc_id
+           WHERE npp.npc_id <> ?
+             AND npp.personal_cash >= ?
+             AND mc.baseline_location IN (${placeholders})
+           ORDER BY npp.personal_cash DESC, npp.npc_id ASC
+           LIMIT 1;`,
+          [npcId, amount, ...locations]
+        );
+        if (local) return local;
+      }
+    }
+    return this.db.queryOne<any>(
+      `SELECT npp.npc_id, npp.personal_cash, mc.name_vi
+       FROM npc_personal_progression npp
+       LEFT JOIN master_characters mc ON mc.npc_id = npp.npc_id
+       WHERE npp.npc_id <> ? AND npp.personal_cash >= ?
+       ORDER BY npp.personal_cash DESC, npp.npc_id ASC
+       LIMIT 1;`,
+      [npcId, amount]
+    );
+  }
+
   /**
    * Simulates a personal monthly action and growth cycle for a single NPC
    */
-  public simulateNpcTurn(npcId: CharacterId, turnNumber: number, gameDate: string): NpcJourneyLog | null {
-    // 1. Fetch current progression state
+  public simulateNpcTurn(
+    npcId: CharacterId,
+    turnNumber: number,
+    gameDate: string,
+    forcedAction?: NpcActionType
+  ): NpcJourneyLog | null {    // 1. Fetch current progression state
     let prog = this.db.queryOne<any>(`SELECT * FROM npc_personal_progression WHERE npc_id = ?;`, [npcId]);
     if (!prog) {
       this.ensureBaselineProgressions();
@@ -234,11 +298,20 @@ export class NpcLifecycleModule implements IFeatureModule {
     ];
 
     const chosenCandidate = utilityAi.selectBestAction(npcId, candidates, prog.current_focus) || candidates[0];
-    const actionType: NpcActionType = chosenCandidate.id as NpcActionType;
+    const actionType: NpcActionType = forcedAction || (chosenCandidate.id as NpcActionType);
 
     let titleVi = '';
     let narrativeVi = '';
     const statChanges: Record<string, number | string> = {};
+    let ledgerDeltaCash = 0;
+    let ledgerDeltaTroops = 0;
+    let ledgerCategory = '';
+    let ledgerCounterparty: string | null = null;
+    let ledgerMemo = '';
+    let commerceBuyer: any = null;
+    let garrisonSettlementId: string | null = null;
+    let recruitedForLedger = 0;
+    let strongholdDebit: { id: string; amount: number } | null = null;
 
     switch (actionType) {
       case 'MARTIAL_DRILL': {
@@ -252,26 +325,45 @@ export class NpcLifecycleModule implements IFeatureModule {
       case 'BANDIT_EXPEDITION': {
         const rollBounty = getTurnDeterministicRoll(turnNumber, npcId, 2);
         const rollTroops = getTurnDeterministicRoll(turnNumber, npcId, 3);
-        let bounty = Math.floor(150 + rollBounty * 200);
-        const recruited = Math.floor(5 + rollTroops * 10);
+        let bounty = topStronghold ? Math.floor(150 + rollBounty * 200) : 0;
+        let recruited = Math.floor(5 + rollTroops * 10);
 
         if (topStronghold && topStronghold.plundered_wealth > 0) {
           bounty = Math.min(topStronghold.plundered_wealth, bounty);
-          this.db.execute(`
-            UPDATE bandit_strongholds 
-            SET plundered_wealth = MAX(0, plundered_wealth - ?) 
-            WHERE stronghold_id = ?;
-          `, [bounty, topStronghold.stronghold_id]);
+          strongholdDebit = { id: topStronghold.stronghold_id, amount: bounty };
         }
 
+        // Volunteers come from the local garrison, leaving a minimum defence.
+        garrisonSettlementId = this.npcSettlementId(npcId);
+        if (garrisonSettlementId) {
+          const garrison = this.db.queryOne<{ garrison_troops: number }>(
+            'SELECT garrison_troops FROM session_settlements WHERE settlement_id = ? LIMIT 1;',
+            [garrisonSettlementId]
+          );
+          const available = Math.max(0, Number(garrison?.garrison_troops || 0) - 50);
+          recruited = Math.min(recruited, available);
+        } else {
+          recruited = 0;
+        }
+        recruitedForLedger = recruited;
+
         titleVi = `${npc.name} dẫn binh tiễu trừ sơn tặc phụ cận`;
-        narrativeVi = `${npc.name} tự dẫn bộ hạ đột kích sào huyệt sơn tặc, trảm tướng cướp, thu được ${bounty} Quan chiến lợi phẩm và thu phục ${recruited} tráng đinh tình nguyện gia nhập.`;
-        statChanges['personal_cash'] = `+${bounty} Quan`;
-        statChanges['personal_troops'] = `+${recruited} Dũng sĩ`;
+        narrativeVi = topStronghold
+          ? `${npc.name} tự dẫn bộ hạ đột kích sào huyệt sơn tặc, trảm tướng cướp, thu được ${bounty} Quan chiến lợi phẩm và thu phục ${recruited} tráng đinh tình nguyện gia nhập.`
+          : `${npc.name} dẫn bộ hạ tuần tra biên giới; không có sào huyệt nào để cướp, chỉ rèn luyện đội ngũ.`;
+        if (bounty > 0) statChanges['personal_cash'] = `+${bounty} Quan`;
+        if (recruited > 0) statChanges['personal_troops'] = `+${recruited} Dũng sĩ`;
         statChanges['prestige'] = '+150 Danh vọng';
         prog.personal_cash += bounty;
         prog.personal_troops += recruited;
         prog.prestige += 150;
+        ledgerDeltaCash = bounty;
+        ledgerDeltaTroops = recruited;
+        ledgerCategory = 'BANDIT_BOUNTY';
+        ledgerCounterparty = topStronghold?.stronghold_id || null;
+        ledgerMemo = topStronghold
+          ? `Chiến lợi phẩm từ ${topStronghold.name_vi}`
+          : 'Tuần tra biên giới';
         break;
       }
 
@@ -296,11 +388,25 @@ export class NpcLifecycleModule implements IFeatureModule {
       case 'COMMERCE_ARBITRAGE':
       default: {
         const rollCash = getTurnDeterministicRoll(turnNumber, npcId, 4);
-        const earned = Math.floor(80 + rollCash * 120);
+        let earned = Math.floor(80 + rollCash * 120);
+        commerceBuyer = this.findCommerceBuyer(npcId, earned);
+        if (commerceBuyer) {
+          earned = Math.min(earned, Math.floor(Number(commerceBuyer.personal_cash || 0)));
+        } else {
+          earned = 0;
+        }
         titleVi = `${npc.name} tham gia giao thương tích lũy`;
-        narrativeVi = `Tận dụng ngày nghỉ tại thị trấn, ${npc.name} thực hiện giao lưu trao đổi hàng hóa vật phẩm, thu thêm ${earned} Quan vào tài sản riêng.`;
-        statChanges['personal_cash'] = `+${earned} Quan`;
+        narrativeVi = earned > 0
+          ? `Tận dụng ngày nghỉ tại thị trấn, ${npc.name} bán hàng cho ${commerceBuyer.name_vi || commerceBuyer.npc_id}, thu thêm ${earned} Quan vào tài sản riêng.`
+          : `${npc.name} đi chợ nhưng không tìm được người mua đủ tiền; ngày giao thương không sinh lời.`;
+        if (earned > 0) statChanges['personal_cash'] = `+${earned} Quan`;
         prog.personal_cash += earned;
+        ledgerDeltaCash = earned;
+        ledgerCategory = 'COMMERCE_INCOME';
+        ledgerCounterparty = commerceBuyer?.npc_id || null;
+        ledgerMemo = commerceBuyer
+          ? `Bán hàng cho ${commerceBuyer.name_vi || commerceBuyer.npc_id}`
+          : 'Không có người mua';
         break;
       }
     }
@@ -320,6 +426,29 @@ export class NpcLifecycleModule implements IFeatureModule {
     };
 
     this.db.transaction(() => {
+      if (strongholdDebit && strongholdDebit.amount > 0) {
+        this.db.execute(
+          'UPDATE bandit_strongholds SET plundered_wealth = MAX(0, plundered_wealth - ?) WHERE stronghold_id = ?;',
+          [strongholdDebit.amount, strongholdDebit.id]
+        );
+      }
+      if (commerceBuyer && ledgerDeltaCash > 0) {
+        postNpcMutation(this.db, {
+          npcId: commerceBuyer.npc_id,
+          gameDate,
+          category: 'COMMERCE_PURCHASE',
+          counterparty: npcId,
+          deltaCash: -ledgerDeltaCash,
+          memoVi: `Mua hàng từ ${npc.name}`
+        });
+      }
+      if (garrisonSettlementId && recruitedForLedger > 0) {
+        this.db.execute(
+          'UPDATE session_settlements SET garrison_troops = MAX(0, garrison_troops - ?) WHERE settlement_id = ?;',
+          [recruitedForLedger, garrisonSettlementId]
+        );
+      }
+
       this.db.execute(`
         INSERT OR REPLACE INTO npc_journey_logs (id, npc_id, turn_number, game_date, action_type, title_vi, narrative_vi, stat_changes_json)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?);
@@ -334,6 +463,20 @@ export class NpcLifecycleModule implements IFeatureModule {
             updated_at = CURRENT_TIMESTAMP
         WHERE npc_id = ?;
       `, [prog.personal_cash, prog.prestige, prog.personal_troops, actionType, npcId]);
+
+      if (ledgerDeltaCash !== 0 || ledgerDeltaTroops !== 0) {
+        postNpcEntry(this.db, {
+          npcId,
+          gameDate,
+          category: ledgerCategory || 'LIFECYCLE',
+          counterparty: ledgerCounterparty,
+          deltaCash: ledgerDeltaCash,
+          deltaTroops: ledgerDeltaTroops,
+          balanceCash: prog.personal_cash,
+          balanceTroops: prog.personal_troops,
+          memoVi: ledgerMemo
+        });
+      }
     });
 
     // 5. Publish to EventBus
@@ -367,6 +510,16 @@ export class NpcLifecycleModule implements IFeatureModule {
 
         this.db.transaction(() => {
           this.db.execute(`UPDATE npc_personal_progression SET personal_cash = ? WHERE npc_id = ?;`, [prog.personal_cash, npcId]);
+          postNpcEntry(this.db, {
+            npcId,
+            gameDate,
+            category: 'BUSINESS_CAPITAL',
+            counterparty: bizId,
+            deltaCash: -initialCapital,
+            balanceCash: prog.personal_cash,
+            balanceTroops: Number(prog.personal_troops || 0),
+            memoVi: `Góp vốn mở ${bizId}`
+          });
 
           this.db.execute(`
             INSERT OR REPLACE INTO businesses 

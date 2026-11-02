@@ -128,21 +128,21 @@ export class SpatialGuardService {
     let businessesCount = 0;
     try {
       const bizRow = this.db.queryOne<{ cnt: number }>(
-        'SELECT COUNT(*) as cnt FROM businesses WHERE owner_id = ? AND status = "ACTIVE";',
+        "SELECT COUNT(*) as cnt FROM businesses WHERE owner_character_id = ? AND status = 'ACTIVE';",
         [playerId]
       );
       businessesCount = bizRow?.cnt || 0;
-    } catch {}
+    } catch { /* best-effort fallback */ }
 
     // Count duel wins
     let duelWins = 0;
     try {
       const duelRow = this.db.queryOne<{ cnt: number }>(
-        'SELECT COUNT(*) as cnt FROM session_duels WHERE player_id = ? AND outcome = "VICTORY";',
+        "SELECT COUNT(*) as cnt FROM session_duels WHERE player_id = ? AND outcome_type = 'VICTORY';",
         [playerId]
       );
       duelWins = duelRow?.cnt || 0;
-    } catch {}
+    } catch { /* best-effort fallback */ }
 
     // Evaluate 8-axis maximum attribute
     const maxAttribute = Math.max(

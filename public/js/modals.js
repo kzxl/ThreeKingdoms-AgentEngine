@@ -603,7 +603,13 @@ async function submitStartNewGame() {
     ? 'Are you sure you want to start a New Historical Campaign? Session state will be re-initialized from Master Blueprint with 100% ledger balance.'
     : 'Bạn có chắc chắn muốn Khởi Tạo Điển Tích Mới? Dữ liệu lượt chơi sẽ được thiết lập lại từ Master Blueprint và cân đối kế toán kép 100%.';
 
-  if (!window.confirm(msg)) return;
+  const confirmed = await window.UI.confirm({
+    title: currentLang === 'en' ? 'New campaign' : 'Khởi tạo màn chơi mới',
+    message: msg,
+    confirmLabel: currentLang === 'en' ? 'Start' : 'Khởi tạo',
+    danger: true
+  });
+  if (!confirmed) return;
 
   try {
     showToast(currentLang === 'en' ? 'Initializing New Campaign from Master Database...' : 'Đang khởi tạo Màn Chơi Mới từ Master Database...');
@@ -647,7 +653,12 @@ async function submitLoadSlot(slotName = 'slot_manual') {
   const msg = currentLang === 'en'
     ? `Restore playthrough from "${slotName}"?`
     : `Khôi phục màn chơi từ bản lưu "${slotName}"?`;
-  if (!window.confirm(msg)) return;
+  const confirmed = await window.UI.confirm({
+    title: currentLang === 'en' ? 'Load save' : 'Tải bản lưu',
+    message: msg,
+    confirmLabel: currentLang === 'en' ? 'Load' : 'Tải'
+  });
+  if (!confirmed) return;
 
   try {
     showToast(currentLang === 'en' ? `Restoring session from slot "${slotName}"...` : `Đang tải slot "${slotName}"...`);
@@ -677,8 +688,9 @@ async function checkAndRenderActiveEventBanner() {
       return;
     }
 
-    // Find local event that has not yet been resolved
-    const localActive = data.events.find(e => e.isLocal && !e.isResolved);
+    // Find the local event that is due now; if none is due, keep the banner
+    // hidden rather than advertising events from other years.
+    const localActive = data.events.find(e => e.isLocal && !e.isResolved && e.isDue);
     if (localActive) {
       currentActiveLocalEvent = localActive;
       const titleEl = document.getElementById('event-banner-title');
@@ -1416,12 +1428,25 @@ async function loadAndRenderProfessions() {
                 <span class="tactical-stat-label">Sản Lượng Ước Tính</span>
                 <span class="tactical-stat-val tactical-stat-val--gold">~${n.yieldQuantityMin}-${n.yieldQuantityMax} Đơn Vị</span>
               </div>
+              <div class="tactical-stat-item">
+                <span class="tactical-stat-label">Tồn Kho Tài Nguyên</span>
+                <span class="tactical-stat-val">${n.stock != null ? `${n.stock}/${n.maxStock}` : 'Không giới hạn'}</span>
+              </div>
+              <div class="tactical-stat-item">
+                <span class="tactical-stat-label">Công Cụ / Kỹ Năng</span>
+                <span class="tactical-stat-val">${n.requiredToolCode || 'Không'} • ${n.skillCode || n.requiredSkillCode || 'Chung'}</span>
+              </div>
             </div>
 
-            <div style="margin-top:4px;">
-              <button class="ui-btn ui-btn--success" style="width:100%;" onclick="handleGatherResource('${n.nodeId}')">
-                Tiến Vào Khai Thác
+            <div style="margin-top:4px; display:flex; gap:6px;">
+              <button class="ui-btn ui-btn--success" style="flex:1;" onclick="handleGatherResource('${n.nodeId}')" ${n.stock != null && n.stock < 1 ? 'disabled' : ''}>
+                ${n.stock != null && n.stock < 1 ? 'Đã Cạn Kiệt' : 'Tiến Vào Khai Thác'}
               </button>
+              ${n.restoreItemCode && n.stock != null && n.stock < n.maxStock ? `
+                <button class="ui-btn ui-btn--ghost" style="flex:1;" onclick="handleRestoreResource('${n.nodeId}')">
+                  Phục Hồi (${n.restoreCash} Quan + 1 ${n.restoreItemCode})
+                </button>
+              ` : ''}
             </div>
           </div>
         `).join('');
@@ -1464,7 +1489,16 @@ async function handleGatherResource(nodeId) {
     const res = await apiGatherResource('PLY-0001', nodeId);
     if (res.success) {
       const data = res.result;
-      showToast(`Thu hoạch thành công +${data.yieldQuantity} ${data.itemName}! (${data.expMessage})`, false);
+      const quality = data.variant && data.variant.quality ? ` [${data.variant.quality}]` : '';
+      const byproduct = data.byproductItemCode && data.byproductQuantity > 0
+        ? ` + ${data.byproductQuantity} ${data.byproductItemCode}`
+        : '';
+      const toolInfo = data.toolCode
+        ? (data.toolBroke
+          ? ` • ${data.toolCode} đã hỏng`
+          : (data.toolUsesLeft != null ? ` • ${data.toolCode} còn ${data.toolUsesLeft} lần` : ''))
+        : '';
+      showToast(`Thu hoạch thành công +${data.yieldQuantity} ${data.itemName}${quality}${byproduct}${toolInfo}! (${data.expMessage})`, false);
       if (data.breakthrough) {
         setTimeout(() => {
           alert(`CHÚC MỪNG ĐỘT PHÁ NGHỀ MỚI!\n\n${data.breakthrough.titleVi}\n\n${data.breakthrough.narrativeVi}`);
@@ -1474,6 +1508,20 @@ async function handleGatherResource(nodeId) {
     }
   } catch (err) {
     showToast(`Khai thác thất bại: ${err.message}`, true);
+  }
+}
+
+async function handleRestoreResource(nodeId) {
+  try {
+    showToast('Đang chi tiền và vật tư để phục hồi điểm tài nguyên...', false);
+    const res = await apiRestoreNode('PLY-0001', nodeId);
+    if (res.success) {
+      const data = res.result;
+      showToast(`Phục hồi ${data.nodeName}: ${data.stockBefore} → ${data.stockAfter}/${data.maxStock} (tiêu 1 ${data.itemConsumed}, -${data.cashPaid} Quan)`, false);
+      await loadAndRenderProfessions();
+    }
+  } catch (err) {
+    showToast(`Phục hồi thất bại: ${err.message}`, true);
   }
 }
 

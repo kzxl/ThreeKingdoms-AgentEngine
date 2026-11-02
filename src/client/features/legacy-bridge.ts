@@ -12,11 +12,16 @@ import { UI } from '../core/ui';
 import { lineageFamilyModal } from './lineage-family';
 import { equipmentForgeModal } from './equipment-forge';
 import { enterpriseWorkshopModal } from './enterprise-workshop';
-import { dossiersModal } from './dossiers';
 import { quickTradeModal } from './trade-quick';
 import { tacticalBattleModal } from './tactical-battle';
 import { transitTurnModals } from './transit-turn';
+import { questModal } from './quests/quest.modal';
+import { marketStallModal } from './market-stall';
 import { worldMapModal } from './world-map';
+import { wildernessMapModal } from './world-map/wilderness-map.modal';
+import { cityMapModal } from './world-map/city-map.modal';
+import { workforceHireModal } from './workforce';
+import { onboardingModal } from './onboarding';
 import { mapLiveService } from './world-map/map-live.service';
 
 export function setupLegacyBridge(): void {
@@ -58,6 +63,7 @@ export function setupLegacyBridge(): void {
     switchTab: (tab: string) => (equipmentForgeModal as any).modal.switchTab(tab),
     equip: (charId: string, slot: string, itemCode: string) => equipmentForgeModal.equip(charId, slot, itemCode),
     unequip: (charId: string, slot: string) => equipmentForgeModal.unequip(charId, slot),
+    repairTool: (itemCode: string) => equipmentForgeModal.repairTool(itemCode),
     executeForge: () => equipmentForgeModal.executeForge()
   };
 
@@ -75,15 +81,9 @@ export function setupLegacyBridge(): void {
   // projection and is still the complete surface. The TS shell remains for a
   // later migration and must not replace it yet.
 
-  // 7. Dossiers (Protagonist & NPC)
-  w.ProtagonistDossierModal = {
-    open: () => dossiersModal.openProtagonist(),
-    close: () => dossiersModal.closeProtagonist()
-  };
-  w.NpcDossierModal = {
-    open: (npcId: string) => dossiersModal.openNpc(npcId),
-    close: () => dossiersModal.closeNpc()
-  };
+  // 7. Dossiers (Protagonist & NPC) are owned by the legacy detailed renderers
+  // (public/js/protagonist-dossier-modal.js and npc-dossier-modal.js). Do not
+  // mount a second shell with the same modal id.
 
   // 8. Personal Journal & Roadmaps are provided by the legacy module
   // (public/js/personal-journal-ui.js) which owns the 4-tab journal DOM
@@ -100,6 +100,11 @@ export function setupLegacyBridge(): void {
     close: () => quickTradeModal.close(),
     updateTotal: () => quickTradeModal.updateTotal(),
     submit: () => quickTradeModal.submit()
+  };
+
+  w.MarketStallModal = {
+    open: (tab = 'stall') => marketStallModal.open(tab),
+    close: () => marketStallModal.close()
   };
 
   // 11. Tactical Battle & Combat
@@ -122,15 +127,46 @@ export function setupLegacyBridge(): void {
     openLegacy: () => transitTurnModals.openTurnAdvanceModal(),
     closeLegacy: () => transitTurnModals.closeTurnAdvanceModal()
   };
+  w.QuestUI = {
+    open: () => questModal.open(),
+    close: () => questModal.close(),
+    accept: (questId: string) => questModal.accept(questId),
+    advance: (questId: string) => questModal.advance(questId),
+    payObligation: (obligationId: string) => questModal.payObligation(obligationId),
+    acceptContract: (offerId: string) => questModal.acceptContract(offerId),
+    deliverContract: (contractId: string) => questModal.deliverContract(contractId),
+    verifyIntel: (reportId: string) => questModal.verifyIntel(reportId),
+    rentFarm: (parcelId: string) => questModal.rentFarm(parcelId),
+    plantCrop: (parcelId: string, cropCode: string) => questModal.plantCrop(parcelId, cropCode),
+    harvestFarm: (parcelId: string) => questModal.harvestFarm(parcelId)
+  };
 
   // 14. World Map Modal & Live Settlement State
   w.WorldMapUI = {
     open: () => worldMapModal.open(),
     close: () => worldMapModal.close()
   };
+  w.WildernessMapUI = {
+    open: (nodeId?: string) => wildernessMapModal.open(nodeId),
+    close: () => wildernessMapModal.close()
+  };
+  w.CityMapUI = {
+    open: (nodeId?: string) => cityMapModal.open(nodeId),
+    close: () => cityMapModal.close()
+  };
+  w.WorkforceHireUI = {
+    open: (candidateName: string) => workforceHireModal.open(candidateName),
+    close: () => workforceHireModal.close()
+  };
+  w.OnboardingUI = {
+    open: (force = false) => onboardingModal.open(force),
+    close: () => onboardingModal.close()
+  };
   w.MapLiveService = {
     load: (force = false) => mapLiveService.load(force),
     getForMapNode: (nodeId: string) => mapLiveService.getForMapNode(nodeId),
+    getSubLocationsForNode: (nodeId: string) => mapLiveService.getSubLocationsForNode(nodeId),
+    getPoiScenesForNode: (nodeId: string) => mapLiveService.getPoiScenesForNode(nodeId),
     getStatusForMapNode: (nodeId: string) => mapLiveService.getStatusForMapNode(nodeId),
     getThreatForMapNode: (nodeId: string) => mapLiveService.getThreatForMapNode(nodeId),
     findNpcByName: (name: string) => mapLiveService.findNpcByName(name),

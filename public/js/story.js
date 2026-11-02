@@ -178,11 +178,17 @@ async function clearStoryChronicle() {
   showToast(currentLang === 'en' ? 'Chat chronicle cleared.' : 'Đã làm mới dòng đối thoại.');
 }
 
-function confirmClearChat() {
-  const msg = currentLang === 'en' 
-    ? 'Do you want to clear the entire chat chronicle and start fresh?' 
+async function confirmClearChat() {
+  const msg = currentLang === 'en'
+    ? 'Do you want to clear the entire chat chronicle and start fresh?'
     : 'Bạn có muốn làm mới và xóa toàn bộ lịch sử đối thoại chat không?';
-  if (window.confirm(msg)) {
+  const confirmed = await window.UI.confirm({
+    title: currentLang === 'en' ? 'Clear chronicle' : 'Xóa lịch sử đối thoại',
+    message: msg,
+    confirmLabel: currentLang === 'en' ? 'Clear' : 'Làm mới',
+    danger: true
+  });
+  if (confirmed) {
     clearStoryChronicle();
   }
 }
@@ -538,38 +544,83 @@ function renderRelations(relations) {
   const isEn = (currentLang === 'en');
   const rels = relations || window.currentScene?.relations || [];
 
+  const countEl = document.getElementById('relations-card-count');
+  if (countEl) {
+    countEl.textContent = String(rels.length);
+    countEl.title = isEn ? `${rels.length} tracked relationships` : `${rels.length} quan hệ đang theo dõi`;
+  }
+
   if (rels.length === 0) {
-    list.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 8px; font-size: 10px;">${isEn ? 'No sentiment data available' : 'Chưa có dữ liệu hảo cảm'}</div>`;
+    list.innerHTML = `<div class="rel-empty">${isEn ? 'No sentiment data available' : 'Chưa có dữ liệu hảo cảm'}</div>`;
     return;
   }
 
-  list.innerHTML = rels.map((rel) => {
+  // Names come from the DB, so quote them before they land in markup or an
+  // inline handler attribute.
+  const escHtml = (value) => String(value ?? '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  const escJs = (value) => String(value ?? '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+
+  const ordered = [...rels].sort((a, b) => (Number(b.score) || 0) - (Number(a.score) || 0));
+
+  list.innerHTML = ordered.map((rel) => {
     const target = rel.target || 100;
     const score = rel.score || 0;
     const pct = Math.max(0, Math.min(100, Math.round((score / target) * 100)));
-    const colorClass = pct >= 70 ? 'emerald' : pct >= 60 ? 'cyan' : pct >= 50 ? 'gold' : 'orange';
-    const isHigh = pct >= 70;
+    const tier = score >= 80
+      ? { label: isEn ? 'Sworn' : 'Sinh Tử', cls: 'emerald' }
+      : score >= 60
+        ? { label: isEn ? 'Confidant' : 'Tri Kỷ', cls: 'cyan' }
+        : score >= 40
+          ? { label: isEn ? 'Familiar' : 'Thân Quen', cls: 'gold' }
+          : score >= 20
+            ? { label: isEn ? 'Acquaintance' : 'Sơ Giao', cls: 'orange' }
+            : { label: isEn ? 'Stranger' : 'Xa Lạ', cls: 'muted' };
 
     const name = isEn ? (rel.nameEn || rel.name) : rel.name;
     const status = isEn ? (rel.statusEn || rel.status) : rel.status;
+    const role = isEn ? (rel.roleEn || rel.role) : rel.role;
+    const inspectTitle = isEn
+      ? `${role ? role + ' — ' : ''}Inspect dossier & fog of information`
+      : `${role ? role + ' — ' : ''}Nhấn để xem Hồ Sơ & Sương Mù Thông Tin`;
+    const safeName = escJs(name);
 
     return `
-      <div class="rel-item" style="cursor: pointer;" onclick="handleSpeakerClick('${name}')" title="Nhấn để xem Hồ Sơ & Sương Mù Thông Tin">
-        <div class="rel-info">
-          <div class="rel-name-group">
-            <span class="rel-name">${name}</span>
-            ${status ? `<span class="rel-status-badge">${status}</span>` : ''}
-          </div>
-          <span class="rel-score ${isHigh ? 'green-text font-bold' : ''}">
-            ${score >= 0 ? '+' : ''}${score} / +${target}
+      <div class="rel-item" role="button" tabindex="0"
+           onclick="handleSpeakerClick('${safeName}')"
+           onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();handleSpeakerClick('${safeName}');}"
+           title="${escHtml(inspectTitle)}">
+        <div class="rel-top">
+          <span class="rel-tier ${tier.cls}">${tier.label}</span>
+          <span class="rel-name">${escHtml(name)}</span>
+          <span class="rel-score ${tier.cls}">
+            ${score > 0 ? '+' : ''}${score}${target !== 100 ? `<span class="rel-target">/${target}</span>` : ''}
           </span>
+          <span class="rel-open" aria-hidden="true">›</span>
         </div>
-        <div class="rel-bar">
-          <div class="rel-bar-fill ${colorClass}" style="width: ${pct}%;"></div>
+        ${status ? `<div class="rel-status-row"><span class="rel-status-badge" title="${escHtml(status)}">${escHtml(status)}</span></div>` : ''}
+        <div class="rel-bar" role="progressbar" aria-valuemin="0" aria-valuemax="${target}" aria-valuenow="${score}" aria-label="${escHtml(name)}">
+          <div class="rel-bar-fill ${tier.cls}" style="width: ${pct}%;"></div>
         </div>
       </div>
     `;
   }).join('');
+}
+
+function toggleProtagonistRelations(forceExpanded) {
+  const block = document.getElementById('protagonist-relations');
+  const body = document.getElementById('relations-body');
+  const toggle = document.getElementById('relations-toggle');
+  if (!block || !body || !toggle) return;
+
+  const expanded = typeof forceExpanded === 'boolean'
+    ? forceExpanded
+    : block.classList.contains('is-collapsed');
+
+  block.classList.toggle('is-collapsed', !expanded);
+  body.hidden = !expanded;
+  toggle.setAttribute('aria-expanded', String(expanded));
 }
 
 function renderSceneFromData(data, customNarrative = null) {
@@ -648,11 +699,6 @@ function renderAgentSimulationFeedback(reasoning, delta) {
       chipsContainer.innerHTML = pills.join('');
     }
   }
-
-  // Refresh agent activity log stream
-  if (typeof loadDeckAgentLogs === 'function') {
-    loadDeckAgentLogs();
-  }
 }
 
 // Global exposure
@@ -678,6 +724,7 @@ window.quickFillPrompt = dispatchQuickAction; // Backward compatibility fallback
 window.renderDynamicQuickChips = renderDynamicQuickChips;
 window.renderChoices = renderChoices;
 window.renderRelations = renderRelations;
+window.toggleProtagonistRelations = toggleProtagonistRelations;
 window.renderSceneFromData = renderSceneFromData;
 window.renderAgentSimulationFeedback = renderAgentSimulationFeedback;
 window.toggleCourierDrawer = toggleCourierDrawer;

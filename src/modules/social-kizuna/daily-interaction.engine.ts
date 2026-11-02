@@ -16,7 +16,10 @@ import { ContextDialogueService } from './context-dialogue.service';
 import { syncProgressProjection } from '../../shared/projection-sync';
 import { RngService } from '../../core/rng';
 import { nextId } from '../../shared/id-generator';
-import { postCashflowEntry } from '../../shared/ledger';
+import { postDoubleEntry } from '../../shared/ledger';
+import { ACCOUNT_CODES } from '../../shared/account-codes';
+import { NpcSkillService } from '../progression/npc-skill.service';
+import { SkillService } from '../progression/skill.service';
 
 export type FogTier = 1 | 2 | 3 | 4 | 5;
 
@@ -53,6 +56,9 @@ export interface NpcProfile {
   locationEn?: string;
   positionVi?: string;
   positionEn?: string;
+  age?: number;
+  portraitUrl?: string | null;
+  illustrationUrl?: string | null;
   war: number;
   int: number;
   ldr: number;
@@ -100,7 +106,11 @@ export interface NpcDossierView {
   styleNameEn: string;
   positionVi: string;
   positionEn: string;
+  age?: number;
+  portraitUrl?: string | null;
+  illustrationUrl?: string | null;
   baselineLocation?: string;
+  skills?: Array<{ skillCode: string; name: string; tier: number; currentExp: number; maxExp: number }>;
   locationVi: string;
   locationEn: string;
   avatarChar: string;
@@ -133,6 +143,28 @@ export interface NpcDossierView {
   // Ambition & Secrets under Fog
   ambition: { displayVi: string; displayEn: string; isRevealed: boolean };
   secretStory: { displayVi: string; displayEn: string; isRevealed: boolean };
+  assets: {
+    ledger: Array<{
+      entryId: string;
+      gameDate: string;
+      category: string;
+      counterparty: string | null;
+      deltaCash: number;
+      deltaTroops: number;
+      balanceCash: number;
+      balanceTroops: number;
+      memoVi: string | null;
+    }>;
+    business: {
+      businessId: string;
+      name: string;
+      status: string;
+      assignedRole: string;
+      managerNpcId: string | null;
+      safeCash: number;
+      tier: number;
+    } | null;
+  };
   interactionCount: number;
 }
 
@@ -165,7 +197,7 @@ export interface DailyInteractionResult {
     moraleDelta?: number;
     staminaChange?: number;
     itemConsumed?: string;
-    expGained?: { skill: string; amount: number };
+    expGained?: { skill: string; skillName?: string; amount: number };
     newIntelUnlocked?: string[];
   };
   updatedDossier: NpcDossierView;
@@ -383,6 +415,14 @@ export class DailyInteractionEngine {
     };
     const positionVi = char?.baseline_position_vi || state?.assigned_role || 'Hào Kiệt Bản Địa';
     const positionEn = POSITION_EN_MAP[positionVi] || char?.baseline_position_en || positionVi;
+    const age = Number(state?.age ?? char?.baseline_age ?? 30);
+    const portraitUrl = state?.portrait_url || char?.portrait_url || null;
+    const illustrationUrl = state?.illustration_url || char?.illustration_url || null;
+
+    // The database is the primary source: narrative fallbacks above only fill
+    // fields the roster does not carry.
+    if (char?.personality) personality = String(char.personality);
+    if (char?.motivation) motivation = String(char.motivation);
 
     return {
       npcId,
@@ -396,6 +436,9 @@ export class DailyInteractionEngine {
       locationEn: locInfo.en,
       positionVi,
       positionEn,
+      age,
+      portraitUrl,
+      illustrationUrl,
       war,
       int,
       ldr,
@@ -533,9 +576,9 @@ export class DailyInteractionEngine {
     let revealedDislikes: string[] = [];
     let revealedStats: string[] = [];
 
-    try { revealedHobbies = JSON.parse(row.revealed_hobbies || '[]'); } catch (e) {}
-    try { revealedDislikes = JSON.parse(row.revealed_dislikes || '[]'); } catch (e) {}
-    try { revealedStats = JSON.parse(row.revealed_stats || '[]'); } catch (e) {}
+    try { revealedHobbies = JSON.parse(row.revealed_hobbies || '[]'); } catch { /* best-effort fallback */ }
+    try { revealedDislikes = JSON.parse(row.revealed_dislikes || '[]'); } catch { /* best-effort fallback */ }
+    try { revealedStats = JSON.parse(row.revealed_stats || '[]'); } catch { /* best-effort fallback */ }
 
     return {
       npcId,
@@ -640,6 +683,78 @@ export class DailyInteractionEngine {
       5: 'Tier 5: Sworn Bond'
     };
 
+    let npcSkills: Array<{
+      skillCode: string;
+      name: string;
+      tier: number;
+      currentExp: number;
+      maxExp: number;
+      derived: boolean;
+      perks: Array<{ nameVi: string; nameEn: string; tier: number }>;
+    }> = [];
+    try {
+      npcSkills = NpcSkillService.forDatabase(this.db).listSkills(npcId).map(skill => ({
+        skillCode: skill.skillCode,
+        name: skill.nameVi,
+        tier: skill.tier,
+        currentExp: skill.currentExp,
+        maxExp: skill.maxExp,
+        derived: skill.derived,
+        perks: skill.perks.map(perk => ({
+          nameVi: perk.nameVi,
+          nameEn: perk.nameEn,
+          tier: perk.tier
+        }))
+      }));
+    } catch {
+      npcSkills = [];
+    }
+
+    let ledger: NpcDossierView['assets']['ledger'] = [];
+    try {
+      ledger = this.db.query<any>(
+        `SELECT entry_id, game_date, category, counterparty, delta_cash, delta_troops,
+                balance_cash, balance_troops, memo_vi
+           FROM npc_ledger WHERE npc_id = ?
+          ORDER BY game_date DESC, created_at DESC LIMIT 5;`,
+        [npcId]
+      ).map(row => ({
+        entryId: String(row.entry_id),
+        gameDate: String(row.game_date),
+        category: String(row.category),
+        counterparty: row.counterparty ? String(row.counterparty) : null,
+        deltaCash: Number(row.delta_cash || 0),
+        deltaTroops: Number(row.delta_troops || 0),
+        balanceCash: Number(row.balance_cash || 0),
+        balanceTroops: Number(row.balance_troops || 0),
+        memoVi: row.memo_vi ? String(row.memo_vi) : null
+      }));
+    } catch {
+      // Old fixture saves may predate the NPC ledger migration.
+      ledger = [];
+    }
+    let businessRow: any = null;
+    try {
+      businessRow = this.db.queryOne<any>(
+        `SELECT b.business_id, b.name, b.status, b.manager_npc_id, b.safe_cash, b.tier,
+                n.assigned_role
+           FROM npc_state n JOIN businesses b ON b.business_id = n.assigned_business_id
+          WHERE n.npc_id = ? LIMIT 1;`,
+        [npcId]
+      );
+    } catch {
+      businessRow = null;
+    }
+    const business = businessRow ? {
+      businessId: String(businessRow.business_id),
+      name: String(businessRow.name),
+      status: String(businessRow.status || 'ACTIVE'),
+      assignedRole: String(businessRow.assigned_role || 'UNASSIGNED'),
+      managerNpcId: businessRow.manager_npc_id ? String(businessRow.manager_npc_id) : null,
+      safeCash: Number(businessRow.safe_cash || 0),
+      tier: Number(businessRow.tier || 1)
+    } : null;
+
     return {
       npcId: profile.npcId,
       nameVi: profile.nameVi,
@@ -649,6 +764,10 @@ export class DailyInteractionEngine {
       styleNameEn: profile.styleNameEn || profile.styleNameVi || 'Style unrecorded',
       positionVi: profile.positionVi || 'Hào Kiệt Bản Địa',
       positionEn: profile.positionEn || 'Local Champion',
+      age: profile.age,
+      portraitUrl: profile.portraitUrl || null,
+      illustrationUrl: profile.illustrationUrl || null,
+      skills: npcSkills,
       baselineLocation: profile.baselineLocation || 'LOC-0001',
       locationVi: profile.locationVi || 'LOC-0001',
       locationEn: profile.locationEn || profile.baselineLocation || 'LOC-0001',
@@ -679,6 +798,7 @@ export class DailyInteractionEngine {
       dislikes: dislikesView,
       ambition: ambitionView,
       secretStory: secretView,
+      assets: { ledger, business },
       interactionCount: fog.interactionCount
     };
   }
@@ -745,7 +865,7 @@ export class DailyInteractionEngine {
     let affinityDelta = 5;
     let respectDelta = 2;
     let cashCost = 0;
-    let expGained: { skill: string; amount: number } | undefined = undefined;
+    let expGained: { skill: string; skillName?: string; amount: number } | undefined = undefined;
 
     if (totalRoll >= 22 || (d20 === 20 && hobbyBonus > 0)) {
       outcome = 'CRITICAL_SUCCESS';
@@ -786,8 +906,13 @@ export class DailyInteractionEngine {
       fatigueDelta = 10;
       moraleDelta = 5;
       if (outcome === 'SUCCESS' || outcome === 'CRITICAL_SUCCESS') {
+        const skillCode = profile.war >= profile.int ? 'SKL-WAR-DUEL' : 'SKL-TAC-STRAT';
         const skillName = profile.war >= profile.int ? 'Võ Thuật (Warfare)' : 'Mưu Lược (Tactics)';
-        expGained = { skill: skillName, amount: outcome === 'CRITICAL_SUCCESS' ? 25 : 12 };
+        expGained = {
+          skill: skillCode,
+          skillName,
+          amount: outcome === 'CRITICAL_SUCCESS' ? 25 : 12
+        };
       }
     } else if (actionType === 'SPAR_DEBATE') {
       fatigueDelta = 15; // Tiêu hao 15 thể lực
@@ -842,7 +967,6 @@ export class DailyInteractionEngine {
       'SELECT campaign_id, "current_date" AS d FROM campaign_meta LIMIT 1;'
     );
     const gameDate = campaignMeta?.d || '184-05-02';
-    const campaignId = campaignMeta?.campaign_id || 'CMP-184-ZHOU-01';
     this.db.transaction(() => {
       // 5.1 Deduct cash if any and balance with ledger & journal
       if (cashCost > 0) {
@@ -857,28 +981,17 @@ export class DailyInteractionEngine {
           const txnId = nextId(this.db, 'cashflow', 'TXN-SOC', gameDate);
           const memo = `Chi phí giao tế & ẩm thực cùng ${heroName}`;
 
-          postCashflowEntry(this.db, {
+          postDoubleEntry(this.db, {
             txnId,
             gameDate,
             counterparty: heroName,
             category: 'ENTERTAINMENT_LIVING',
             outflow: cashCost,
             balance: newTotalBalance,
-            memo
+            memo,
+            debitAccount: ACCOUNT_CODES.operatingExpense,
+            creditAccount: ACCOUNT_CODES.cashMobile
           });
-
-          // Double-Entry Parity
-          this.db.execute(`
-            INSERT INTO account_journal (
-              txn_id, campaign_id, game_date, account_code, debit, credit, memo
-            ) VALUES (?, ?, ?, '6001_OPERATING_EXPENSE', ?, 0, ?);
-          `, [txnId, campaignId, gameDate, cashCost, memo]);
-
-          this.db.execute(`
-            INSERT INTO account_journal (
-              txn_id, campaign_id, game_date, account_code, debit, credit, memo
-            ) VALUES (?, ?, ?, '1001_CASH_MOBILE', 0, ?, 'Xuất tiền mặt chi tiêu giao tế');
-          `, [txnId, campaignId, gameDate, cashCost]);
         }
       }
 
@@ -895,6 +1008,11 @@ export class DailyInteractionEngine {
         fog.relationshipTitleVi,
         `${actionType}: ${outcome} (${dialogueNarrativeVi.slice(0, 60)}...)`
       ]);
+
+      // 5.2b Mentorship must actually train the player, not just narrate it.
+      if (expGained) {
+        SkillService.forDatabase(this.db).awardExp(expGained.skill, expGained.amount);
+      }
 
       // 5.3 Update Fog Table
       const updatedHobbiesJson = JSON.stringify(fog.revealedHobbies);

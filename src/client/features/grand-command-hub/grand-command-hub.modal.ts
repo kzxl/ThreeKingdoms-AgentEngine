@@ -11,6 +11,7 @@ import { equipmentForgeModal } from '../equipment-forge';
 import { enterpriseWorkshopModal } from '../enterprise-workshop';
 import { caravanLogisticsModal } from '../caravan-logistics';
 import { lineageFamilyModal } from '../lineage-family';
+import { marketStallModal } from '../market-stall';
 import { getSpatialPoiModals } from '../spatial-poi';
 
 export class GrandCommandHubModal {
@@ -28,6 +29,7 @@ export class GrandCommandHubModal {
         { id: 'gear', label: 'Quân Trang & Lò Rèn', seal: '武' },
         { id: 'enterprise', label: 'Sản Nghiệp & Xưởng', seal: '業' },
         { id: 'caravan', label: 'Thương Đoàn & Tiêu Xa', seal: '商' },
+        { id: 'market', label: 'Chợ & Quầy Bán', seal: '市' },
         { id: 'family', label: 'Gia Thất & Dòng Tộc', seal: '家' },
         { id: 'duel', label: 'Diễn Võ & Lôi Đài', seal: '演' },
         { id: 'banquet', label: 'Tụ Nghĩa & Yến Tiệc', seal: '義' }
@@ -61,6 +63,9 @@ export class GrandCommandHubModal {
     } else if (tabId === 'caravan') {
       await this.modal.close();
       await caravanLogisticsModal.open('active');
+    } else if (tabId === 'market') {
+      await this.modal.close();
+      await marketStallModal.open('stall');
     } else if (tabId === 'family') {
       await this.modal.close();
       await lineageFamilyModal.open('courtship');

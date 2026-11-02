@@ -58,6 +58,22 @@ async function openTurnAdvanceModal() {
   renderTurnAdvanceConfirm();
 }
 
+/**
+ * One-click day step: opens the report shell and advances immediately. The
+ * month close, if any, happens inside the same server call.
+ */
+async function advanceNextDayNow() {
+  const modal = document.getElementById('turn-advance-modal');
+  if (!modal) {
+    console.error('turn-advance-modal not found');
+    return;
+  }
+  activeTurnAdvanceResult = null;
+  openTurnAdvanceModalShell();
+  getTurnAdvanceContent();
+  await submitExecuteAdvanceTurn();
+}
+
 function closeTurnAdvanceModal() {
   closeTurnAdvanceModalShell();
 }
@@ -74,42 +90,42 @@ function renderTurnAdvanceConfirm() {
   container.innerHTML = `
     <div class="turn-adv-confirm-box">
       <div class="turn-adv-header-icon">${uiIcon('hourglass')}</div>
-      <h3 class="turn-adv-title">${isEn ? 'Close the Month & Advance the Calendar' : 'Kết Thúc Tháng & Chuyển Sang Tháng Mới'}</h3>
+      <h3 class="turn-adv-title">${isEn ? 'Advance One Day' : 'Tiến Sang Ngày Tiếp Theo'}</h3>
       <p class="turn-adv-subtitle">
-        ${isEn 
-          ? 'Advancing to the next strategic turn will simulate 1 full calendar month of living world events, enterprise cycles, and NPC actions across the realm.'
-          : 'Kết thúc tháng hiện tại sẽ thúc đẩy bánh xe thời gian tiến thêm 1 tháng, kích hoạt mô phỏng thế giới sống động, thu chi sản nghiệp và hoạt động tự chủ của quần hùng khắp các châu quận.'}
+        ${isEn
+          ? 'One calendar day passes automatically. Grain upkeep, fatigue recovery, tasks and caravans advance; if tomorrow is the 1st, the month closes by itself.'
+          : 'Một ngày lịch trôi qua tự động. Lương thảo, thể lực, công việc dài ngày và thương đoàn đều tiến; nếu mai là mùng 1 thì tháng tự động được chốt.'}
       </p>
 
       <div class="turn-adv-changes-grid">
         <div class="turn-adv-card">
           <div class="turn-adv-card-icon">${uiIcon('calendar')}</div>
-          <div class="turn-adv-card-title">${isEn ? 'Time Step (+1 Month)' : 'Thời Gian (+1 Tháng)'}</div>
-          <div class="turn-adv-card-desc">${isEn ? 'World advances to next calendar month; seasonal prices update.' : 'Tiến trình lịch pháp chuyển sang tháng tiếp theo, giá thị trường biến động theo mùa.'}</div>
+          <div class="turn-adv-card-title">${isEn ? 'Time (+1 Day)' : 'Thời Gian (+1 Ngày)'}</div>
+          <div class="turn-adv-card-desc">${isEn ? 'The calendar advances exactly one day; no days are skipped.' : 'Lịch pháp tiến đúng một ngày, không bỏ qua ngày nào.'}</div>
         </div>
         <div class="turn-adv-card">
           <div class="turn-adv-card-icon">${uiIcon('sprout')}</div>
-          <div class="turn-adv-card-title">${isEn ? 'Stamina Recovery' : 'Hồi Phục Sinh Lực'}</div>
-          <div class="turn-adv-card-desc">${isEn ? 'Recover +35 fatigue; morale stabilizes to optimal level.' : 'Hồi phục +35 điểm mệt mỏi; sĩ khí bản thân hồi phục trạng thái sung mãn.'}</div>
+          <div class="turn-adv-card-title">${isEn ? 'Daily Upkeep' : 'Chi Dùng Hằng Ngày'}</div>
+          <div class="turn-adv-card-desc">${isEn ? 'Grain is consumed and fatigue recovers day by day.' : 'Lương thảo tiêu hao và thể lực hồi phục theo từng ngày.'}</div>
         </div>
         <div class="turn-adv-card">
-          <div class="turn-adv-card-icon">${uiIcon('coin')}</div>
-          <div class="turn-adv-card-title">${isEn ? 'Enterprise Operations' : 'Vận Hành Sản Nghiệp'}</div>
-          <div class="turn-adv-card-desc">${isEn ? 'Workshops generate revenue; staff monthly wages disbursed from safe cash.' : 'Xưởng chức tác kết toán doanh thu, tự động thanh toán lương gia nhân từ két sắt.'}</div>
+          <div class="turn-adv-card-icon">${uiIcon('scroll')}</div>
+          <div class="turn-adv-card-title">${isEn ? 'Automatic Month Close' : 'Tự Động Chốt Tháng'}</div>
+          <div class="turn-adv-card-desc">${isEn ? 'Reaching the 1st runs enterprise settlement, the living world and fame changes automatically.' : 'Khi sang mùng 1, sản nghiệp, thế giới sống động và danh vọng tự động kết toán.'}</div>
         </div>
         <div class="turn-adv-card">
           <div class="turn-adv-card-icon">${uiIcon('users')}</div>
-          <div class="turn-adv-card-title">${isEn ? 'Living World Simulation' : 'Quần Hùng Tự Chủ'}</div>
-          <div class="turn-adv-card-desc">${isEn ? 'Autonomous NPC training, faction politics, and regional logistic shifts.' : 'Các danh tướng rèn luyện võ nghệ, triều đình bổ nhiệm quan viên, nghĩa quân cơ động.'}</div>
+          <div class="turn-adv-card-title">${isEn ? 'Long-Running Work' : 'Công Việc Dài Ngày'}</div>
+          <div class="turn-adv-card-desc">${isEn ? 'Tasks and caravans keep moving in the background.' : 'Công việc và thương đoàn tiếp tục chạy nền, không cần thao tác lại.'}</div>
         </div>
       </div>
 
       <div class="turn-adv-action-bar">
         <button class="btn btn-outline" onclick="closeTurnAdvanceModal()">
-          ${isEn ? 'Return to Current Turn' : 'Quay Lại'}
+          ${isEn ? 'Return' : 'Quay Lại'}
         </button>
         <button class="btn btn-primary font-bold turn-adv-btn-exec" onclick="submitExecuteAdvanceTurn()">
-          <span>${uiIcon('hourglass')} ${isEn ? 'Confirm Next Month' : 'Xác Nhận Qua Tháng'}</span>
+          <span>${uiIcon('hourglass')} ${isEn ? 'Advance 1 Day' : 'Tiến 1 Ngày'}</span>
         </button>
       </div>
     </div>
@@ -124,13 +140,13 @@ async function submitExecuteAdvanceTurn() {
   container.innerHTML = `
     <div class="turn-adv-loading">
       <div class="turn-adv-spinner"></div>
-      <h4>${isEn ? 'Simulating Living World Progression...' : 'Đang mô phỏng chuyển biến thế cuộc tháng mới...'}</h4>
-      <p>${isEn ? 'Calculating workshop dividends, NPC career shifts, and faction politics across the Three Kingdoms...' : 'Đang tính toán lợi nhuận sản nghiệp, lương bổng gia nhân và diễn biến chính trị các châu...'}</p>
+      <h4>${isEn ? 'Advancing the Calendar One Day...' : 'Đang tiến một ngày...'}</h4>
+      <p>${isEn ? 'Charging daily upkeep, moving caravans and tasks; closing the month automatically if the day rolls over.' : 'Đang trừ lương thảo, đẩy thương đoàn và công việc; tự động chốt tháng nếu bước sang mùng 1...'}</p>
     </div>
   `;
 
   try {
-    const result = await apiAdvanceTurn();
+    const result = await apiAdvanceDays(1);
     activeTurnAdvanceResult = result;
     renderTurnAdvanceReport(result);
 
@@ -148,7 +164,16 @@ async function submitExecuteAdvanceTurn() {
     // Let the map and other live surfaces refresh their campaign state.
     window.dispatchEvent(new CustomEvent('sim:turn-advanced', { detail: result }));
 
-    showToast(isEn ? `Welcome to Turn ${result.nextTurn} (${result.nextDate})!` : `Đã chuyển sang Lượt ${result.nextTurn} (Ngày ${result.nextDate})!`);
+    if (Array.isArray(result.dueEvents) && result.dueEvents.length > 0) {
+      const names = result.dueEvents.slice(0, 2).map(event => (isEn ? event.nameEn : event.nameVi)).join(', ');
+      showToast(isEn ? `Historical event due: ${names}` : `Sự kiện lịch sử đến hạn: ${names}`);
+      if (typeof checkAndRenderActiveEventBanner === 'function') checkAndRenderActiveEventBanner();
+    }
+
+    const closed = Number(result.monthClosedCount || 0) > 0;
+    showToast(isEn
+      ? `Now ${result.nextDate}${closed ? ' — the month closed automatically.' : '.'}`
+      : `Đã sang ngày ${result.nextDate}${closed ? ' — tháng đã tự động chốt.' : '.'}`);
 
   } catch (err) {
     console.error('Turn advance failed:', err);
@@ -164,38 +189,115 @@ function renderTurnAdvanceError(err) {
   if (!container) return;
   const message = String(err && err.message ? err.message : err || '');
   container.innerHTML = `
-    <div class="turn-adv-card" role="alert">
-      <div class="turn-adv-card-icon">${uiIcon('alert')}</div>
-      <div class="turn-adv-card-title">${isEn ? 'Month Close Failed' : 'Chốt Tháng Thất Bại'}</div>
-      <div class="turn-adv-card-desc">
-        ${isEn
-          ? 'The world simulation did not commit. No cash, stock or calendar change was saved; retrying is safe.'
-          : 'Mô phỏng thế cuộc chưa ghi nhận. Tiền, kho và lịch chưa đổi; thử lại là an toàn.'}
+      <div class="turn-adv-card" role="alert">
+        <div class="turn-adv-card-icon">${uiIcon('alert')}</div>
+        <div class="turn-adv-card-title">${isEn ? 'Could Not Advance the Day' : 'Không Thể Tiến Ngày'}</div>
+        <div class="turn-adv-card-desc">
+          ${isEn
+            ? 'The day or its month boundary did not commit. No cash, stock or calendar change was saved; retrying is safe.'
+            : 'Ngày hoặc nghiệp vụ chốt tháng chưa ghi nhận. Tiền, kho và lịch chưa đổi; thử lại là an toàn.'}
+        </div>
+        <pre class="turn-adv-error-detail">${message.replace(/</g, '&lt;')}</pre>
+        <div class="turn-adv-action-bar">
+          <button class="btn btn-outline" onclick="closeTurnAdvanceModal()">
+            ${isEn ? 'Close' : 'Đóng'}
+          </button>
+          <button class="btn btn-primary font-bold" onclick="submitExecuteAdvanceTurn()">
+            ${isEn ? 'Retry' : 'Thử Lại'}
+          </button>
+        </div>
       </div>
-      <pre class="turn-adv-error-detail">${message.replace(/</g, '&lt;')}</pre>
-      <div class="turn-adv-action-bar">
-        <button class="btn btn-outline" onclick="closeTurnAdvanceModal()">
-          ${isEn ? 'Close' : 'Đóng'}
-        </button>
-        <button class="btn btn-primary font-bold" onclick="submitExecuteAdvanceTurn()">
-          ${isEn ? 'Retry Month Close' : 'Thử Lại Chốt Tháng'}
-        </button>
-      </div>
-    </div>
   `;
 }
 
 const TURN_ACTION_LABELS = {
   TRADE_BUY: { vi: 'Thu mua vật tư', en: 'Procurement' },
   TRADE_SELL: { vi: 'Bán hàng hóa', en: 'Sale' },
+  TRADE: { vi: 'Giao dịch', en: 'Trade' },
   PRODUCTION_BATCH: { vi: 'Sản xuất lô hàng', en: 'Production batch' },
   PAY_WAGES: { vi: 'Chi trả lương', en: 'Wage payment' },
   RECORD_BOUNTY: { vi: 'Ghi nhận chiến lợi phẩm', en: 'Bounty recorded' },
   REWARD_NPC: { vi: 'Thưởng gia nhân', en: 'Retainer reward' },
   MOVE_LOCATION: { vi: 'Di chuyển', en: 'Travel' },
   PERSONAL_GROWTH: { vi: 'Tu dưỡng bản thân', en: 'Self-cultivation' },
-  KIZUNA_INTERACT: { vi: 'Giao lưu hào kiệt', en: 'Social interaction' }
+  KIZUNA_INTERACT: { vi: 'Giao lưu hào kiệt', en: 'Social interaction' },
+  KIZUNA_NATURAL_CHAT: { vi: 'Trò chuyện tự nhiên', en: 'Natural conversation' },
+  ENTERPRISE_WORK: { vi: 'Ca làm việc', en: 'Work shift' },
+  ENTERPRISE_SAFE_CASH: { vi: 'Nạp / rút quỹ xưởng', en: 'Enterprise safe cash' },
+  ENTERPRISE_COLLECT: { vi: 'Thu lợi nhuận xưởng', en: 'Collect enterprise profit' },
+  ENTERPRISE_OPEN: { vi: 'Mở cơ sở mới', en: 'Open enterprise' },
+  LABOR_WORK: { vi: 'Lao động công nhật', en: 'Wage labor' },
+  MONTH_CLOSE: { vi: 'Chốt tháng', en: 'Month close' },
+  BUSINESS_MONTHLY_ACCRUAL: { vi: 'Kết toán xưởng tháng', en: 'Monthly workshop settlement' },
+  EXPLORE_POI: { vi: 'Khảo sát địa điểm', en: 'Explore location' },
+  GATHER_RESOURCE: { vi: 'Khai thác tài nguyên', en: 'Gather resources' },
+  TOOL_REPAIR: { vi: 'Sửa công cụ', en: 'Repair tool' },
+  NODE_RESTORE: { vi: 'Phục hồi điểm tài nguyên', en: 'Restore resource node' },
+  WILDERNESS_TRAVEL: { vi: 'Đi tới địa danh dã ngoại', en: 'Wilderness travel' },
+  CITY_ENTER: { vi: 'Vào địa điểm nội thành', en: 'Enter city location' },
+  MARCH: { vi: 'Hành quân', en: 'March' },
+  PATROL: { vi: 'Tuần tra', en: 'Patrol' },
+  GARRISON_REINFORCE: { vi: 'Điều binh đồn trú', en: 'Reinforce garrison' },
+  EXPEDITION_START: { vi: 'Xuất chinh', en: 'Start expedition' },
+  SIEGE_START: { vi: 'Bắt đầu bao vây', en: 'Start siege' },
+  SIEGE_ASSAULT: { vi: 'Công thành', en: 'Siege assault' },
+  BANDIT_STRONGHOLD_ASSAULT: { vi: 'Đánh ổ phỉ', en: 'Assault bandit stronghold' },
+  DUEL_INITIATE: { vi: 'Khiêu chiến', en: 'Initiate duel' },
+  DUEL_ROUND: { vi: 'Hiệp đấu', en: 'Duel round' },
+  DUEL_SPAR: { vi: 'Tỉ thí', en: 'Sparring' },
+  DUEL_ARENA: { vi: 'Đấu trường', en: 'Arena duel' },
+  DUEL_CARAVAN_AMBUSH: { vi: 'Phục kích thương đoàn', en: 'Caravan ambush' },
+  BANQUET_HOST: { vi: 'Mở tiệc chiêu đãi', en: 'Host banquet' },
+  BANQUET_RECRUIT: { vi: 'Chiêu mộ tại tiệc', en: 'Recruit at banquet' },
+  BANQUET_BROTHERHOOD: { vi: 'Kết nghĩa huynh đệ', en: 'Sworn brotherhood' },
+  REST_WITH_SPOUSE: { vi: 'Nghỉ ngơi cùng phu nhân', en: 'Rest with spouse' },
+  FARM_RENT: { vi: 'Thuê ruộng', en: 'Rent farmland' },
+  FARM_PLANT: { vi: 'Gieo trồng', en: 'Plant crop' },
+  FARM_HARVEST: { vi: 'Thu hoạch', en: 'Harvest' },
+  CRAFT: { vi: 'Chế tác', en: 'Craft' },
+  CRAFT_RECIPE: { vi: 'Chế tác theo công thức', en: 'Craft recipe' },
+  FORGE_BESPOKE: { vi: 'Đúc thần binh', en: 'Bespoke forge' },
+  FORGE_BESPOKE_WEAPON: { vi: 'Đúc thần binh', en: 'Bespoke forge' },
+  FORGE_STANDARD: { vi: 'Rèn vũ khí tiêu chuẩn', en: 'Standard forge' },
+  STALL_OPEN: { vi: 'Mở quầy bán', en: 'Open stall' },
+  STALL_LIST: { vi: 'Niêm yết hàng', en: 'List goods' },
+  STALL_CLOSE: { vi: 'Đóng quầy bán', en: 'Close stall' },
+  CARAVAN_DISPATCH: { vi: 'Phái thương đoàn', en: 'Dispatch caravan' },
+  CARAVAN_CLAIM: { vi: 'Nhận thương đoàn', en: 'Claim caravan' },
+  MERCHANT_ROUTE_CREATE: { vi: 'Mở thương lộ', en: 'Create merchant route' },
+  MERCHANT_ROUTE_STATUS: { vi: 'Đổi trạng thái thương lộ', en: 'Update merchant route' },
+  CONTRACT_ACCEPT: { vi: 'Nhận hợp đồng', en: 'Accept contract' },
+  CONTRACT_DELIVER: { vi: 'Giao hợp đồng', en: 'Deliver contract' },
+  QUEST_ACCEPT: { vi: 'Nhận nhiệm vụ', en: 'Accept quest' },
+  QUEST_ADVANCE: { vi: 'Tiến bước nhiệm vụ', en: 'Advance quest' },
+  COURTSHIP_PROPOSE: { vi: 'Cầu hôn', en: 'Propose marriage' },
+  LINEAGE_SUCCESSION: { vi: 'Kế vị gia tộc', en: 'Lineage succession' },
+  WORKFORCE_HIRE: { vi: 'Chiêu mộ nhân sự', en: 'Hire specialist' },
+  PERK_CHOOSE: { vi: 'Chọn tuyệt kỹ', en: 'Choose perk' },
+  MENTORSHIP_TURN: { vi: 'Truyền nghề', en: 'Mentorship' },
+  CHILD_BIRTH: { vi: 'Sinh con', en: 'Childbirth' },
+  CHILD_AGE: { vi: 'Con lớn thêm', en: 'Child aging' },
+  PREGNANCY_TICK: { vi: 'Tiến trình thai nghén', en: 'Pregnancy progress' },
+  OBLIGATION_PAY: { vi: 'Trả nghĩa vụ', en: 'Pay obligation' },
+  ECOLOGY_RELIEF: { vi: 'Cứu trợ sinh thái', en: 'Ecology relief' },
+  ECOLOGY_TRANSPORT: { vi: 'Vận chuyển cứu trợ', en: 'Ecology transport' },
+  NPC_MARKET_BUY: { vi: 'NPC mua hàng', en: 'NPC market purchase' },
+  INTEL_VERIFY: { vi: 'Xác minh tình báo', en: 'Verify intel' },
+  STUDY: { vi: 'Học tập', en: 'Study' },
+  START_TASK: { vi: 'Khởi công công việc dài ngày', en: 'Start long task' },
+  CANCEL_TASK: { vi: 'Hủy công việc dài ngày', en: 'Cancel long task' },
+  ADMIN_ACTION: { vi: 'Thao tác hệ thống', en: 'System action' }
 };
+
+function formatActionLabel(actionType, isEn) {
+  const label = TURN_ACTION_LABELS[actionType];
+  if (label) return isEn ? label.en : label.vi;
+  const humanized = String(actionType || '')
+    .replace(/_/g, ' ')
+    .toLowerCase()
+    .replace(/(^|\s)\S/g, char => char.toUpperCase());
+  return isEn ? humanized || 'System action' : `Thao tác: ${humanized || 'hệ thống'}`;
+}
 
 function turnReportEmpty(isEn, vi, en) {
   return `<div class="turn-rpt-empty">${isEn ? en : vi}</div>`;
@@ -221,6 +323,8 @@ function renderTurnAdvanceReport(res) {
   const finance = res.financeSummary || { inflow: 0, outflow: 0, net: 0 };
   const status = res.playerStatus || {};
   const eco = res.ecologyResults || {};
+  const daysAdvanced = Number(res.daysAdvanced || 1);
+  const monthsClosed = Number(res.monthClosedCount || 0);
 
   const bizHtml = bizList.length > 0 ? bizList.map(b => {    const method = b.settlementMethod === 'WORKSHOP'
       ? (isEn ? 'Workshop cycle' : 'Xưởng tự vận hành')
@@ -249,12 +353,12 @@ function renderTurnAdvanceReport(res) {
     : '';
 
   const actionHtml = actionList.length > 0 ? actionList.map(a => {
-    const label = TURN_ACTION_LABELS[a.actionType] || { vi: a.actionType, en: a.actionType };
+    const label = formatActionLabel(a.actionType, isEn);
     return `
       <div class="turn-rpt-timeline-item">
         <span class="turn-rpt-chip">${a.gameDate || ''}</span>
         <div>
-          <div class="turn-rpt-item-title">${isEn ? label.en : label.vi}${a.memo ? ` • ${a.memo}` : ''}</div>
+          <div class="turn-rpt-item-title">${label}${a.memo ? ` • ${a.memo}` : ''}</div>
           <div class="turn-rpt-item-meta">${a.status || 'SUCCESS'}</div>
         </div>
       </div>
@@ -332,12 +436,16 @@ function renderTurnAdvanceReport(res) {
     <div class="turn-adv-report-box">
       <div class="turn-rpt-header">
         <div>
-          <span class="turn-rpt-badge font-mono">${isEn ? 'MONTHLY WORLD DISPATCH' : 'BÁO CÁO THẾ CUỘC THÁNG MỚI'}</span>
-          <h3 class="turn-rpt-title">${res.turnTitle || `Lượt ${res.nextTurn}`}</h3>
-          <span class="turn-rpt-date font-mono">${res.prevDate} → <strong>${res.nextDate}</strong> (Lượt ${res.nextTurn})</span>
+          <span class="turn-rpt-badge font-mono">${monthsClosed > 0
+            ? (isEn ? 'MONTHLY WORLD DISPATCH' : 'BÁO CÁO THẾ CUỘC THÁNG MỚI')
+            : (isEn ? 'DAILY DISPATCH' : 'BÁO CÁO NGÀY')}</span>
+          <h3 class="turn-rpt-title">${res.turnTitle || (isEn ? `Day ${res.nextDate}` : `Ngày ${res.nextDate}`)}</h3>
+          <span class="turn-rpt-date font-mono">${res.prevDate} → <strong>${res.nextDate}</strong>${monthsClosed > 0 ? ` (Lượt ${res.nextTurn})` : ` (+${daysAdvanced} ${isEn ? 'day' : 'ngày'})`}</span>
         </div>
       </div>
-      <p class="turn-rpt-summary">${res.turnSummary || ''}</p>
+      <p class="turn-rpt-summary">${res.turnSummary || (isEn
+        ? `${daysAdvanced} day advanced. Grain -${Number(res.grainCost || 0).toFixed(2)} piculs; fatigue now ${status.fatigue ?? '—'}/100.${monthsClosed > 0 ? ' The month closed automatically.' : ' No month boundary yet, so monthly settlement sections stay empty.'}`
+        : `Đã tiến ${daysAdvanced} ngày. Hao lương -${Number(res.grainCost || 0).toFixed(2)} Thạch; thể lực còn ${status.fatigue ?? '—'}/100.${monthsClosed > 0 ? ' Tháng đã tự động chốt.' : ' Chưa tới mốc chốt tháng nên các mục kết toán tháng để trống.'}`)}</p>
       <div class="turn-rpt-kpi-grid">${kpiHtml}</div>
 
       <div class="turn-rpt-sections-grid">
@@ -364,8 +472,8 @@ function renderTurnAdvanceReport(res) {
               <strong class="gold-text">${Number(status.fame || 0).toLocaleString()}${res.fameDecay ? ` (${res.fameDecay.delta})` : ''}</strong>
             </div>
             <div class="turn-rpt-stat-row">
-              <span>${isEn ? 'Skipped days / grain upkeep:' : 'Ngày bỏ qua / hao lương:'}</span>
-              <strong class="${res.grainMissing ? 'danger-text' : 'amber-text'}">${res.skippedDays || 0} • -${Number(res.grainCost || 0).toFixed(2)} ${isEn ? 'piculs' : 'Thạch'}</strong>
+              <span>${isEn ? 'Days advanced / grain upkeep:' : 'Ngày đã tiến / hao lương:'}</span>
+              <strong class="${res.grainMissing ? 'danger-text' : 'amber-text'}">${daysAdvanced} • -${Number(res.grainCost || 0).toFixed(2)} ${isEn ? 'piculs' : 'Thạch'}</strong>
             </div>
             <div class="turn-rpt-stat-row">
               <span>${isEn ? 'Cash in / out:' : 'Thu / Chi:'}</span>
@@ -393,7 +501,7 @@ function renderTurnAdvanceReport(res) {
         <div class="turn-rpt-card full-width">
           <div class="turn-rpt-card-hdr">
             ${uiIcon('calendar')}
-            <span class="title">${isEn ? 'What You Did This Month' : 'Những Việc Bạn Đã Làm Trong Tháng'}</span>
+            <span class="title">${isEn ? 'What Happened This Period' : 'Diễn Biến Trong Kỳ'}</span>
           </div>
           <div class="turn-rpt-card-body turn-rpt-timeline">${actionHtml}</div>
         </div>
@@ -448,7 +556,7 @@ function renderTurnAdvanceReport(res) {
 
       <div class="turn-adv-action-bar">
         <button class="btn btn-primary font-bold turn-adv-btn-exec" onclick="finishTurnAdvance()">
-          <span>${uiIcon('hourglass')} ${isEn ? `Enter Turn ${res.nextTurn}` : `Bắt Đầu Lượt ${res.nextTurn}`} →</span>
+          <span>${uiIcon('hourglass')} ${isEn ? 'Continue' : 'Tiếp Tục'} →</span>
         </button>
       </div>
     </div>
@@ -547,88 +655,115 @@ async function renderTimePanel() {
       `;
     }).join('') : `<div class="turn-rpt-empty">${isEn ? 'No multi-day tasks.' : 'Không có công việc dài ngày.'}</div>`;
 
-    const actionRows = [
-      ['TRADE_BUY', isEn ? 'Market transaction' : 'Giao dịch chợ'],
-      ['PERSONAL_GROWTH', isEn ? 'Training / rest' : 'Luyện tập / nghỉ'],
-      ['KIZUNA_INTERACT', isEn ? 'Social interaction' : 'Giao lưu'],
-      ['WORK_SHIFT', isEn ? 'Work shift' : 'Ca làm việc'],
-      ['MOVE_LOCATION', isEn ? 'Local travel' : 'Di chuyển'],
-      ['ENTERPRISE_MANAGE', isEn ? 'Enterprise / caravan' : 'Sản nghiệp / thương đoàn'],
-      ['START_TASK', isEn ? 'Start long task' : 'Khởi công task']
-    ].map(([type, label]) => {
+    const actionDefs = [
+      ['TRADE_BUY', 'Giao dịch chợ', 'Market trade', '市'],
+      ['PERSONAL_GROWTH', 'Luyện tập / nghỉ', 'Training / rest', '修'],
+      ['KIZUNA_INTERACT', 'Giao lưu', 'Social interaction', '交'],
+      ['WORK_SHIFT', 'Ca làm việc', 'Work shift', '工'],
+      ['MOVE_LOCATION', 'Di chuyển', 'Travel', '行'],
+      ['ENTERPRISE_MANAGE', 'Sản nghiệp / thương đoàn', 'Enterprise / caravan', '業'],
+      ['START_TASK', 'Khởi công task', 'Start long task', '計']
+    ];
+    const actionRows = actionDefs.map(([type, labelVi, labelEn, seal]) => {
       const cost = policy[type] || { days: 1, fatigue: 0 };
+      const fatigue = Number(cost.fatigue || 0);
       return `
-        <div class="turn-rpt-stat-row">
-          <span>${label}</span>
-          <strong>${cost.days} ${isEn ? 'day(s)' : 'ngày'} • ${cost.fatigue > 0 ? `-${cost.fatigue}` : '0'} ${isEn ? 'fatigue' : 'thể lực'}</strong>
+        <div class="time-cost-chip">
+          <span class="time-cost-seal">${seal}</span>
+          <span class="time-cost-name">${isEn ? labelEn : labelVi}</span>
+          <span class="time-cost-value">${cost.days} ${isEn ? 'day(s)' : 'ngày'}${fatigue > 0 ? ` • -${fatigue} ${isEn ? 'fatigue' : 'thể lực'}` : ''}</span>
         </div>
       `;
     }).join('');
 
     const recentHtml = recent.length > 0 ? recent.map(item => {
-      const label = TURN_ACTION_LABELS[item.actionType] || { vi: item.actionType, en: item.actionType };
+      const label = formatActionLabel(item.actionType, isEn);
       return `
         <div class="time-timeline-row">
           <span class="turn-rpt-chip">${escapeTimeText(item.gameDate || '')}</span>
-          <span class="time-timeline-title">${escapeTimeText(isEn ? label.en : label.vi)}${item.memo ? ` • ${escapeTimeText(item.memo)}` : ''}</span>
+          <span class="time-timeline-title">${escapeTimeText(label)}${item.memo ? ` • ${escapeTimeText(item.memo)}` : ''}</span>
           <span class="time-timeline-real">${escapeTimeText(item.createdAt || '')}</span>
         </div>
       `;
-    }).join('') : `<div class="turn-rpt-empty">${isEn ? 'No recorded actions yet.' : 'Chưa có thao tác nào được ghi nhận.'}</div>`;
+    }).join('') : `<div class="turn-rpt-empty">${isEn ? 'No recorded actions this month.' : 'Tháng này chưa có thao tác nào được ghi nhận.'}</div>`;
+
+    const fatigue = Math.max(0, Math.min(100, Number(clock.fatigue || 0)));
+    const stamina = Math.max(0, 100 - fatigue);
+    const phaseLabel = clock.phaseLabel || '';
+    const health = Number(clock.health ?? 100);
+    const morale = Number(clock.morale ?? 100);
+    const grain = Number(clock.grain || 0);
+    const dayOfMonth = Number(clock.dayOfMonth || 1);
+    const daysPerMonth = Number(clock.daysPerMonth || 30);
+    const daysLeft = Number(clock.daysLeft ?? Math.max(0, daysPerMonth - dayOfMonth));
 
     container.innerHTML = `
-      <div class="time-hero">
-        <div class="time-hero-date font-mono">${escapeTimeText(clock.currentDate || '—')}</div>
-        <div class="time-hero-meta">
-          ${isEn ? 'Day' : 'Ngày'} ${clock.dayOfMonth || 1}/${clock.daysPerMonth || 30} •
-          ${isEn ? 'Turn' : 'Lượt'} ${clock.activeTurn || 1} •
-          ${isEn ? 'Season' : 'Mùa'} ${escapeTimeText(clock.season || '—')}
-        </div>
-        <div class="time-progress"><span style="width:${dayPct}%"></span></div>
-        <div class="time-progress-labels">
-          <span>${isEn ? 'Day 1' : 'Ngày 1'}</span>
-          <span>${isEn ? `${clock.daysLeft || 0} days left` : `Còn ${clock.daysLeft || 0} ngày`}</span>
-          <span>${isEn ? 'Day 30' : 'Ngày 30'}</span>
-        </div>
-      </div>
-
-      <div class="time-stat-grid">
-        <div class="turn-rpt-kpi"><span class="turn-rpt-kpi-label">${uiIcon('sprout')} ${isEn ? 'Fatigue' : 'Thể lực'}</span><strong class="turn-rpt-kpi-value">${clock.fatigue ?? 0}/100</strong></div>
-        <div class="turn-rpt-kpi"><span class="turn-rpt-kpi-label">${uiIcon('grain')} ${isEn ? 'Grain' : 'Lương thảo'}</span><strong class="turn-rpt-kpi-value">${Number(clock.grain || 0).toFixed(2)}</strong></div>
-        <div class="turn-rpt-kpi"><span class="turn-rpt-kpi-label">${uiIcon('shield')} ${isEn ? 'Health / Morale' : 'Sinh lực / Sĩ khí'}</span><strong class="turn-rpt-kpi-value">${clock.health ?? 100} / ${clock.morale ?? 100}</strong></div>
-        <div class="turn-rpt-kpi"><span class="turn-rpt-kpi-label">${uiIcon('hourglass')} ${isEn ? 'Active tasks' : 'Task đang chạy'}</span><strong class="turn-rpt-kpi-value">${tasks.length}</strong></div>
-      </div>
-
-      <div class="time-compare-grid">
-        <div class="turn-rpt-card">
-          <div class="turn-rpt-card-hdr">${uiIcon('calendar')}<span class="title">${isEn ? 'Real-World Comparison' : 'Đối Chiếu Thực Tế'}</span></div>
-          <div class="turn-rpt-card-body">
-            <div class="time-real-date" id="time-real-clock">${formatRealDateTime()}</div>
-            <div class="turn-rpt-item-meta">${isEn ? '1 game day = 1 calendar day; a month is 30 game days. Only “Next Month” closes the month.' : '1 ngày game = 1 ngày lịch; tháng game 30 ngày. Chỉ “Qua Tháng” mới chốt tháng.'}</div>
-            <div class="turn-rpt-stat-row"><span>${isEn ? 'Timezone' : 'Múi giờ'}</span><strong>UTC${(data.real?.timezoneOffsetMinutes || 0) <= 0 ? '+' : '-'}${Math.abs((data.real?.timezoneOffsetMinutes || 0) / 60)}</strong></div>
+      <div class="time-panel">
+        <div class="time-hero">
+          <div class="time-hero-top">
+            <div>
+              <div class="time-hero-date font-mono">${escapeTimeText(clock.currentDate || '—')}</div>
+              <div class="time-hero-meta">
+                ${isEn ? 'Turn' : 'Lượt'} ${clock.activeTurn || 1} •
+                ${isEn ? 'Season' : 'Mùa'} ${escapeTimeText(clock.season || '—')}
+                ${phaseLabel ? ` • ${escapeTimeText(phaseLabel)}` : ''}
+              </div>
+            </div>
+            <span class="time-phase-badge">${isEn ? 'Day' : 'Ngày'} ${dayOfMonth}/${daysPerMonth}</span>
+          </div>
+          <div class="time-progress"><span style="width:${dayPct}%"></span></div>
+          <div class="time-progress-labels">
+            <span>${isEn ? 'Month start' : 'Đầu tháng'}</span>
+            <span>${isEn ? `${daysLeft} days until close` : `Còn ${daysLeft} ngày tới chốt tháng`}</span>
+            <span>${isEn ? 'Month close' : 'Chốt tháng'}</span>
           </div>
         </div>
-        <div class="turn-rpt-card">
-          <div class="turn-rpt-card-hdr">${uiIcon('hourglass')}<span class="title">${isEn ? 'Action Time Budget' : 'Ngân Sách Hành Động'}</span></div>
-          <div class="turn-rpt-card-body">${actionRows}</div>
+
+        <div class="time-kpi-grid">
+          <div class="time-kpi is-fatigue"><span>${isEn ? 'Fatigue' : 'Mệt mỏi'}</span><strong>${fatigue}/100</strong></div>
+          <div class="time-kpi is-stamina"><span>${isEn ? 'Stamina left' : 'Thể lực còn'}</span><strong>${stamina}/100</strong></div>
+          <div class="time-kpi is-health"><span>${isEn ? 'Health' : 'Sinh lực'}</span><strong>${health}/100</strong></div>
+          <div class="time-kpi is-morale"><span>${isEn ? 'Morale' : 'Sĩ khí'}</span><strong>${morale}%</strong></div>
+          <div class="time-kpi is-grain"><span>${isEn ? 'Grain' : 'Lương thảo'}</span><strong>${grain.toFixed(2)} <small>${isEn ? 'piculs' : 'Thạch'}</small></strong></div>
+          <div class="time-kpi is-task"><span>${isEn ? 'Active tasks' : 'Task đang chạy'}</span><strong>${tasks.length}</strong></div>
         </div>
-      </div>
 
-      <div class="turn-rpt-card">
-        <div class="turn-rpt-card-hdr">${uiIcon('hourglass')}<span class="title">${isEn ? 'Multi-day Tasks' : 'Công Việc Dài Ngày'}</span></div>
-        <div class="turn-rpt-card-body">${taskHtml}</div>
-      </div>
+        <section class="time-section time-clock-section">
+          <div class="time-section-title">${uiIcon('calendar')} ${isEn ? 'Real-world clock' : 'Đối chiếu thời gian thực'}</div>
+          <div class="time-clock-row">
+            <div>
+              <div class="time-real-date" id="time-real-clock">${formatRealDateTime()}</div>
+              <div class="time-clock-meta">${isEn ? 'Your local clock' : 'Đồng hồ máy bạn'} • UTC${(data.real?.timezoneOffsetMinutes || 0) <= 0 ? '+' : '-'}${Math.abs((data.real?.timezoneOffsetMinutes || 0) / 60)}</div>
+            </div>
+            <div class="time-clock-rule">
+              ${isEn
+                ? '1 game day = 1 calendar day. A month is 30 game days; reaching the 1st closes the previous month automatically.'
+                : '1 ngày game = 1 ngày lịch. Tháng game 30 ngày; sang mùng 1, tháng trước tự chốt lương, thuê, hao hụt và hồi phục.'}
+            </div>
+          </div>
+        </section>
 
-      <div class="turn-rpt-card">
-        <div class="turn-rpt-card-hdr">${uiIcon('scroll')}<span class="title">${isEn ? 'Recent Time Log' : 'Dòng Thời Gian Gần Đây'}</span></div>
-        <div class="turn-rpt-card-body">${recentHtml}</div>
-      </div>
+        <section class="time-section">
+          <div class="time-section-title">${uiIcon('hourglass')} ${isEn ? 'Action time budget' : 'Ngân sách thời gian hành động'}</div>
+          <div class="time-cost-grid">${actionRows}</div>
+        </section>
 
-      <div class="turn-adv-action-bar">
-        <button class="btn btn-outline" onclick="closeTimePanel()">${isEn ? 'Close' : 'Đóng'}</button>
-        <button class="btn btn-primary font-bold" onclick="closeTimePanel(); openTurnAdvanceModal();">
-          ${uiIcon('hourglass')} ${isEn ? 'Next Month' : 'Qua Tháng'}
-        </button>
+        <section class="time-section">
+          <div class="time-section-title">${uiIcon('hourglass')} ${isEn ? 'Multi-day tasks' : 'Công việc dài ngày'}</div>
+          ${taskHtml}
+        </section>
+
+        <section class="time-section">
+          <div class="time-section-title">${uiIcon('scroll')} ${isEn ? 'Recent timeline' : 'Dòng thời gian gần đây'}</div>
+          ${recentHtml}
+        </section>
+
+        <div class="time-actions">
+          <button class="ui-btn ui-btn--ghost" onclick="closeTimePanel()">${isEn ? 'Close' : 'Đóng'}</button>
+          <button class="ui-btn ui-btn--primary font-bold" onclick="closeTimePanel(); advanceNextDayNow();">
+            ${uiIcon('hourglass')} ${isEn ? 'Next Day' : 'Ngày Tiếp'}
+          </button>
+        </div>
       </div>
     `;
   } catch (err) {
@@ -641,6 +776,7 @@ window.openTimePanel = openTimePanel;
 window.closeTimePanel = closeTimePanel;
 window.renderTimePanel = renderTimePanel;
 window.openTurnAdvanceModal = openTurnAdvanceModal;
+window.advanceNextDayNow = advanceNextDayNow;
 window.closeTurnAdvanceModal = closeTurnAdvanceModal;
 window.submitExecuteAdvanceTurn = submitExecuteAdvanceTurn;
 window.finishTurnAdvance = finishTurnAdvance;

@@ -18,23 +18,31 @@ import Database from 'better-sqlite3';
 import { ArchetypePreset } from './instances.constants';
 import { postCashflowEntryRaw } from '../../shared/ledger';
 import { ACCOUNT_CODES } from '../../shared/account-codes';
+import { readProfileLegacy } from '../../shared/legacy-store';
+import { expRequiredForTier } from '../../shared/skill-exp';
+import SCENARIO_SEEDS from '../../../config/scenario-seeds.json';
 
 export interface InstanceBootstrapOptions {
   preset: ArchetypePreset;
   playerName: string;
   playerStyle: string;
+  scenarioId?: string;
 }
 
 const HISTORY_TABLES = [
   'campaign_meta',
   'player_state',
   'player_skills',
+  'player_perks',
+  'player_talents',
   'cashflow_ledger',
   'account_journal',
   'inventory_items',
+  'player_bag_by_location',
   'stock_movements',
   'businesses',
   'npc_skills',
+  'npc_perks',
   'npc_personal_progression',
   'prestige_events',
   'exploration_log',
@@ -65,6 +73,7 @@ const HISTORY_TABLES = [
   'session_duels',
   'session_events',
   'military_expeditions',
+  'session_sieges',
   'active_tasks',
   'turn_log',
   'action_log',
@@ -73,7 +82,38 @@ const HISTORY_TABLES = [
   'merchant_promissory_notes',
   'emergent_innovations',
   'faction_political_events',
-  'world_turn_ledger'
+  'world_turn_ledger',
+  'player_life_state',
+  'gathering_node_state',
+  'character_tool_uses',
+  'warehouses',
+  'warehouse_stock',
+  'player_stalls',
+  'stall_listings',
+  'stall_sales',
+  'npc_market_offers',
+  'npc_market_sales',
+  'npc_trade_preferences',
+  'freight_contracts',
+  'freight_shipments',
+  'merchant_route_items',
+  'merchant_routes',
+  'merchant_shipments',
+  'merchant_events',
+  'merchant_day_ledger',
+  'world_day_ledger',
+  'npc_ledger',
+  'merchant_route_stock',
+  'settlement_consumption_log',
+  // Player-owned runtime state added after the original history list. The
+  // single-session reset reuses this bootstrap, so a new campaign must not
+  // inherit old tax bills, farmland, quest progress, injuries or contracts.
+  'obligations',
+  'land_parcels',
+  'player_quests',
+  'conditions',
+  'contract_offers',
+  'player_contracts'
 ];
 
 const START_DATE = '184-05-02';
@@ -90,6 +130,66 @@ function columnExists(db: Database.Database, table: string, column: string): boo
 }
 
 /**
+ * Applies scenario-specific map ownership and wars. The seed data lives in
+ * config/scenario-seeds.json so the legacy new-game path can share it.
+ */
+function applyScenarioSeed(db: Database.Database, scenarioId?: string): void {
+  if (!scenarioId) return;
+  const seed = (SCENARIO_SEEDS as Record<string, {
+    playerSettlements?: string[];
+    wars?: string[];
+    allies?: string[];
+  }>)[scenarioId];
+  if (!seed) return;
+
+  const playerFaction = db.prepare(
+    `SELECT faction_id FROM session_factions WHERE leader_id = 'PLY-0001' AND is_active = 1 LIMIT 1;`
+  ).get() as { faction_id?: string } | undefined;
+  if (!playerFaction?.faction_id) return;
+
+  const owned = new Set(seed.playerSettlements || []);
+  const settlements = db.prepare(
+    'SELECT settlement_id, ruler_faction_id FROM session_settlements;'
+  ).all() as Array<{ settlement_id: string; ruler_faction_id: string }>;
+  const assign = db.prepare(
+    `UPDATE session_settlements SET ruler_faction_id = ?, governor_id = ? WHERE settlement_id = ?;`
+  );
+  for (const settlement of settlements) {
+    if (owned.has(settlement.settlement_id)) {
+      assign.run(playerFaction.faction_id, 'PLY-0001', settlement.settlement_id);
+    } else if (settlement.ruler_faction_id === playerFaction.faction_id) {
+      assign.run('FAC-HAN', null, settlement.settlement_id);
+    }
+  }
+
+  const capital = seed.playerSettlements?.[0];
+  if (capital) {
+    db.prepare('UPDATE session_factions SET capital_settlement_id = ? WHERE faction_id = ?;')
+      .run(capital, playerFaction.faction_id);
+  }
+
+  const war = db.prepare(`
+    INSERT OR REPLACE INTO faction_diplomacy
+      (id, faction_id_a, faction_id_b, relation_state, diplomatic_attitude, truce_turns_remaining, tribute_amount, updated_turn)
+    VALUES (?, ?, ?, 'WAR', -100, 0, 0, 1);
+  `);
+  for (const enemy of seed.wars || []) {
+    const exists = db.prepare('SELECT 1 AS ok FROM session_factions WHERE faction_id = ?;').get(enemy);
+    if (exists) war.run(`DIP-${playerFaction.faction_id}-${enemy}`, playerFaction.faction_id, enemy);
+  }
+
+  const ally = db.prepare(`
+    INSERT OR REPLACE INTO faction_diplomacy
+      (id, faction_id_a, faction_id_b, relation_state, diplomatic_attitude, truce_turns_remaining, tribute_amount, updated_turn)
+    VALUES (?, ?, ?, 'ALLY', 60, 0, 0, 1);
+  `);
+  for (const friend of seed.allies || []) {
+    const exists = db.prepare('SELECT 1 AS ok FROM session_factions WHERE faction_id = ?;').get(friend);
+    if (exists) ally.run(`DIP-${playerFaction.faction_id}-${friend}`, playerFaction.faction_id, friend);
+  }
+}
+
+/**
  * Rewrites the session layer of `db` into a clean new-game state.
  * The caller must disable foreign keys for the duration and re-enable them
  * afterwards (see `createInstance`).
@@ -100,7 +200,24 @@ export function initializeInstanceDatabase(
 ): void {
   const { preset, playerName, playerStyle } = options;
   const isCommoner = preset.id === 'ARCH-COMMONER-YOUTH';
-  const totalCash = Number(preset.initialCash) + Number(preset.initialSafeCash);
+  let totalCash = Number(preset.initialCash) + Number(preset.initialSafeCash);
+  let legacyBonus = 0;
+  const startingLicenses = [...(preset.startingLicenses || [])];
+
+  // A scenario changes the calendar start (and campaign title) when present.
+  let startDate = START_DATE;
+  let campaignName = preset.nameEn;
+  if (options.scenarioId && tableExists(db, 'master_scenarios')) {
+    try {
+      const scenario = db.prepare(
+        'SELECT name_vi, start_date FROM master_scenarios WHERE scenario_id = ? LIMIT 1;'
+      ).get(options.scenarioId) as { name_vi?: string; start_date?: string } | undefined;
+      if (scenario?.start_date) startDate = scenario.start_date;
+      if (scenario?.name_vi) campaignName = scenario.name_vi;
+    } catch {
+      // Keep the 184 fallback when the master table is incomplete.
+    }
+  }
 
   const reset = db.transaction(() => {
     // 1. Clear every history/runtime table. Missing tables are skipped so the
@@ -133,7 +250,33 @@ export function initializeInstanceDatabase(
       INSERT INTO campaign_meta
         (campaign_id, campaign_name, start_date, "current_date", active_turn, rules_version, random_seed)
       VALUES (?, ?, ?, ?, 1, '1.1.0', 1840201)
-    `).run(`CMP-${START_DATE.replace(/-/g, '')}-INSTANCE`, preset.nameEn, START_DATE, START_DATE);
+    `).run(`CMP-${startDate.replace(/-/g, '')}-INSTANCE`, campaignName, startDate, startDate);
+
+    // NG+ legacy: the previous campaign's record gives the next one a small
+    // head start. The legacy table is deliberately not cleared above; a clean
+    // template instance falls back to the machine-level profile file.
+    let legacyNetWorth = 0;
+    if (tableExists(db, 'campaign_legacy')) {
+      try {
+        const legacy = db.prepare(
+          'SELECT MAX(net_worth) AS net_worth FROM campaign_legacy;'
+        ).get() as { net_worth?: number } | undefined;
+        legacyNetWorth = Number(legacy?.net_worth || 0);
+      } catch {
+        legacyNetWorth = 0;
+      }
+    }
+    try {
+      const profile = readProfileLegacy();
+      if (profile) legacyNetWorth = Math.max(legacyNetWorth, Number(profile.netWorth || 0));
+    } catch {
+      // A missing/corrupt profile file keeps the database legacy only.
+    }
+    if (legacyNetWorth > 0) {
+      legacyBonus = Math.min(20000, Math.floor(legacyNetWorth * 0.1));
+      totalCash += legacyBonus;
+      if (!startingLicenses.includes('Di Sản Tổ Tiên')) startingLicenses.push('Di Sản Tổ Tiên');
+    }
 
     db.prepare(`
       INSERT INTO player_state (
@@ -142,15 +285,17 @@ export function initializeInstanceDatabase(
         liquid_cash, safe_cash, strategic_grain, fixed_capital, special_licenses,
         health, fatigue, morale
       ) VALUES (
-        'PLY-0001', ?, ?, ?, 'LOC-0001', 'LOC-0001',
+        'PLY-0001', ?, ?, ?, ?, ?,
         ?, ?, ?, ?, ?, ?, ?, ?,
-        ?, ?, ?, 0, '[]',
+        ?, ?, ?, 0, ?,
         100, 0, 100
       )
     `).run(
       playerName,
       playerStyle,
       preset.startingAge,
+      preset.startingLocation,
+      preset.startingLocation,
       preset.attributes.int,
       preset.attributes.pol,
       preset.attributes.war,
@@ -159,9 +304,10 @@ export function initializeInstanceDatabase(
       preset.attributes.com,
       preset.attributes.log,
       preset.attributes.cra,
-      preset.initialCash,
+      preset.initialCash + legacyBonus,
       preset.initialSafeCash,
-      isCommoner ? 1.0 : 5.0
+      isCommoner ? 1.0 : 5.0,
+      JSON.stringify(startingLicenses)
     );
 
     // 3. Starting warehouse.
@@ -181,6 +327,55 @@ export function initializeInstanceDatabase(
       VALUES (?, ?, ?, ?, ?, ?)
     `);
     for (const row of startingStock) insertStock.run(...row);
+
+    // Archetype-specific starting goods (silk factor, frontier officer, etc.).
+    if (preset.startingItems && preset.startingItems.length > 0) {
+      const grantItem = db.prepare(`
+        INSERT INTO inventory_items (item_code, category, description, quantity, unit_cost_basis, location)
+        VALUES (?, ?, ?, ?, ?, ?)
+        ON CONFLICT(item_code) DO UPDATE SET quantity = quantity + excluded.quantity
+      `);
+      for (const item of preset.startingItems) {
+        grantItem.run(
+          item.itemCode,
+          item.category,
+          item.description,
+          item.quantity,
+          Number(item.unitCost || 0),
+          preset.startingLocation
+        );
+      }
+    }
+
+    // Starting skills: the archetype opens three real skill rows (the old game
+    // deleted player_skills and never seeded them).
+    if (preset.startingSkills?.length
+      && tableExists(db, 'player_skills')
+      && tableExists(db, 'master_skills')) {
+      const grantSkill = db.prepare(`
+        INSERT OR IGNORE INTO player_skills (skill_code, skill_name, tier, current_exp, max_exp)
+        SELECT skill_code, skill_name_vi, 1, 0, ? FROM master_skills WHERE skill_code = ?;
+      `);
+      for (const code of preset.startingSkills) grantSkill.run(expRequiredForTier(1), code);
+    }
+
+    // Innate talents are per-archetype in the master roster; store their codes
+    // so the skill resolver can apply the structured talent effects.
+    if (tableExists(db, 'player_talents') && tableExists(db, 'master_player_archetypes')) {
+      try {
+        const row = db.prepare(
+          'SELECT innate_talents FROM master_player_archetypes WHERE archetype_id = ? LIMIT 1;'
+        ).get(preset.id) as { innate_talents?: string } | undefined;
+        const talents = row?.innate_talents ? JSON.parse(row.innate_talents) : [];
+        const grantTalent = db.prepare('INSERT OR IGNORE INTO player_talents (talent_code) VALUES (?);');
+        for (const talent of Array.isArray(talents) ? talents : []) {
+          const code = String(talent).split(':')[0].trim();
+          if (code) grantTalent.run(code);
+        }
+      } catch {
+        // A missing master talent row keeps the campaign playable.
+      }
+    }
 
     // 4. Starting workshop and NPC assignments. A commoner does not own it
     //    (the foreman does), matching the zero-to-hero archetype.
@@ -233,18 +428,32 @@ export function initializeInstanceDatabase(
         UPDATE npc_state SET assigned_business_id = ?, assigned_role = ?, monthly_wage = ?
         WHERE npc_id = 'NPC-0008'
       `).run(carpenter.business, carpenter.role, carpenter.wage);
+
+      // Seed ages from the immutable master roster when it is available.
+      if (tableExists(db, 'master_characters')) {
+        db.prepare(`
+          UPDATE npc_state
+          SET age = COALESCE(
+            (SELECT baseline_age FROM master_characters mc WHERE mc.npc_id = npc_state.npc_id),
+            age
+          )
+          WHERE npc_id IN ('NPC-0007', 'NPC-0008')
+        `).run();
+      }
     }
 
     // 5. Opening ledger: one balanced transaction for liquid + safe capital.
     const txnId = 'TXN-INIT-001';
     postCashflowEntryRaw(db, {
       txnId,
-      gameDate: START_DATE,
+      gameDate: startDate,
       counterparty: 'Bản Doanh Khởi Sự',
       category: 'CAPITAL_INJECTION',
       inflow: totalCash,
       balance: totalCash,
-      memo: `Số vốn khởi nghiệp của thân phận ${preset.nameVi}.`,
+      memo: legacyBonus > 0
+        ? `Vốn khởi nghiệp ${preset.nameVi} + di sản tổ tiên ${legacyBonus} Quan.`
+        : `Số vốn khởi nghiệp của thân phận ${preset.nameVi}.`,
       status: 'Confirmed'
     });
 
@@ -252,21 +461,21 @@ export function initializeInstanceDatabase(
       INSERT INTO account_journal (txn_id, campaign_id, game_date, account_code, debit, credit, memo)
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `);
-    const campaignId = `CMP-${START_DATE.replace(/-/g, '')}-INSTANCE`;
-    insertJournal.run(txnId, campaignId, START_DATE, ACCOUNT_CODES.cashMobile, preset.initialCash, 0, 'Vốn tiền mặt ban đầu');
+    const campaignId = `CMP-${startDate.replace(/-/g, '')}-INSTANCE`;
+    insertJournal.run(txnId, campaignId, startDate, ACCOUNT_CODES.cashMobile, preset.initialCash + legacyBonus, 0, 'Vốn tiền mặt ban đầu');
     if (Number(preset.initialSafeCash) > 0) {
-      insertJournal.run(txnId, campaignId, START_DATE, ACCOUNT_CODES.cashSafe, preset.initialSafeCash, 0, 'Vốn két sản nghiệp ban đầu');
+      insertJournal.run(txnId, campaignId, startDate, ACCOUNT_CODES.cashSafe, preset.initialSafeCash, 0, 'Vốn két sản nghiệp ban đầu');
     }
-    insertJournal.run(txnId, campaignId, START_DATE, ACCOUNT_CODES.ownerEquity, 0, totalCash, 'Vốn chủ sở hữu ban đầu');
+    insertJournal.run(txnId, campaignId, startDate, ACCOUNT_CODES.ownerEquity, 0, totalCash, 'Vốn chủ sở hữu ban đầu');
 
     // 6. First turn and chronicle entry.
     db.prepare(`
       INSERT INTO turn_log (turn_number, game_date, turn_title, location, summary, dilemma_choice)
       VALUES (1, ?, ?, ?, ?, ?)
     `).run(
-      START_DATE,
+      startDate,
       isCommoner ? 'Bố Y Khởi Thủy Tại Huyện Trác' : 'Khởi Sự Nghiệp Lớn Tại Huyện Trác',
-      isCommoner ? 'Huyện Trác' : 'Trang Viên Vườn Đào',
+      isCommoner ? 'Huyện Trác' : preset.startingLocation,
       `${playerName} (${playerStyle}), xuất thân ${preset.nameVi}, đặt chân tới Trác Huyện bắt đầu hành trình lập nghiệp.`,
       isCommoner ? 'Đi làm thuê tích lũy vốn và năng lực' : 'Sản xuất thủ công kết hợp quân nhu bảo vệ quê hương'
     );
@@ -275,9 +484,11 @@ export function initializeInstanceDatabase(
       INSERT INTO chat_chronicle (id, turn_number, game_date, type, speaker, title, avatar, text, reasoning)
       VALUES ('chron_start', 1, ?, 'narrative', 'Sử Quan', 'Khởi Đầu Gian Nan', 'Sử', ?, 'Khởi tạo tân thủ')
     `).run(
-      START_DATE,
+      startDate,
       `${playerName} (${playerStyle}), xuất thân ${preset.nameVi}, đặt chân tới Trác Huyện bắt đầu hành trình lập nghiệp giữa thời tao loạn.`
     );
+
+    applyScenarioSeed(db, options.scenarioId);
   });
 
   reset();

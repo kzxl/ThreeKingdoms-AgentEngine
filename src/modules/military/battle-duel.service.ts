@@ -10,9 +10,13 @@
 import { DatabaseService } from '../../core/database';
 import { RngService } from '../../core/rng';
 import { nextId } from '../../shared/id-generator';
+import { recordLegacy } from '../../shared/victory';
+import { SkillService } from '../progression/skill.service';
+import { NpcSkillService } from '../progression/npc-skill.service';
 import { getFameTier, fameRatio } from '../../shared/prestige';
 import { PrestigeService } from '../progression/prestige.service';
 import { DynastySuccessionService } from '../lineage-succession/dynasty-succession.service';
+import { ConditionService } from './condition.service';
 import BATTLE_CONFIG from '../../../config/battle-duel.json';
 
 export interface PreBattleInput {
@@ -25,6 +29,7 @@ export interface PreBattleInput {
   playerLeadership: number;
   playerDiplomacy: number;
   enemyName: string;
+  enemyId?: string;
   enemyWar: number;
   enemyLeadership: number;
 }
@@ -66,6 +71,15 @@ export class BattleDuelService {
     const prestige = PrestigeService.forDatabase(this.db);
     const fame = prestige.getFame(input.playerId);
     const cfg = BATTLE_CONFIG;
+    const duelSkill = Math.round(SkillService.forDatabase(this.db).getEffectTotal(
+      'DUEL_POWER',
+      ['SKL-WAR-DUEL', 'SKL-WAR-SPEAR', 'SKL-WAR-BLADE', 'SKL-WAR-RIDE']
+    ));
+    const playerWar = Number(input.playerWar || 0) + duelSkill;
+    const enemyDuelSkill = input.enemyId
+      ? NpcSkillService.forDatabase(this.db).combatBonuses(input.enemyId).duelPower
+      : 0;
+    const enemyWar = Number(input.enemyWar || 0) + enemyDuelSkill;
 
     let negotiationAttempted = false;
     let negotiationSuccess = false;
@@ -99,10 +113,10 @@ export class BattleDuelService {
     let deathChance = 0;
     let deathRoll = 1;
 
-    if (cfg.enabled && input.playerWar >= 70 && input.enemyWar >= 70 && rng.chance(cfg.duelTriggerChance)) {
+    if (cfg.enabled && playerWar >= 70 && enemyWar >= 70 && rng.chance(cfg.duelTriggerChance)) {
       duelTriggered = true;
-      const playerScore = input.playerWar + rng.d20() + input.playerLeadership / 10;
-      const enemyScore = input.enemyWar + rng.d20() + input.enemyLeadership / 10;
+      const playerScore = playerWar + rng.d20() + input.playerLeadership / 10;
+      const enemyScore = enemyWar + rng.d20() + input.enemyLeadership / 10;
       const margin = Math.abs(playerScore - enemyScore);
       duelWinner = playerScore === enemyScore ? 'DRAW' : playerScore > enemyScore ? 'PLAYER' : 'ENEMY';
 
@@ -127,6 +141,22 @@ export class BattleDuelService {
       } else {
         narrativeVi = `Hai tướng giao đấu bất phân thắng bại.`;
         narrativeEn = `The two champions fought to a standstill.`;
+      }
+    }
+
+    // Combat consequences: a killed enemy leaves the roster; a surviving loser
+    // carries a wound that reduces combat power until the next month close.
+    if (duelTriggered) {
+      const conditions = ConditionService.forDatabase(this.db);
+      if (death === 'ENEMY' && input.enemyId) {
+        conditions.applyNpcDeath(input.enemyId, 'BATTLE_DUEL');
+      } else if (death !== 'PLAYER') {
+        const severity = rng.chance(0.3) ? 3 : 2;
+        if (duelWinner === 'PLAYER' && input.enemyId) {
+          conditions.applyInjury(input.enemyId, severity, 'BATTLE_DUEL', input.gameDate);
+        } else if (duelWinner === 'ENEMY') {
+          conditions.applyInjury(input.playerId, severity, 'BATTLE_DUEL', input.gameDate);
+        }
       }
     }
 
@@ -157,6 +187,12 @@ export class BattleDuelService {
 
     if (death === 'PLAYER') {
       this.applyPlayerDeath(input.playerId, 'DUEL_DEATH');
+    }
+
+    // The defending champion learns from a champion duel that did not kill him.
+    if (input.enemyId && duelTriggered && death !== 'ENEMY') {
+      const exp = duelWinner === 'ENEMY' ? 20 : duelWinner === 'DRAW' ? 10 : 8;
+      NpcSkillService.forDatabase(this.db).awardExp(input.enemyId, 'SKL-WAR-DUEL', exp);
     }
 
     return {
@@ -200,6 +236,7 @@ export class BattleDuelService {
       [reason]
     );
     this.db.execute('UPDATE player_state SET health = 0, fame = 0 WHERE player_id = ?;', [playerId]);
+    recordLegacy(this.db, 'DEFEATED', 'Tử Chiến');
     return { succession: false };
   }
 

@@ -1,5 +1,10 @@
 # Refactor Wave 1 — Data & Runtime Consolidation (2026-10-29)
 
+> **Status 2026-10-31:** historical wave record. Current structure and gates are
+> in `ARCHITECTURE.md`; P0 1.23.x added server-authoritative action time,
+> enterprise P&L with debt, one career-path resolver and migration-based data
+> repair.
+
 This document records the first executed refactor wave of `ThreeKingdoms-AgentEngine`:
 what was changed, why, how it was verified, and what remains. It is the companion to
 `docs/audit/DEEP_ARCHITECTURE_AUDIT.md` (assessment) and supersedes its remediation

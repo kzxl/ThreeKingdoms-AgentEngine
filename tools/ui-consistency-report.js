@@ -68,7 +68,8 @@ function collect() {
     legacyButtonClassesInClientTs: Math.max(0, legacyClientTsUsages),
     inlineStyleAttributes: countMatches(publicSource, /style="/g),
     tinyFontSizes: countMatches(styles, /font-size:\s*(?:8|8\.5|9|9\.5|10|10\.5)px/g),
-    nativeConfirmCalls: countMatches(publicSource, /\bconfirm\(/g),
+    // Count only browser-native confirm(); `window.UI.confirm(` is the custom dialog.
+    nativeConfirmCalls: countMatches(publicSource, /(?<!\.)\bconfirm\(/g),
     uiPrimitiveUsages: countMatches(publicSource, /\bui-(?:btn|badge)\b/g) +
       countMatches(tsSource, /\bui-(?:btn|badge)/g)
   };

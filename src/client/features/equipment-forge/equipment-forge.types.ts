@@ -27,6 +27,21 @@ export interface EquipmentOverview {
   }>;
 }
 
+export interface ToolInventoryRow {
+  itemCode: string;
+  nameVi: string;
+  kind: 'CONSUMABLE' | 'DURABLE';
+  quantity: number;
+  usesLeft: number;
+  maxUses: number;
+  repairCash: number;
+  repairSkillCode: string | null;
+  repairMinTier: number;
+  skillTier: number;
+  needsRepair: boolean;
+  canRepair: boolean;
+}
+
 export interface BespokeForgePayload {
   characterId: string;
   weaponNameVi: string;

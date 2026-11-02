@@ -22,8 +22,8 @@ export class TransitTurnModals {
     // 2. Turn Advance Modal
     this.turnModal = createModalShell({
       id: 'turn-advance-modal',
-      title: 'Quyết Toán Tháng • Luân Chuyển Chiến Cục',
-      subtitle: 'Kết thúc tháng hiện tại, kết toán tài chính, sản nghiệp và mô phỏng thế giới sống động',
+      title: 'Ngày Tiếp Theo • Dòng Thời Gian',
+      subtitle: 'Tiến một ngày, chi dùng hằng ngày và tự động chốt tháng khi sang mùng 1',
       seal: '歲',
       size: 'md'
     });
@@ -61,16 +61,16 @@ export class TransitTurnModals {
 
   public async showTurnAdvance(turnNumber: number, gameDate: string, summaryHtml?: string): Promise<void> {
     this.turnModal.setTitle(
-      `Quyết Toán Lượt Thứ ${turnNumber}`,
-      `Thời gian: ${gameDate} • Thiên thời địa lợi`
+      `Ngày ${gameDate}`,
+      `Nhịp thời gian: ngày ${turnNumber} • Chi dùng và tiến trình tự động`
     );
     this.turnModal.setContent(`
       <div class="turn-advance-body p-2 space-y-3">
         <div class="p-3 bg-slate-950 rounded border border-slate-800 text-xs font-mono space-y-1">
           ${summaryHtml || `
-            <div class="text-green-400">◆ Hoàn tất chu kỳ sản xuất hàng tháng của các xưởng.</div>
-            <div class="text-amber-300">◆ Kết toán sổ cái kép thu chi tài chính.</div>
-            <div class="text-blue-300">◆ Cập nhật tiến độ thai kỳ và bồi dưỡng thế hệ gia tộc.</div>
+            <div class="text-green-400">◆ Một ngày trôi qua: lương thảo tiêu hao, thể lực hồi phục.</div>
+            <div class="text-amber-300">◆ Công việc dài ngày và thương đoàn tiếp tục tiến.</div>
+            <div class="text-blue-300">◆ Sang mùng 1, tháng tự động kết toán sản nghiệp và thế giới.</div>
           `}
         </div>
         <button class="ui-btn ui-btn--accent w-full py-2 font-bold" onclick="window.TurnAdvanceUI.close()">

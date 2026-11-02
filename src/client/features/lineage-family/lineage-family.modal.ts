@@ -7,6 +7,7 @@
  */
 
 import { createModalShell, ModalShellInstance } from '../../core/modal-shell';
+import { confirmDialog } from '../../core/ui';
 import { lineageFamilyService } from './lineage-family.service';
 import { CourtshipCandidate, FamilyChild, FamilySpouse, LineageOverview } from './lineage-family.types';
 
@@ -453,7 +454,13 @@ export class LineageFamilyModal {
   }
 
   public async executeSuccession(): Promise<void> {
-    if (!confirm('Bạn có chắc chắn muốn chuyển giao quyền lực sang Thế tử kế thừa không?')) return;
+    const confirmed = await confirmDialog({
+      title: 'Chuyển giao quyền lực',
+      message: 'Bạn có chắc chắn muốn chuyển giao quyền lực sang Thế tử kế thừa không?',
+      confirmLabel: 'Kế vị',
+      danger: true
+    });
+    if (!confirmed) return;
     try {
       const heirId = this.overview?.activeHeir?.child_id;
       if (!heirId) throw new Error('Chưa chỉ định Thế tử kế vị.');

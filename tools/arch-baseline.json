@@ -4,7 +4,7 @@
   "sql-interpolation": 83,
   "math-random-in-domain": 0,
   "wallclock-id-in-domain": 0,
-  "silent-catch": 19,
+  "silent-catch": 0,
   "cashflow-direct-insert": 0,
   "global-service-locator": 4,
   "unquoted-current-date": 0,

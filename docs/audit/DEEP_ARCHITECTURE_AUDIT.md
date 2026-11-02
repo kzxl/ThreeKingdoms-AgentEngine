@@ -6,6 +6,12 @@
 **Status:** Completed Architectural Assessment & Strategic Roadmap  
 **Standards Compliance:** Universe Architecture v4.0, ACID SQLite Ledger, Anti-AI-Slop  
 
+> **Implementation status 2026-10-31:** this document is the 2026-10-28 baseline.
+> P0 1.23.1–1.23.4 closed the action-time hole, enterprise loss clamping, the
+> career-path facade and legacy text data; see `ARCHITECTURE.md` §7–10. The
+> remaining findings (NPC/faction conservation, utility-AI planning, causal
+> coupling, non-determinism, turn atomicity) are still tracked and are P1+ work.
+
 ---
 
 ## 1. Executive Summary

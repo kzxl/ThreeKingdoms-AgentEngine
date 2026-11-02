@@ -18,7 +18,7 @@ The **ThreeKingdoms-AgentEngine** test infrastructure provides an autonomous, mu
 ```
 +-------------------------------------------------------------------------+
 |                  TIER 4: State & Audit Invariant Layer                  |
-|          tools/sim-audit.js (140/140 Mathematical Conservation)         |
+|          tools/sim-audit.js (2,313 invariants, 9 blocks)                 |
 +------------------------------------+------------------------------------+
                                      |
 +------------------------------------+------------------------------------+
@@ -51,13 +51,36 @@ The **ThreeKingdoms-AgentEngine** test infrastructure provides an autonomous, mu
 - **Marriage & Lineage (`tests/verify-marriage-lineage.ts`)**: Validates courtship eligibility ($\text{Affinity} \ge 80$), dowry schedules, cohabitation, 3-stage gestation, genetic inheritance algorithms, master mentorship, and dynastic succession continuity.
 - **Single Combat Duels (`tests/verify-rotk-duels.ts`)**: Validates 1v1 tactical duels, 4 asymmetric commands (`ATTACK`, `DEFEND`, `SPECIAL_STRIKE`, `FOCUS_SPIRIT`), gear bonus scaling, golden cap ($>100$ WAR), and contextual triggers (sparring, arena, caravan ambushes).
 - **Tavern Banquets & Brotherhood (`tests/verify-tavern-banquets.ts`)**: Validates gourmet dishes and Dukang wine BOM, 3 banquet tiers, inventory deduction, Peach Garden sworn brotherhood oath ($\text{Affinity} \ge 80$), and retainer recruitment into `FAC-LIANG-CLAN`.
+- **Action Time Authority (`tests/verify-action-time-authority.ts`)**: A spar consumes five days, a social interaction two, and a fatigued action is rejected without moving the clock.
+- **Workshop Economy (`tests/verify-workshop-economy.ts`)**: Staffing scales output, rent/wages are charged, losses become debt, profit repays debt first.
+- **Career Paths (`tests/verify-career-paths.ts`)**: Five scores, `outcome_type` duel wins, modifiers, and a real WAR EXP award.
+- **Data Cleanup (`tests/verify-data-cleanup.ts`)**: Skill/item text is repaired, numeric legacy currency labels become Quan, prose is preserved, migration is idempotent.
+- **Local Market (`tests/verify-local-market.ts`)**: Buying drains stock and raises the next quote, selling adds stock and lowers it, drift/history work, the bridge is keyed per database.
+- **Obligations (`tests/verify-obligations.ts`)**: Monthly tax is issued once, payment goes through the ledger, an unpaid bill becomes overdue with a late fee and credibility loss, insufficient funds change nothing.
+- **Contract Board (`tests/verify-contract-board.ts`)**: Three deterministic offers per month, accept/deliver consumes real stock and pays the reward, expiry creates a penalty obligation, month close rotates offers.
+- **Combat Consequences (`tests/verify-combat-consequences.ts`)**: An injury reduces effective WAR, NPC death clears the business/faction roster, and one month of rest heals.
+- **Intel Reports (`tests/verify-intel.ts`)**: Monthly reports are deterministic, verification reveals the truth, a report cannot be verified twice, and a 20%-off claim is flagged false.
+- **Farmland (`tests/verify-farm.ts`)**: Rent reaches the landlord, out-of-season crops are rejected, early harvest is rejected, harvest adds real grain, double rent and insufficient cash fail, and leases expire.
+- **Ledger Completeness (`tests/verify-ledger-completeness.ts`)**: Migration 049 backfills orphan cashflow rows and `postDoubleEntry` writes a balanced pair.
+- **Core Time Coverage (`tests/verify-core-time-coverage.ts`)**: Trade costs 2 days, reinforcement 1, movement 1 through the real router.
+- **Idempotency (`tests/verify-idempotency.ts`)**: Trade, reinforcement and farm rent replay without double cash, inventory, troops, lease or days.
+- **Faction Ledger (`tests/verify-faction-ledger.ts`)**: Opening balances, a rent flow, drift detection and outflow clamping keep `opening + inflow − outflow = treasury_cash`.
+- **Settlement Ledger (`tests/verify-settlement-ledger.ts`)**: Opening, a loot flow and drift detection keep every settlement treasury balanced.
+- **World Atomicity (`tests/verify-world-atomic.ts`)**: A world module that throws rolls back its write and aborts the close; a successful module commits.
+- **Day Phases (`tests/verify-day-phases.ts`)**: Three admin phases fill a day, a day action resets the phase, and quest accept spends one phase.
+- **Schema Contract (`tests/verify-schema-contract.ts`)**: A fresh schema + migrations database has the 45 runtime tables and required business/NPC columns.
 
 ### Tier 4: Invariant & State Conservation Auditor (`tools/sim-audit.js`)
-- **Cashflow Ledger Subsystem (51 checks)**: Sequence balance continuity and player cash cross-parity.
-- **Physical Inventory Subsystem (31 checks)**: SKU non-negativity and movement balance alignment.
-- **Double-Entry Journal Subsystem (50 checks)**: Exact debit == credit equality per transaction set.
-- **Projection Synchronization (3 checks)**: Markdown reporting consistency (`game/PROGRESS.md`).
-- **NPC & Enterprise Integrity (5 checks)**: Business safe cash, efficiency, and NPC vitals `[0..100]`.
+The auditor verifies **2,313 invariants across nine blocks** against SQLite as the
+primary truth:
+1. Cashflow ledger sequence and player cash parity.
+2. Physical inventory non-negativity and movement balance.
+3. Double-entry journal `Dr == Cr` parity per transaction set.
+4. `game/PROGRESS.md` projection synchronization.
+5. NPC and enterprise state (safe cash, debt, efficiency, vitals).
+6. Grand-strategy factions, settlements, credit notes and diplomatic pacts.
+7. Life-sim maidens, dowries and encounter rates.
+8. Campaign clock plausibility and turn-history alignment.
 
 ---
 
@@ -71,7 +94,62 @@ The **ThreeKingdoms-AgentEngine** test infrastructure provides an autonomous, mu
 | `tools/verify-equipment-and-exp.ts` | Core: Equipment System & EXP Progression | 58 | Diminishing returns scaling, gear slot constraints, effective stats calculation |
 | `tools/verify-enterprise-labor.ts` | Core: Enterprise Management & Wage Labor | 12 | Master recipe BOM, owner profit accrual, wage labor shifts, fatigue exhaustion guard |
 | `tests/test-branch4-logistics.ts` | Core: Inter-City Caravans & Arbitrage | 8 | 18 settlement profiles, distance matrix, crisis price multipliers, caravan dispatch/claim |
-| `tools/sim-audit.js` | System: Autonomous Invariant Auditor | 140 | Full ACID double-entry accounting, stock conservation, projection synchronization |
+| `tests/verify-action-time-authority.ts` | P0: Server-authoritative action time | — | Day cost per mutation, fatigue rejection, no clock change on rejection |
+| `tests/verify-workshop-economy.ts` | P0: Enterprise monthly P&L | — | Staffing, wages, rent, debt, debt-first repayment, zero-staff closure |
+| `tests/verify-career-paths.ts` | P0: Career-path resolver | — | Five scores, `outcome_type` duel count, modifiers, WAR EXP application |
+| `tests/verify-data-cleanup.ts` | P0: Text and currency repair | — | Skill/item repair, Quan labels, prose preservation, idempotency |
+| `tests/verify-local-market.ts` | P1: Local settlement market | — | Buy/sell stock movement, price direction, drift/history, per-DB bridge cache |
+| `tests/verify-obligations.ts` | P1: Periodic obligations | — | Issue/idempotency, payment, late fee/credibility, insufficiency, month close |
+| `tests/verify-contract-board.ts` | P1: Contract board | — | Rotation, accept, delivery with stock, expiry penalty, month-close rotation |
+| `tests/verify-combat-consequences.ts` | RPG: Injuries and NPC death | — | Injury penalty, effective WAR, NPC death clears roster, monthly recovery |
+| `tests/verify-intel.ts` | RPG: Intel reports | — | Deterministic monthly reports, verification, double-verify rejection, false claim |
+| `tests/verify-farm.ts` | RPG: Farmland and crops | — | Rent/landlord, seasonal planting, early-harvest rejection, real grain output, lease expiry |
+| `tests/verify-ledger-completeness.ts` | Core: Ledger/journal completeness | — | Orphan backfill, balanced `postDoubleEntry` |
+| `tests/verify-core-time-coverage.ts` | Core: Time authority coverage | — | Trade +2 days, reinforce +1, movement +1 |
+| `tests/verify-idempotency.ts` | Core: Idempotent financial actions | — | Replay without double cash/inventory/troops/lease/days |
+| `tests/verify-schema-contract.ts` | Core: Runtime schema contract | — | Fresh schema + migrations has runtime tables/columns |
+| `tests/verify-faction-ledger.ts` | Core: World treasury ledger | — | Opening + flows = treasury, rent flow, drift detection, outflow clamp |
+| `tests/verify-settlement-ledger.ts` | Core: Settlement treasury ledger | — | Opening + flows = treasury, loot flow, drift detection |
+| `tests/verify-world-atomic.ts` | Core: Atomic world month close | — | Failed module rolls back, close aborts, successful module commits |
+| `tests/verify-day-phases.ts` | Core: Three-phase day | — | Three admin phases fill a day, day action resets, route wiring |
+| `tests/verify-loan-contracts.ts` | Extended: Loan contracts | — | Borrow/repay phase, replay, balanced journal |
+| `tests/verify-ecology-contracts.ts` | Extended: Ecology contracts | — | Relief phase, assault day/loot ledger, transport stock and replay |
+| `tests/verify-profession-contracts.ts` | Extended: Profession contracts | — | Gather/craft days, dividend replay, stock conservation |
+| `tests/verify-social-contracts.ts` | Extended: Social contracts | — | Kizuna/banquet days, dish and cash replay |
+| `tests/verify-progression-contracts.ts` | Extended: Progression contracts | — | Move day, quest phase/step, replay |
+| `tests/verify-duel-contracts.ts` | Extended: Duel contracts | — | Initiation day, round replay, unchanged duel state |
+| `tests/verify-lineage-contracts.ts` | Extended: Lineage contracts | — | Aging and mentorship replay, no duplicate growth |
+| `tests/verify-life-wiring.ts` | Life: Wiring | — | Mentorship EXP, growth focus, spouse roles, virtue discount |
+| `tests/verify-life-layer.ts` | Life: Daily loop | — | Needs, phases, six actions, skill EXP, upkeep ledger, replay |
+| `tests/verify-livelihood-depth.ts` | Livelihood: Depth | — | Node stock/regrowth, tool penalty, skill yield, rent/soil/rotation |
+| `tests/verify-resource-variants.ts` | Livelihood: Variants | — | Season/skill weights, byproducts, fish/hide/timber processing gates |
+| `tests/verify-node-restoration.ts` | Livelihood: Restoration | — | Stock item/cash fee, skill gate, refill and replay |
+| `tests/verify-tool-durability.ts` | Livelihood: Tools | — | Consumable net, durable axe, breaking, recipes |
+| `tests/verify-market-stall.ts` | Market: Two-sided stall | — | NPC buyers, NPC offers, price band, cash and replay |
+| `tests/verify-npc-pricing.ts` | Market: NPC pricing | — | Affinity bid, preference ask, caps |
+| `tests/verify-tool-repair.ts` | Livelihood: Tool repair | — | Cash/skill gate, reset uses, consumable rejection |
+| `tests/verify-warehouse.ts` | Gia Thương: Warehouse | — | Rent/buy, capacity, deposit/withdraw, expiry |
+| `tests/verify-stall-warehouse.ts` | Gia Thương: Stall source | — | Warehouse listing and return on close |
+| `tests/verify-freight.ts` | Gia Thương: Freight | — | Contract generation, guard fee, travel, reward |
+| `tests/verify-merchant-route.ts` | Gia Thương: Company route | — | Procure, dispatch, unload, sell, pause |
+| `tests/verify-spoilage.ts` | Gia Thương: Perishables | — | Fresh vs dried loss, cold chain, freight discount |
+| `tests/verify-endowment-consumption.ts` | Market: Endowment | — | Fish-rich price, monthly shortage, public order, log |
+| `tests/verify-market-price-parity.ts` | Market: One price formula | — | Endowment-aware local multiplier, calculate/quote parity |
+| `tests/verify-freight-conservation.ts` | Market: Freight conservation | — | Source reservation, delivery credit, failure return, parallel rejection |
+| `tests/verify-day-tick-idempotency.ts` | Market: Day ledger | — | Stall, freight and consumption replay without a second effect |
+| `tests/verify-freight-demand.ts` | Market: Consumption demand | — | Fish demand posts a fish contract from a fishing town |
+| `tests/verify-feature-scaffold.ts` | Tooling: Feature standard | — | Scaffold creates the standard folder, refuses overwrite, dry-run writes nothing |
+| `tests/verify-logistics-risk.ts` | Market: Ambush/insurance | — | Guard deterrence, cargo loss, one claim, replay no-op |
+| `tests/verify-tool-boat.ts` | Livelihood: Fishing boat | — | Item, durability rule, recipe and FISH alternate tool |
+| `tests/verify-defeat-consistency.ts` | Military: One damage path | — | Health reaches 0, one DEFEATED transition, injury uses the same path |
+| `tests/verify-npc-conservation.ts` | NPC: Income/troop ledger | — | Commerce transfers cash, raid draws lair/garrison, ledger balances match |
+| `tests/verify-npc-business-succession.ts` | NPC: Business succession | — | Heir, foreman trustee, settlement liquidation, applyNpcDeath wiring |
+| `tests/verify-terminal-state.ts` | Campaign: Terminal state | — | Victory before bankruptcy, two-month bankrupt, CAMPAIGN_OVER guard |
+| `tests/verify-npc-refusal.ts` | Social: Hire refusal | — | Low-standing refusal, retry date, affinity-gated success |
+| `tests/verify-map-registry.ts` | Map: One registry | — | 20 nodes, 133 sub-locations, 132 POIs, 23 resources, zero orphans |
+| `tests/verify-wilderness-map.ts` | Map: Wilderness | — | 40 scoped rows, local coords, travel, urban/foreign guards |
+| `tests/verify-modal-priority.ts` | UI: Modal stacking | — | Dossier z-index above the map and Escape ownership |
+| `tools/sim-audit.js` | System: Autonomous Invariant Auditor | 2,313 | Nine blocks: accounting, inventory, journal, projection, enterprise, strategy, life-sim, clock, trade/warehouse/shipment |
 
 ---
 
@@ -88,7 +166,7 @@ npx tsx tests/verify-rotk-duels.ts
 
 ### Full Verification Pipeline
 ```bash
-# Single gate: typecheck → arch ratchet → 19 suites → API contract → write smoke
+# Single gate: typecheck → arch ratchet → 101 suites → API contract → write smoke
 npm run verify
 
 # Individually:
@@ -99,10 +177,10 @@ npm run lint:ui        # UI debt ratchet (button classes, inline styles, native 
 npm run lint:slop      # anti-slop laws: emoji, gradients, glow shadows, font families
 npm run lint:api       # client /api/* paths must exist or be allowlisted with a reason
 npm run routes:shadow  # fails if a legacy route is already served by the Router
-npm test               # 4 legacy + 15 verify-*.ts suites, isolated DB per suite
+npm test               # 4 legacy + 82 verify-*.ts suites, isolated DB per suite
 npm run golden:verify  # 28 read-only endpoint contracts
 npm run smoke:write    # 8 HTTP write paths + post-write audit
-npm run audit          # 1,358 SQLite invariants
+npm run audit          # 2,313 SQLite invariants in nine blocks
 ```
 
 ### Per-Feature Refactor Protocol
@@ -150,7 +228,7 @@ To guarantee that test execution never corrupts active session data or causes in
        ▼
 [4. AUDIT GATE]
   Execute node tools/sim-audit.js.
-  Assert 140/140 invariants verified with 0 discrepancies.
+  Assert 2,313 invariants verified with 0 discrepancies.
 ```
 
 ---

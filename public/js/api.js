@@ -44,13 +44,6 @@ async function apiFetchLedger() {
   return data;
 }
 
-async function apiFetchAgentLogs() {
-  const res = await fetch(`${API_BASE}/api/agent/logs`);
-  const data = await res.json();
-  if (!data.success) throw new Error(data.error || 'Failed to fetch agent logs');
-  return data;
-}
-
 async function apiDispatchPrompt(payload) {
   const res = await fetch(`${API_BASE}/api/agent/prompt`, {
     method: 'POST',
@@ -318,6 +311,17 @@ async function apiGatherResource(characterId, nodeId) {
   return data;
 }
 
+async function apiRestoreNode(characterId, nodeId) {
+  const res = await fetch(`${API_BASE}/api/professions/nodes/restore`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ characterId, nodeId })
+  });
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Failed to restore node');
+  return data;
+}
+
 async function apiSynthesizeBreakthrough(characterId = 'PLY-0001') {
   const res = await fetch(`${API_BASE}/api/professions/synthesize`, {
     method: 'POST',
@@ -446,7 +450,6 @@ window.apiFetchScene = apiFetchScene;
 window.apiFetchInventory = apiFetchInventory;
 window.apiFetchNpcs = apiFetchNpcs;
 window.apiFetchLedger = apiFetchLedger;
-window.apiFetchAgentLogs = apiFetchAgentLogs;
 async function apiPlanTravel(fromNodeId, toNodeId) {
   const res = await fetch(`${API_BASE}/api/travel/plan`, {
     method: 'POST',
@@ -469,6 +472,17 @@ async function apiStartTravel(fromNodeId, toNodeId) {
   return data.transit;
 }
 
+async function apiAdvanceDays(days = 1, notes = '') {
+  const res = await fetch(`${API_BASE}/api/campaign/advance-day`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ days, notes })
+  });
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Failed to advance day');
+  return data.result || data;
+}
+
 async function apiAdvanceTurn(notes = '') {
   const res = await fetch(`${API_BASE}/api/campaign/advance-turn`, {
     method: 'POST',
@@ -489,15 +503,21 @@ async function apiFetchClock() {
   return data;
 }
 
+/**
+ * Deprecated compatibility shim.
+ *
+ * The API endpoint that resolved the player's action already charged its days
+ * on the server (`src/shared/action-time.ts`). Call sites keep their old shape,
+ * but this function now only refreshes the clock so a second POST cannot
+ * double-charge or advance the calendar.
+ */
 async function apiSpendActionTime(actionType, subType = null, reason = '', daysOverride = null) {
-  const res = await fetch(`${API_BASE}/api/time/spend`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ actionType, subType, reason, daysOverride })
-  });
-  const data = await res.json();
-  if (!data.success) throw new Error(data.error || 'Action time rejected');
-  return data.time;
+  void actionType;
+  void subType;
+  void reason;
+  void daysOverride;
+  const data = await apiFetchClock();
+  return data.clock;
 }
 
 async function apiFetchTasks() {
@@ -560,6 +580,7 @@ async function apiCompleteTravelMarch(payload) {
 
 window.apiPlanTravel = apiPlanTravel;
 window.apiStartTravel = apiStartTravel;
+window.apiAdvanceDays = apiAdvanceDays;
 window.apiAdvanceTurn = apiAdvanceTurn;
 window.apiFetchClock = apiFetchClock;
 window.apiSpendActionTime = apiSpendActionTime;
@@ -600,6 +621,7 @@ window.apiFetchGatheringNodes = apiFetchGatheringNodes;
 window.apiFetchCharacterProfessions = apiFetchCharacterProfessions;
 window.apiFetchInnovations = apiFetchInnovations;
 window.apiGatherResource = apiGatherResource;
+window.apiRestoreNode = apiRestoreNode;
 window.apiSynthesizeBreakthrough = apiSynthesizeBreakthrough;
 window.apiFetchCrises = apiFetchCrises;
 window.apiFetchCaravans = apiFetchCaravans;

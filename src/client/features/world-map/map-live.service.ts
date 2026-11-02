@@ -12,6 +12,8 @@
  * resolve the extra rows onto the nearest rendered citadel.
  */
 
+import { SETTLEMENT_ALIASES, resolveMapNodeId } from '../../../shared/map-aliases';
+
 export interface MapLiveRecord {
   settlementId?: string;
   sourceSettlementId?: string;
@@ -62,6 +64,13 @@ export interface MapLiveState {
   expeditions: Record<string, unknown>[];
   resourcesByNode: Record<string, { types: Record<string, number>; nodes: Record<string, unknown>[] }>;
   resourceTotals: Record<string, number>;
+  mapRegistry: {
+    nodes: Array<Record<string, unknown>>;
+    subLocationsByNode: Record<string, Array<Record<string, unknown>>>;
+    poiScenesByNode: Record<string, Array<Record<string, unknown>>>;
+    resourcesByNode: Record<string, Array<Record<string, unknown>>>;
+    orphans: string[];
+  } | null;
   errors: string[];
 }
 
@@ -76,13 +85,6 @@ export interface MapLiveRoute {
   descVi?: string;
   descEn?: string;
 }
-
-const SETTLEMENT_ALIASES: Record<string, string> = {
-  wu_wei: 'xi_liang',
-  he_fei: 'shou_chun',
-  pu_yang: 'ye_cheng',
-  wu_ling: 'jiang_ling'
-};
 
 class MapLiveService {
   public readonly ALIASES = SETTLEMENT_ALIASES;
@@ -113,11 +115,21 @@ class MapLiveService {
     expeditions: [],
     resourcesByNode: {},
     resourceTotals: {},
+    mapRegistry: null,
     errors: []
   };
 
   public resolveMapNodeId(settlementId: string): string {
-    return SETTLEMENT_ALIASES[settlementId] || settlementId;
+    return resolveMapNodeId(settlementId);
+  }
+
+  /** Sub-locations/POIs for a node, from the single DB-backed registry. */
+  public getSubLocationsForNode(nodeId: string): Array<Record<string, unknown>> {
+    return this.state.mapRegistry?.subLocationsByNode?.[nodeId] || [];
+  }
+
+  public getPoiScenesForNode(nodeId: string): Array<Record<string, unknown>> {
+    return this.state.mapRegistry?.poiScenesByNode?.[nodeId] || [];
   }
 
   private mergeRecord(
@@ -158,7 +170,8 @@ class MapLiveService {
       locationResult,
       caravanResult,
       expeditionResult,
-      resourceResult
+      resourceResult,
+      registryResult
     ] = await Promise.allSettled([
       this.readJson<{ success?: boolean; garrisons?: MapLiveRecord[] }>('/api/garrisons'),
       this.readJson<{ success?: boolean; settlements?: MapLiveRecord[] }>('/api/factions/settlements'),
@@ -193,7 +206,15 @@ class MapLiveService {
       this.readJson<{ success?: boolean; locations?: Record<string, unknown>[] }>('/api/locations'),
       this.readJson<{ success?: boolean; caravans?: Record<string, unknown>[] }>('/api/logistics/caravans'),
       this.readJson<{ success?: boolean; expeditions?: Record<string, unknown>[] }>('/api/expeditions'),
-      this.readJson<{ success?: boolean; nodes?: Record<string, unknown>[] }>('/api/professions/nodes')
+      this.readJson<{ success?: boolean; nodes?: Record<string, unknown>[] }>('/api/professions/nodes'),
+      this.readJson<{
+        success?: boolean;
+        nodes?: Array<Record<string, unknown>>;
+        subLocationsByNode?: Record<string, Array<Record<string, unknown>>>;
+        poiScenesByNode?: Record<string, Array<Record<string, unknown>>>;
+        resourcesByNode?: Record<string, Array<Record<string, unknown>>>;
+        orphans?: string[];
+      }>('/api/map/registry')
     ]);
 
     const garrisons = garrisonResult.status === 'fulfilled' && garrisonResult.value.success
@@ -247,6 +268,11 @@ class MapLiveService {
     const resourceNodes = resourceResult.status === 'fulfilled' && resourceResult.value.success
       ? (resourceResult.value.nodes || [])
       : [];
+    const mapRegistry = registryResult.status === 'fulfilled' && registryResult.value.success
+      ? registryResult.value
+      : null;
+
+    if (registryResult.status === 'rejected') this.state.errors.push('map-registry');
 
     if (garrisonResult.status === 'rejected') this.state.errors.push('garrisons');
     if (factionResult.status === 'rejected') this.state.errors.push('factions/settlements');
@@ -265,6 +291,13 @@ class MapLiveService {
     if (caravanResult.status === 'rejected') this.state.errors.push('caravans');
     if (expeditionResult.status === 'rejected') this.state.errors.push('expeditions');
     if (resourceResult.status === 'rejected') this.state.errors.push('resources');
+    this.state.mapRegistry = mapRegistry ? {
+      nodes: mapRegistry.nodes || [],
+      subLocationsByNode: mapRegistry.subLocationsByNode || {},
+      poiScenesByNode: mapRegistry.poiScenesByNode || {},
+      resourcesByNode: mapRegistry.resourcesByNode || {},
+      orphans: mapRegistry.orphans || []
+    } : null;
 
     const factionsById: Record<string, Record<string, unknown>> = {};
     factionList.forEach(faction => {
@@ -611,7 +644,9 @@ class MapLiveService {
       .filter(caravan => caravan.from && caravan.to);
 
     const expeditions = this.state.expeditions
-      .filter(expedition => String((expedition as { status?: string }).status).toUpperCase() === 'MARCHING')
+      .filter(expedition => ['MARCHING', 'ARRIVED'].includes(
+        String((expedition as { status?: string }).status).toUpperCase()
+      ))
       .map(expedition => {
         const raw = expedition as {
           origin_settlement_id?: string;

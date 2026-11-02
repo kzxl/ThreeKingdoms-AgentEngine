@@ -26,29 +26,60 @@ function uiIcon(name, className = '') {
 }
 window.uiIcon = uiIcon;
 
+// One renderer for the active injury/condition entries used by the protagonist
+// dossier, NPC dossier and personal journal. The server filters inactive rows.
+function renderConditionChips(conditions, isEn = false) {
+  if (!Array.isArray(conditions) || conditions.length === 0) return '';
+  return `
+    <div class="condition-strip" role="list" aria-label="${isEn ? 'Active wounds' : 'Vết thương đang hoạt động'}">
+      ${conditions.map(condition => {
+        const severity = Math.max(1, Math.min(3, Number(condition.severity || 1)));
+        const severityLabel = isEn
+          ? ['', 'Light', 'Serious', 'Critical'][severity]
+          : ['', 'Nhẹ', 'Nặng', 'Trọng thương'][severity];
+        const source = condition.source || (isEn ? 'Combat' : 'Giao chiến');
+        const narrative = isEn
+          ? (condition.narrativeEn || '')
+          : (condition.narrativeVi || '');
+        return `
+          <span class="condition-chip is-severity-${severity}" role="listitem"
+                title="${String(narrative).replace(/"/g, '&quot;')}">
+            <strong>${severityLabel}</strong>
+            <span>−${Number(condition.statPenalty || 0)} chiến lực</span>
+            <span>${Number(condition.daysRemaining || 0)} ${isEn ? 'days' : 'ngày'}</span>
+            <span class="condition-source">${source}</span>
+          </span>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+window.renderConditionChips = renderConditionChips;
+
 // Server policy cache. `/api/time/clock` returns the authoritative
 // `ACTION_TIME_POLICY`; the local table below is only an offline fallback so
 // the day chip can render before the first clock fetch.
 let ACTION_POLICY_CACHE = null;
 
 const ACTION_DAY_COSTS = {
-  TRADE_BUY: 1,
-  TRADE_SELL: 1,
-  PRODUCTION_BATCH: 1,
+  TRADE_BUY: 2,
+  TRADE_SELL: 2,
+  PRODUCTION_BATCH: 2,
   PAY_WAGES: 0,
   RECORD_BOUNTY: 0,
   REWARD_NPC: 0,
   MOVE_LOCATION: 1,
-  PERSONAL_GROWTH: 1,
-  KIZUNA_INTERACT: 1,
+  PERSONAL_GROWTH: 5,
+  KIZUNA_INTERACT: 2,
   WORK_SHIFT: 1,
-  WORKFORCE_HIRE: 1,
-  ENTERPRISE_MANAGE: 1,
+  WORKFORCE_HIRE: 2,
+  ENTERPRISE_MANAGE: 2,
   START_TASK: 1,
   CANCEL_TASK: 0,
   REST_RECOVERY: 1,
-  TRAIN_MARTIAL: 1,
-  EXPLORE_POI: 1
+  TRAIN_MARTIAL: 5,
+  EXPLORE_POI: 2,
+  QUEST_STEP: 2
 };
 
 function setActionPolicy(policy) {
@@ -100,3 +131,22 @@ window.API_BASE = API_BASE;
 window.storyChronicle = storyChronicle;
 window.activeSubLocation = activeSubLocation;
 window.lastEncounterSubLocation = lastEncounterSubLocation;
+
+/**
+ * Returns a z-index above every visible modal. Legacy IIFE modals are not in
+ * ModalStack, so a dossier opened from the map would otherwise sit under the
+ * shell-owned map backdrop (inline z-index 1010).
+ */
+function nextModalZIndex(base = 1000) {
+  let max = base;
+  if (typeof document === 'undefined') return max + 10;
+  document.querySelectorAll('.modal-backdrop, .modal-overlay, .modal-dialog').forEach((el) => {
+    if (el.classList && el.classList.contains('hidden')) return;
+    const inline = Number(el.style && el.style.zIndex);
+    const computed = Number(window.getComputedStyle(el).zIndex);
+    const value = Number.isFinite(inline) && inline > 0 ? inline : (Number.isFinite(computed) ? computed : 0);
+    if (value > max) max = value;
+  });
+  return max + 10;
+}
+window.nextModalZIndex = nextModalZIndex;

@@ -1,5 +1,10 @@
 # Phân tích kinh tế hành động theo ngày
 
+> **Status 2026-10-31:** the chokepoint design below was implemented in 1.23.1.
+> Every player mutation now charges days through `src/shared/action-time.ts`;
+> see `ARCHITECTURE.md` §7. This note is the current-state addendum; the body
+> remains the 2026-10-29 snapshot.
+
 Ngày 29/10/2026. Tài liệu này phân tích hiện trạng thời gian/hành động của Simulation và đề xuất mô hình
 "một thao tác = một ngày, task lớn chạy nhiều ngày, chỉ Qua Tháng mới chốt tháng" theo hướng ROTK.
 

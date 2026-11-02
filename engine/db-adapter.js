@@ -108,7 +108,7 @@ function runSqlBatch(dbPath, sqlStatements) {
   } catch (err) {
     try {
       if (db && db.open && db.inTransaction) db.exec('ROLLBACK;');
-    } catch {}
+    } catch { /* best-effort fallback */ }
     return { success: false, error: err.message };
   }
 }
@@ -147,7 +147,7 @@ function closeConnections(dbPath) {
   for (const db of connections.values()) {
     try {
       if (db.open) db.close();
-    } catch {}
+    } catch { /* best-effort fallback */ }
   }
   connections.clear();
   try {

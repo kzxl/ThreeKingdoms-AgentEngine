@@ -1,7 +1,7 @@
 # Prestige System
 
-Status: 1.6.8. `config/prestige.json` is the single source for the fame scale,
-tier thresholds and balance numbers.
+Status: 1.23.3. `config/prestige.json` is the single source for the fame scale,
+tier thresholds and balance numbers; the fame scale itself is unchanged since 1.6.8.
 
 ## Scale
 
@@ -81,6 +81,27 @@ It exposes `getFame`, `getTier`, `award`, `penalize`, `decayInactive` and
    harvest, 1.15 in lean months) and active crises (drought/locust/flood/plague,
    cap 3×) to the reference before the fame spread.
 
+## Career paths (1.23.3)
+
+Fame is the social score; career identity is a separate, derived layer. There is
+one resolver, `engine/career-paths.js`, and the progression API displays exactly
+the scores and modifiers gameplay applies.
+
+| Path | Score inputs | Applied modifier |
+|---|---|---|
+| `MARTIAL` | WAR × 0.75 + min(30, duel wins × 8) | +10% WAR EXP |
+| `MERCHANT` | COM × 0.65 + min(40, liquid cash / 500) | +5% trade margin |
+| `SCHOLAR` | (INT + POL) / 2 | +10% INT/POL EXP |
+| `ARTISAN` | CRA × 0.7 + highest craft tier × 6 | −2% defect chance per tier |
+| `LINEAGE` | spouse + children + fame | +10% clan prestige on marriage/birth/succession |
+
+- The highest-scoring path is active; only its modifiers apply.
+- Duel wins are counted with `session_duels.outcome_type = 'VICTORY'`. The old
+  query used a non-existent `outcome` column, so this was silently zero before
+  the fix.
+- `GET /api/progression/career-paths` returns `activePath`, `activeScore`,
+  `modifiers` and the five path rows.
+
 ## Defeat states (1.6.12)
 
 - Battle: civil officers negotiate before combat; a duel can trigger at 20%;
@@ -94,10 +115,10 @@ It exposes `getFame`, `getTier`, `award`, `penalize`, `decayInactive` and
 
 1. Guest auto-assignment needs an owned business and a met fame gate; otherwise
    the guest stays `GUEST` until the player hires them.
-2. The market-pulse screen shows stock/demand, multipliers and the last 12
-   textual points; a chart with longer history is still minimal.
-3. `UnrestConsequence` strategies now own retainer and officer bookkeeping, but
-   officer territory transfer deliberately stays in faction-politics.
+2. The market-pulse screen draws a 24-point SVG sparkline; longer history and
+   tooltips are still minimal.
+3. `UnrestConsequence` strategies own retainer and officer bookkeeping; officer
+   territory transfer deliberately stays in faction-politics.
 4. The will supports charity, per-child cash, businesses and equipment instance
-   ids; assigning the same equipment to two children is last-write-wins.
+   ids, and rejects the same asset going to two children.
 

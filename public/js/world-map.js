@@ -1545,6 +1545,16 @@ function renderWorldMapIntel(nodeId = selectedMapNodeId) {
     </div>
   ` : '';
 
+  const foreignFactionId = (live && !isOwnSettlement) ? live.rulerFactionId : null;
+  const diplomacyButtons = foreignFactionId ? `
+    <button class="intel-diplomacy-action" onclick="changeFactionRelation('${foreignFactionId}', 'WAR')" title="${isEn ? 'Declare war on this faction' : 'Tuyên chiến với phe này'}">
+      <span>${uiIcon('flame')}</span> <span>${isEn ? 'Declare War' : 'Tuyên Chiến'}</span>
+    </button>
+    <button class="intel-diplomacy-action" onclick="changeFactionRelation('${foreignFactionId}', 'PEACE')" title="${isEn ? 'Sign a truce with this faction' : 'Ký hòa ước với phe này'}">
+      <span>${uiIcon('scroll')}</span> <span>${isEn ? 'Make Peace' : 'Cầu Hòa'}</span>
+    </button>
+  ` : '';
+
   const militaryButtons = [
     canReinforce ? `
       <button class="btn-intel-tactical btn-intel-reinforce" onclick="promptReinforceGarrison('${nodeId}')" title="${isEn ? 'Reinforce garrison troops' : 'Điều động ngân lượng chiêu mộ binh sĩ đồn trú'}">
@@ -1555,7 +1565,8 @@ function renderWorldMapIntel(nodeId = selectedMapNodeId) {
       <button class="btn-intel-tactical btn-intel-assault" onclick="promptSiegeAssault('${nodeId}')" title="${isEn ? 'Assault settlement citadel' : 'Đốc thúc ba quân công phá thành trì'}">
         <span>${uiIcon('flame')}</span> <span>${isEn ? 'Siege Assault' : 'Công Thành'}</span>
       </button>
-    ` : ''
+    ` : '',
+    diplomacyButtons
   ].join('');
 
   const militaryActionsHtml = militaryButtons
@@ -1620,6 +1631,8 @@ function renderWorldMapIntel(nodeId = selectedMapNodeId) {
         <button class="btn-march" onclick="executeMarchToSelectedNode('${nodeId}')"><span>${isEn ? 'March here' : 'Hành quân tới đây'}</span></button>
       `}
       <button class="intel-secondary-action" ${caravanDisabled ? 'disabled' : ''} onclick="openCaravanWithDestination('${nodeId}')" title="${caravanTitle}">${uiIcon('cart')} ${isEn ? 'Trade caravan' : 'Lập thương đoàn'}</button>
+      <button class="intel-secondary-action" onclick="openCityMap('${nodeId}')" title="${isEn ? 'Enter the city and visit its districts' : 'Vào thành và đi lại giữa các địa điểm nội thành'}">${uiIcon('castle')} ${isEn ? 'Enter city' : 'Vào Thành'}</button>
+      <button class="intel-secondary-action" onclick="openWildernessMap('${nodeId}')" title="${isEn ? 'Explore the wilderness around this city' : 'Khảo sát dã ngoại quanh thành này'}">${uiIcon('tree')} ${isEn ? 'Wilderness' : 'Dã Ngoại'}</button>
     </div>
 
     <!-- Connected Routes -->
@@ -1725,6 +1738,22 @@ function renderWorldMapIntel(nodeId = selectedMapNodeId) {
       </div>
     </details>
   `;
+}
+
+function openWildernessMap(nodeId) {
+  if (window.WildernessMapUI && typeof window.WildernessMapUI.open === 'function') {
+    window.WildernessMapUI.open(nodeId);
+    return;
+  }
+  showToast(currentLang === 'en' ? 'Wilderness map is loading, please retry.' : 'Bản đồ dã ngoại chưa sẵn sàng, thử lại sau.', true);
+}
+
+function openCityMap(nodeId) {
+  if (window.CityMapUI && typeof window.CityMapUI.open === 'function') {
+    window.CityMapUI.open(nodeId);
+    return;
+  }
+  showToast(currentLang === 'en' ? 'City map is loading, please retry.' : 'Bản đồ nội thành chưa sẵn sàng, thử lại sau.', true);
 }
 
 async function executeMarchToSelectedNode(nodeId) {
@@ -1850,7 +1879,12 @@ async function promptReinforceGarrison(settlementId) {
   const confirmMsg = isEn
     ? `Station ${count} troops at ${settlementName} for ${cost} quan?\nConfirm deployment?`
     : `Điều phối ${count} binh sĩ đồn trú tại ${settlementName} với ngân sách ${cost} Quan?\nXác nhận điều quân?`;
-  if (!confirm(confirmMsg)) return;
+  const confirmed = await window.UI.confirm({
+    title: isEn ? 'Deploy garrison' : 'Điều binh đồn trú',
+    message: confirmMsg,
+    confirmLabel: isEn ? 'Deploy' : 'Điều quân'
+  });
+  if (!confirmed) return;
 
   try {
     if (typeof setProcessingLock === 'function') setProcessingLock(true, isEn ? 'Deploying garrison...' : 'Đang điều binh đồn trú...');
@@ -1908,6 +1942,32 @@ async function promptReinforceGarrison(settlementId) {
 }
 
 /**
+ * Player diplomacy: declare war or sign a truce with a foreign faction.
+ */
+async function changeFactionRelation(factionId, mode) {
+  const isEn = (currentLang === 'en');
+  const path = mode === 'WAR' ? '/api/factions/declare-war' : '/api/factions/make-peace';
+  const labelVi = mode === 'WAR' ? 'Tuyên chiến' : 'Cầu hòa';
+  const labelEn = mode === 'WAR' ? 'Declare war' : 'Make peace';
+
+  try {
+    const res = await fetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ factionId })
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error || `${labelEn} failed`);
+    if (typeof showToast === 'function') showToast(data.message || `${labelVi} ${factionId}`);
+    if (window.MapLiveService && typeof MapLiveService.load === 'function') await MapLiveService.load(true);
+    if (typeof renderWorldMapIntel === 'function') renderWorldMapIntel(selectedMapNodeId);
+    if (typeof renderWorldMapSvg === 'function') renderWorldMapSvg();
+  } catch (err) {
+    if (typeof showToast === 'function') showToast(`${labelVi} thất bại: ${err.message}`, true);
+  }
+}
+
+/**
  * Strategic Action: Launch Citadel Siege Assault
  */
 async function promptSiegeAssault(settlementId) {
@@ -1916,26 +1976,60 @@ async function promptSiegeAssault(settlementId) {
   const isEn = (currentLang === 'en');
   const settlementName = isEn ? targetNode.nameEn : targetNode.nameVi;
 
-  const input = prompt(
-    isEn
-      ? `Launch siege assault against ${settlementName}!\nEnter attacking vanguard army size (Recommended: 100 - 500 troops):`
-      : `Phát động công thành đoạt ải tại ${settlementName}!\nNhập quy mô tiền quân xuất chinh (Khuyến nghị: 100 - 500 binh sĩ):`,
-    '250'
-  );
-  if (!input) return;
+  const arrivedExpedition = (() => {
+    const state = window.MapLiveService && typeof window.MapLiveService.getState === 'function'
+      ? window.MapLiveService.getState()
+      : null;
+    const list = (state && state.expeditions) || [];
+    return list.find(exp => {
+      if (String(exp.status || '').toUpperCase() !== 'ARRIVED') return false;
+      const rawTarget = String(exp.target_settlement_id || exp.targetSettlementId || '');
+      const target = window.MapLiveService && typeof window.MapLiveService.resolveMapNodeId === 'function'
+        ? window.MapLiveService.resolveMapNodeId(rawTarget)
+        : rawTarget;
+      return target === settlementId;
+    });
+  })();
 
-  const attackerTroops = parseInt(input.trim(), 10);
-  if (isNaN(attackerTroops) || attackerTroops <= 0) {
+  let attackerTroops = 0;
+  let expeditionId = null;
+  if (arrivedExpedition) {
+    attackerTroops = Number(arrivedExpedition.troop_count || arrivedExpedition.troopCount || 0);
+    expeditionId = arrivedExpedition.expedition_id || arrivedExpedition.expeditionId;
     if (typeof showToast === 'function') {
-      showToast(isEn ? 'Please enter a valid troop count.' : 'Vui lòng nhập quy mô binh sĩ hợp lệ.', true);
+      showToast(isEn
+        ? `Using the arrived expedition: ${attackerTroops} troops at ${settlementName}.`
+        : `Dùng viễn chinh đã tới: ${attackerTroops} quân tại ${settlementName}.`);
     }
-    return;
+  } else {
+    const input = prompt(
+      isEn
+        ? `Launch siege assault against ${settlementName}!\nEnter attacking vanguard army size (Recommended: 100 - 500 troops):`
+        : `Phát động công thành đoạt ải tại ${settlementName}!\nNhập quy mô tiền quân xuất chinh (Khuyến nghị: 100 - 500 binh sĩ):`,
+      '250'
+    );
+    if (!input) return;
+    attackerTroops = parseInt(input.trim(), 10);
+    if (isNaN(attackerTroops) || attackerTroops <= 0) {
+      if (typeof showToast === 'function') {
+        showToast(isEn ? 'Please enter a valid troop count.' : 'Vui lòng nhập quy mô binh sĩ hợp lệ.', true);
+      }
+      return;
+    }
   }
 
-  const confirmMsg = isEn
-    ? `Launch assault on ${settlementName} with ${attackerTroops} troops?\nThis will initiate direct battlefield combat!`
-    : `Quyết định đốc thúc ${attackerTroops} quân xuất kích công phạt ${settlementName}?\nHành động này sẽ kích hoạt giao tranh thực tế!`;
-  if (!confirm(confirmMsg)) return;
+  if (!expeditionId) {
+    const confirmMsg = isEn
+      ? `Launch assault on ${settlementName} with ${attackerTroops} troops?\nThis will initiate direct battlefield combat!`
+      : `Quyết định đốc thúc ${attackerTroops} quân xuất kích công phạt ${settlementName}?\nHành động này sẽ kích hoạt giao tranh thực tế!`;
+    const confirmed = await window.UI.confirm({
+      title: isEn ? 'Launch assault' : 'Xuất quân công thành',
+      message: confirmMsg,
+      confirmLabel: isEn ? 'Assault' : 'Công phạt',
+      danger: true
+    });
+    if (!confirmed) return;
+  }
 
   try {
     if (typeof setProcessingLock === 'function') setProcessingLock(true, isEn ? 'Assaulting citadel...' : 'Đang công phạt thành lũy...');
@@ -1943,11 +2037,53 @@ async function promptSiegeAssault(settlementId) {
     const res = await fetch('/api/military/assault', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ targetSettlementId: settlementId, attackerTroops, commanderId: 'PLY-0001' })
+      body: JSON.stringify({
+        targetSettlementId: settlementId,
+        attackerTroops,
+        commanderId: 'PLY-0001',
+        mode: 'SIEGE',
+        expeditionId: expeditionId || undefined
+      })
     });
     const data = await res.json();
     if (!data.success) {
       throw new Error(data.error || 'Assault failed');
+    }
+
+    if (data.siege) {
+      const siege = data.siege;
+      if (siege.aborted) {
+        if (typeof showToast === 'function') {
+          showToast(isEn
+            ? `The siege of ${settlementName} was aborted: the commander fell in the pre-battle duel.`
+            : `Bao vây ${settlementName} bị hủy: chủ tướng tử trận trong trận đấu tướng trước cửa thành.`, true);
+        }
+        if (typeof renderWorldMapIntel === 'function') renderWorldMapIntel(settlementId);
+        if (typeof renderWorldMapSvg === 'function') renderWorldMapSvg();
+        if (typeof loadStatus === 'function') loadStatus();
+        return;
+      }
+      if (typeof appendStoryTurn === 'function') {
+        appendStoryTurn({
+          type: 'player',
+          speaker: isEn ? 'Liang Yan (Siege)' : 'Lương Diễn (Bao Vây)',
+          title: isEn ? 'Siege Invested' : 'Bắt Đầu Bao Vây',
+          avatar: 'Diễn',
+          text: isEn
+            ? `The army surrounds **${targetNode.nameEn}** with **${siege.attackerTroops} troops**. The walls will be worn down day by day; the city falls when the defense breaks.`
+            : `Đại quân vây kín **${targetNode.nameVi}** với **${siege.attackerTroops} binh sĩ**. Tường thành sẽ bị bào mòn qua từng ngày; hạ thành khi phòng thủ vỡ.`,
+          deltas: { target: targetNode.nameVi, status: siege.status }
+        });
+      }
+      if (typeof showToast === 'function') {
+        showToast(isEn
+          ? `Siege of ${settlementName} has begun (${siege.attackerTroops} troops).`
+          : `Đã bao vây ${settlementName} (${siege.attackerTroops} quân).`);
+      }
+      if (typeof renderWorldMapIntel === 'function') renderWorldMapIntel(settlementId);
+      if (typeof renderWorldMapSvg === 'function') renderWorldMapSvg();
+      if (typeof loadStatus === 'function') loadStatus();
+      return;
     }
 
     if (targetNode.military) {
@@ -2020,70 +2156,15 @@ async function promptSiegeAssault(settlementId) {
 /**
  * Strategic Action: Recruit Auxiliary Specialist
  */
-async function hireSpecialistPrompt(candidateName, nodeId) {
-  const isEn = (currentLang === 'en');
-  const confirmMsg = isEn
-    ? `Sign employment contract with [${candidateName}]?\nSigning Bonus (Bond): 250 quan\nAssigned to: Liang Clan Enterprise (+15% to +25% Efficiency boost)\nConfirm recruitment?`
-    : `Ký kết khế ước chiêu mộ nhân sĩ [${candidateName}]?\nTiền thưởng ký kết (Ký quỹ): 250 Quan\nPhân bổ vào: Sản nghiệp Lương Gia (+15% đến +25% Hiệu suất vận hành)\nXác nhận chiêu mộ?`;
-
-  if (!confirm(confirmMsg)) return;
-
-  try {
-    if (typeof setProcessingLock === 'function') setProcessingLock(true, isEn ? 'Signing contract...' : 'Đang ký kết khế ước chiêu mộ...');
-
-    const res = await fetch('/api/workforce/hire', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ candidateName, signingBonus: 250, characterId: 'PLY-0001' })
-    });
-    const data = await res.json();
-    if (!data.success) {
-      throw new Error(data.error || 'Recruitment failed');
-    }
-
-    if (typeof window.apiSpendActionTime === 'function') {
-      try {
-        await window.apiSpendActionTime('WORKFORCE_HIRE', null, `Chiêu mộ ${candidateName}`);
-      } catch (timeErr) {
-        if (typeof showToast === 'function') showToast(timeErr.message, true);
-      }
-    }
-
-    const narrativeVi = `Lương Diễn đích thân yết kiến, trao tặng **${data.signingBonusPaid} quan** chiêu mộ **${data.nameVi}** gia nhập sản nghiệp **${data.businessName}**. Đảm nhận cương vị **${data.assignedRole}**, thúc đẩy hiệu suất sản xuất và quản trị tăng vọt lên **${(data.newEfficiencyMultiplier * 100).toFixed(0)}%**!`;
-    const narrativeEn = `Liang Yan personally extends invitations and grants **${data.signingBonusPaid} quan** signing bonus to recruit **${data.nameVi}** into **${data.businessName}**. Serving as **${data.assignedRole}**, boosting enterprise operational efficiency to **${(data.newEfficiencyMultiplier * 100).toFixed(0)}%**!`;
-
-    if (typeof appendStoryTurn === 'function') {
-      appendStoryTurn({
-        type: 'player',
-        speaker: isEn ? 'Liang Yan (Workforce Recruitment)' : 'Lương Diễn (Chiêu Mộ Nhân Tài)',
-        title: isEn ? 'Retainer Contract Signed' : 'Ký Kết Khế Ước Gia Thần',
-        avatar: 'Diễn',
-        text: isEn ? narrativeEn : narrativeVi,
-        deltas: {
-          recruit: data.nameVi,
-          business: data.businessName,
-          role: data.assignedRole,
-          bonus: `-${data.signingBonusPaid} Quan`,
-          efficiency: `${(data.newEfficiencyMultiplier * 100).toFixed(0)}%`
-        }
-      });
-    }
-
-    if (typeof showToast === 'function') {
-      showToast(isEn ? `Recruited ${data.nameVi} into ${data.businessName}!` : `Đã chiêu mộ ${data.nameVi} gia nhập ${data.businessName}!`);
-    }
-
-    if (typeof renderWorldMapIntel === 'function') renderWorldMapIntel(nodeId);
-    if (typeof loadStatus === 'function') loadStatus();
-    if (typeof loadDeckNpcs === 'function') loadDeckNpcs();
-    if (typeof loadDeckLedger === 'function') loadDeckLedger();
-
-  } catch (err) {
-    console.error('Recruitment failed:', err);
-    if (typeof showToast === 'function') showToast(`Lỗi chiêu mộ: ${err.message}`, true);
-    else alert(`Lỗi chiêu mộ: ${err.message}`);
-  } finally {
-    if (typeof setProcessingLock === 'function') setProcessingLock(false, null);
+function hireSpecialistPrompt(candidateName, nodeId) {
+  // The quote/hire flow lives in the TS workforce slice; this legacy entry point
+  // only forwards the candidate name so there is a single renderer.
+  if (window.WorkforceHireUI && typeof window.WorkforceHireUI.open === 'function') {
+    window.WorkforceHireUI.open(candidateName);
+    return;
+  }
+  if (typeof showToast === 'function') {
+    showToast(currentLang === 'en' ? 'Hire dialog is loading, please retry.' : 'Hộp thoại chiêu mộ chưa sẵn sàng, thử lại sau.', true);
   }
 }
 

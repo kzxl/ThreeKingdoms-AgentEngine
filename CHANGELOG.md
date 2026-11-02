@@ -7,6 +7,1850 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.56.0] - 2026-11-02
+
+### Changed
+- The product is now **single-session**: one active `saves/session.db` (or
+  `SIM_DB_PATH`). Starting a new campaign resets that database in place through
+  `initializeInstanceDatabase`, backs the previous file up to
+  `saves/backups/session-pre-reset-*.db`, and reloads the browser. No server
+  restart, no instance workers and no `x-instance-id` routing.
+- The title screen now offers **Khởi lập cơ nghiệp mới** and **Phiên hiện tại**
+  (continue). The multi-instance list, switch/delete/clone buttons and the
+  restart-command banner are removed. The header button is **Phiên Chơi**.
+- Added `POST /api/game/new-session` (in-place reset) and
+  `GET /api/game/archetypes` (static starting presets). Existing databases under
+  `saves/instances/` remain on disk but are ignored by the UI.
+
+### Verification
+`verify-single-session-reset.ts` boots the real composition root on a sandbox
+database, resets it through HTTP, and proves the backup, the new player/turn,
+and both legacy and modular routes work without a restart. Typecheck, client
+syntax, UI/slop ratchet and the focused instance suites pass.
+
+---
+
+## [1.55.1] - 2026-11-02
+
+### Fixed
+- Creating or selecting a non-startup instance no longer drops the player into
+  the `INSTANCE_NOT_ACTIVE` 409. The title screen detects `restartRequired`,
+  keeps the gate open, shows the exact `SIM_DB_PATH=...` command with a copy
+  button and a "server restarted" retry, and only marks the instance active
+  after the server is running that database.
+- `/api/instances` now marks the current instance from the server's startup
+  database instead of the per-request `x-instance-id` header, so the "Đang Chơi"
+  badge is correct after a restart.
+- `/api/instances/new` and `/api/instances/select` return `dbPath` and
+  `restartRequired` explicitly.
+
+`verify-instance-restart-ux.ts` locks the client guard order and the server
+response fields. True in-process hot-swapping remains the larger W6-0
+multi-instance refactor; this change makes the existing restart path explicit
+and safe.
+
+---
+
+## [1.55.0] - 2026-11-02
+
+### Changed
+- The right deck is now **Túi Cá Nhân** (per-settlement personal bag), **Gia Đinh**
+  (retainers) and **Nhật Ký** (cashflow ledger). The separate `Sổ Cái TXN` and
+  `AI Feed` tabs are gone; the header **Nhật Ký** button opens the ledger log.
+- Retainer cards no longer carry a monthly-wage badge. Wages live in **Sản Nghiệp**:
+  each business now returns `staff_members` and the owner surface renders a payroll
+  roster with role, monthly wage, staff count, wage total and monthly overhead.
+  The classic enterprise renderer mirrors the same fields when the TS bundle is
+  unavailable.
+- The personal-bag tab shows the bag location, item count, per-item value and a
+  two-action trade row. The header metric is now **Giá Trị Túi** and is computed
+  from the current settlement bag (`financials.bagValue`) rather than the global
+  inventory aggregate.
+- Exploration discoveries are asserted to land in `player_bag_by_location` for the
+  current settlement. `/api/scene` now moves `current_sub_location` together with
+  `current_location`, so the bag anchor follows a walked local POI.
+- Removed the unused `/api/agent/logs` endpoint, its in-memory activity stream and
+  the client `apiFetchAgentLogs` wrapper.
+
+### Verification
+Typecheck, architecture guard, client syntax, UI/slop ratchets (debt reduced),
+client API contract, route-shadow report, 28 golden contracts and 8 write smokes
+pass. `verify-exploration` now covers the personal-bag credit. Five suites fail on
+the stale live save (`verify-civilian-courtship-lineage`, `verify-endowment-consumption`,
+`verify-freight`, `verify-market-price-book`, `verify-merchant-route`); the same
+failures reproduce without these changes, and the freight/market-price suites pass
+on `saves/backups/pre-verify-reset/session.db`.
+
+---
+
+## [1.54.0] - 2026-11-02
+
+### Changed
+- The key-relationship network now lives inside the protagonist sheet instead of a
+  separate deck card. Its header collapses the section and keeps `aria-expanded`
+  in sync, so the retainer/ledger tabs can reclaim vertical space when needed.
+- Each relationship row is now a five-tier ladder (`Sinh Tử` / `Tri Kỷ` /
+  `Thân Quen` / `Sơ Giao` / `Xa Lạ`) derived from the affinity score and sorted
+  by closeness. Name, score and tier share one line, the long sentiment text is
+  clamped to two lines, and a single meter replaces the overlapping layout.
+- Retainer cards truncate long names and roles, keep the monthly wage on one line
+  and stack stat labels above their values. Below 1180px the retainer/ledger pane
+  scrolls inside the card instead of stretching the page by one screen per NPC.
+
+### Verification
+Client syntax, UI consistency and anti-slop ratchets pass. Measured at 405px:
+right-deck `scrollWidth` 358 = `clientWidth`, page width 405 = viewport, no row
+overflow. `verify-freight` and the `/api/audit` golden assertion fail identically
+on `HEAD` (pre-existing data drift) and are unrelated to the UI files here.
+
+---
+
+## [1.51.1] - 2026-11-02
+
+Fixed enterprise safe-cash deposits and withdrawals.
+
+### Fixed
+- `POST /api/enterprise/manage-safe-cash` was never registered, so the modal's
+  **Nạp quỹ** / **Rút quỹ** buttons always returned 404. The route now accepts
+  `businessId` (or `enterpriseId`), `DEPOSIT` / `WITHDRAW`, an idempotency key
+  and moves cash in one transaction.
+- Deposits debit the business asset and credit mobile cash; withdrawals reverse
+  it, and both write balanced `cashflow_ledger` + `account_journal` entries.
+- Invalid amounts, insufficient mobile cash and over-withdrawal are rejected;
+  moving funds costs no game day.
+- The lineage verification now snapshots and restores `npc_ledger` /
+  `npc_personal_progression`, so repeated runs no longer leave audit drift.
+
+### Verification
+`npm run verify` green: 110/110 suites. `npm run audit` passed 2,429 invariants
+with 0 discrepancies.
+
+---
+
+## [1.53.1] - 2026-11-02
+
+### Fixed
+- The **Khảo sát** button showed `Danh vọng undefined`: `/api/explore` wraps its
+  payload in `result`, but the client read `data.discovered`/`data.fame`.
+  The client now unwraps `data.result || data`, uses `item?.nameVi` and the
+  server `narrativeVi`, and sends an idempotency key.
+- The button is now labelled **Tản Bộ** and its tooltip states that it surveys
+  the current location inside the city; exploring farther uses **Dã Ngoại**.
+- Local walking now updates `window.activeSubLocation`, the action dock and the
+  persisted sub-location, so the next survey reports the place the player just
+  walked to instead of the stale initial "Vườn Đào". The walking call also uses
+  the correct `setProcessingLock(busy, null, text)` signature.
+- Exploration and prestige suites now run against a temp DB before any singleton
+  is constructed; endowment/freight/stall/merchant tests clear
+  `world_day_ledger` so live progress cannot turn their days into no-ops.
+
+### Verification
+`npm run verify` green: 111/111 suites; `npm run audit` 2,815 invariants, 0
+discrepancies. `verify-exploration` guards the response unwrap, button label and
+walk-location refresh.
+
+---
+
+## [1.53.0] - 2026-11-02
+
+Supply-chain depth: per-city personal bag and multi-item merchant routes.
+
+### Added
+- **Per-city personal bag (W1-5).** Migration 084 adds
+  `player_bag_by_location` and mirrors every inventory quantity change into the
+  player's current city. Trade selling checks the destination city bag, so goods
+  bought in A cannot be sold in B without transport. Market board
+  `playerQuantity`, the right-panel inventory, warehouse deposit/withdraw and
+  caravan dispatch all use the city bag.
+- **Multi-item merchant routes (W1-7 remainder).** Migration 085 adds
+  `merchant_route_items`; a route can carry several items, each with its own
+  buy ceiling, sell floor and quantity per run. The logistics form supports
+  adding/removing item rows, and the route card lists the full manifest.
+
+### Changed
+- Trade pricing now resolves the player's `LOC-*` sub-location to the actual
+  settlement node, so local specialisation is part of the quote.
+- Warehouse deposit/withdraw requires standing in the warehouse's city.
+- Migration 086–089 add a `BEFORE UPDATE` guard: an inventory reduction aborts
+  with `PLAYER_BAG_INSUFFICIENT` when the current city bag does not hold the
+  goods, and `current_player_location` prefers an explicit `LOC-*` id.
+- Audit block 1 checks that every city bag sum never exceeds aggregate
+  inventory.
+
+### Verification
+`npm run verify` green: 111/111 suites, 28/28 API contracts, 8/8 write smokes.
+`npm run audit` passed 2,466 invariants with 0 discrepancies.
+
+---
+
+## [1.52.3] - 2026-11-02
+
+### Fixed
+- Audited all 73 `apiClient`/`fetch` paths in `src/client` against the 259
+  registered server routes. `tools/client-api-allowlist.json` is now empty, so
+  any future client call to a missing route fails the gate.
+- Arena calls now use `/api/duel/arena/roster`, `/api/duel/initiate` and
+  `/api/duel/round`, mapping the server roster/duel shape correctly.
+- Tavern drink uses the legacy `PERSONAL_GROWTH / REST_RECOVERY` action; banquet
+  host sends `tier`; brotherhood sends `npcId`.
+- Residence rest uses `/api/life/act` with `SLEEP`.
+- The TS title screen uses `/api/game/new` with real `scenarioId`/`archetypeId`
+  values instead of the nonexistent `/api/session/new-game`.
+
+### Verification
+`npm run lint:api --strict`: 73 client paths, 0 missing, 0 allowlisted.
+`npm run verify` green: 110/110 suites. `npm run audit` 2,441 invariants, 0
+discrepancies.
+
+---
+
+## [1.52.2] - 2026-11-02
+
+### Fixed
+- Opening an NPC dossier failed with `formatNumber is not defined` because the
+  Assets tab used a formatter that only existed in the protagonist file. The NPC
+  dossier now defines its own locale-aware `formatNumber`.
+- `verify-dossier-assets` asserts the helper exists, so the Assets tab cannot
+  regress to a runtime ReferenceError.
+
+### Verification
+`npm run verify` green: 110/110 suites.
+
+---
+
+## [1.52.1] - 2026-11-02
+
+Readable action logs and a wage-ledger balance fix.
+
+### Fixed
+- The time timeline and turn report showed raw action codes such as
+  `ENTERPRISE_WORK`, `ENTERPRISE_SAFE_CASH`, `MONTH_CLOSE` and `EXPLORE_POI`.
+  `TURN_ACTION_LABELS` now covers the full action catalog and unknown codes are
+  humanized instead of printed verbatim.
+- `performLaborShift` did not select `safe_cash`, so `LABOR_WAGE` ledger entries
+  recorded liquid cash only and were 3,000 Quan short whenever the personal safe
+  held a reserve. The balance now equals liquid + safe, matching `newBalance`.
+- Market tests no longer force `current_date` to a date earlier than the save's
+  latest ledger entry; they use `MAX(game_date)` so real player progress does not
+  produce false INVALID_PARAMS failures.
+
+### Verification
+`npm run verify` green: 110/110 suites. `npm run audit` passed 2,441 invariants
+with 0 discrepancies.
+
+---
+
+## [1.52.0] - 2026-11-02
+
+Reworked the campaign time panel for readability.
+
+### Changed
+- The modal uses a 980px surface instead of being clamped by the shared
+  `modal-card` width; the old two-column comparison and its dead space are gone.
+- Fatigue and remaining stamina are separate KPIs (`Mệt mỏi 0/100`,
+  `Thể lực còn 100/100`); health, morale, grain and active tasks fill the grid.
+- The hero shows date, turn, season, phase and a month-close progress bar.
+- Action costs use a seven-item compact grid with days and fatigue per type.
+- The real-world clock, multi-day tasks and recent timeline each get their own
+  section; the **Next Day** footer is sticky.
+
+### Verification
+`npm run verify` green: 110/110 suites. New `verify-time-panel-ui` guards the
+width, labels, phase, cost grid and section structure.
+
+---
+
+## [1.51.0] - 2026-11-02
+
+Fixed and expanded the Bách Nghệ enterprise/workshop surface.
+
+### Fixed
+- Wage-work buttons sent legacy ids (`WOODCUT`, `WEAVE_MAT`, `SMITH_ASSIST`)
+  that the server rejects. The modal now renders the six canonical `SHIFT_*`
+  entries returned by `/api/enterprise/status`.
+- The owner tab read fields (`name_vi`, `enterprise_id`, `worker_count`) that
+  the server never returns; the client type and renderer now match the real
+  `businesses` contract.
+
+### Added
+- Portfolio summary cards: cash, enterprise safe cash, debt, staff wages, rent
+  and accumulated profit.
+- Per-enterprise cards with manager name, assigned/roster staff, efficiency,
+  daily revenue, debt, rent + wages, health badge and auto-procure state.
+- Inline cash input with deposit/withdraw, plus **collect profits**.
+- Opening catalogue with startup/turnkey cost, rent, workforce, projected
+  revenue and per-material availability.
+- Work tab summary (fatigue, available shifts, best wage, best wage/fatigue)
+  and six canonical shift cards with blocked reasons.
+
+### Verification
+`npm run verify` green: 109/109 suites, 28/28 API contracts, 8/8 write smokes.
+`npm run audit` passed 2,313 invariants with 0 discrepancies.
+
+---
+
+## [1.50.0] - 2026-11-02
+
+Upgraded the local market price board from a five-column stub to a full
+trading surface.
+
+### Added
+- `GET /api/economy/market-board` returns all 160 master items for the player's
+  current settlement with local price, base price, change, stock/demand,
+  pressure, recent history, player stock and the best arbitrage destination.
+- Settlement resolution now follows names/sub-locations (`Vườn Đào` → `zhuo_xian`)
+  instead of only accepting `LOC-*` ids.
+- Board summary cards: total items, scarce/surplus counts, arbitrage count and
+  the best margin.
+- Search, category, pressure and sort filters; expandable rows with a larger
+  trend chart, item stats and arbitrage detail.
+- Buy/sell buttons on every row open the existing quick-trade dialog.
+
+### Changed
+- The market modal uses the full 1120px surface instead of the 440px shared
+  `modal-card` cap.
+- Supply pressure combines stock/demand with the settlement specialisation, so
+  surplus/deficit counts are not always zero.
+
+### Verification
+`npm run verify` green: 108/108 suites, 28/28 API contracts, 8/8 write smokes.
+`npm run audit` passed 2,313 invariants with 0 discrepancies.
+
+---
+
+## [1.49.1] - 2026-11-02
+
+Unified the protagonist and NPC dossier surfaces.
+
+### Changed
+- The protagonist dossier now uses the same `.dossier-*` header, sticky tab
+  bar, 320×270 short-label radar, 2×4 stat grid and sticky action footer as the
+  NPC dossier.
+- The illustration band renders only when `player_state.illustration_url` is
+  present.
+- Removed the duplicate `src/client/features/dossiers` ModalShell, which mounted
+  the same `protagonist-dossier-modal` / `npc-dossier-modal` ids and shadowed the
+  detailed renderer through the legacy bridge.
+- Inline styles dropped from 740 to 681; the protagonist dossier no longer uses
+  `grand-hub-subnav-btn`.
+
+### Verification
+`npm run verify` green: 107/107 suites, 28/28 API contracts, 8/8 write smokes.
+New `verify-dossier-consistency` guards one renderer per modal id and the shared
+class contract.
+
+---
+
+## [1.49.0] - 2026-11-02
+
+Closed the remaining UI surfaces from the 2026-11-01 plan.
+
+### Added
+- Warehouse renewal and merchant-route creation in the market modal; the
+  logistics tab shows the latest five `merchant_events`.
+- Durable-tool repair tab with usage bars, server price and skill gate.
+- Wilderness resource gather badges and POI scene survey; the city mini-map
+  exposes all 93 urban rows and opens contextual scenes without spending a day.
+- Hire quote modal with server price, fame/virtue/affinity gates and the
+  `retryAfterDate` for refusals.
+- Injury strip in the protagonist dossier, NPC dossier and journal, fed by
+  `/api/conditions`.
+- NPC dossier **Assets & Succession** tab with the latest `npc_ledger` entries
+  and assigned business/manager.
+- First-run onboarding card and a `?` header button to reopen it.
+
+### Changed
+- The local picker and region resolution read `MapLiveService` registry rows
+  first; `map-data.js` remains an offline fallback.
+- All native `confirm()` calls use `window.UI.confirm`/`confirmDialog`.
+- The right-panel deck defaults to the household tab instead of the raw ledger.
+- The frozen legacy script count is unchanged; onboarding is a TypeScript slice.
+- UI ratchet locks `nativeConfirmCalls` at 0 and inline styles at 740.
+
+### Verification
+`npm run verify` green: 106/106 suites, 28/28 API contracts, 8/8 write smokes.
+`npm run audit` passed 2,313 invariants with 0 discrepancies.
+
+---
+
+## [1.48.0] - 2026-11-01
+
+Reworked the NPC dossier for readability.
+
+### Changed
+- Stat rows show the numeric value once and the rank once; fogged values show
+  `???` and “Sương mù” instead of repeating the rank.
+- Radar is 320×270 with short LDR/WAR/CRA/INT/POL/DIP/COM/LOG labels; long rank
+  strings no longer sit on the axes.
+- Header uses compact identity, location/mood/relationship chips and two meter
+  rows; the empty illustration band is removed.
+- Stats use a 320px radar + 2×4 grid; tabs and the action footer are sticky, so
+  actions are visible without scrolling.
+- Dossier blocks moved from inline styles to CSS classes; inline styles dropped
+  from 783 to 740 and the 11px font floor is enforced.
+
+### Verification
+`npm run verify` green: 101/101 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 2,313 invariants, 0 discrepancies.
+
+---
+
+## [1.47.1] - 2026-11-01
+
+Fix modal priority when opening a dossier from the world map.
+
+### Fixed
+- `nextModalZIndex()` in `public/js/config.js` raises a legacy modal above the
+  highest visible modal. The world map is shell-owned with inline z-index 1010,
+  so the NPC/protagonist dossier previously rendered underneath it.
+- NPC and protagonist dossiers now set their z-index before opening and consume
+  Escape with `stopImmediatePropagation`, so the map behind them does not close.
+- `verify-modal-priority.ts`.
+
+### Verification
+`npm run verify` green: 101/101 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 2,313 invariants, 0 discrepancies.
+
+---
+
+## [1.47.0] - 2026-11-01
+
+Wilderness local map (city mini-map remains for the next phase).
+
+### Added
+- Migration 082 adds `map_scope`, local coordinates, icon/scene keys to
+  `location_sublocations` and `player_state.current_sub_location`; migration 083
+  backfills legacy place names such as "Vườn Đào" → "Tư Trạch Vườn Đào".
+- `WildernessService`, `GET /api/map/wilderness` and
+  `POST /api/map/wilderness/travel`: only WILDERNESS rows in the current city are
+  reachable; each move charges one day through action time.
+- `WildernessMapModal` renders the 40 wilderness points on a local SVG with the
+  current position, resource nodes and POI scene keys; the world-map intel panel
+  gains a Dã Ngoại button.
+- `verify-wilderness-map.ts`; schema contract covers the new columns.
+
+### Verification
+`npm run verify` green: 100/100 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 2,313 invariants, 0 discrepancies.
+
+---
+
+## [1.46.0] - 2026-11-01
+
+One map registry from SQLite (Map Step A).
+
+### Added
+- Migration 081 normalizes all 133 sub-locations into
+  `location_sublocations` with a stable id, parent location, sort order and
+  `URBAN/WILDERNESS/WATER/ROAD/RUINS` kind.
+- `MapRegistryService` and `GET /api/map/registry` return 20 nodes, 133
+  sub-locations, 132 POI scenes, 23 resource nodes and 23 settlements. Every
+  entity resolves to a rendered node; the registry reports zero orphans.
+- `MapLiveService` loads the registry and exposes
+  `getSubLocationsForNode` / `getPoiScenesForNode`.
+- Settlement aliases moved to `src/shared/map-aliases.ts`, shared by client and
+  server.
+- `verify-map-registry.ts`; schema contract covers `location_sublocations`.
+
+### Verification
+`npm run verify` green: 99/99 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 2,313 invariants, 0 discrepancies.
+
+---
+
+## [1.45.0] - 2026-11-01
+
+NPC hiring pushback and the map evolution decision.
+
+### Added
+- Specialist hiring checks affinity (baseline sentiment + relationship deltas),
+  fame and virtue. A stranger with no standing, or a proud officer with low
+  affinity and fame under 1,000, refuses with `NPC_REFUSED`, `affinity` and a
+  `retryAfterDate` 30 days out.
+- `docs/MAP_EVOLUTION_ANALYSIS_2026-11-01.md`: a node graph vs ROTK XIV-style
+  tile layer analysis. Recommendation: one canonical registry and clickable
+  sub-locations first, then a hybrid terrain/tile layer at local zoom; no full
+  continuous-map rewrite.
+- `verify-npc-refusal.ts`.
+
+### Verification
+`npm run verify` green: 98/98 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 2,313 invariants, 0 discrepancies.
+
+---
+
+## [1.44.0] - 2026-11-01
+
+NPC business succession and one terminal-state gate.
+
+### Added
+- `resolveBusinessSuccession` passes an NPC-owned enterprise to an adult heir,
+  then a senior foreman as trustee, then liquidates it into the settlement
+  treasury. `applyNpcDeath` runs the resolver before clearing the deceased row.
+- Month close checks victory before bankruptcy; a `VICTORIOUS` campaign cannot be
+  downgraded, and a terminal campaign rejects player actions with `CAMPAIGN_OVER`.
+- `verify-npc-business-succession.ts` and `verify-terminal-state.ts`.
+
+### Verification
+`npm run verify` green: 97/97 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 2,307 invariants, 0 discrepancies.
+
+---
+
+## [1.43.0] - 2026-11-01
+
+NPC income and troop conservation through one ledger.
+
+### Added
+- Migration 080 adds `npc_ledger` and backfills opening balances for every NPC.
+- `postNpcEntry` / `postNpcMutation` are the only writers of NPC cash and
+  troops. Stall sales, NPC market offers, freight fees/penalties, merchant route
+  purchases, loans, dowries, faction rewards and prestige openings all append an
+  entry.
+- A commerce turn now transfers cash from a named local buyer instead of
+  minting it; a bandit expedition takes bounty from the lair and recruits from
+  the local garrison (leaving a minimum defence).
+- Audit checks the latest ledger balance and the sum of deltas against
+  `npc_personal_progression`: 2,307 invariants.
+- `verify-npc-conservation.ts`.
+
+### Verification
+`npm run verify` green: 95/95 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 2,307 invariants, 0 discrepancies.
+
+---
+
+## [1.42.0] - 2026-11-01
+
+One player damage path and one zero-health transition.
+
+### Changed
+- Every combat/injury/assault path now calls
+  `applyPlayerDamage` (`src/modules/military/player-vitals.ts`). Health may reach
+  0 instead of being clamped to 1, 20 or 25.
+- At 0 health the existing `BattleDuelService.applyPlayerDeath` runs once:
+  succession if an heir exists, otherwise `campaign_meta.status = 'DEFEATED'`.
+- Injury, siege defeat, tactical assault, duel ambush and bandit assault all use
+  the same path.
+- `tools/test-runner.js` gives each modern suite its own `SIM_LEGACY_PATH`, so a
+  death test can no longer overwrite the shared `saves/legacy.json`.
+- `verify-instance-manager.ts` isolates the NG+ profile explicitly.
+
+### Verification
+`npm run verify` green: 94/94 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,961 invariants, 0 discrepancies.
+
+---
+
+## [1.41.0] - 2026-11-01
+
+Logistics risk, freight insurance and the market logistics screen.
+
+### Added
+- Deterministic ambush risk for freight and merchant routes: an active bandit
+  lair near an endpoint threatens the cargo; `MILITIA` is ambushed, `VETERAN`
+  and `ELITE_RETINUE` deter weaker lairs and lose less when they do not.
+- Freight insurance: optional 4% premium at accept, 75% claim on lost cargo.
+- Migration 078 adds insurance and ambush columns to shipment tables; audit
+  checks `quantity + spoiled + ambush <= initial` and claims only when insured.
+- The market modal has a fourth `Vận Chuyển` tab: freight contracts with guard
+  tiers/insurance, active shipments and merchant route pause/resume.
+- Warehouse rent/renew extends the existing lease by 90 days instead of
+  resetting from today, using the 30-day campaign calendar.
+- Migration 079 adds `TOOL-BOAT`, its recipe and the FISH alternate tool.
+- `verify-logistics-risk.ts` and `verify-tool-boat.ts`.
+
+### Verification
+`npm run verify` green: 93/93 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,961 invariants, 0 discrepancies.
+
+---
+
+## [1.40.0] - 2026-11-01
+
+Market demand completion and a standard feature-module scaffold.
+
+### Added
+- Stall listings now enter local market stock; sales consume stock and closing
+  returns unsold goods. Migration 077 adds `stall_listings.market_effect`, and
+  audit block 9 proves the listing/sale/close reconciliation.
+- Freight demand is generated from `settlement_consumption` as well as static
+  deficits. A fish-consuming inland town now posts fish contracts when a
+  fishing town has stock.
+- `docs/FEATURE_MODULE_STANDARD.md` defines the feature folder contract, and
+  `tools/scaffold-feature.js` / `npm run scaffold:feature` create it.
+- `verify-freight-demand.ts` and `verify-feature-scaffold.ts`.
+
+### Verification
+`npm run verify` green: 91/91 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,961 invariants, 0 discrepancies.
+
+---
+
+## [1.39.0] - 2026-11-01
+
+Economic conservation: the three remaining P0 defects from the 1.38.0 re-check
+are fixed, and every day tick is now idempotent.
+
+### Fixed
+- Freight contracts reserve source settlement stock at accept, credit the
+  destination only on delivery and return unspoiled cargo when the contract
+  fails. Two contracts can no longer draw the same source supply.
+- Every quote consumer uses one local multiplier that includes regional
+  endowment: direct trade, stall, contract board, intel and contextual actions.
+  `calculateSettlementPrice` and `getLocalMultiplier` are pinned by a parity
+  test.
+- Stall sales, freight progress, merchant routes and monthly essential
+  consumption are idempotent per campaign day. Replaying a day no longer sells,
+  spoils or consumes twice.
+
+### Added
+- Migration 075: `freight_shipments.source_reserved_quantity`.
+- Migration 076: `world_day_ledger(system, game_date)`; merchant rows are copied
+  from the old `merchant_day_ledger`.
+- `src/shared/game-date.ts` uses the 30-day campaign calendar for day arithmetic.
+- `verify-freight-conservation.ts`, `verify-market-price-parity.ts` and
+  `verify-day-tick-idempotency.ts`.
+- Audit block 9 checks that a freight reservation is non-negative and never
+  exceeds the initial quantity.
+
+### Verification
+`npm run verify` green: 89/89 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,961 invariants, 0 discrepancies.
+
+---
+
+## [1.38.0] - 2026-10-31
+
+Supply-chain hardening: the Gia Thương layer is isolated, audited, atomic and
+uses one price anchor.
+
+### Added
+- All new session tables are in `HISTORY_TABLES`; a new game no longer inherits
+  warehouses, stalls, offers, freight, routes, tool wear, life state or node
+  stock.
+- Audit block 9 (`TRADE, WAREHOUSE & SHIPMENT`) checks warehouse capacity,
+  stock/offer/shipment bounds, route-tag stock, endowments and consumption. Total
+  invariants: 1,961.
+- `merchant_day_ledger` makes each campaign day one atomic transaction; a repeated
+  tick is a no-op.
+- `calculateSettlementPrice` now includes stock/demand, regional endowment and
+  season/crisis, and is used by stall, NPC offers, caravans, freight and company
+  routes.
+- Stall list/close require `stallId` or `settlementId` when multiple stalls are
+  open.
+- Freight contracts check source stock, reserve issuer cash and charge penalties
+  on overdue delivery.
+- `merchant_route_stock` ensures a route only ships/sells its own cargo; route
+  creation/procurement/dispatch reject expired leases.
+- NPC offer purchases go to the local warehouse when possible.
+- Retail sales no longer inflate local market stock.
+- `SKL-FISH-BOAT`/`SKL-HUNT-SKIN` stack with cold chain; `TOOL-BOW` is an
+  alternate hunting tool.
+- Migrations 073–074 add regional endowment and monthly essential consumption,
+  with public-order loss on shortage.
+- Market panel now exposes stall sourcing from warehouse and warehouse
+  rent/buy/deposit/withdraw.
+
+### Verification
+`npm run verify` green: 86/86 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,961 invariants, 0 discrepancies.
+
+---
+
+## [1.37.0] - 2026-10-31
+
+Gia Thương foundation: per-settlement warehouses, freight contracts, automated
+trade routes and perishable cargo.
+
+### Added
+- Migration 064: `warehouses` and `warehouse_stock`. Rent (300/90 days) or buy
+  (2,000), capacity, deposit/withdraw and lease expiry. The personal bag and
+  the settlement warehouse are separate stores.
+- Migration 065: stall listings track `source_type` (`BAG|WAREHOUSE`) and
+  `warehouse_id`; closing the stall returns unsold goods to the original source.
+- Migration 066: NPC freight contracts and shipments. The issuer owns the cargo;
+  the player pays the escort fee and receives a fee on delivery.
+- Migration 067: merchant company routes. The daily tick procures from NPC
+  offers below the buy ceiling, stores at the source warehouse, ships on
+  schedule, unloads at the destination and sells above the sell floor.
+- Migration 068: shelf life/spoilage on items; fresh fish/meat lose quantity on
+  long trips, dried/salted goods stay stable. `SKL-LOG-COLD` reduces spoilage,
+  `SKL-LOG-FREIGHT` discounts escort fees, and `TRAVEL_SPEED` shortens freight
+  and company travel.
+- APIs: `/api/warehouses/*`, `/api/freight/*`, `/api/merchant/*`; stall listing
+  accepts `source=WAREHOUSE`.
+- Five new gates: warehouse, stall-warehouse, freight, merchant-route, spoilage.
+
+### Verification
+`npm run verify` green: 85/85 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,708 invariants, 0 discrepancies.
+
+---
+
+## [1.36.0] - 2026-10-31
+
+NPCs price goods by relationship and preference; durable tools can be repaired.
+
+### Added
+- Migration 062: `npc_trade_preferences` stores bid/ask modifiers per NPC and
+  item category. `npc-pricing.ts` derives affinity from baseline sentiment +
+  relationship deltas and preferences from WAR/INT/COM/CRA/LDR.
+- Stall buyer caps become `1.15 × relationship × preference` (0.95–1.30); NPC
+  asks become `band / relationship × preference.ask` (0.75–1.35). A friendly
+  warrior pays more for weapons and asks less for them; a stranger pays less.
+- Migration 063: `tool_rules.repair_cash/repair_skill_code/repair_min_tier`.
+  `POST /api/professions/tools/repair` charges one phase + cash, resets uses
+  and awards the repair skill. Consumable nets/traps are rejected.
+- `tests/verify-npc-pricing.ts` and `tests/verify-tool-repair.ts`.
+
+### Verification
+`npm run verify` green: 80/80 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,708 invariants, 0 discrepancies.
+
+---
+
+## [1.35.0] - 2026-10-31
+
+Tools wear out and the local market is now two-sided.
+
+### Added
+- Migration 059: `tool_rules`, `character_tool_uses`, `TOOL-TRAP`, and six tool
+  recipes. Nets/traps are consumed per use; axes/picks/hoes/bows lose durability
+  and break on the last use.
+- Gather returns `toolKind`, `toolUsesLeft` and `toolBroke`; the legacy toast
+  reports wear and breakage.
+- Migrations 060–061: player stalls, listings, sales, NPC offers and NPC
+  purchases. NPC personal cash is seeded for the whole master roster.
+- NPCs buy player listings at up to 115% of the local quote; NPC sellers ask
+  85–125%. Both sides move real cash, inventory and local market stock, with
+  append-only sale rows.
+- `engine/stall-bridge.js` runs sales on every elapsed day.
+- Grand Command Hub gains a `Chợ & Quầy Bán` tab with stall, listings and offers.
+- `tests/verify-tool-durability.ts` and `tests/verify-market-stall.ts`.
+
+### Verification
+`npm run verify` green: 78/78 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,708 invariants, 0 discrepancies.
+
+---
+
+## [1.34.0] - 2026-10-31
+
+Rare-variant sinks and active resource restoration.
+
+### Added
+- Seven rare-variant recipes: fine dried carp, sturgeon caviar, shrimp paste,
+  venison jerky, antler tonic, pine board and ebony board.
+- `resource_node_rules` gains `restore_item_code`, `restore_cash`,
+  `restore_stock`, `restore_days`, `restore_skill_code`, `restore_min_tier`.
+- Four restoration inputs (fish fry, sapling, salt lick, herb seedling).
+- `POST /api/professions/nodes/restore` charges one `RESTORE_NODE` day, consumes
+  one input, pays the cash fee through `postDoubleEntry`, refills the node and
+  awards the restoration skill.
+- Legacy gather screen shows live stock, tool/skill requirement, empty-state
+  disable, restore button, variant quality and byproduct in the toast.
+- `tests/verify-node-restoration.ts` plus rare-recipe coverage in
+  `verify-resource-variants.ts`.
+
+### Verification
+`npm run verify` green: 76/76 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,546 invariants, 0 discrepancies.
+
+---
+
+## [1.33.0] - 2026-10-31
+
+Species variants and processing chains for fishing, hunting and forestry.
+
+### Added
+- Migration 056 adds `resource_yield_variants`: weighted item, minimum skill
+  tier, season, quality, quantity multiplier and optional byproduct.
+- Fish variants: river fish, carp, summer shrimp, autumn sturgeon (+ roe).
+  Game variants: wild meat, venison, autumn antler (+ hide). Timber variants:
+  oak, pine, ebony.
+- Gather picks a variant from the deterministic `resource-variant` stream,
+  scales output, writes `GATHERING_BYPRODUCT` stock movements and returns
+  `variant.quality`, `byproductItemCode` and `byproductQuantity`.
+- Five processing recipes: dried fish, fish sauce, game jerky, cured hide and
+  sawn planks. `required_skill_code`/`required_skill_tier` are enforced and the
+  recipe skill receives the craft EXP.
+- `tests/verify-resource-variants.ts` covers season/skill weighting, byproducts
+  and processing skill gates.
+
+### Verification
+`npm run verify` green: 75/75 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,546 invariants, 0 discrepancies.
+
+---
+
+## [1.32.0] - 2026-10-31
+
+Livelihood depth foundation: agriculture, forestry, fishing and hunting now
+have their own skills, node economy and farm rules.
+
+### Added
+- Migration 055 seeds twelve livelihood skills across `AGRICULTURE`, `FISHING`,
+  `FORAGING`, `SURVIVAL`, `COMMERCE` and `LEADERSHIP`, with tiered effects and
+  perks.
+- `resource_node_rules` defines skill, tool, max stock, respawn and minimum tier
+  per resource type; `gathering_node_state` stores per-node stock.
+- `ResourceNodeService` refreshes stock lazily from elapsed days; gather
+  consumes stock in the same transaction and returns `stockRemaining`,
+  `skillTier`, `skillBonus`, `toolMultiplier` and `toolMissing`.
+- Tool items (`TOOL-PICK`, `TOOL-AXE`, `TOOL-NET`, `TOOL-BOW`, `TOOL-HOE`) are
+  ordinary market items. A missing tool cuts gather yield by 30%.
+- `master_crops` gains `skill_code`, `rotation_group` and `soil_impact`;
+  `land_parcels` remembers `last_crop_code`.
+- Farm yield now uses crop skill + `SKL-FARM-LABOR`; irrigation reduces crisis
+  and harvest risk; harvest depletes or restores soil; rotation gives ×1.10 or
+  ×0.95; `SKL-LAND-LEASE` discounts rent.
+- Farm board shows soil, effective rent/discount and expected yield.
+- `tests/verify-livelihood-depth.ts` covers node stock/regrowth, tool penalty,
+  specialised skill bonus, rent discount, crop yield, soil and rotation.
+
+### Verification
+`npm run verify` green: 74/74 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,546 invariants, 0 discrepancies.
+
+---
+
+## [1.31.0] - 2026-10-31
+
+Life-sim systems now feed a real skill domain and a daily loop.
+
+### Added
+- Migration 054 adds `player_life_state` (stress, last meal/rest, monthly upkeep)
+  and nine `LIFE` skills with tiered effects and perks: cooking, tea ceremony,
+  etiquette, household stewardship, family instruction, medicine, music/chess,
+  restraint and civic duty.
+- `LifeService` and `POST /api/life/act` expose six actions: eat, sleep, tea,
+  household upkeep, study and leisure. Each action charges one phase (sleep one
+  day), accepts an idempotency key and awards the matching LIFE skill EXP.
+- Household upkeep is a real `postDoubleEntry` cashflow (`Life/HouseholdUpkeep`).
+- Personal Journal gains a `Gia Đạo` tab with four needs, phase, household
+  summary and action buttons.
+- `tests/verify-life-layer.ts` covers needs, phases, skill EXP, upkeep ledger and
+  replay.
+
+### Fixed
+- Kizuna `LEARN_MENTOR` now persists its `expGained` to `SKL-WAR-DUEL` or
+  `SKL-TAC-STRAT` and uses `postDoubleEntry` instead of a manual journal pair.
+- Household roles are wired: `ENTERPRISE_SUPERVISOR` (+15% player business
+  efficiency), `MILITARY_DEFENDER` (+25% effective caravan guards), while
+  `STRATEGIC_ADVISOR` keeps its mentorship bonus.
+- `growth_focus` now applies +25% to the matching mentorship stats; `virtue`
+  lowers specialist signing bonuses by up to 10%.
+- `tests/verify-life-wiring.ts` covers all four wirings.
+
+### Verification
+`npm run verify` green: 73/73 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,546 invariants, 0 discrepancies.
+
+---
+
+## [1.30.0] - 2026-10-31
+
+Core contracts now cover the extended feature groups, not only the original
+trade/military/farm paths.
+
+### Added
+- Loans accept an idempotency key, spend one administrative phase and book
+  borrow/repay through `postDoubleEntry`; the controller no longer creates the
+  table at runtime.
+- Ecology relief, stronghold assault and transport replay cleanly. Bandit loot
+  is ledgered (`Combat/BanditLoot`) and `/api/ecology/transport` delegates to
+  `CaravanLogisticsService`, so cargo, guard fee and `dispatched_by_player` are
+  handled by the single caravan writer.
+- Professions gather/craft/forge/hire/open/collect, social kizuna/banquet/
+  brotherhood/recruit, progression move/quest/perk/explore, duel
+  initiate/round/spar/arena/ambush, and lineage pregnancy/birth/mentorship/
+  aging/succession all accept idempotency keys and record `action_log`.
+- Seven contract suites: `verify-loan-contracts`, `verify-ecology-contracts`,
+  `verify-profession-contracts`, `verify-social-contracts`,
+  `verify-progression-contracts`, `verify-duel-contracts`,
+  `verify-lineage-contracts`.
+
+### Verification
+`npm run verify` green: 71/71 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,546 invariants, 0 discrepancies.
+
+---
+
+## [1.29.0] - 2026-10-31
+
+Day phases: a day has morning, afternoon and evening.
+
+### Added
+- `config/game-constants.json` gains `calendar.phasesPerDay = 3`;
+  `campaign_meta.current_phase` is added by migration 053 (and the base schema).
+- `getClock` returns `phase`, `phasesPerDay` and `phaseLabel`.
+- `advancePhase` spends phase slots; reaching the end advances one day and resets
+  to morning. `applyActionTime` uses phases when a policy row has `phases` and no
+  `days`.
+- New `ADMIN_ACTION` policy (1 phase). Quest accept, perk choice, obligation
+  payment, contract accept and caravan claim use it, so three administrative
+  actions fill a day while field actions still consume whole days.
+- `tests/verify-day-phases.ts` proves three admin phases fill a day, a day action
+  resets the phase, and quest accept spends one phase through the router.
+
+### Verification
+`npm run verify` green: 64/64 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,546 invariants, 0 discrepancies.
+
+---
+
+## [1.28.1] - 2026-10-31
+
+World month close is atomic per module.
+
+### Changed
+- `engine/world-transaction.js` runs each world module (NPC lifecycle, faction
+  politics, ecology, AI war) inside one DatabaseService transaction. A module
+  that writes and then throws rolls back all of its own writes.
+- AI war errors now propagate to the close instead of being logged and skipped;
+  the close aborts before the core batch, so a retry is safe.
+- The AI war step is skipped only when `military_expeditions` is absent (minimal
+  schema fixtures), not on a real module failure.
+- `tests/verify-world-atomic.ts` proves a failed module writes nothing and the
+  clock does not move; a successful module commits.
+
+### Verification
+`npm run verify` green: 63/63 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,546 invariants, 0 discrepancies.
+
+---
+
+## [1.28.0] - 2026-10-31
+
+Settlement treasuries now have a double-entry ledger too.
+
+### Added
+- Migration 052 creates `settlement_ledger` with an `OPENING` row per settlement.
+- `postSettlementEntry` updates `session_settlements.treasury_cash` and appends
+  one ledger row in a transaction; outflow is clamped to the available treasury.
+- Siege loot now goes through the ledger instead of a direct treasury update.
+- The auditor proves `opening + inflow − outflow = treasury_cash` for every
+  settlement and reports drift. Invariants: 1,546.
+- `tests/verify-settlement-ledger.ts` covers opening, a loot flow and drift.
+
+### Verification
+`npm run verify` green: 62/62 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,546 invariants, 0 discrepancies.
+
+---
+
+## [1.27.1] - 2026-10-31
+
+Idempotency extended to the remaining player mutations.
+
+### Changed
+- Idempotency keys now cover faction declare-war/make-peace, lineage courtship
+  and rest, wage labor, expedition start, siege/assault start and caravan claim.
+- A replay returns the stored result and does not charge days, move troops,
+  change diplomacy or settle a caravan twice.
+- Every one of these actions is recorded in `action_log` with its key (or null
+  for an intentional repeat).
+
+### Verification
+`npm run verify` green: 61/61 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,523 invariants, 0 discrepancies.
+
+---
+
+## [1.27.0] - 2026-10-31
+
+World economy: faction treasuries now have a double-entry ledger.
+
+### Added
+- Migration 051 creates `faction_ledger` and an `OPENING` row for every faction,
+  equal to its current treasury.
+- `src/shared/faction-ledger.ts` (`postFactionEntry`, `ensureFactionOpening`)
+  updates `session_factions.treasury_cash` and appends one ledger row in a
+  transaction. Outflow is clamped to the available treasury.
+- All faction treasury writes moved to the helper: tax pulse, tribute transfer,
+  officer reward, caravan purchase/revenue, farm rent. New rebel factions get an
+  opening row; the secession insert is `OR IGNORE` so a repeat event cannot reset
+  a rebel treasury.
+- The auditor now proves `opening + sum(inflow) − sum(outflow) = treasury_cash`
+  for every faction and fails if a treasury changed outside the ledger.
+  Invariants: 1,523.
+- `tests/verify-faction-ledger.ts` covers opening balances, a rent flow, drift
+  detection and outflow clamping.
+
+### Verification
+`npm run verify` green: 61/61 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,523 invariants, 0 discrepancies.
+
+---
+
+## [1.26.5] - 2026-10-31
+
+Core error handling: no empty catch blocks remain.
+
+### Changed
+- All 19 empty `catch {}` blocks in `engine/` and `src/` now carry an explicit
+  best-effort comment, so a reader can tell a deliberate fallback from a hidden
+  failure. The architecture ratchet for `silent-catch` is locked at **0**; a new
+  empty catch fails `npm run lint`.
+- No behaviour change: the catches are the same fallback paths (projection
+  writes, optional JSON parse, schema probing, file cleanup).
+
+### Verification
+`npm run verify` green: 60/60 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,506 invariants, 0 discrepancies.
+
+---
+
+## [1.26.4] - 2026-10-31
+
+Core schema contract: runtime tables no longer appear only on first use.
+
+### Changed
+- Migration 050 creates the runtime tables that services used to `CREATE TABLE
+  IF NOT EXISTS` lazily: equipment, the six family tables, loans, expeditions,
+  intel fog and the duel chronicle. It also adds the runtime columns on
+  `businesses` (type/owner/revenue/profit) and `npc_state` (eight EXP columns).
+- A fresh `schema.sql + all migrations` database now has the same runtime
+  contract as the live campaign without waiting for a request to hit a service.
+- `tests/verify-schema-contract.ts` builds a fresh database and asserts 18
+  runtime tables plus the required business/NPC columns exist.
+
+### Verification
+`npm run verify` green: 60/60 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,506 invariants, 0 discrepancies.
+
+---
+
+## [1.26.3] - 2026-10-31
+
+Core idempotency and action journal for service-level mutations.
+
+### Added
+- `src/shared/action-journal.ts`: `requestIdempotencyKey` (body or
+  `Idempotency-Key` header), `findIdempotentResult`, `recordAction` and
+  `runIdempotentAction`. A replay returns the stored result without running the
+  mutation or charging days again.
+- Wired into trade, caravan dispatch, garrison reinforcement, obligation
+  payment, contract accept/deliver, intel verification and farm
+  rent/plant/harvest. Every successful action now lands in `action_log` (with a
+  key when supplied, null for intentional repeats).
+- `tests/verify-idempotency.ts` proves trade, reinforcement and farm rent replay
+  without double cash, inventory, troops, lease or calendar movement.
+
+### Verification
+`npm run verify` green: 59/59 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,506 invariants, 0 discrepancies.
+
+---
+
+## [1.26.2] - 2026-10-31
+
+Core time coverage: trade, military, politics and household actions now cost days.
+
+### Changed
+- New policy rows: `MILITARY_MUSTER`, `EXPEDITION_START`, `SIEGE_PREP`,
+  `POLITICAL_ACTION`, `COURTSHIP`.
+- `POST /api/trade` charges `TRADE_BUY`/`TRADE_SELL` (2 days) before quoting.
+- `POST /api/caravans/dispatch` charges `ENTERPRISE_MANAGE`; `/api/garrisons/reinforce`
+  charges `MILITARY_MUSTER`; expedition start charges `EXPEDITION_START`; assault
+  and siege start charge `SIEGE_PREP`.
+- Faction declare-war/make-peace charge `POLITICAL_ACTION`; lineage courtship
+  charges `COURTSHIP`; rest with spouse charges `REST_RECOVERY`; wage labor
+  charges `WORK_SHIFT`; location switch charges `MOVE_LOCATION`.
+- Fixed two SQL literals written with double quotes (`player_id = "PLY-0001"`,
+  `status = "ACTIVE"`) that made reinforcement and the business counter fail
+  silently.
+- `syncProgressProjection` refuses OS-temp databases, so a directly-run test can
+  no longer render `game/PROGRESS.md` from its sandbox.
+- `tests/verify-core-time-coverage.ts` proves trade +2 days, reinforcement +1
+  and movement +1 through the real router.
+
+### Verification
+`npm run verify` green: 58/58 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,506 invariants, 0 discrepancies.
+
+---
+
+## [1.26.1] - 2026-10-31
+
+Core accounting: every cashflow row now has a balanced journal pair.
+
+### Changed
+- `src/shared/ledger.ts` adds `postDoubleEntry`, which writes the cashflow row
+  and the matching Dr/Cr journal pair under the same `txn_id` in one
+  transaction.
+- `enterprise-labor.service.ts` (capital, dividend, two wage paths, business
+  opening) and `wage-labor.service.ts` moved from `postCashflowEntry` to
+  `postDoubleEntry`. Wages credit `4003_LABOR_INCOME`, dividends credit
+  `4002_FINANCIAL_INCOME`, capital investments debit `1501_FIXED_ASSETS`.
+- Migration 049 backfills a balanced pair for every historical cashflow row
+  without one (11 rows in the live save).
+- `tools/sim-audit.js` now fails when the journal table is missing, when a
+  cashflow row has no journal pair, or when a journal row has no cashflow.
+  Audit invariants: 1,506.
+- `tests/verify-ledger-completeness.ts` covers the backfill and the helper.
+
+### Verification
+`npm run verify` green: 57/57 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,506 invariants, 0 discrepancies.
+
+---
+
+## [1.26.0] - 2026-10-31
+
+RPG farming: rent a parcel, plant a seasonal crop, harvest grain.
+
+### Added
+- Migration 048 creates `master_crops` (rice, wheat, soybeans, vegetables with
+  seasons, growth days, seed cost, yield per mu, risk) and `land_parcels`
+  (four parcels per settlement, area 2/3/5/8 mu, soil quality, rent, lease).
+- `FarmService` rents a parcel for 90 days (rent goes to the ruling faction
+  treasury), plants only in-season crops (seed cost per mu × area), computes
+  expected yield from area, soil and active ecological crises, and harvests on
+  or after the growth date into `COM-GRAIN` through the inventory movement
+  writer. Late harvest loses 10% per 15 days; a crop risk roll can lose 20%.
+- Routes: `GET /api/farm/parcels`, `POST /api/farm/rent`,
+  `POST /api/farm/plant`, `POST /api/farm/harvest` (and `/api/professions/farm*`
+  aliases), each action charged through `chargePlayerAction`
+  (`FARM_RENT` 1 day, `FARM_PLANT`/`FARM_HARVEST` 2 days).
+- `GameplayManager.closeMonth` expires leases (`farmLeasesExpired`); harvesting
+  awards `PROF_FARMER` EXP.
+- The quest modal now renders a **Farmland** section with Rent / Plant / Harvest
+  actions (`QuestUI.rentFarm`, `plantCrop`, `harvestFarm`); the client bundle was
+  rebuilt.
+- `tests/verify-farm.ts` covers rent/landlord payment, seasonal rejection, early
+  harvest, real grain output, double rent, insufficient cash and lease expiry.
+
+### Verification
+`npm run verify` green: 56/56 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,493 invariants, 0 discrepancies.
+
+---
+
+## [1.25.2] - 2026-10-31
+
+RPG information layer: monthly intel reports with confidence and verification.
+
+### Added
+- Migration 047 creates `intel_reports` with a claim, confidence, expiry,
+  source and verification result.
+- `IntelService` posts three monthly reports per settlement (two price claims,
+  one garrison claim) with ±25–30% error and a confidence of 0.4–0.9.
+  `POST /api/intel/verify` charges two exploration days and reveals the actual
+  value; a claim more than 20% off is flagged `isFalse`.
+- The quest modal now shows an **Intel** section with a Verify button
+  (`QuestUI.verifyIntel`); the client bundle was rebuilt.
+- `tests/verify-intel.ts` covers deterministic monthly reports, verification,
+  double-verify rejection, false-claim detection and month rotation.
+
+### Verification
+`npm run verify` green: 55/55 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,493 invariants, 0 discrepancies.
+
+---
+
+## [1.25.1] - 2026-10-31
+
+ROTK scenario identity: each start date now has its own war and alliance.
+
+### Changed
+- `config/scenario-seeds.json` no longer makes 184 and 190 identical:
+  - 184 Yellow Turban: Zhuo County, at war with the Yellow Turbans.
+  - 190 Coalition: Zhuo County, at war with Dong Zhuo and allied with Cao Cao.
+  - 200 Guandu: Zhuo + Pingyuan, at war with Yuan Shao.
+  - 208 Red Cliffs: Zhuo + Pingyuan + Xuchang, at war with Cao Cao and allied
+    with Sun Jian.
+- Both scenario appliers (`engine/scenario-seed.js` and the instance bootstrap)
+  write `relation_state = 'ALLY'` for the new `allies` list, next to the
+  existing `wars` list. Missing factions are skipped.
+- `tests/verify-scenario-seed.ts` asserts the four seeds differ, the 208 war and
+  alliance are written, and the three-holding start still works.
+
+### Verification
+`npm run verify` green: 54/54 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,493 invariants, 0 discrepancies.
+
+---
+
+## [1.25.0] - 2026-10-31
+
+RPG combat consequences: injuries, real NPC death and monthly recovery.
+
+### Added
+- Migration 046 creates `conditions`: persistent injuries with severity 1–3,
+  a combat penalty (3/6/9), a recovery timer and narrative.
+- `ConditionService` applies injuries (health −8×severity for the player,
+  morale −10×severity for NPCs), exposes `getCombatPenalty`, heals active
+  conditions at month close, and kills NPC officers permanently
+  (`is_alive = 0`, business cleared, faction officer row removed, episodic
+  memory where available).
+- Single combat now applies context consequences: sparring has an 8% minor
+  injury, arena 30% severity 1–2, caravan defence 25% winner injury / 45% loser
+  injury; a caravan win has a 4% chance to kill the bandit chief and a loss has
+  a 1% player-death chance (heir succession or DEFEATED).
+- Pre-battle champion duels kill the enemy officer for real and wound the
+  surviving loser. `effectiveWar` in the duel profile subtracts active injury
+  penalties, so a wounded officer fights worse.
+- `GameplayManager.closeMonth` heals active conditions; the report carries
+  `conditionsRecovered`. Route `GET /api/conditions?characterId=...`.
+- `tests/verify-combat-consequences.ts` covers the penalty, NPC death, monthly
+  recovery and the month-close bridge.
+
+### Verification
+`npm run verify` green: 54/54 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,493 invariants, 0 discrepancies.
+
+---
+
+## [1.24.2] - 2026-10-31
+
+P1-c: repeatable local contract board.
+
+### Added
+- Migration 045 creates `contract_offers` and `player_contracts`.
+- `ContractBoardService` posts three deterministic delivery offers per
+  settlement per month (from the settlement's surplus/deficit pool), accepts an
+  offer with a deadline, consumes the real inventory on delivery, pays the
+  reward through the ledger and awards fame. An expired contract becomes a
+  `CONTRACT_PENALTY` obligation.
+- `GameplayManager.closeMonth` expires missed deliveries and posts the next
+  month's offers; the monthly report carries `contracts`.
+- Routes: `GET /api/contracts`, `POST /api/contracts/accept`,
+  `POST /api/contracts/deliver` (and the `/api/economy/*` aliases).
+- The quest modal now shows an **Contracts** section with accept/deliver
+  actions (`QuestUI.acceptContract`, `QuestUI.deliverContract`); the client
+  bundle was rebuilt.
+- `tests/verify-contract-board.ts` covers rotation/idempotency, accept, delivery
+  with stock consumption, expiry penalty, insufficient stock and the month-close
+  rotation.
+
+### Verification
+`npm run verify` green: 53/53 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,493 invariants, 0 discrepancies.
+
+---
+
+## [1.24.1] - 2026-10-31
+
+P1-b: periodic obligations with a due date and real consequences.
+
+### Added
+- Migration 044 creates `obligations`: player tax bills with amount, due date,
+  status (`DUE`/`PAID`/`OVERDUE`/`WAIVED`), breakdown, penalty and narrative.
+- `ObligationService` issues one monthly tax for the month being entered
+  (5% of estimated enterprise gross plus a household poll tax with a 20 quan
+  minimum), lists dues with days remaining, pays from cash/grain through the
+  single ledger writer, and marks unpaid bills `OVERDUE` with a 10% late fee and
+  a 5-point credibility loss.
+- `GameplayManager.closeMonth` processes overdue bills and issues the next
+  month's tax; the report carries `obligations` (overdue, issued, summary).
+- Routes: `GET /api/obligations`, `GET /api/economy/obligations`,
+  `POST /api/obligations/pay`, `POST /api/economy/obligations/pay`.
+- The quest modal now renders an **Obligations** section with Pay buttons
+  (`QuestUI.payObligation`); the client bundle was rebuilt.
+- `tests/verify-obligations.ts` covers issue, idempotency, payment, the late
+  fee/credibility penalty, insufficient funds and the month-close hook.
+
+### Verification
+`npm run verify` green: 52/52 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,493 invariants, 0 discrepancies.
+
+---
+
+## [1.24.0] - 2026-10-31
+
+P1-a: the local settlement market is the single write/read source for stock.
+
+### Changed
+- `SettlementMarketService.applyTrade` books physical fills into
+  `settlement_market_state`: buying drains local stock (the next quote rises),
+  selling adds to it (the next quote falls). Stock is clamped and the state is
+  the same row `getLocalMultiplier` already reads.
+- `SimulationCore` TRADE_BUY/TRADE_SELL, `POST /api/trade` and caravan claim
+  settlement all call `applyTrade`; each response exposes the new `market`
+  state. Arbitrage now moves both settlements instead of only drifting on a
+  monthly timer.
+- `settlement-market-bridge` keeps one context per database path. The previous
+  single-slot cache returned the first campaign for every later path, so a
+  sandbox or instance could read another campaign's market.
+- `driftSettlement` accepts `{ recordHistory: false }` for daily drift; the
+  monthly call still writes one pulse-history row per item.
+- `tests/verify-local-market.ts` proves buy/sell stock movement, price direction,
+  drift and history; `verify-market-price-book` now re-reads the post-fill quote.
+
+### Verification
+`npm run verify` green: 51/51 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,493 invariants, 0 discrepancies.
+
+---
+
+## [1.23.4] - 2026-10-31
+
+Text cleanup: broken code-page names and legacy currency labels.
+
+### Changed
+- Migration 043 resyncs `player_skills.skill_name` from the clean
+  `master_skills.skill_name_vi` (six rows had a broken code page), repairs the
+  two medicine items (`MED-TRAUMA-SALVE`, `MED-REVIVE-PILL`), and rewrites
+  numeric legacy currency labels to Quan/quan across session events, master
+  events, chronicle, turn log, quests and quest steps. Ordinary uses of the word
+  money (for example "nộp tiền mặt") are left untouched.
+- `tests/verify-data-cleanup.ts` seeds dirty rows, runs the migration twice and
+  asserts clean names, normalised labels, preserved prose and idempotency.
+
+### Verification
+`npm run verify` green: 50/50 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,493 invariants, 0 discrepancies.
+
+---
+
+## [1.23.3] - 2026-10-31
+
+Career paths become real: one resolver drives both the API and gameplay.
+
+### Changed
+- `engine/career-paths.js` is the single resolver for the five paths. The
+  progression API now returns the same scores and `modifiers` gameplay applies,
+  instead of recomputing them inline while no service read them.
+- Fixed `spatial-guard.service.ts` counting `session_duels.outcome`, a column
+  that does not exist (the schema uses `outcome_type`). Duel wins were silently
+  always zero, which also disabled the stage-3 duel criterion.
+- Applied the active path's modifiers:
+  - MARTIAL: +10% WAR EXP through `AttributeProgressionService` and training
+    skill EXP in `SimulationCore`.
+  - SCHOLAR: +10% INT/POL EXP through the same writers.
+  - MERCHANT: +5% trade margin in the economy trade quote.
+  - ARTISAN: -2% defect chance per profession tier in crafting.
+  - LINEAGE: +10% clan prestige from marriage, birth and succession.
+- `tests/verify-career-paths.ts` covers the five scores, the `outcome_type`
+  duel count, the modifiers and a real WAR EXP award.
+
+### Verification
+`npm run verify` green: 49/49 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,493 invariants, 0 discrepancies.
+
+---
+
+## [1.23.2] - 2026-10-31
+
+Real enterprise economics: monthly P&L can lose money and carries debt.
+
+### Changed
+- Migration 042 adds `businesses.tier` and `businesses.debt`. The monthly
+  formula previously read a non-existent tier column (always 1) and clamped
+  losses to zero, so a loss-making workshop silently forgave its shortfall.
+- `engine/business-economics.js` is the single pure settlement function:
+  output scales with assigned staff against the roster (no staff = no revenue,
+  understaffing scales down), and rent + actual wages are real costs. Profit
+  pays debt first; a loss consumes safe cash and records the remainder as debt.
+- `GameplayManager.closeMonth` writes `safe_cash` and `debt` from that
+  settlement and reports gross, wages, rent, profit, staffing ratio and health
+  (`PROFITABLE` / `LOSS` / `DISTRESSED` / `CLOSED`). Workshop-settled months
+  still skip the passive path so wages are never charged twice.
+- `EnterpriseLaborService.collectProfits` refuses owner withdrawals while the
+  enterprise carries debt; `EnterpriseDetails` exposes `tier` and `debt`.
+- `tests/verify-workshop-economy.ts` covers the pure settlement and a real
+  month close; `verify-instance-bootstrap` now derives the expected migration
+  count from the migrations directory instead of hardcoding it.
+
+### Verification
+`npm run verify` green: 48/48 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,493 invariants, 0 discrepancies.
+
+---
+
+## [1.23.1] - 2026-10-31
+
+Server-side action time authority for player mutations.
+
+### Changed
+- `src/shared/action-time.ts` charges calendar days at the HTTP boundary for
+  duels (spar, arena, caravan ambush, initiate), kizuna interactions, banquets,
+  brotherhood oaths, retainer/workforce recruitment, caravan dispatch,
+  gathering, crafting, both forge paths, work shifts and enterprise opening.
+  A rejected charge (fatigue, ended campaign) throws `ActionTimeError` before
+  the service runs, so the clock and game state stay untouched.
+- New policy rows: `DUEL_SPAR`, `ARENA_CHALLENGE`, `COMBAT_ENCOUNTER`,
+  `GATHER_NODE`. Combat and gathering services own their stamina cost, so these
+  rows charge days only; a day-consuming action still requires fatigue
+  headroom below the cap.
+- `POST /api/time/spend` is now a deprecated clock refresh and the legacy
+  `apiSpendActionTime` client helper no longer advances time. Actions can no
+  longer be played for free by skipping or double-calling the client helper.
+- `tests/verify-action-time-authority.ts` proves a spar costs five days, a
+  social interaction costs two, and a fatigued action is rejected without
+  moving the clock.
+
+### Verification
+`npm run verify` green: 47/47 suites, 28/28 contracts, 8/8 write smokes.
+
+---
+
+## [1.23.0] - 2026-10-30
+
+Skill extension: shared EXP curve, NPC combat skills and talent-specific effects.
+
+### Changed
+- Migration 039 aligns every `player_skills` / `npc_skills` row with one shared
+  EXP curve (`40 / 90 / 180 / 320`) defined in `config/game-constants.json`.
+  Higher tiers convert incoming EXP at 100% / 80% / 60% / 40%, and EXP clamps at
+  tier 5. `SkillService`, `engine/task-manager.js` and `engine/sim-core.js` all
+  use the same helper instead of three divergent `max_exp * 1.5` loops.
+- Migration 040 seeds `npc_skills` for every `npc_state` officer from canonical
+  attributes, creates `npc_perks`, and persists the best perk for each reached
+  tier. `NpcSkillService` resolves NPC effects deterministically; generals that
+  exist only in `master_characters` fall back to an attribute aptitude grade.
+- NPC `DUEL_POWER`, `SIEGE_POWER` and `MORALE_BONUS` now affect single combat,
+  pre-battle duels, siege daily damage and field battles. NPC dossiers show
+  skills plus their chosen perks.
+- NPC officers gain skill EXP from duels, pre-battle champion duels, sieges and
+  field battles, rolling tiers and persisting newly reached perks through the
+  same curve. Master-only generals have no `npc_state` row and stay static.
+- Generals listed only in `master_characters` now show derived skills in the
+  dossier (marked "Bẩm sinh"/"Innate") instead of an empty skill block.
+- Migration 041 replaces the category-wide talent effects from migration 038
+  with a curated list for all 33 master talents (for example `TLT-PEERLESS`
+  grants `DUEL_POWER +5`, `TLT-ROAR-BRIDGE` grants `DUEL_POWER +3` and
+  `MORALE_BONUS +2`). `SkillService.listTalents` groups effects per talent and
+  retains the category fallback for homebrew/test talents.
+- New campaigns also clear `player_perks`, `player_talents` and `npc_perks`, so
+  a fresh run no longer inherits the previous campaign's progression.
+- `tests/verify-npc-skills.ts` covers seeding, perk selection and the mastery
+  fallback; `tests/verify-skill-system.ts` covers the EXP curve and talent
+  aggregation.
+
+### Verification
+`npm run verify` green: 46/46 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,493 invariants.
+
+---
+
+## [1.22.0] - 2026-10-31
+
+Skill effects, starting skills and the dossier skill sheet.
+
+### Changed
+- Migration 036 creates `master_skill_effects` and seeds structured tier 2–5
+  effects for all 36 master skills: `CHECK_BONUS` for every skill plus
+  domain effects (`TRADE_MARGIN`, `DEFECT_REDUCTION`, `TRAVEL_SPEED`,
+  `DUEL_POWER`, `SIEGE_POWER`, `MORALE_BONUS`).
+- `SkillService` resolves the **highest reached tier** per skill (not the sum of
+  lower tiers). `getCheckBonus` and `getEffectTotal` are the single resolver.
+- New campaigns seed three starting skills per archetype; previously the reset
+  deleted `player_skills` and never re-seeded, so fresh characters had none.
+- Quest steps carry a `skill_code`; the d20 check now adds the linked skill's
+  check bonus. Travel checks add logistics/scout/ride skill bonuses, travel
+  speed shortens march days, crafting reduces defect chance, and bespoke forge
+  mastery includes the smithing skill.
+- The protagonist dossier gains a **Kỹ Năng & Tuyệt Kỹ** tab fed by
+  `GET /api/skills`, showing tier, EXP and active effects.
+- `tests/verify-skill-system.ts` covers effect resolution, the quest bonus and
+  starting-skill seeding.
+
+### Verification
+`npm run verify` green: 45/45 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,374 invariants.
+
+---
+
+## [1.21.0] - 2026-10-31
+
+Quest & encounter engine (Phase 1 of the RPG direction).
+
+### Added
+- Migration 034 creates `master_quests`, `master_quest_steps` and
+  `player_quests`, and seeds five 3-step questlines: Martial, Merchant, Scholar,
+  Artisan and Lineage. Migration 035 rescales step DCs to 12/15/18 for the d20
+  check.
+- `QuestService` handles accept/list/advance: each step consumes calendar days
+  through the day clock, rolls d20 + stat modifier against its DC, and pays
+  cash/fame/attribute EXP/items through the ledger, prestige service and stock
+  movements. Failure stays on the step, costs fatigue and increments attempts.
+- Routes: `GET /api/quests`, `/api/quests/log`, `POST /api/quests/accept`,
+  `POST /api/quests/advance`.
+- A standardized **Nhiệm Vụ** modal in the TS client bundle (no new legacy
+  script) shows the quest log, step checks and results.
+- `tests/verify-quest-engine.ts` covers seeding, day cost, success rewards,
+  completion and the failure path.
+
+### Verification
+`npm run verify` green: 44/44 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,374 invariants.
+
+---
+
+## [1.20.0] - 2026-10-31
+
+DB-first character dossiers, illustration slots and POI registry.
+
+### Changed
+- `master_characters`, `npc_state` and `player_state` gain `portrait_url` and
+  `illustration_url` (migration 032). The NPC dossier prefers roster
+  personality/motivation over the narrative hardcodes, so DB rows are the
+  primary source; narrative cases only fill fields the roster lacks.
+- Both dossiers render a portrait frame (image or seal fallback) and a
+  full-width illustration slot. An empty slot says art can be added later, so a
+  future art pipeline only writes URLs into the database.
+- Migration 033 creates `master_poi_scenes`, seeded from all 133
+  `master_locations.sub_locations` entries with the scene key the runtime should
+  use. `sim-web` now reads this registry first and keeps the keyword chain only
+  as a fallback.
+
+### Verification
+`npm run verify` green: 43/43 suites (new `verify-dossier-db.ts`), 28/28
+contracts, 8/8 write smokes; `npm run audit` 1,374 invariants.
+
+---
+
+## [1.19.0] - 2026-10-31
+
+Unknown POIs keep their identity.
+
+### Changed
+- The scene normalizer no longer relabels an unmatched sub-location as
+  `Vườn Đào`. It keeps the raw name, so the location-aware generic choices use
+  the player's actual settlement and resident NPC/resource instead of Peach
+  Garden fiction.
+- `verify-poi-coverage.ts` now guards the unknown-POI fallback in addition to
+  the ten bespoke mappings.
+
+### Verification
+`npm run verify` green: 42/42 suites, 28/28 contracts, 8/8 write smokes.
+
+---
+
+## [1.18.0] - 2026-10-31
+
+AI armies and AI conquest.
+
+### Added
+- `AiArmyService` runs at each month close: every active AI faction at war with
+  at least `military_power >= 800` may dispatch one expedition from its capital
+  against the weakest enemy settlement. An active expedition blocks a second
+  dispatch.
+- `FieldBattleService` now resolves both sides generically: player arrivals keep
+  `ARRIVED` for a manual siege, while an AI victory captures the city
+  (`ruler_faction_id`, governor, surviving garrison, defense 30, order -20) and
+  ends the expedition `CONCLUDED`. Captures are chronicled as `AI_CONQUEST`.
+- The month report carries the `aiWar` dispatch list.
+- `tests/verify-ai-war.ts` covers one-army-per-faction, the day-clock march,
+  field battle, capture and the chronicle row.
+
+### Verification
+`npm run verify` green: 42/42 suites, 28/28 contracts, 8/8 write smokes.
+
+---
+
+## [1.17.0] - 2026-10-31
+
+Profile-level NG+ legacy.
+
+### Changed
+- `src/shared/legacy-store.ts` keeps the strongest finished campaign in
+  `saves/legacy.json` (path overridable with `SIM_LEGACY_PATH`). A victory is
+  never downgraded by a later defeat.
+- `recordLegacy` writes both the per-database row and the profile file, so a
+  brand-new instance cloned from the clean template also receives the 10%
+  cash bonus and the `Di Sản Tổ Tiên` license.
+- Tests that trigger victory or death now isolate `SIM_LEGACY_PATH` to their
+  temp directory, so a full verify run cannot contaminate fresh instances.
+
+### Verification
+`npm run verify` green: 41/41 suites, 28/28 contracts, 8/8 write smokes.
+
+---
+
+## [1.16.0] - 2026-10-31
+
+Field battles on hostile arrival.
+
+### Added
+- When a marching expedition reaches a settlement owned by a faction at war with
+  its commander, the garrison meets it in the field. `FieldBattleService` runs
+  the multi-round tactical engine, writes surviving attackers and defenders
+  back, and sends a victory to `ARRIVED` or a defeat to `CONCLUDED`.
+- The day clock resolves the battle synchronously through
+  `engine/field-battle-bridge.js`; friendly or neutral arrivals keep the old
+  `ARRIVED` path.
+- `tests/verify-field-battle.ts` covers attacker victory, defender victory, a
+  friendly-city bypass and the clock-driven bridge.
+
+### Verification
+`npm run verify` green: 41/41 suites, 28/28 contracts, 8/8 write smokes.
+
+---
+
+## [1.15.0] - 2026-10-31
+
+POI scene coverage for Zhuo County and the five grand citadels.
+
+### Added
+- The five Zhuo POIs (residence, smithy, tavern, caravan depot, arena) now
+  route to their bespoke generators instead of the generic fallback.
+- The five citadels (Wancheng, Huainan, Shangdang, Xiliang, Jiaozhi) have
+  scene-normalizer branches and themed generators (court, military camp, or
+  Jiangdong administration).
+- `tests/verify-poi-coverage.ts` guards the ten scene mappings.
+
+### Verification
+`npm run verify` green: 40/40 suites, 28/28 contracts, 8/8 write smokes.
+
+---
+
+## [1.14.0] - 2026-10-31
+
+Pre-battle layer for city sieges.
+
+### Added
+- Opening a siege now runs `resolvePreBattle`: low-LDR/high-DIP commanders may
+  negotiate, both martial commanders may fight a champion duel, and a player
+  death aborts the investment. Negotiation/duel wins reduce the wall by 10 and
+  add 2 daily damage; a lost duel costs 10% of the attackers.
+- Migration 031 stores the pre-battle result on `session_sieges.prebattle_json`.
+- The world map reports an aborted siege instead of claiming it started.
+- `tests/verify-siege-prebattle.ts` covers negotiation, champion duels and the
+  persisted log; existing siege tests pass `preBattle: false` for deterministic
+  math.
+
+### Verification
+`npm run verify` green: 39/39 suites, 28/28 contracts, 8/8 write smokes.
+
+---
+
+## [1.13.0] - 2026-10-31
+
+Scenario-specific starting map.
+
+### Added
+- `config/scenario-seeds.json` defines each scenario's player holdings and
+  opening war. 184/190 start with Zhuo only, 200 adds Pingyuan, 208 adds
+  Xuchang.
+- The instance bootstrap and the legacy `/api/game/new` path apply the seed:
+  player settlements are transferred, other former player cities revert to the
+  Han court, the faction capital moves to the first holding and the opening war
+  is written to `faction_diplomacy`.
+- `tests/verify-scenario-seed.ts` verifies the 208 calendar, three holdings,
+  capital and war with the Han court.
+
+### Verification
+`npm run verify` green: 38/38 suites, 28/28 contracts, 8/8 write smokes.
+
+---
+
+## [1.12.0] - 2026-10-31
+
+Campaign legacy / NG+.
+
+### Added
+- Migration 030 adds `campaign_legacy`. A victory or a final defeat (no heir)
+  writes one row with generation, fame, net worth, settlement count and outcome.
+- The next campaign bootstrapped in the same database line receives 10% of the
+  legacy net worth as starting cash (capped at 20,000 quan) and the
+  `Di Sản Tổ Tiên` license. The bonus is included in the opening cashflow and
+  journal, so the double-entry audit stays balanced.
+- `tests/verify-legacy.ts` covers victory/defeat records, the capped bonus and
+  the license grant.
+
+### Verification
+`npm run verify` green: 37/37 suites, 28/28 contracts, 8/8 write smokes.
+
+---
+
+## [1.11.0] - 2026-10-30
+
+Progression law, endgame and content depth.
+
+### Changed
+- **One stage ladder.** `/api/status` exposes the server-computed progression;
+  the header badge and journal consume it instead of their own 1,500 / 12,000 /
+  50,000 thresholds. The server ladder stays 2,000 / 10,000 / 50,000.
+- **Stage gates are enforced.** Stage 2 opens household roles, stage 3 opens
+  remote courier actions and interstate caravans plus expeditions/assaults, and
+  stage 4 opens declaring war. Gate errors keep their 403 status.
+- **Five career paths are server data.** `GET /api/progression/career-paths`
+  scores Võ / Thương / Sĩ / Công / Tông Tộc from stats, wealth, fame,
+  professions, duels and family, and names the leading path.
+- **Archetypes start differently.** Frontier officers begin with a spear and
+  military rations, Silk Caravan factors with silk/tea/horse stock and trade
+  licenses, Scholar-Artisans with silk/tea. `current_location` and
+  `permanent_base` now use the preset's starting location instead of LOC-0001.
+- **Scenarios reach the instance path.** `CreateInstanceDTO` accepts
+  `scenarioId`; the bootstrap reads its `start_date` and campaign name.
+- **Victory exists.** Holding 12 settlements + 5,000 fame + stage 4 sets
+  `campaign_meta.status='VICTORIOUS'` on month close or conquest. The end
+  overlay now renders victory and defeat with the realm summary.
+- **Generic POI scenes are location-aware.** The 133 sub-locations without a
+  bespoke script now use the local settlement, a resident notable, a local
+  gathering resource and its market quote instead of always Zhang Fei + grain.
+- **Historical events pay their rewards.** Type-aware choice templates for
+  battles, diplomacy and choice events; `required_stat` blocks participation;
+  `rep_gain` awards fame; `sentiment_all`, `exp_*` and item rewards are applied
+  (items write a stock movement). The banner only advertises due events.
+- **Discovery loot is regional.** Migration 028 adds `location_keyword` /
+  `poi_keyword` and 11 regional finds; exploration filters by location and POI.
+- **Unrest hurts the city.** A disgruntled governor reduces the appointed
+  settlement's public order in addition to the existing secession path.
+- Migration 029 adds the eight player attribute EXP columns to the schema.
+
+### Verification
+`npm run verify` green: 36/36 suites (new `verify-endgame.ts`,
+`verify-content-depth.ts`), 28/28 contracts, 8/8 write smokes; `npm run audit`
+1,374 invariants, 0 discrepancies. Migrations 028–029 apply cleanly.
+
+### Deferred
+- NG+ / legacy carry-over, hand-written scenes for all 133 POIs, and
+  scenario-specific faction ownership remain backlog.
+
+---
+
+## [1.10.0] - 2026-10-30
+
+The Hegemon Road: expedition-bound conquest, garrison ownership and faction war.
+
+### Changed
+- **An arrived expedition can invest a city.** `POST /api/assault` accepts
+  `expeditionId`; the siege then takes its troops from the `ARRIVED` expedition,
+  marks it `BESIEGING`, writes surviving strength back each day and ends it
+  `CONCLUDED` when the siege resolves. Without an id the old ad-hoc troop path
+  remains available.
+- **Victory changes ownership.** Migration 027 adds `session_sieges.expedition_id`.
+  A won siege sets `ruler_faction_id` to the player's faction,
+  `governor_id='PLY-0001'`, installs the surviving attackers as the garrison,
+  resets walls to 30 and writes a `SETTLEMENT_CONQUERED` chronicle event. Loot
+  still flows through the central ledger writer.
+- **Own cities cannot be besieged**, a `MARCHING` army cannot start a siege, and
+  an expedition cannot withdraw while `BESIEGING`.
+- **Garrisons belong to their owner.** `POST /api/garrisons[*]` now returns 403
+  when the settlement is not owned by the player's faction.
+- **The supply graph uses the real road network.** `MilitaryModule` loads all
+  `master_routes` (keeping the Zhuo → Julu → Luoyang baseline for compatibility),
+  canonicalizes settlement nodes to `LOC-*`, and blocks roads whose endpoint
+  belongs to a faction at `WAR` with the player. Expedition supply now measures
+  from the origin to the player capital instead of origin-to-origin.
+- **Player diplomacy.** `POST /api/factions/declare-war` and
+  `/api/factions/make-peace` write `faction_diplomacy` (`WAR` / `TRUCE` for 12
+  turns) and chronicle `WAR_DECLARED` / `PEACE_SIGNED`. The world-map intel panel
+  exposes both actions for foreign settlements.
+- The world map reuses an arrived expedition automatically when bombarding its
+  target city and shows the expedition troop count.
+
+### Verification
+`npm run verify` green: 34/34 suites (new `verify-conquest.ts`), 28/28
+contracts, 8/8 write smokes; `npm run audit` 1,374 invariants, 0 discrepancies.
+Tests cover expedition-bound siege, ownership/governor transfer, own-city and
+marching-army rejection, war-time road closure and peace restoration.
+
+### Fixed
+- `verify-holistic-enhancements` restores its famine fixture settlement so later
+  live-world suites do not inherit a zero granary.
+- Supply-graph tests can opt out of the master road network
+  (`loadMasterRoutes: false`) when asserting a single-edge cut.
+
+---
+
+## [1.9.0] - 2026-10-30
+
+ROTK-style day commitment, life cycle clock, living world and multi-day sieges.
+
+### Changed
+- **Action economy is now day-committed.** A market session costs 2 days,
+  social interaction 2, banquet/recruit 2, cultivation 5 and martial training 5
+  (`engine/action-policy.js` plus the `public/js/config.js` mirror). A 30-day
+  month therefore fits roughly 6–12 major actions; rest and bookkeeping stay
+  free.
+- **NPCs have an age.** Migration 024 adds `npc_state.age` and backfills it from
+  `master_characters.baseline_age`; instance bootstrap seeds it for the starting
+  retainers and commissioned heirs insert their own age.
+- **Yearly aging and monthly family clock.** `closeMonth` advances the
+  protagonist, named NPCs and children once per 12 closed months, and runs
+  pregnancy, autonomous NPC marriage and childbirth every month through a lazy
+  lineage bridge. A failed lineage step cannot undo the month's economy.
+- **Expeditions march over days.** Migration 025 adds `route_id`, `march_days`,
+  `days_remaining` and `arrival_date`; `POST /api/expeditions` resolves the route
+  ETA and charges grain for those days. The day clock moves `MARCHING` to
+  `ARRIVED` once, and `POST /api/expeditions/conclude` withdraws the army.
+- **Historical events are date-gated.** `getActiveEvents` now exposes `isDue`
+  (same year and season); `advance-day` returns the local due events and the UI
+  raises the event banner instead of waiting for the player to open it.
+- **Sieges take days.** Migration 026 adds `session_sieges`. `POST
+  /api/assault` defaults to a persistent siege (`mode: 'SIEGE'`), the day clock
+  grinds defense and garrison, and the city falls at the breach threshold.
+  `mode: 'INSTANT'` keeps the old one-roll resolution for scripts.
+
+### Verification
+`npm run verify` green: 33/33 suites (new `verify-lifecycle-clock.ts`,
+`verify-living-world.ts`, `verify-siege-clock.ts`), 28/28 contracts, 8/8 write
+smokes; `npm run audit` 1,370 invariants, 0 discrepancies. Migrations 024–026
+apply cleanly to the template database.
+
+### Fixed
+- Temporary/test databases no longer overwrite the live `game/PROGRESS.md`
+  projection; only the canonical campaign database owns it.
+- Player pregnancy ticks no longer advance NPC couples (autonomous NPC life owns
+  those), preventing a double stage per month.
+
+---
+
+## [1.8.0] - 2026-10-30
+
+Day is the only time unit; month close is now a boundary event.
+
+### Changed
+- `engine/time-manager.js` gained `advanceTime()`, the single time-advance
+  entry point. It walks whole days, applies daily grain/fatigue/task/caravan
+  progress and publishes one `WORLD_DAY_TICK` per day. Crossing into day 1 of a
+  new month calls `GameplayManager.closeMonth` before moving the clock, so a
+  failed close leaves the calendar untouched and the same days can be retried.
+- `GameplayManager.advanceTurn` is now a thin alias that runs the day clock to
+  the next month boundary. The monthly settlements moved into `closeMonth`,
+  which no longer touches grain, fatigue, tasks or caravans.
+- Every day-consuming action (`applyActionTime`), march arrival and caravan
+  tick now flows through `advanceTime`; a day 30 action rolls into the next
+  month and closes it automatically.
+- The header button is now **Ngày Tiếp** and advances exactly one day
+  (`POST /api/campaign/advance-day`); the report shows a daily dispatch and a
+  monthly dispatch only when the boundary was crossed.
+- Fatigue recovers 1/day (calendar constant) instead of a flat −35 per month;
+  morale (+10) and health (+15) remain monthly boundary effects.
+
+### Removed
+- `MONTH_END` blocking in `canSpendActionTime`, `completeMarch` and the caravan
+  tick endpoint.
+- The `31 − D` skipped-day accounting and the duplicate day-tick publication
+  inside the month close; days are now actually walked once.
+- The client-side "Qua Tháng" confirm flow (kept `advance-turn` as a legacy
+  server alias for tests and external callers).
+
+### Verification
+`npm run verify` green: 30/30 suites (new `verify-next-day-clock.ts`), 28/28
+contracts, 8/8 write smokes; `npm run audit` 1,368 invariants, 0 discrepancies.
+The new suite proves one-day math, automatic month boundary, a single close
+per month and idempotent retry.
+
+---
+
+## [1.7.1] - 2026-10-30
+
+Market sparkline and one-heir-per-asset validation.
+
+### Changed
+- The market-pulse modal now draws an inline SVG sparkline over the last 24
+  monthly stock-multiplier points instead of a text-only series.
+- `setWill` rejects assigning the same business/equipment instance to two
+  children (`Tài sản ... chỉ được trao cho một người thừa kế`), so last-write-wins
+  cannot silently disinherit one child.
+- Officer territory transfer intentionally remains in faction-politics; the
+  `OfficerUnrestConsequence` strategy only records the shared unrest signal and
+  returns `requiresFactionAction`.
+
+### Verification
+`npm run verify` green: 29/29 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 1,358 invariants, 0 discrepancies. Tests cover multi-month
+history points and duplicate-asset rejection.
+
+---
+
 ## [1.7.0] - 2026-10-30
 
 Node.js 26 LTS upgrade.

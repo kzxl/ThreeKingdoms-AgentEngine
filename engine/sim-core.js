@@ -9,7 +9,7 @@ const path = require('path');
 const { getMarketItem, resolveMarketPrice } = require('./market-price-book');
 const { quoteFromReference } = require('./market-quote');
 const { worldPriceMultiplier } = require('./world-price');
-const { getLocalMultiplier } = require('./settlement-market-bridge');
+const { getLocalMultiplier, applyTrade } = require('./settlement-market-bridge');
 const { BILL_OF_MATERIALS, calculateDefectRate } = require('./rules');
 const { renderProgressMarkdown } = require('./projector');
 
@@ -18,9 +18,11 @@ const GAME_DIR = path.join(ROOT_DIR, 'game');
 const DEFAULT_DB_PATH = path.join(ROOT_DIR, 'saves', 'session.db');
 
 const { runSqlJson, runSqlBatch, escapeSql } = require('./db-adapter');
+const { applySkillExpGain } = require('./skill-exp');
 const { normalizeAction } = require('./action-validation');
 const { canSpendActionTime, applyActionTime, getClock } = require('./time-manager');
 const { startTask, cancelTask } = require('./task-manager');
+const { getCareerModifiers, readerForDbPath } = require('./career-paths');
 
 /** Action types that append to cashflow_ledger and must stay chronologically ordered. */
 const LEDGER_ACTIONS = new Set(['TRADE_BUY', 'TRADE_SELL', 'PAY_WAGES', 'RECORD_BOUNTY', 'REWARD_NPC']);
@@ -292,6 +294,14 @@ class SimulationCore {
       return { success: false, code: 'TRANSACTION_FAILED', error: batchRes.error };
     }
 
+    // Buying removes stock from the local market, so the next quote is higher.
+    const market = applyTrade(
+      this.dbPath,
+      fameRow?.current_location || 'LOC-0001',
+      item_code,
+      -quantity
+    );
+
     this._project();
 
     return {
@@ -303,7 +313,8 @@ class SimulationCore {
         newCashBalance: newBal,
         itemCode: item_code,
         newQuantity: newQty,
-        unitCostBasis: newUnitCost
+        unitCostBasis: newUnitCost,
+        market
       }
     };
   }
@@ -326,6 +337,31 @@ class SimulationCore {
     const localMultiplier = getLocalMultiplier(this.dbPath, fameRow?.current_location || 'LOC-0001', item_code);
     const quote = quoteFromReference(marketItem.price, Number(fameRow?.fame || 0), item_code, worldMultiplier, localMultiplier);
     const unit_price = quote.sellPrice;
+
+    // Per-city bag: goods sitting in another city cannot be sold here. The
+    // trigger-mirrored table exists on saves after migration 084; older saves
+    // keep global-bag behaviour.
+    try {
+      const locationRow = runSqlJson(this.dbPath, `SELECT location_id FROM current_player_location LIMIT 1;`)[0];
+      const bagRow = runSqlJson(
+        this.dbPath,
+        // arch-guard:allow-sql-interpolation — legacy CLI adapter has no bound
+        // parameters; both values are single-quote escaped above.
+        `SELECT quantity FROM player_bag_by_location
+          WHERE location_id = '${String(locationRow?.location_id || 'LOC-0001').replace(/'/g, "''")}'
+            AND item_code = '${String(item_code).replace(/'/g, "''")}' LIMIT 1;`
+      )[0];
+      const bagQty = Number(bagRow?.quantity || 0);
+      if (bagQty < quantity) {
+        return {
+          success: false,
+          code: 'INSUFFICIENT_STOCK',
+          error: `Túi tại ${locationRow?.location_id || 'thành hiện tại'} chỉ có ${bagQty} ${item_code}; hàng ở thành khác phải được vận chuyển tới trước.`
+        };
+      }
+    } catch (bagErr) {
+      // Legacy save without the per-city bag table.
+    }
 
     // Condition check: inventory availability
     const itemRow = runSqlJson(this.dbPath, `SELECT quantity, unit_cost_basis FROM inventory_items WHERE item_code = '${item_code}' LIMIT 1;`)[0];
@@ -387,6 +423,14 @@ class SimulationCore {
       return { success: false, code: 'TRANSACTION_FAILED', error: batchRes.error };
     }
 
+    // Selling adds stock to the local market, so the next quote is lower.
+    const market = applyTrade(
+      this.dbPath,
+      fameRow?.current_location || 'LOC-0001',
+      item_code,
+      quantity
+    );
+
     this._project();
 
     return {
@@ -398,7 +442,8 @@ class SimulationCore {
         newCashBalance: newBal,
         itemCode: item_code,
         newQuantity: newQty,
-        netProfit
+        netProfit,
+        market
       }
     };
   }
@@ -710,19 +755,28 @@ class SimulationCore {
 
     const actionId = this._nextSequenceId('ACT', 'action_log', game_date);
     let skillUpdateSql = '';
+    let appliedExp = 0;
 
     if (exp_skill) {
       const skillRow = runSqlJson(this.dbPath, `SELECT * FROM player_skills WHERE skill_code = '${exp_skill}' LIMIT 1;`)[0];
       if (skillRow) {
-        let newExp = Number(skillRow.current_exp) + Number(exp_amount);
-        let newTier = Number(skillRow.tier);
-        let maxExp = Number(skillRow.max_exp);
-        if (newExp >= maxExp && newTier < 5) {
-          newTier += 1;
-          newExp = newExp - maxExp;
-          maxExp = Math.round(maxExp * 1.5);
-        }
-        skillUpdateSql = `UPDATE player_skills SET current_exp = ${newExp}, tier = ${newTier}, max_exp = ${maxExp} WHERE skill_code = '${exp_skill}';`;
+        // The active career path boosts training for its matching attribute.
+        const skillMeta = runSqlJson(
+          this.dbPath,
+          'SELECT primary_attr FROM master_skills WHERE skill_code = ? LIMIT 1;',
+          [exp_skill]
+        )[0];
+        const career = skillMeta?.primary_attr
+          ? getCareerModifiers(readerForDbPath(this.dbPath)).modifiers
+          : null;
+        const careerMultiplier = Number(career?.expMultiplier?.[skillMeta?.primary_attr] || 1);
+        const advanced = applySkillExpGain(
+          Number(skillRow.tier || 1),
+          Number(skillRow.current_exp || 0),
+          Math.max(0, Math.round(Number(exp_amount) * careerMultiplier))
+        );
+        appliedExp = advanced.gained;
+        skillUpdateSql = `UPDATE player_skills SET current_exp = ${advanced.currentExp}, tier = ${advanced.tier}, max_exp = ${advanced.maxExp} WHERE skill_code = '${exp_skill}';`;
       }
     }
 
@@ -730,7 +784,7 @@ class SimulationCore {
       UPDATE player_state SET fatigue = ${newFatigue}, morale = ${newMorale};
       ${skillUpdateSql}
       INSERT INTO action_log (action_id, idempotency_key, turn_number, game_date, action_type, payload, result, status)
-      VALUES ('${actionId}', ${idempotency_key ? `'${idempotency_key}'` : 'NULL'}, (SELECT active_turn FROM campaign_meta LIMIT 1), '${game_date}', 'PERSONAL_GROWTH', '${JSON.stringify(action).replace(/'/g, "''")}', '{"subType":"${sub_type}","fatigue":${newFatigue},"morale":${newMorale},"skillCode":${exp_skill ? `"${exp_skill}"` : 'null'},"expGained":${exp_amount || 0},"memo":"${memo || 'Tu thân dưỡng tính hoàn tất'}"}', 'SUCCESS');
+      VALUES ('${actionId}', ${idempotency_key ? `'${idempotency_key}'` : 'NULL'}, (SELECT active_turn FROM campaign_meta LIMIT 1), '${game_date}', 'PERSONAL_GROWTH', '${JSON.stringify(action).replace(/'/g, "''")}', '{"subType":"${sub_type}","fatigue":${newFatigue},"morale":${newMorale},"skillCode":${exp_skill ? `"${exp_skill}"` : 'null'},"expGained":${appliedExp},"memo":"${memo || 'Tu thân dưỡng tính hoàn tất'}"}', 'SUCCESS');
     `;
 
     const batchRes = runSqlBatch(this.dbPath, sql);
@@ -747,7 +801,7 @@ class SimulationCore {
         fatigue: newFatigue,
         morale: newMorale,
         skillCode: exp_skill,
-        expGained: exp_amount || 0,
+        expGained: appliedExp,
         memo: memo || 'Tu thân dưỡng tính hoàn tất'
       }
     };

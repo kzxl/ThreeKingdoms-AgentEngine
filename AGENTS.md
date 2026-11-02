@@ -29,10 +29,12 @@ this file (language, communication style, engineering workflow, safety, Semantic
 ## Verification and commits
 
 - Run `npm run verify` after every change (typecheck, four lint ratchets, route shadowing,
-  24 suites, 28 API contracts, 8 write smokes). Run `npm run audit` for the 1,358 invariants.
+  36 suites, 28 API contracts, 8 write smokes). Run `npm run audit` for the 1,374 invariants.
 - Run `npm run build:client` after any `src/client` or `public/js` change; restart the dev server
   before a browser check (an old server keeps serving the old bundle).
 - Tests under `tests/verify-*.ts` are auto-discovered; no list edit is needed.
+- Finish one feature at a time: verify it green, then create a **separate commit for that feature**
+  before starting the next. Never batch unrelated features into one commit.
 - Commit after a green build/test, staging only task-scoped files. Never `git add -A`; prefer
   `node E:\Tools\SemanticBrain\tools\git-safe-commit.js -m "<message>" <files...>` when available.
 - Do not overwrite configuration, metadata or rule files without inspecting them first.

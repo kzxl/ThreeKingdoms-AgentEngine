@@ -110,6 +110,8 @@ export interface UtilityActionCandidate {
 export interface ModuleContext {
   dbPath: string;
   eventBus: import('./event-bus').EventBus;
+  /** Tests may opt out of loading master_routes into the supply graph. */
+  loadMasterRoutes?: boolean;
 }
 
 export interface IFeatureModule {

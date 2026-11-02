@@ -11,18 +11,34 @@
  * and re-opened the database on every write.
  */
 
+import os from 'os';
 import path from 'path';
 import { DatabaseService } from '../core/database';
 
 const PROJECTION_PATH = path.resolve(__dirname, '../../game/PROGRESS.md');
 const PROJECTOR_PATH = path.resolve(__dirname, '../../engine/projector');
+const CANONICAL_DB_PATH = path.resolve(
+  process.env.SIM_DB_PATH || path.resolve(__dirname, '../../saves/session.db')
+);
+const TEMP_ROOT = path.resolve(os.tmpdir());
+
+/** Directly-run tests use an OS temp DB; those must never own the projection. */
+function isTemporaryDatabase(dbPath: string): boolean {
+  const resolved = path.resolve(dbPath);
+  return resolved === TEMP_ROOT || resolved.startsWith(`${TEMP_ROOT}${path.sep}`);
+}
 
 /**
  * Re-renders game/PROGRESS.md from the given database.
  * Never throws: projection failure must not roll back a committed transaction.
+ *
+ * Only the canonical campaign database owns the projection. Temporary databases
+ * used by tests and cloned instances must not overwrite the live PROGRESS.md.
  */
 export function syncProgressProjection(db: DatabaseService): void {
   try {
+    if (path.resolve(db.path) !== CANONICAL_DB_PATH) return;
+    if (isTemporaryDatabase(db.path)) return;
     const { renderProgressMarkdown } = require(PROJECTOR_PATH);
     renderProgressMarkdown(db.getDbPath(), PROJECTION_PATH);
   } catch (err: any) {

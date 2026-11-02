@@ -2,39 +2,46 @@
  * ThreeKingdoms-AgentEngine: Settlement market bridge for the CommonJS engine.
  */
 
-let cached = null;
-let cachedPath = null;
+const contexts = new Map();
 
+/**
+ * One context per database path. The previous single-slot cache returned the
+ * first campaign for every later path, so a sandbox/test database could read
+ * the live market (or vice versa).
+ */
 function getSettlementMarketContext(dbPath) {
-  if (cached) return cached;
+  const key = dbPath || '__default__';
+  const existing = contexts.get(key);
+  if (existing) return existing;
   try {
     require('tsx/cjs');
     const { DatabaseService } = require('../src/core/database.ts');
     const { SettlementMarketService } = require('../src/modules/economy/settlement-market.service.ts');
     const { LOC_TO_NODE_MAP } = require('../src/modules/ecology-logistics/spatial-registry.ts');
-    cached = {
+    const ctx = {
       service: SettlementMarketService.forDatabase(DatabaseService.getInstance(dbPath)),
       locToNode: LOC_TO_NODE_MAP
     };
-    cachedPath = dbPath;
-    return cached;
+    contexts.set(key, ctx);
+    return ctx;
   } catch (error) {
     return null;
   }
 }
 
-/** Releases the TypeScript DatabaseService connection opened by this bridge. */
+/** Releases every TypeScript DatabaseService connection opened by this bridge. */
 function close() {
-  if (!cached) return;
+  if (contexts.size === 0) return;
   try {
     require('tsx/cjs');
     const { DatabaseService } = require('../src/core/database.ts');
-    DatabaseService.closePath(cachedPath);
+    for (const key of contexts.keys()) {
+      if (key !== '__default__') DatabaseService.closePath(key);
+    }
   } catch (error) {
     // bridge may not have loaded tsx
   }
-  cached = null;
-  cachedPath = null;
+  contexts.clear();
 }
 
 function driftPlayerSettlement(dbPath, location) {
@@ -52,6 +59,32 @@ function getLocalMultiplier(dbPath, location, itemCode) {
     return ctx.service.getLocalMultiplier(node, itemCode);
   } catch (error) {
     return 1;
+  }
+}
+
+/** Monthly essential consumption across every settlement. */
+function consumeEssentials(dbPath, gameDate) {
+  const ctx = getSettlementMarketContext(dbPath);
+  if (!ctx) return [];
+  try {
+    return ctx.service.consumeEssentials(gameDate);
+  } catch (error) {
+    return [];
+  }
+}
+
+/**
+ * Books a trade into local stock: buying passes a negative delta, selling a
+ * positive one. Returns the new state or null when the bridge is unavailable.
+ */
+function applyTrade(dbPath, location, itemCode, stockDelta) {
+  const ctx = getSettlementMarketContext(dbPath);
+  if (!ctx) return null;
+  try {
+    const node = ctx.locToNode[location] || location;
+    return ctx.service.applyTrade(node, itemCode, stockDelta);
+  } catch (error) {
+    return null;
   }
 }
 
@@ -73,4 +106,4 @@ function getStockState(dbPath, location, itemCode) {
   }
 }
 
-module.exports = { driftPlayerSettlement, getLocalMultiplier, getStockState, close };
+module.exports = { driftPlayerSettlement, consumeEssentials, getLocalMultiplier, getStockState, applyTrade, close };

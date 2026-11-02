@@ -1,21 +1,33 @@
 /**
- * ThreeKingdoms-AgentEngine: Title Screen & Multi-Instance Landing Modal
+ * ThreeKingdoms-AgentEngine: Title Screen & Single-Session Launcher
  * (public/js/title-screen-ui.js)
  *
- * Implements:
- * 1. Title Screen Launcher on web access (Start Screen Gate)
- * 2. New Campaign Creation with Archetype selection (Default: Thanh Niên Bố Y)
- * 3. Instance Switcher & Save Slot Management (Load, Fork/Clone, Delete)
- * 4. Transparent local storage session persistence
+ * One active database per server: `saves/session.db` (or SIM_DB_PATH).
+ * Creating a new campaign resets that database in place after an automatic
+ * backup, so the modular engine keeps the same connection and the browser only
+ * needs a refresh. There is no instance list, worker process or restart step.
  */
 
 (function () {
   'use strict';
 
-  let cachedInstances = [];
   let cachedArchetypes = [];
+  let currentSummary = null;
   let selectedArchetypeId = 'ARCH-COMMONER-YOUTH';
-  let activeInstanceId = 'default';
+  let isSubmitting = false;
+
+  const FALLBACK_ARCHETYPE = {
+    id: 'ARCH-COMMONER-YOUTH',
+    nameVi: 'Thanh Niên Bố Y (Hai Bàn Tay Trắng)',
+    defaultName: 'Lương Diễn',
+    defaultStyleName: 'Chí Viễn',
+    startingAge: 18,
+    initialCash: 100,
+    startingLocation: 'Huyện Trác (Thảo Lư)',
+    bioVi: 'Thanh niên áo vải chốn hương thôn, hai bàn tay trắng lập thân.',
+    startingAssetsVi: ['Vải thô áo cộc', 'Đòn gánh tre', '100 Đồng tiền vụn'],
+    attributes: { war: 55, ldr: 50, int: 60, pol: 45, dip: 50, com: 52, log: 52, cra: 58 }
+  };
 
   function isEnglish() {
     return typeof window.currentLang !== 'undefined' && window.currentLang === 'en';
@@ -25,32 +37,21 @@
     return Number(num || 0).toLocaleString('en-US');
   }
 
-  /**
-   * Initializes the Title Screen module and handles first-load gate
-   */
-  /**
-   * Product default: every load of the game address starts at instance
-   * selection, so the player explicitly chooses which playthrough to enter.
-   * Flip to false to restore "skip the gate for a returning session".
-   */
-  const ALWAYS_SHOW_INSTANCE_GATE = true;
+  function escapeHtml(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
 
   async function init() {
-    const savedId = localStorage.getItem('current_instance_id') || 'default';
-    activeInstanceId = savedId;
-
-    // Check URL parameters for explicit title screen requests
-    const urlParams = new URLSearchParams(window.location.search);
-    const forceTitle = urlParams.get('screen') === 'title' || urlParams.get('title') === 'true';
-
-    if (ALWAYS_SHOW_INSTANCE_GATE || forceTitle || !localStorage.getItem('current_instance_id')) {
-      // The gate is not dismissible on entry: an instance must be selected.
-      await openTitleScreen(true);
-    }
+    await openTitleScreen(true);
   }
 
   /**
-   * Opens the Title Screen modal
+   * Opens the single-session launcher. The first gate hides the close button so
+   * the player explicitly continues or creates a campaign.
    */
   async function openTitleScreen(isFirstGate = false) {
     let modal = document.getElementById('title-screen-modal');
@@ -58,52 +59,40 @@
       createTitleScreenModalDOM();
       modal = document.getElementById('title-screen-modal');
     }
-
     modal.classList.remove('hidden');
 
-    // Hide close button if user hasn't selected any instance yet
     const closeBtn = document.getElementById('title-screen-close-btn');
-    if (closeBtn) {
-      closeBtn.style.display = isFirstGate ? 'none' : 'block';
-    }
+    if (closeBtn) closeBtn.style.display = isFirstGate ? 'none' : 'block';
 
-    await fetchInstancesAndArchetypes();
+    await fetchTitleData();
     renderTitleScreenContent();
   }
 
-  /**
-   * Closes the Title Screen modal
-   */
   function closeTitleScreen() {
     const modal = document.getElementById('title-screen-modal');
-    if (modal) {
-      modal.classList.add('hidden');
-    }
+    if (modal) modal.classList.add('hidden');
   }
 
-  /**
-   * Fetches all instances and archetype presets from the backend
-   */
-  async function fetchInstancesAndArchetypes() {
+  async function fetchTitleData() {
     try {
-      const res = await fetch(`/api/instances?instanceId=${encodeURIComponent(activeInstanceId)}`, {
-        headers: { 'x-instance-id': activeInstanceId }
-      });
-      const data = await res.json();
-      if (data.success) {
-        cachedInstances = data.instances || [];
-        cachedArchetypes = data.archetypes || [];
-        if (data.currentInstanceId) {
-          activeInstanceId = data.currentInstanceId;
-        }
+      const [instRes, summaryRes] = await Promise.all([
+        fetch('/api/game/archetypes'),
+        fetch('/api/game/summary')
+      ]);
+      const instData = await instRes.json();
+      if (instData.success && Array.isArray(instData.archetypes) && instData.archetypes.length > 0) {
+        cachedArchetypes = instData.archetypes;
       }
+      const summaryData = await summaryRes.json();
+      if (summaryData.success) currentSummary = summaryData.summary || null;
     } catch (err) {
-      console.warn('[TitleScreenUI] Failed to fetch instances:', err);
+      console.warn('[TitleScreenUI] Failed to load title data:', err);
     }
+    if (cachedArchetypes.length === 0) cachedArchetypes = [FALLBACK_ARCHETYPE];
   }
 
   /**
-   * Creates the modal markup shell in the DOM if absent
+   * Creates the modal markup shell in the DOM if absent.
    */
   function createTitleScreenModalDOM() {
     const modal = document.createElement('div');
@@ -116,7 +105,7 @@
             <span class="title-screen-seal">三国</span>
             <div>
               <h2 class="title-screen-main-title">TAM QUỐC THƯƠNG ĐỒ • CHÍ LẬP NGHIỆP</h2>
-              <div class="title-screen-subtitle">Three Kingdoms Tactical Simulation • Quản Lý Đa Phiên Chơi (Multi-Instance Engine)</div>
+              <div class="title-screen-subtitle">Three Kingdoms Tactical Simulation • Một Phiên Chơi / Single-Session Campaign</div>
             </div>
           </div>
           <button id="title-screen-close-btn" class="ui-btn ui-btn--ghost ui-btn--icon" onclick="TitleScreenUI.close()" title="Đóng cửa sổ">&times;</button>
@@ -130,25 +119,59 @@
   }
 
   /**
-   * Renders the 2-column layout: [1. New Campaign] vs [2. Load Instance]
+   * Renders the two-column launcher: new campaign vs the one current session.
    */
   function renderTitleScreenContent() {
     const container = document.getElementById('title-screen-body');
     if (!container) return;
 
     const isEn = isEnglish();
-    const currArch = cachedArchetypes.find(a => a.id === selectedArchetypeId) || cachedArchetypes[0] || {
-      id: 'ARCH-COMMONER-YOUTH',
-      nameVi: 'Thanh Niên Bố Y (Hai Bàn Tay Trắng)',
-      defaultName: 'Lương Diễn',
-      defaultStyleName: 'Chí Viễn',
-      startingAge: 18,
-      initialCash: 100,
-      startingLocation: 'Huyện Trác (Thảo Lư)',
-      bioVi: 'Thanh niên áo vải chốn hương thôn, hai bàn tay trắng lập thân.',
-      startingAssetsVi: ['Vải thô áo cộc', 'Đòn gánh tre', '100 Đồng tiền vụn'],
-      attributes: { war: 55, ldr: 50, int: 60, pol: 45, dip: 50, com: 52, log: 52, cra: 58 }
-    };
+    const currArch = cachedArchetypes.find(a => a.id === selectedArchetypeId) || cachedArchetypes[0] || FALLBACK_ARCHETYPE;
+    const summary = currentSummary || {};
+    const canContinue = summary.canContinue === true;
+    const cashText = typeof window.formatMoney === 'function'
+      ? window.formatMoney(summary.liquidCash || 0)
+      : `${formatNumber(summary.liquidCash || 0)} Quan`;
+    const grainText = typeof window.formatGrain === 'function'
+      ? window.formatGrain(summary.strategicGrain || 0)
+      : `${Number(summary.strategicGrain || 0).toFixed(2)} Thạch`;
+    const initial = summary.playerName ? String(summary.playerName).charAt(0) : '漢';
+
+    const currentCard = canContinue ? `
+      <div class="title-inst-card active-inst-card">
+        <div class="title-inst-head">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="title-inst-seal">${escapeHtml(initial)}</span>
+            <div>
+              <strong style="color: #fff; font-size: 13.5px;">${escapeHtml(summary.playerName)} (${escapeHtml(summary.playerStyle)})</strong>
+              <div style="font-size: 11px; color: #94a3b8;">${escapeHtml(summary.campaignName || '')}</div>
+            </div>
+          </div>
+          <span class="tactical-badge tactical-badge--primary">${isEn ? 'Current' : 'Đang Chơi'}</span>
+        </div>
+
+        <div class="title-inst-body">
+          <div class="title-inst-metric">
+            <span>${isEn ? 'Turn' : 'Lượt'}: <b>${formatNumber(summary.activeTurn || 1)}</b> (${escapeHtml(summary.currentDate || '')})</span>
+            <span>${isEn ? 'Location' : 'Địa bàn'}: <b>${escapeHtml(summary.location || '')}</b></span>
+          </div>
+          <div class="title-inst-metric">
+            <span>${isEn ? 'Cash' : 'Tiền mặt'}: <b style="color: #fbbf24;">${escapeHtml(cashText)}</b></span>
+            <span>${isEn ? 'Grain' : 'Lương thảo'}: <b>${escapeHtml(grainText)}</b></span>
+          </div>
+        </div>
+
+        <div class="title-inst-actions">
+          <button class="ui-btn ui-btn--primary ui-btn--sm" onclick="TitleScreenUI.continueCurrentSession()">
+            ▶ ${isEn ? 'Continue current session' : 'Tiếp Tục Phiên Hiện Tại'}
+          </button>
+        </div>
+      </div>
+    ` : `
+      <div class="title-empty-state">
+        <p>${isEn ? 'No current session yet. Create one on the left.' : 'Chưa có phiên hiện tại. Hãy tạo mới ở cột bên trái.'}</p>
+      </div>
+    `;
 
     container.innerHTML = `
       <div class="title-screen-grid">
@@ -158,11 +181,10 @@
             <span class="title-panel-icon">武</span>
             <div>
               <h3 class="title-panel-title">${isEn ? '1. START NEW CAMPAIGN' : '1. KHỞI LẬP CƠ NGHIỆP MỚI'}</h3>
-              <div class="title-panel-sub">${isEn ? 'Create a fresh isolated playthrough instance' : 'Khởi tạo một phiên chơi độc lập mới từ đầu'}</div>
+              <div class="title-panel-sub">${isEn ? 'Replace the active session with a fresh campaign' : 'Thay thế phiên hiện tại bằng một chiến dịch mới'}</div>
             </div>
           </div>
 
-          <!-- Archetype Selection Cards -->
           <div class="title-section-label">${isEn ? 'Starting Archetype (Default: Penniless Commoner):' : 'Thân Phận Khởi Đầu (Mặc định: Thanh Niên Tay Trắng):'}</div>
           <div class="title-archetype-selector">
             ${cachedArchetypes.map(a => {
@@ -173,14 +195,13 @@
                   <span class="title-arch-seal">${a.seal || '士'}</span>
                   <div class="title-arch-text">
                     <strong style="color: ${isSelected ? '#fbbf24' : '#f1f5f9'};">${a.nameVi}</strong>
-                    <div style="font-size: 10.5px; color: #94a3b8;">${a.startingAge} Tuổi • Vốn: ${formatNumber(a.initialCash)} Quan ${isPauper ? '<span class="tactical-badge tactical-badge--success" style="font-size:9px; padding:1px 4px; margin-left:4px;">Khuyên Dùng</span>' : ''}</div>
+                    <div style="font-size: 10.5px; color: #94a3b8;">${a.startingAge} Tuổi • Vốn: ${formatNumber(a.initialCash)} Quan ${isPauper ? '<span class="tactical-badge tactical-badge--success" style="font-size: 9px; padding: 1px 4px; margin-left: 4px;">Khuyên Dùng</span>' : ''}</div>
                   </div>
                 </div>
               `;
             }).join('')}
           </div>
 
-          <!-- Identity Fields -->
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px;">
             <div class="form-group">
               <label class="form-label">${isEn ? 'Character Name:' : 'Họ Tên Nhân Vật:'}</label>
@@ -192,7 +213,6 @@
             </div>
           </div>
 
-          <!-- Live Archetype Preview Box -->
           <div class="title-preview-box">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
               <strong style="color: #fde68a; font-size: 12px;">${currArch.nameVi}</strong>
@@ -212,97 +232,70 @@
             </div>
           </div>
 
-          <!-- Start Action Button -->
-          <button class="ui-btn ui-btn--primary ui-btn--lg title-launch-btn" onclick="TitleScreenUI.createInstance()">
-            ${isEn ? '武 Launch New Campaign & Enter World' : '武 Khởi Lập Phiên Mới & Vào Bản Đồ'}
+          <div class="title-single-db-warning">
+            ${isEn
+              ? 'This replaces the current session. The old save is backed up automatically under saves/backups/.'
+              : 'Tạo mới sẽ thay thế phiên hiện tại. Bản cũ được sao lưu tự động trong saves/backups/.'}
+          </div>
+
+          <button class="ui-btn ui-btn--primary ui-btn--lg title-launch-btn" onclick="TitleScreenUI.createInstance()" ${isSubmitting ? 'disabled' : ''}>
+            ${isEn ? '武 Create New Session & Enter' : '武 Tạo Mới & Vào Game'}
           </button>
         </div>
 
-        <!-- COLUMN 2: LOAD EXISTING INSTANCES -->
+        <!-- COLUMN 2: THE SINGLE CURRENT SESSION -->
         <div class="title-panel title-panel--load">
           <div class="title-panel-header">
             <span class="title-panel-icon">卷</span>
             <div>
-              <h3 class="title-panel-title">${isEn ? '2. LOAD EXISTING INSTANCES' : '2. CHỌN LẠI CÁC PHIÊN ĐÃ LƯU'}</h3>
-              <div class="title-panel-sub">${isEn ? `${cachedInstances.length} Saved Playthrough Slots Available` : `Hiện có ${cachedInstances.length} phiên chơi độc lập đã lưu`}</div>
+              <h3 class="title-panel-title">${isEn ? '2. CURRENT SESSION' : '2. PHIÊN HIỆN TẠI'}</h3>
+              <div class="title-panel-sub">${isEn ? 'One database: saves/session.db' : 'Một database duy nhất: saves/session.db'}</div>
             </div>
           </div>
 
-          <div class="title-instances-list">
-            ${cachedInstances.length === 0 ? `
-              <div class="title-empty-state">
-                <p>${isEn ? 'No saved instances found. Start a new campaign on the left!' : 'Chưa có phiên lưu nào. Hãy bắt đầu chiến dịch mới ở cột bên trái!'}</p>
-              </div>
-            ` : cachedInstances.map(inst => {
-              const isCur = inst.id === activeInstanceId;
-              const dateStr = new Date(inst.updatedAt).toLocaleDateString('vi-VN', {
-                hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric'
-              });
-              return `
-                <div class="title-inst-card ${isCur ? 'active-inst-card' : ''}">
-                  <div class="title-inst-head">
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                      <span class="title-inst-seal">${inst.name.charAt(0) || '漢'}</span>
-                      <div>
-                        <strong style="color: #fff; font-size: 13.5px;">${inst.name} (${inst.styleName})</strong>
-                        <div style="font-size: 11px; color: #94a3b8;">${inst.archetypeNameVi} • Tuổi: ${inst.age}</div>
-                      </div>
-                    </div>
-                    ${isCur ? '<span class="tactical-badge tactical-badge--primary">Đang Chơi</span>' : ''}
-                  </div>
+          ${currentCard}
 
-                  <div class="title-inst-body">
-                    <div class="title-inst-metric">
-                      <span>Lượt: <b>${inst.turnNumber}</b> (${inst.gameDate})</span>
-                      <span>Địa bàn: <b>${inst.location}</b></span>
-                    </div>
-                    <div class="title-inst-metric">
-                      <span>Tiền mặt: <b style="color:#fbbf24;">${formatNumber(inst.liquidCash)} quan</b></span>
-                      <span>Lưu lần cuối: <span style="color:#94a3b8;">${dateStr}</span></span>
-                    </div>
-                  </div>
-
-                  <div class="title-inst-actions">
-                    <button class="ui-btn ui-btn--primary ui-btn--sm" onclick="TitleScreenUI.selectInstance('${inst.id}')">
-                      ${isCur ? '▶ Tiếp Tục' : 'Tiến Vào'}
-                    </button>
-                    <button class="ui-btn ui-btn--secondary ui-btn--sm" onclick="TitleScreenUI.cloneInstance('${inst.id}')" title="Sao lưu hoặc phân nhánh phiên này">
-                      Sao Lưu
-                    </button>
-                    ${!inst.isDefault ? `
-                      <button class="ui-btn ui-btn--danger ui-btn--sm" onclick="TitleScreenUI.deleteInstance('${inst.id}')" title="Xóa phiên chơi này">
-                        Xóa
-                      </button>
-                    ` : ''}
-                  </div>
-                </div>
-              `;
-            }).join('')}
+          <div class="title-single-db-note">
+            ${isEn
+              ? 'Single-session mode. Creating a new campaign resets the active database in place and reloads the page; no server restart is needed.'
+              : 'Chế độ một phiên. Tạo chiến dịch mới sẽ reset database đang chạy tại chỗ rồi tải lại trang; không cần khởi động lại server.'}
           </div>
         </div>
       </div>
     `;
   }
 
-  /**
-   * Updates selected archetype and refreshes preview
-   */
   function selectArchetype(archId) {
     selectedArchetypeId = archId;
     renderTitleScreenContent();
   }
 
-  /**
-   * Creates a new instance from the configured archetype
-   */
+  async function confirmReplaceSession() {
+    if (!window.UI || typeof window.UI.confirm !== 'function') return false;
+    return window.UI.confirm({
+      title: isEnglish() ? 'Start a new campaign' : 'Tạo phiên mới',
+      message: isEnglish()
+        ? 'This replaces the current session. A backup will be saved to saves/backups/ first.'
+        : 'Thao tác này sẽ thay thế phiên hiện tại. Hệ thống sẽ sao lưu bản cũ vào saves/backups/ trước.',
+      confirmLabel: isEnglish() ? 'Create & replace' : 'Tạo mới & thay thế',
+      danger: true
+    });
+  }
+
   async function createInstance() {
+    if (isSubmitting) return;
     const nameInput = document.getElementById('title-char-name');
     const styleInput = document.getElementById('title-char-style');
     const name = nameInput ? nameInput.value.trim() : 'Lương Diễn';
     const styleName = styleInput ? styleInput.value.trim() : 'Chí Viễn';
 
+    const confirmed = await confirmReplaceSession();
+    if (!confirmed) return;
+
+    isSubmitting = true;
+    renderTitleScreenContent();
     try {
-      const res = await fetch('/api/instances/new', {
+      const res = await fetch('/api/game/new-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -312,147 +305,43 @@
         })
       });
       const data = await res.json();
-      if (!data.success) throw new Error(data.error || 'Failed to create instance');
+      if (!data.success) throw new Error(data.error || 'Failed to create session');
 
-      showToast(data.messageVi || 'Khởi tạo thành công phiên chơi mới!');
-      await selectInstance(data.instanceId);
+      showToast(data.messageVi || 'Đã tạo phiên mới!');
+      setTimeout(() => window.location.reload(), 650);
     } catch (err) {
-      showToast(`[LỖI] ${err.message}`, true);
-    }
-  }
-
-  /**
-   * Activates an instance and refreshes the in-game state
-   */
-  async function selectInstance(instanceId) {
-    try {
-      const res = await fetch('/api/instances/select', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ instanceId })
-      });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.error || 'Failed to select instance');
-
-      activeInstanceId = instanceId;
-      localStorage.setItem('current_instance_id', instanceId);
-
-      showToast(data.messageVi || `Đã chuyển sang phiên chơi [${instanceId}]!`);
-      closeTitleScreen();
-
-      // Reload entire frontend state
-      if (typeof window.loadAllData === 'function') {
-        window.loadAllData();
-      } else {
-        window.location.reload();
-      }
-    } catch (err) {
-      showToast(`[LỖI] ${err.message}`, true);
-    }
-  }
-
-  /**
-   * Deletes a non-default instance
-   */
-  async function deleteInstance(instanceId) {
-    const message = `Bạn có chắc chắn muốn xóa vĩnh viễn phiên chơi [${instanceId}] không? Hành động này không thể hoàn tác.`;
-    const confirmed = window.UI && typeof window.UI.confirm === 'function'
-      ? await window.UI.confirm({
-          title: 'Xóa phiên chơi',
-          message,
-          confirmLabel: 'Xóa vĩnh viễn',
-          danger: true
-        })
-      : confirm(message);
-    if (!confirmed) {
-      return;
-    }
-
-    try {
-      const res = await fetch(`/api/instances/${encodeURIComponent(instanceId)}`, {
-        method: 'DELETE'
-      });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.error || 'Failed to delete instance');
-
-      showToast(data.messageVi || 'Đã xóa phiên chơi thành công!');
-
-      // If active instance was deleted, reset to default
-      if (activeInstanceId === instanceId) {
-        activeInstanceId = 'default';
-        localStorage.setItem('current_instance_id', 'default');
-      }
-
-      await fetchInstancesAndArchetypes();
+      isSubmitting = false;
       renderTitleScreenContent();
-    } catch (err) {
       showToast(`[LỖI] ${err.message}`, true);
     }
   }
 
-  /**
-   * Clones an existing instance into a new save slot
-   */
-  async function cloneInstance(sourceId) {
-    const label = prompt('Nhập nhãn ghi chú cho nhánh sao lưu mới (tùy chọn):', 'Nhánh thử nghiệm');
-    if (label === null) return; // cancelled
-
-    try {
-      const res = await fetch('/api/instances/clone', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sourceId, newLabel: label })
-      });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.error || 'Failed to clone instance');
-
-      showToast(data.messageVi || 'Đã nhân bản nhánh chơi thành công!');
-      await fetchInstancesAndArchetypes();
-      renderTitleScreenContent();
-    } catch (err) {
-      showToast(`[LỖI] ${err.message}`, true);
+  function continueCurrentSession() {
+    closeTitleScreen();
+    if (typeof window.loadAllData === 'function') {
+      window.loadAllData();
+    } else {
+      window.location.reload();
     }
   }
 
-  function showToast(msg, isError = false) {
+  function showToast(message, isError = false) {
     if (typeof window.showToast === 'function') {
-      window.showToast(msg, isError);
+      window.showToast(message, isError);
     } else {
-      alert(msg);
+      console.log(`[TitleScreenUI] ${message}`);
     }
   }
 
-  // Intercept fetch to automatically append x-instance-id header
-  const originalFetch = window.fetch;
-  window.fetch = function (url, options = {}) {
-    const instId = localStorage.getItem('current_instance_id') || 'default';
-    options.headers = options.headers || {};
-    if (options.headers instanceof Headers) {
-      if (!options.headers.has('x-instance-id')) {
-        options.headers.set('x-instance-id', instId);
-      }
-    } else if (Array.isArray(options.headers)) {
-      options.headers.push(['x-instance-id', instId]);
-    } else {
-      options.headers['x-instance-id'] = instId;
-    }
-    return originalFetch(url, options);
-  };
-
-  // Public API Export
   window.TitleScreenUI = {
     init,
     open: openTitleScreen,
     close: closeTitleScreen,
     selectArchetype,
     createInstance,
-    selectInstance,
-    deleteInstance,
-    cloneInstance,
-    getActiveInstanceId: () => activeInstanceId
+    continueCurrentSession
   };
 
-  // Initialize on DOM ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {

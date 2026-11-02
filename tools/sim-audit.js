@@ -144,6 +144,33 @@ function auditSqliteInventory() {
     }
   }
 
+  // Per-city bag must never hold more than the aggregate inventory; a larger
+  // bag means a trigger/mirror wrote twice or a manual edit bypassed movement.
+  const bagTable = runSqlJson(
+    "SELECT name FROM sqlite_master WHERE type='table' AND name='player_bag_by_location';"
+  );
+  if (bagTable && bagTable.length > 0) {
+    const bagSums = runSqlJson(
+      `SELECT item_code, SUM(quantity) AS quantity
+         FROM player_bag_by_location GROUP BY item_code;`
+    );
+    const byItem = new Map(items.map(item => [item.item_code, Number(item.quantity)]));
+    for (const bag of bagSums) {
+      checksCount++;
+      const bagQty = Number(bag.quantity || 0);
+      const totalQty = Number(byItem.get(bag.item_code) || 0);
+      if (bagQty < 0) {
+        errors.push(`Player bag ${bag.item_code} has negative quantity: ${bagQty}`);
+      }
+      if (bagQty > totalQty + 0.001) {
+        errors.push(`Player bag ${bag.item_code} (${bagQty}) exceeds aggregate inventory (${totalQty})`);
+      }
+      if (bagQty > 0 && !byItem.has(bag.item_code)) {
+        errors.push(`Player bag ${bag.item_code} exists without an inventory_items row`);
+      }
+    }
+  }
+
   return {
     passed: errors.length === 0,
     checksCount,
@@ -161,8 +188,17 @@ function auditDoubleEntryJournal() {
   // Check if account_journal table exists
   const tableCheck = runSqlJson(`SELECT name FROM sqlite_master WHERE type='table' AND name='account_journal';`);
   if (!tableCheck || tableCheck.length === 0) {
-    // Journal table not yet installed (optional during P0, required in P1)
-    return { passed: true, checksCount: 0, errors: [], entriesCount: 0, installed: false };
+    // The journal is no longer optional: a cashflow row without a journal pair
+    // cannot be explained or audited.
+    return {
+      passed: false,
+      checksCount: 1,
+      errors: ['account_journal table is missing; every cashflow row must carry a balanced journal pair'],
+      entriesCount: 0,
+      installed: false,
+      orphanCashflow: 0,
+      orphanJournal: 0
+    };
   }
 
   const entries = runSqlJson(`
@@ -180,12 +216,35 @@ function auditDoubleEntryJournal() {
     }
   }
 
+  // Completeness both ways: every cashflow has a journal, every journal has a cashflow.
+  const orphanCashflow = Number(runSqlJson(`
+    SELECT COUNT(*) AS c FROM cashflow_ledger c
+    LEFT JOIN account_journal j ON c.txn_id = j.txn_id
+    WHERE j.txn_id IS NULL;
+  `)[0]?.c || 0);
+  checksCount++;
+  if (orphanCashflow > 0) {
+    errors.push(`${orphanCashflow} cashflow row(s) have no account_journal pair`);
+  }
+
+  const orphanJournal = Number(runSqlJson(`
+    SELECT COUNT(*) AS c FROM account_journal j
+    LEFT JOIN cashflow_ledger c ON c.txn_id = j.txn_id
+    WHERE c.txn_id IS NULL;
+  `)[0]?.c || 0);
+  checksCount++;
+  if (orphanJournal > 0) {
+    errors.push(`${orphanJournal} journal row(s) have no cashflow transaction`);
+  }
+
   return {
     passed: errors.length === 0,
     checksCount,
     errors,
     entriesCount: entries.length,
-    installed: true
+    installed: true,
+    orphanCashflow,
+    orphanJournal
   };
 }
 
@@ -232,9 +291,52 @@ function auditNpcAndBusinesses() {
     }
   }
 
+  const ledgerTable = runSqlJson(
+    `SELECT name FROM sqlite_master WHERE type='table' AND name='npc_ledger';`
+  );
+  if (ledgerTable && ledgerTable.length > 0) {
+    const rows = runSqlJson(`
+      SELECT p.npc_id, p.personal_cash, p.personal_troops,
+             l.entry_id, l.balance_cash, l.balance_troops
+      FROM npc_personal_progression p
+      LEFT JOIN npc_ledger l ON l.rowid = (
+        SELECT rowid FROM npc_ledger WHERE npc_id = p.npc_id ORDER BY rowid DESC LIMIT 1
+      );
+    `);
+    for (const row of rows) {
+      checksCount++;
+      if (!row.entry_id) {
+        errors.push(`NPC ${row.npc_id} has no npc_ledger entry`);
+        continue;
+      }
+      if (Math.abs(Number(row.balance_cash) - Number(row.personal_cash)) > 0.01) {
+        errors.push(`NPC ${row.npc_id} ledger cash ${row.balance_cash} != progression ${row.personal_cash}`);
+      }
+      if (Number(row.balance_troops) !== Number(row.personal_troops)) {
+        errors.push(`NPC ${row.npc_id} ledger troops ${row.balance_troops} != progression ${row.personal_troops}`);
+      }
+    }
+    const sums = runSqlJson(`
+      SELECT npc_id, SUM(delta_cash) AS cash, SUM(delta_troops) AS troops
+      FROM npc_ledger GROUP BY npc_id;
+    `);
+    for (const sum of sums) {
+      checksCount++;
+      const progression = runSqlJson(
+        `SELECT personal_cash, personal_troops FROM npc_personal_progression WHERE npc_id = '${String(sum.npc_id).replace(/'/g, "''")}';`
+      )[0];
+      if (!progression) continue;
+      if (Math.abs(Number(sum.cash) - Number(progression.personal_cash)) > 0.01) {
+        errors.push(`NPC ${sum.npc_id} ledger deltas do not sum to personal_cash`);
+      }
+      if (Number(sum.troops) !== Number(progression.personal_troops)) {
+        errors.push(`NPC ${sum.npc_id} ledger deltas do not sum to personal_troops`);
+      }
+    }
+  }
+
   const skillTable = runSqlJson(`SELECT name FROM sqlite_master WHERE type='table' AND name='npc_skills';`);
-  if (skillTable && skillTable.length > 0) {
-    const skills = runSqlJson(`SELECT * FROM npc_skills;`);
+  if (skillTable && skillTable.length > 0) {    const skills = runSqlJson(`SELECT * FROM npc_skills;`);
     for (const s of skills) {
       checksCount++;
       if (s.tier < 1 || s.tier > 5) errors.push(`NPC ${s.npc_id} skill ${s.skill_code} tier out of bounds: ${s.tier}`);
@@ -261,7 +363,7 @@ function auditSqliteFactionsAndSettlements() {
   // Check if session_factions and session_settlements exist in sqlite_master
   let tableCheck = [];
   try {
-    tableCheck = runSqlJson(`SELECT name FROM sqlite_master WHERE type='table' AND name IN ('session_factions', 'session_settlements', 'npc_personal_progression', 'merchant_promissory_notes', 'faction_diplomacy');`);
+    tableCheck = runSqlJson(`SELECT name FROM sqlite_master WHERE type='table' AND name IN ('session_factions', 'session_settlements', 'npc_personal_progression', 'merchant_promissory_notes', 'faction_diplomacy', 'faction_ledger', 'settlement_ledger');`);
   } catch (e) {
     return { passed: true, checksCount: 0, errors: [], installed: false, factionCount: 0, settlementCount: 0, progCount: 0, noteCount: 0, diploCount: 0 };
   }
@@ -273,6 +375,22 @@ function auditSqliteFactionsAndSettlements() {
 
   // 1. Audit Factions
   const factions = runSqlJson(`SELECT faction_id, treasury_cash, granary_grain FROM session_factions;`);
+  const hasFactionLedger = existingTables.has('faction_ledger');
+  if (!hasFactionLedger) {
+    checksCount++;
+    errors.push('faction_ledger table is missing; world treasury changes are not auditable');
+  }
+  const ledgerByFaction = new Map();
+  if (hasFactionLedger) {
+    for (const row of runSqlJson(`SELECT faction_id, category, inflow, outflow FROM faction_ledger;`)) {
+      const current = ledgerByFaction.get(row.faction_id) || { opening: 0, inflow: 0, outflow: 0, entries: 0 };
+      if (row.category === 'OPENING') current.opening += Number(row.inflow || 0);
+      else current.inflow += Number(row.inflow || 0);
+      current.outflow += Number(row.outflow || 0);
+      current.entries += 1;
+      ledgerByFaction.set(row.faction_id, current);
+    }
+  }
   for (const f of factions) {
     checksCount++;
     if (f.treasury_cash < 0) {
@@ -282,10 +400,40 @@ function auditSqliteFactionsAndSettlements() {
     if (f.granary_grain < 0) {
       errors.push(`Faction ${f.faction_id} has negative granary grain: ${f.granary_grain}`);
     }
+    if (hasFactionLedger) {
+      checksCount++;
+      const ledger = ledgerByFaction.get(f.faction_id) || { opening: 0, inflow: 0, outflow: 0, entries: 0 };
+      const expected = ledger.opening + ledger.inflow - ledger.outflow;
+      if (ledger.entries === 0) {
+        errors.push(`Faction ${f.faction_id} has no faction_ledger opening row`);
+      } else if (Math.abs(expected - Number(f.treasury_cash)) > 0.01) {
+        errors.push(
+          `Faction ${f.faction_id} treasury ${f.treasury_cash} != ledger expected ${expected} (opening ${ledger.opening}, in ${ledger.inflow}, out ${ledger.outflow})`
+        );
+      }
+    }
   }
 
   // 2. Audit Settlements
-  const settlements = runSqlJson(`SELECT settlement_id, garrison_troops, defense, granary_grain FROM session_settlements;`);
+  const hasSettlementLedger = existingTables.has('settlement_ledger');
+  if (!hasSettlementLedger) {
+    checksCount++;
+    errors.push('settlement_ledger table is missing; settlement treasury changes are not auditable');
+  }
+  const settlementLedgerBySettlement = new Map();
+  if (hasSettlementLedger) {
+    for (const row of runSqlJson(`SELECT settlement_id, category, inflow, outflow FROM settlement_ledger;`)) {
+      const current = settlementLedgerBySettlement.get(row.settlement_id)
+        || { opening: 0, inflow: 0, outflow: 0, entries: 0 };
+      if (row.category === 'OPENING') current.opening += Number(row.inflow || 0);
+      else current.inflow += Number(row.inflow || 0);
+      current.outflow += Number(row.outflow || 0);
+      current.entries += 1;
+      settlementLedgerBySettlement.set(row.settlement_id, current);
+    }
+  }
+
+  const settlements = runSqlJson(`SELECT settlement_id, garrison_troops, defense, granary_grain, treasury_cash FROM session_settlements;`);
   for (const s of settlements) {
     checksCount++;
     if (s.garrison_troops < 0) {
@@ -298,6 +446,19 @@ function auditSqliteFactionsAndSettlements() {
     checksCount++;
     if (Number(s.granary_grain) < 0) {
       errors.push(`Settlement ${s.settlement_id} has negative granary grain: ${s.granary_grain}`);
+    }
+    if (hasSettlementLedger) {
+      checksCount++;
+      const ledger = settlementLedgerBySettlement.get(s.settlement_id)
+        || { opening: 0, inflow: 0, outflow: 0, entries: 0 };
+      const expected = ledger.opening + ledger.inflow - ledger.outflow;
+      if (ledger.entries === 0) {
+        errors.push(`Settlement ${s.settlement_id} has no settlement_ledger opening row`);
+      } else if (Math.abs(expected - Number(s.treasury_cash)) > 0.01) {
+        errors.push(
+          `Settlement ${s.settlement_id} treasury ${s.treasury_cash} != ledger expected ${expected} (opening ${ledger.opening}, in ${ledger.inflow}, out ${ledger.outflow})`
+        );
+      }
     }
   }
 
@@ -592,6 +753,155 @@ function auditCampaignClock() {
   };
 }
 
+function auditTradeAndWarehouses() {
+  const errors = [];
+  let checksCount = 0;
+  const tables = new Set(
+    runSqlJson(`SELECT name FROM sqlite_master WHERE type = 'table';`).map(row => row.name)
+  );
+  if (!tables.has('warehouses') || !tables.has('warehouse_stock')) {
+    return { installed: false, passed: true, checksCount: 0, errors, warehouseCount: 0, listingCount: 0, shipmentCount: 0 };
+  }
+
+  const warehouses = runSqlJson(`SELECT * FROM warehouses;`);
+  const stockRows = runSqlJson(`SELECT * FROM warehouse_stock;`);
+  const usage = new Map();
+  for (const row of stockRows) {
+    checksCount++;
+    const qty = Number(row.quantity || 0);
+    if (qty < 0) errors.push(`Warehouse ${row.warehouse_id} item ${row.item_code} has negative stock: ${qty}`);
+    usage.set(row.warehouse_id, (usage.get(row.warehouse_id) || 0) + qty);
+  }
+  for (const warehouse of warehouses) {
+    checksCount++;
+    const capacity = Number(warehouse.capacity || 0);
+    const used = usage.get(warehouse.warehouse_id) || 0;
+    if (capacity <= 0) errors.push(`Warehouse ${warehouse.warehouse_id} has non-positive capacity`);
+    if (used > capacity + 0.01) {
+      errors.push(`Warehouse ${warehouse.warehouse_id} over capacity: used=${used}, capacity=${capacity}`);
+    }
+    if (!['RENTED', 'OWNED'].includes(String(warehouse.ownership_type))) {
+      errors.push(`Warehouse ${warehouse.warehouse_id} has invalid ownership type ${warehouse.ownership_type}`);
+    }
+  }
+
+  if (tables.has('stall_listings')) {
+    for (const row of runSqlJson(`SELECT * FROM stall_listings;`)) {
+      checksCount++;
+      if (Number(row.quantity || 0) < 0) errors.push(`Stall listing ${row.listing_id} has negative quantity`);
+      if (Number(row.unit_price || 0) <= 0) errors.push(`Stall listing ${row.listing_id} has non-positive price`);
+      if (row.market_effect !== undefined) {
+        const effect = Number(row.market_effect || 0);
+        const quantity = Number(row.quantity || 0);
+        if (effect < -0.01) errors.push(`Stall listing ${row.listing_id} has negative market effect ${effect}`);
+        if (row.status === 'ACTIVE' && Math.abs(effect - quantity) > 0.01) {
+          errors.push(`Stall listing ${row.listing_id} market effect ${effect} does not match quantity ${quantity}`);
+        }
+        if (row.status !== 'ACTIVE' && Math.abs(effect) > 0.01) {
+          errors.push(`Stall listing ${row.listing_id} is ${row.status} but still holds market effect ${effect}`);
+        }
+      }
+    }
+  }
+  if (tables.has('npc_market_offers')) {
+    for (const row of runSqlJson(`SELECT * FROM npc_market_offers;`)) {
+      checksCount++;
+      if (Number(row.quantity || 0) < 0) errors.push(`NPC offer ${row.offer_id} has negative quantity`);
+      if (Number(row.unit_price || 0) <= 0) errors.push(`NPC offer ${row.offer_id} has non-positive price`);
+    }
+  }
+  for (const table of ['freight_shipments', 'merchant_shipments']) {
+    if (!tables.has(table)) continue;
+    for (const row of runSqlJson(`SELECT * FROM ${table};`)) {
+      checksCount++;
+      const quantity = Number(row.quantity || 0);
+      const initial = Number(row.initial_quantity || quantity);
+      const spoiled = Number(row.spoiled_quantity || 0);
+      const ambushLoss = Number(row.ambush_loss_quantity || 0);
+      if (quantity < 0) errors.push(`${table} ${row.shipment_id} has negative quantity`);
+      if (spoiled < 0) errors.push(`${table} shipment has negative spoiled quantity`);
+      if (ambushLoss < 0) errors.push(`${table} shipment has negative ambush loss`);
+      if (initial + 0.01 < quantity) errors.push(`${table} shipment delivered ${quantity} above initial ${initial}`);
+      if (quantity + spoiled + ambushLoss > initial + 0.01) {
+        errors.push(`${table} ${row.shipment_id} quantity + spoiled + ambush exceeds initial ${initial}`);
+      }
+      if (table === 'freight_shipments' && row.source_reserved_quantity !== undefined) {
+        const reserved = Number(row.source_reserved_quantity || 0);
+        if (reserved < 0) errors.push(`${table} ${row.shipment_id} has negative source reservation`);
+        if (reserved > initial + 0.01) {
+          errors.push(`${table} ${row.shipment_id} reserved ${reserved} above initial ${initial}`);
+        }
+      }
+      if (table === 'freight_shipments' && row.insured !== undefined) {
+        const premium = Number(row.insurance_premium || 0);
+        const claim = Number(row.insurance_claim || 0);
+        if (premium < 0) errors.push(`${table} ${row.shipment_id} has negative insurance premium`);
+        if (claim < 0) errors.push(`${table} ${row.shipment_id} has negative insurance claim`);
+        if (Number(row.insured) === 0 && claim > 0) {
+          errors.push(`${table} ${row.shipment_id} has a claim without insurance`);
+        }
+      }
+    }
+  }
+  if (tables.has('merchant_routes')) {
+    for (const row of runSqlJson(`SELECT * FROM merchant_routes;`)) {
+      checksCount++;
+      if (Number(row.max_buy_price) >= Number(row.min_sell_price)) {
+        errors.push(`Merchant route ${row.route_id} has buy ceiling >= sell floor`);
+      }
+    }
+  }
+  if (tables.has('merchant_route_stock')) {
+    const warehouseMap = new Map(
+      runSqlJson('SELECT warehouse_id, item_code, quantity FROM warehouse_stock;')
+        .map(row => [`${row.warehouse_id}:${row.item_code}`, Number(row.quantity || 0)])
+    );
+    for (const row of runSqlJson(`SELECT * FROM merchant_route_stock;`)) {
+      checksCount++;
+      const qty = Number(row.quantity || 0);
+      const available = warehouseMap.get(`${row.warehouse_id}:${row.item_code}`) || 0;
+      if (qty < 0) errors.push(`Route stock ${row.route_id}/${row.item_code} is negative`);
+      if (qty > available + 0.01) {
+        errors.push(`Route stock ${row.route_id}/${row.item_code} exceeds warehouse stock`);
+      }
+    }
+  }
+  if (tables.has('settlement_consumption')) {
+    for (const row of runSqlJson(`SELECT * FROM settlement_consumption;`)) {
+      checksCount++;
+      if (Number(row.monthly_demand || 0) < 0) errors.push(`Consumption demand for ${row.item_code} is negative`);
+    }
+  }
+  if (tables.has('settlement_item_endowment')) {
+    for (const row of runSqlJson(`SELECT * FROM settlement_item_endowment;`)) {
+      checksCount++;
+      if (Number(row.supply_score || 0) < 0 || Number(row.demand_score || 0) < 0) {
+        errors.push(`Endowment for ${row.settlement_id}/${row.item_code} is negative`);
+      }
+    }
+  }
+  if (tables.has('settlement_consumption_log')) {
+    for (const row of runSqlJson(`SELECT * FROM settlement_consumption_log;`)) {
+      checksCount++;
+      if (Number(row.consumed || 0) > Number(row.demand || 0) + 0.01) {
+        errors.push(`Consumption log ${row.log_id} consumed more than demand`);
+      }
+      if (Number(row.shortage || 0) < 0) errors.push(`Consumption log ${row.log_id} has negative shortage`);
+    }
+  }
+
+  return {
+    installed: true,
+    passed: errors.length === 0,
+    checksCount,
+    errors,
+    warehouseCount: warehouses.length,
+    listingCount: tables.has('stall_listings') ? runSqlJson(`SELECT COUNT(*) AS c FROM stall_listings;`)[0].c : 0,
+    shipmentCount: (tables.has('freight_shipments') ? runSqlJson(`SELECT COUNT(*) AS c FROM freight_shipments;`)[0].c : 0)
+      + (tables.has('merchant_shipments') ? runSqlJson(`SELECT COUNT(*) AS c FROM merchant_shipments;`)[0].c : 0)
+  };
+}
+
 function runAudit() {
   console.log('====================================================');
   console.log(' ⚡ ThreeKingdoms-AgentEngine: Invariant & State Auditor');
@@ -629,18 +939,20 @@ function runAudit() {
       console.log(`    ✅ Passed: Quantity non-negativity and movement balances verified.`);
     }
 
-    // 3. Double-Entry Journal Audit (if installed)
+    // 3. Double-Entry Journal Audit (required)
     const journalResult = auditDoubleEntryJournal();
     totalChecks += journalResult.checksCount;
+    console.log(`\n[3] DOUBLE-ENTRY JOURNAL (Dr/Cr Parity & Completeness):`);
+    console.log(`    Journal Sets Checked  : ${journalResult.entriesCount}`);
     if (journalResult.installed) {
-      console.log(`\n[3] DOUBLE-ENTRY JOURNAL (Dr/Cr Parity):`);
-      console.log(`    Journal Sets Checked  : ${journalResult.entriesCount}`);
-      if (!journalResult.passed) {
-        allPassed = false;
-        journalResult.errors.forEach(e => { console.error(`    ❌ ${e}`); allErrors.push(e); });
-      } else {
-        console.log(`    ✅ Passed: Every transaction debits == credits exactly.`);
-      }
+      console.log(`    Cashflow Without Pair : ${journalResult.orphanCashflow}`);
+      console.log(`    Journal Without Cash  : ${journalResult.orphanJournal}`);
+    }
+    if (!journalResult.passed) {
+      allPassed = false;
+      journalResult.errors.forEach(e => { console.error(`    ❌ ${e}`); allErrors.push(e); });
+    } else {
+      console.log(`    ✅ Passed: Every cashflow row has a balanced Dr/Cr journal pair.`);
     }
 
     // 4. Projection Synchronization Audit
@@ -675,7 +987,9 @@ function runAudit() {
     if (factionResult.installed && (factionResult.factionCount > 0 || factionResult.settlementCount > 0)) {
       console.log(`\n[${journalResult.installed ? 6 : 5}] GRAND STRATEGY INVARIANTS (Factions & Settlements):`);
       console.log(`    Factions Verified     : ${factionResult.factionCount}`);
+      console.log(`    World Treasury Ledger : ${factionResult.passed ? 'opening + flows match' : 'drift detected'}`);
       console.log(`    Settlements Verified  : ${factionResult.settlementCount}`);
+      console.log(`    Settlement Ledger     : ${factionResult.passed ? 'opening + flows match' : 'drift detected'}`);
       if (factionResult.progCount > 0) {
         console.log(`    Personal Assets Checked: ${factionResult.progCount}`);
       }
@@ -722,6 +1036,22 @@ function runAudit() {
       console.log(`    ✅ Passed: Game date is plausible and aligned with turn history.`);
     }
 
+    // 9. Trade, Warehouse & Shipment Audit
+    const tradeResult = auditTradeAndWarehouses();
+    totalChecks += tradeResult.checksCount;
+    if (tradeResult.installed) {
+      console.log(`\n[${journalResult.installed ? 9 : 8}] TRADE, WAREHOUSE & SHIPMENT INVARIANTS:`);
+      console.log(`    Warehouses Checked    : ${tradeResult.warehouseCount}`);
+      console.log(`    Stall Listings        : ${tradeResult.listingCount}`);
+      console.log(`    Shipments Checked     : ${tradeResult.shipmentCount}`);
+      if (!tradeResult.passed) {
+        allPassed = false;
+        tradeResult.errors.forEach(e => { console.error(`    ❌ ${e}`); allErrors.push(e); });
+      } else {
+        console.log(`    ✅ Passed: Capacity, non-negative stock, offers and shipment loss are bounded.`);
+      }
+    }
+
     console.log('\n====================================================');
     if (allPassed) {
       console.log(` 🟢 AUDIT VERDICT: PASSED`);
@@ -755,5 +1085,6 @@ module.exports = {
   auditSqliteFactionsAndSettlements,
   auditCivilianMaidensAndLifeSim,
   auditCampaignClock,
+  auditTradeAndWarehouses,
   runAudit
 };

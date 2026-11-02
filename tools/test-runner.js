@@ -166,7 +166,9 @@ function main() {
         const sandboxDb = prepareSandbox(suite);
         process.stdout.write(`>>> [modern] ${suite} ... `);
         const res = runSuite(suite, process.execPath, [TSX_CLI, path.join(TESTS_DIR, suite)], {
-          SIM_DB_PATH: sandboxDb
+          SIM_DB_PATH: sandboxDb,
+          // Death/NG+ suites must not write the shared saves/legacy.json.
+          SIM_LEGACY_PATH: path.join(path.dirname(sandboxDb), 'legacy.json')
         });
         results.push(res);
         console.log(`${res.status} (${(res.durationMs / 1000).toFixed(1)}s)`);

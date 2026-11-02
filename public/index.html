@@ -57,8 +57,8 @@
       <button class="ui-btn ui-btn--secondary ui-btn--sm" id="btn-main-menu">
         Hành Dinh
       </button>
-      <button class="ui-btn ui-btn--accent ui-btn--sm" id="btn-switch-instance" onclick="TitleScreenUI.open()" title="Chuyển đổi hoặc khởi tạo phiên chơi mới">
-        ⇄ Đổi Phiên
+      <button class="ui-btn ui-btn--accent ui-btn--sm" id="btn-switch-instance" onclick="TitleScreenUI.open()" title="Tạo phiên mới hoặc tiếp tục phiên hiện tại">
+        ⇄ Phiên Chơi
       </button>
       <div class="header-title-block">
         <span class="main-title" title="TAM QUỐC CHÍ • LƯƠNG THỊ PHONG VÂN LỤC">TAM QUỐC CHÍ • LƯƠNG THỊ PHONG VÂN LỤC</span>
@@ -81,7 +81,7 @@
         <span class="chip-val cyan-text" id="top-val-grain">9.60 Thạch</span>
       </div>
       <div class="metric-chip">
-        <span class="chip-label">Giá Trị Kho:</span>
+        <span class="chip-label">Giá Trị Túi:</span>
         <span class="chip-val purple-text" id="top-val-inv">47,578 Quan</span>
       </div>
       <div class="metric-chip">
@@ -129,13 +129,18 @@
           </div>
 
           <button class="ui-btn ui-btn--ghost ui-btn--sm" id="btn-explore-poi" onclick="exploreCurrentPoi()"
-                  title="Dành một ngày khảo sát POI hiện tại; danh vọng càng cao càng dễ tìm vật phẩm hiếm">
-            Khảo Sát
+                  title="Tản bộ quanh địa điểm hiện tại trong thành (tốn 1 ngày); muốn đi xa hơn hãy mở Dã Ngoại">
+            Tản Bộ
           </button>
 
           <button class="ui-btn ui-btn--ghost ui-btn--sm" id="btn-market-pulse" onclick="openMarketPulse()"
                   title="Xem tồn kho, nhu cầu và 12 mốc giá gần nhất của chợ địa phương">
             Chợ &amp; Giá
+          </button>
+
+          <button class="ui-btn ui-btn--ghost ui-btn--sm" id="btn-onboarding" onclick="window.OnboardingUI && window.OnboardingUI.open(true)"
+                  title="Hướng dẫn vòng ngày, chi phí hành động, chợ và lưu trữ">
+            ? Hướng Dẫn
           </button>
 
           <!-- World Map / Dư Đồ Tam Quốc Button -->
@@ -204,10 +209,15 @@
               <span id="txt-btn-courier">Phi Thư</span>
               <span class="courier-badge-count" id="courier-badge-count">0</span>
             </button>
-            <!-- Strategic Turn Progression Trigger -->
-            <button class="btn-turn-dock" id="btn-turn-dock" onclick="openTurnAdvanceModal()" title="Qua Tháng / Kết Thúc Tháng & Mô Phỏng Thế Giới">
+            <!-- Quest Log Trigger -->
+            <button class="quest-dock" id="btn-quest-dock" onclick="QuestUI.open()" title="Nhật Ký Nhiệm Vụ / Quest Log">
+              <span class="hub-seal-sub"><svg class="ui-icon"><use href="#icon-scroll"></use></svg></span>
+              <span>Nhiệm Vụ</span>
+            </button>
+            <!-- Day Progression Trigger -->
+            <button class="btn-turn-dock" id="btn-turn-dock" onclick="advanceNextDayNow()" title="Ngày Tiếp Theo / Tiến 1 Ngày (tự động chốt tháng khi sang mùng 1)">
               <span class="hub-seal-sub turn-seal"><svg class="ui-icon"><use href="#icon-hourglass"></use></svg></span>
-              <span id="txt-btn-turn-dock">Qua Tháng</span>
+              <span id="txt-btn-turn-dock">Ngày Tiếp</span>
             </button>
           </div>
         </div>
@@ -275,15 +285,15 @@
             </div>
             <div class="protagonist-title" id="protagonist-title">Bố Y Thường Dân • Khởi Đầu Tay Trắng</div>
             <div class="protagonist-career-badge-row">
-              <span class="career-stage-badge stage-pauper" id="protagonist-career-badge" onclick="if(window.GrandCommandHubUI){GrandCommandHubUI.open('career');}" title="Nhấn để xem Hành Trình Cuộc Đời & Ngũ Đại Phẩm Lộ">
+              <span class="career-stage-badge stage-pauper" id="protagonist-career-badge" onclick="event.stopPropagation(); if(window.GrandCommandHubUI){GrandCommandHubUI.open('career');}" title="Nhấn để xem Hành Trình Cuộc Đời & Ngũ Đại Phẩm Lộ">
                 <svg class="ui-icon"><use href="#icon-sprout"></use></svg> Bố Y Khởi Thủy
               </span>
               <div class="career-mini-icons" id="protagonist-paths-indicator" title="Tiến độ Ngũ Đại Phẩm Lộ: Thợ, Thương, Võ, Sĩ, Tông Tộc">
-                <span class="path-icon-dot" id="dot-path-artisan" title="Bách Nghệ / Thợ Cả" onclick="if(window.GrandCommandHubUI){GrandCommandHubUI.open('gear');}"><svg class="ui-icon"><use href="#icon-hammer"></use></svg></span>
-                <span class="path-icon-dot" id="dot-path-merchant" title="Hành Thương / Cự Phú" onclick="if(window.GrandCommandHubUI){GrandCommandHubUI.open('caravan');}"><svg class="ui-icon"><use href="#icon-coin"></use></svg></span>
-                <span class="path-icon-dot" id="dot-path-martial" title="Võ Hiệp / Quân Lữ" onclick="if(window.GrandCommandHubUI){GrandCommandHubUI.open('duel');}"><svg class="ui-icon"><use href="#icon-sword"></use></svg></span>
-                <span class="path-icon-dot" id="dot-path-scholar" title="Sĩ Đồ / Quân Sư" onclick="if(window.GrandCommandHubUI){GrandCommandHubUI.open('career');}"><svg class="ui-icon"><use href="#icon-scroll"></use></svg></span>
-                <span class="path-icon-dot" id="dot-path-lineage" title="Tông Tộc / Thế Gia" onclick="if(window.LineageFamilyUI){LineageFamilyUI.open('courtship');}else if(window.GrandCommandHubUI){GrandCommandHubUI.open('family');}"><svg class="ui-icon"><use href="#icon-users"></use></svg></span>
+                <span class="path-icon-dot" id="dot-path-artisan" title="Bách Nghệ / Thợ Cả" onclick="event.stopPropagation(); if(window.GrandCommandHubUI){GrandCommandHubUI.open('gear');}"><svg class="ui-icon"><use href="#icon-hammer"></use></svg></span>
+                <span class="path-icon-dot" id="dot-path-merchant" title="Hành Thương / Cự Phú" onclick="event.stopPropagation(); if(window.GrandCommandHubUI){GrandCommandHubUI.open('caravan');}"><svg class="ui-icon"><use href="#icon-coin"></use></svg></span>
+                <span class="path-icon-dot" id="dot-path-martial" title="Võ Hiệp / Quân Lữ" onclick="event.stopPropagation(); if(window.GrandCommandHubUI){GrandCommandHubUI.open('duel');}"><svg class="ui-icon"><use href="#icon-sword"></use></svg></span>
+                <span class="path-icon-dot" id="dot-path-scholar" title="Sĩ Đồ / Quân Sư" onclick="event.stopPropagation(); if(window.GrandCommandHubUI){GrandCommandHubUI.open('career');}"><svg class="ui-icon"><use href="#icon-scroll"></use></svg></span>
+                <span class="path-icon-dot" id="dot-path-lineage" title="Tông Tộc / Thế Gia" onclick="event.stopPropagation(); if(window.LineageFamilyUI){LineageFamilyUI.open('courtship');}else if(window.GrandCommandHubUI){GrandCommandHubUI.open('family');}"><svg class="ui-icon"><use href="#icon-users"></use></svg></span>
               </div>
             </div>
           </div>
@@ -392,23 +402,25 @@
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- 1. Key NPC Relationships Card (RELATIONS.md) -->
-      <div class="deck-card relations-card">
-        <div class="deck-card-header">
-          <div class="deck-title-group">
-            <span class="deck-title" id="relations-card-title">Quan Hệ Hào Kiệt</span>
+        <!-- Relationship network, folded into the protagonist sheet -->
+        <div class="protagonist-relations" id="protagonist-relations">
+          <button class="relations-toggle" type="button" id="relations-toggle"
+                  aria-expanded="true" aria-controls="relations-body"
+                  onclick="toggleProtagonistRelations()">
+            <span class="relations-seal" aria-hidden="true">緣</span>
+            <span class="relations-toggle-title" id="relations-card-title">Quan Hệ Hào Kiệt</span>
+            <span class="relations-count" id="relations-card-count">0</span>
+            <span class="relations-chevron" aria-hidden="true"></span>
+          </button>
+          <div class="relations-body" id="relations-body">
+            <div class="relations-sub-hint" id="relations-card-hint">
+              Tín nhiệm &amp; hảo cảm của các nhân sĩ trọng yếu (-100 đến +100).
+            </div>
+            <div class="relations-progress-list" id="relations-progress-list">
+              <!-- Dynamically populated by renderRelations -->
+            </div>
           </div>
-          <span class="deck-deadline" id="relations-card-badge">Tín Nhiệm / Hảo Cảm</span>
-        </div>
-        <div class="relations-sub-hint" id="relations-card-hint">
-          Mức độ tín nhiệm & hảo cảm của các nhân sĩ trọng yếu đối với Lương Diễn (-100 đến +100).
-        </div>
-
-        <!-- Progress Bars List -->
-        <div class="relations-progress-list" id="relations-progress-list">
-          <!-- Dynamically populated by renderRelations -->
         </div>
       </div>
 
@@ -416,30 +428,30 @@
       <div class="deck-card tabs-card">
         <div class="deck-tabs-header">
           <button class="deck-tab-btn" data-subtab="subtab-inventory" onclick="switchDeckTab('subtab-inventory')">
-            Kho Xưởng
+            Túi Cá Nhân
           </button>
-          <button class="deck-tab-btn" data-subtab="subtab-npcs" onclick="switchDeckTab('subtab-npcs')">
+          <button class="deck-tab-btn active" data-subtab="subtab-npcs" onclick="switchDeckTab('subtab-npcs')">
             Gia Đinh
           </button>
-          <button class="deck-tab-btn active" data-subtab="subtab-ledger" onclick="switchDeckTab('subtab-ledger')">
-            Sổ Cái TXN
-          </button>
-          <button class="deck-tab-btn" data-subtab="subtab-agent-log" onclick="switchDeckTab('subtab-agent-log')">
-            Nhật Ký AI
+          <button class="deck-tab-btn" data-subtab="subtab-log" onclick="switchDeckTab('subtab-log')">
+            Nhật Ký
           </button>
         </div>
 
-        <!-- SUBTAB 1: KHO XƯỞNG (INVENTORY) -->
+        <!-- SUBTAB 1: PERSONAL BAG OF THE CURRENT SETTLEMENT -->
         <div id="subtab-inventory" class="deck-tab-pane">
+          <div class="deck-bag-summary">
+            <span class="deck-bag-location" id="deck-bag-location">Túi cá nhân</span>
+            <span class="deck-bag-count" id="deck-bag-count">0 vật phẩm</span>
+          </div>
           <div class="deck-table-container">
             <table class="deck-mini-table">
               <thead>
                 <tr>
-                  <th>Mã SKU</th>
-                  <th>Mô tả</th>
+                  <th id="th-desc">Vật Phẩm</th>
                   <th class="num-col" id="th-qty">Số Lượng</th>
-                  <th class="num-col">Đơn giá</th>
-                  <th style="text-align: center;">Thao tác</th>
+                  <th class="num-col" id="th-price">Giá Trị</th>
+                  <th class="deck-action-col" id="th-action">Thao tác</th>
                 </tr>
               </thead>
               <tbody id="deck-inventory-tbody">
@@ -449,24 +461,34 @@
           </div>
         </div>
 
-        <!-- SUBTAB 2: LƯƠNG NHÂN (NPCS & WORKSHOP) -->
-        <div id="subtab-npcs" class="deck-tab-pane">
+        <!-- SUBTAB 2: RETAINERS (wages are managed inside Sản Nghiệp) -->
+        <div id="subtab-npcs" class="deck-tab-pane active">
+          <div class="deck-panel-toolbar">
+            <span class="deck-panel-title">Gia đinh trực thuộc</span>
+            <button class="ui-btn ui-btn--ghost ui-btn--sm"
+                    onclick="if(window.EnterpriseUI){EnterpriseUI.openEnterpriseModal('owner')}">
+              Sản Nghiệp
+            </button>
+          </div>
           <div class="deck-npcs-list" id="deck-npcs-list">
             <!-- Dynamically populated from SQLite -->
           </div>
         </div>
 
-        <!-- SUBTAB 3: SỔ CÁI DÒNG TIỀN (TXN LEDGER) -->
-        <div id="subtab-ledger" class="deck-tab-pane active">
+        <!-- SUBTAB 3: LEDGER LOG (cashflow ledger lives in the log section) -->
+        <div id="subtab-log" class="deck-tab-pane">
+          <div class="deck-log-summary">
+            <div class="deck-log-balance">
+              <span>Số dư sau giao dịch</span>
+              <strong id="deck-log-balance">0 Quan</strong>
+            </div>
+            <div class="deck-log-flow">
+              <span id="deck-log-inflow">Thu +0</span>
+              <span id="deck-log-outflow">Chi -0</span>
+            </div>
+          </div>
           <div class="deck-transactions-list" id="deck-transactions-list">
             <!-- Dynamically populated from SQLite -->
-          </div>
-        </div>
-
-        <!-- SUBTAB 4: NHẬT KÝ MÔ PHỎNG AGENT (AI SIMULATION FEED) -->
-        <div id="subtab-agent-log" class="deck-tab-pane">
-          <div class="deck-agent-log-list" id="deck-agent-log-list">
-            <!-- Dynamically populated from /api/agent/logs -->
           </div>
         </div>
       </div>
@@ -478,6 +500,7 @@
     <div class="modal-card market-pulse-card">
       <div class="modal-header">
         <h3 class="modal-title">Chợ &amp; Giá Địa Phương</h3>
+        <button class="ui-btn ui-btn--primary ui-btn--sm" onclick="window.MarketStallModal?.open('stall')">Quầy Bán</button>
         <button class="ui-btn ui-btn--ghost ui-btn--icon" onclick="closeMarketPulse()">&times;</button>
       </div>
       <div class="modal-body" id="market-pulse-body">

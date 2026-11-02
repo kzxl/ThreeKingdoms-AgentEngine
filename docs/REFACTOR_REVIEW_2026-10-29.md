@@ -1,5 +1,9 @@
 # Refactor Review
 
+> **Status 2026-10-31:** all counts in this 2026-10-29 review are historical
+> (for example 1,358 invariants). Current gate: 50/50 suites, 28 contracts,
+> 8 write smokes and 1,493 invariants; see `ARCHITECTURE.md` §6.4.
+
 Date: 2026-10-29. Scope: the whole `E:\15. Other\Simulation` repo after waves 1–3 of
 `docs/LOGIC_DUPLICATION_AUDIT_2026-10-29.md` and waves 1–1.5 of the refactor plan.
 Every number below was measured at the working HEAD, not copied from older docs.

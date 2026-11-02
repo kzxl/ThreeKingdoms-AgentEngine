@@ -9,6 +9,7 @@
  */
 
 import { DatabaseService } from '../../core/database';
+import { worldPriceMultiplier } from '../../shared/world-price';
 
 export type SupplyState = 'SURPLUS' | 'NORMAL' | 'DEFICIT';
 
@@ -513,7 +514,7 @@ export class RegionalMarketService {
     return 1;
   }
 
-  public calculateSettlementPrice(settlementId: string, itemCode: string): number {
+  public calculateSettlementPrice(settlementId: string, itemCode: string, gameDate?: string): number {
     const item = this.db.queryOne<any>(
       'SELECT baseline_peace_price, current_market_price, category FROM master_items WHERE item_code = ?;',
       [itemCode]
@@ -525,23 +526,37 @@ export class RegionalMarketService {
 
     const basePrice = Number(item.current_market_price || item.baseline_peace_price || 50);
     const specializationMultiplier = this.getSpecializationMultiplier(settlementId, itemCode);
-
-    const { multiplier: crisisMult, crisisActive } = this.getCrisisCommodityMultiplier(
-      settlementId,
-      itemCode,
-      item.category
+    const date = gameDate
+      || this.db.queryOne<{ d: string }>('SELECT "current_date" AS d FROM campaign_meta LIMIT 1;')?.d
+      || '184-05-02';
+    const state = this.db.queryOne<{ stock: number; demand: number }>(
+      'SELECT stock, demand FROM settlement_market_state WHERE settlement_id = ? AND item_code = ? LIMIT 1;',
+      [settlementId, itemCode]
     );
-
-    let finalPrice: number;
-    if (crisisActive) {
-      // During active crisis, crisis demand overrides local abundance
-      const effectiveBase = specializationMultiplier < 1.0 ? 1.0 : specializationMultiplier;
-      finalPrice = Math.round(basePrice * effectiveBase * crisisMult);
-    } else {
-      finalPrice = Math.round(basePrice * specializationMultiplier);
+    const stock = Number(state?.stock || 100);
+    const demand = Number(state?.demand || 100);
+    const stockMultiplier = Math.max(0.5, Math.min(2, Math.sqrt(demand / Math.max(1, stock))));
+    let endowment: { supply_score: number; demand_score: number } | undefined;
+    try {
+      endowment = this.db.queryOne<{ supply_score: number; demand_score: number }>(
+        'SELECT supply_score, demand_score FROM settlement_item_endowment WHERE settlement_id = ? AND item_code = ? LIMIT 1;',
+        [settlementId, itemCode]
+      );
+    } catch {
+      // Minimal databases before migration 073 have no endowment table.
+      endowment = undefined;
     }
-
-    return Math.max(1, finalPrice);
+    const endowmentMultiplier = endowment
+      ? Math.max(0.6, Math.min(1.6, Math.sqrt(Number(endowment.demand_score) / Math.max(1, Number(endowment.supply_score)))))
+      : 1;
+    // Same clamp and composition as SettlementMarketService.getLocalMultiplier;
+    // verify-market-price-parity pins the two together.
+    const localMultiplier = Math.max(
+      0.5,
+      Math.min(2, specializationMultiplier * stockMultiplier * endowmentMultiplier)
+    );
+    const worldMultiplier = worldPriceMultiplier(this.db, itemCode, date, settlementId);
+    return Math.max(1, Math.round(basePrice * localMultiplier * worldMultiplier));
   }
 
   /**

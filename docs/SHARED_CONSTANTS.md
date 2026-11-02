@@ -1,7 +1,8 @@
 # Shared Constants
 
-Date: 2026-10-29. Goal: every cross-cutting definition (currency unit, grain unit, calendar,
-fatigue cap) lives in **one data file**, not scattered literals.
+Date: 2026-10-29; skill curve and feature-owned constants clarified 2026-10-31. Goal: every
+cross-cutting definition (currency unit, grain unit, calendar, fatigue cap, skill EXP curve)
+lives in **one data file**, not scattered literals.
 
 ## 1. Single source
 
@@ -18,7 +19,12 @@ fatigue cap) lives in **one data file**, not scattered literals.
     "dailyFatigueRecovery": 1,
     "fallbackDate": "184-05-02"
   },
-  "fatigue": { "max": 100 }
+  "fatigue": { "max": 100 },
+  "skillProgression": {
+    "expCurve": [40, 90, 180, 320],
+    "gainMultiplier": [1, 0.8, 0.6, 0.4],
+    "maxTier": 5
+  }
 }
 ```
 
@@ -39,6 +45,8 @@ without the client (or vice versa) fails `npm run verify`.
   `FATIGUE_MAX`, `FALLBACK_DATE`.
 - `engine/date-utils.js`: 30-day months, 12 months/year, fallback date, day clamping.
 - `src/shared/game-clock.ts`: default fallback date.
+- `src/shared/action-time.ts`: fatigue cap for the server-side action gate.
+- `src/shared/skill-exp.ts`, `engine/skill-exp.js`: shared EXP curve and tier multipliers.
 - `public/js/config.js`: `CURRENCY_UNIT`, `GRAIN_UNIT`, `formatMoney()`, `formatGrain()`; the
   header uses the helpers (`6.586 Quan` / `9,60 Thạch` in VI, `6,586 quan` / `9.60 piculs` in EN).
 
@@ -53,8 +61,10 @@ without the client (or vice versa) fails `npm run verify`.
 
 Do **not** move feature-owned tables here: `engine/action-policy.js` (action costs),
 `CANONICAL_LABOR_SHIFTS` (labor shifts), `GUARD_TIER_CONFIGS` (caravan guards),
-`SETTLEMENT_PROFILES` (regional market). They each have a single owner but belong to their domain,
-not to global constants.
+`SETTLEMENT_PROFILES` (regional market), `engine/business-economics.js` (tier base
+revenue and per-worker revenue) and `engine/career-paths.js` (path scores and
+modifiers). They each have a single owner but belong to their domain, not to
+global constants.
 
 ## 4. Why not `.env`
 

@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS campaign_meta (
     start_date TEXT NOT NULL DEFAULT '184-02-01',
     current_date TEXT NOT NULL DEFAULT '184-02-01',
     active_turn INTEGER NOT NULL DEFAULT 0,
+    current_phase INTEGER NOT NULL DEFAULT 0,
     rules_version TEXT NOT NULL DEFAULT '1.1.0',
     random_seed INTEGER NOT NULL DEFAULT 1840201,
     status TEXT NOT NULL DEFAULT 'ACTIVE',
@@ -19,7 +20,70 @@ CREATE TABLE IF NOT EXISTS campaign_meta (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 1b. Deterministic Identifier Sequences (per id scope)
+-- 1a. Campaign Legacy (NG+ carry-over)
+CREATE TABLE IF NOT EXISTS campaign_legacy (
+    legacy_id TEXT PRIMARY KEY,
+    campaign_id TEXT NOT NULL,
+    generation INTEGER NOT NULL DEFAULT 1,
+    fame INTEGER NOT NULL DEFAULT 0,
+    net_worth INTEGER NOT NULL DEFAULT 0,
+    settlements INTEGER NOT NULL DEFAULT 0,
+    outcome TEXT NOT NULL DEFAULT 'VICTORIOUS',
+    title_vi TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 1b. DB-driven POI scene registry (populated by migration 033)
+CREATE TABLE IF NOT EXISTS master_poi_scenes (
+    poi_name TEXT PRIMARY KEY,
+    location_id TEXT NOT NULL,
+    scene_key TEXT NOT NULL
+);
+
+-- 1d. Quest engine (definitions seeded by migration 034)
+CREATE TABLE IF NOT EXISTS master_quests (
+    quest_id TEXT PRIMARY KEY,
+    title_vi TEXT NOT NULL,
+    title_en TEXT NOT NULL,
+    path_code TEXT NOT NULL,
+    min_stage INTEGER NOT NULL DEFAULT 1,
+    description_vi TEXT,
+    description_en TEXT,
+    reward_json TEXT DEFAULT '{}',
+    sort_order INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS master_quest_steps (
+    step_id TEXT PRIMARY KEY,
+    quest_id TEXT NOT NULL,
+    step_index INTEGER NOT NULL,
+    title_vi TEXT NOT NULL,
+    title_en TEXT NOT NULL,
+    stat TEXT NOT NULL,
+    dc INTEGER NOT NULL,
+    days_cost INTEGER NOT NULL DEFAULT 2,
+    success_vi TEXT,
+    success_en TEXT,
+    failure_vi TEXT,
+    failure_en TEXT,
+    reward_json TEXT DEFAULT '{}',
+    skill_code TEXT,
+    UNIQUE(quest_id, step_index)
+);
+
+CREATE TABLE IF NOT EXISTS player_quests (
+    player_id TEXT NOT NULL,
+    quest_id TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'ACTIVE',
+    current_step INTEGER NOT NULL DEFAULT 0,
+    attempts INTEGER NOT NULL DEFAULT 0,
+    started_date TEXT,
+    completed_date TEXT,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY(player_id, quest_id)
+);
+
+-- 1e. Deterministic Identifier Sequences (per id scope)
 CREATE TABLE IF NOT EXISTS id_sequence (
     scope      TEXT PRIMARY KEY,
     next_value INTEGER NOT NULL DEFAULT 0
@@ -41,6 +105,14 @@ CREATE TABLE IF NOT EXISTS player_state (
     com_attr INTEGER NOT NULL DEFAULT 50,
     log_attr INTEGER NOT NULL DEFAULT 50,
     cra_attr INTEGER NOT NULL DEFAULT 50,
+    int_exp INTEGER NOT NULL DEFAULT 0,
+    war_exp INTEGER NOT NULL DEFAULT 0,
+    ldr_exp INTEGER NOT NULL DEFAULT 0,
+    pol_exp INTEGER NOT NULL DEFAULT 0,
+    dip_exp INTEGER NOT NULL DEFAULT 0,
+    com_exp INTEGER NOT NULL DEFAULT 0,
+    log_exp INTEGER NOT NULL DEFAULT 0,
+    cra_exp INTEGER NOT NULL DEFAULT 0,
     liquid_cash INTEGER NOT NULL DEFAULT 15000 CHECK (liquid_cash >= 0),
     safe_cash INTEGER NOT NULL DEFAULT 0 CHECK (safe_cash >= 0),
     strategic_grain REAL NOT NULL DEFAULT 0.0 CHECK (strategic_grain >= 0),
@@ -52,7 +124,9 @@ CREATE TABLE IF NOT EXISTS player_state (
     fame INTEGER NOT NULL DEFAULT 500 CHECK (fame >= 0),
     credibility INTEGER NOT NULL DEFAULT 50 CHECK (credibility >= 0 AND credibility <= 100),
     virtue INTEGER NOT NULL DEFAULT 50 CHECK (virtue >= 0 AND virtue <= 100),
-    militia INTEGER NOT NULL DEFAULT 0 CHECK (militia >= 0)
+    militia INTEGER NOT NULL DEFAULT 0 CHECK (militia >= 0),
+    portrait_url TEXT,
+    illustration_url TEXT
 );
 
 -- 3. Player Skills Ladder
@@ -63,6 +137,47 @@ CREATE TABLE IF NOT EXISTS player_skills (
     current_exp INTEGER NOT NULL DEFAULT 0,
     max_exp INTEGER NOT NULL DEFAULT 40,
     notes TEXT
+);
+
+-- 3b. Structured skill effects (seeded by migration 036)
+CREATE TABLE IF NOT EXISTS master_skill_effects (
+    skill_code TEXT NOT NULL,
+    tier INTEGER NOT NULL,
+    effect_type TEXT NOT NULL,
+    value REAL NOT NULL,
+    PRIMARY KEY (skill_code, tier, effect_type)
+);
+
+-- 3c. Skill perks (seeded by migration 037)
+CREATE TABLE IF NOT EXISTS master_perks (
+    perk_code TEXT PRIMARY KEY,
+    skill_code TEXT NOT NULL,
+    tier INTEGER NOT NULL,
+    name_vi TEXT NOT NULL,
+    name_en TEXT NOT NULL,
+    description_vi TEXT,
+    description_en TEXT,
+    effect_type TEXT NOT NULL,
+    value REAL NOT NULL,
+    UNIQUE(skill_code, tier)
+);
+
+CREATE TABLE IF NOT EXISTS player_perks (
+    perk_code TEXT PRIMARY KEY,
+    chosen_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 3d. Player talents (seeded by migration 038)
+CREATE TABLE IF NOT EXISTS player_talents (
+    talent_code TEXT PRIMARY KEY,
+    chosen_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS master_talent_effects (
+    talent_code TEXT NOT NULL,
+    effect_type TEXT NOT NULL,
+    value REAL NOT NULL,
+    PRIMARY KEY (talent_code, effect_type)
 );
 
 -- 4. Single-Entry Cash Flow Log (Running balance cache)
@@ -100,6 +215,17 @@ CREATE TABLE IF NOT EXISTS inventory_items (
     quantity REAL NOT NULL CHECK (quantity >= 0),
     unit_cost_basis INTEGER NOT NULL DEFAULT 0 CHECK (unit_cost_basis >= 0),
     location TEXT NOT NULL DEFAULT 'Zhuo Workshop'
+);
+
+-- 6b. Per-city personal bag. inventory_items remains the aggregate store;
+-- migration 084 adds the mirror triggers.
+CREATE TABLE IF NOT EXISTS player_bag_by_location (
+    location_id TEXT NOT NULL,
+    item_code TEXT NOT NULL,
+    quantity REAL NOT NULL DEFAULT 0 CHECK (quantity >= 0),
+    unit_cost_basis INTEGER NOT NULL DEFAULT 0,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (location_id, item_code)
 );
 
 -- 7. Physical Stock Movements (MOV Ledger)
@@ -157,6 +283,7 @@ CREATE TABLE IF NOT EXISTS turn_log (
 CREATE TABLE IF NOT EXISTS npc_state (
     npc_id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
+    age INTEGER NOT NULL DEFAULT 30,
     loyalty INTEGER NOT NULL DEFAULT 75 CHECK (loyalty >= 0 AND loyalty <= 100),
     morale INTEGER NOT NULL DEFAULT 80 CHECK (morale >= 0 AND morale <= 100),
     fatigue INTEGER NOT NULL DEFAULT 0 CHECK (fatigue >= 0 AND fatigue <= 100),
@@ -177,6 +304,8 @@ CREATE TABLE IF NOT EXISTS npc_state (
     management_exp INTEGER NOT NULL DEFAULT 0,
     craft_exp INTEGER NOT NULL DEFAULT 0,
     is_alive INTEGER NOT NULL DEFAULT 1,
+    portrait_url TEXT,
+    illustration_url TEXT,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -191,6 +320,14 @@ CREATE TABLE IF NOT EXISTS npc_skills (
     notes TEXT,
     PRIMARY KEY (npc_id, skill_code),
     FOREIGN KEY(npc_id) REFERENCES npc_state(npc_id)
+);
+
+-- 12b. NPC Perks (deterministic auto-selection per reached tier)
+CREATE TABLE IF NOT EXISTS npc_perks (
+    npc_id TEXT NOT NULL,
+    perk_code TEXT NOT NULL,
+    chosen_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (npc_id, perk_code)
 );
 
 -- 13. Businesses & Autonomous Enterprise Facilities

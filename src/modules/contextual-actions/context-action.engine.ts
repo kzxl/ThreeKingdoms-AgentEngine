@@ -21,6 +21,7 @@ import { quoteFromReference } from '../../shared/market-quote';
 import { worldPriceMultiplier } from '../../shared/world-price';
 import { SettlementMarketService } from '../economy/settlement-market.service';
 import { LOC_TO_NODE_MAP } from '../ecology-logistics/spatial-registry';
+import { SkillService } from '../progression/skill.service';
 
 export type ActionPillar =
   | 'KIZUNA_SOCIAL'
@@ -133,13 +134,24 @@ export class ContextActionEngine {
 
     switch (subLocation) {
       case 'Vườn Đào':
+      case 'Tư Trạch Vườn Đào':
         return this.generatePeachGardenChoices(liquidCash, fatigue, leathQty, bamQty, gameDate);
 
       case 'Chợ Đông Môn':
         return this.generateMarketplaceChoices(liquidCash, fatigue, saltQty, grainQty, matQty, gameDate);
 
       case 'Xưởng Lương Thị':
+      case 'Thiết Điếm Trác Huyện':
         return this.generateWorkshopChoices(liquidCash, fatigue, bamQty, leathQty, matQty, shieldQty, gameDate);
+
+      case 'Tửu Quán Trác Huyện':
+        return this.generateMarketplaceChoices(liquidCash, fatigue, saltQty, grainQty, matQty, gameDate);
+
+      case 'Mã Xa Dịch Trạm':
+        return this.generateMarketplaceChoices(liquidCash, fatigue, saltQty, grainQty, matQty, gameDate);
+
+      case 'Lôi Đài Giáo Trường':
+        return this.generateMilitaryCampChoices(liquidCash, fatigue, grainQty, shieldQty, gameDate);
 
       case 'Quảng Tông Quân Doanh':
         return this.generateMilitaryCampChoices(liquidCash, fatigue, grainQty, shieldQty, gameDate);
@@ -182,6 +194,18 @@ export class ContextActionEngine {
       case 'Thành Đô Ích Châu Phủ':
         return this.generateChengduChoices(liquidCash, fatigue, gameDate);
 
+      // Three Kingdoms citadels that previously collapsed into the Zhuo generic.
+      case 'Uyển Thành Nha Môn':
+      case 'Hoài Nam Ngụy Đế Cung':
+        return this.generateXuchangChoices(liquidCash, fatigue, gameDate);
+
+      case 'Thượng Đảng Trọng Trấn':
+      case 'Tây Lương Tướng Phủ':
+        return this.generateMilitaryCampChoices(liquidCash, fatigue, grainQty, shieldQty, gameDate);
+
+      case 'Giao Châu Thái Thú Phủ':
+        return this.generateJianyeChoices(liquidCash, fatigue, gameDate);
+
       default:
         return this.generateGenericChoices(subLocation, liquidCash, fatigue, gameDate);
     }
@@ -194,13 +218,20 @@ export class ContextActionEngine {
     }
     const node = LOC_TO_NODE_MAP[this.location] || this.location;
     const localMultiplier = SettlementMarketService.forDatabase(this.db).getLocalMultiplier(node, itemCode);
-    return quoteFromReference(
+    const quote = quoteFromReference(
       item.price,
       this.fame,
       itemCode,
       worldPriceMultiplier(this.db, itemCode, this.gameDate),
       localMultiplier
-    )[side];
+    );
+    const margin = Math.min(0.2, SkillService.forDatabase(this.db).getEffectTotal(
+      'TRADE_MARGIN',
+      ['SKL-COM-APPRAISE', 'SKL-COM-SPECULATE', 'SKL-COM-CARAVAN', 'SKL-MGT-ENTERPRISE']
+    ));
+    return side === 'buyPrice'
+      ? Math.max(1, Math.round(quote.buyPrice * (1 - margin)))
+      : Math.max(1, Math.round(quote.sellPrice * (1 + margin)));
   }
 
   private buyPrice(itemCode: string): number {
@@ -1206,7 +1237,49 @@ export class ContextActionEngine {
     fatigue: number,
     gameDate: string
   ): ContextualChoice[] {
-    const grainPrice = this.buyPrice('COM-GRAIN');
+    // Location-aware fallback: every one of the 133 sub-locations gets the
+    // local settlement, a resident notable and a local resource instead of a
+    // single Zhuo County script.
+    let placeName = subLocation;
+    try {
+      const place = this.db.queryOne<{ name_vi: string }>(
+        'SELECT name_vi FROM master_locations WHERE location_id = ? LIMIT 1;',
+        [this.location]
+      );
+      if (place?.name_vi) placeName = place.name_vi;
+    } catch { /* master locations absent */ }
+
+    let hostNpc: { npc_id: string; name_vi: string } = { npc_id: 'NPC-0002', name_vi: 'Hào Kiệt Bản Địa' };
+    try {
+      const host = this.db.queryOne<{ npc_id: string; name_vi: string }>(
+        `SELECT npc_id, name_vi FROM master_characters
+         WHERE baseline_location = ? AND npc_id NOT LIKE 'MDN-%'
+         ORDER BY war_attr DESC, int_attr DESC LIMIT 1;`,
+        [this.location]
+      );
+      if (host?.npc_id) hostNpc = host;
+    } catch { /* master characters absent */ }
+
+    let localItem = { code: 'COM-GRAIN', name: 'Lương thảo địa phương', price: 0 };
+    try {
+      localItem.price = this.buyPrice('COM-GRAIN');
+      const node = this.db.queryOne<{ yield_item_code: string; yield_item_name_vi: string }>(
+        `SELECT yield_item_code, yield_item_name_vi FROM gathering_nodes
+         WHERE settlement_id = ? ORDER BY yield_quantity_max DESC LIMIT 1;`,
+        [LOC_TO_NODE_MAP[this.location] || this.location]
+      );
+      if (node?.yield_item_code) {
+        localItem = {
+          code: node.yield_item_code,
+          name: node.yield_item_name_vi,
+          price: this.buyPrice(node.yield_item_code)
+        };
+      }
+    } catch {
+      // Keep grain when the local node or its market quote is unavailable.
+    }
+    const localQty = liquidCash >= localItem.price * 2 ? 2 : 1;
+
     return [
       {
         id: 'OPT_1',
@@ -1215,16 +1288,16 @@ export class ContextActionEngine {
         pillarLabelEn: 'HERO KIZUNA',
         badgeClass: 'pillar-kizuna',
         icon: '茶',
-        title: `Thăm hỏi hào kiệt và danh sĩ địa phương tại ${subLocation}`,
-        titleEn: `Visit local champions and scholars in ${subLocation}`,
+        title: `Thăm hỏi ${hostNpc.name_vi} và danh sĩ địa phương tại ${placeName}`,
+        titleEn: `Visit ${hostNpc.name_vi} and local scholars in ${placeName}`,
         desc: 'Kết giao danh sĩ • Nâng cao thiện cảm và danh vọng địa phương',
         descEn: 'Befriend local luminaries • Boost local goodwill and prestige',
         action: {
           type: 'KIZUNA_INTERACT',
-          npc_id: 'NPC-0002',
-          npc_name: 'Hào Kiệt Bản Địa',
+          npc_id: hostNpc.npc_id,
+          npc_name: hostNpc.name_vi,
           action_type: 'TEA_CONVERSE',
-          prompt: `Giao lưu đàm đạo thế cuộc tại ${subLocation}`
+          prompt: `Giao lưu đàm đạo thế cuộc tại ${placeName}`
         }
       },
       {
@@ -1234,16 +1307,16 @@ export class ContextActionEngine {
         pillarLabelEn: 'FACILITY OPERATION',
         badgeClass: 'pillar-facility',
         icon: '商',
-        title: `Khảo sát hoạt động kinh thương và nguồn cung sản vật tại ${subLocation}`,
-        titleEn: `Inspect commerce and regional goods supply in ${subLocation}`,
+        title: `Thu mua ${localItem.name} tại ${placeName} (${localQty} • ${localItem.price} Quan)`,
+        titleEn: `Procure ${localItem.name} in ${placeName} (${localQty} • ${localItem.price} quan)`,
         desc: 'Giao thương định mức • Cân đối sổ cái kép SimCore',
         descEn: 'Standard commerce operations • Preserves ledger balance',
         action: {
           type: 'TRADE_BUY',
-          item_code: 'COM-GRAIN',
-          quantity: 2,
-          unit_price: grainPrice,
-          counterparty: `Thương cục ${subLocation}`,
+          item_code: localItem.code,
+          quantity: localQty,
+          unit_price: localItem.price,
+          counterparty: `Thương cục ${placeName}`,
           game_date: gameDate
         }
       },
@@ -1254,8 +1327,8 @@ export class ContextActionEngine {
         pillarLabelEn: 'LOCAL INCIDENT',
         badgeClass: 'pillar-opportunity',
         icon: '策',
-        title: `Tìm hiểu tình hình an ninh và phong thổ nhân tình tại ${subLocation}`,
-        titleEn: `Investigate regional security and local customs in ${subLocation}`,
+        title: `Tìm hiểu tình hình an ninh và phong thổ nhân tình tại ${placeName}`,
+        titleEn: `Investigate regional security and local customs in ${placeName}`,
         desc: 'Tăng hiểu biết địa phương • Mở khóa cơ hội thương vụ mới',
         descEn: 'Gain regional knowledge • Unlock commercial opportunities',
         action: {
@@ -1264,7 +1337,7 @@ export class ContextActionEngine {
           exp_amount: 10,
           fatigue_delta: 5,
           morale_delta: 5,
-          memo: `Khảo sát địa bàn ${subLocation}`,
+          memo: `Khảo sát địa bàn ${placeName}`,
           game_date: gameDate
         }
       },
@@ -1275,8 +1348,8 @@ export class ContextActionEngine {
         pillarLabelEn: 'SELF CULTIVATION',
         badgeClass: 'pillar-growth',
         icon: '修',
-        title: `Tĩnh tâm tu dưỡng và rèn luyện kỹ năng tại lữ quán ${subLocation}`,
-        titleEn: `Meditate and cultivate core skills at local inn in ${subLocation}`,
+        title: `Tĩnh tâm tu dưỡng và rèn luyện kỹ năng tại lữ quán ${placeName}`,
+        titleEn: `Meditate and cultivate core skills at local inn in ${placeName}`,
         desc: 'Sĩ khí +10 • Giảm bớt mỏi mệt • Chuẩn bị cho hành trình tiếp theo',
         descEn: 'Morale +10 • Reduce fatigue • Prepare for next expedition',
         action: {
@@ -1284,7 +1357,7 @@ export class ContextActionEngine {
           sub_type: 'REST_RECOVERY',
           fatigue_delta: 25,
           morale_delta: 10,
-          memo: `Tĩnh dưỡng tại ${subLocation}`,
+          memo: `Tĩnh dưỡng tại ${placeName}`,
           game_date: gameDate
         }
       }

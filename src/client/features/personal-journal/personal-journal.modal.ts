@@ -5,12 +5,13 @@
 
 import { createModalShell, ModalShellInstance } from '../../core/modal-shell';
 import { personalJournalService } from './personal-journal.service';
-import { CareerPathProgress, JournalMilestone } from './personal-journal.types';
+import { CareerPathProgress, JournalMilestone, LifeStatusView } from './personal-journal.types';
 
 export class PersonalJournalModal {
   private modal: ModalShellInstance;
   private paths: CareerPathProgress[] = [];
   private milestones: JournalMilestone[] = [];
+  private life: LifeStatusView | null = null;
 
   constructor() {
     this.modal = createModalShell({
@@ -21,6 +22,7 @@ export class PersonalJournalModal {
       size: 'xl',
       tabs: [
         { id: 'career', label: 'Ngũ Đại Phẩm Lộ', seal: '◆' },
+        { id: 'life', label: 'Gia Đạo', seal: '家' },
         { id: 'milestones', label: 'Cột Mốc Huân Công', seal: '勳' }
       ],
       activeTabId: 'career',
@@ -47,6 +49,7 @@ export class PersonalJournalModal {
       const data = await personalJournalService.getCareerRoadmap('PLY-0001');
       this.paths = data.paths;
       this.milestones = data.milestones;
+      this.life = await personalJournalService.getLifeStatus('PLY-0001');
     } catch (e) {
       console.error('[PersonalJournalModal] Error refreshing data:', e);
     }
@@ -56,6 +59,8 @@ export class PersonalJournalModal {
     const tab = this.modal.activeTab || 'career';
     if (tab === 'career') {
       this.renderCareerTab();
+    } else if (tab === 'life') {
+      this.renderLifeTab();
     } else {
       this.renderMilestonesTab();
     }
@@ -105,6 +110,129 @@ export class PersonalJournalModal {
     `;
 
     this.modal.setContent(html);
+  }
+
+  private renderLifeTab(): void {
+    const life = this.life;
+    if (!life) {
+      this.modal.setContent(`
+        <div class="journal-modal-content">
+          <div class="tactical-card p-4 bg-slate-900 rounded border border-slate-800 text-muted text-sm">
+            Không tải được trạng thái Gia Đạo. Hãy kiểm tra kết nối máy chủ.
+          </div>
+        </div>
+      `);
+      return;
+    }
+
+    const bar = (label: string, value: number, tone: string) => `
+      <div class="text-[11px]">
+        <div class="flex justify-between mb-1"><span class="text-slate-300">${label}</span><span class="font-mono text-slate-200">${Math.round(value)}</span></div>
+        <div class="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-700">
+          <div class="${tone} h-2 rounded-full transition-all" style="width: ${Math.max(0, Math.min(100, value))}%"></div>
+        </div>
+      </div>
+    `;
+
+    const actions = life.actions.map(action => `
+      <button
+        class="ui-btn ${action.available ? 'ui-btn--primary' : 'ui-btn--ghost'} ui-btn--sm"
+        data-life-action="${action.code}"
+        ${action.available ? '' : 'disabled'}
+        title="${action.reasonVi || action.labelEn}">
+        ${action.labelVi}
+      </button>
+    `).join('');
+
+    const skills = life.skills.length > 0
+      ? life.skills.map(skill => `
+        <div class="flex justify-between items-center text-[11px] border-b border-slate-800 py-1.5">
+          <span class="text-slate-200">${skill.nameVi}</span>
+          <span class="font-mono text-amber-300">Bậc ${skill.tier} · ${skill.currentExp}/${skill.maxExp}</span>
+        </div>
+      `).join('')
+      : '<div class="text-muted text-xs">Chưa học kỹ năng đời sống nào. Hãy dùng bữa, uống trà hoặc luyện tập.</div>';
+
+    const trainable = life.trainableSkills.filter(skill => skill.domain === 'LIFE');
+    const skillOptions = trainable.map(skill =>
+      `<option value="${skill.skillCode}">${skill.nameVi}</option>`
+    ).join('');
+
+    const html = `
+      <div class="journal-modal-content">
+        <div class="spatial-banner-lead">
+          <div class="lead-seal">家</div>
+          <div class="lead-text">
+            <h3>Gia Đạo & Sinh Hoạt</h3>
+            <div class="text-muted text-sm">${life.date} · Buổi ${life.phaseLabel} · ${life.household.spouseName ? `Phu nhân ${life.household.spouseName} (${life.household.spouseRole})` : 'Chưa lập gia thất'} · ${life.household.children} con</div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+          ${bar('Thể lực', 100 - life.needs.fatigue, 'bg-green-400')}
+          ${bar('Sĩ khí', life.needs.morale, 'bg-amber-400')}
+          ${bar('Căng thẳng', life.needs.stress, 'bg-red-400')}
+          ${bar('Khí huyết', life.needs.health, 'bg-sky-400')}
+        </div>
+
+        <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800 mb-3">
+          <div class="text-xs font-bold text-amber-200 mb-2">Sinh Hoạt Trong Ngày</div>
+          <div class="flex flex-wrap gap-2 mb-2">${actions}</div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-[11px]">
+            <label class="text-muted">Người cùng uống trà
+              <input id="life-npc-id" class="w-full mt-1 px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200" value="NPC-0002" />
+            </label>
+            <label class="text-muted">Kỹ năng để luyện
+              <input id="life-skill-code" list="life-skill-list" class="w-full mt-1 px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200" value="SKL-LIF-COOK" />
+              <datalist id="life-skill-list">
+                ${skillOptions || '<option value="SKL-LIF-COOK">Trù Phòng & Gia Yến</option>'}
+              </datalist>
+            </label>
+          </div>
+        </div>
+
+        <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800">
+          <div class="text-xs font-bold text-amber-200 mb-2">Kỹ Năng Đời Sống</div>
+          ${skills}
+        </div>
+      </div>
+    `;
+
+    this.modal.setContent(html);
+    this.bindLifeActions();
+  }
+
+  private bindLifeActions(): void {
+    const body = this.modal.getBodyElement();
+    if (!body) return;
+    const npcInput = body.querySelector<HTMLInputElement>('#life-npc-id');
+    const skillSelect = body.querySelector<HTMLInputElement>('#life-skill-code');
+
+    body.querySelectorAll<HTMLButtonElement>('[data-life-action]').forEach(button => {
+      button.addEventListener('click', async () => {
+        const actionCode = button.dataset.lifeAction || '';
+        button.disabled = true;
+        try {
+          const response = await personalJournalService.performLifeAction({
+            characterId: 'PLY-0001',
+            actionCode,
+            npcId: actionCode === 'TEA_WITH_NPC' ? (npcInput?.value || 'NPC-0002') : undefined,
+            skillCode: actionCode === 'STUDY_TRAIN' ? (skillSelect?.value || 'SKL-LIF-COOK') : undefined
+          });
+          const message = response?.result?.messageVi || 'Đã thực hiện sinh hoạt.';
+          if (typeof (window as any).showToast === 'function') {
+            (window as any).showToast(message);
+          }
+          this.life = await personalJournalService.getLifeStatus('PLY-0001');
+          this.renderLifeTab();
+        } catch (error: any) {
+          button.disabled = false;
+          if (typeof (window as any).showToast === 'function') {
+            (window as any).showToast(error.message || 'Không thể thực hiện sinh hoạt.', true);
+          }
+        }
+      });
+    });
   }
 
   private renderMilestonesTab(): void {

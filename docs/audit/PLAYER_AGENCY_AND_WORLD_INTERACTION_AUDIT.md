@@ -6,6 +6,11 @@
 **Status:** Completed Player Agency & World Interaction Audit  
 **Standards Compliance:** Universe Architecture v4.0, ACID SQLite Ledger, Anti-AI-Slop  
 
+> **Implementation status 2026-10-31:** this document is the 2026-10-28 baseline.
+> P0 1.23.1–1.23.4 added server-owned action time, real enterprise debt and
+> career modifiers; see `ARCHITECTURE.md` §7–10. The invincible-protagonist,
+> macro-agency, NPC-refusal and world-clock findings remain P1+ work.
+
 ---
 
 ## 1. Executive Summary

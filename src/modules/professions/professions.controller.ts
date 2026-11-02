@@ -12,6 +12,12 @@ import { RngService } from '../../core/rng';
 import { nextId } from '../../shared/id-generator';
 import { ModuleRegistry } from '../../core/module-registry';
 import { ProfessionsModule } from './professions.module';
+import { SkillService } from '../progression/skill.service';
+import { chargePlayerAction } from '../../shared/action-time';
+import { getCareerModifiers } from '../../../engine/career-paths';
+import { FarmService } from './farm.service';
+import { ResourceNodeService } from './resource-node.service';
+import { requestIdempotencyKey, findIdempotentResult, recordAction } from '../../shared/action-journal';
 
 import { WageLaborController } from './features/wage-labor/wage-labor.controller';
 import { registerBespokeForgeRoutes } from './features/bespoke-forge/bespoke-forge.controller';
@@ -150,12 +156,32 @@ export function registerProfessionsRoutes(router: Router): void {
         return;
       }
 
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
+
+      const time = chargePlayerAction(
+        db.path,
+        'GATHER_NODE',
+        null,
+        `Gather at ${nodeId}`
+      );
       const meta = getCampaignMeta(db);
       const result = professionsMod.gatherResource(characterId, nodeId, meta.activeTurn, meta.currentDate);
 
-      sendJson(res, 200, { success: true, result });
+      const response = { result, time };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'GATHER_RESOURCE',
+        payload: { characterId, nodeId },
+        result: response
+      });
+      sendJson(res, 200, { success: true, ...response, idempotent: false });
     } catch (err: any) {
-      sendJson(res, 400, { success: false, error: err.message });
+      sendJson(res, err.statusCode || 400, { success: false, error: err.message, code: err.code });
     }
   };
 
@@ -174,6 +200,20 @@ export function registerProfessionsRoutes(router: Router): void {
       }
 
       const craftQty = Math.max(1, parseInt(quantity, 10));
+
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
+
+      const time = chargePlayerAction(
+        db.path,
+        'PRODUCTION_BATCH',
+        null,
+        `Craft ${recipeCode} x${craftQty}`
+      );
       const meta = getCampaignMeta(db);
 
       const craftResult = db.transaction(() => {
@@ -185,6 +225,20 @@ export function registerProfessionsRoutes(router: Router): void {
         const player = db.queryOne<any>('SELECT fatigue, cra_attr FROM player_state WHERE player_id = ?;', [characterId]);
         if (player && player.fatigue + 15 * craftQty > 95) {
           throw new Error(`Khí lực kiệt quệ (${player.fatigue}/100)! Không đủ sức đứng lò chế tác khí giới.`);
+        }
+
+        const requiredSkill = recipe.required_skill_code || null;
+        if (requiredSkill) {
+          const skillRow = db.queryOne<any>(
+            'SELECT tier FROM player_skills WHERE skill_code = ? LIMIT 1;',
+            [requiredSkill]
+          );
+          const requiredTier = Number(recipe.required_skill_tier || 1);
+          if (Number(skillRow?.tier || 0) < requiredTier) {
+            throw new Error(
+              `Cần kỹ năng ${requiredSkill} bậc ${requiredTier} để chế biến ${recipe.product_name_vi} (hiện tại bậc ${Number(skillRow?.tier || 0)}).`
+            );
+          }
         }
 
         // Parse Bill of Materials
@@ -215,8 +269,13 @@ export function registerProfessionsRoutes(router: Router): void {
           );
         }
 
-        // Defect calculation based on Craft attribute
-        const defectChance = Math.max(0.02, recipe.base_defect_rate - ((player?.cra_attr || 50) / 1000));
+        // Defect calculation based on Craft attribute and craft-skill perks.
+        const skillReduction = SkillService.forDatabase(db).getEffectTotal('DEFECT_REDUCTION');
+        const careerReduction = getCareerModifiers(db as any, characterId).modifiers.defectReduction;
+        const defectChance = Math.max(
+          0.01,
+          recipe.base_defect_rate - ((player?.cra_attr || 50) / 1000) - skillReduction - careerReduction
+        );
         const defects = RngService.forDomain(db, 'crafting').chance(defectChance) ? 1 : 0;
         const finalYield = Math.max(1, craftQty - defects);
 
@@ -247,6 +306,17 @@ export function registerProfessionsRoutes(router: Router): void {
           [expGain, characterId]
         );
 
+        // Crafting feeds the matching skill so checks and perks see the work.
+        const recipeCategory = String(recipe.category || '').toUpperCase();
+        const skillCode = requiredSkill || (/MEDICINE|ALCHEMIST/.test(recipeCategory)
+          ? 'SKL-MED-HEAL'
+          : /SMITH|WEAPON|ARMOR/.test(recipeCategory)
+            ? 'SKL-CRA-SMITH'
+            : /COOK|BREW|COMMERCE|CARAVAN/.test(recipeCategory)
+              ? 'SKL-MGT-ENTERPRISE'
+              : 'SKL-CRA-WEAVE');
+        SkillService.forDatabase(db).awardExp(skillCode, expGain);
+
         return {
           recipeCode,
           productItemCode: recipe.product_item_code,
@@ -265,18 +335,206 @@ export function registerProfessionsRoutes(router: Router): void {
       const professionsMod = getProfessionsModule();
       const breakthrough = professionsMod ? professionsMod.checkAndTriggerBreakthrough(characterId, meta.activeTurn, meta.currentDate) : null;
 
-      sendJson(res, 200, {
-        success: true,
+      const response = {
         ...craftResult,
         breakthrough,
+        time,
         message: `Chế tác thành công ${craftResult.yieldQuantity} ${craftResult.productNameVi} (+${craftResult.expGained} EXP Nghề rèn dệt)!`
+      };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'CRAFT_RECIPE',
+        payload: { characterId, recipeCode, quantity: craftQty },
+        result: response
       });
+      sendJson(res, 200, { success: true, ...response, idempotent: false });
     } catch (err: any) {
-      sendJson(res, 400, { success: false, error: err.message });
+      sendJson(res, err.statusCode || 400, { success: false, error: err.message, code: err.code });
     }
   };
 
   router.post('/api/professions/craft', handleCraft);
+
+  // -------------------------------------------------------------
+  // 4a. Restoration: replant forest / restock fishing ground / herd game
+  // -------------------------------------------------------------
+  router.post('/api/professions/nodes/restore', async (_req: any, res: any, ctx: RouteContext) => {
+    try {
+      const { nodeId, characterId = 'PLY-0001' } = ctx.body || {};
+      if (!nodeId) {
+        sendJson(res, 400, { success: false, error: 'nodeId is required.' });
+        return;
+      }
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
+
+      const time = chargePlayerAction(db.path, 'RESTORE_NODE', null, `Restore ${nodeId}`);
+      const meta = getCampaignMeta(db);
+      const result = ResourceNodeService.forDatabase(db).restoreNode(nodeId, characterId, meta.currentDate);
+      const response = { result, time };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'NODE_RESTORE',
+        payload: { nodeId, characterId },
+        result: response
+      });
+      sendJson(res, 200, { success: true, ...response, idempotent: false });
+    } catch (err: any) {
+      sendJson(res, err.statusCode || 400, { success: false, error: err.message, code: err.code });
+    }
+  });
+
+  // -------------------------------------------------------------
+  // 4aa. Durable tools and repair
+  // -------------------------------------------------------------
+  router.get('/api/professions/tools', (_req: any, res: any, ctx: RouteContext) => {
+    try {
+      const characterId = (ctx.query.characterId as string) || 'PLY-0001';
+      const tools = ResourceNodeService.forDatabase(db).listTools(characterId);
+      sendJson(res, 200, { success: true, tools });
+    } catch (err: any) {
+      sendJson(res, err.statusCode || 400, { success: false, error: err.message, code: err.code });
+    }
+  });
+
+  router.post('/api/professions/tools/repair', async (_req: any, res: any, ctx: RouteContext) => {
+    try {
+      const { itemCode, characterId = 'PLY-0001' } = ctx.body || {};
+      if (!itemCode) {
+        sendJson(res, 400, { success: false, error: 'itemCode is required.' });
+        return;
+      }
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
+      const time = chargePlayerAction(db.path, 'ADMIN_ACTION', null, `Repair ${itemCode}`);
+      const meta = getCampaignMeta(db);
+      const result = ResourceNodeService.forDatabase(db).repairTool(characterId, itemCode, meta.currentDate);
+      const response = { result, time };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'TOOL_REPAIR',
+        payload: { itemCode, characterId },
+        result: response
+      });
+      sendJson(res, 200, { success: true, ...response, idempotent: false });
+    } catch (err: any) {
+      sendJson(res, err.statusCode || 400, { success: false, error: err.message, code: err.code });
+    }
+  });
+
+  // -------------------------------------------------------------
+  // 4b. Farmland: list parcels, rent, plant, harvest
+  // -------------------------------------------------------------
+  const handleGetFarmParcels = (req: any, res: any, ctx: RouteContext) => {
+    try {
+      const playerId = (ctx.query.playerId as string) || 'PLY-0001';
+      const settlementId = ctx.query.settlementId as string | undefined;
+      const board = FarmService.forDatabase(db).listParcels(playerId, settlementId);
+      sendJson(res, 200, { success: true, playerId, ...board });
+    } catch (err: any) {
+      sendJson(res, 500, { success: false, error: err.message });
+    }
+  };
+  router.get('/api/farm/parcels', handleGetFarmParcels);
+  router.get('/api/professions/farm', handleGetFarmParcels);
+
+  const handleRentFarm = (req: any, res: any, ctx: RouteContext) => {
+    try {
+      const { parcelId, playerId = 'PLY-0001' } = ctx.body || {};
+      if (!parcelId) {
+        sendJson(res, 400, { success: false, error: 'parcelId is required.' });
+        return;
+      }
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
+      const time = chargePlayerAction(db.path, 'FARM_RENT', null, `Rent ${parcelId}`);
+      const parcel = FarmService.forDatabase(db).rent(parcelId, playerId);
+      const response = { parcel, time };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'FARM_RENT',
+        payload: { parcelId, playerId },
+        result: response
+      });
+      sendJson(res, 200, { success: true, ...response, idempotent: false });
+    } catch (err: any) {
+      sendJson(res, err.statusCode || 400, { success: false, error: err.message, code: err.code });
+    }
+  };
+  router.post('/api/farm/rent', handleRentFarm);
+  router.post('/api/professions/farm/rent', handleRentFarm);
+
+  const handlePlantCrop = (req: any, res: any, ctx: RouteContext) => {
+    try {
+      const { parcelId, cropCode, playerId = 'PLY-0001' } = ctx.body || {};
+      if (!parcelId || !cropCode) {
+        sendJson(res, 400, { success: false, error: 'parcelId and cropCode are required.' });
+        return;
+      }
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
+      const time = chargePlayerAction(db.path, 'FARM_PLANT', null, `Plant ${cropCode} at ${parcelId}`);
+      const parcel = FarmService.forDatabase(db).plant(parcelId, cropCode, playerId);
+      const response = { parcel, time };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'FARM_PLANT',
+        payload: { parcelId, cropCode, playerId },
+        result: response
+      });
+      sendJson(res, 200, { success: true, ...response, idempotent: false });
+    } catch (err: any) {
+      sendJson(res, err.statusCode || 400, { success: false, error: err.message, code: err.code });
+    }
+  };
+  router.post('/api/farm/plant', handlePlantCrop);
+  router.post('/api/professions/farm/plant', handlePlantCrop);
+
+  const handleHarvestFarm = (req: any, res: any, ctx: RouteContext) => {
+    try {
+      const { parcelId, playerId = 'PLY-0001' } = ctx.body || {};
+      if (!parcelId) {
+        sendJson(res, 400, { success: false, error: 'parcelId is required.' });
+        return;
+      }
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
+      const time = chargePlayerAction(db.path, 'FARM_HARVEST', null, `Harvest ${parcelId}`);
+      const result = FarmService.forDatabase(db).harvest(parcelId, playerId);
+      const response = { ...result, time };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'FARM_HARVEST',
+        payload: { parcelId, playerId },
+        result: response
+      });
+      sendJson(res, 200, { success: true, ...response, idempotent: false });
+    } catch (err: any) {
+      sendJson(res, err.statusCode || 400, { success: false, error: err.message, code: err.code });
+    }
+  };
+  router.post('/api/farm/harvest', handleHarvestFarm);
+  router.post('/api/professions/farm/harvest', handleHarvestFarm);
 
   // -------------------------------------------------------------
   // 5. POST /api/professions/paradigm-shift & /api/professions/synthesize

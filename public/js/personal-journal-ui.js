@@ -48,12 +48,13 @@
 
   async function getCharacterJournalState() {
     try {
-      const [statusRes, entRes, lineageRes, equipRes, progRes] = await Promise.all([
+      const [statusRes, entRes, lineageRes, equipRes, progRes, conditionRes] = await Promise.all([
         fetch('/api/status').then(r => r.json()).catch(() => ({ success: false })),
         fetch('/api/enterprise/status?characterId=PLY-0001').then(r => r.json()).catch(() => ({ success: false })),
         fetch('/api/lineage/status').then(r => r.json()).catch(() => ({ success: false })),
         fetch('/api/equipment?characterId=PLY-0001').then(r => r.json()).catch(() => ({ success: false })),
-        fetch('/api/progression/status?playerId=PLY-0001').then(r => r.json()).catch(() => ({ success: false }))
+        fetch('/api/progression/status?playerId=PLY-0001').then(r => r.json()).catch(() => ({ success: false })),
+        fetch('/api/conditions?characterId=PLY-0001').then(r => r.json()).catch(() => ({ success: false }))
       ]);
 
       const p = statusRes?.player || {};
@@ -122,7 +123,8 @@
         isMarried,
         spouses,
         equipmentOverview: equipRes?.overview || null,
-        recentLedger: statusRes?.recentLedger || []
+        recentLedger: statusRes?.recentLedger || [],
+        conditions: conditionRes?.conditions || []
       };
 
       return cachedProgressionState;
@@ -252,8 +254,8 @@
         num: 2,
         titleVi: 'Tiểu Khang Lập Nghiệp',
         titleEn: 'Budding Factor',
-        criteriaVi: 'Tích lũy >1,500 Quan, mở xưởng thủ công hoặc sắm xe la, định hình 1 trong 5 đại phẩm lộ',
-        criteriaEn: 'Net worth >1,500 quan, own workshop or cart, choosing 1 of 5 career branches',
+        criteriaVi: 'Tích lũy >2,000 Quan, mở xưởng thủ công hoặc sắm xe la, định hình 1 trong 5 đại phẩm lộ',
+        criteriaEn: 'Net worth >2,000 quan, own workshop or cart, choosing 1 of 5 career branches',
         seal: '業', icon: 'house',
         badgeClass: 'stage-artisan',
         descVi: 'Đã thoát cảnh cơ hàn, có thể tự mở xưởng chế tác hoặc trang bị xe ngựa. Có bàn làm việc quản lý tại gia.',
@@ -389,6 +391,8 @@
             </div>
           </div>
         </div>
+
+        ${typeof renderConditionChips === 'function' ? renderConditionChips(state.conditions, isEn) : ''}
 
         <!-- Spatial Grounding Rules Notice -->
         <div class="tactical-card" style="border-left: 3px solid #10b981; background: rgba(16, 185, 129, 0.05); margin-bottom: 16px; padding: 10px 14px;">

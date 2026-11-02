@@ -126,11 +126,12 @@ export class HeirMentorshipService {
 
           this.db.execute(`
             INSERT OR REPLACE INTO npc_state 
-            (npc_id, name, war_attr, int_attr, cra_attr, com_attr, ldr_attr, loyalty, morale, fatigue)
-            VALUES (?, ?, ?, ?, ?, ?, ?, 100, 100, 0);
+            (npc_id, name, age, war_attr, int_attr, cra_attr, com_attr, ldr_attr, loyalty, morale, fatigue)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 100, 100, 0);
           `, [
             childId,
             child.name_vi || childId,
+            newAge,
             child.war_attr || 50,
             child.int_attr || 50,
             child.cra_attr || 50,
@@ -289,14 +290,32 @@ export class HeirMentorshipService {
         if (spec.statIncreases.pol) spec.statIncreases.pol = Math.round(spec.statIncreases.pol * 1.25);
       }
 
+      // Growth focus selected by the player must bias what the tutor actually
+      // teaches; otherwise the field is cosmetic.
+      const focus = String(child.growth_focus || 'BALANCED').toUpperCase();
+      const focusedGains: Record<string, number> = { ...spec.statIncreases };
+      const boost = (key: string) => {
+        if (focusedGains[key]) focusedGains[key] = Math.round(focusedGains[key] * 1.25);
+      };
+      if (focus === 'WARFARE') {
+        boost('war');
+        boost('ldr');
+      } else if (focus === 'INTELLECT') {
+        boost('int');
+        boost('pol');
+      } else if (focus === 'COMMERCE') {
+        boost('com');
+        boost('log');
+      }
+
       // Apply Stat Increments (strictly clamped <= 120)
-      const warInc = spec.statIncreases.war || 0;
-      const intInc = spec.statIncreases.int || 0;
-      const comInc = spec.statIncreases.com || 0;
-      const ldrInc = spec.statIncreases.ldr || 0;
-      const polInc = spec.statIncreases.pol || 0;
-      const craInc = spec.statIncreases.cra || 0;
-      const logInc = spec.statIncreases.log || 0;
+      const warInc = focusedGains.war || 0;
+      const intInc = focusedGains.int || 0;
+      const comInc = focusedGains.com || 0;
+      const ldrInc = focusedGains.ldr || 0;
+      const polInc = focusedGains.pol || 0;
+      const craInc = focusedGains.cra || 0;
+      const logInc = focusedGains.log || 0;
 
       this.db.execute(
         `UPDATE family_children
@@ -343,7 +362,7 @@ export class HeirMentorshipService {
           meta.currentDate,
           spec.subject,
           spec.narrativeVi,
-          JSON.stringify(spec.statIncreases)
+          JSON.stringify(focusedGains)
         ]
       );
 
@@ -353,7 +372,7 @@ export class HeirMentorshipService {
         mentorNameVi: spec.mentorName,
         statGained: spec.statGained,
         expDelta: spec.expDelta,
-        statIncreases: spec.statIncreases,
+        statIncreases: focusedGains,
         totalMentorshipTurns: Number(child.mentorship_turns_completed || 0) + 1,
         narrativeVi: `[${child.name_vi}] thụ giáo ${spec.mentorName}: ${spec.narrativeVi}`
       };

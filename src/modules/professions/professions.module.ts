@@ -11,6 +11,8 @@ import { syncProgressProjection } from '../../shared/projection-sync';
 import { RngService } from '../../core/rng';
 import { nextId } from '../../shared/id-generator';
 import { getGameDate } from '../../shared/game-clock';
+import { SkillService } from '../progression/skill.service';
+import { ResourceNodeService } from './resource-node.service';
 import {
   IFeatureModule,
   ModuleContext,
@@ -20,6 +22,16 @@ import {
   GatheringNode,
   EmergentInnovation
 } from '../../core/types';
+
+const PROFESSION_SKILL: Record<string, string> = {
+  PROF_MINER: 'SKL-CRA-SMITH',
+  PROF_HERBALIST: 'SKL-MED-HEAL',
+  PROF_CARPENTER: 'SKL-CRA-WEAVE',
+  PROF_SALT_MAKER: 'SKL-COM-SPECULATE',
+  PROF_FARMER: 'SKL-LOG-PROV',
+  PROF_FISHER: 'SKL-LOG-PROV',
+  PROF_HUNTER: 'SKL-WAR-ARCH'
+};
 
 export class ProfessionsModule implements IFeatureModule {
   public readonly id = 'module.professions';
@@ -130,30 +142,39 @@ export class ProfessionsModule implements IFeatureModule {
   }
 
   /**
-   * Retrieves all gathering spots on the map
+   * Retrieves all gathering spots on the map with their live stock and rule.
    */
   public getGatheringNodes(settlementId?: string): GatheringNode[] {
-    const filter = settlementId ? `WHERE settlement_id = ?` : '';
-    const params = settlementId ? [settlementId] : [];
-    const sql = `
-      SELECT 
-        node_id as nodeId,
-        settlement_id as settlementId,
-        name_vi as nameVi,
-        name_en as nameEn,
-        resource_type as resourceType,
-        yield_item_code as yieldItemCode,
-        yield_item_name_vi as yieldItemNameVi,
-        yield_quantity_min as yieldQuantityMin,
-        yield_quantity_max as yieldQuantityMax,
-        fatigue_cost as fatigueCost,
-        required_skill_code as requiredSkillCode,
-        description_vi as descriptionVi
-      FROM gathering_nodes
-      ${filter}
-      ORDER BY settlement_id, resource_type;
-    `;
-    return this.db.query<GatheringNode>(sql, params);
+    const resources = ResourceNodeService.forDatabase(this.db);
+    const today = getGameDate(this.db);
+    return resources.listNodes(settlementId).map(row => {
+      const rule = resources.getRule(row.resource_type);
+      const stock = rule ? resources.getStock(row.node_id, rule, today) : null;
+      return {
+        nodeId: row.node_id,
+        settlementId: row.settlement_id,
+        nameVi: row.name_vi,
+        nameEn: row.name_en,
+        resourceType: row.resource_type,
+        yieldItemCode: row.yield_item_code,
+        yieldItemNameVi: row.yield_item_name_vi,
+        yieldQuantityMin: Number(row.yield_quantity_min),
+        yieldQuantityMax: Number(row.yield_quantity_max),
+        fatigueCost: Number(row.fatigue_cost),
+        requiredSkillCode: row.required_skill_code || null,
+        descriptionVi: row.description_vi,
+        stock: stock?.stock ?? null,
+        maxStock: stock?.maxStock ?? null,
+        skillCode: row.rule_skill_code || null,
+        requiredToolCode: row.rule_tool_code || null,
+        alternateToolCode: row.rule_alt_tool_code || null,
+        minSkillTier: Number(row.min_skill_tier || 0),
+        restoreItemCode: rule?.restoreItemCode || null,
+        restoreCash: rule?.restoreCash || 0,
+        restoreStock: rule?.restoreStock || 0,
+        restoreSkillCode: rule?.restoreSkillCode || null
+      } as GatheringNode;
+    });
   }
 
   /**
@@ -260,15 +281,6 @@ export class ProfessionsModule implements IFeatureModule {
       }
     }
 
-    // Check player fatigue if player
-    if (characterId === 'PLY-0001') {
-      const player = this.db.queryOne<any>(`SELECT fatigue, health FROM player_state WHERE player_id = 'PLY-0001';`);
-      if (player && player.fatigue + node.fatigue_cost > 90) {
-        throw new Error(`Khí lực kiệt quệ (${player.fatigue}/100)! Cần nghỉ ngơi ẩm trà hoặc dưỡng sức trước khi tiếp tục lên núi khai thác.`);
-      }
-      this.db.execute(`UPDATE player_state SET fatigue = MIN(100, fatigue + ?) WHERE player_id = 'PLY-0001';`, [node.fatigue_cost]);
-    }
-
     // Determine corresponding profession category
     const profCodeMap: Record<string, string> = {
       MINERAL: 'PROF_MINER',
@@ -288,11 +300,70 @@ export class ProfessionsModule implements IFeatureModule {
     );
 
     const tier = prof ? prof.tier : 1;
-    const tierBonus = 1.0 + (tier - 1) * 0.25;
+    const resources = ResourceNodeService.forDatabase(this.db);
+    const rule = resources.getRule(node.resource_type);
+    const requiredSkill = node.required_skill_code || rule?.skillCode || PROFESSION_SKILL[profCode] || 'SKL-LOG-PROV';
+    const skillTier = resources.skillTier(requiredSkill);
+    const minSkillTier = Math.max(Number(rule?.minSkillTier || 0), node.required_skill_code ? 1 : 0);
+    if (minSkillTier > 0 && skillTier < minSkillTier) {
+      throw new Error(
+        `Cần kỹ năng ${requiredSkill} bậc ${minSkillTier} để khai thác ${node.name_vi} (hiện tại bậc ${skillTier}).`
+      );
+    }
+
+    // Tools are not consumed by the check; the successful gather consumes one
+    // use (nets/traps are consumed, axes/picks/hoes/bows wear down).
+    let chosenTool = rule?.requiredToolCode || null;
+    let toolStatus = chosenTool ? resources.toolStatus(characterId, chosenTool) : null;
+    if (chosenTool && toolStatus && !toolStatus.available && rule?.alternateToolCode) {
+      const alternate = resources.toolStatus(characterId, rule.alternateToolCode);
+      if (alternate?.available) {
+        chosenTool = rule.alternateToolCode;
+        toolStatus = alternate;
+      }
+    }
+    const hasRequiredTool = toolStatus ? toolStatus.available : true;
+    const toolMultiplier = hasRequiredTool ? 1 : 0.7;
+
+    // Profession tier is the broad ladder; the specialised skill is the
+    // personal ladder. Both are capped so a single resource cannot run away.
+    const professionBonus = 1.0 + (tier - 1) * 0.15;
+    const skillBonus = 1.0 + Math.min(0.30, skillTier * 0.06);
 
     // Calculate yield (conservation-safe integer or float)
+    const stockBefore = rule
+      ? resources.getStock(nodeId, rule, gameDate)
+      : null;
+    if (stockBefore && stockBefore.stock < 1) {
+      const error: any = new Error('Điểm khai thác đã cạn kiệt; hãy đợi vài ngày để tài nguyên tái sinh.');
+      error.code = 'NODE_EXHAUSTED';
+      throw error;
+    }
+
+    // Check player fatigue only after the node is known to be available, so a
+    // failed gather never spends stamina.
+    if (characterId === 'PLY-0001') {
+      const player = this.db.queryOne<any>(`SELECT fatigue, health FROM player_state WHERE player_id = 'PLY-0001';`);
+      if (player && player.fatigue + node.fatigue_cost > 90) {
+        throw new Error(`Khí lực kiệt quệ (${player.fatigue}/100)! Cần nghỉ ngơi ẩm trà hoặc dưỡng sức trước khi tiếp tục lên núi khai thác.`);
+      }
+      this.db.execute(`UPDATE player_state SET fatigue = MIN(100, fatigue + ?) WHERE player_id = 'PLY-0001';`, [node.fatigue_cost]);
+    }
+
     const baseYield = node.yield_quantity_min + RngService.forDomain(this.db, 'gathering').nextFloat() * (node.yield_quantity_max - node.yield_quantity_min);
-    const totalYield = Math.round(baseYield * tierBonus * 10) / 10;
+    const rawYield = baseYield * professionBonus * skillBonus * toolMultiplier;
+    const totalYield = Math.round(Math.min(rawYield, baseYield * 2.2) * 10) / 10;
+    const variant = resources.pickVariant(node.resource_type, skillTier, gameDate);
+    const requestedYield = Math.round(totalYield * Number(variant?.quantityMultiplier || 1) * 10) / 10;
+    const yieldItemCode = variant?.itemCode || node.yield_item_code;
+    const yieldItem = this.db.queryOne<any>(
+      'SELECT name_vi, category FROM master_items WHERE item_code = ? LIMIT 1;',
+      [yieldItemCode]
+    );
+    const byproductCode = variant?.byproductItemCode || null;
+    const byproductItem = byproductCode
+      ? this.db.queryOne<any>('SELECT name_vi, category FROM master_items WHERE item_code = ? LIMIT 1;', [byproductCode])
+      : null;
 
     const expGain = 25;
     let upgradedTier = tier;
@@ -326,14 +397,37 @@ export class ProfessionsModule implements IFeatureModule {
     }
 
     const movId = nextId(this.db, 'stock-movements', 'MOV-GATH', getGameDate(this.db));
+    let actualYield = requestedYield;
+    let byproductYield = 0;
+    let stockRemaining = stockBefore ? stockBefore.stock : null;
+    let toolUse: any = null;
 
     this.db.transaction(() => {
+      // 0. Consume node stock first so an exhausted node cannot add inventory.
+      if (rule) {
+        const consumed = resources.consume(nodeId, rule, requestedYield, gameDate);
+        actualYield = consumed.taken;
+        stockRemaining = consumed.stock;
+      }
+      if (actualYield <= 0) {
+        const error: any = new Error('Điểm khai thác đã cạn kiệt; hãy đợi vài ngày để tài nguyên tái sinh.');
+        error.code = 'NODE_EXHAUSTED';
+        throw error;
+      }
+
+      // 0b. A successful gather consumes one tool use.
+      if (chosenTool && hasRequiredTool) {
+        toolUse = resources.consumeTool(characterId, chosenTool, gameDate);
+      }
+
       // 1. Physically deposit into inventory_items (Safe conservation)
+      const category = yieldItem?.category || 'RAW_MATERIAL';
+      const itemName = yieldItem?.name_vi || yieldItemCode;
       this.db.execute(`
         INSERT INTO inventory_items (item_code, category, description, quantity, unit_cost_basis, location)
-        VALUES (?, 'RAW_MATERIAL', ?, ?, 10, 'Zhuo Workshop')
+        VALUES (?, ?, ?, ?, 10, ?)
         ON CONFLICT(item_code) DO UPDATE SET quantity = quantity + excluded.quantity;
-      `, [node.yield_item_code, node.yield_item_name_vi, totalYield]);
+      `, [yieldItemCode, category, itemName, actualYield, `Kho ${node.settlement_id}`]);
 
       // 2. Log stock movement
       this.db.execute(`
@@ -348,7 +442,33 @@ export class ProfessionsModule implements IFeatureModule {
           (SELECT quantity FROM inventory_items WHERE item_code = ?), 
           ?
         );
-      `, [movId, gameDate, node.yield_item_code, totalYield, node.yield_item_code, nodeId]);
+      `, [movId, gameDate, yieldItemCode, actualYield, yieldItemCode, nodeId]);
+
+      // 2b. Byproduct (hide, roe, antler) scales with the actual harvest.
+      if (byproductCode && Number(variant?.byproductQuantity || 0) > 0) {
+        byproductYield = Math.round(
+          Number(variant?.byproductQuantity || 0) * (actualYield / Math.max(0.1, requestedYield)) * 10
+        ) / 10;
+        if (byproductYield > 0) {
+          const byproductMovementId = nextId(this.db, 'stock-movements', 'MOV-GATH', getGameDate(this.db));
+          this.db.execute(`
+            INSERT INTO inventory_items (item_code, category, description, quantity, unit_cost_basis, location)
+            VALUES (?, ?, ?, ?, 5, ?)
+            ON CONFLICT(item_code) DO UPDATE SET quantity = quantity + excluded.quantity;
+          `, [
+            byproductCode,
+            byproductItem?.category || 'RAW_MATERIAL',
+            byproductItem?.name_vi || byproductCode,
+            byproductYield,
+            `Kho ${node.settlement_id}`
+          ]);
+          this.db.execute(`
+            INSERT INTO stock_movements (mov_id, game_date, item_code, movement_type, quantity, unit_cost, balance_after, ref_txn)
+            VALUES (?, ?, ?, 'GATHERING_BYPRODUCT', ?, 5,
+                    (SELECT quantity FROM inventory_items WHERE item_code = ?), ?);
+          `, [byproductMovementId, gameDate, byproductCode, byproductYield, byproductCode, nodeId]);
+        }
+      }
 
       // 3. Award Profession EXP and check tier upgrade
       if (prof) {
@@ -365,6 +485,13 @@ export class ProfessionsModule implements IFeatureModule {
       }
     });
 
+    // Profession work also feeds the specialised livelihood skill.
+    try {
+      SkillService.forDatabase(this.db).awardExp(requiredSkill, expGain);
+    } catch {
+      // A missing master skill must not roll back the harvest.
+    }
+
     // 4. Check for Emergent Breakthrough Synthesis
     const breakthrough = this.checkAndTriggerBreakthrough(characterId, turnNumber, gameDate);
 
@@ -375,13 +502,33 @@ export class ProfessionsModule implements IFeatureModule {
       success: true,
       nodeId,
       nodeName: node.name_vi,
-      itemCode: node.yield_item_code,
-      itemName: node.yield_item_name_vi,
-      yieldQuantity: totalYield,
+      itemCode: yieldItemCode,
+      itemName: yieldItem?.name_vi || yieldItemCode,
+      yieldQuantity: actualYield,
+      variant: variant
+        ? {
+          variantId: variant.variantId,
+          quality: variant.quality,
+          quantityMultiplier: variant.quantityMultiplier
+        }
+        : null,
+      byproductItemCode: byproductCode,
+      byproductQuantity: byproductYield,
       fatigueCost: node.fatigue_cost,
       expGained: expGain,
       professionTier: upgradedTier,
       expMessage: expMsg,
+      skillCode: requiredSkill,
+      skillTier,
+      professionBonus: Number(professionBonus.toFixed(2)),
+      skillBonus: Number(skillBonus.toFixed(2)),
+      toolMultiplier,
+      toolCode: chosenTool,
+      toolMissing: !hasRequiredTool,
+      toolKind: toolStatus?.kind || null,
+      toolUsesLeft: toolUse?.usesLeft ?? toolStatus?.usesLeft ?? null,
+      toolBroke: Boolean(toolUse?.broke),
+      stockRemaining,
       breakthrough: breakthrough || null
     };
   }

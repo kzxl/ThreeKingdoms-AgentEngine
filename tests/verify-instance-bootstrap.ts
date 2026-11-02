@@ -45,9 +45,23 @@ function bootstrap(id: string): string {
   assert.strictEqual(count('trade_caravans'), 0, `${id}: no inherited caravans`);
   assert.strictEqual(count('active_tasks'), 0, `${id}: no inherited tasks`);
   assert.strictEqual(count('world_turn_ledger'), 0, `${id}: no inherited world-turn markers`);
+  assert.strictEqual(count('warehouses'), 0, `${id}: no inherited warehouses`);
+  assert.strictEqual(count('warehouse_stock'), 0, `${id}: no inherited warehouse stock`);
+  assert.strictEqual(count('player_stalls'), 0, `${id}: no inherited stalls`);
+  assert.strictEqual(count('stall_listings'), 0, `${id}: no inherited listings`);
+  assert.strictEqual(count('npc_market_offers'), 0, `${id}: no inherited NPC offers`);
+  assert.strictEqual(count('freight_shipments'), 0, `${id}: no inherited freight`);
+  assert.strictEqual(count('merchant_routes'), 0, `${id}: no inherited routes`);
+  assert.strictEqual(count('merchant_shipments'), 0, `${id}: no inherited company shipments`);
+  assert.strictEqual(count('gathering_node_state'), 0, `${id}: node stock starts lazy at max`);
+  assert.strictEqual(count('character_tool_uses'), 0, `${id}: no inherited tool wear`);
+  assert.strictEqual(count('player_life_state'), 0, `${id}: no inherited stress/meal state`);
   assert.strictEqual(count('cashflow_ledger'), 1, `${id}: exactly one opening ledger row`);
   assert.strictEqual(count('businesses'), 1, `${id}: the starting workshop must exist`);
-  assert.strictEqual(count('inventory_items'), id === 'ARCH-COMMONER-YOUTH' ? 2 : 4, `${id}: expected starting stock`);
+  const expectedStock = id === 'ARCH-COMMONER-YOUTH' ? 2
+    : id === 'ARCH-SCHOLAR-ARTISAN' ? 6
+      : 7;
+  assert.strictEqual(count('inventory_items'), expectedStock, `${id}: expected starting stock`);
   db.close();
   return dbPath;
 }
@@ -147,7 +161,13 @@ function run(): void {
     ).get();
     assert(unrestTable, 'schema must declare unrest_events');
     const migrations = (fresh.prepare('SELECT COUNT(*) AS c FROM schema_migrations').get() as any).c;
-    assert.strictEqual(Number(migrations), 23, 'initDb must apply all 23 versioned migrations');
+    const expectedMigrations = fs.readdirSync(path.join(ROOT, 'tools', 'migrations'))
+      .filter(name => /^\d{3}-.+\.js$/.test(name)).length;
+    assert.strictEqual(
+      Number(migrations),
+      expectedMigrations,
+      `initDb must apply all ${expectedMigrations} versioned migrations`
+    );
     fresh.close();
 
     // Bootstrap must also work on a schema-initialized database (no live-session

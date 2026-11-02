@@ -71,18 +71,6 @@ export class EconomyModule implements IFeatureModule {
   }
 
   /**
-   * Distance Decay: Tax shipments or trade caravans travelling across multiple
-   * provinces suffer transport overhead, rations consumption, and bandit leakage.
-   * Formula: EffectiveCash = SentCash * (1 - DistanceKm * 0.0005)
-   */
-  public calculateDistanceDecay(sentCash: number, distanceKm: number): { deliveredCash: number; lostInTransit: number } {
-    const lossRate = Math.min(0.50, distanceKm * 0.0005); // Maximum 50% decay
-    const lostInTransit = Math.round(sentCash * lossRate);
-    const deliveredCash = sentCash - lostInTransit;
-    return { deliveredCash, lostInTransit };
-  }
-
-  /**
    * Calculates seasonal agricultural grain yield for a settlement
    */
   public calculateAutumnHarvest(settlement: SettlementState): number {

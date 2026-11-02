@@ -80,6 +80,24 @@ export class OfficerUnrestConsequence implements UnrestConsequence {
 
   public execute(): UnrestConsequenceResult {
     const eventId = UnrestService.forDatabase(this.db).record(this.actor);
+    // An unhappy governor damages the order of the city they hold; the
+    // territorial coup/secession itself stays in faction-politics.
+    try {
+      const officer = this.db.queryOne<{ appointed_settlement_id: string }>(
+        `SELECT appointed_settlement_id FROM faction_officers WHERE officer_id = ? LIMIT 1;`,
+        [this.actor.npcId]
+      );
+      if (officer?.appointed_settlement_id) {
+        this.db.execute(
+          `UPDATE session_settlements
+           SET public_order = MAX(10, public_order - ?)
+           WHERE settlement_id = ?;`,
+          [Math.max(2, Math.round(Number(this.actor.severity || 1) * 2)), officer.appointed_settlement_id]
+        );
+      }
+    } catch {
+      // Older schemas may lack the appointed settlement column.
+    }
     return { applied: true, eventId, requiresFactionAction: true };
   }
 }

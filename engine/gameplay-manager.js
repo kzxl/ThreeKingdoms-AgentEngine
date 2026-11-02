@@ -12,19 +12,35 @@
 
 const fs = require('fs');
 const path = require('path');
-const { runSqlJson, runSqlBatch, escapeSql } = require('./db-adapter');
+const { runSqlJson, runSqlBatch, runSqlExec, escapeSql } = require('./db-adapter');
 const { advanceCalendarMonth, parseGameDate, formatGameDate, getSeasonInfo, calculateMonthDiff } = require('./date-utils');
-const { advanceCampaignDays, publishDayTicks, GRAIN_PER_DAY } = require('./time-manager');
-const { progressTasks, projectTaskProgress, listTasks } = require('./task-manager');
+const {
+  advanceTime,
+  getClock,
+  DAYS_PER_MONTH,
+  GRAIN_PER_DAY,
+  DAILY_FATIGUE_RECOVERY
+} = require('./time-manager');
+const { listTasks } = require('./task-manager');
+const { expRequiredForTier } = require('./skill-exp');
 const { getPrestigeService } = require('./prestige-bridge');
 const { getFameAttractionService } = require('./fame-attraction-bridge');
 const { getBattleDuelService } = require('./battle-duel-bridge');
 const { driftPlayerSettlement } = require('./settlement-market-bridge');
 const { getRetainerLoyaltyService } = require('./retainer-loyalty-bridge');
+const { settleBusinessMonth, businessHealth } = require('./business-economics');
+const { getFamilyLineageService } = require('./lineage-bridge');
 
 const ROOT_DIR = path.resolve(__dirname, '..');
 const SAVES_DIR = path.join(ROOT_DIR, 'saves');
 const DB_PATH = process.env.SIM_DB_PATH || path.join(SAVES_DIR, 'session.db');
+
+const ARCHETYPE_STARTING_SKILLS = {
+  'ARCH-COMMONER-YOUTH': ['SKL-CRA-WEAVE', 'SKL-COM-APPRAISE', 'SKL-LOG-PROV'],
+  'ARCH-SCHOLAR-ARTISAN': ['SKL-COM-BOOK', 'SKL-COM-APPRAISE', 'SKL-MGT-ENTERPRISE'],
+  'ARCH-FRONTIER-OFFICER': ['SKL-WAR-SPEAR', 'SKL-LDR-DRILL', 'SKL-LOG-PROV'],
+  'ARCH-SILK-CARAVAN': ['SKL-COM-CARAVAN', 'SKL-COM-SPECULATE', 'SKL-COM-APPRAISE']
+};
 
 class GameplayManager {
   constructor(dbPath = DB_PATH) {
@@ -123,10 +139,13 @@ class GameplayManager {
       DELETE FROM campaign_meta;
       DELETE FROM player_state;
       DELETE FROM player_skills;
+      DELETE FROM player_perks;
+      DELETE FROM player_talents;
       DELETE FROM cashflow_ledger;
       DELETE FROM account_journal;
       DELETE FROM inventory_items;
       DELETE FROM stock_movements;
+      DELETE FROM npc_perks;
       DELETE FROM npc_state;
       DELETE FROM npc_skills;
       DELETE FROM npc_relationship_deltas;
@@ -146,7 +165,7 @@ class GameplayManager {
         liquid_cash, safe_cash, strategic_grain, fixed_capital, special_licenses, health, fatigue, morale
       ) VALUES (
         'PLY-0001', '${playerName.replace(/'/g, "''")}', '${styleName.replace(/'/g, "''")}', ${arch.starting_age},
-        'Vườn Đào', '${arch.starting_location}',
+        '${arch.starting_location.replace(/'/g, "''")}', '${arch.starting_location.replace(/'/g, "''")}',
         ${arch.int_attr}, ${arch.pol_attr}, ${arch.war_attr}, ${arch.ldr_attr}, ${arch.dip_attr}, ${arch.com_attr}, ${arch.log_attr}, ${arch.cra_attr},
         ${arch.initial_liquid_cash}, 0, ${startGrain}, ${startFixedCapital}, '${arch.initial_perks ? arch.initial_perks.replace(/'/g, "''") : '[]'}', 100, 0, 100
       );
@@ -223,6 +242,45 @@ class GameplayManager {
       throw new Error(`Failed to start new game: ${res.error}`);
     }
 
+    // Scenario-specific map ownership and wars (shared with the instance path).
+    try {
+      require('./scenario-seed').applyScenarioSeed(this.dbPath, scenarioId);
+    } catch (scenarioError) {
+      console.warn('[GameplayManager] scenario seed failed:', scenarioError.message);
+    }
+
+    // Starting skills: the reset deletes player_skills, so a new campaign must
+    // seed the archetype's three opening skills.
+    try {
+      for (const code of ARCHETYPE_STARTING_SKILLS[archetypeId] || ARCHETYPE_STARTING_SKILLS['ARCH-COMMONER-YOUTH']) {
+        runSqlExec(
+          this.dbPath,
+          `INSERT OR IGNORE INTO player_skills (skill_code, skill_name, tier, current_exp, max_exp)
+           SELECT skill_code, skill_name_vi, 1, 0, ? FROM master_skills WHERE skill_code = ?;`,
+          [expRequiredForTier(1), code]
+        );
+      }
+    } catch (skillError) {
+      console.warn('[GameplayManager] starting skill seed failed:', skillError.message);
+    }
+
+    // Innate talents from the archetype master row.
+    try {
+      const talents = JSON.parse(arch.innate_talents || '[]');
+      for (const talent of Array.isArray(talents) ? talents : []) {
+        const code = String(talent).split(':')[0].trim();
+        if (code) {
+          runSqlExec(
+            this.dbPath,
+            'INSERT OR IGNORE INTO player_talents (talent_code) VALUES (?);',
+            [code]
+          );
+        }
+      }
+    } catch (talentError) {
+      console.warn('[GameplayManager] starting talent seed failed:', talentError.message);
+    }
+
     return {
       success: true,
       campaignId,
@@ -265,73 +323,81 @@ class GameplayManager {
   }
 
   /**
-   * Advance the campaign to the next strategic turn (Monthly Progression).
-   * Increments active_turn, advances game date by 1 month, runs autonomous business operations,
-   * restores player fatigue, executes living world simulations, writes turn_log and chronicle.
+   * Close the month that just ended. The day clock calls this when the
+   * calendar leaves day 30 (engine/time-manager.advanceTime); it never moves
+   * the date itself. Grain, fatigue, tasks and caravans belong to the day loop,
+   * so this method owns only the monthly settlements.
    */
-  advanceTurn({ notes = '' } = {}) {
+  closeMonth({ endedDate = null, nextDate: nextDateOverride = null, turnOverride = null, recoveredFatigue = 0 } = {}) {
     // 1. Fetch active campaign metadata
     const meta = runSqlJson(this.dbPath, `SELECT * FROM campaign_meta LIMIT 1;`)[0];
     if (!meta) throw new Error('Campaign metadata missing in session database.');
 
-    const prevTurn = Number(meta.active_turn || 1);
+    const prevTurn = Number(turnOverride || meta.active_turn || 1);
     const nextTurn = prevTurn + 1;
-    const prevDate = meta.current_date || '184-05-02';
+    const prevDate = endedDate || meta.current_date || '184-05-02';
+    const nextDate = nextDateOverride || advanceCalendarMonth(prevDate, 1, true);
     const prevYear = Number(String(prevDate).split('-')[0]);
-    if (!Number.isFinite(prevYear) || prevYear < 180 || prevYear > 300) {
-      throw new Error(`Campaign clock ${prevDate} is outside the game era; run npm run migrate to repair it.`);
+    const nextYear = Number(String(nextDate).split('-')[0]);
+    if (!Number.isFinite(prevYear) || prevYear < 180 || prevYear > 300
+      || !Number.isFinite(nextYear) || nextYear < 180 || nextYear > 300) {
+      throw new Error(`Campaign clock ${prevDate} -> ${nextDate} is outside the game era; run npm run migrate to repair it.`);
     }
 
-    // 2. Advance game date to the 1st of next month
-    const nextDate = advanceCalendarMonth(prevDate, 1, true);
+    // Idempotency: a committed close is recorded in the action journal. A retry
+    // after a failed clock write must never settle the same month twice.
+    const closeKey = `MONTH_CLOSE_${meta.campaign_id}_${nextTurn}`;
+    const priorClose = runSqlJson(
+      this.dbPath,
+      `SELECT action_id FROM action_log WHERE idempotency_key = ? LIMIT 1;`,
+      [closeKey]
+    )[0];
+    if (priorClose) {
+      return {
+        skipped: true,
+        prevTurn,
+        nextTurn,
+        prevDate,
+        nextDate,
+        bizReports: [],
+        npcLogs: [],
+        politicalEvents: [],
+        activeTasks: [],
+        completedTasks: []
+      };
+    }
 
-    // 3. Player State Fatigue Recovery & Morale Stabilization (Gradual Health Recovery, No Invincible Resets)
+    // 2. Player monthly recovery. Fatigue is a daily resource and is handled by
+    // the day loop; morale and health recover once per closed month.
     const player = runSqlJson(this.dbPath, `SELECT * FROM player_state LIMIT 1;`)[0];
-    const prevDateParts = String(prevDate).split('-').map(Number);
-    // Closing on day D jumps to the 1st of the next month: days D+1..30 are
-    // skipped (31 - D). Those days are not free: they consume grain upkeep and
-    // advance tasks/caravans exactly like the day clock would.
-    const skippedDays = Math.max(0, 31 - (prevDateParts[2] || 1));
-    const grainCost = Number((skippedDays * GRAIN_PER_DAY).toFixed(2));
-    const currentGrain = Number(player ? (player.strategic_grain || 0) : 0);
-    const grainMissing = grainCost > currentGrain;
-    const grainAfter = Math.max(0, Number((currentGrain - grainCost).toFixed(2)));
-    let recoveredFatigue = 0;
-    let playerUpdateSql = '';
     let playerStatus = null;
+    let monthlyPlayerSql = '';
     if (player) {
-      const currentFatigue = Number(player.fatigue || 0);
-      const newFatigue = Math.max(0, currentFatigue - 35 + (grainMissing ? 5 : 0));
-      recoveredFatigue = currentFatigue - newFatigue;
       const currentMorale = Number(player.morale || 100);
       const newMorale = Math.min(100, currentMorale + 10);
       const currentHealth = Number(player.health !== undefined ? player.health : 100);
-      // Natural health recovery of +15 if alive, capped at 100
       const newHealth = currentHealth > 0 ? Math.min(100, currentHealth + 15) : 0;
       playerStatus = {
-        fatigue: newFatigue,
+        fatigue: Number(player.fatigue || 0),
         morale: newMorale,
         health: newHealth,
         liquidCash: Number(player.liquid_cash || 0),
         safeCash: Number(player.safe_cash || 0),
-        strategicGrain: grainAfter,
+        strategicGrain: Number(player.strategic_grain || 0),
         fame: Number(player.fame || 0),
         militia: Number(player.militia || 0),
         location: player.current_location || 'LOC-0001'
       };
-      playerUpdateSql = `UPDATE player_state SET fatigue = ${newFatigue}, morale = ${newMorale}, health = ${newHealth}, strategic_grain = ${grainAfter} WHERE player_id = '${player.player_id}';`;
+      monthlyPlayerSql = `UPDATE player_state SET morale = ${newMorale}, health = ${newHealth} WHERE player_id = '${player.player_id}';`;
     }
 
-    // Multi-day tasks keep progressing through the days that remain in the
-    // month, even when the player closes the month early. The report uses a
-    // pure projection; the write happens after the core turn batch commits.
-    const remainingMonthDays = skippedDays;
-    const allTasks = projectTaskProgress(listTasks(this.dbPath), remainingMonthDays);
+    // The day loop already progressed tasks; the report reflects that state.
+    const allTasks = listTasks(this.dbPath);
     const activeTasks = allTasks.filter(task => task.status === 'IN_PROGRESS');
     const completedTasks = allTasks.filter(task => task.status === 'COMPLETED' && task.completed_at);
 
-    // 4. Prepare campaign_meta update SQL
-    const metaUpdateSql = `UPDATE campaign_meta SET active_turn = ${nextTurn}, current_date = '${nextDate}' WHERE campaign_id = '${meta.campaign_id}';`;
+    // 4. Prepare campaign_meta update SQL (the date was already advanced by the day loop)
+    const metaUpdateSql = `UPDATE campaign_meta SET active_turn = ${nextTurn}, updated_at = CURRENT_TIMESTAMP WHERE campaign_id = '${meta.campaign_id}';`;
 
     // 5. Monthly Business / Enterprise Cycle & Retainer Wages
     // One settlement per (business, month): the autonomous workshop cycle and
@@ -350,18 +416,31 @@ class GameplayManager {
     );
 
     const businesses = runSqlJson(this.dbPath, `SELECT * FROM businesses;`);
+    let hasEnterpriseSupervisor = false;
+    try {
+      hasEnterpriseSupervisor = runSqlJson(
+        this.dbPath,
+        `SELECT 1 AS ok FROM family_spouses
+         WHERE husband_id = 'PLY-0001' AND household_role = 'ENTERPRISE_SUPERVISOR' AND status = 'MARRIED'
+         LIMIT 1;`
+      ).length > 0;
+    } catch {
+      // Older/sparse databases may not have the lineage tables yet.
+      hasEnterpriseSupervisor = false;
+    }
     const bizReports = [];
     const bizUpdates = [];
     for (const b of businesses) {
+      if (hasEnterpriseSupervisor && b.owner_character_id === 'PLY-0001') {
+        b.household_efficiency_multiplier = 1.15;
+      }
       const staff = runSqlJson(this.dbPath, `SELECT * FROM npc_state WHERE assigned_business_id = '${b.business_id}';`);
       let totalWages = 0;
       for (const s of staff) {
         totalWages += Number(s.monthly_wage || 0);
       }
-      const tier = Number(b.tier || 1);
-      const workforce = Number(b.current_workforce || 2);
-      const eff = Number(b.efficiency_multiplier || 1.0);
-      let currentSafe = Number(b.safe_cash || 0);
+      const currentSafe = Number(b.safe_cash || 0);
+      const currentDebt = Number(b.debt || 0);
 
       if (settledBusinesses.has(b.business_id)) {
         bizReports.push({
@@ -369,9 +448,12 @@ class GameplayManager {
           businessName: b.name,
           grossIncome: 0,
           totalWages,
+          rent: Number(b.monthly_rent || 0),
           netProfit: 0,
           newSafeCash: currentSafe,
+          debt: currentDebt,
           staffCount: staff.length,
+          health: businessHealth({ staffCount: staff.length, debt: currentDebt, netProfit: 0 }),
           skipped: true,
           skippedReason: 'WORKSHOP_CYCLE_SETTLED',
           settlementMethod: 'WORKSHOP'
@@ -379,22 +461,26 @@ class GameplayManager {
         continue;
       }
 
-      const grossIncome = Math.round(tier * 260 * eff + workforce * 25);
-      const netProfit = grossIncome - totalWages;
-      const updatedSafe = Math.max(0, currentSafe + netProfit);
-      bizUpdates.push(`UPDATE businesses SET safe_cash = ${updatedSafe} WHERE business_id = '${b.business_id}';`);
+      const settlement = settleBusinessMonth(b, staff);
+      bizUpdates.push(
+        `UPDATE businesses SET safe_cash = ${settlement.safeCash}, debt = ${settlement.debt} WHERE business_id = '${b.business_id}';`
+      );
       bizUpdates.push(`INSERT OR IGNORE INTO action_log (action_id, idempotency_key, turn_number, game_date, action_type, payload, result, status)
         VALUES ('ACT-BIZ-${b.business_id}-${closingMonth}', 'BIZ_CYCLE_${b.business_id}_${closingMonth}', ${prevTurn}, '${prevDate}', 'BUSINESS_MONTHLY_ACCRUAL',
-        '{"business_id": "${b.business_id}"}', '{"grossIncome": ${grossIncome}, "netProfit": ${netProfit}, "newSafeCash": ${updatedSafe}}', 'SUCCESS');`);
+        '{"business_id": "${b.business_id}"}', '{"grossIncome": ${settlement.grossIncome}, "totalWages": ${settlement.totalWages}, "rent": ${settlement.rent}, "netProfit": ${settlement.netProfit}, "newSafeCash": ${settlement.safeCash}, "debt": ${settlement.debt}}', 'SUCCESS');`);
 
       bizReports.push({
         businessId: b.business_id,
         businessName: b.name,
-        grossIncome,
-        totalWages,
-        netProfit,
-        newSafeCash: updatedSafe,
-        staffCount: staff.length,
+        grossIncome: settlement.grossIncome,
+        totalWages: settlement.totalWages,
+        rent: settlement.rent,
+        netProfit: settlement.netProfit,
+        newSafeCash: settlement.safeCash,
+        debt: settlement.debt,
+        staffCount: settlement.staffCount,
+        staffingRatio: settlement.staffingRatio,
+        health: businessHealth(settlement),
         settlementMethod: 'PASSIVE'
       });
     }
@@ -410,26 +496,46 @@ class GameplayManager {
     let ecologyResults = null;
     const worldErrors = [];
 
+    // Each module is one transaction: a module that throws rolls back its own
+    // writes instead of leaving a half-simulated turn. `world_turn_ledger` still
+    // makes a retry skip the modules that already committed.
+    const { runWorldTransaction } = require('./world-transaction');
     if (gsm && gsm.npcLifecycle && typeof gsm.npcLifecycle.simulateAllActiveNpcs === 'function') {
-      try { npcLogs = gsm.npcLifecycle.simulateAllActiveNpcs(nextTurn, nextDate); }
-      catch (e) { worldErrors.push(`npc: ${e.message}`); }
+      try {
+        npcLogs = runWorldTransaction(this.dbPath, () => gsm.npcLifecycle.simulateAllActiveNpcs(nextTurn, nextDate));
+      } catch (e) { worldErrors.push(`npc: ${e.message}`); }
     }
     if (gsm && gsm.factionPolitics && typeof gsm.factionPolitics.simulatePoliticalCycle === 'function') {
-      try { politicalEvents = gsm.factionPolitics.simulatePoliticalCycle(nextTurn, nextDate); }
-      catch (e) { worldErrors.push(`politics: ${e.message}`); }
+      try {
+        politicalEvents = runWorldTransaction(this.dbPath, () => gsm.factionPolitics.simulatePoliticalCycle(nextTurn, nextDate));
+      } catch (e) { worldErrors.push(`politics: ${e.message}`); }
     }
     if (gsm && gsm.ecologyLogistics && typeof gsm.ecologyLogistics.simulateEcologyAndLogisticsTurn === 'function') {
-      try { ecologyResults = gsm.ecologyLogistics.simulateEcologyAndLogisticsTurn(nextTurn, nextDate); }
-      catch (e) { worldErrors.push(`ecology: ${e.message}`); }
+      try {
+        ecologyResults = runWorldTransaction(this.dbPath, () => gsm.ecologyLogistics.simulateEcologyAndLogisticsTurn(nextTurn, nextDate));
+      } catch (e) { worldErrors.push(`ecology: ${e.message}`); }
     }
 
-    // Closing a month skips the days the player did not play: caravans travel
-    // through them exactly as they would have on the day clock.
-    if (gsm && gsm.caravanLogistics && typeof gsm.caravanLogistics.advanceByDays === 'function' && remainingMonthDays > 0) {
-      try { gsm.caravanLogistics.advanceByDays(remainingMonthDays); }
-      catch (e) { worldErrors.push(`caravans: ${e.message}`); }
+    // AI factions at war may dispatch one army each; movement and battles use
+    // the same day clock as the player's expeditions.
+    let aiWar = [];
+    const aiWarReady = runSqlJson(
+      this.dbPath,
+      "SELECT 1 AS ok FROM sqlite_master WHERE type='table' AND name='military_expeditions' LIMIT 1;"
+    ).length > 0;
+    if (aiWarReady) {
+      try {
+        aiWar = runWorldTransaction(
+          this.dbPath,
+          () => require('./ai-war-bridge').simulateMonthly(this.dbPath, nextTurn, nextDate)
+        ) || [];
+      } catch (aiError) {
+        worldErrors.push(`ai-war: ${aiError.message}`);
+      }
     }
 
+    // Caravans advance in the day loop (one call per elapsed day span), so the
+    // month close must not move them a second time.
     if (worldErrors.length > 0) {
       throw new Error(`World simulation failed for turn ${nextTurn}; month not closed (retry is safe): ${worldErrors.join('; ')}`);
     }
@@ -538,9 +644,14 @@ class GameplayManager {
        LIMIT 8;`
     );
 
-    const locationRow = player
-      ? runSqlJson(this.dbPath, `SELECT name_vi FROM master_locations WHERE location_id = ? LIMIT 1;`, [player.current_location || ''])[0]
-      : null;
+    let locationRow = null;
+    if (player) {
+      try {
+        locationRow = runSqlJson(this.dbPath, `SELECT name_vi FROM master_locations WHERE location_id = ? LIMIT 1;`, [player.current_location || ''])[0];
+      } catch {
+        locationRow = null;
+      }
+    }
 
     const ecologyEvents = (ecologyResults && Array.isArray(ecologyResults.events)) ? ecologyResults.events : [];
     const worldDigest = {
@@ -593,13 +704,22 @@ class GameplayManager {
       WHERE status = 'ACTIVE';
     `;
 
+    // The close marker shares the core batch with active_turn and turn_log, so
+    // a retry can detect a committed close even if the clock write failed.
+    const closeMarkerSql = `
+      INSERT OR IGNORE INTO action_log (action_id, idempotency_key, turn_number, game_date, action_type, payload, result, status)
+      VALUES ('ACT-MONTH-CLOSE-${nextTurn}', '${closeKey}', ${nextTurn}, '${nextDate}', 'MONTH_CLOSE',
+        '{"prevDate":"${prevDate}","nextDate":"${nextDate}"}', '{}', 'SUCCESS');
+    `;
+
     // Execute all core turn mutations inside an ACID transaction to prevent partial state corruption
     const atomicTurnBatch = [
-      playerUpdateSql,
+      monthlyPlayerSql,
       metaUpdateSql,
       ...bizUpdates,
       proceduralNpcSql,
       promissoryInterestSql,
+      closeMarkerSql,
       turnLogSql,
       chronicleSql
     ].filter(Boolean).join('\n');
@@ -609,15 +729,45 @@ class GameplayManager {
       throw new Error(`Failed to commit turn advance transaction: ${txResult.error}`);
     }
 
-    // Task writes happen after the core turn commits; last_tick_date makes a
-    // replay of the same close idempotent.
-    if (remainingMonthDays > 0) {
+    // Yearly lifecycle: the campaign anniversary advances the protagonist, the
+    // named roster and every child by one year. Kept outside the core batch so
+    // an older database without npc_state.age cannot block the close.
+    const monthsSinceStart = calculateMonthDiff(meta.start_date || prevDate, nextDate);
+    const isNewYear = monthsSinceStart > 0 && monthsSinceStart % 12 === 0;
+    if (isNewYear) {
       try {
-        progressTasks(this.dbPath, remainingMonthDays, nextDate);
-      } catch (taskError) {
-        console.warn('[GameplayManager] task progress failed:', taskError.message);
+        runSqlBatch(this.dbPath, `
+          UPDATE player_state SET age = age + 1 WHERE player_id = 'PLY-0001';
+          UPDATE npc_state SET age = age + 1 WHERE age IS NOT NULL;
+        `);
+      } catch (ageError) {
+        console.warn('[GameplayManager] yearly aging failed:', ageError.message);
       }
     }
+
+    // Family lifecycle: player pregnancy advances once per closed month, and
+    // NPC couples marry/conceive/deliver on the same cadence. Each call is
+    // isolated so a missing optional table cannot skip the others.
+    let lineage = null;
+    try {
+      lineage = getFamilyLineageService(this.dbPath);
+    } catch (lineageLoadError) {
+      console.warn('[GameplayManager] lineage service unavailable:', lineageLoadError.message);
+    }
+    if (lineage) {
+      if (isNewYear) {
+        try { lineage.advanceAllChildrenAge(1); }
+        catch (childError) { console.warn('[GameplayManager] child aging failed:', childError.message); }
+      }
+      try { lineage.advancePregnancyTick(nextTurn, nextDate); }
+      catch (pregnancyError) { console.warn('[GameplayManager] pregnancy tick failed:', pregnancyError.message); }
+      try { lineage.simulateAutonomousNpcMarriages(nextTurn, nextDate); }
+      catch (marriageError) { console.warn('[GameplayManager] NPC marriage tick failed:', marriageError.message); }
+      try { lineage.simulateAutonomousNpcChildbirth(nextTurn, nextDate); }
+      catch (birthError) { console.warn('[GameplayManager] NPC childbirth tick failed:', birthError.message); }
+    }
+
+    // Task writes happen in the day loop before the close runs; nothing to do here.
 
     // Fame decays after long inactivity. The prestige ledger is the inactivity
     // clock: any award/loss resets it, and decay itself writes an event.
@@ -649,6 +799,15 @@ class GameplayManager {
       console.warn('[GameplayManager] fame arrivals failed:', arrivalError.message);
     }
 
+    // The same month-close gate owns victory and bankruptcy. Victory is checked
+    // first so a terminal campaign cannot be downgraded to BANKRUPT.
+    let victoryStatus = null;
+    try {
+      victoryStatus = require('./victory-bridge').checkVictory(this.dbPath);
+    } catch (victoryError) {
+      console.warn('[GameplayManager] victory check failed:', victoryError.message);
+    }
+
     // Bankruptcy is a slow defeat: two consecutive closes below the cash/grain floor.
     let defeatStatus = null;
     try {
@@ -656,6 +815,14 @@ class GameplayManager {
       if (battleService) defeatStatus = battleService.checkBankruptcy('PLY-0001');
     } catch (defeatError) {
       console.warn('[GameplayManager] bankruptcy check failed:', defeatError.message);
+    }
+
+    // Essential goods are consumed before the local market drifts.
+    let essentialConsumption = [];
+    try {
+      essentialConsumption = require('./settlement-market-bridge').consumeEssentials(this.dbPath, prevDate);
+    } catch (consumptionError) {
+      console.warn('[GameplayManager] essential consumption failed:', consumptionError.message);
     }
 
     // Local stock/demand drifts once per month for the player's settlement.
@@ -674,17 +841,45 @@ class GameplayManager {
       console.warn('[GameplayManager] retainer loyalty failed:', loyaltyError.message);
     }
 
-    // Publish the skipped days (excluding the new month's first day, which the
-    // month tick already represents) so daily subscribers see every elapsed day.
-    let dayTicksPublished = 0;
-    if (skippedDays > 1) {
-      try {
-        dayTicksPublished = publishDayTicks(prevDate, skippedDays - 1);
-      } catch (tickError) {
-        console.warn('[GameplayManager] day tick publish failed:', tickError.message);
-      }
+    // Periodic obligations: penalise bills that passed their due date, then
+    // issue the tax for the month being entered.
+    let obligations = null;
+    try {
+      obligations = require('./obligation-bridge').processMonthClose(
+        this.dbPath, 'PLY-0001', prevDate, nextDate
+      );
+    } catch (obligationError) {
+      console.warn('[GameplayManager] obligation processing failed:', obligationError.message);
     }
 
+    // Repeatable contract board: expire missed deliveries and post next month's
+    // offers for the player's settlement.
+    let contracts = null;
+    try {
+      contracts = require('./contract-board-bridge').processMonthClose(
+        this.dbPath, 'PLY-0001', prevDate, nextDate
+      );
+    } catch (contractError) {
+      console.warn('[GameplayManager] contract board processing failed:', contractError.message);
+    }
+
+    // One month of rest clears active injuries (10/20/30-day wounds).
+    let conditionsRecovered = 0;
+    try {
+      conditionsRecovered = require('./condition-bridge').recoverMonth(this.dbPath);
+    } catch (conditionError) {
+      console.warn('[GameplayManager] condition recovery failed:', conditionError.message);
+    }
+
+    // Land leases that reached their end date return to the market.
+    let farmLeasesExpired = 0;
+    try {
+      farmLeasesExpired = require('./farm-bridge').expireLeases(this.dbPath);
+    } catch (farmError) {
+      console.warn('[GameplayManager] farm lease expiry failed:', farmError.message);
+    }
+
+    // Day ticks were already published by the day loop for every elapsed day.
     // Cascade only after the core turn is committed. Subscribers re-entering
     // the world modules are safe: world_turn_ledger already marks this turn.
     if (eventBus && typeof eventBus.publish === 'function') {
@@ -721,7 +916,7 @@ class GameplayManager {
           pContent = pContent.replace(turnHeaderTag, `${turnHeaderTag}\n${newTurnBlock}`);
         }
         fs.writeFileSync(progressPath, pContent, 'utf8');
-      } catch (e) {}
+      } catch { /* best-effort fallback */ }
     }
 
     return {
@@ -731,16 +926,17 @@ class GameplayManager {
       prevDate,
       nextDate,
       recoveredFatigue,
-      skippedDays,
-      skippedFromDate: prevDate,
-      grainCost,
-      grainAfter,
-      grainMissing,
-      dayTicksPublished,
       fameDecay,
       fameArrivals,
       retainerDepartures,
       defeatStatus,
+      victoryStatus,
+      obligations,
+      contracts,
+      conditionsRecovered,
+      farmLeasesExpired,
+      essentialConsumption,
+      aiWar,
       playerStatus,
       playerLocationName: locationRow ? locationRow.name_vi : (playerLoc || ''),
       bizReports,
@@ -765,28 +961,81 @@ class GameplayManager {
   }
 
   /**
-   * Advances simulation calendar by a discrete number of days (Sub-Monthly Micro Ticks).
-   * Publishes WORLD_DAY_TICK on EventBus, updates player fatigue recovery, advances caravan transit.
+   * Advance exactly one day. If tomorrow is day 1 of a new month, the month
+   * that just ended is closed inside the same call.
    */
-  advanceDays(dayCount = 7, { notes = '' } = {}) {
-    // Explicit rest/advance may roll into the next month; it consumes no grain
-    // provisions and recovers 3 fatigue per day.
-    const result = advanceCampaignDays(this.dbPath, dayCount, {
+  advanceNextDay({ notes = '' } = {}) {
+    return this.advanceDays(1, { notes });
+  }
+
+  /**
+   * Legacy month-close entry point: runs the day clock to the next month
+   * boundary, closing the month on the way.
+   */
+  advanceTurn({ notes = '' } = {}) {
+    const clock = getClock(this.dbPath);
+    const daysToBoundary = DAYS_PER_MONTH - clock.dayOfMonth + 1;
+    return this.advanceDays(daysToBoundary, { notes });
+  }
+
+  /**
+   * The single time-advance entry point. Days are the unit; a month close is a
+   * boundary event performed by `closeMonth` through engine/time-manager.
+   */
+  advanceDays(dayCount = 1, { notes = '' } = {}) {
+    const result = advanceTime(this.dbPath, dayCount, {
       reason: notes || 'advanceDays',
-      clampToMonthEnd: false,
-      grainUpkeepPerDay: 0,
-      fatigueRecoveryPerDay: 3
+      grainUpkeepPerDay: GRAIN_PER_DAY,
+      fatigueRecoveryPerDay: DAILY_FATIGUE_RECOVERY
     });
     if (!result.success) throw new Error(result.error || 'Failed to advance days');
 
+    const months = Array.isArray(result.monthsClosed) ? result.monthsClosed : [];
+    const lastClosed = months.length ? months[months.length - 1] : null;
+    const player = runSqlJson(this.dbPath, `SELECT * FROM player_state LIMIT 1;`)[0] || null;
+    const meta = runSqlJson(this.dbPath, `SELECT active_turn FROM campaign_meta LIMIT 1;`)[0] || {};
+    const activeTurn = lastClosed && lastClosed.nextTurn
+      ? Number(lastClosed.nextTurn)
+      : Number(meta.active_turn || 1);
+
     return {
+      ...(lastClosed || {}),
       success: true,
-      prevDate: result.prevDate,
-      newDate: result.nextDate,
       daysAdvanced: result.advancedDays,
-      fatigueRecovered: result.dailyRecovery,
-      dayTicksPublished: result.dayTicksPublished
+      prevDate: result.prevDate,
+      nextDate: result.nextDate,
+      newDate: result.nextDate,
+      prevTurn: lastClosed && lastClosed.prevTurn ? Number(lastClosed.prevTurn) : activeTurn,
+      nextTurn: activeTurn,
+      playerStatus: player ? {
+        fatigue: Number(player.fatigue || 0),
+        morale: Number(player.morale || 100),
+        health: Number(player.health !== undefined ? player.health : 100),
+        liquidCash: Number(player.liquid_cash || 0),
+        safeCash: Number(player.safe_cash || 0),
+        strategicGrain: Number(player.strategic_grain || 0),
+        fame: Number(player.fame || 0),
+        militia: Number(player.militia || 0),
+        location: player.current_location || 'LOC-0001'
+      } : null,
+      recoveredFatigue: Math.max(0, Number(result.fatigueBefore || 0) - Number(result.fatigueAfter || 0)),
+      grainCost: result.grainCost,
+      grainAfter: result.grainAfter,
+      grainMissing: result.grainCost > 0 && result.grainAfter <= 0,
+      dayTicksPublished: result.dayTicksPublished,
+      monthsClosed: months,
+      monthClosedCount: months.filter(month => !month.skipped).length,
+      activeTasks: result.activeTasks,
+      completedTasks: lastClosed ? (lastClosed.completedTasks || []) : [],
+      skippedDays: 0,
+      fatigueBefore: result.fatigueBefore,
+      fatigueAfter: result.fatigueAfter
     };
+  }
+
+  /** Used by engine/time-manager at a month boundary. */
+  static closeMonthFor(dbPath, context = {}) {
+    return new GameplayManager(dbPath).closeMonth(context);
   }
 }
 

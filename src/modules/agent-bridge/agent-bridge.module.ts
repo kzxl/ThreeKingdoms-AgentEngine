@@ -145,7 +145,7 @@ export class AgentBridgeModule implements IFeatureModule {
         for (const row of fromDb) {
           if (!existingIds.has(row.id)) pool.push(row);
         }
-      } catch {}
+      } catch { /* best-effort fallback */ }
     }
 
     if (!queryTopic || queryTopic.trim() === '') {

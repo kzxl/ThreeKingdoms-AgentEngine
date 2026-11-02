@@ -1,6 +1,11 @@
 # Engine Engineering Progress (PROGRESS.md)
 
-## Current Status: Giai đoạn P0, P1, P2, P3, P4 Hoàn Thành (4/4 Test Suites, 20/20 Tests Passed)
+> **Status 2026-11-01:** this is the 2026-10-28 engineering snapshot, kept for
+> history. The current gate is 89/89 suites, 28 API contracts, 8 write smokes and
+> 1,961 invariants; see `ARCHITECTURE.md` §6.4 and §20, and
+> `docs/IMPLEMENTATION_PLAN_2026-11-01.md` for the remaining phases.
+
+## Snapshot Status: 2026-10-28 (4 legacy suites, 20 tests, 63 invariants)
 
 ---
 
@@ -122,6 +127,8 @@
 
 ---
 
-### 4. Remaining Work / Next Steps
-- Core implementation requirements (P0, P1, P2, P3, P4) are fully realized and verified.
-- The engine is fully primed for Turn 6 gameplay actions (Salt trade liquidation in Jizhou, military stratagems with Lu Zhi, workshop order dispatch).
+### 4. Historical Next Steps (2026-10-28)
+- The P0–P4 items below were the state at this snapshot; many have since been
+  extended or replaced.
+- For current work, use `docs/IMPLEMENTATION_PLAN_2026-11-01.md` and the gate in
+  `ARCHITECTURE.md` §6.4.

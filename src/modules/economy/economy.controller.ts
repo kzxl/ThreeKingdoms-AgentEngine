@@ -11,14 +11,23 @@ import { DatabaseService } from '../../core/database';
 import { ModuleRegistry } from '../../core/module-registry';
 import { EconomyModule } from './economy.module';
 import { RegionalMarketService, SETTLEMENT_PROFILES } from './regional-market.service';
-import { LOC_TO_NODE_MAP } from '../ecology-logistics/spatial-registry';
+import { LOC_TO_NODE_MAP, resolveNodeId } from '../ecology-logistics/spatial-registry';
+import { assertBagQuantity, resolvePlayerLocationId } from '../../shared/player-bag';
 import { SettlementMarketService } from './settlement-market.service';
 import { CaravanLogisticsService } from '../ecology-logistics/caravan-logistics.service';
-import { postCashflowEntry } from '../../shared/ledger';
+import { postCashflowEntry, postDoubleEntry } from '../../shared/ledger';
 import { ACCOUNT_CODES } from '../../shared/account-codes';
 import { getMarketItem } from '../../shared/market-price-book';
 import { quoteFromReference } from '../../shared/market-quote';
 import { worldPriceMultiplier } from '../../shared/world-price';
+import { SpatialGuardService } from '../progression/spatial-guard.service';
+import { SkillService } from '../progression/skill.service';
+import { getCareerModifiers } from '../../../engine/career-paths';
+import { ObligationService } from './obligation.service';
+import { ContractBoardService } from './contract-board.service';
+import { IntelService } from './intel.service';
+import { chargePlayerAction } from '../../shared/action-time';
+import { requestIdempotencyKey, findIdempotentResult, recordAction } from '../../shared/action-journal';
 
 function getEconomyModule(): EconomyModule | undefined {
   return ModuleRegistry.getInstance().get<EconomyModule>('module.economy');
@@ -26,22 +35,6 @@ function getEconomyModule(): EconomyModule | undefined {
 
 function getDb(): DatabaseService {
   return DatabaseService.getInstance();
-}
-
-function ensureLoansTable(db: DatabaseService): void {
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS financial_loans (
-      loan_id TEXT PRIMARY KEY,
-      borrower_id TEXT NOT NULL,
-      lender_name TEXT NOT NULL,
-      principal INTEGER NOT NULL,
-      interest_rate REAL NOT NULL DEFAULT 0.05,
-      outstanding_balance INTEGER NOT NULL,
-      created_date TEXT NOT NULL,
-      due_date TEXT NOT NULL,
-      status TEXT NOT NULL DEFAULT 'ACTIVE'
-    );
-  `);
 }
 
 function getCampaignMeta(db: DatabaseService): { campaignId: string; activeTurn: number; currentDate: string } {
@@ -104,9 +97,31 @@ function oneYearLater(gameDate: string): string {
 /**
  * Registers all Economy module routes into the provided Router instance.
  */
+function resolveSettlementId(db: DatabaseService, requested?: string): string {
+  const player = db.queryOne<{ current_location: string; current_sub_location: string }>(
+    'SELECT current_location, current_sub_location FROM player_state WHERE player_id = ?;',
+    ['PLY-0001']
+  );
+  const raw = requested || player?.current_sub_location || player?.current_location || 'LOC-0001';
+  if (LOC_TO_NODE_MAP[raw]) return LOC_TO_NODE_MAP[raw];
+  if (SETTLEMENT_PROFILES[raw]) return raw;
+
+  const subLocation = db.queryOne<{ location_id: string }>(
+    'SELECT location_id FROM location_sublocations WHERE name_vi = ? OR sub_location_id = ? LIMIT 1;',
+    [raw, raw]
+  );
+  if (subLocation) return resolveNodeId(subLocation.location_id);
+
+  const location = db.queryOne<{ location_id: string }>(
+    'SELECT location_id FROM master_locations WHERE name_vi = ? OR name_en = ? LIMIT 1;',
+    [raw, raw]
+  );
+  if (location) return resolveNodeId(location.location_id);
+  return resolveNodeId(raw);
+}
+
 export function registerEconomyRoutes(router: Router): void {
   const db = getDb();
-  ensureLoansTable(db);
 
   // -------------------------------------------------------------
   // 1. GET /api/market & /api/economy/market
@@ -178,6 +193,18 @@ export function registerEconomyRoutes(router: Router): void {
   router.get('/api/economy/market', handleGetMarket);
 
   // Market pulse: local stock/demand and the last 12 monthly points.
+  // Full price board: every item, local price, pressure, history, player stock
+  // and the best arbitrage destination in one payload.
+  router.get('/api/economy/market-board', (_req: any, res: any, ctx: RouteContext) => {
+    try {
+      const settlementId = resolveSettlementId(db, ctx.query.settlementId as string | undefined);
+      const board = SettlementMarketService.forDatabase(db).getMarketBoard(settlementId);
+      sendJson(res, 200, { success: true, ...board });
+    } catch (err: any) {
+      sendJson(res, 500, { success: false, error: err.message });
+    }
+  });
+
   router.get('/api/economy/settlement-market', (_req: any, res: any, ctx: RouteContext) => {
     try {
       const player = db.queryOne<{ current_location: string }>(
@@ -271,6 +298,21 @@ export function registerEconomyRoutes(router: Router): void {
         return;
       }
 
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
+
+      // A market session costs two days; charge before the clock-derived quote.
+      const time = chargePlayerAction(
+        db.path,
+        tradeAction === 'BUY' ? 'TRADE_BUY' : 'TRADE_SELL',
+        null,
+        `Trade ${tradeAction} ${qty} ${itemCode}`
+      );
+
       const meta = getCampaignMeta(db);
       const effectiveDate = meta.currentDate;
       const fameRow = db.queryOne<{ fame: number; current_location: string }>(
@@ -278,12 +320,20 @@ export function registerEconomyRoutes(router: Router): void {
         ['PLY-0001']
       );
       const worldMultiplier = worldPriceMultiplier(db, itemCode, effectiveDate);
-      const settlementNode = LOC_TO_NODE_MAP[fameRow?.current_location || ''] || (fameRow?.current_location || '');
+      const playerLocationId = resolvePlayerLocationId(db);
+      const settlementNode = resolveNodeId(playerLocationId);
       const localMultiplier = settlementNode
         ? SettlementMarketService.forDatabase(db).getLocalMultiplier(settlementNode, itemCode)
         : 1;
       const quote = quoteFromReference(marketItem.price, Number(fameRow?.fame || 0), itemCode, worldMultiplier, localMultiplier);
-      const effectiveUnitPrice = tradeAction === 'BUY' ? quote.buyPrice : quote.sellPrice;
+      const career = getCareerModifiers(db as any, 'PLY-0001').modifiers;
+      const tradeMargin = Math.min(0.2, SkillService.forDatabase(db).getEffectTotal(
+        'TRADE_MARGIN',
+        ['SKL-COM-APPRAISE', 'SKL-COM-SPECULATE', 'SKL-COM-CARAVAN', 'SKL-MGT-ENTERPRISE']
+      ) + Number(career.tradeMargin || 0));
+      const effectiveUnitPrice = tradeAction === 'BUY'
+        ? Math.max(1, Math.round(quote.buyPrice * (1 - tradeMargin)))
+        : Math.max(1, Math.round(quote.sellPrice * (1 + tradeMargin)));
       const itemInfo = {
         item_code: marketItem.itemCode,
         name_vi: marketItem.nameVi,
@@ -297,6 +347,10 @@ export function registerEconomyRoutes(router: Router): void {
           ['PLY-0001']
         );
         if (!player) throw new Error('Player state PLY-0001 not found.');
+
+        if (tradeAction === 'SELL') {
+          assertBagQuantity(db, playerLocationId, itemCode, qty, settlementNode);
+        }
 
         const txnId = nextSequentialId(db, 'cashflow_ledger', 'TXN', effectiveDate);
         const safeCash = Number(player.safe_cash || 0);
@@ -406,9 +460,27 @@ export function registerEconomyRoutes(router: Router): void {
         };
       });
 
+      // The local market state is the same source its quote read; book the fill.
+      const market = settlementNode
+        ? SettlementMarketService.forDatabase(db).applyTrade(
+          settlementNode,
+          itemCode,
+          tradeAction === 'BUY' ? -qty : qty
+        )
+        : null;
+
+      const response = { ...tradeResult, market, time };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: `TRADE_${tradeAction}`,
+        payload: { action: tradeAction, itemCode, quantity: qty },
+        result: response
+      });
+
       sendJson(res, 200, {
         success: true,
-        ...tradeResult,
+        ...response,
+        idempotent: false,
         message: `Thực hiện lệnh ${tradeAction} thành công: ${qty} ${tradeResult.itemName} tổng trị giá ${totalAmount} quan.`
       });
     } catch (err: any) {
@@ -418,6 +490,199 @@ export function registerEconomyRoutes(router: Router): void {
 
   router.post('/api/trade', handleTrade);
   router.post('/api/economy/trade', handleTrade);
+
+  // -------------------------------------------------------------
+  // 3b. GET /api/obligations & POST /api/obligations/pay
+  // -------------------------------------------------------------
+  const handleGetObligations = (req: any, res: any, ctx: RouteContext) => {
+    try {
+      const playerId = (ctx.query.playerId as string) || 'PLY-0001';
+      const service = ObligationService.forDatabase(db);
+      sendJson(res, 200, {
+        success: true,
+        playerId,
+        obligations: service.list(playerId),
+        summary: service.summary(playerId)
+      });
+    } catch (err: any) {
+      sendJson(res, 500, { success: false, error: err.message });
+    }
+  };
+  router.get('/api/obligations', handleGetObligations);
+  router.get('/api/economy/obligations', handleGetObligations);
+
+  const handlePayObligation = (req: any, res: any, ctx: RouteContext) => {
+    try {
+      const { obligationId, playerId = 'PLY-0001' } = ctx.body || {};
+      if (!obligationId) {
+        sendJson(res, 400, { success: false, error: 'obligationId is required.' });
+        return;
+      }
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
+      const time = chargePlayerAction(db.path, 'ADMIN_ACTION', null, `Pay obligation ${obligationId}`);
+      const service = ObligationService.forDatabase(db);
+      const obligation = service.pay(obligationId, playerId);
+      const response = { obligation, summary: service.summary(playerId), time };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'OBLIGATION_PAY',
+        payload: { obligationId, playerId },
+        result: response
+      });
+      sendJson(res, 200, {
+        success: true,
+        ...response,
+        idempotent: false
+      });
+    } catch (err: any) {
+      const status = err.code === 'INSUFFICIENT_FUNDS' || err.code === 'INSUFFICIENT_GRAIN' ? 409 : 400;
+      sendJson(res, status, { success: false, error: err.message, code: err.code });
+    }
+  };
+  router.post('/api/obligations/pay', handlePayObligation);
+  router.post('/api/economy/obligations/pay', handlePayObligation);
+
+  // -------------------------------------------------------------
+  // 3c. Contract board: list, accept, deliver
+  // -------------------------------------------------------------
+  const handleGetContracts = (req: any, res: any, ctx: RouteContext) => {
+    try {
+      const playerId = (ctx.query.playerId as string) || 'PLY-0001';
+      const settlementId = ctx.query.settlementId as string | undefined;
+      const board = ContractBoardService.forDatabase(db).list(playerId, settlementId);
+      sendJson(res, 200, { success: true, playerId, ...board });
+    } catch (err: any) {
+      sendJson(res, 500, { success: false, error: err.message });
+    }
+  };
+  router.get('/api/contracts', handleGetContracts);
+  router.get('/api/economy/contracts', handleGetContracts);
+
+  const handleAcceptContract = (req: any, res: any, ctx: RouteContext) => {
+    try {
+      const { offerId, playerId = 'PLY-0001' } = ctx.body || {};
+      if (!offerId) {
+        sendJson(res, 400, { success: false, error: 'offerId is required.' });
+        return;
+      }
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
+      const time = chargePlayerAction(db.path, 'ADMIN_ACTION', null, `Accept contract ${offerId}`);
+      const service = ContractBoardService.forDatabase(db);
+      const contract = service.accept(offerId, playerId);
+      const response = { contract, time };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'CONTRACT_ACCEPT',
+        payload: { offerId, playerId },
+        result: response
+      });
+      sendJson(res, 200, { success: true, ...response, idempotent: false });
+    } catch (err: any) {
+      sendJson(res, 400, { success: false, error: err.message, code: err.code });
+    }
+  };
+  router.post('/api/contracts/accept', handleAcceptContract);
+  router.post('/api/economy/contracts/accept', handleAcceptContract);
+
+  const handleDeliverContract = (req: any, res: any, ctx: RouteContext) => {
+    try {
+      const { contractId, playerId = 'PLY-0001' } = ctx.body || {};
+      if (!contractId) {
+        sendJson(res, 400, { success: false, error: 'contractId is required.' });
+        return;
+      }
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
+      const service = ContractBoardService.forDatabase(db);
+      const contract = service.deliver(contractId, playerId);
+      const response = { contract, summary: service.list(playerId).summary };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'CONTRACT_DELIVER',
+        payload: { contractId, playerId },
+        result: response
+      });
+      sendJson(res, 200, {
+        success: true,
+        ...response,
+        idempotent: false
+      });
+    } catch (err: any) {
+      const status = err.message?.includes('không còn trong kho') ? 409 : 400;
+      sendJson(res, status, { success: false, error: err.message, code: err.code });
+    }
+  };
+  router.post('/api/contracts/deliver', handleDeliverContract);
+  router.post('/api/economy/contracts/deliver', handleDeliverContract);
+
+  // -------------------------------------------------------------
+  // 3d. Intel board: list rumors and verify one (costs days)
+  // -------------------------------------------------------------
+  const handleGetIntel = (req: any, res: any, ctx: RouteContext) => {
+    try {
+      const settlementId = ctx.query.settlementId as string | undefined;
+      const service = IntelService.forDatabase(db);
+      const settlement = service.resolveSettlement(settlementId);
+      sendJson(res, 200, {
+        success: true,
+        settlementId: settlement,
+        reports: service.list(settlementId)
+      });
+    } catch (err: any) {
+      sendJson(res, 500, { success: false, error: err.message });
+    }
+  };
+  router.get('/api/intel', handleGetIntel);
+  router.get('/api/economy/intel', handleGetIntel);
+
+  const handleVerifyIntel = (req: any, res: any, ctx: RouteContext) => {
+    try {
+      const { reportId } = ctx.body || {};
+      if (!reportId) {
+        sendJson(res, 400, { success: false, error: 'reportId is required.' });
+        return;
+      }
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
+      const time = chargePlayerAction(
+        db.path,
+        'EXPLORE_POI',
+        null,
+        `Verify intel ${reportId}`
+      );
+      const result = IntelService.forDatabase(db).verify(reportId);
+      const response = { ...result, time };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'INTEL_VERIFY',
+        payload: { reportId },
+        result: response
+      });
+      sendJson(res, 200, { success: true, ...response, idempotent: false });
+    } catch (err: any) {
+      sendJson(res, err.statusCode || 400, { success: false, error: err.message, code: err.code });
+    }
+  };
+  router.post('/api/intel/verify', handleVerifyIntel);
+  router.post('/api/economy/intel/verify', handleVerifyIntel);
 
   // -------------------------------------------------------------
   // 4. GET /api/ledger & /api/economy/ledger
@@ -506,7 +771,28 @@ export function registerEconomyRoutes(router: Router): void {
         sendJson(res, 400, { success: false, error: 'Positive loan amount is required.' });
         return;
       }
+      if (loanAction !== 'BORROW' && loanAction !== 'REPAY') {
+        sendJson(res, 400, { success: false, error: 'Action must be BORROW or REPAY.' });
+        return;
+      }
+      if (loanAction === 'REPAY' && !loanId) {
+        sendJson(res, 400, { success: false, error: 'loanId is required to repay a specific debt.' });
+        return;
+      }
 
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
+
+      const time = chargePlayerAction(
+        db.path,
+        'ADMIN_ACTION',
+        null,
+        `Loan ${loanAction} ${numAmount}`
+      );
       const meta = getCampaignMeta(db);
       const effectiveDate = meta.currentDate;
 
@@ -533,24 +819,16 @@ export function registerEconomyRoutes(router: Router): void {
           );
 
           const txnId = nextSequentialId(db, 'cashflow_ledger', 'TXN', effectiveDate);
-          postCashflowEntry(db, {
+          postDoubleEntry(db, {
             txnId,
             gameDate: effectiveDate,
             counterparty: lenderName,
             category: 'Financing/Loan',
             inflow: numAmount,
             balance: newCash + safeCash,
-            memo: `Vay vốn kinh doanh từ ${lenderName}`
-          });
-
-          insertJournalPair(db, {
-            txnId,
-            campaignId: meta.campaignId,
-            gameDate: effectiveDate,
+            memo: `Vay vốn kinh doanh từ ${lenderName}`,
             debitAccount: ACCOUNT_CODES.cashMobile,
-            creditAccount: ACCOUNT_CODES.accountsPayable,
-            amount: numAmount,
-            memo: `Vay vốn lưu động ${lenderName}`
+            creditAccount: ACCOUNT_CODES.accountsPayable
           });
 
           return {
@@ -561,59 +839,55 @@ export function registerEconomyRoutes(router: Router): void {
             newLiquidCash: newCash,
             message: `Vay thành công ${numAmount} quan từ ${lenderName} (Lãi suất 5%, hoàn trả ${outstanding} quan).`
           };
-        } else if (loanAction === 'REPAY') {
-          if (!loanId) throw new Error('loanId is required to repay a specific debt.');
-          const targetLoan = db.queryOne<any>('SELECT * FROM financial_loans WHERE loan_id = ? AND status = ?', [loanId, 'ACTIVE']);
-          if (!targetLoan) throw new Error(`Active loan ${loanId} not found.`);
-
-          const payAmount = Math.min(numAmount, targetLoan.outstanding_balance);
-          if (player.liquid_cash < payAmount) {
-            throw new Error(`Insufficient funds: require ${payAmount} quan, available ${player.liquid_cash} quan.`);
-          }
-
-          const newCash = player.liquid_cash - payAmount;
-          const remainingDebt = targetLoan.outstanding_balance - payAmount;
-          const newStatus = remainingDebt <= 0 ? 'REPAID' : 'ACTIVE';
-
-          db.execute('UPDATE player_state SET liquid_cash = ? WHERE player_id = ?', [newCash, 'PLY-0001']);
-          db.execute('UPDATE financial_loans SET outstanding_balance = ?, status = ? WHERE loan_id = ?', [remainingDebt, newStatus, loanId]);
-
-          const txnId = nextSequentialId(db, 'cashflow_ledger', 'TXN', effectiveDate);
-          postCashflowEntry(db, {
-            txnId,
-            gameDate: effectiveDate,
-            counterparty: targetLoan.lender_name,
-            category: 'Financing/Repayment',
-            outflow: payAmount,
-            balance: newCash + safeCash,
-            memo: `Trả nợ khoản vay ${loanId}`
-          });
-
-          insertJournalPair(db, {
-            txnId,
-            campaignId: meta.campaignId,
-            gameDate: effectiveDate,
-            debitAccount: ACCOUNT_CODES.accountsPayable,
-            creditAccount: ACCOUNT_CODES.cashMobile,
-            amount: payAmount,
-            memo: `Hoàn trả nợ vay ${loanId}`
-          });
-
-          return {
-            loanId,
-            action: 'REPAY',
-            paidAmount: payAmount,
-            remainingDebt,
-            newStatus,
-            newLiquidCash: newCash,
-            message: `Hoàn trả ${payAmount} quan cho ${targetLoan.lender_name}. Nợ còn lại: ${remainingDebt} quan.`
-          };
-        } else {
-          throw new Error('Action must be BORROW or REPAY.');
         }
+
+        const targetLoan = db.queryOne<any>('SELECT * FROM financial_loans WHERE loan_id = ? AND status = ?', [loanId, 'ACTIVE']);
+        if (!targetLoan) throw new Error(`Active loan ${loanId} not found.`);
+
+        const payAmount = Math.min(numAmount, targetLoan.outstanding_balance);
+        if (player.liquid_cash < payAmount) {
+          throw new Error(`Insufficient funds: require ${payAmount} quan, available ${player.liquid_cash} quan.`);
+        }
+
+        const newCash = player.liquid_cash - payAmount;
+        const remainingDebt = targetLoan.outstanding_balance - payAmount;
+        const newStatus = remainingDebt <= 0 ? 'REPAID' : 'ACTIVE';
+
+        db.execute('UPDATE player_state SET liquid_cash = ? WHERE player_id = ?', [newCash, 'PLY-0001']);
+        db.execute('UPDATE financial_loans SET outstanding_balance = ?, status = ? WHERE loan_id = ?', [remainingDebt, newStatus, loanId]);
+
+        const txnId = nextSequentialId(db, 'cashflow_ledger', 'TXN', effectiveDate);
+        postDoubleEntry(db, {
+          txnId,
+          gameDate: effectiveDate,
+          counterparty: targetLoan.lender_name,
+          category: 'Financing/Repayment',
+          outflow: payAmount,
+          balance: newCash + safeCash,
+          memo: `Trả nợ khoản vay ${loanId}`,
+          debitAccount: ACCOUNT_CODES.accountsPayable,
+          creditAccount: ACCOUNT_CODES.cashMobile
+        });
+
+        return {
+          loanId,
+          action: 'REPAY',
+          paidAmount: payAmount,
+          remainingDebt,
+          newStatus,
+          newLiquidCash: newCash,
+          message: `Hoàn trả ${payAmount} quan cho ${targetLoan.lender_name}. Nợ còn lại: ${remainingDebt} quan.`
+        };
       });
 
-      sendJson(res, 200, { success: true, ...result });
+      const response = { ...result, time };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: `LOAN_${loanAction}`,
+        payload: { action: loanAction, amount: numAmount, lenderName, loanId },
+        result: response
+      });
+      sendJson(res, 200, { success: true, ...response, idempotent: false });
     } catch (err: any) {
       sendJson(res, 400, { success: false, error: err.message });
     }
@@ -740,6 +1014,27 @@ export function registerEconomyRoutes(router: Router): void {
         return;
       }
 
+      SpatialGuardService.getInstance().assertStage(
+        playerId,
+        3,
+        'Thương Đoàn Liên Châu',
+        (ctx.body || {}).bypassProgressionGate || (ctx.body || {}).bypassSpatialGuard
+      );
+
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
+
+      const time = chargePlayerAction(
+        db.path,
+        'ENTERPRISE_MANAGE',
+        null,
+        `Dispatch caravan ${fromSettlementId} -> ${toSettlementId}`
+      );
+
       const logisticsService = CaravanLogisticsService.getInstance();
       const result = logisticsService.dispatchCaravan(
         {
@@ -752,12 +1047,20 @@ export function registerEconomyRoutes(router: Router): void {
         playerId
       );
 
+      const response = { ...result, time };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'CARAVAN_DISPATCH',
+        payload: { cargoItemCode, cargoQuantity, fromSettlementId, toSettlementId, guardTier },
+        result: response
+      });
       sendJson(res, 200, {
         success: true,
-        ...result
+        ...response,
+        idempotent: false
       });
     } catch (err: any) {
-      sendJson(res, 400, { success: false, error: err.message });
+      sendJson(res, err.statusCode || 400, { success: false, error: err.message });
     }
   };
 
@@ -772,26 +1075,14 @@ export function registerEconomyRoutes(router: Router): void {
   // can never move them for free.
   const handleTickCaravans = async (_req: any, res: any, _ctx: RouteContext) => {
     try {
-      const { advanceCampaignDays } = require('../../../engine/time-manager');
-      const time = advanceCampaignDays(getDb().path, 1, {
+      const { advanceTime } = require('../../../engine/time-manager');
+      const time = advanceTime(getDb().path, 1, {
         reason: 'Thương đoàn lên đường',
-        clampToMonthEnd: true,
         grainUpkeepPerDay: 0.02,
         fatigueRecoveryPerDay: 1
       });
       if (!time.success) {
         sendJson(res, 409, { success: false, error: time.error || 'Không thể cho thời gian trôi qua.' });
-        return;
-      }
-      if (!time.advancedDays) {
-        // Day 30: the month must be closed explicitly; do not report a day
-        // that never passed.
-        sendJson(res, 409, {
-          success: false,
-          code: 'MONTH_END',
-          error: 'Đã hết ngày 30. Hãy bấm Qua Tháng trước khi tiếp tục.',
-          clock: time
-        });
         return;
       }
       const caravans = time.caravans || {
@@ -827,9 +1118,23 @@ export function registerEconomyRoutes(router: Router): void {
         return;
       }
 
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
+      const time = chargePlayerAction(db.path, 'ADMIN_ACTION', null, `Claim caravan ${caravanId}`);
       const logisticsService = CaravanLogisticsService.getInstance();
       const result = logisticsService.claimCaravan(caravanId, playerId);
-      sendJson(res, 200, result);
+      const response = { ...result, time };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'CARAVAN_CLAIM',
+        payload: { caravanId, playerId },
+        result: response
+      });
+      sendJson(res, 200, { ...response, idempotent: false });
     } catch (err: any) {
       sendJson(res, 400, { success: false, error: err.message });
     }

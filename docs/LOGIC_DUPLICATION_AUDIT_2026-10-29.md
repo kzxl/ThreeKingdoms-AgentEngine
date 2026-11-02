@@ -1,5 +1,10 @@
 # Rà soát logic trùng lặp & chồng chéo tính năng
 
+> **Status 2026-10-31:** P0 1.23.1–1.23.4 closed the action-time,
+> business-settlement, career-resolver and text-data findings. Market-source
+> consolidation, legacy UI retirement and the remaining duplication items are
+> still open. See `ARCHITECTURE.md` and `DECISIONS.md` ADR-007–010.
+
 Ngày 29/10/2026. Phạm vi: `engine/`, `src/`, `public/js`, `public/index.html`, `tools/sim-web.js`.
 Phương pháp: đọc code + đối chiếu call graph + mở thử UI trên trình duyệt. Các kết luận dưới đây là
 hiện trạng tại thời điểm rà soát, không phải giả thuyết từ tên file.

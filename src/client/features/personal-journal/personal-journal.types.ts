@@ -24,3 +24,43 @@ export interface JournalMilestone {
   isUnlocked: boolean;
   rewardPrestige?: number;
 }
+
+export interface LifeActionView {
+  code: string;
+  labelVi: string;
+  labelEn: string;
+  available: boolean;
+  reasonVi?: string;
+}
+
+export interface LifeSkillView {
+  skillCode: string;
+  nameVi: string;
+  tier: number;
+  currentExp: number;
+  maxExp: number;
+  effectType: string;
+  effectValue: number;
+}
+
+export interface LifeStatusView {
+  characterId: string;
+  date: string;
+  phase: number;
+  phaseLabel: string;
+  needs: {
+    fatigue: number;
+    morale: number;
+    stress: number;
+    health: number;
+  };
+  household: {
+    spouseName: string | null;
+    spouseRole: string | null;
+    children: number;
+    upkeepDue: boolean;
+  };
+  skills: LifeSkillView[];
+  trainableSkills: Array<{ skillCode: string; nameVi: string; domain: string }>;
+  actions: LifeActionView[];
+}

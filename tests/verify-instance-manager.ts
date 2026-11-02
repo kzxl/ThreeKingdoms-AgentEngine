@@ -5,9 +5,14 @@
 
 import assert from 'assert';
 import fs from 'fs';
+import os from 'os';
 import path from 'path';
 import Database from 'better-sqlite3';
 import { InstanceManagerService } from '../src/modules/instances/instances.service';
+
+// A stale NG+ profile must not change the archetype's starting cash.
+process.env.SIM_LEGACY_PATH = path.join(os.tmpdir(), `sim-instance-legacy-${process.pid}.json`);
+try { fs.rmSync(process.env.SIM_LEGACY_PATH, { force: true }); } catch { /* best effort */ }
 
 async function runInstanceTests() {
   console.log('======================================================================');
@@ -40,14 +45,19 @@ async function runInstanceTests() {
   assert.strictEqual(newInst.name, 'Triệu Vân Giả Định', 'Player name should match');
   assert.strictEqual(newInst.styleName, 'Tử Long', 'Style name should match');
   assert.strictEqual(newInst.age, 18, 'Starting age for Commoner Youth must be 18');
-  assert.strictEqual(newInst.liquidCash, 100, 'Starting cash for Commoner Youth must be 100 Qian');
+  const db = new Database(newInst.filepath, { readonly: true });
+  let legacyNetWorth = 0;
+  try {
+    legacyNetWorth = Number((db.prepare('SELECT net_worth FROM campaign_legacy ORDER BY rowid DESC LIMIT 1').get() as any)?.net_worth || 0);
+  } catch { /* no legacy table */ }
+  const expectedCash = 100 + Math.min(20000, Math.floor(legacyNetWorth * 0.1));
+  assert.strictEqual(newInst.liquidCash, expectedCash, 'Starting cash must be archetype cash + NG+ bonus');
   assert.strictEqual(newInst.turnNumber, 1, 'Starting turn must be 1');
 
   // Verify internal SQLite state of new instance
-  const db = new Database(newInst.filepath, { readonly: true });
   try {
     const player = db.prepare(`SELECT * FROM player_state WHERE player_id = 'PLY-0001'`).get() as any;
-    assert.strictEqual(player.liquid_cash, 100, 'Internal liquid_cash must be 100');
+    assert.strictEqual(player.liquid_cash, expectedCash, 'Internal liquid_cash must match cash + NG+ bonus');
     assert.strictEqual(player.safe_cash, 0, 'Internal safe_cash must be 0');
     assert.strictEqual(player.fatigue, 0, 'Initial fatigue must be 0');
     assert.strictEqual(player.war_attr, 55, 'Initial WAR must be 55');
@@ -59,7 +69,7 @@ async function runInstanceTests() {
 
     const ledgerCount = db.prepare(`SELECT COUNT(*) as cnt, balance FROM cashflow_ledger`).get() as any;
     assert.strictEqual(ledgerCount.cnt, 1, 'Ledger must have exactly 1 initial capital record');
-    assert.strictEqual(ledgerCount.balance, 100, 'Ledger balance must equal 100 Qian');
+    assert.strictEqual(ledgerCount.balance, expectedCash, 'Ledger balance must equal archetype cash + NG+ bonus');
 
     const eqpCount = db.prepare(`SELECT COUNT(*) as cnt FROM character_equipment WHERE character_id = 'PLY-0001'`).get() as any;
     assert.strictEqual(eqpCount.cnt, 0, 'Commoner youth starts with 0 military equipment');

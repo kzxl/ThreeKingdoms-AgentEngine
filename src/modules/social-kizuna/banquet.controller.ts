@@ -21,6 +21,9 @@ import {
   RecruitRetainerParams
 } from './tavern-banquet.service';
 import { SpatialGuardService } from '../progression/spatial-guard.service';
+import { DatabaseService } from '../../core/database';
+import { chargePlayerAction } from '../../shared/action-time';
+import { requestIdempotencyKey, findIdempotentResult, recordAction } from '../../shared/action-journal';
 
 export function registerBanquetRoutes(router: Router): void {
   const banquetService = TavernBanquetService.getInstance();
@@ -56,10 +59,32 @@ export function registerBanquetRoutes(router: Router): void {
         allowAutoProcure
       };
 
+      const db = DatabaseService.getInstance();
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
+
+      const time = chargePlayerAction(
+        db.path,
+        'KIZUNA_INTERACT',
+        null,
+        `Host banquet ${tier} (${guestNpcIds.join(',')})`
+      );
+
       const result = banquetService.hostBanquet(params);
-      sendJson(res, 200, { success: true, result });
+      const response = { result, time };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'BANQUET_HOST',
+        payload: params,
+        result: response
+      });
+      sendJson(res, 200, { success: true, ...response, idempotent: false });
     } catch (err: any) {
-      sendJson(res, 400, { success: false, error: err.message });
+      sendJson(res, err.statusCode || 400, { success: false, error: err.message, code: err.code });
     }
   };
 
@@ -90,10 +115,32 @@ export function registerBanquetRoutes(router: Router): void {
         body.bypassSpatialGuard
       );
 
+      const db = DatabaseService.getInstance();
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
+
+      const time = chargePlayerAction(
+        db.path,
+        'KIZUNA_INTERACT',
+        null,
+        `Swear brotherhood with ${npcId}`
+      );
+
       const result = banquetService.swearBrotherhood(npcId, playerId);
-      sendJson(res, 200, { success: true, result });
+      const response = { result, time };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'BANQUET_BROTHERHOOD',
+        payload: { npcId, playerId },
+        result: response
+      });
+      sendJson(res, 200, { success: true, ...response, idempotent: false });
     } catch (err: any) {
-      sendJson(res, 400, { success: false, error: err.message });
+      sendJson(res, err.statusCode || 400, { success: false, error: err.message, code: err.code });
     }
   };
 
@@ -132,10 +179,32 @@ export function registerBanquetRoutes(router: Router): void {
         assignedRole
       };
 
+      const db = DatabaseService.getInstance();
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
+
+      const time = chargePlayerAction(
+        db.path,
+        'WORKFORCE_HIRE',
+        null,
+        `Recruit retainer ${heroNpcId}`
+      );
+
       const result = banquetService.recruitRetainer(params);
-      sendJson(res, 200, { success: true, result });
+      const response = { result, time };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'BANQUET_RECRUIT',
+        payload: params,
+        result: response
+      });
+      sendJson(res, 200, { success: true, ...response, idempotent: false });
     } catch (err: any) {
-      sendJson(res, 400, { success: false, error: err.message });
+      sendJson(res, err.statusCode || 400, { success: false, error: err.message, code: err.code });
     }
   };
 

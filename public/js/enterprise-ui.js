@@ -40,6 +40,29 @@
     return (typeof currentLang !== 'undefined' && currentLang === 'en');
   }
 
+  const STAFF_ROLE_LABELS = {
+    FOREMAN: { vi: 'Thợ cả', en: 'Foreman' },
+    CARPENTER: { vi: 'Thợ mộc', en: 'Carpenter' },
+    CRAFTSMAN: { vi: 'Thợ thủ công', en: 'Craftsman' },
+    MANAGER: { vi: 'Quản lý', en: 'Manager' },
+    CHIEF_ARTISAN_PARTNER: { vi: 'Thợ cả đồng sáng lập', en: 'Chief Artisan Partner' },
+    ACCOUNTANT_MANAGER: { vi: 'Quản lý kế toán', en: 'Accountant Manager' },
+    APPRENTICE_CARPENTER: { vi: 'Thợ mộc học việc', en: 'Apprentice Carpenter' },
+    APPRENTICE_WEAVER: { vi: 'Thợ dệt học việc', en: 'Apprentice Weaver' },
+    SPECIALIST_OPERATOR: { vi: 'Chuyên viên vận hành', en: 'Specialist Operator' },
+    CARAVAN_ESCORT_CHIEF: { vi: 'Đội trưởng hộ tống', en: 'Escort Chief' },
+    MASTER_BLACKSMITH: { vi: 'Thợ rèn bậc thầy', en: 'Master Blacksmith' },
+    FOUNDRY_MASTER: { vi: 'Chủ lò đúc', en: 'Foundry Master' },
+    ASSISTANT_WORKER: { vi: 'Phụ thợ', en: 'Assistant Worker' }
+  };
+
+  function staffRoleLabel(role) {
+    const key = String(role || '').toUpperCase();
+    const entry = STAFF_ROLE_LABELS[key];
+    if (entry) return isEnglish() ? entry.en : entry.vi;
+    return String(role || (isEnglish() ? 'Staff' : 'Nhân công')).replace(/_/g, ' ');
+  }
+
   function playUiSound(type = 'click') {
     if (typeof playSfx === 'function') {
       try { playSfx(type); } catch (e) {}
@@ -276,6 +299,83 @@
         background: rgba(245, 158, 11, 0.15);
         border: 1px solid rgba(245, 158, 11, 0.4);
         color: #fbbf24;
+      }
+      .ent-summary-strip {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 8px;
+        margin-bottom: 14px;
+      }
+      .ent-summary-card {
+        background: #0b1120;
+        border: 1px solid rgba(148, 163, 184, 0.15);
+        border-radius: 6px;
+        padding: 8px 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        font-size: 11px;
+        color: #94a3b8;
+      }
+      .ent-summary-card strong {
+        color: #fbbf24;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 12px;
+      }
+      .ent-staff-block {
+        margin-top: 10px;
+        padding-top: 8px;
+        border-top: 1px dashed rgba(148, 163, 184, 0.25);
+      }
+      .ent-staff-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 5px;
+        font-size: 11px;
+        color: #94a3b8;
+      }
+      .ent-staff-head strong {
+        color: #fbbf24;
+        font-family: 'JetBrains Mono', monospace;
+        white-space: nowrap;
+      }
+      .ent-staff-list {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+      }
+      .ent-staff-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 3px 6px;
+        border-radius: 4px;
+        background: rgba(0, 0, 0, 0.2);
+        font-size: 11px;
+      }
+      .ent-staff-name {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        color: #e2e8f0;
+      }
+      .ent-staff-role {
+        color: #64748b;
+        font-size: 11px;
+      }
+      .ent-staff-wage {
+        flex: 0 0 auto;
+        color: #fbbf24;
+        font-family: 'JetBrains Mono', monospace;
+        white-space: nowrap;
+      }
+      .ent-staff-empty {
+        color: #64748b;
+        font-size: 11px;
+        font-style: italic;
       }
     `;
     document.head.appendChild(style);
@@ -561,6 +661,26 @@
     const playerCash = Number(st.playerCash || 0);
 
     return `
+      <!-- MONTHLY LABOR & OVERHEAD SUMMARY -->
+      <div class="ent-summary-strip">
+        <div class="ent-summary-card">
+          <span>${isEn ? 'Daily revenue' : 'Tổng thu/ngày'}</span>
+          <strong>+${(st.totalDailyRevenue || 0).toLocaleString()} Quan</strong>
+        </div>
+        <div class="ent-summary-card">
+          <span>${isEn ? 'Monthly payroll' : 'Quỹ lương/tháng'}</span>
+          <strong>${(st.totalStaffWages || 0).toLocaleString()} Quan</strong>
+        </div>
+        <div class="ent-summary-card">
+          <span>${isEn ? 'Monthly rent' : 'Mặt bằng/tháng'}</span>
+          <strong>${(st.totalMonthlyRent || 0).toLocaleString()} Quan</strong>
+        </div>
+        <div class="ent-summary-card">
+          <span>${isEn ? 'Total monthly cost' : 'Tổng chi/tháng'}</span>
+          <strong>${(st.totalMonthlyOverhead || 0).toLocaleString()} Quan</strong>
+        </div>
+      </div>
+
       <!-- CURRENTLY OWNED BUSINESSES -->
       <div style="margin-bottom:20px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
@@ -579,6 +699,19 @@
         ` : owned.map(biz => {
           const profit = Number(biz.accumulated_profit || 0);
           const dailyRev = Number(biz.daily_revenue || biz.daily_revenue_avg || 120);
+          const staffMembers = Array.isArray(biz.staff_members) ? biz.staff_members : [];
+          const staffWages = Number(biz.staff_wages || 0);
+          const monthlyOverhead = Number(biz.monthly_overhead || 0);
+          const staffList = staffMembers.length === 0
+            ? `<div class="ent-staff-empty">${isEn ? 'No retainers assigned to this enterprise yet.' : 'Chưa bổ nhiệm gia nhân nào vào sản nghiệp này.'}</div>`
+            : staffMembers.map(member => `
+                <div class="ent-staff-row">
+                  <span class="ent-staff-name" title="${member.name} (${member.npc_id})">
+                    ${member.name} <span class="ent-staff-role">• ${staffRoleLabel(member.role)}</span>
+                  </span>
+                  <span class="ent-staff-wage">${Number(member.monthly_wage || 0).toLocaleString()} Quan/tháng</span>
+                </div>
+              `).join('');
 
           return `
             <div class="ent-biz-card">
@@ -601,10 +734,20 @@
 
               <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:8px; font-size:11px; color:#94a3b8; font-family:'JetBrains Mono',monospace; background:rgba(0,0,0,0.25); padding:8px 10px; border-radius:4px;">
                 <div>Nhân công: <strong style="color:#fff;">${biz.current_workforce || biz.workforce_count || 4} thợ</strong></div>
+                <div>Lương nhân công: <strong style="color:#fbbf24;">${staffWages.toLocaleString()} Quan/tháng</strong></div>
                 <div>Thu nhập ngày: <strong style="color:#34d399;">+${dailyRev.toLocaleString()} Quan</strong></div>
                 <div>Mặt bằng: <strong style="color:#f59e0b;">${biz.monthly_rent || 200} Quan/tháng</strong></div>
+                <div>Tổng chi/tháng: <strong style="color:#f87171;">${monthlyOverhead.toLocaleString()} Quan</strong></div>
                 <div>Két sắt dự phòng: <strong style="color:#38bdf8;">${(biz.safe_cash || 0).toLocaleString()} Quan</strong></div>
                 <div>Thặng dư tích lũy: <strong style="color:#4ade80;">+${profit.toLocaleString()} Quan</strong></div>
+              </div>
+
+              <div class="ent-staff-block">
+                <div class="ent-staff-head">
+                  <span>${isEn ? 'Payroll roster' : 'Bảng lương nhân công'}</span>
+                  <strong>${staffMembers.length} ${isEn ? 'staff' : 'người'} • ${staffWages.toLocaleString()} Quan/tháng</strong>
+                </div>
+                <div class="ent-staff-list">${staffList}</div>
               </div>
             </div>
           `;

@@ -1425,6 +1425,16 @@ function getLocalPoiDistance(fromLoc, toLoc) {
 
 function getCurrentRegionNode(subLoc = activeSubLocation) {
   if (!subLoc) return WORLD_MAP_NODES['zhuo_xian'];
+  // The DB registry owns all 133 names; map-data is only the offline fallback.
+  if (window.MapLiveService && typeof window.MapLiveService.getSubLocationsForNode === 'function') {
+    for (const key of Object.keys(WORLD_MAP_NODES)) {
+      const node = WORLD_MAP_NODES[key];
+      const rows = window.MapLiveService.getSubLocationsForNode(node.id);
+      if (rows.some(row => row.nameVi === subLoc || row.subLocationId === subLoc)) {
+        return node;
+      }
+    }
+  }
   for (const key of Object.keys(WORLD_MAP_NODES)) {
     const node = WORLD_MAP_NODES[key];
     if (node.subLocations && node.subLocations.includes(subLoc)) {
@@ -1581,6 +1591,8 @@ function getPoiIconName(name) {
   return 'route';
 }
 
+let localPoiRegistryRequested = false;
+
 function renderLocalPoiNav(loc = activeSubLocation) {
   const regionBadge = document.getElementById('loc-region-badge');
   const breadcrumbText = document.getElementById('loc-breadcrumb-text');
@@ -1607,7 +1619,18 @@ function renderLocalPoiNav(loc = activeSubLocation) {
   //    chip row that wrapped onto a second line and crowded out the chronicle.
   //    The map data lists a couple of aliases for the same place; keep one row each.
   const seenDestinations = new Set();
-  const localPois = (currentRegion.subLocations || [])
+  const registryRows = (window.MapLiveService && typeof window.MapLiveService.getSubLocationsForNode === 'function')
+    ? window.MapLiveService.getSubLocationsForNode(currentRegion.id)
+    : [];
+  if (registryRows.length === 0 && window.MapLiveService && typeof window.MapLiveService.load === 'function'
+      && !localPoiRegistryRequested) {
+    localPoiRegistryRequested = true;
+    window.MapLiveService.load().then(() => renderLocalPoiNav(loc)).catch(() => {});
+  }
+  const destinations = registryRows.length > 0
+    ? registryRows.map(row => String(row.nameVi || '')).filter(Boolean)
+    : (currentRegion.subLocations || []);
+  const localPois = destinations
     .filter(sl => sl !== loc)
     .filter(sl => {
       const meta = getPoiMeta(sl);
@@ -1720,9 +1743,14 @@ async function travelLocalPoi(targetLoc) {
 
   showToast(isEn ? `Arrived at ${toMeta.en} (${distLabel})` : `Đã bước tới ${toMeta.vi} (${dist})...`);
   activeSubLocation = targetLoc;
+  window.activeSubLocation = targetLoc;
+  try { localStorage.setItem('sim_active_subloc', targetLoc); } catch { /* private mode */ }
+  if (window.SpatialPoiController && typeof window.SpatialPoiController.updateActionDock === 'function') {
+    window.SpatialPoiController.updateActionDock(targetLoc);
+  }
 
   try {
-    setProcessingLock(true, isEn ? 'Walking...' : 'Đang di chuyển...');
+    setProcessingLock(true, null, isEn ? 'Walking...' : 'Đang di chuyển...');
     await loadScene(targetLoc);
     renderLocalPoiNav(targetLoc);
   } finally {

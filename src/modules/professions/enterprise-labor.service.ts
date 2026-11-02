@@ -12,7 +12,8 @@
 import { DatabaseService } from '../../core/database';
 import { seedMasterRecipes } from './recipes-seed';
 import { nextSequentialId } from '../../shared/id-generator';
-import { getPlayerCapital, postCashflowEntry } from '../../shared/ledger';
+import { getPlayerCapital, postDoubleEntry } from '../../shared/ledger';
+import { ACCOUNT_CODES } from '../../shared/account-codes';
 import { CANONICAL_LABOR_SHIFTS } from './features/wage-labor/wage-labor.constants';
 
 export type EnterpriseType = 'WORKSHOP' | 'TAVERN' | 'APOTHECARY' | 'BLACKSMITH';
@@ -229,6 +230,8 @@ export interface EnterpriseDetails {
   delegationLevel: number;
   efficiencyMultiplier: number;
   autoProcure: boolean;
+  tier: number;
+  debt: number;
 }
 
 export interface CollectProfitsResult {
@@ -238,6 +241,7 @@ export interface CollectProfitsResult {
   remainingProfit: number;
   remainingSafeCash: number;
   ownerNewCash: number;
+  debt?: number;
   message: string;
 }
 
@@ -453,14 +457,16 @@ export class EnterpriseLaborService {
 
       // 2. Record cashflow ledger entry
       const txnId = nextSequentialId(this.db, 'cashflow_ledger', 'TXN-CAPITAL', currentDate);
-      postCashflowEntry(this.db, {
+      postDoubleEntry(this.db, {
         txnId,
         gameDate: currentDate,
         counterparty: `Khai trương ${name}`,
         category: 'CAPITAL_INVESTMENT',
         outflow: initialCapital,
         balance: remainingCash,
-        memo: `Đầu tư mở cơ sở kinh doanh ${name}`
+        memo: `Đầu tư mở cơ sở kinh doanh ${name}`,
+        debitAccount: ACCOUNT_CODES.fixedAssets,
+        creditAccount: ACCOUNT_CODES.cashMobile
       });
 
       // 3. Register business in businesses table
@@ -530,7 +536,9 @@ export class EnterpriseLaborService {
       accumulatedProfit: row.accumulated_profit || 0,
       delegationLevel: row.delegation_level,
       efficiencyMultiplier: row.efficiency_multiplier,
-      autoProcure: Boolean(row.auto_procure)
+      autoProcure: Boolean(row.auto_procure),
+      tier: Number(row.tier || 1),
+      debt: Number(row.debt || 0)
     };
   }
 
@@ -557,11 +565,124 @@ export class EnterpriseLaborService {
   }
 
   /**
+   * Moves owner cash into or out of one enterprise's safe reserve. This is a
+   * balance-sheet transfer, not income: the ledger records the paired cash and
+   * business-asset legs so player capital stays reconciled.
+   */
+  public manageSafeCash(
+    characterId: string,
+    businessId: string,
+    action: 'DEPOSIT' | 'WITHDRAW',
+    amount: number
+  ): any {
+    const normalizedAction = String(action || '').toUpperCase();
+    if (normalizedAction !== 'DEPOSIT' && normalizedAction !== 'WITHDRAW') {
+      throw new Error('action phải là DEPOSIT hoặc WITHDRAW.');
+    }
+    const cash = Math.floor(Number(amount));
+    if (!Number.isFinite(cash) || cash <= 0) {
+      throw new Error('Số tiền phải là số nguyên dương.');
+    }
+
+    const biz = this.getEnterpriseDetails(businessId);
+    if (String(biz.ownerCharacterId) !== String(characterId)) {
+      throw new Error('Bạn không sở hữu cơ sở này.');
+    }
+    const player = this.db.queryOne<{ liquid_cash: number; safe_cash: number }>(
+      'SELECT liquid_cash, safe_cash FROM player_state WHERE player_id = ?;',
+      [characterId]
+    );
+    if (!player) throw new Error(`Không tìm thấy nhân vật ${characterId}.`);
+
+    if (normalizedAction === 'DEPOSIT' && Number(player.liquid_cash || 0) < cash) {
+      throw new Error(`Không đủ tiền mặt: cần ${cash} Quan, hiện có ${Number(player.liquid_cash || 0)} Quan.`);
+    }
+    if (normalizedAction === 'WITHDRAW' && Number(biz.safeCash || 0) < cash) {
+      throw new Error(`Quỹ an toàn chỉ còn ${Number(biz.safeCash || 0)} Quan.`);
+    }
+
+    const currentDate = this.getGameDate();
+    return this.db.transaction(() => {
+      if (normalizedAction === 'DEPOSIT') {
+        this.db.execute(
+          'UPDATE player_state SET liquid_cash = liquid_cash - ? WHERE player_id = ?;',
+          [cash, characterId]
+        );
+        this.db.execute(
+          'UPDATE businesses SET safe_cash = safe_cash + ? WHERE business_id = ?;',
+          [cash, businessId]
+        );
+      } else {
+        this.db.execute(
+          'UPDATE businesses SET safe_cash = safe_cash - ? WHERE business_id = ?;',
+          [cash, businessId]
+        );
+        this.db.execute(
+          'UPDATE player_state SET liquid_cash = liquid_cash + ? WHERE player_id = ?;',
+          [cash, characterId]
+        );
+      }
+
+      const capital = getPlayerCapital(this.db, characterId);
+      const isDeposit = normalizedAction === 'DEPOSIT';
+      const txnId = nextSequentialId(
+        this.db,
+        'cashflow_ledger',
+        isDeposit ? 'TXN-SAFE-IN' : 'TXN-SAFE-OUT',
+        currentDate
+      );
+      postDoubleEntry(this.db, {
+        txnId,
+        gameDate: currentDate,
+        counterparty: biz.name,
+        category: isDeposit ? 'ENTERPRISE_SAFE_DEPOSIT' : 'ENTERPRISE_SAFE_WITHDRAW',
+        inflow: isDeposit ? 0 : cash,
+        outflow: isDeposit ? cash : 0,
+        balance: capital.total,
+        memo: isDeposit
+          ? `Nạp ${cash} Quan vào quỹ an toàn ${biz.name}`
+          : `Rút ${cash} Quan từ quỹ an toàn ${biz.name}`,
+        debitAccount: isDeposit ? ACCOUNT_CODES.fixedAssets : ACCOUNT_CODES.cashMobile,
+        creditAccount: isDeposit ? ACCOUNT_CODES.cashMobile : ACCOUNT_CODES.fixedAssets
+      });
+
+      const updated = this.getEnterpriseDetails(businessId);
+      return {
+        success: true,
+        businessId,
+        action: normalizedAction,
+        amount: cash,
+        businessSafeCash: Number(updated.safeCash || 0),
+        ownerNewCash: this.getPlayerCash(characterId),
+        balance: capital.total,
+        message: isDeposit
+          ? `Đã nạp ${cash} Quan vào quỹ an toàn ${biz.name}.`
+          : `Đã rút ${cash} Quan từ quỹ an toàn ${biz.name}.`
+      };
+    });
+  }
+
+  /**
    * Withdraws accumulated profits from the enterprise to the owner's personal cash.
    */
   public collectProfits(businessId: string, withdrawAmount?: number): CollectProfitsResult {
     const biz = this.getEnterpriseDetails(businessId);
     const availableProfit = biz.accumulatedProfit;
+
+    // Debt has teeth: monthly profit first repays it (engine/business-economics),
+    // and the owner cannot withdraw more while the enterprise is still in debt.
+    if (biz.debt > 0) {
+      return {
+        success: false,
+        businessId,
+        collectedAmount: 0,
+        remainingProfit: availableProfit,
+        remainingSafeCash: biz.safeCash,
+        ownerNewCash: this.getPlayerCash(biz.ownerCharacterId),
+        debt: biz.debt,
+        message: `Cơ sở đang nợ ${biz.debt} quan. Lợi nhuận tháng sẽ được dùng trả nợ trước khi chia.`
+      };
+    }
 
     if (availableProfit <= 0 && (!withdrawAmount || biz.safeCash <= 0)) {
       return {
@@ -624,14 +745,16 @@ export class EnterpriseLaborService {
       // 3. Log cashflow ledger entry. Balance is total player capital
       //    (liquid + personal vault), not liquid cash alone.
       const txnId = nextSequentialId(this.db, 'cashflow_ledger', 'TXN-DIVIDEND', currentDate);
-      postCashflowEntry(this.db, {
+      postDoubleEntry(this.db, {
         txnId,
         gameDate: currentDate,
         counterparty: biz.name,
         category: 'ENTERPRISE_DIVIDEND',
         inflow: toWithdraw,
         balance: ownerCapital.total,
-        memo: `Rút lợi nhuận kinh doanh từ ${biz.name}`
+        memo: `Rút lợi nhuận kinh doanh từ ${biz.name}`,
+        debitAccount: ACCOUNT_CODES.cashMobile,
+        creditAccount: ACCOUNT_CODES.financialIncome
       });
 
       const updated = this.getEnterpriseDetails(businessId);
@@ -726,14 +849,16 @@ export class EnterpriseLaborService {
 
       // 3. Log cashflow wage transaction
       const txnId = nextSequentialId(this.db, 'cashflow_ledger', 'TXN-WAGE', currentDate);
-      postCashflowEntry(this.db, {
+      postDoubleEntry(this.db, {
         txnId,
         gameDate: currentDate,
         counterparty: `Chủ quản cơ sở (${job.businessType})`,
         category: 'LABOR_WAGE',
         inflow: job.dailyWage,
         balance: newLiquidCash,
-        memo: `Tiền công làm thuê: ${job.titleVi}`
+        memo: `Tiền công làm thuê: ${job.titleVi}`,
+        debitAccount: ACCOUNT_CODES.cashMobile,
+        creditAccount: ACCOUNT_CODES.laborIncome
       });
 
       // 4. Award Profession EXP
@@ -818,34 +943,85 @@ export class EnterpriseLaborService {
    */
   public getEnterpriseStatus(characterId: string = 'PLY-0001') {
     // 1. Fetch owned businesses
+    interface StaffMember {
+      npc_id: string;
+      name: string;
+      role: string;
+      monthly_wage: number;
+    }
+    const staffByBusiness = new Map<string, { count: number; wages: number; members: StaffMember[] }>();
+    for (const row of this.db.query<any>(
+      `SELECT npc_id, name, assigned_business_id, assigned_role, monthly_wage
+         FROM npc_state
+        WHERE assigned_business_id IS NOT NULL AND assigned_business_id <> ''
+        ORDER BY monthly_wage DESC, name ASC;`
+    )) {
+      const businessId = String(row.assigned_business_id);
+      const staff = staffByBusiness.get(businessId) || { count: 0, wages: 0, members: [] };
+      staff.count += 1;
+      staff.wages += Number(row.monthly_wage || 0);
+      staff.members.push({
+        npc_id: String(row.npc_id),
+        name: String(row.name || row.npc_id),
+        role: String(row.assigned_role || 'STAFF'),
+        monthly_wage: Number(row.monthly_wage || 0)
+      });
+      staffByBusiness.set(businessId, staff);
+    }
+    const managerNames = new Map<string, string>();
+    for (const row of this.db.query<any>('SELECT npc_id, name_vi FROM master_characters;')) {
+      managerNames.set(String(row.npc_id), String(row.name_vi));
+    }
+
     const businesses = this.db.query<any>(
       `SELECT business_id, name, location_id, manager_npc_id, safe_cash, delegation_level, 
               efficiency_multiplier, current_workforce, monthly_capacity_hours, monthly_rent,
-              auto_procure, status, business_type, owner_character_id, daily_revenue, accumulated_profit
+              auto_procure, status, business_type, owner_character_id, daily_revenue, accumulated_profit,
+              tier, debt
        FROM businesses
        WHERE owner_character_id = ? OR owner_character_id IS NULL OR owner_character_id = 'PLY-0001'
        ORDER BY business_id ASC;`,
       [characterId]
-    ).map(b => ({
-      business_id: b.business_id,
-      name: b.name,
-      location_id: b.location_id || 'LOC-0001',
-      location: b.location_id || 'LOC-0001',
-      manager_npc_id: b.manager_npc_id || 'NPC-0007',
-      safe_cash: Number(b.safe_cash || 0),
-      delegation_level: Number(b.delegation_level || 2),
-      efficiency_multiplier: Number(b.efficiency_multiplier || 0.85),
-      current_workforce: Number(b.current_workforce || 4),
-      workforce_count: Number(b.current_workforce || 4),
-      monthly_capacity_hours: Number(b.monthly_capacity_hours || 800),
-      monthly_rent: Number(b.monthly_rent || 200),
-      auto_procure: Number(b.auto_procure || 1),
-      status: b.status || 'ACTIVE',
-      business_type: b.business_type || 'WORKSHOP',
-      daily_revenue: Number(b.daily_revenue || 0),
-      daily_revenue_avg: Number(b.daily_revenue || 0),
-      accumulated_profit: Number(b.accumulated_profit || 0)
-    }));
+    ).map(b => {
+      const staff = staffByBusiness.get(String(b.business_id)) || { count: 0, wages: 0, members: [] };
+      const debt = Number(b.debt || 0);
+      const rent = Number(b.monthly_rent || 200);
+      const health = staff.count === 0
+        ? 'CLOSED'
+        : debt > 0
+          ? 'DISTRESSED'
+          : Number(b.accumulated_profit || 0) > 0
+            ? 'PROFITABLE'
+            : 'BREAK_EVEN';
+      return {
+        business_id: b.business_id,
+        name: b.name,
+        location_id: b.location_id || 'LOC-0001',
+        location: b.location_id || 'LOC-0001',
+        manager_npc_id: b.manager_npc_id || 'NPC-0007',
+        manager_name: managerNames.get(String(b.manager_npc_id || 'NPC-0007')) || b.manager_npc_id || 'NPC-0007',
+        safe_cash: Number(b.safe_cash || 0),
+        debt,
+        tier: Number(b.tier || 1),
+        delegation_level: Number(b.delegation_level || 2),
+        efficiency_multiplier: Number(b.efficiency_multiplier || 0.85),
+        current_workforce: Number(b.current_workforce || 4),
+        workforce_count: Number(b.current_workforce || 4),
+        staff_count: staff.count,
+        staff_wages: staff.wages,
+        staff_members: staff.members,
+        monthly_capacity_hours: Number(b.monthly_capacity_hours || 800),
+        monthly_rent: rent,
+        monthly_overhead: rent + staff.wages,
+        auto_procure: Number(b.auto_procure || 1),
+        status: b.status || 'ACTIVE',
+        health,
+        business_type: b.business_type || 'WORKSHOP',
+        daily_revenue: Number(b.daily_revenue || 0),
+        daily_revenue_avg: Number(b.daily_revenue || 0),
+        accumulated_profit: Number(b.accumulated_profit || 0)
+      };
+    });
 
     // 2. Fetch player state
     const player = this.db.queryOne<any>(
@@ -986,6 +1162,10 @@ export class EnterpriseLaborService {
     const totalDailyRevenue = businesses.reduce((s, b) => s + (b.daily_revenue || 0), 0);
     const totalWorkforce = businesses.reduce((s, b) => s + (b.current_workforce || 0), 0);
     const totalAccumulatedProfit = businesses.reduce((s, b) => s + (b.accumulated_profit || 0), 0);
+    const totalSafeCash = businesses.reduce((s, b) => s + (b.safe_cash || 0), 0);
+    const totalDebt = businesses.reduce((s, b) => s + (b.debt || 0), 0);
+    const totalMonthlyRent = businesses.reduce((s, b) => s + (b.monthly_rent || 0), 0);
+    const totalStaffWages = businesses.reduce((s, b) => s + (b.staff_wages || 0), 0);
 
     return {
       characterId,
@@ -997,6 +1177,11 @@ export class EnterpriseLaborService {
       totalDailyRevenue,
       totalWorkforce,
       totalAccumulatedProfit,
+      totalSafeCash,
+      totalDebt,
+      totalMonthlyRent,
+      totalStaffWages,
+      totalMonthlyOverhead: totalMonthlyRent + totalStaffWages,
       openableTypes,
       laborShifts
     };
@@ -1023,7 +1208,7 @@ export class EnterpriseLaborService {
     }
 
     const player = this.db.queryOne<any>(
-      'SELECT liquid_cash, fatigue, cra_attr, com_attr, int_attr, log_attr, cra_exp, com_exp, int_exp, log_exp FROM player_state WHERE player_id = ?;',
+      'SELECT liquid_cash, safe_cash, fatigue, cra_attr, com_attr, int_attr, log_attr, cra_exp, com_exp, int_exp, log_exp FROM player_state WHERE player_id = ?;',
       [characterId]
     );
 
@@ -1063,14 +1248,16 @@ export class EnterpriseLaborService {
 
       // Correct Cashflow Ledger insertion
       const txnId = nextSequentialId(this.db, 'cashflow_ledger', 'TXN-WAGE', currentDate);
-      postCashflowEntry(this.db, {
+      postDoubleEntry(this.db, {
         txnId,
         gameDate: currentDate,
         counterparty: shift.workplaceVi,
         category: 'LABOR_WAGE',
         inflow: shift.wage,
         balance: totalBalance,
-        memo: `Tiền công lao động ca: ${shift.titleVi}`
+        memo: `Tiền công lao động ca: ${shift.titleVi}`,
+        debitAccount: ACCOUNT_CODES.cashMobile,
+        creditAccount: ACCOUNT_CODES.laborIncome
       });
 
       // Award Profession EXP cleanly
@@ -1119,7 +1306,7 @@ export class EnterpriseLaborService {
         remainingStamina: Math.max(0, 100 - newFatigue),
         newFatigue,
         newLiquidCash: newCash,
-        newBalance: newCash,
+        newBalance: totalBalance,
         expGained: shift.expGain,
         professionExpGained: shift.expGain,
         attributeExpGained: shift.attributeExp,
@@ -1215,14 +1402,16 @@ export class EnterpriseLaborService {
 
       // 3. Record cashflow ledger entry with CORRECT columns
       const txnId = nextSequentialId(this.db, 'cashflow_ledger', 'TXN-BIZ', currentDate);
-      postCashflowEntry(this.db, {
+      postDoubleEntry(this.db, {
         txnId,
         gameDate: currentDate,
         counterparty: 'Quan Phủ Trác Quận',
         category: 'CAPITAL_INVESTMENT',
         outflow: totalCashNeeded,
         balance: remainingCash,
-        memo: `Đầu tư khai trương sản nghiệp: ${finalName} (${totalTurnkeyDeduction > 0 ? 'kèm bù vật liệu' : 'vật liệu tự túc'})`
+        memo: `Đầu tư khai trương sản nghiệp: ${finalName} (${totalTurnkeyDeduction > 0 ? 'kèm bù vật liệu' : 'vật liệu tự túc'})`,
+        debitAccount: ACCOUNT_CODES.fixedAssets,
+        creditAccount: ACCOUNT_CODES.cashMobile
       });
 
       // 4. Insert into businesses table

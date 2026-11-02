@@ -13,10 +13,20 @@
 import { Router, sendJson, RouteContext } from '../../server/router';
 import { DailyInteractionEngine, EverydayActionType } from './daily-interaction.engine';
 import { DatabaseService } from '../../core/database';
+import { SpatialGuardService } from '../progression/spatial-guard.service';
+import { chargePlayerAction } from '../../shared/action-time';
+import { requestIdempotencyKey, findIdempotentResult, recordAction } from '../../shared/action-journal';
+
+const REMOTE_COURIER_ACTIONS: ReadonlySet<string> = new Set([
+  'SEND_COURIER_LETTER',
+  'CARRIER_PIGEON_LETTER',
+  'DISPATCH_GIFT_CARAVAN'
+]);
 
 export function registerKizunaRoutes(router: Router): void {
   const engine = DailyInteractionEngine.getInstance();
   const db = DatabaseService.getInstance();
+  const guard = SpatialGuardService.getInstance();
 
   /**
    * 1. GET /api/kizuna/dossier/:npcId
@@ -107,10 +117,40 @@ export function registerKizunaRoutes(router: Router): void {
         return;
       }
 
+      if (REMOTE_COURIER_ACTIONS.has(String(actionType))) {
+        guard.assertStage(
+          body.playerId || 'PLY-0001',
+          3,
+          'Phi Thư Viễn Trình',
+          body.bypassProgressionGate || body.bypassSpatialGuard
+        );
+      }
+
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
+
+      const time = chargePlayerAction(
+        db.path,
+        'KIZUNA_INTERACT',
+        null,
+        `Kizuna ${actionType} with ${npcId}`
+      );
+
       const result = engine.executeDailyInteraction(npcId, actionType, customPrompt, itemCode);
-      sendJson(res, 200, { success: true, result });
+      const response = { result, time };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'KIZUNA_INTERACT',
+        payload: { npcId, actionType, prompt: customPrompt, itemCode },
+        result: response
+      });
+      sendJson(res, 200, { success: true, ...response, idempotent: false });
     } catch (err: any) {
-      sendJson(res, 500, { success: false, error: err.message });
+      sendJson(res, err.statusCode || 500, { success: false, error: err.message, code: err.code });
     }
   };
 
@@ -173,10 +213,31 @@ export function registerKizunaRoutes(router: Router): void {
         actionType = 'HEART_CONFESSION';
       }
 
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { success: true, ...prior, idempotent: true });
+        return;
+      }
+
+      const time = chargePlayerAction(
+        db.path,
+        'KIZUNA_INTERACT',
+        null,
+        `Natural chat ${actionType} with ${npcId}`
+      );
+
       const result = engine.executeDailyInteraction(npcId, actionType, prompt);
-      sendJson(res, 200, { success: true, actionType, result });
+      const response = { actionType, result, time };
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'KIZUNA_NATURAL_CHAT',
+        payload: { npcId, prompt, actionType },
+        result: response
+      });
+      sendJson(res, 200, { success: true, ...response, idempotent: false });
     } catch (err: any) {
-      sendJson(res, 500, { success: false, error: err.message });
+      sendJson(res, err.statusCode || 500, { success: false, error: err.message, code: err.code });
     }
   };
 
