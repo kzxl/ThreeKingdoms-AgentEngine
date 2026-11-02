@@ -1194,7 +1194,7 @@ export class EnterpriseLaborService {
     }
 
     const player = this.db.queryOne<any>(
-      'SELECT liquid_cash, fatigue, cra_attr, com_attr, int_attr, log_attr, cra_exp, com_exp, int_exp, log_exp FROM player_state WHERE player_id = ?;',
+      'SELECT liquid_cash, safe_cash, fatigue, cra_attr, com_attr, int_attr, log_attr, cra_exp, com_exp, int_exp, log_exp FROM player_state WHERE player_id = ?;',
       [characterId]
     );
 
@@ -1292,7 +1292,7 @@ export class EnterpriseLaborService {
         remainingStamina: Math.max(0, 100 - newFatigue),
         newFatigue,
         newLiquidCash: newCash,
-        newBalance: newCash,
+        newBalance: totalBalance,
         expGained: shift.expGain,
         professionExpGained: shift.expGain,
         attributeExpGained: shift.attributeExp,

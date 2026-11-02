@@ -57,7 +57,7 @@ async function run(): Promise<void> {
     WHERE campaign_id = (SELECT campaign_id FROM campaign_meta LIMIT 1);
   `);
   db.execute(`
-    UPDATE player_state SET liquid_cash = 1000, safe_cash = 0, fatigue = 0
+    UPDATE player_state SET liquid_cash = 1000, safe_cash = 3000, fatigue = 0
     WHERE player_id = 'PLY-0001';
   `);
   db.execute("DELETE FROM action_log WHERE idempotency_key LIKE 'TEST-ENT-WORK%';");
@@ -89,7 +89,9 @@ async function run(): Promise<void> {
   assert.strictEqual(work.data.wagePaid, 95);
   assert.strictEqual(work.data.newFatigue, 12);
   assert.strictEqual(Number(work.data.newLiquidCash), 1095);
-  assert(db.queryOne("SELECT 1 AS ok FROM cashflow_ledger WHERE category = 'LABOR_WAGE';"));
+  assert.strictEqual(Number(work.data.newBalance), 4095, 'ledger balance must include personal safe cash');
+  const wageLedger = db.queryOne("SELECT balance FROM cashflow_ledger WHERE category = 'LABOR_WAGE' ORDER BY rowid DESC LIMIT 1;");
+  assert.strictEqual(Number(wageLedger.balance), 4095, 'LABOR_WAGE ledger must record liquid + safe');
 
   const replay = await request(router, 'POST', '/api/enterprise/work', {
     characterId: 'PLY-0001',
