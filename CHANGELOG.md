@@ -29,6 +29,23 @@ with 0 discrepancies.
 
 ---
 
+## [1.53.1] - 2026-11-02
+
+### Fixed
+- The **Khảo sát** button showed `Danh vọng undefined`: `/api/explore` wraps its
+  payload in `result`, but the client read `data.discovered`/`data.fame`.
+  The client now unwraps `data.result || data`, uses `item?.nameVi` and the
+  server `narrativeVi`, and sends an idempotency key.
+- The button is now labelled **Khảo Sát POI** and its tooltip states that it
+  surveys the current location inside the city; exploring around the city uses
+  **Dã Ngoại**.
+
+### Verification
+`npm run verify` green: 111/111 suites; `verify-exploration` guards the response
+unwrap and the button label.
+
+---
+
 ## [1.53.0] - 2026-11-02
 
 Supply-chain depth: per-city personal bag and multi-item merchant routes.
