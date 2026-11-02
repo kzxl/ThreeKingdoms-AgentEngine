@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.52.0] - 2026-11-02
+
+Reworked the campaign time panel for readability.
+
+### Changed
+- The modal uses a 980px surface instead of being clamped by the shared
+  `modal-card` width; the old two-column comparison and its dead space are gone.
+- Fatigue and remaining stamina are separate KPIs (`Mệt mỏi 0/100`,
+  `Thể lực còn 100/100`); health, morale, grain and active tasks fill the grid.
+- The hero shows date, turn, season, phase and a month-close progress bar.
+- Action costs use a seven-item compact grid with days and fatigue per type.
+- The real-world clock, multi-day tasks and recent timeline each get their own
+  section; the **Next Day** footer is sticky.
+
+### Verification
+`npm run verify` green: 110/110 suites. New `verify-time-panel-ui` guards the
+width, labels, phase, cost grid and section structure.
+
+---
+
 ## [1.51.0] - 2026-11-02
 
 Fixed and expanded the Bách Nghệ enterprise/workshop surface.
