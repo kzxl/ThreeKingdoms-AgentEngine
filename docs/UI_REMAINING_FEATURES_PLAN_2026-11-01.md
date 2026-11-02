@@ -54,10 +54,11 @@ carry it.
 
 The frozen `public/js` count is unchanged: onboarding lives in
 `src/client/features/onboarding`. `nativeConfirmCalls` is locked at 0 and inline
-styles at 740 by `tools/ui-baseline.json`.
+styles at 681 by `tools/ui-baseline.json`.
 
-Two earlier supply-chain items remain outside this plan: a per-city personal bag
-(W1-5) and multi-item merchant routes.
+The two earlier supply-chain items (per-city personal bag W1-5 and multi-item
+merchant routes) are closed in 1.53.0; Wave 1 is complete. The next gameplay
+slice is Wave 3 (W3-2…W3-7).
 
 ## 4. Handling plan
 

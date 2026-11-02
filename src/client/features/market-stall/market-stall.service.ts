@@ -100,6 +100,14 @@ export interface MerchantRouteView {
   quantityPerRun: number;
   frequencyDays: number;
   nextRunDate: string;
+  items?: Array<{
+    itemCode: string;
+    quantityPerRun: number;
+    maxBuyPrice: number;
+    minSellPrice: number;
+    sourceStock: number;
+    destinationStock: number;
+  }>;
 }
 
 export class MarketStallService {
@@ -221,10 +229,12 @@ export class MarketStallService {
   public async createMerchantRoute(input: {
     fromWarehouseId: string;
     toWarehouseId: string;
-    itemCode: string;
-    quantityPerRun: number;
-    maxBuyPrice: number;
-    minSellPrice: number;
+    items: Array<{
+      itemCode: string;
+      quantityPerRun: number;
+      maxBuyPrice: number;
+      minSellPrice: number;
+    }>;
     frequencyDays: number;
     guardTier: string;
     nameVi?: string;

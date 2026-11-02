@@ -217,6 +217,17 @@ CREATE TABLE IF NOT EXISTS inventory_items (
     location TEXT NOT NULL DEFAULT 'Zhuo Workshop'
 );
 
+-- 6b. Per-city personal bag. inventory_items remains the aggregate store;
+-- migration 084 adds the mirror triggers.
+CREATE TABLE IF NOT EXISTS player_bag_by_location (
+    location_id TEXT NOT NULL,
+    item_code TEXT NOT NULL,
+    quantity REAL NOT NULL DEFAULT 0 CHECK (quantity >= 0),
+    unit_cost_basis INTEGER NOT NULL DEFAULT 0,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (location_id, item_code)
+);
+
 -- 7. Physical Stock Movements (MOV Ledger)
 CREATE TABLE IF NOT EXISTS stock_movements (
     mov_id TEXT PRIMARY KEY,

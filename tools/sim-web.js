@@ -569,13 +569,33 @@ const server = http.createServer(async (req, res) => {
       const movements = runSqlJson(`SELECT * FROM stock_movements ORDER BY rowid DESC LIMIT 30;`);
       const fame = Number(runSqlJson(`SELECT fame FROM player_state LIMIT 1;`)[0]?.fame || 0);
       const location = runSqlJson(`SELECT current_location FROM player_state LIMIT 1;`)[0]?.current_location || 'LOC-0001';
+      const bagByItem = new Map();
+      let hasBag = false;
+      try {
+        for (const row of runSqlJson(
+          `SELECT item_code, quantity FROM player_bag_by_location
+           WHERE location_id = (SELECT location_id FROM current_player_location);`
+        )) {
+          bagByItem.set(String(row.item_code), Number(row.quantity || 0));
+        }
+        hasBag = true;
+      } catch (bagErr) {
+        // Pre-084 saves keep the global bag semantics.
+      }
       const pricedItems = items.map(item => {
         const market = getMarketItem(currentActiveDbPath || DB_PATH, item.item_code);
-        if (!market) return item;
+        const localQuantity = hasBag ? Number(bagByItem.get(item.item_code) || 0) : Number(item.quantity || 0);
+        const base = {
+          ...item,
+          quantity: localQuantity,
+          localQuantity,
+          globalQuantity: Number(item.quantity || 0)
+        };
+        if (!market) return base;
         const quote = quoteFromReference(market.price, fame, item.item_code);
         const stockState = getStockState(currentActiveDbPath || DB_PATH, location, item.item_code);
         return {
-          ...item,
+          ...base,
           marketPrice: quote.referencePrice,
           estimatedBuyPrice: quote.buyPrice,
           estimatedSellPrice: quote.sellPrice,
@@ -583,7 +603,9 @@ const server = http.createServer(async (req, res) => {
           stockMultiplier: stockState?.multiplier || 1
         };
       });
-      sendJson(res, 200, { success: true, items: pricedItems, movements });
+      // The deck is the personal bag of the current city, not the global stash.
+      const localItems = hasBag ? pricedItems.filter(item => item.localQuantity > 0) : pricedItems;
+      sendJson(res, 200, { success: true, items: localItems, movements });
     } catch (err) {
       sendJson(res, 500, { success: false, error: err.message });
     }

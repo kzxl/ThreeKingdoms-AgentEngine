@@ -221,11 +221,11 @@ day is byte-identical.
 | W1-2 | ✅ **Done (`5346294`).** Freight demand unions `settlement_consumption` with `deficitItems`, highest demand first; source falls back from surplus to highest stock to endowment. | `freight.service.ts` | `verify-freight-demand.ts` |
 | W1-3 | ✅ **Done (`e4bb051`).** Fourth market tab shows freight contracts (guard tier + insurance), active shipments with delivery and merchant routes with pause/resume. | `market-stall.modal.ts`, `market-stall.service.ts` | `lint:api`, client build |
 | W1-4 | ✅ **Done (`ea945f9`).** Deterministic lair/guard risk, 25/15/10% cargo loss by tier, freight 4% premium / 75% claim, one ambush per shipment, route cargo loss. | `logistics-risk.ts`, migration 078 | `verify-logistics-risk.ts`, audit |
-| W1-5 | Per-city personal bag: tag inventory by settlement instead of one global bag | `tools/schema.sql`, `inventory-movement.ts`, UI | buying in A and selling in B still requires transport |
+| W1-5 | ✅ **Done (1.53.0).** `player_bag_by_location` + migration 084 mirror every inventory change into the current city; trade/warehouse/caravan reject goods held elsewhere. | migration 084, `player-bag.ts`, trade/warehouse/stall/caravan paths, deck UI | `verify-player-bag.ts`; audit bag ≤ aggregate |
 | W1-6 | ✅ **Done (`43f22da`).** Audit block 9 checks `market_effect = quantity` for ACTIVE listings and `0` for closed/sold-out listings; freight reservation is checked too. | `tools/sim-audit.js` | deliberately corrupt a row; audit fails |
-| W1-7 | **Partial (`d4228d9`)**: warehouse lease extends from its current end, `TOOL-BOAT` + recipe + FISH alternate ship. Multi-item merchant routes remain. | `warehouse.service.ts`, migration 079 | `verify-warehouse.ts`, `verify-tool-boat.ts` |
+| W1-7 | ✅ **Done (1.53.0).** Warehouse lease extension, `TOOL-BOAT` + FISH tool, and multi-item merchant routes (`merchant_route_items`, migration 085). | `warehouse.service.ts`, migration 079/085, `merchant-company.service.ts`, logistics form | `verify-warehouse.ts`, `verify-tool-boat.ts`, `verify-merchant-route.ts` |
 
-Remaining order inside Wave 1: W1-5 → multi-item routes.
+Wave 1 is complete. Remaining work is Wave 3 (W3-2…W3-7).
 
 ---
 

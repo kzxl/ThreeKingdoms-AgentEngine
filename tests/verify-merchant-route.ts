@@ -47,7 +47,9 @@ function seed(): void {
     INSERT INTO npc_market_offers (offer_id, settlement_id, npc_id, npc_name_vi, item_code,
       quantity, unit_price, status, created_date, expires_date)
     VALUES ('OFFER-TEST-GRAIN', 'zhuo_xian', 'NPC-0001', 'Lưu Bị', 'COM-GRAIN',
-      30, 50, 'ACTIVE', '185-06-01', '185-09-01');
+      30, 50, 'ACTIVE', '185-06-01', '185-09-01'),
+           ('OFFER-TEST-BAMBOO', 'zhuo_xian', 'NPC-0005', 'Trần Bảo', 'COM-BAMBOO',
+      30, 20, 'ACTIVE', '185-06-01', '185-09-01');
   `).run();
   db.prepare("DELETE FROM action_log WHERE idempotency_key LIKE 'TEST-MERCHANT%';").run();
   db.close();
@@ -99,26 +101,29 @@ async function run(): Promise<void> {
   const created = await request(router, 'POST', '/api/merchant/routes', {
     fromWarehouseId: 'WH-TEST-SRC',
     toWarehouseId: 'WH-TEST-DST',
-    itemCode: 'COM-GRAIN',
-    maxBuyPrice: 50,
-    minSellPrice: 100,
-    quantityPerRun: 10,
     frequencyDays: 1,
     guardTier: 'MILITIA',
     nameVi: 'Tuyến Trác → Kế',
+    items: [
+      { itemCode: 'COM-GRAIN', maxBuyPrice: 50, minSellPrice: 100, quantityPerRun: 10 },
+      { itemCode: 'COM-BAMBOO', maxBuyPrice: 30, minSellPrice: 40, quantityPerRun: 5 }
+    ],
     idempotencyKey: 'TEST-MERCHANT-CREATE'
   });
   assert.strictEqual(created.status, 200, JSON.stringify(created.data));
   const routeId = created.data.route.routeId;
   assert(routeId);
   assert.strictEqual(created.data.route.status, 'ACTIVE');
+  assert.strictEqual(created.data.route.items.length, 2, 'route must expose the full item manifest');
 
   const cashBefore = num(raw, "SELECT liquid_cash FROM player_state WHERE player_id = 'PLY-0001';");
   timeManager.advanceCampaignDays(TEST_DB, 6, { clampToMonthEnd: false });
 
-  const events = raw.prepare('SELECT event_type, COUNT(*) AS c FROM merchant_events WHERE route_id = ? GROUP BY event_type;').all(routeId) as any[];
+  const events = raw.prepare('SELECT event_type, item_code, COUNT(*) AS c FROM merchant_events WHERE route_id = ? GROUP BY event_type, item_code;').all(routeId) as any[];
   const types = new Set(events.map(row => row.event_type));
+  const eventItems = new Set(events.map(row => row.item_code));
   assert(types.has('PURCHASE'), 'route must procure from NPC offers');
+  assert(eventItems.has('COM-GRAIN') && eventItems.has('COM-BAMBOO'), 'both route items must move');
   assert(types.has('DISPATCH'), 'route must dispatch a shipment');
   assert(types.has('UNLOAD') || types.has('SALE'), 'arrived cargo must reach the destination');
 

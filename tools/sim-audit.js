@@ -144,6 +144,33 @@ function auditSqliteInventory() {
     }
   }
 
+  // Per-city bag must never hold more than the aggregate inventory; a larger
+  // bag means a trigger/mirror wrote twice or a manual edit bypassed movement.
+  const bagTable = runSqlJson(
+    "SELECT name FROM sqlite_master WHERE type='table' AND name='player_bag_by_location';"
+  );
+  if (bagTable && bagTable.length > 0) {
+    const bagSums = runSqlJson(
+      `SELECT item_code, SUM(quantity) AS quantity
+         FROM player_bag_by_location GROUP BY item_code;`
+    );
+    const byItem = new Map(items.map(item => [item.item_code, Number(item.quantity)]));
+    for (const bag of bagSums) {
+      checksCount++;
+      const bagQty = Number(bag.quantity || 0);
+      const totalQty = Number(byItem.get(bag.item_code) || 0);
+      if (bagQty < 0) {
+        errors.push(`Player bag ${bag.item_code} has negative quantity: ${bagQty}`);
+      }
+      if (bagQty > totalQty + 0.001) {
+        errors.push(`Player bag ${bag.item_code} (${bagQty}) exceeds aggregate inventory (${totalQty})`);
+      }
+      if (bagQty > 0 && !byItem.has(bag.item_code)) {
+        errors.push(`Player bag ${bag.item_code} exists without an inventory_items row`);
+      }
+    }
+  }
+
   return {
     passed: errors.length === 0,
     checksCount,

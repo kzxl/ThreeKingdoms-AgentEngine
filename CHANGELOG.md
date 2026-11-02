@@ -29,6 +29,35 @@ with 0 discrepancies.
 
 ---
 
+## [1.53.0] - 2026-11-02
+
+Supply-chain depth: per-city personal bag and multi-item merchant routes.
+
+### Added
+- **Per-city personal bag (W1-5).** Migration 084 adds
+  `player_bag_by_location` and mirrors every inventory quantity change into the
+  player's current city. Trade selling checks the destination city bag, so goods
+  bought in A cannot be sold in B without transport. Market board
+  `playerQuantity`, the right-panel inventory, warehouse deposit/withdraw and
+  caravan dispatch all use the city bag.
+- **Multi-item merchant routes (W1-7 remainder).** Migration 085 adds
+  `merchant_route_items`; a route can carry several items, each with its own
+  buy ceiling, sell floor and quantity per run. The logistics form supports
+  adding/removing item rows, and the route card lists the full manifest.
+
+### Changed
+- Trade pricing now resolves the player's `LOC-*` sub-location to the actual
+  settlement node, so local specialisation is part of the quote.
+- Warehouse deposit/withdraw requires standing in the warehouse's city.
+- Audit block 1 checks that every city bag sum never exceeds aggregate
+  inventory.
+
+### Verification
+`npm run verify` green: 111/111 suites, 28/28 API contracts, 8/8 write smokes.
+`npm run audit` passed 2,466 invariants with 0 discrepancies.
+
+---
+
 ## [1.52.3] - 2026-11-02
 
 ### Fixed

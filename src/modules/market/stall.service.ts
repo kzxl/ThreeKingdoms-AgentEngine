@@ -16,7 +16,8 @@ import { consumeInventoryItem, restoreInventoryItem } from '../../shared/invento
 import { getMarketItem } from '../../shared/market-price-book';
 import { RegionalMarketService } from '../economy/regional-market.service';
 import { SettlementMarketService } from '../economy/settlement-market.service';
-import { LOC_TO_NODE_MAP } from '../ecology-logistics/spatial-registry';
+import { LOC_TO_NODE_MAP, NODE_TO_LOC_MAP } from '../ecology-logistics/spatial-registry';
+import { assertBagQuantity } from '../../shared/player-bag';
 import { npcBidMultiplier } from './npc-pricing';
 import { addGameDays } from '../../shared/game-date';
 import { hasProcessedDay, markProcessedDay } from '../../shared/day-ledger';
@@ -249,6 +250,8 @@ export class StallService {
           [qty, warehouseId, itemCode]
         );
       } else {
+        const stallLocationId = NODE_TO_LOC_MAP[stall.settlement_id] || stall.settlement_id;
+        assertBagQuantity(this.db, stallLocationId, itemCode, qty, stall.settlement_id);
         consumeInventoryItem(this.db, {
           itemCode,
           quantity: qty,

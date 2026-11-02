@@ -10,6 +10,7 @@
 import { DatabaseService } from '../../core/database';
 import { RngService } from '../../core/rng';
 import { RegionalMarketService, SETTLEMENT_PROFILES } from './regional-market.service';
+import { NODE_TO_LOC_MAP } from '../ecology-logistics/spatial-registry';
 import { nextId } from '../../shared/id-generator';
 import { hasProcessedDay, markProcessedDay } from '../../shared/day-ledger';
 
@@ -286,9 +287,11 @@ export class SettlementMarketService {
     }
     for (const list of historyByItem.values()) list.reverse();
 
+    const bagLocationId = NODE_TO_LOC_MAP[settlementId] || settlementId;
     const playerQuantity = new Map<string, number>();
     for (const row of this.db.query<any>(
-      'SELECT item_code, quantity FROM inventory_items;'
+      'SELECT item_code, quantity FROM player_bag_by_location WHERE location_id = ?;',
+      [bagLocationId]
     )) {
       playerQuantity.set(String(row.item_code), Number(row.quantity || 0));
     }

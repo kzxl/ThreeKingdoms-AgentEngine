@@ -12,6 +12,7 @@ import { ModuleRegistry } from '../../core/module-registry';
 import { EconomyModule } from './economy.module';
 import { RegionalMarketService, SETTLEMENT_PROFILES } from './regional-market.service';
 import { LOC_TO_NODE_MAP, resolveNodeId } from '../ecology-logistics/spatial-registry';
+import { assertBagQuantity, resolvePlayerLocationId } from '../../shared/player-bag';
 import { SettlementMarketService } from './settlement-market.service';
 import { CaravanLogisticsService } from '../ecology-logistics/caravan-logistics.service';
 import { postCashflowEntry, postDoubleEntry } from '../../shared/ledger';
@@ -319,7 +320,8 @@ export function registerEconomyRoutes(router: Router): void {
         ['PLY-0001']
       );
       const worldMultiplier = worldPriceMultiplier(db, itemCode, effectiveDate);
-      const settlementNode = LOC_TO_NODE_MAP[fameRow?.current_location || ''] || (fameRow?.current_location || '');
+      const playerLocationId = resolvePlayerLocationId(db);
+      const settlementNode = resolveNodeId(playerLocationId);
       const localMultiplier = settlementNode
         ? SettlementMarketService.forDatabase(db).getLocalMultiplier(settlementNode, itemCode)
         : 1;
@@ -345,6 +347,10 @@ export function registerEconomyRoutes(router: Router): void {
           ['PLY-0001']
         );
         if (!player) throw new Error('Player state PLY-0001 not found.');
+
+        if (tradeAction === 'SELL') {
+          assertBagQuantity(db, playerLocationId, itemCode, qty, settlementNode);
+        }
 
         const txnId = nextSequentialId(db, 'cashflow_ledger', 'TXN', effectiveDate);
         const safeCash = Number(player.safe_cash || 0);

@@ -150,16 +150,34 @@ export class MerchantCompanyService {
     if (!this.warehouseUsable(from.warehouse_id, gameDate)) throw new Error('Kho nguồn đã hết hạn.');
     if (!this.warehouseUsable(to.warehouse_id, gameDate)) throw new Error('Kho đích đã hết hạn.');
     if (from.settlement_id === to.settlement_id) throw new Error('Kho nguồn và kho đích phải khác thành.');
-    const item = getMarketItem(this.db, String(input.itemCode || ''));
-    if (!item) throw new Error('Mặt hàng không tồn tại.');
-    const maxBuy = Math.max(1, Math.round(Number(input.maxBuyPrice) || 0));
-    const minSell = Math.max(1, Math.round(Number(input.minSellPrice) || 0));
-    if (minSell <= maxBuy) throw new Error('Giá bán sàn phải cao hơn giá mua trần.');
-    const qty = Math.max(0.1, Number(input.quantityPerRun) || 0);
+
+    const rawItems = Array.isArray(input.items) && input.items.length > 0
+      ? input.items
+      : [{
+          itemCode: input.itemCode,
+          maxBuyPrice: input.maxBuyPrice,
+          minSellPrice: input.minSellPrice,
+          quantityPerRun: input.quantityPerRun
+        }];
+    const seen = new Set<string>();
+    const items = rawItems.map((row: any) => {
+      const itemCode = String(row.itemCode || '').trim();
+      const item = getMarketItem(this.db, itemCode);
+      if (!item) throw new Error(`Mặt hàng ${itemCode || '(trống)'} không tồn tại.`);
+      if (seen.has(item.itemCode)) throw new Error(`Mặt hàng ${item.itemCode} bị lặp trong thương lộ.`);
+      seen.add(item.itemCode);
+      const maxBuy = Math.max(1, Math.round(Number(row.maxBuyPrice) || 0));
+      const minSell = Math.max(1, Math.round(Number(row.minSellPrice) || 0));
+      if (minSell <= maxBuy) throw new Error(`Giá bán sàn của ${item.itemCode} phải cao hơn giá mua trần.`);
+      const quantity = Math.max(0.1, Number(row.quantityPerRun) || 0);
+      return { itemCode: item.itemCode, itemNameVi: item.nameVi, maxBuy, minSell, quantity };
+    });
+
     const frequency = Math.max(1, Math.round(Number(input.frequencyDays) || 7));
     const guard = String(input.guardTier || 'VETERAN').toUpperCase() as keyof typeof GUARD_TIER_CONFIGS;
     if (!GUARD_TIER_CONFIGS[guard]) throw new Error('Cấp hộ vệ không hợp lệ.');
     const routeId = nextSequentialId(this.db, 'merchant_routes', 'MTR', gameDate);
+    const first = items[0];
     this.db.execute(
       `INSERT INTO merchant_routes
         (route_id, owner_id, name_vi, from_warehouse_id, to_warehouse_id, item_code,
@@ -168,11 +186,19 @@ export class MerchantCompanyService {
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', ?, ?);`,
       [
         routeId, ownerId,
-        String(input.nameVi || `${from.settlement_id} → ${to.settlement_id} ${item.itemCode}`),
-        from.warehouse_id, to.warehouse_id, item.itemCode,
-        maxBuy, minSell, qty, frequency, guard, gameDate, gameDate
+        String(input.nameVi || `${from.settlement_id} → ${to.settlement_id} ${items.length} mặt hàng`),
+        from.warehouse_id, to.warehouse_id, first.itemCode,
+        first.maxBuy, first.minSell, first.quantity, frequency, guard, gameDate, gameDate
       ]
     );
+    for (const item of items) {
+      this.db.execute(
+        `INSERT INTO merchant_route_items
+          (route_id, item_code, max_buy_price, min_sell_price, quantity_per_run, created_date)
+         VALUES (?, ?, ?, ?, ?, ?);`,
+        [routeId, item.itemCode, item.maxBuy, item.minSell, item.quantity, gameDate]
+      );
+    }
     return this.getRoute(ownerId, routeId);
   }
 
@@ -189,7 +215,46 @@ export class MerchantCompanyService {
     return this.view(row);
   }
 
+  private routeItems(routeId: string): any[] {
+    const rows = this.db.query<any>(
+      `SELECT item_code, max_buy_price, min_sell_price, quantity_per_run
+         FROM merchant_route_items WHERE route_id = ? ORDER BY rowid;`,
+      [routeId]
+    );
+    if (rows.length > 0) {
+      return rows.map(row => ({
+        itemCode: String(row.item_code),
+        maxBuyPrice: Number(row.max_buy_price),
+        minSellPrice: Number(row.min_sell_price),
+        quantityPerRun: Number(row.quantity_per_run)
+      }));
+    }
+    const legacy = this.db.queryOne<any>(
+      'SELECT item_code, max_buy_price, min_sell_price, quantity_per_run FROM merchant_routes WHERE route_id = ?;',
+      [routeId]
+    );
+    return legacy ? [{
+      itemCode: String(legacy.item_code),
+      maxBuyPrice: Number(legacy.max_buy_price),
+      minSellPrice: Number(legacy.min_sell_price),
+      quantityPerRun: Number(legacy.quantity_per_run)
+    }] : [];
+  }
+
   private view(row: any): any {
+    const items = this.routeItems(row.route_id).map(item => ({
+      ...item,
+      sourceStock: this.routeStock(row.route_id, row.from_warehouse_id, item.itemCode),
+      destinationStock: this.routeStock(row.route_id, row.to_warehouse_id, item.itemCode)
+    }));
+    const first = items[0] || {
+      itemCode: row.item_code,
+      maxBuyPrice: Number(row.max_buy_price),
+      minSellPrice: Number(row.min_sell_price),
+      quantityPerRun: Number(row.quantity_per_run),
+      sourceStock: 0,
+      destinationStock: 0
+    };
     return {
       routeId: row.route_id,
       nameVi: row.name_vi,
@@ -197,16 +262,18 @@ export class MerchantCompanyService {
       toWarehouseId: row.to_warehouse_id,
       fromSettlementId: row.from_settlement,
       toSettlementId: row.to_settlement,
-      itemCode: row.item_code,
-      maxBuyPrice: Number(row.max_buy_price),
-      minSellPrice: Number(row.min_sell_price),
-      quantityPerRun: Number(row.quantity_per_run),
+      itemCode: first.itemCode,
+      maxBuyPrice: first.maxBuyPrice,
+      minSellPrice: first.minSellPrice,
+      quantityPerRun: first.quantityPerRun,
+      items,
+      itemCount: items.length,
       frequencyDays: Number(row.frequency_days),
       guardTier: row.guard_tier,
       status: row.status,
       nextRunDate: row.next_run_date,
-      sourceStock: this.routeStock(row.route_id, row.from_warehouse_id, row.item_code),
-      destinationStock: this.routeStock(row.route_id, row.to_warehouse_id, row.item_code)
+      sourceStock: first.sourceStock,
+      destinationStock: first.destinationStock
     };
   }
 
@@ -416,58 +483,60 @@ export class MerchantCompanyService {
     const npcMarket = NpcMarketService.forDatabase(this.db);
     for (const route of routes) {
       if (!this.warehouseUsable(route.from_warehouse_id, date)) continue;
-      const current = this.stock(route.from_warehouse_id, route.item_code);
-      let needed = Math.max(0, Number(route.quantity_per_run) - current);
-      if (needed < 0.1) continue;
       npcMarket.refreshOffers(route.from_settlement, date);
-      const offers = this.db.query<any>(
-        `SELECT * FROM npc_market_offers
-         WHERE settlement_id = ? AND item_code = ? AND status = 'ACTIVE'
-           AND quantity > 0 AND unit_price <= ?
-         ORDER BY unit_price ASC;`,
-        [route.from_settlement, route.item_code, Number(route.max_buy_price)]
-      );
-      for (const offer of offers) {
-        if (needed < 0.1) break;
-        const room = this.room(route.from_warehouse_id);
-        if (room < 0.1) break;
-        const player = this.db.queryOne<any>('SELECT liquid_cash, safe_cash FROM player_state WHERE player_id = ? LIMIT 1;', [route.owner_id]);
-        const affordable = Math.floor(Number(player?.liquid_cash || 0) / Number(offer.unit_price));
-        if (affordable < 1) break;
-        const qty = Math.min(needed, Number(offer.quantity), room, affordable);
-        if (qty < 0.1) continue;
-        const total = Math.round(qty * Number(offer.unit_price));
-        const newLiquid = Number(player.liquid_cash) - total;
-        this.db.execute('UPDATE player_state SET liquid_cash = ? WHERE player_id = ?;', [newLiquid, route.owner_id]);
-        const txnId = nextSequentialId(this.db, 'cashflow_ledger', 'TXN', date);
-        postDoubleEntry(this.db, {
-          txnId, gameDate: date,
-          counterparty: offer.npc_name_vi,
-          category: 'Trade/MerchantPurchase',
-          outflow: total,
-          balance: newLiquid + Number(player.safe_cash || 0),
-          memo: `Công ty thu mua ${qty} ${route.item_code} từ ${offer.npc_name_vi}`,
-          debitAccount: ACCOUNT_CODES.inventory,
-          creditAccount: ACCOUNT_CODES.cashMobile
-        });
-        postNpcMutation(this.db, {
-          npcId: offer.npc_id,
-          gameDate: date,
-          category: 'MERCHANT_ROUTE_PURCHASE',
-          counterparty: route.owner_id,
-          deltaCash: total,
-          memoVi: `Công ty mua ${qty} ${route.item_code}`
-        });
-        const remaining = Math.max(0, Number(offer.quantity) - qty);
-        this.db.execute(
-          'UPDATE npc_market_offers SET quantity = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE offer_id = ?;',
-          [remaining, remaining > 0 ? 'ACTIVE' : 'SOLD_OUT', offer.offer_id]
+      for (const itemConfig of this.routeItems(route.route_id)) {
+        const current = this.stock(route.from_warehouse_id, itemConfig.itemCode);
+        let needed = Math.max(0, Number(itemConfig.quantityPerRun) - current);
+        if (needed < 0.1) continue;
+        const offers = this.db.query<any>(
+          `SELECT * FROM npc_market_offers
+           WHERE settlement_id = ? AND item_code = ? AND status = 'ACTIVE'
+             AND quantity > 0 AND unit_price <= ?
+           ORDER BY unit_price ASC;`,
+          [route.from_settlement, itemConfig.itemCode, itemConfig.maxBuyPrice]
         );
-        this.addStock(route.from_warehouse_id, route.item_code, qty);
-        this.addRouteStock(route.route_id, route.from_warehouse_id, route.item_code, qty);
-        SettlementMarketService.forDatabase(this.db).applyTrade(route.from_settlement, route.item_code, -qty);
-        this.event(route.route_id, date, 'PURCHASE', route.item_code, qty, total, `Thu mua ${qty} ${route.item_code} tại ${route.from_settlement}.`);
-        needed -= qty;
+        for (const offer of offers) {
+          if (needed < 0.1) break;
+          const room = this.room(route.from_warehouse_id);
+          if (room < 0.1) break;
+          const player = this.db.queryOne<any>('SELECT liquid_cash, safe_cash FROM player_state WHERE player_id = ? LIMIT 1;', [route.owner_id]);
+          const affordable = Math.floor(Number(player?.liquid_cash || 0) / Number(offer.unit_price));
+          if (affordable < 1) break;
+          const qty = Math.min(needed, Number(offer.quantity), room, affordable);
+          if (qty < 0.1) continue;
+          const total = Math.round(qty * Number(offer.unit_price));
+          const newLiquid = Number(player.liquid_cash) - total;
+          this.db.execute('UPDATE player_state SET liquid_cash = ? WHERE player_id = ?;', [newLiquid, route.owner_id]);
+          const txnId = nextSequentialId(this.db, 'cashflow_ledger', 'TXN', date);
+          postDoubleEntry(this.db, {
+            txnId, gameDate: date,
+            counterparty: offer.npc_name_vi,
+            category: 'Trade/MerchantPurchase',
+            outflow: total,
+            balance: newLiquid + Number(player.safe_cash || 0),
+            memo: `Công ty thu mua ${qty} ${itemConfig.itemCode} từ ${offer.npc_name_vi}`,
+            debitAccount: ACCOUNT_CODES.inventory,
+            creditAccount: ACCOUNT_CODES.cashMobile
+          });
+          postNpcMutation(this.db, {
+            npcId: offer.npc_id,
+            gameDate: date,
+            category: 'MERCHANT_ROUTE_PURCHASE',
+            counterparty: route.owner_id,
+            deltaCash: total,
+            memoVi: `Công ty mua ${qty} ${itemConfig.itemCode}`
+          });
+          const remaining = Math.max(0, Number(offer.quantity) - qty);
+          this.db.execute(
+            'UPDATE npc_market_offers SET quantity = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE offer_id = ?;',
+            [remaining, remaining > 0 ? 'ACTIVE' : 'SOLD_OUT', offer.offer_id]
+          );
+          this.addStock(route.from_warehouse_id, itemConfig.itemCode, qty);
+          this.addRouteStock(route.route_id, route.from_warehouse_id, itemConfig.itemCode, qty);
+          SettlementMarketService.forDatabase(this.db).applyTrade(route.from_settlement, itemConfig.itemCode, -qty);
+          this.event(route.route_id, date, 'PURCHASE', itemConfig.itemCode, qty, total, `Thu mua ${qty} ${itemConfig.itemCode} tại ${route.from_settlement}.`);
+          needed -= qty;
+        }
       }
     }
   }
@@ -484,9 +553,18 @@ export class MerchantCompanyService {
     for (const route of routes) {
       if (!this.warehouseUsable(route.from_warehouse_id, date)) continue;
       if (!this.warehouseUsable(route.to_warehouse_id, date)) continue;
-      const routeQty = this.routeStock(route.route_id, route.from_warehouse_id, route.item_code);
-      const qty = Math.min(routeQty, Number(route.quantity_per_run));
-      if (qty < 0.1) continue;
+
+      const dispatchItems = this.routeItems(route.route_id)
+        .map(itemConfig => ({
+          ...itemConfig,
+          quantity: Math.min(
+            this.routeStock(route.route_id, route.from_warehouse_id, itemConfig.itemCode),
+            Number(itemConfig.quantityPerRun)
+          )
+        }))
+        .filter(itemConfig => itemConfig.quantity >= 0.1);
+      if (dispatchItems.length === 0) continue;
+
       const guard = GUARD_TIER_CONFIGS[route.guard_tier as keyof typeof GUARD_TIER_CONFIGS] || GUARD_TIER_CONFIGS.VETERAN;
       const discount = freightDiscountPct(this.db);
       const guardFee = Math.max(1, Math.round(guard.costQian * (1 - discount / 100)));
@@ -505,28 +583,35 @@ export class MerchantCompanyService {
         debitAccount: ACCOUNT_CODES.operatingExpense,
         creditAccount: ACCOUNT_CODES.cashMobile
       });
-      this.removeStock(route.from_warehouse_id, route.item_code, qty);
-      this.removeRouteStock(route.route_id, route.from_warehouse_id, route.item_code, qty);
-      const shipmentId = nextSequentialId(this.db, 'merchant_shipments', 'MSH', date);
+
       const days = this.travelDays(route.from_settlement, route.to_settlement);
-      this.db.execute(
-        `INSERT INTO merchant_shipments
-          (shipment_id, route_id, owner_id, from_warehouse_id, to_warehouse_id, item_code,
-           quantity, days_remaining, status, cargo_value, guard_fee, created_date,
-           initial_quantity, total_days, spoiled_quantity)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'EN_ROUTE', ?, ?, ?, ?, ?, 0);`,
-        [
-          shipmentId, route.route_id, route.owner_id, route.from_warehouse_id, route.to_warehouse_id,
-          route.item_code, qty, days,
-          Math.round(qty * Number(route.max_buy_price)), guardFee, date,
-          qty, days
-        ]
-      );
+      for (const itemConfig of dispatchItems) {
+        const qty = itemConfig.quantity;
+        this.removeStock(route.from_warehouse_id, itemConfig.itemCode, qty);
+        this.removeRouteStock(route.route_id, route.from_warehouse_id, itemConfig.itemCode, qty);
+        const shipmentId = nextSequentialId(this.db, 'merchant_shipments', 'MSH', date);
+        this.db.execute(
+          `INSERT INTO merchant_shipments
+            (shipment_id, route_id, owner_id, from_warehouse_id, to_warehouse_id, item_code,
+             quantity, days_remaining, status, cargo_value, guard_fee, created_date,
+             initial_quantity, total_days, spoiled_quantity)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'EN_ROUTE', ?, ?, ?, ?, ?, 0);`,
+          [
+            shipmentId, route.route_id, route.owner_id, route.from_warehouse_id, route.to_warehouse_id,
+            itemConfig.itemCode, qty, days,
+            Math.round(qty * Number(itemConfig.maxBuyPrice)), guardFee, date,
+            qty, days
+          ]
+        );
+        this.event(
+          route.route_id, date, 'DISPATCH', itemConfig.itemCode, qty, guardFee,
+          `Xuất chuyến ${qty} ${itemConfig.itemCode} ${route.from_settlement} → ${route.to_settlement}.`
+        );
+      }
       this.db.execute(
         'UPDATE merchant_routes SET next_run_date = ?, updated_at = CURRENT_TIMESTAMP WHERE route_id = ?;',
         [addGameDays(date, Number(route.frequency_days)), route.route_id]
       );
-      this.event(route.route_id, date, 'DISPATCH', route.item_code, qty, guardFee, `Xuất chuyến ${qty} ${route.item_code} ${route.from_settlement} → ${route.to_settlement}.`);
     }
   }
 

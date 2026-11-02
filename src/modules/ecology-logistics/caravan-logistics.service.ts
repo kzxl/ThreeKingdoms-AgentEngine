@@ -23,6 +23,8 @@ import { SettlementMarketService } from '../economy/settlement-market.service';
 import { postFactionEntry } from '../../shared/faction-ledger';
 import { postCashflowEntry } from '../../shared/ledger';
 import { CaravanStatus } from '../../core/types';
+import { assertBagQuantity } from '../../shared/player-bag';
+import { NODE_TO_LOC_MAP } from './spatial-registry';
 
 export type GuardTier = 'MILITIA' | 'VETERAN' | 'ELITE_RETINUE';
 
@@ -205,6 +207,8 @@ export class CaravanLogisticsService {
           `Kho hàng không đủ tồn kho mặt hàng ${item.name_vi} (Hiện có: ${stock?.quantity || 0}, Cần xuất: ${cargoQuantity}).`
         );
       }
+      const originLocationId = NODE_TO_LOC_MAP[fromSettlementId] || fromSettlementId;
+      assertBagQuantity(this.db, originLocationId, cargoItemCode, cargoQuantity, fromSettlementId);
 
       // 2. Verify player cash for guard hire fee
       const player = this.db.queryOne<{ liquid_cash: number; safe_cash: number; name: string }>(

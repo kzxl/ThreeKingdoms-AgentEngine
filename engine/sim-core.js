@@ -338,6 +338,31 @@ class SimulationCore {
     const quote = quoteFromReference(marketItem.price, Number(fameRow?.fame || 0), item_code, worldMultiplier, localMultiplier);
     const unit_price = quote.sellPrice;
 
+    // Per-city bag: goods sitting in another city cannot be sold here. The
+    // trigger-mirrored table exists on saves after migration 084; older saves
+    // keep global-bag behaviour.
+    try {
+      const locationRow = runSqlJson(this.dbPath, `SELECT location_id FROM current_player_location LIMIT 1;`)[0];
+      const bagRow = runSqlJson(
+        this.dbPath,
+        // arch-guard:allow-sql-interpolation — legacy CLI adapter has no bound
+        // parameters; both values are single-quote escaped above.
+        `SELECT quantity FROM player_bag_by_location
+          WHERE location_id = '${String(locationRow?.location_id || 'LOC-0001').replace(/'/g, "''")}'
+            AND item_code = '${String(item_code).replace(/'/g, "''")}' LIMIT 1;`
+      )[0];
+      const bagQty = Number(bagRow?.quantity || 0);
+      if (bagQty < quantity) {
+        return {
+          success: false,
+          code: 'INSUFFICIENT_STOCK',
+          error: `Túi tại ${locationRow?.location_id || 'thành hiện tại'} chỉ có ${bagQty} ${item_code}; hàng ở thành khác phải được vận chuyển tới trước.`
+        };
+      }
+    } catch (bagErr) {
+      // Legacy save without the per-city bag table.
+    }
+
     // Condition check: inventory availability
     const itemRow = runSqlJson(this.dbPath, `SELECT quantity, unit_cost_basis FROM inventory_items WHERE item_code = '${item_code}' LIMIT 1;`)[0];
     if (!itemRow) {

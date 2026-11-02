@@ -2419,17 +2419,23 @@ var H = new class {
           </div>
           ${e.status === "ARRIVED" ? `<button class="ui-btn ui-btn--primary ui-btn--sm" data-freight-deliver="${B(e.shipmentId)}">Giao hàng</button>` : ""}
         </div>
-      `).join("") : "<div class=\"text-muted text-sm mb-2\">Không có chuyến hàng đang chạy.</div>", n = this.merchantRoutes.length > 0 ? this.merchantRoutes.map((e) => `
+      `).join("") : "<div class=\"text-muted text-sm mb-2\">Không có chuyến hàng đang chạy.</div>", n = this.merchantRoutes.length > 0 ? this.merchantRoutes.map((e) => {
+			let t = (e.items && e.items.length > 0 ? e.items : [{
+				itemCode: e.itemCode,
+				quantityPerRun: e.quantityPerRun
+			}]).map((e) => `${B(e.itemCode)}×${e.quantityPerRun}`).join(", ");
+			return `
         <div class="flex justify-between items-center text-[11px] border-b border-slate-800 py-1.5 gap-2">
           <div>
-            <div class="text-slate-200">${B(e.nameVi)} • ${B(e.itemCode)} × ${e.quantityPerRun}</div>
+            <div class="text-slate-200">${B(e.nameVi)} • ${t}</div>
             <div class="text-muted">${B(e.fromSettlementId)} → ${B(e.toSettlementId)} • ${B(e.status)} • mỗi ${e.frequencyDays} ngày</div>
           </div>
           <button class="ui-btn ui-btn--ghost ui-btn--sm" data-route-status data-route-id="${B(e.routeId)}" data-next-status="${e.status === "ACTIVE" ? "PAUSED" : "ACTIVE"}">
             ${e.status === "ACTIVE" ? "Tạm Dừng" : "Tiếp Tục"}
           </button>
         </div>
-      `).join("") : "<div class=\"text-muted text-sm\">Chưa có thương lộ tự động.</div>", r = this.merchantEvents.length > 0 ? this.merchantEvents.slice(0, 5).map((e) => `
+      `;
+		}).join("") : "<div class=\"text-muted text-sm\">Chưa có thương lộ tự động.</div>", r = this.merchantEvents.length > 0 ? this.merchantEvents.slice(0, 5).map((e) => `
         <div class="text-[11px] border-b border-slate-800 py-1">
           <span class="text-slate-300">${B(e.eventType || e.event_type)}</span>
           <span class="text-muted"> • ${B(e.gameDate || e.game_date || "")} • ${B(e.itemCode || e.item_code || "")}</span>
@@ -2448,13 +2454,9 @@ var H = new class {
         ${`
       <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800 mb-3">
         <div class="text-xs font-bold text-amber-200 mb-2">Mở Thương Lộ Tự Động</div>
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-2 text-[11px]">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-2 text-[11px] mb-2">
           <select id="route-from" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200">${i}</select>
           <select id="route-to" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200">${i}</select>
-          <input id="route-item" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200" value="COM-GRAIN" placeholder="Mã hàng" />
-          <input id="route-qty" type="number" min="1" step="1" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200" value="10" />
-          <input id="route-buy" type="number" min="1" step="1" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200" value="50" placeholder="Giá mua trần" />
-          <input id="route-sell" type="number" min="1" step="1" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200" value="100" placeholder="Giá bán sàn" />
           <input id="route-freq" type="number" min="1" step="1" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200" value="7" placeholder="Ngày/chuyến" />
           <select id="route-guard" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200">
             <option value="MILITIA">Dân Dũng</option>
@@ -2462,6 +2464,17 @@ var H = new class {
             <option value="ELITE_RETINUE">Tinh Nhuệ</option>
           </select>
         </div>
+        <div class="route-items-head text-[11px] text-muted mb-1">Mặt hàng · SL/chuyến · Giá mua trần · Giá bán sàn</div>
+        <div id="route-items" class="route-items">
+          <div class="route-item-row">
+            <input data-route-field="item" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200" value="COM-GRAIN" placeholder="Mã hàng" />
+            <input data-route-field="qty" type="number" min="1" step="1" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200" value="10" />
+            <input data-route-field="buy" type="number" min="1" step="1" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200" value="50" placeholder="Mua trần" />
+            <input data-route-field="sell" type="number" min="1" step="1" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200" value="100" placeholder="Bán sàn" />
+            <button class="ui-btn ui-btn--ghost ui-btn--sm" data-route-remove-item title="Xóa mặt hàng">×</button>
+          </div>
+        </div>
+        <button class="ui-btn ui-btn--ghost ui-btn--sm mt-1" data-route-add-item>+ Mặt hàng</button>
         <div class="flex justify-between items-center mt-2 gap-2">
           <div class="text-muted text-[11px]">${a ? "Kho nguồn và kho đích phải khác thành; giá bán sàn phải cao hơn giá mua trần." : "Cần ít nhất 2 kho ở hai thành khác nhau."}</div>
           <button class="ui-btn ui-btn--primary ui-btn--sm" data-route-create ${a ? "" : "disabled"}>Mở Thương Lộ</button>
@@ -2494,7 +2507,8 @@ var H = new class {
 	}
 	bind() {
 		let e = this.modal.getBodyElement();
-		e && (e.querySelectorAll("[data-stall-action]").forEach((t) => {
+		if (!e) return;
+		e.querySelectorAll("[data-stall-action]").forEach((t) => {
 			t.addEventListener("click", async () => {
 				let n = t.dataset.stallAction;
 				t.setAttribute("disabled", "true");
@@ -2549,23 +2563,45 @@ var H = new class {
 					e.removeAttribute("disabled"), V(t.message || "Giao hàng thất bại.", !0);
 				}
 			});
+		});
+		let t = (t) => {
+			t.querySelector("[data-route-remove-item]")?.addEventListener("click", () => {
+				e.querySelectorAll(".route-item-row").length > 1 && t.remove();
+			});
+		};
+		e.querySelectorAll(".route-item-row").forEach(t), e.querySelector("[data-route-add-item]")?.addEventListener("click", () => {
+			let n = e.querySelector("#route-items"), r = n?.querySelector(".route-item-row");
+			if (!n || !r) return;
+			let i = r.cloneNode(!0);
+			i.querySelectorAll("input").forEach((e) => {
+				e.dataset.routeField === "item" && (e.value = ""), e.dataset.routeField === "qty" && (e.value = "10"), e.dataset.routeField === "buy" && (e.value = "50"), e.dataset.routeField === "sell" && (e.value = "100");
+			}), n.appendChild(i), t(i);
 		}), e.querySelectorAll("[data-route-create]").forEach((t) => {
 			t.addEventListener("click", async () => {
-				let n = e.querySelector("#route-from")?.value || "", r = e.querySelector("#route-to")?.value || "", i = e.querySelector("#route-item")?.value.trim() || "", a = Number(e.querySelector("#route-qty")?.value || 0), o = Number(e.querySelector("#route-buy")?.value || 0), s = Number(e.querySelector("#route-sell")?.value || 0), c = Number(e.querySelector("#route-freq")?.value || 7), l = e.querySelector("#route-guard")?.value || "VETERAN";
-				if (!n || !r || n === r) V("Kho nguồn và kho đích phải khác nhau.", !0);
-				else if (!i || a <= 0 || o <= 0 || s <= o) V("Kiểm tra mã hàng, số lượng và giá bán sàn > giá mua trần.", !0);
+				let n = e.querySelector("#route-from")?.value || "", r = e.querySelector("#route-to")?.value || "", i = Number(e.querySelector("#route-freq")?.value || 7), a = e.querySelector("#route-guard")?.value || "VETERAN";
+				if (!n || !r || n === r) {
+					V("Kho nguồn và kho đích phải khác nhau.", !0);
+					return;
+				}
+				let o = Array.from(e.querySelectorAll(".route-item-row")).map((e) => {
+					let t = (t) => e.querySelector(`[data-route-field="${t}"]`);
+					return {
+						itemCode: t("item")?.value.trim() || "",
+						quantityPerRun: Number(t("qty")?.value || 0),
+						maxBuyPrice: Number(t("buy")?.value || 0),
+						minSellPrice: Number(t("sell")?.value || 0)
+					};
+				});
+				if (o.length === 0 || o.some((e) => !e.itemCode || e.quantityPerRun <= 0 || e.maxBuyPrice <= 0 || e.minSellPrice <= e.maxBuyPrice)) V("Kiểm tra từng mặt hàng: mã hàng, số lượng và giá bán sàn > giá mua trần.", !0);
 				else {
 					t.setAttribute("disabled", "true");
 					try {
 						await z.createMerchantRoute({
 							fromWarehouseId: n,
 							toWarehouseId: r,
-							itemCode: i,
-							quantityPerRun: a,
-							maxBuyPrice: o,
-							minSellPrice: s,
-							frequencyDays: c,
-							guardTier: l
+							items: o,
+							frequencyDays: i,
+							guardTier: a
 						}), V("Đã mở thương lộ tự động."), await this.refresh(), this.render();
 					} catch (e) {
 						t.removeAttribute("disabled"), V(e.message || "Mở thương lộ thất bại.", !0);
@@ -2582,7 +2618,7 @@ var H = new class {
 					e.removeAttribute("disabled"), V(t.message || "Đổi trạng thái thương lộ thất bại.", !0);
 				}
 			});
-		}));
+		});
 	}
 }(), U = class {
 	modal;

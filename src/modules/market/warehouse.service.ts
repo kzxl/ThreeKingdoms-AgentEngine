@@ -12,6 +12,8 @@ import { postDoubleEntry } from '../../shared/ledger';
 import { ACCOUNT_CODES } from '../../shared/account-codes';
 import { consumeInventoryItem, restoreInventoryItem } from '../../shared/inventory-movement';
 import { addGameDays } from '../../shared/game-date';
+import { assertBagQuantity, resolvePlayerLocationId } from '../../shared/player-bag';
+import { NODE_TO_LOC_MAP } from '../ecology-logistics/spatial-registry';
 
 const RENT_CASH = 300;
 const PURCHASE_PRICE = 2000;
@@ -213,9 +215,19 @@ export class WarehouseService {
     });
   }
 
+  private assertSameCity(row: any, ownerId: string): string {
+    const warehouseLocationId = NODE_TO_LOC_MAP[row.settlement_id] || row.settlement_id;
+    const playerLocationId = resolvePlayerLocationId(this.db, ownerId);
+    if (warehouseLocationId !== playerLocationId) {
+      throw new Error('Phải đứng tại thành của kho mới nạp hoặc rút hàng.');
+    }
+    return playerLocationId;
+  }
+
   public deposit(ownerId: string, warehouseId: string, itemCode: string, quantity: number, gameDate: string): any {
     const row = this.warehouseRow(warehouseId, ownerId);
     this.assertUsable(row, gameDate);
+    const locationId = this.assertSameCity(row, ownerId);
     const qty = Math.max(0.1, Number(quantity) || 0);
     const used = this.capacityUsed(warehouseId);
     if (used + qty > Number(row.capacity)) {
@@ -226,6 +238,7 @@ export class WarehouseService {
       [itemCode]
     );
     if (!stock || Number(stock.quantity) < qty) throw new Error(`Túi nhân không đủ ${itemCode}.`);
+    assertBagQuantity(this.db, locationId, itemCode, qty, row.settlement_id);
 
     return this.db.transaction(() => {
       consumeInventoryItem(this.db, {
@@ -258,6 +271,7 @@ export class WarehouseService {
   public withdraw(ownerId: string, warehouseId: string, itemCode: string, quantity: number, gameDate: string): any {
     const row = this.warehouseRow(warehouseId, ownerId);
     this.assertUsable(row, gameDate);
+    this.assertSameCity(row, ownerId);
     const qty = Math.max(0.1, Number(quantity) || 0);
     const stock = this.db.queryOne<{ quantity: number }>(
       'SELECT quantity FROM warehouse_stock WHERE warehouse_id = ? AND item_code = ? LIMIT 1;',

@@ -293,17 +293,24 @@ export class MarketStallModal {
       : '<div class="text-muted text-sm mb-2">Không có chuyến hàng đang chạy.</div>';
 
     const routes = this.merchantRoutes.length > 0
-      ? this.merchantRoutes.map(route => `
+      ? this.merchantRoutes.map(route => {
+        const itemSummary = (route.items && route.items.length > 0
+          ? route.items
+          : [{ itemCode: route.itemCode, quantityPerRun: route.quantityPerRun }])
+          .map(item => `${esc(item.itemCode)}×${item.quantityPerRun}`)
+          .join(', ');
+        return `
         <div class="flex justify-between items-center text-[11px] border-b border-slate-800 py-1.5 gap-2">
           <div>
-            <div class="text-slate-200">${esc(route.nameVi)} • ${esc(route.itemCode)} × ${route.quantityPerRun}</div>
+            <div class="text-slate-200">${esc(route.nameVi)} • ${itemSummary}</div>
             <div class="text-muted">${esc(route.fromSettlementId)} → ${esc(route.toSettlementId)} • ${esc(route.status)} • mỗi ${route.frequencyDays} ngày</div>
           </div>
           <button class="ui-btn ui-btn--ghost ui-btn--sm" data-route-status data-route-id="${esc(route.routeId)}" data-next-status="${route.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE'}">
             ${route.status === 'ACTIVE' ? 'Tạm Dừng' : 'Tiếp Tục'}
           </button>
         </div>
-      `).join('')
+      `;
+      }).join('')
       : '<div class="text-muted text-sm">Chưa có thương lộ tự động.</div>';
 
     const events = this.merchantEvents.length > 0
@@ -322,13 +329,9 @@ export class MarketStallModal {
     const routeForm = `
       <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800 mb-3">
         <div class="text-xs font-bold text-amber-200 mb-2">Mở Thương Lộ Tự Động</div>
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-2 text-[11px]">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-2 text-[11px] mb-2">
           <select id="route-from" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200">${warehouseOptions}</select>
           <select id="route-to" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200">${warehouseOptions}</select>
-          <input id="route-item" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200" value="COM-GRAIN" placeholder="Mã hàng" />
-          <input id="route-qty" type="number" min="1" step="1" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200" value="10" />
-          <input id="route-buy" type="number" min="1" step="1" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200" value="50" placeholder="Giá mua trần" />
-          <input id="route-sell" type="number" min="1" step="1" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200" value="100" placeholder="Giá bán sàn" />
           <input id="route-freq" type="number" min="1" step="1" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200" value="7" placeholder="Ngày/chuyến" />
           <select id="route-guard" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200">
             <option value="MILITIA">Dân Dũng</option>
@@ -336,6 +339,17 @@ export class MarketStallModal {
             <option value="ELITE_RETINUE">Tinh Nhuệ</option>
           </select>
         </div>
+        <div class="route-items-head text-[11px] text-muted mb-1">Mặt hàng · SL/chuyến · Giá mua trần · Giá bán sàn</div>
+        <div id="route-items" class="route-items">
+          <div class="route-item-row">
+            <input data-route-field="item" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200" value="COM-GRAIN" placeholder="Mã hàng" />
+            <input data-route-field="qty" type="number" min="1" step="1" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200" value="10" />
+            <input data-route-field="buy" type="number" min="1" step="1" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200" value="50" placeholder="Mua trần" />
+            <input data-route-field="sell" type="number" min="1" step="1" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200" value="100" placeholder="Bán sàn" />
+            <button class="ui-btn ui-btn--ghost ui-btn--sm" data-route-remove-item title="Xóa mặt hàng">×</button>
+          </div>
+        </div>
+        <button class="ui-btn ui-btn--ghost ui-btn--sm mt-1" data-route-add-item>+ Mặt hàng</button>
         <div class="flex justify-between items-center mt-2 gap-2">
           <div class="text-muted text-[11px]">${canCreateRoute ? 'Kho nguồn và kho đích phải khác thành; giá bán sàn phải cao hơn giá mua trần.' : 'Cần ít nhất 2 kho ở hai thành khác nhau.'}</div>
           <button class="ui-btn ui-btn--primary ui-btn--sm" data-route-create ${canCreateRoute ? '' : 'disabled'}>Mở Thương Lộ</button>
@@ -499,22 +513,52 @@ export class MarketStallModal {
       });
     });
 
+    const bindRouteItemRemove = (row: HTMLElement) => {
+      row.querySelector<HTMLElement>('[data-route-remove-item]')?.addEventListener('click', () => {
+        const rows = body.querySelectorAll('.route-item-row');
+        if (rows.length > 1) row.remove();
+      });
+    };
+    body.querySelectorAll<HTMLElement>('.route-item-row').forEach(bindRouteItemRemove);
+
+    body.querySelector('[data-route-add-item]')?.addEventListener('click', () => {
+      const container = body.querySelector('#route-items');
+      const template = container?.querySelector<HTMLElement>('.route-item-row');
+      if (!container || !template) return;
+      const clone = template.cloneNode(true) as HTMLElement;
+      clone.querySelectorAll<HTMLInputElement>('input').forEach(input => {
+        if (input.dataset.routeField === 'item') input.value = '';
+        if (input.dataset.routeField === 'qty') input.value = '10';
+        if (input.dataset.routeField === 'buy') input.value = '50';
+        if (input.dataset.routeField === 'sell') input.value = '100';
+      });
+      container.appendChild(clone);
+      bindRouteItemRemove(clone);
+    });
+
     body.querySelectorAll<HTMLElement>('[data-route-create]').forEach(button => {
       button.addEventListener('click', async () => {
         const fromWarehouseId = body.querySelector<HTMLSelectElement>('#route-from')?.value || '';
         const toWarehouseId = body.querySelector<HTMLSelectElement>('#route-to')?.value || '';
-        const itemCode = body.querySelector<HTMLInputElement>('#route-item')?.value.trim() || '';
-        const quantityPerRun = Number(body.querySelector<HTMLInputElement>('#route-qty')?.value || 0);
-        const maxBuyPrice = Number(body.querySelector<HTMLInputElement>('#route-buy')?.value || 0);
-        const minSellPrice = Number(body.querySelector<HTMLInputElement>('#route-sell')?.value || 0);
         const frequencyDays = Number(body.querySelector<HTMLInputElement>('#route-freq')?.value || 7);
         const guardTier = body.querySelector<HTMLSelectElement>('#route-guard')?.value || 'VETERAN';
         if (!fromWarehouseId || !toWarehouseId || fromWarehouseId === toWarehouseId) {
           toast('Kho nguồn và kho đích phải khác nhau.', true);
           return;
         }
-        if (!itemCode || quantityPerRun <= 0 || maxBuyPrice <= 0 || minSellPrice <= maxBuyPrice) {
-          toast('Kiểm tra mã hàng, số lượng và giá bán sàn > giá mua trần.', true);
+        const items = Array.from(body.querySelectorAll<HTMLElement>('.route-item-row')).map(row => {
+          const field = (name: string) => row.querySelector<HTMLInputElement>(`[data-route-field="${name}"]`);
+          return {
+            itemCode: field('item')?.value.trim() || '',
+            quantityPerRun: Number(field('qty')?.value || 0),
+            maxBuyPrice: Number(field('buy')?.value || 0),
+            minSellPrice: Number(field('sell')?.value || 0)
+          };
+        });
+        if (items.length === 0 || items.some(item =>
+          !item.itemCode || item.quantityPerRun <= 0 || item.maxBuyPrice <= 0 || item.minSellPrice <= item.maxBuyPrice
+        )) {
+          toast('Kiểm tra từng mặt hàng: mã hàng, số lượng và giá bán sàn > giá mua trần.', true);
           return;
         }
         button.setAttribute('disabled', 'true');
@@ -522,10 +566,7 @@ export class MarketStallModal {
           await marketStallService.createMerchantRoute({
             fromWarehouseId,
             toWarehouseId,
-            itemCode,
-            quantityPerRun,
-            maxBuyPrice,
-            minSellPrice,
+            items,
             frequencyDays,
             guardTier
           });
