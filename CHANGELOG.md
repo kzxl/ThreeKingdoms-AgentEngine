@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.48.0] - 2026-11-01
+
+Reworked the NPC dossier for readability.
+
+### Changed
+- Stat rows show the numeric value once and the rank once; fogged values show
+  `???` and “Sương mù” instead of repeating the rank.
+- Radar is 320×270 with short LDR/WAR/CRA/INT/POL/DIP/COM/LOG labels; long rank
+  strings no longer sit on the axes.
+- Header uses compact identity, location/mood/relationship chips and two meter
+  rows; the empty illustration band is removed.
+- Stats use a 320px radar + 2×4 grid; tabs and the action footer are sticky, so
+  actions are visible without scrolling.
+- Dossier blocks moved from inline styles to CSS classes; inline styles dropped
+  from 783 to 740 and the 11px font floor is enforced.
+
+### Verification
+`npm run verify` green: 101/101 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 2,313 invariants, 0 discrepancies.
+
+---
+
 ## [1.47.1] - 2026-11-01
 
 Fix modal priority when opening a dossier from the world map.

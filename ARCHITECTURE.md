@@ -1226,6 +1226,11 @@ The wilderness slice is implemented before the city mini-map:
 The city mini-map is still open: 93 urban rows are scoped but no city hotspot
 renderer exists yet.
 
+NPC dossier: the header is identity + chips + two relationship meters; the stats
+tab is a 320px radar plus a 2×4 grid. The value slot uses `s.value`, the rank is
+printed once, and fog renders `???` / “Sương mù”. Tabs and the action footer are
+sticky; an illustration is rendered only when `illustration_url` exists.
+
 Modal priority: the world map is shell-owned and receives an inline z-index
 (1010) from `ModalStack`. Legacy dossiers are not in that stack, so they call
 `nextModalZIndex()` (`public/js/config.js`) before opening and claim Escape with

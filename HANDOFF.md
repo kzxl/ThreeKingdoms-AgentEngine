@@ -70,6 +70,8 @@ check; an old server keeps serving the old bundle.
   rejects player actions with `CAMPAIGN_OVER`.
 - **Hiring**: affinity + fame + virtue gate; a low-standing stranger is refused
   with `NPC_REFUSED` and a 30-day retry date.
+- **Dossier UI**: numeric value once, rank once, short-label radar, 2×4 stat
+  grid, sticky tabs/action footer.
 - **Map**: `GET /api/map/registry` is the single source for 20 nodes, 133
   sub-locations, 132 POIs and 23 resource nodes; every row resolves, zero
   orphans. Wilderness travel updates `current_sub_location` through

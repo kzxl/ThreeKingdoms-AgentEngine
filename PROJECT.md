@@ -160,6 +160,7 @@ The milestone tables below are the original expansion history. Current verified 
 | 79 | NPC Hire Refusal | Affinity/fame/virtue gate returns NPC_REFUSED with retry date; no silent hire | M29 | Social 1.45.0 |
 | 80 | Map Registry | 133 sub-locations normalized; one API resolves 20 nodes, 132 POIs, 23 resources and 23 settlements | M30 | Map 1.46.0 |
 | 81 | Wilderness Local Map | 40 wilderness rows with local coords, current_sub_location, travel API and SVG modal | M31 | Map 1.47.0 |
+| 82 | Dossier UI Rework | Numeric/rank dedup, short-label radar, 2×4 stat grid, sticky tabs/footer, CSS classes | M32 | UI 1.48.0 |
 
 ---
 
@@ -198,6 +199,7 @@ The milestone tables below are the original expansion history. Current verified 
 | M29 | NPC Pushback & Map Decision | Features 79: hire refusal; map evolution analysis recommends hybrid tiles | M1-M28 | DONE |
 | M30 | Map Registry | Feature 80: normalized sub-locations and one server registry | M1-M29 | DONE |
 | M31 | Wilderness Local Map | Feature 81: wilderness scope, local coordinates, travel API and modal | M1-M30 | DONE |
+| M32 | Dossier UI Rework | Feature 82: readable stats, short-label radar, sticky action footer and CSS classes | M1-M31 | DONE |
 
 ---
 
