@@ -29,6 +29,27 @@ with 0 discrepancies.
 
 ---
 
+## [1.52.3] - 2026-11-02
+
+### Fixed
+- Audited all 73 `apiClient`/`fetch` paths in `src/client` against the 259
+  registered server routes. `tools/client-api-allowlist.json` is now empty, so
+  any future client call to a missing route fails the gate.
+- Arena calls now use `/api/duel/arena/roster`, `/api/duel/initiate` and
+  `/api/duel/round`, mapping the server roster/duel shape correctly.
+- Tavern drink uses the legacy `PERSONAL_GROWTH / REST_RECOVERY` action; banquet
+  host sends `tier`; brotherhood sends `npcId`.
+- Residence rest uses `/api/life/act` with `SLEEP`.
+- The TS title screen uses `/api/game/new` with real `scenarioId`/`archetypeId`
+  values instead of the nonexistent `/api/session/new-game`.
+
+### Verification
+`npm run lint:api --strict`: 73 client paths, 0 missing, 0 allowlisted.
+`npm run verify` green: 110/110 suites. `npm run audit` 2,441 invariants, 0
+discrepancies.
+
+---
+
 ## [1.52.2] - 2026-11-02
 
 ### Fixed
