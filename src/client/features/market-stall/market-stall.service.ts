@@ -145,6 +145,12 @@ export class MarketStallService {
     });
   }
 
+  public async renewWarehouse(warehouseId: string): Promise<any> {
+    return apiClient.post('/api/warehouses/renew', {
+      warehouseId, idempotencyKey: `warehouse-renew-${warehouseId}-${Date.now()}`
+    });
+  }
+
   public async openStall(settlementId?: string): Promise<any> {
     return apiClient.post('/api/stall/open', { settlementId, idempotencyKey: `stall-open-${Date.now()}` });
   }
@@ -210,6 +216,23 @@ export class MarketStallService {
   public async getMerchantEvents(): Promise<any[]> {
     const res = await apiClient.get('/api/merchant/events');
     return (res as any).events || [];
+  }
+
+  public async createMerchantRoute(input: {
+    fromWarehouseId: string;
+    toWarehouseId: string;
+    itemCode: string;
+    quantityPerRun: number;
+    maxBuyPrice: number;
+    minSellPrice: number;
+    frequencyDays: number;
+    guardTier: string;
+    nameVi?: string;
+  }): Promise<any> {
+    return apiClient.post('/api/merchant/routes', {
+      ...input,
+      idempotencyKey: `merchant-route-create-${input.fromWarehouseId}-${input.toWarehouseId}-${Date.now()}`
+    });
   }
 
   public async setMerchantRouteStatus(routeId: string, status: 'ACTIVE' | 'PAUSED'): Promise<any> {
