@@ -10271,3 +10271,77 @@ textarea {
 .condition-source {
   color: #94a3b8;
 }
+
+/* NPC dossier: assets and NPC ledger */
+.dossier-asset-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.dossier-asset-card {
+  padding: 0.75rem;
+  border: 1px solid rgba(120, 90, 40, 0.35);
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.55);
+}
+
+.dossier-asset-head {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #fbbf24;
+  margin-bottom: 0.45rem;
+}
+
+.dossier-asset-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.dossier-asset-meta {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  margin-top: 0.15rem;
+}
+
+.dossier-asset-empty {
+  font-size: 0.78rem;
+  color: #94a3b8;
+}
+
+.dossier-ledger-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.dossier-ledger-category {
+  font-size: 0.75rem;
+  color: #e2e8f0;
+}
+
+.dossier-ledger-memo {
+  font-size: 0.68rem;
+  color: #94a3b8;
+}
+
+.dossier-ledger-values {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.1rem;
+  font-size: 0.68rem;
+  color: #94a3b8;
+}
+
+.dossier-ledger-values strong.is-positive {
+  color: #86efac;
+}
+
+.dossier-ledger-values strong.is-negative {
+  color: #fca5a5;
+}

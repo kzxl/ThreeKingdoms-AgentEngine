@@ -494,6 +494,50 @@
       </div>
     `;
 
+    // 5. Tab 4: Assets, NPC ledger and business succession
+    const assets = dossier.assets || { ledger: [], business: null };
+    const business = assets.business;
+    const businessHtml = business
+      ? `
+        <div class="dossier-asset-card">
+          <div class="dossier-asset-head">${isEn ? 'Business Succession' : 'Sản Nghiệp & Kế Thừa'}</div>
+          <div class="dossier-asset-title">${business.name}</div>
+          <div class="dossier-asset-meta">
+            ${business.businessId} • ${business.assignedRole} • ${business.status} • Tier ${business.tier}
+          </div>
+          <div class="dossier-asset-meta">
+            ${isEn ? 'Manager / successor:' : 'Người quản lý / kế thừa:'} ${business.managerNpcId || (isEn ? 'none' : 'chưa có')}
+            • ${isEn ? 'safe cash' : 'quỹ an toàn'} ${formatNumber(business.safeCash)} Quan
+          </div>
+        </div>
+      `
+      : `<div class="dossier-asset-empty">${isEn ? 'No enterprise is assigned to this officer.' : 'Nhân vật chưa được phân bổ sản nghiệp nào.'}</div>`;
+    const ledgerHtml = (assets.ledger || []).length > 0
+      ? assets.ledger.map(entry => `
+          <div class="dossier-ledger-row">
+            <div>
+              <div class="dossier-ledger-category">${entry.category}${entry.counterparty ? ` • ${entry.counterparty}` : ''}</div>
+              <div class="dossier-ledger-memo">${entry.memoVi || ''}</div>
+            </div>
+            <div class="dossier-ledger-values">
+              <span>${entry.gameDate}</span>
+              <strong class="${entry.deltaCash >= 0 ? 'is-positive' : 'is-negative'}">${entry.deltaCash >= 0 ? '+' : ''}${formatNumber(entry.deltaCash)} Quan</strong>
+              <span>${isEn ? 'balance' : 'số dư'} ${formatNumber(entry.balanceCash)}</span>
+            </div>
+          </div>
+        `).join('')
+      : `<div class="dossier-asset-empty">${isEn ? 'No ledger entries yet.' : 'Chưa có bút toán nào.'}</div>`;
+
+    const tab4Html = `
+      <div class="dossier-asset-layout">
+        ${businessHtml}
+        <div class="dossier-asset-card">
+          <div class="dossier-asset-head">${isEn ? 'Latest NPC Ledger' : 'Sổ Cái NPC Gần Nhất'}</div>
+          ${ledgerHtml}
+        </div>
+      </div>
+    `;
+
     // 6. Action Deck Buttons Based on Spatial Proximity
     let actionButtonsHtml = '';
     if (isCoPresent) {
@@ -638,11 +682,18 @@
             <button class="dossier-tab-btn ${activeDossierTab === 'biography' ? 'active' : ''}" onclick="switchDossierTab('biography')">
               ${isEn ? 'Chronicle & Biography' : 'Liệt Truyện & Tiểu Sử'}
             </button>
+            <button class="dossier-tab-btn ${activeDossierTab === 'assets' ? 'active' : ''}" onclick="switchDossierTab('assets')">
+              ${isEn ? 'Assets & Succession' : 'Tài Sản & Kế Thừa'}
+            </button>
           </div>
 
           <!-- 3. Active Tab Stage -->
           <div id="dossier-tab-content" class="dossier-tab-content">
-            ${activeDossierTab === 'stats' ? tab1Html : (activeDossierTab === 'kizuna' ? tab2Html : tab3Html)}
+            ${activeDossierTab === 'stats'
+              ? tab1Html
+              : (activeDossierTab === 'kizuna'
+                ? tab2Html
+                : (activeDossierTab === 'assets' ? tab4Html : tab3Html))}
           </div>
 
           <!-- Dynamic Interaction Feedback Box -->

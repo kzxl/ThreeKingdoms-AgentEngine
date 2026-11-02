@@ -307,7 +307,7 @@ export class MarketStallModal {
       : '<div class="text-muted text-sm">Chưa có thương lộ tự động.</div>';
 
     const events = this.merchantEvents.length > 0
-      ? this.merchantEvents.slice(0, 6).map(event => `
+      ? this.merchantEvents.slice(0, 5).map(event => `
         <div class="text-[11px] border-b border-slate-800 py-1">
           <span class="text-slate-300">${esc(event.eventType || event.event_type)}</span>
           <span class="text-muted"> • ${esc(event.gameDate || event.game_date || '')} • ${esc(event.itemCode || event.item_code || '')}</span>

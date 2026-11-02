@@ -883,7 +883,7 @@ var SimulationClient=(function(e){Object.defineProperty(e,Symbol.toStringTag,{va
             ${e.status===`ACTIVE`?`Tạm Dừng`:`Tiếp Tục`}
           </button>
         </div>
-      `).join(``):`<div class="text-muted text-sm">Chưa có thương lộ tự động.</div>`,r=this.merchantEvents.length>0?this.merchantEvents.slice(0,6).map(e=>`
+      `).join(``):`<div class="text-muted text-sm">Chưa có thương lộ tự động.</div>`,r=this.merchantEvents.length>0?this.merchantEvents.slice(0,5).map(e=>`
         <div class="text-[11px] border-b border-slate-800 py-1">
           <span class="text-slate-300">${V(e.eventType||e.event_type)}</span>
           <span class="text-muted"> • ${V(e.gameDate||e.game_date||``)} • ${V(e.itemCode||e.item_code||``)}</span>

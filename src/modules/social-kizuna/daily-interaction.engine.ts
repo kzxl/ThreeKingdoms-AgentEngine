@@ -143,6 +143,28 @@ export interface NpcDossierView {
   // Ambition & Secrets under Fog
   ambition: { displayVi: string; displayEn: string; isRevealed: boolean };
   secretStory: { displayVi: string; displayEn: string; isRevealed: boolean };
+  assets: {
+    ledger: Array<{
+      entryId: string;
+      gameDate: string;
+      category: string;
+      counterparty: string | null;
+      deltaCash: number;
+      deltaTroops: number;
+      balanceCash: number;
+      balanceTroops: number;
+      memoVi: string | null;
+    }>;
+    business: {
+      businessId: string;
+      name: string;
+      status: string;
+      assignedRole: string;
+      managerNpcId: string | null;
+      safeCash: number;
+      tier: number;
+    } | null;
+  };
   interactionCount: number;
 }
 
@@ -688,6 +710,51 @@ export class DailyInteractionEngine {
       npcSkills = [];
     }
 
+    let ledger: NpcDossierView['assets']['ledger'] = [];
+    try {
+      ledger = this.db.query<any>(
+        `SELECT entry_id, game_date, category, counterparty, delta_cash, delta_troops,
+                balance_cash, balance_troops, memo_vi
+           FROM npc_ledger WHERE npc_id = ?
+          ORDER BY game_date DESC, created_at DESC LIMIT 5;`,
+        [npcId]
+      ).map(row => ({
+        entryId: String(row.entry_id),
+        gameDate: String(row.game_date),
+        category: String(row.category),
+        counterparty: row.counterparty ? String(row.counterparty) : null,
+        deltaCash: Number(row.delta_cash || 0),
+        deltaTroops: Number(row.delta_troops || 0),
+        balanceCash: Number(row.balance_cash || 0),
+        balanceTroops: Number(row.balance_troops || 0),
+        memoVi: row.memo_vi ? String(row.memo_vi) : null
+      }));
+    } catch {
+      // Old fixture saves may predate the NPC ledger migration.
+      ledger = [];
+    }
+    let businessRow: any = null;
+    try {
+      businessRow = this.db.queryOne<any>(
+        `SELECT b.business_id, b.name, b.status, b.manager_npc_id, b.safe_cash, b.tier,
+                n.assigned_role
+           FROM npc_state n JOIN businesses b ON b.business_id = n.assigned_business_id
+          WHERE n.npc_id = ? LIMIT 1;`,
+        [npcId]
+      );
+    } catch {
+      businessRow = null;
+    }
+    const business = businessRow ? {
+      businessId: String(businessRow.business_id),
+      name: String(businessRow.name),
+      status: String(businessRow.status || 'ACTIVE'),
+      assignedRole: String(businessRow.assigned_role || 'UNASSIGNED'),
+      managerNpcId: businessRow.manager_npc_id ? String(businessRow.manager_npc_id) : null,
+      safeCash: Number(businessRow.safe_cash || 0),
+      tier: Number(businessRow.tier || 1)
+    } : null;
+
     return {
       npcId: profile.npcId,
       nameVi: profile.nameVi,
@@ -731,6 +798,7 @@ export class DailyInteractionEngine {
       dislikes: dislikesView,
       ambition: ambitionView,
       secretStory: secretView,
+      assets: { ledger, business },
       interactionCount: fog.interactionCount
     };
   }
