@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.51.0] - 2026-11-02
+
+Fixed and expanded the Bách Nghệ enterprise/workshop surface.
+
+### Fixed
+- Wage-work buttons sent legacy ids (`WOODCUT`, `WEAVE_MAT`, `SMITH_ASSIST`)
+  that the server rejects. The modal now renders the six canonical `SHIFT_*`
+  entries returned by `/api/enterprise/status`.
+- The owner tab read fields (`name_vi`, `enterprise_id`, `worker_count`) that
+  the server never returns; the client type and renderer now match the real
+  `businesses` contract.
+
+### Added
+- Portfolio summary cards: cash, enterprise safe cash, debt, staff wages, rent
+  and accumulated profit.
+- Per-enterprise cards with manager name, assigned/roster staff, efficiency,
+  daily revenue, debt, rent + wages, health badge and auto-procure state.
+- Inline cash input with deposit/withdraw, plus **collect profits**.
+- Opening catalogue with startup/turnkey cost, rent, workforce, projected
+  revenue and per-material availability.
+- Work tab summary (fatigue, available shifts, best wage, best wage/fatigue)
+  and six canonical shift cards with blocked reasons.
+
+### Verification
+`npm run verify` green: 109/109 suites, 28/28 API contracts, 8/8 write smokes.
+`npm run audit` passed 2,313 invariants with 0 discrepancies.
+
+---
+
 ## [1.50.0] - 2026-11-02
 
 Upgraded the local market price board from a five-column stub to a full
