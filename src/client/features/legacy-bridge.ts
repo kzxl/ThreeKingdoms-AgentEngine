@@ -12,7 +12,6 @@ import { UI } from '../core/ui';
 import { lineageFamilyModal } from './lineage-family';
 import { equipmentForgeModal } from './equipment-forge';
 import { enterpriseWorkshopModal } from './enterprise-workshop';
-import { dossiersModal } from './dossiers';
 import { quickTradeModal } from './trade-quick';
 import { tacticalBattleModal } from './tactical-battle';
 import { transitTurnModals } from './transit-turn';
@@ -82,15 +81,9 @@ export function setupLegacyBridge(): void {
   // projection and is still the complete surface. The TS shell remains for a
   // later migration and must not replace it yet.
 
-  // 7. Dossiers (Protagonist & NPC)
-  w.ProtagonistDossierModal = {
-    open: () => dossiersModal.openProtagonist(),
-    close: () => dossiersModal.closeProtagonist()
-  };
-  w.NpcDossierModal = {
-    open: (npcId: string) => dossiersModal.openNpc(npcId),
-    close: () => dossiersModal.closeNpc()
-  };
+  // 7. Dossiers (Protagonist & NPC) are owned by the legacy detailed renderers
+  // (public/js/protagonist-dossier-modal.js and npc-dossier-modal.js). Do not
+  // mount a second shell with the same modal id.
 
   // 8. Personal Journal & Roadmaps are provided by the legacy module
   // (public/js/personal-journal-ui.js) which owns the 4-tab journal DOM
