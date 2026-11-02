@@ -28,6 +28,8 @@ export class WildernessMapModal {
   private modal: ModalShellInstance;
   private view: WildernessView | null = null;
   private nodeId: string | null = null;
+  private scene: any = null;
+  private scenePoiName: string | null = null;
 
   constructor() {
     this.modal = createModalShell({
@@ -91,9 +93,88 @@ export class WildernessMapModal {
           <span>Vị trí hiện tại: <strong>${esc(currentSubLocation || 'Trong thành')}</strong></span>
           <span class="text-muted">Chọn một địa danh để đi bộ tới; quay lại thành bằng nút đóng.</span>
         </div>
+        ${this.renderResourcesPanel(currentSubLocation)}
+        ${this.renderPoiPanel()}
+        ${this.renderScenePanel()}
       </div>
     `);
     this.bind();
+  }
+
+  private isInWilderness(currentSubLocation: string | null): boolean {
+    return Boolean(currentSubLocation)
+      && (this.view?.wilderness || []).some(spot => spot.nameVi === currentSubLocation);
+  }
+
+  private renderResourcesPanel(currentSubLocation: string | null): string {
+    const resources = this.view?.resources || [];
+    if (resources.length === 0) return '';
+    const inWilderness = this.isInWilderness(currentSubLocation);
+    return `
+      <div class="wilderness-action-panel">
+        <div class="flex justify-between items-center gap-3 mb-2">
+          <div class="text-xs font-bold text-amber-200">Điểm Tài Nguyên</div>
+          <div class="text-[11px] text-muted">${inWilderness
+            ? `Đang ở ${esc(currentSubLocation || '')} — có thể khai thác.`
+            : 'Hãy đi tới một địa danh dã ngoại trước khi khai thác.'}</div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+          ${resources.map(resource => `
+            <div class="flex justify-between items-center gap-2 rounded border border-slate-800 bg-slate-900/70 p-2">
+              <div>
+                <div class="text-sm text-slate-200">${esc(resource.nameVi)}</div>
+                <div class="text-[11px] text-muted">${esc(resource.resourceType)} • ${esc(resource.resourceNodeId)}</div>
+              </div>
+              <button class="ui-btn ui-btn--primary ui-btn--sm" data-wilderness-gather="${esc(resource.resourceNodeId)}" ${inWilderness ? '' : 'disabled'}>
+                Khai Thác
+              </button>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  private renderPoiPanel(): string {
+    const poiScenes = this.view?.poiScenes || [];
+    if (poiScenes.length === 0) return '';
+    return `
+      <div class="wilderness-action-panel">
+        <div class="text-xs font-bold text-amber-200 mb-2">Khảo Sát Địa Điểm</div>
+        <div class="flex flex-wrap gap-2">
+          ${poiScenes.map(poi => `
+            <button class="ui-btn ui-btn--ghost ui-btn--sm" data-poi-scene="${esc(poi.poiName)}">
+              ${esc(poi.poiName)}
+            </button>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  private renderScenePanel(): string {
+    if (!this.scene) return '';
+    const options = Array.isArray(this.scene.options) ? this.scene.options : [];
+    return `
+      <div class="wilderness-scene-card">
+        <div class="flex justify-between items-start gap-3">
+          <div>
+            <div class="text-xs font-bold text-amber-200">${esc(this.scenePoiName || this.scene.npc?.name || 'Khảo sát')}</div>
+            <div class="text-[11px] text-muted">${esc(this.scene.npc?.name || '')}${this.scene.npc?.title ? ` • ${esc(this.scene.npc.title)}` : ''}</div>
+          </div>
+          <button class="ui-btn ui-btn--ghost ui-btn--sm" data-scene-close>Đóng</button>
+        </div>
+        <p class="text-sm text-slate-300 mt-2">${esc(this.scene.narrative || '')}</p>
+        <div class="grid grid-cols-1 gap-2 mt-2">
+          ${options.map((option: any, index: number) => `
+            <button class="ui-btn ui-btn--ghost ui-btn--sm text-left" data-scene-option="${index}" ${option.disabled ? 'disabled' : ''}>
+              <strong>${esc(option.title || option.id || `Lựa chọn ${index + 1}`)}</strong>
+              ${option.desc ? `<span class="block text-[11px] text-muted">${esc(option.desc)}</span>` : ''}
+            </button>
+          `).join('')}
+        </div>
+      </div>
+    `;
   }
 
   private renderSpot(spot: WildernessSpot, currentSubLocation: string | null): string {
@@ -132,6 +213,68 @@ export class WildernessMapModal {
         if (event.key === 'Enter' || event.key === ' ') {
           event.preventDefault();
           void travel();
+        }
+      });
+    });
+
+    body.querySelectorAll<HTMLElement>('[data-wilderness-gather]').forEach(button => {
+      button.addEventListener('click', async () => {
+        const nodeId = button.dataset.wildernessGather || '';
+        button.setAttribute('disabled', 'true');
+        try {
+          const response = await wildernessMapService.gather(nodeId);
+          const result = response?.result || response;
+          const item = result?.itemNameVi || result?.itemCode || 'tài nguyên';
+          const quantity = Number(result?.quantity || result?.yieldQuantity || 0);
+          toast(quantity > 0 ? `Khai thác được ${quantity} ${item}.` : 'Khai thác thành công.');
+          await this.refresh();
+          this.render();
+        } catch (error: any) {
+          button.removeAttribute('disabled');
+          toast(error.message || 'Khai thác thất bại.', true);
+        }
+      });
+    });
+
+    body.querySelectorAll<HTMLElement>('[data-poi-scene]').forEach(button => {
+      button.addEventListener('click', async () => {
+        const poiName = button.dataset.poiScene || '';
+        button.setAttribute('disabled', 'true');
+        try {
+          this.scene = await wildernessMapService.getScene(poiName);
+          this.scenePoiName = poiName;
+          this.render();
+        } catch (error: any) {
+          button.removeAttribute('disabled');
+          toast(error.message || 'Không mở được địa điểm.', true);
+        }
+      });
+    });
+
+    body.querySelectorAll<HTMLElement>('[data-scene-close]').forEach(button => {
+      button.addEventListener('click', () => {
+        this.scene = null;
+        this.scenePoiName = null;
+        this.render();
+      });
+    });
+
+    body.querySelectorAll<HTMLElement>('[data-scene-option]').forEach(button => {
+      button.addEventListener('click', async () => {
+        const index = Number(button.dataset.sceneOption || -1);
+        const option = this.scene?.options?.[index];
+        if (!option?.action) return;
+        button.setAttribute('disabled', 'true');
+        try {
+          const response = await wildernessMapService.dispatchAction(option.action);
+          toast(response?.message || 'Đã thực hiện lựa chọn.');
+          this.scene = null;
+          this.scenePoiName = null;
+          await this.refresh();
+          this.render();
+        } catch (error: any) {
+          button.removeAttribute('disabled');
+          toast(error.message || 'Hành động thất bại.', true);
         }
       });
     });

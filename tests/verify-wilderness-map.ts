@@ -76,6 +76,15 @@ function run(): void {
     /thành khác/i
   );
 
+  // The wilderness surface exposes gather and POI-scene actions, not counts only.
+  const ui = fs.readFileSync(path.join(ROOT, 'src/client/features/world-map/wilderness-map.modal.ts'), 'utf8');
+  const client = fs.readFileSync(path.join(ROOT, 'src/client/features/world-map/wilderness-map.service.ts'), 'utf8');
+  assert(ui.includes('data-wilderness-gather'), 'wilderness UI must render gather badges');
+  assert(ui.includes('data-poi-scene'), 'wilderness UI must render POI survey actions');
+  assert(ui.includes('wilderness-scene-card'), 'POI scenes must render inline');
+  assert(client.includes('/api/professions/gather'), 'client gather must call the professions endpoint');
+  assert(client.includes('/api/scene'), 'client POI survey must call the contextual scene endpoint');
+
   db.close();
   DatabaseService.resetInstance();
   console.log('  ✅ PASSED: wilderness scope, coordinates, travel and city guards.');

@@ -752,7 +752,7 @@ var g = {
 			typeof window.showToast == "function" && window.showToast(e.message || "Kế thừa thất bại!", !0);
 		}
 	}
-}, x = new b(), S = class e {
+}, x = new b(), te = class e {
 	static instance;
 	static getInstance() {
 		return e.instance ||= new e(), e.instance;
@@ -787,12 +787,12 @@ var g = {
 			idempotencyKey: `tool-repair-${e}-${t}-${Date.now()}`
 		});
 	}
-}, C = S.getInstance();
+}, S = te.getInstance();
 // src/client/features/equipment-forge/equipment-forge.modal.ts
-function w(e) {
+function C(e) {
 	return String(e ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
-var te = class {
+var ne = class {
 	modal;
 	currentCharacterId = "PLY-0001";
 	overview = null;
@@ -842,7 +842,7 @@ var te = class {
 		await this.modal.close();
 	}
 	async refreshData() {
-		let [e, t] = await Promise.all([C.getOverview(this.currentCharacterId).catch((e) => (console.error("[EquipmentForgeModal] Error refreshing overview:", e), null)), C.getTools(this.currentCharacterId).catch((e) => (console.error("[EquipmentForgeModal] Error refreshing tools:", e), []))]);
+		let [e, t] = await Promise.all([S.getOverview(this.currentCharacterId).catch((e) => (console.error("[EquipmentForgeModal] Error refreshing overview:", e), null)), S.getTools(this.currentCharacterId).catch((e) => (console.error("[EquipmentForgeModal] Error refreshing tools:", e), []))]);
 		this.overview = e, this.tools = t;
 	}
 	async renderActiveTab() {
@@ -971,17 +971,17 @@ var te = class {
           <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800">
             <div class="flex justify-between items-start gap-3">
               <div>
-                <div class="font-bold text-amber-200 text-sm">${w(e.nameVi)}</div>
-                <div class="text-xs text-muted">${w(e.itemCode)} • ${t} • SL: ${e.quantity}</div>
+                <div class="font-bold text-amber-200 text-sm">${C(e.nameVi)}</div>
+                <div class="text-xs text-muted">${C(e.itemCode)} • ${t} • SL: ${e.quantity}</div>
               </div>
               <button class="ui-btn ui-btn--primary ui-btn--sm" ${i ? "" : "disabled"}
-                onclick="window.EquipmentUI.repairTool('${w(e.itemCode)}')">Sửa Chữa</button>
+                onclick="window.EquipmentUI.repairTool('${C(e.itemCode)}')">Sửa Chữa</button>
             </div>
             <div class="text-[11px] text-slate-300 mt-2">
               Độ bền: ${e.usesLeft}/${e.maxUses} lượt
               <progress class="tool-durability-bar" max="${e.maxUses}" value="${e.usesLeft}"></progress>
             </div>
-            <div class="text-[11px] text-muted mt-1">${w(r)}</div>
+            <div class="text-[11px] text-muted mt-1">${C(r)}</div>
           </div>
         `;
 		}).join("") : "<div class=\"text-center py-8 text-muted\">\n          Kho chưa có công cụ nào. Chế tác tại Lò Rèn hoặc mua từ chợ phiên.\n        </div>";
@@ -1000,7 +1000,7 @@ var te = class {
 	}
 	async repairTool(e) {
 		try {
-			let t = await C.repairTool(this.currentCharacterId, e), n = t?.result || t;
+			let t = await S.repairTool(this.currentCharacterId, e), n = t?.result || t;
 			typeof window.showToast == "function" && window.showToast(`Đã sửa ${e}: ${n?.usesBefore ?? "?"} → ${n?.usesAfter ?? "?"} lượt (${n?.cashPaid ?? 0} Quan).`), await this.refreshData(), await this.renderActiveTab();
 		} catch (e) {
 			typeof window.showToast == "function" && window.showToast(e.message || "Sửa công cụ thất bại!", !0);
@@ -1008,14 +1008,14 @@ var te = class {
 	}
 	async equip(e, t, n) {
 		try {
-			await C.equipItem(e, t, n), typeof window.showToast == "function" && window.showToast("Đã trang bị thành công!"), await this.refreshData(), await this.renderActiveTab();
+			await S.equipItem(e, t, n), typeof window.showToast == "function" && window.showToast("Đã trang bị thành công!"), await this.refreshData(), await this.renderActiveTab();
 		} catch (e) {
 			typeof window.showToast == "function" && window.showToast(e.message || "Lỗi trang bị!", !0);
 		}
 	}
 	async unequip(e, t) {
 		try {
-			await C.unequipItem(e, t), typeof window.showToast == "function" && window.showToast("Đã tháo trang bị về kho!"), await this.refreshData(), await this.renderActiveTab();
+			await S.unequipItem(e, t), typeof window.showToast == "function" && window.showToast("Đã tháo trang bị về kho!"), await this.refreshData(), await this.renderActiveTab();
 		} catch (e) {
 			typeof window.showToast == "function" && window.showToast(e.message || "Lỗi tháo trang bị!", !0);
 		}
@@ -1030,13 +1030,13 @@ var te = class {
 			destination: r?.value || "EQUIP"
 		};
 		try {
-			let e = await C.forgeBespokeWeapon(i);
+			let e = await S.forgeBespokeWeapon(i);
 			typeof window.showToast == "function" && window.showToast(e.narrativeVi || "Đúc rèn thần binh thành công!"), await this.refreshData(), await this.modal.switchTab("gear");
 		} catch (e) {
 			typeof window.showToast == "function" && window.showToast(e.message || "Đúc rèn thất bại!", !0);
 		}
 	}
-}, T = new te(), E = class e {
+}, w = new ne(), T = class e {
 	static instance;
 	static getInstance() {
 		return e.instance ||= new e(), e.instance;
@@ -1055,7 +1055,7 @@ var te = class {
 	async executeLaborShift(e, t) {
 		return v.post("/api/enterprise/work", { shiftId: e });
 	}
-}, D = E.getInstance(), ne = class {
+}, E = T.getInstance(), re = class {
 	modal;
 	enterprises = [];
 	laborOptions = [];
@@ -1092,7 +1092,7 @@ var te = class {
 	}
 	async refreshData() {
 		try {
-			let e = await D.getStatus("PLY-0001");
+			let e = await E.getStatus("PLY-0001");
 			this.enterprises = e?.ownedBusinesses || e?.activeEnterprises || [], this.laborOptions = e?.laborOptions || [];
 		} catch (e) {
 			console.error("[EnterpriseWorkshopModal] Error refreshing data:", e);
@@ -1153,7 +1153,7 @@ var te = class {
 		if (!t) return;
 		let n = parseInt(t, 10);
 		if (!(isNaN(n) || n <= 0)) try {
-			await D.manageSafeCash(e, "DEPOSIT", n), typeof window.showToast == "function" && window.showToast("Đã nạp tiền vào Quỹ an toàn!"), await this.refreshData(), await this.renderActiveTab();
+			await E.manageSafeCash(e, "DEPOSIT", n), typeof window.showToast == "function" && window.showToast("Đã nạp tiền vào Quỹ an toàn!"), await this.refreshData(), await this.renderActiveTab();
 		} catch (e) {
 			typeof window.showToast == "function" && window.showToast(e.message || "Lỗi nạp tiền!", !0);
 		}
@@ -1163,20 +1163,20 @@ var te = class {
 		if (!t) return;
 		let n = parseInt(t, 10);
 		if (!(isNaN(n) || n <= 0)) try {
-			await D.manageSafeCash(e, "WITHDRAW", n), typeof window.showToast == "function" && window.showToast("Đã rút tiền từ Quỹ an toàn về ngân khố!"), await this.refreshData(), await this.renderActiveTab();
+			await E.manageSafeCash(e, "WITHDRAW", n), typeof window.showToast == "function" && window.showToast("Đã rút tiền từ Quỹ an toàn về ngân khố!"), await this.refreshData(), await this.renderActiveTab();
 		} catch (e) {
 			typeof window.showToast == "function" && window.showToast(e.message || "Lỗi rút tiền!", !0);
 		}
 	}
 	async executeWork(e) {
 		try {
-			let t = await D.executeLaborShift(e);
+			let t = await E.executeLaborShift(e);
 			typeof window.showToast == "function" && window.showToast(t.narrativeVi || "Lao động hoàn tất, nhận tiền công!"), await this.refreshData(), await this.renderActiveTab();
 		} catch (e) {
 			typeof window.showToast == "function" && window.showToast(e.message || "Không thể làm việc lúc này!", !0);
 		}
 	}
-}, O = new ne(), k = class e {
+}, D = new re(), O = class e {
 	static instance;
 	static getInstance() {
 		return e.instance ||= new e(), e.instance;
@@ -1211,7 +1211,7 @@ var te = class {
 		let t = await v.get("/api/npcs/dossier", { npcId: e });
 		return t.dossier || t;
 	}
-}, A = k.getInstance(), j = class {
+}, k = O.getInstance(), ie = class {
 	protagonistModal;
 	npcModal;
 	currentProtagonist = null;
@@ -1242,7 +1242,7 @@ var te = class {
 	}
 	async openNpc(e) {
 		try {
-			this.currentNpc = await A.getNpcDossier(e), this.npcModal.setTitle(`Hồ Sơ Nhân Vật • ${this.currentNpc.nameVi}`, `Địa điểm: ${this.currentNpc.locationVi || "U Châu"} • Thân phận: ${this.currentNpc.positionVi || "Võ Tướng"}`), this.renderNpcContent(), await this.npcModal.open();
+			this.currentNpc = await k.getNpcDossier(e), this.npcModal.setTitle(`Hồ Sơ Nhân Vật • ${this.currentNpc.nameVi}`, `Địa điểm: ${this.currentNpc.locationVi || "U Châu"} • Thân phận: ${this.currentNpc.positionVi || "Võ Tướng"}`), this.renderNpcContent(), await this.npcModal.open();
 		} catch (e) {
 			console.error("[DossiersModal] Error loading NPC:", e);
 		}
@@ -1252,7 +1252,7 @@ var te = class {
 	}
 	async loadProtagonist() {
 		try {
-			this.currentProtagonist = await A.getProtagonistDossier(), this.renderProtagonistContent();
+			this.currentProtagonist = await k.getProtagonistDossier(), this.renderProtagonistContent();
 		} catch (e) {
 			console.error("[DossiersModal] Error loading protagonist:", e);
 		}
@@ -1332,7 +1332,7 @@ var te = class {
     `;
 		this.npcModal.setContent(n);
 	}
-}, M = new j(), N = class {
+}, A = new ie(), j = class {
 	modal;
 	currentMode = "BUY";
 	currentItemCode = "COM-GRAIN";
@@ -1404,7 +1404,7 @@ var te = class {
 			typeof window.showToast == "function" && window.showToast(e.message || "Giao dịch thất bại!", !0);
 		}
 	}
-}, P = new N(), F = class e {
+}, M = new j(), N = class e {
 	static instance;
 	static getInstance() {
 		return e.instance ||= new e(), e.instance;
@@ -1436,7 +1436,7 @@ var te = class {
 	async restAtResidence(e = 1) {
 		return v.post("/api/character/rest", { days: e });
 	}
-}.getInstance(), I = class {
+}.getInstance(), P = class {
 	modal;
 	currentDuelId = null;
 	duelState = null;
@@ -1451,7 +1451,7 @@ var te = class {
 	}
 	async startDuel(e) {
 		try {
-			let t = await F.startDuel(e);
+			let t = await N.startDuel(e);
 			this.currentDuelId = t.duelId, this.duelState = t.state, this.renderDuel(), await this.modal.open();
 		} catch (e) {
 			typeof window.showToast == "function" && window.showToast(e.message || "Lỗi khởi động giao đấu!", !0);
@@ -1506,12 +1506,12 @@ var te = class {
 	}
 	async executeAction(e) {
 		if (this.currentDuelId) try {
-			this.duelState = await F.executeDuelRound(this.currentDuelId, e), this.renderDuel();
+			this.duelState = await N.executeDuelRound(this.currentDuelId, e), this.renderDuel();
 		} catch (e) {
 			typeof window.showToast == "function" && window.showToast(e.message || "Lỗi hiệp đấu!", !0);
 		}
 	}
-}, L = new I(), R = class {
+}, F = new P(), I = class {
 	travelModal;
 	turnModal;
 	constructor() {
@@ -1571,22 +1571,22 @@ var te = class {
 	async closeTurnAdvanceModal() {
 		await this.turnModal.close();
 	}
-}, z = new R();
+}, L = new I();
 // src/client/features/quests/quest.modal.ts
-function B() {
+function R() {
 	return window.currentLang === "en";
 }
-function V(e) {
+function z(e) {
 	return String(e ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
-function re(e) {
+function B(e) {
 	if (!e || typeof e != "object") return "";
 	let t = [];
-	if (e.cash && t.push(`+${e.cash} Quan`), e.fame && t.push(`+${e.fame} ${B() ? "fame" : "danh vọng"}`), e.exp) for (let [n, r] of Object.entries(e.exp)) r && t.push(`+${r} ${String(n).toUpperCase()} EXP`);
+	if (e.cash && t.push(`+${e.cash} Quan`), e.fame && t.push(`+${e.fame} ${R() ? "fame" : "danh vọng"}`), e.exp) for (let [n, r] of Object.entries(e.exp)) r && t.push(`+${r} ${String(n).toUpperCase()} EXP`);
 	if (Array.isArray(e.items)) for (let n of e.items) t.push(`${n.quantity}× ${n.code}`);
 	return t.join(" • ");
 }
-var H = new class {
+var V = new class {
 	modal;
 	constructor() {
 		this.modal = i({
@@ -1695,7 +1695,7 @@ var H = new class {
 			]);
 			this.modal.setContent(this.render(t, n.obligations, n.summary, r, i, a, e));
 		} catch (e) {
-			this.modal.setContent(`<div class="quest-empty">${V(e.message)}</div>`);
+			this.modal.setContent(`<div class="quest-empty">${z(e.message)}</div>`);
 		}
 	}
 	async accept(e) {
@@ -1825,12 +1825,12 @@ var H = new class {
       <div class="quest-item">
         <div class="quest-head">
           <div>
-            <div class="quest-title">${V(t ? e.itemNameEn : e.itemNameVi)} × ${e.quantity}</div>
-            <div class="quest-path">${V(e.rewardCash)} Quan • +${e.rewardFame} ${t ? "fame" : "danh vọng"} • ${t ? "by" : "hạn"} ${V(e.expiresDate)}</div>
+            <div class="quest-title">${z(t ? e.itemNameEn : e.itemNameVi)} × ${e.quantity}</div>
+            <div class="quest-path">${z(e.rewardCash)} Quan • +${e.rewardFame} ${t ? "fame" : "danh vọng"} • ${t ? "by" : "hạn"} ${z(e.expiresDate)}</div>
           </div>
-          <button class="quest-action" onclick="QuestUI.acceptContract('${V(e.offerId)}')">${t ? "Accept" : "Nhận"}</button>
+          <button class="quest-action" onclick="QuestUI.acceptContract('${z(e.offerId)}')">${t ? "Accept" : "Nhận"}</button>
         </div>
-        <div class="quest-desc">${V(t ? e.narrativeEn : e.narrativeVi)}</div>
+        <div class="quest-desc">${z(t ? e.narrativeEn : e.narrativeVi)}</div>
       </div>
     `).join(""), o = r.map((e) => {
 			let n = e.haveQuantity >= e.quantity, r = e.daysRemaining < 0;
@@ -1838,17 +1838,17 @@ var H = new class {
         <div class="quest-item">
           <div class="quest-head">
             <div>
-              <div class="quest-title">${V(t ? e.itemNameEn : e.itemNameVi)} ${e.haveQuantity}/${e.quantity}</div>
-              <div class="quest-path">${V(e.rewardCash)} Quan • ${t ? "due" : "hạn"} ${V(e.dueDate)}${r ? ` • ${t ? "late" : "quá hạn"}` : ""}</div>
+              <div class="quest-title">${z(t ? e.itemNameEn : e.itemNameVi)} ${e.haveQuantity}/${e.quantity}</div>
+              <div class="quest-path">${z(e.rewardCash)} Quan • ${t ? "due" : "hạn"} ${z(e.dueDate)}${r ? ` • ${t ? "late" : "quá hạn"}` : ""}</div>
             </div>
-            <button class="quest-action ${n ? "is-primary" : ""}" onclick="QuestUI.deliverContract('${V(e.contractId)}')">${t ? "Deliver" : "Giao"}</button>
+            <button class="quest-action ${n ? "is-primary" : ""}" onclick="QuestUI.deliverContract('${z(e.contractId)}')">${t ? "Deliver" : "Giao"}</button>
           </div>
         </div>
       `;
 		}).join("");
 		return `
       <div class="quest-section">
-        <div class="quest-section-title">${V(i)}</div>
+        <div class="quest-section-title">${z(i)}</div>
         ${o}${a}
       </div>
     `;
@@ -1857,17 +1857,17 @@ var H = new class {
 		if (!e.parcels || e.parcels.length === 0) return `<div class="quest-empty">${t ? "No farmland here." : "Không có ruộng ở đây."}</div>`;
 		let n = e.parcels.map((e) => {
 			let n = t ? e.nameEn : e.nameVi, r = "";
-			if (e.status === "IDLE") r = `<button class="quest-action" onclick="QuestUI.rentFarm('${V(e.parcelId)}')">${t ? "Rent" : "Thuê"} (${e.rentCash} Quan)</button>`;
+			if (e.status === "IDLE") r = `<button class="quest-action" onclick="QuestUI.rentFarm('${z(e.parcelId)}')">${t ? "Rent" : "Thuê"} (${e.rentCash} Quan)</button>`;
 			else if (e.status === "LEASED") {
 				let n = (e.availableCrops || []).filter((e) => e.inSeason);
-				r = n.length > 0 ? n.map((n) => `<button class="quest-action" onclick="QuestUI.plantCrop('${V(e.parcelId)}','${V(n.cropCode)}')">${t ? `Plant ${n.nameEn}` : `Trồng ${n.nameVi}`}</button>`).join(" ") : `<span class="quest-badge">${t ? "Out of season" : "Trái mùa"}</span>`;
-			} else e.status === "GROWING" && e.crop && (r = `<button class="quest-action ${e.crop.daysRemaining <= 0 ? "is-primary" : ""}" onclick="QuestUI.harvestFarm('${V(e.parcelId)}')">${t ? "Harvest" : "Thu hoạch"}</button>`);
-			let i = e.crop ? `${V(e.crop.nameVi)} • ${t ? "harvest" : "thu"} ${V(e.crop.harvestDate)} • ${e.crop.daysRemaining}${t ? "d" : " ngày"} • ${t ? "yield" : "dự kiến"} ${e.crop.expectedYield}` : `${e.areaMu} ${t ? "mu" : "mẫu"} • ${t ? "soil" : "đất"} ${e.soilQuality.toFixed(2)} • ${t ? "rent" : "tô"} ${e.rentCash} Quan${(e.rentDiscount || 0) > 0 ? ` (-${e.rentDiscount}%)` : ""}`;
+				r = n.length > 0 ? n.map((n) => `<button class="quest-action" onclick="QuestUI.plantCrop('${z(e.parcelId)}','${z(n.cropCode)}')">${t ? `Plant ${n.nameEn}` : `Trồng ${n.nameVi}`}</button>`).join(" ") : `<span class="quest-badge">${t ? "Out of season" : "Trái mùa"}</span>`;
+			} else e.status === "GROWING" && e.crop && (r = `<button class="quest-action ${e.crop.daysRemaining <= 0 ? "is-primary" : ""}" onclick="QuestUI.harvestFarm('${z(e.parcelId)}')">${t ? "Harvest" : "Thu hoạch"}</button>`);
+			let i = e.crop ? `${z(e.crop.nameVi)} • ${t ? "harvest" : "thu"} ${z(e.crop.harvestDate)} • ${e.crop.daysRemaining}${t ? "d" : " ngày"} • ${t ? "yield" : "dự kiến"} ${e.crop.expectedYield}` : `${e.areaMu} ${t ? "mu" : "mẫu"} • ${t ? "soil" : "đất"} ${e.soilQuality.toFixed(2)} • ${t ? "rent" : "tô"} ${e.rentCash} Quan${(e.rentDiscount || 0) > 0 ? ` (-${e.rentDiscount}%)` : ""}`;
 			return `
         <div class="quest-item">
           <div class="quest-head">
             <div>
-              <div class="quest-title">${V(n)}</div>
+              <div class="quest-title">${z(n)}</div>
               <div class="quest-path">${i}</div>
             </div>
             ${r}
@@ -1890,12 +1890,12 @@ var H = new class {
         <div class="quest-item">
           <div class="quest-head">
             <div>
-              <div class="quest-title">${V(e.subjectName)}</div>
-              <div class="quest-path">${V(e.subjectType)} • ${V(n)} • ${V(e.source)} • ${V(e.confidenceLabel)}</div>
+              <div class="quest-title">${z(e.subjectName)}</div>
+              <div class="quest-path">${z(e.subjectType)} • ${z(n)} • ${z(e.source)} • ${z(e.confidenceLabel)}</div>
             </div>
-            <button class="quest-action" onclick="QuestUI.verifyIntel('${V(e.reportId)}')">${t ? `Verify (${e.verificationDays}d)` : `Xác minh (${e.verificationDays} ngày)`}</button>
+            <button class="quest-action" onclick="QuestUI.verifyIntel('${z(e.reportId)}')">${t ? `Verify (${e.verificationDays}d)` : `Xác minh (${e.verificationDays} ngày)`}</button>
           </div>
-          <div class="quest-path">${t ? "Expires" : "Hết hạn"} ${V(e.expiresDate)}</div>
+          <div class="quest-path">${t ? "Expires" : "Hết hạn"} ${z(e.expiresDate)}</div>
         </div>
       `;
 		}).join("");
@@ -1915,56 +1915,56 @@ var H = new class {
         <div class="quest-item">
           <div class="quest-head">
             <div>
-              <div class="quest-title">${V((n ? e.narrativeEn : e.narrativeVi) || e.type)}</div>
-              <div class="quest-path">${V(e.type)} • ${V(e.dueDate)} • ${V(i)}</div>
+              <div class="quest-title">${z((n ? e.narrativeEn : e.narrativeVi) || e.type)}</div>
+              <div class="quest-path">${z(e.type)} • ${z(e.dueDate)} • ${z(i)}</div>
             </div>
-            <button class="quest-action ${t ? "is-primary" : ""}" onclick="QuestUI.payObligation('${V(e.obligationId)}')">${n ? "Pay" : "Nộp"}</button>
+            <button class="quest-action ${t ? "is-primary" : ""}" onclick="QuestUI.payObligation('${z(e.obligationId)}')">${n ? "Pay" : "Nộp"}</button>
           </div>
-          <div class="quest-meta">${V(a)}</div>
+          <div class="quest-meta">${z(a)}</div>
           <div class="quest-path"><span class="quest-badge">${r}</span></div>
         </div>
       `;
 		}).join("");
 		return `
       <div class="quest-section">
-        <div class="quest-section-title">${V(i)}</div>
+        <div class="quest-section-title">${z(i)}</div>
         ${a}
       </div>
     `;
 	}
 	render(e, t, n, r, i, a, o) {
-		let s = B(), c = o ? `
+		let s = R(), c = o ? `
       <div class="quest-result ${o.success ? "is-success" : "is-failure"}">
         <strong>${o.success ? s ? "Step succeeded" : "Bước thành công" : s ? "Step failed" : "Bước thất bại"}</strong>
-        <div>${V(s ? o.narrativeEn : o.narrative)}</div>
+        <div>${z(s ? o.narrativeEn : o.narrative)}</div>
         <div class="quest-meta">D20 ${o.roll} + ${o.mod} = ${o.total} / DC ${o.dc}</div>
-        <div class="quest-meta">${V(re(o.rewards || {}))}</div>
+        <div class="quest-meta">${z(B(o.rewards || {}))}</div>
       </div>
     ` : "", l = e.map((e) => {
 			let t = e.status === "COMPLETED" ? s ? "Completed" : "Đã hoàn thành" : e.status === "ACTIVE" ? s ? "Active" : "Đang làm" : s ? "Available" : "Có thể nhận", n = e.steps.map((t) => `
         <div class="quest-step ${t.index < e.currentStep ? "is-done" : t.index === e.currentStep && e.status === "ACTIVE" ? "is-current" : ""}">
           <span class="quest-step-index">${t.index + 1}</span>
-          <span class="quest-step-title">${V(s ? t.titleEn : t.titleVi)}</span>
-          <span class="quest-step-check">${V(String(t.stat).toUpperCase())} DC ${t.dc} • ${t.daysCost}${s ? "d" : " ngày"}</span>
+          <span class="quest-step-title">${z(s ? t.titleEn : t.titleVi)}</span>
+          <span class="quest-step-check">${z(String(t.stat).toUpperCase())} DC ${t.dc} • ${t.daysCost}${s ? "d" : " ngày"}</span>
         </div>
-      `).join(""), r = e.status === "AVAILABLE" ? `<button class="quest-action" onclick="QuestUI.accept('${V(e.questId)}')">${s ? "Accept" : "Nhận nhiệm vụ"}</button>` : e.status === "ACTIVE" ? `<button class="quest-action is-primary" onclick="QuestUI.advance('${V(e.questId)}')">${s ? `Advance step ${e.currentStep + 1}` : `Thực hiện bước ${e.currentStep + 1}`}</button>` : `<span class="quest-badge">${s ? "Completed" : "Hoàn thành"}</span>`;
+      `).join(""), r = e.status === "AVAILABLE" ? `<button class="quest-action" onclick="QuestUI.accept('${z(e.questId)}')">${s ? "Accept" : "Nhận nhiệm vụ"}</button>` : e.status === "ACTIVE" ? `<button class="quest-action is-primary" onclick="QuestUI.advance('${z(e.questId)}')">${s ? `Advance step ${e.currentStep + 1}` : `Thực hiện bước ${e.currentStep + 1}`}</button>` : `<span class="quest-badge">${s ? "Completed" : "Hoàn thành"}</span>`;
 			return `
         <div class="quest-item">
           <div class="quest-head">
             <div>
-              <div class="quest-title">${V(s ? e.titleEn : e.titleVi)}</div>
-              <div class="quest-path">${V(e.pathCode)} • ${t}</div>
+              <div class="quest-title">${z(s ? e.titleEn : e.titleVi)}</div>
+              <div class="quest-path">${z(e.pathCode)} • ${t}</div>
             </div>
             ${r}
           </div>
-          <div class="quest-desc">${V(s ? e.descriptionEn : e.descriptionVi)}</div>
+          <div class="quest-desc">${z(s ? e.descriptionEn : e.descriptionVi)}</div>
           <div class="quest-steps">${n}</div>
         </div>
       `;
 		}).join("");
 		return `<div class="quest-body">${c}${this.renderObligations(t, n, s)}${this.renderContracts(r, s)}${this.renderFarm(a, s)}${this.renderIntel(i, s)}${l || `<div class="quest-empty">${s ? "No quests available." : "Chưa có nhiệm vụ."}</div>`}</div>`;
 	}
-}(), U = class e {
+}(), H = class e {
 	static instance;
 	static getInstance() {
 		return e.instance ||= new e(), e.instance;
@@ -2082,13 +2082,13 @@ var H = new class {
 	}
 }.getInstance();
 // src/client/features/market-stall/market-stall.modal.ts
-function W(e) {
+function U(e) {
 	return String(e ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
-function G(e, t = !1) {
+function W(e, t = !1) {
 	typeof window.showToast == "function" && window.showToast(e, t);
 }
-var K = new class {
+var G = new class {
 	modal;
 	stall = null;
 	offers = [];
@@ -2142,12 +2142,12 @@ var K = new class {
 		await this.modal.close();
 	}
 	async refresh() {
-		this.stall = await U.getStall("PLY-0001"), this.offers = await U.getOffers(this.stall?.settlementId), this.warehouses = await U.getWarehouses();
+		this.stall = await H.getStall("PLY-0001"), this.offers = await H.getOffers(this.stall?.settlementId), this.warehouses = await H.getWarehouses();
 		let [e, t, n, r] = await Promise.all([
-			U.getFreightContracts(this.stall?.settlementId).catch(() => []),
-			U.getFreightShipments().catch(() => []),
-			U.getMerchantRoutes().catch(() => []),
-			U.getMerchantEvents().catch(() => [])
+			H.getFreightContracts(this.stall?.settlementId).catch(() => []),
+			H.getFreightShipments().catch(() => []),
+			H.getMerchantRoutes().catch(() => []),
+			H.getMerchantEvents().catch(() => [])
 		]);
 		this.freightContracts = e, this.freightShipments = t, this.merchantRoutes = n, this.merchantEvents = r;
 	}
@@ -2161,13 +2161,13 @@ var K = new class {
 			let t = e.marketPrice > 0 ? Math.round((e.unitPrice / e.marketPrice - 1) * 100) : 0;
 			return `
           <div class="flex justify-between items-center text-[11px] border-b border-slate-800 py-1.5">
-            <span class="text-slate-200">${W(e.itemNameVi)} × ${e.quantity}</span>
+            <span class="text-slate-200">${U(e.itemNameVi)} × ${e.quantity}</span>
             <span class="font-mono text-amber-300">${e.unitPrice} Quan (${t >= 0 ? "+" : ""}${t}% chợ)</span>
           </div>
         `;
 		}).join("") : "<div class=\"text-muted text-xs\">Quầy chưa có hàng.</div>", t = this.stall.recentSales.length > 0 ? this.stall.recentSales.map((e) => `
         <div class="flex justify-between text-[11px] py-1">
-          <span class="text-slate-300">${W(e.npcNameVi)} mua ${e.quantity} ${W(e.itemCode)}</span>
+          <span class="text-slate-300">${U(e.npcNameVi)} mua ${e.quantity} ${U(e.itemCode)}</span>
           <span class="font-mono text-green-400">+${e.totalCash} Quan</span>
         </div>
       `).join("") : "<div class=\"text-muted text-xs\">Chưa có giao dịch.</div>";
@@ -2176,8 +2176,8 @@ var K = new class {
         <div class="spatial-banner-lead">
           <div class="lead-seal">攤</div>
           <div class="lead-text">
-            <h3>${W(this.stall.nameVi)}</h3>
-            <div class="text-muted text-sm">${W(this.stall.settlementId)} • Hàng đang bán: ${this.stall.listings.length} • NPC sẽ mua mỗi ngày nếu giá ≤ 115% giá chợ.</div>
+            <h3>${U(this.stall.nameVi)}</h3>
+            <div class="text-muted text-sm">${U(this.stall.settlementId)} • Hàng đang bán: ${this.stall.listings.length} • NPC sẽ mua mỗi ngày nếu giá ≤ 115% giá chợ.</div>
           </div>
         </div>
 
@@ -2193,7 +2193,7 @@ var K = new class {
             <input id="stall-source" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200" value="BAG" placeholder="BAG hoặc WAREHOUSE" />
             <input id="stall-warehouse" list="stall-warehouse-list" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200" placeholder="Mã kho (nếu lấy từ kho)" />
             <datalist id="stall-warehouse-list">
-              ${this.warehouses.filter((e) => e.settlementId === this.stall?.settlementId).map((e) => `<option value="${W(e.warehouseId)}">${W(e.nameVi)} (${e.usedCapacity}/${e.capacity})</option>`).join("")}
+              ${this.warehouses.filter((e) => e.settlementId === this.stall?.settlementId).map((e) => `<option value="${U(e.warehouseId)}">${U(e.nameVi)} (${e.usedCapacity}/${e.capacity})</option>`).join("")}
             </datalist>
           </div>
           <div class="text-muted text-[10px] mt-1">Giá thấp hơn 115% giá chợ thì NPC mua nhanh hơn; giá quá cao sẽ không có người mua.</div>
@@ -2231,12 +2231,12 @@ var K = new class {
         <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800 mb-2">
           <div class="flex justify-between items-center">
             <div>
-              <div class="text-sm font-bold text-slate-200">${W(e.nameVi)} • ${W(e.ownershipType)}</div>
-              <div class="text-[11px] text-muted">${W(e.settlementId)} • ${e.usedCapacity}/${e.capacity} • ${e.status}${e.leaseUntil ? ` • hết hạn ${W(e.leaseUntil)}` : ""}</div>
+              <div class="text-sm font-bold text-slate-200">${U(e.nameVi)} • ${U(e.ownershipType)}</div>
+              <div class="text-[11px] text-muted">${U(e.settlementId)} • ${e.usedCapacity}/${e.capacity} • ${e.status}${e.leaseUntil ? ` • hết hạn ${U(e.leaseUntil)}` : ""}</div>
             </div>
             <div class="flex gap-1">
-              ${e.ownershipType === "RENTED" ? `<button class="ui-btn ui-btn--primary ui-btn--sm" data-warehouse-action="renew" data-warehouse-id="${W(e.warehouseId)}" title="Cộng thêm 90 ngày từ hạn hiện tại">Gia hạn</button>` : ""}
-              <button class="ui-btn ui-btn--ghost ui-btn--sm" data-warehouse-action="withdraw" data-warehouse-id="${W(e.warehouseId)}">Rút hàng</button>
+              ${e.ownershipType === "RENTED" ? `<button class="ui-btn ui-btn--primary ui-btn--sm" data-warehouse-action="renew" data-warehouse-id="${U(e.warehouseId)}" title="Cộng thêm 90 ngày từ hạn hiện tại">Gia hạn</button>` : ""}
+              <button class="ui-btn ui-btn--ghost ui-btn--sm" data-warehouse-action="withdraw" data-warehouse-id="${U(e.warehouseId)}">Rút hàng</button>
             </div>
           </div>
         </div>
@@ -2246,7 +2246,7 @@ var K = new class {
           <div class="grid grid-cols-1 md:grid-cols-4 gap-2 text-[11px]">
             <input id="warehouse-id" list="warehouse-id-list" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200" placeholder="Mã kho" />
             <datalist id="warehouse-id-list">
-              ${this.warehouses.map((e) => `<option value="${W(e.warehouseId)}">${W(e.nameVi)}</option>`).join("") || "<option value=\"\">Chưa có kho</option>"}
+              ${this.warehouses.map((e) => `<option value="${U(e.warehouseId)}">${U(e.nameVi)}</option>`).join("") || "<option value=\"\">Chưa có kho</option>"}
             </datalist>
             <input id="warehouse-item" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200" value="COM-GRAIN" placeholder="Mã hàng" />
             <input id="warehouse-qty" type="number" min="1" step="1" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200" value="10" />
@@ -2273,10 +2273,10 @@ var K = new class {
           ${this.offers.map((e) => `
             <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800 flex justify-between items-center gap-3">
               <div>
-                <div class="text-sm font-bold text-slate-200">${W(e.itemNameVi)} × ${e.quantity}</div>
-                <div class="text-[11px] text-muted">${W(e.npcNameVi)} • ${e.unitPrice} Quan (${e.priceDeltaPct >= 0 ? "+" : ""}${e.priceDeltaPct}% chợ) • hết hạn ${W(e.expiresDate)}</div>
+                <div class="text-sm font-bold text-slate-200">${U(e.itemNameVi)} × ${e.quantity}</div>
+                <div class="text-[11px] text-muted">${U(e.npcNameVi)} • ${e.unitPrice} Quan (${e.priceDeltaPct >= 0 ? "+" : ""}${e.priceDeltaPct}% chợ) • hết hạn ${U(e.expiresDate)}</div>
               </div>
-              <button class="ui-btn ui-btn--primary ui-btn--sm" data-offer-buy="${W(e.offerId)}">Mua 1</button>
+              <button class="ui-btn ui-btn--primary ui-btn--sm" data-offer-buy="${U(e.offerId)}">Mua 1</button>
             </div>
           `).join("")}
         </div>
@@ -2288,43 +2288,43 @@ var K = new class {
         <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800 mb-2">
           <div class="flex justify-between items-start gap-3">
             <div>
-              <div class="text-sm font-bold text-slate-200">${W(e.itemCode)} × ${e.quantity}</div>
-              <div class="text-[11px] text-muted">${W(e.fromSettlementId)} → ${W(e.toSettlementId)} • thưởng ${e.rewardCash} Quan • còn ${e.daysLeft} ngày • đi ${e.travelDays} ngày</div>
+              <div class="text-sm font-bold text-slate-200">${U(e.itemCode)} × ${e.quantity}</div>
+              <div class="text-[11px] text-muted">${U(e.fromSettlementId)} → ${U(e.toSettlementId)} • thưởng ${e.rewardCash} Quan • còn ${e.daysLeft} ngày • đi ${e.travelDays} ngày</div>
             </div>
             <label class="text-[10px] text-slate-300 flex items-center gap-1">
-              <input type="checkbox" data-freight-insurance="${W(e.contractId)}" /> Bảo hiểm +4%
+              <input type="checkbox" data-freight-insurance="${U(e.contractId)}" /> Bảo hiểm +4%
             </label>
           </div>
           <div class="flex gap-1 mt-2">
-            <button class="ui-btn ui-btn--ghost ui-btn--sm" data-freight-accept data-contract-id="${W(e.contractId)}" data-guard-tier="MILITIA">Dân Dũng</button>
-            <button class="ui-btn ui-btn--primary ui-btn--sm" data-freight-accept data-contract-id="${W(e.contractId)}" data-guard-tier="VETERAN">Thiện Chiến</button>
-            <button class="ui-btn ui-btn--ghost ui-btn--sm" data-freight-accept data-contract-id="${W(e.contractId)}" data-guard-tier="ELITE_RETINUE">Tinh Nhuệ</button>
+            <button class="ui-btn ui-btn--ghost ui-btn--sm" data-freight-accept data-contract-id="${U(e.contractId)}" data-guard-tier="MILITIA">Dân Dũng</button>
+            <button class="ui-btn ui-btn--primary ui-btn--sm" data-freight-accept data-contract-id="${U(e.contractId)}" data-guard-tier="VETERAN">Thiện Chiến</button>
+            <button class="ui-btn ui-btn--ghost ui-btn--sm" data-freight-accept data-contract-id="${U(e.contractId)}" data-guard-tier="ELITE_RETINUE">Tinh Nhuệ</button>
           </div>
         </div>
       `).join("") : "<div class=\"text-muted text-sm mb-2\">Thành này chưa có hợp đồng vận chuyển.</div>", t = this.freightShipments.length > 0 ? this.freightShipments.map((e) => `
         <div class="flex justify-between items-center text-[11px] border-b border-slate-800 py-1.5 gap-2">
           <div>
-            <div class="text-slate-200">${W(e.itemCode)} × ${e.quantity} • ${W(e.status)}</div>
-            <div class="text-muted">${e.status === "ARRIVED" ? "Đã đến đích" : `Còn ${e.daysRemaining} ngày`} • ${W(e.guardTier)}${e.insured ? " • có bảo hiểm" : ""}${e.ambushLossQuantity > 0 ? ` • mất ${e.ambushLossQuantity} do phục kích` : ""}</div>
+            <div class="text-slate-200">${U(e.itemCode)} × ${e.quantity} • ${U(e.status)}</div>
+            <div class="text-muted">${e.status === "ARRIVED" ? "Đã đến đích" : `Còn ${e.daysRemaining} ngày`} • ${U(e.guardTier)}${e.insured ? " • có bảo hiểm" : ""}${e.ambushLossQuantity > 0 ? ` • mất ${e.ambushLossQuantity} do phục kích` : ""}</div>
           </div>
-          ${e.status === "ARRIVED" ? `<button class="ui-btn ui-btn--primary ui-btn--sm" data-freight-deliver="${W(e.shipmentId)}">Giao hàng</button>` : ""}
+          ${e.status === "ARRIVED" ? `<button class="ui-btn ui-btn--primary ui-btn--sm" data-freight-deliver="${U(e.shipmentId)}">Giao hàng</button>` : ""}
         </div>
       `).join("") : "<div class=\"text-muted text-sm mb-2\">Không có chuyến hàng đang chạy.</div>", n = this.merchantRoutes.length > 0 ? this.merchantRoutes.map((e) => `
         <div class="flex justify-between items-center text-[11px] border-b border-slate-800 py-1.5 gap-2">
           <div>
-            <div class="text-slate-200">${W(e.nameVi)} • ${W(e.itemCode)} × ${e.quantityPerRun}</div>
-            <div class="text-muted">${W(e.fromSettlementId)} → ${W(e.toSettlementId)} • ${W(e.status)} • mỗi ${e.frequencyDays} ngày</div>
+            <div class="text-slate-200">${U(e.nameVi)} • ${U(e.itemCode)} × ${e.quantityPerRun}</div>
+            <div class="text-muted">${U(e.fromSettlementId)} → ${U(e.toSettlementId)} • ${U(e.status)} • mỗi ${e.frequencyDays} ngày</div>
           </div>
-          <button class="ui-btn ui-btn--ghost ui-btn--sm" data-route-status data-route-id="${W(e.routeId)}" data-next-status="${e.status === "ACTIVE" ? "PAUSED" : "ACTIVE"}">
+          <button class="ui-btn ui-btn--ghost ui-btn--sm" data-route-status data-route-id="${U(e.routeId)}" data-next-status="${e.status === "ACTIVE" ? "PAUSED" : "ACTIVE"}">
             ${e.status === "ACTIVE" ? "Tạm Dừng" : "Tiếp Tục"}
           </button>
         </div>
       `).join("") : "<div class=\"text-muted text-sm\">Chưa có thương lộ tự động.</div>", r = this.merchantEvents.length > 0 ? this.merchantEvents.slice(0, 6).map((e) => `
         <div class="text-[11px] border-b border-slate-800 py-1">
-          <span class="text-slate-300">${W(e.eventType || e.event_type)}</span>
-          <span class="text-muted"> • ${W(e.gameDate || e.game_date || "")} • ${W(e.itemCode || e.item_code || "")}</span>
+          <span class="text-slate-300">${U(e.eventType || e.event_type)}</span>
+          <span class="text-muted"> • ${U(e.gameDate || e.game_date || "")} • ${U(e.itemCode || e.item_code || "")}</span>
         </div>
-      `).join("") : "<div class=\"text-muted text-sm\">Chưa có biến cố thương lộ.</div>", i = this.warehouses.map((e) => `<option value="${W(e.warehouseId)}">${W(e.nameVi)} (${W(e.settlementId)})</option>`).join(""), a = this.warehouses.length >= 2;
+      `).join("") : "<div class=\"text-muted text-sm\">Chưa có biến cố thương lộ.</div>", i = this.warehouses.map((e) => `<option value="${U(e.warehouseId)}">${U(e.nameVi)} (${U(e.settlementId)})</option>`).join(""), a = this.warehouses.length >= 2;
 		return `
       <div class="journal-modal-content">
         <div class="spatial-banner-lead">
@@ -2389,14 +2389,14 @@ var K = new class {
 				let n = t.dataset.stallAction;
 				t.setAttribute("disabled", "true");
 				try {
-					if (n === "open") await U.openStall(), G("Đã mở quầy.");
+					if (n === "open") await H.openStall(), W("Đã mở quầy.");
 					else if (n === "list") {
 						let t = e.querySelector("#stall-item-code")?.value.trim() || "", n = Number(e.querySelector("#stall-item-qty")?.value || 0), r = Number(e.querySelector("#stall-item-price")?.value || 0), i = (e.querySelector("#stall-source")?.value || "BAG").toUpperCase(), a = e.querySelector("#stall-warehouse")?.value || void 0;
-						await U.listItem(t, n, r, i, a, this.stall?.stallId), G(`Đã niêm yết ${n} ${t}.`);
-					} else n === "close" && (await U.closeStall(this.stall?.stallId), G("Đã đóng quầy và trả hàng về kho."));
+						await H.listItem(t, n, r, i, a, this.stall?.stallId), W(`Đã niêm yết ${n} ${t}.`);
+					} else n === "close" && (await H.closeStall(this.stall?.stallId), W("Đã đóng quầy và trả hàng về kho."));
 					await this.refresh(), this.render();
 				} catch (e) {
-					t.removeAttribute("disabled"), G(e.message || "Thao tác quầy thất bại.", !0);
+					t.removeAttribute("disabled"), W(e.message || "Thao tác quầy thất bại.", !0);
 				}
 			});
 		}), e.querySelectorAll("[data-offer-buy]").forEach((e) => {
@@ -2404,9 +2404,9 @@ var K = new class {
 				let t = e.dataset.offerBuy || "";
 				e.setAttribute("disabled", "true");
 				try {
-					await U.buyOffer(t, 1), G("Đã mua hàng từ NPC."), await this.refresh(), this.render();
+					await H.buyOffer(t, 1), W("Đã mua hàng từ NPC."), await this.refresh(), this.render();
 				} catch (t) {
-					e.removeAttribute("disabled"), G(t.message || "Mua hàng thất bại.", !0);
+					e.removeAttribute("disabled"), W(t.message || "Mua hàng thất bại.", !0);
 				}
 			});
 		}), e.querySelectorAll("[data-warehouse-action]").forEach((t) => {
@@ -2414,9 +2414,9 @@ var K = new class {
 				let n = t.dataset.warehouseAction || "", r = t.dataset.warehouseId || e.querySelector("#warehouse-id")?.value || "", i = e.querySelector("#warehouse-item")?.value.trim() || "COM-GRAIN", a = Number(e.querySelector("#warehouse-qty")?.value || 1);
 				t.setAttribute("disabled", "true");
 				try {
-					n === "rent" ? (await U.rentWarehouse(), G("Đã thuê kho tại thành hiện tại.")) : n === "buy" ? (await U.buyWarehouse(), G("Đã mua kho tại thành hiện tại.")) : n === "renew" ? G(`Đã gia hạn kho đến ${(await U.renewWarehouse(r))?.result?.leaseUntil || "hạn mới"}.`) : n === "deposit" ? (await U.deposit(r, i, a), G(`Đã nạp ${a} ${i} vào kho.`)) : (await U.withdraw(r, i, a), G(`Đã rút ${a} ${i} khỏi kho.`)), await this.refresh(), this.render();
+					n === "rent" ? (await H.rentWarehouse(), W("Đã thuê kho tại thành hiện tại.")) : n === "buy" ? (await H.buyWarehouse(), W("Đã mua kho tại thành hiện tại.")) : n === "renew" ? W(`Đã gia hạn kho đến ${(await H.renewWarehouse(r))?.result?.leaseUntil || "hạn mới"}.`) : n === "deposit" ? (await H.deposit(r, i, a), W(`Đã nạp ${a} ${i} vào kho.`)) : (await H.withdraw(r, i, a), W(`Đã rút ${a} ${i} khỏi kho.`)), await this.refresh(), this.render();
 				} catch (e) {
-					t.removeAttribute("disabled"), G(e.message || "Thao tác kho thất bại.", !0);
+					t.removeAttribute("disabled"), W(e.message || "Thao tác kho thất bại.", !0);
 				}
 			});
 		}), e.querySelectorAll("[data-freight-accept]").forEach((t) => {
@@ -2424,9 +2424,9 @@ var K = new class {
 				let n = t.dataset.contractId || "", r = t.dataset.guardTier || "VETERAN", i = e.querySelector(`[data-freight-insurance="${n}"]`)?.checked === !0;
 				t.setAttribute("disabled", "true");
 				try {
-					await U.acceptFreight(n, r, i), G(i ? "Đã nhận chuyến và mua bảo hiểm." : "Đã nhận chuyến hàng."), await this.refresh(), this.render();
+					await H.acceptFreight(n, r, i), W(i ? "Đã nhận chuyến và mua bảo hiểm." : "Đã nhận chuyến hàng."), await this.refresh(), this.render();
 				} catch (e) {
-					t.removeAttribute("disabled"), G(e.message || "Nhận chuyến thất bại.", !0);
+					t.removeAttribute("disabled"), W(e.message || "Nhận chuyến thất bại.", !0);
 				}
 			});
 		}), e.querySelectorAll("[data-freight-deliver]").forEach((e) => {
@@ -2434,20 +2434,20 @@ var K = new class {
 				let t = e.dataset.freightDeliver || "";
 				e.setAttribute("disabled", "true");
 				try {
-					await U.deliverFreight(t), G("Đã giao hàng và nhận phí vận chuyển."), await this.refresh(), this.render();
+					await H.deliverFreight(t), W("Đã giao hàng và nhận phí vận chuyển."), await this.refresh(), this.render();
 				} catch (t) {
-					e.removeAttribute("disabled"), G(t.message || "Giao hàng thất bại.", !0);
+					e.removeAttribute("disabled"), W(t.message || "Giao hàng thất bại.", !0);
 				}
 			});
 		}), e.querySelectorAll("[data-route-create]").forEach((t) => {
 			t.addEventListener("click", async () => {
 				let n = e.querySelector("#route-from")?.value || "", r = e.querySelector("#route-to")?.value || "", i = e.querySelector("#route-item")?.value.trim() || "", a = Number(e.querySelector("#route-qty")?.value || 0), o = Number(e.querySelector("#route-buy")?.value || 0), s = Number(e.querySelector("#route-sell")?.value || 0), c = Number(e.querySelector("#route-freq")?.value || 7), l = e.querySelector("#route-guard")?.value || "VETERAN";
-				if (!n || !r || n === r) G("Kho nguồn và kho đích phải khác nhau.", !0);
-				else if (!i || a <= 0 || o <= 0 || s <= o) G("Kiểm tra mã hàng, số lượng và giá bán sàn > giá mua trần.", !0);
+				if (!n || !r || n === r) W("Kho nguồn và kho đích phải khác nhau.", !0);
+				else if (!i || a <= 0 || o <= 0 || s <= o) W("Kiểm tra mã hàng, số lượng và giá bán sàn > giá mua trần.", !0);
 				else {
 					t.setAttribute("disabled", "true");
 					try {
-						await U.createMerchantRoute({
+						await H.createMerchantRoute({
 							fromWarehouseId: n,
 							toWarehouseId: r,
 							itemCode: i,
@@ -2456,9 +2456,9 @@ var K = new class {
 							minSellPrice: s,
 							frequencyDays: c,
 							guardTier: l
-						}), G("Đã mở thương lộ tự động."), await this.refresh(), this.render();
+						}), W("Đã mở thương lộ tự động."), await this.refresh(), this.render();
 					} catch (e) {
-						t.removeAttribute("disabled"), G(e.message || "Mở thương lộ thất bại.", !0);
+						t.removeAttribute("disabled"), W(e.message || "Mở thương lộ thất bại.", !0);
 					}
 				}
 			});
@@ -2467,14 +2467,14 @@ var K = new class {
 				let t = e.dataset.routeId || "", n = e.dataset.nextStatus || "PAUSED";
 				e.setAttribute("disabled", "true");
 				try {
-					await U.setMerchantRouteStatus(t, n), G(n === "ACTIVE" ? "Đã tiếp tục thương lộ." : "Đã tạm dừng thương lộ."), await this.refresh(), this.render();
+					await H.setMerchantRouteStatus(t, n), W(n === "ACTIVE" ? "Đã tiếp tục thương lộ." : "Đã tạm dừng thương lộ."), await this.refresh(), this.render();
 				} catch (t) {
-					e.removeAttribute("disabled"), G(t.message || "Đổi trạng thái thương lộ thất bại.", !0);
+					e.removeAttribute("disabled"), W(t.message || "Đổi trạng thái thương lộ thất bại.", !0);
 				}
 			});
 		}));
 	}
-}(), q = class {
+}(), K = class {
 	modal;
 	constructor() {
 		this.modal = i({
@@ -2494,7 +2494,7 @@ var K = new class {
 	async close() {
 		await this.modal.close();
 	}
-}, J = new q(), Y = class e {
+}, q = new K(), J = class e {
 	static instance;
 	static getInstance() {
 		return e.instance ||= new e(), e.instance;
@@ -2508,12 +2508,28 @@ var K = new class {
 			idempotencyKey: `wilderness-travel-${e}-${Date.now()}`
 		});
 	}
-}, X = Y.getInstance();
+	async gather(e, t = "PLY-0001") {
+		return v.post("/api/professions/gather", {
+			characterId: t,
+			nodeId: e,
+			idempotencyKey: `wilderness-gather-${e}-${Date.now()}`
+		});
+	}
+	async getScene(e, t = "PLY-0001") {
+		return v.get("/api/scene", {
+			subLocation: e,
+			characterId: t
+		});
+	}
+	async dispatchAction(e) {
+		return v.post("/api/action", e);
+	}
+}, Y = J.getInstance();
 // src/client/features/world-map/wilderness-map.modal.ts
-function Z(e) {
+function X(e) {
 	return String(e ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
-function ie(e, t = !1) {
+function Z(e, t = !1) {
 	typeof window.showToast == "function" && window.showToast(e, t);
 }
 var ae = {
@@ -2527,6 +2543,8 @@ var ae = {
 	modal;
 	view = null;
 	nodeId = null;
+	scene = null;
+	scenePoiName = null;
 	constructor() {
 		this.modal = i({
 			id: "wilderness-map-modal",
@@ -2546,7 +2564,7 @@ var ae = {
 		await this.modal.close();
 	}
 	async refresh() {
-		this.view = await X.get(this.nodeId || void 0), this.nodeId = this.view.nodeId;
+		this.view = await Y.get(this.nodeId || void 0), this.nodeId = this.view.nodeId;
 	}
 	render() {
 		if (!this.view) {
@@ -2559,12 +2577,12 @@ var ae = {
         <div class="spatial-banner-lead">
           <div class="lead-seal">野</div>
           <div class="lead-text">
-            <h3>${Z(i)} • Dã Ngoại</h3>
+            <h3>${X(i)} • Dã Ngoại</h3>
             <div class="text-muted text-sm">${e.length} địa danh ngoài thành • ${o} điểm tài nguyên • ${s} POI. Mỗi lần di chuyển tốn 1 ngày và 5 thể lực.</div>
           </div>
         </div>
         <div class="wilderness-map-frame">
-          <svg class="wilderness-map-svg" viewBox="0 0 600 360" role="img" aria-label="Bản đồ dã ngoại ${Z(i)}">
+          <svg class="wilderness-map-svg" viewBox="0 0 600 360" role="img" aria-label="Bản đồ dã ngoại ${X(i)}">
             <rect class="wilderness-map-ground" x="0" y="0" width="600" height="360" rx="8"></rect>
             <circle class="wilderness-map-ring" cx="300" cy="180" r="130"></circle>
             <circle class="wilderness-map-ring" cx="300" cy="180" r="72"></circle>
@@ -2573,39 +2591,147 @@ var ae = {
           </svg>
         </div>
         <div class="wilderness-map-legend">
-          <span>Vị trí hiện tại: <strong>${Z(r || "Trong thành")}</strong></span>
+          <span>Vị trí hiện tại: <strong>${X(r || "Trong thành")}</strong></span>
           <span class="text-muted">Chọn một địa danh để đi bộ tới; quay lại thành bằng nút đóng.</span>
         </div>
+        ${this.renderResourcesPanel(r)}
+        ${this.renderPoiPanel()}
+        ${this.renderScenePanel()}
       </div>
     `), this.bind();
+	}
+	isInWilderness(e) {
+		return !!e && (this.view?.wilderness || []).some((t) => t.nameVi === e);
+	}
+	renderResourcesPanel(e) {
+		let t = this.view?.resources || [];
+		if (t.length === 0) return "";
+		let n = this.isInWilderness(e);
+		return `
+      <div class="wilderness-action-panel">
+        <div class="flex justify-between items-center gap-3 mb-2">
+          <div class="text-xs font-bold text-amber-200">Điểm Tài Nguyên</div>
+          <div class="text-[11px] text-muted">${n ? `Đang ở ${X(e || "")} — có thể khai thác.` : "Hãy đi tới một địa danh dã ngoại trước khi khai thác."}</div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+          ${t.map((e) => `
+            <div class="flex justify-between items-center gap-2 rounded border border-slate-800 bg-slate-900/70 p-2">
+              <div>
+                <div class="text-sm text-slate-200">${X(e.nameVi)}</div>
+                <div class="text-[11px] text-muted">${X(e.resourceType)} • ${X(e.resourceNodeId)}</div>
+              </div>
+              <button class="ui-btn ui-btn--primary ui-btn--sm" data-wilderness-gather="${X(e.resourceNodeId)}" ${n ? "" : "disabled"}>
+                Khai Thác
+              </button>
+            </div>
+          `).join("")}
+        </div>
+      </div>
+    `;
+	}
+	renderPoiPanel() {
+		let e = this.view?.poiScenes || [];
+		return e.length === 0 ? "" : `
+      <div class="wilderness-action-panel">
+        <div class="text-xs font-bold text-amber-200 mb-2">Khảo Sát Địa Điểm</div>
+        <div class="flex flex-wrap gap-2">
+          ${e.map((e) => `
+            <button class="ui-btn ui-btn--ghost ui-btn--sm" data-poi-scene="${X(e.poiName)}">
+              ${X(e.poiName)}
+            </button>
+          `).join("")}
+        </div>
+      </div>
+    `;
+	}
+	renderScenePanel() {
+		if (!this.scene) return "";
+		let e = Array.isArray(this.scene.options) ? this.scene.options : [];
+		return `
+      <div class="wilderness-scene-card">
+        <div class="flex justify-between items-start gap-3">
+          <div>
+            <div class="text-xs font-bold text-amber-200">${X(this.scenePoiName || this.scene.npc?.name || "Khảo sát")}</div>
+            <div class="text-[11px] text-muted">${X(this.scene.npc?.name || "")}${this.scene.npc?.title ? ` • ${X(this.scene.npc.title)}` : ""}</div>
+          </div>
+          <button class="ui-btn ui-btn--ghost ui-btn--sm" data-scene-close>Đóng</button>
+        </div>
+        <p class="text-sm text-slate-300 mt-2">${X(this.scene.narrative || "")}</p>
+        <div class="grid grid-cols-1 gap-2 mt-2">
+          ${e.map((e, t) => `
+            <button class="ui-btn ui-btn--ghost ui-btn--sm text-left" data-scene-option="${t}" ${e.disabled ? "disabled" : ""}>
+              <strong>${X(e.title || e.id || `Lựa chọn ${t + 1}`)}</strong>
+              ${e.desc ? `<span class="block text-[11px] text-muted">${X(e.desc)}</span>` : ""}
+            </button>
+          `).join("")}
+        </div>
+      </div>
+    `;
 	}
 	renderSpot(e, t) {
 		let n = 40 + Number(e.localX ?? .5) * 520, r = 30 + Number(e.localY ?? .5) * 300, i = e.nameVi === t, a = ae[e.iconKey] || "野";
 		return `
-      <g class="wilderness-node${i ? " is-current" : ""}" data-wilderness-travel="${Z(e.subLocationId)}" tabindex="0" role="button" aria-label="${Z(e.nameVi)}">
+      <g class="wilderness-node${i ? " is-current" : ""}" data-wilderness-travel="${X(e.subLocationId)}" tabindex="0" role="button" aria-label="${X(e.nameVi)}">
         <circle class="wilderness-node-halo" cx="${n.toFixed(1)}" cy="${r.toFixed(1)}" r="22"></circle>
         <circle class="wilderness-node-dot" cx="${n.toFixed(1)}" cy="${r.toFixed(1)}" r="14"></circle>
         <text class="wilderness-node-seal" x="${n.toFixed(1)}" y="${(r + 5).toFixed(1)}" text-anchor="middle">${a}</text>
-        <text class="wilderness-node-label" x="${n.toFixed(1)}" y="${(r + 33).toFixed(1)}" text-anchor="middle">${Z(e.nameVi)}</text>
+        <text class="wilderness-node-label" x="${n.toFixed(1)}" y="${(r + 33).toFixed(1)}" text-anchor="middle">${X(e.nameVi)}</text>
       </g>
     `;
 	}
 	bind() {
 		let e = this.modal.getBodyElement();
-		e && e.querySelectorAll("[data-wilderness-travel]").forEach((e) => {
+		e && (e.querySelectorAll("[data-wilderness-travel]").forEach((e) => {
 			let t = async () => {
 				let t = e.dataset.wildernessTravel || "";
 				try {
-					let e = await X.travel(t), n = Number(e?.time?.advancedDays || 1);
-					ie(`Đã tới ${e?.result?.nameVi || "địa danh"} sau ${n} ngày.`), await this.refresh(), this.render();
+					let e = await Y.travel(t), n = Number(e?.time?.advancedDays || 1);
+					Z(`Đã tới ${e?.result?.nameVi || "địa danh"} sau ${n} ngày.`), await this.refresh(), this.render();
 				} catch (e) {
-					ie(e.message || "Không thể di chuyển.", !0);
+					Z(e.message || "Không thể di chuyển.", !0);
 				}
 			};
 			e.addEventListener("click", t), e.addEventListener("keydown", (e) => {
 				(e.key === "Enter" || e.key === " ") && (e.preventDefault(), t());
 			});
-		});
+		}), e.querySelectorAll("[data-wilderness-gather]").forEach((e) => {
+			e.addEventListener("click", async () => {
+				let t = e.dataset.wildernessGather || "";
+				e.setAttribute("disabled", "true");
+				try {
+					let e = await Y.gather(t), n = e?.result || e, r = n?.itemNameVi || n?.itemCode || "tài nguyên", i = Number(n?.quantity || n?.yieldQuantity || 0);
+					Z(i > 0 ? `Khai thác được ${i} ${r}.` : "Khai thác thành công."), await this.refresh(), this.render();
+				} catch (t) {
+					e.removeAttribute("disabled"), Z(t.message || "Khai thác thất bại.", !0);
+				}
+			});
+		}), e.querySelectorAll("[data-poi-scene]").forEach((e) => {
+			e.addEventListener("click", async () => {
+				let t = e.dataset.poiScene || "";
+				e.setAttribute("disabled", "true");
+				try {
+					this.scene = await Y.getScene(t), this.scenePoiName = t, this.render();
+				} catch (t) {
+					e.removeAttribute("disabled"), Z(t.message || "Không mở được địa điểm.", !0);
+				}
+			});
+		}), e.querySelectorAll("[data-scene-close]").forEach((e) => {
+			e.addEventListener("click", () => {
+				this.scene = null, this.scenePoiName = null, this.render();
+			});
+		}), e.querySelectorAll("[data-scene-option]").forEach((e) => {
+			e.addEventListener("click", async () => {
+				let t = Number(e.dataset.sceneOption || -1), n = this.scene?.options?.[t];
+				if (n?.action) {
+					e.setAttribute("disabled", "true");
+					try {
+						Z((await Y.dispatchAction(n.action))?.message || "Đã thực hiện lựa chọn."), this.scene = null, this.scenePoiName = null, await this.refresh(), this.render();
+					} catch (t) {
+						e.removeAttribute("disabled"), Z(t.message || "Hành động thất bại.", !0);
+					}
+				}
+			});
+		}));
 	}
 }, se = new oe(), ce = {
 	wu_wei: "xi_liang",
@@ -2686,114 +2812,114 @@ var Q = new class {
 			this.readJson("/api/expeditions"),
 			this.readJson("/api/professions/nodes"),
 			this.readJson("/api/map/registry")
-		]), ee = t.status === "fulfilled" && t.value.success && t.value.garrisons || [], y = n.status === "fulfilled" && n.value.success && n.value.settlements || [], b = r.status === "fulfilled" && r.value.success && r.value.factions || [], x = i.status === "fulfilled" && i.value.success ? i.value : null, S = a.status === "fulfilled" && a.value.success && a.value.strongholds || [], C = o.status === "fulfilled" && o.value.success && o.value.crises || [], w = s.status === "fulfilled" && s.value.success && s.value.npcs || [], te = c.status === "fulfilled" && c.value.success ? c.value : null, T = l.status === "fulfilled" && l.value.success && l.value.items || [], E = u.status === "fulfilled" && u.value.success && u.value.specialists || [], D = d.status === "fulfilled" && d.value.success && d.value.businesses || [], ne = f.status === "fulfilled" && f.value.success && f.value.tiers || [], O = p.status === "fulfilled" && p.value.success && p.value.routes || [], k = m.status === "fulfilled" && m.value.success && m.value.locations || [], A = h.status === "fulfilled" && h.value.success && h.value.caravans || [], j = g.status === "fulfilled" && g.value.success && g.value.expeditions || [], M = _.status === "fulfilled" && _.value.success && _.value.nodes || [], N = v.status === "fulfilled" && v.value.success ? v.value : null;
-		v.status === "rejected" && this.state.errors.push("map-registry"), t.status === "rejected" && this.state.errors.push("garrisons"), n.status === "rejected" && this.state.errors.push("factions/settlements"), r.status === "rejected" && this.state.errors.push("factions"), i.status === "rejected" && this.state.errors.push("military"), a.status === "rejected" && this.state.errors.push("strongholds"), o.status === "rejected" && this.state.errors.push("crises"), s.status === "rejected" && this.state.errors.push("npcs"), c.status === "rejected" && this.state.errors.push("status"), l.status === "rejected" && this.state.errors.push("inventory"), u.status === "rejected" && this.state.errors.push("workforce"), d.status === "rejected" && this.state.errors.push("businesses"), f.status === "rejected" && this.state.errors.push("guard-tiers"), p.status === "rejected" && this.state.errors.push("routes"), m.status === "rejected" && this.state.errors.push("locations"), h.status === "rejected" && this.state.errors.push("caravans"), g.status === "rejected" && this.state.errors.push("expeditions"), _.status === "rejected" && this.state.errors.push("resources"), this.state.mapRegistry = N ? {
-			nodes: N.nodes || [],
-			subLocationsByNode: N.subLocationsByNode || {},
-			poiScenesByNode: N.poiScenesByNode || {},
-			resourcesByNode: N.resourcesByNode || {},
-			orphans: N.orphans || []
+		]), ee = t.status === "fulfilled" && t.value.success && t.value.garrisons || [], y = n.status === "fulfilled" && n.value.success && n.value.settlements || [], b = r.status === "fulfilled" && r.value.success && r.value.factions || [], x = i.status === "fulfilled" && i.value.success ? i.value : null, te = a.status === "fulfilled" && a.value.success && a.value.strongholds || [], S = o.status === "fulfilled" && o.value.success && o.value.crises || [], C = s.status === "fulfilled" && s.value.success && s.value.npcs || [], ne = c.status === "fulfilled" && c.value.success ? c.value : null, w = l.status === "fulfilled" && l.value.success && l.value.items || [], T = u.status === "fulfilled" && u.value.success && u.value.specialists || [], E = d.status === "fulfilled" && d.value.success && d.value.businesses || [], re = f.status === "fulfilled" && f.value.success && f.value.tiers || [], D = p.status === "fulfilled" && p.value.success && p.value.routes || [], O = m.status === "fulfilled" && m.value.success && m.value.locations || [], k = h.status === "fulfilled" && h.value.success && h.value.caravans || [], ie = g.status === "fulfilled" && g.value.success && g.value.expeditions || [], A = _.status === "fulfilled" && _.value.success && _.value.nodes || [], j = v.status === "fulfilled" && v.value.success ? v.value : null;
+		v.status === "rejected" && this.state.errors.push("map-registry"), t.status === "rejected" && this.state.errors.push("garrisons"), n.status === "rejected" && this.state.errors.push("factions/settlements"), r.status === "rejected" && this.state.errors.push("factions"), i.status === "rejected" && this.state.errors.push("military"), a.status === "rejected" && this.state.errors.push("strongholds"), o.status === "rejected" && this.state.errors.push("crises"), s.status === "rejected" && this.state.errors.push("npcs"), c.status === "rejected" && this.state.errors.push("status"), l.status === "rejected" && this.state.errors.push("inventory"), u.status === "rejected" && this.state.errors.push("workforce"), d.status === "rejected" && this.state.errors.push("businesses"), f.status === "rejected" && this.state.errors.push("guard-tiers"), p.status === "rejected" && this.state.errors.push("routes"), m.status === "rejected" && this.state.errors.push("locations"), h.status === "rejected" && this.state.errors.push("caravans"), g.status === "rejected" && this.state.errors.push("expeditions"), _.status === "rejected" && this.state.errors.push("resources"), this.state.mapRegistry = j ? {
+			nodes: j.nodes || [],
+			subLocationsByNode: j.subLocationsByNode || {},
+			poiScenesByNode: j.poiScenesByNode || {},
+			resourcesByNode: j.resourcesByNode || {},
+			orphans: j.orphans || []
 		} : null;
-		let P = {};
+		let M = {};
 		b.forEach((e) => {
 			let t = e && e.factionId;
-			t && (P[t] = e);
+			t && (M[t] = e);
 		});
-		let F = {};
+		let N = {};
 		ee.forEach((e) => {
-			e && e.settlementId && (F[e.settlementId] = this.mergeRecord(F[e.settlementId], e));
+			e && e.settlementId && (N[e.settlementId] = this.mergeRecord(N[e.settlementId], e));
 		}), y.forEach((e) => {
-			e && e.settlementId && (F[e.settlementId] = this.mergeRecord(F[e.settlementId], e));
-		}), Object.keys(F).forEach((e) => {
-			let t = F[e], n = t.rulerFactionId ? P[t.rulerFactionId] : null;
+			e && e.settlementId && (N[e.settlementId] = this.mergeRecord(N[e.settlementId], e));
+		}), Object.keys(N).forEach((e) => {
+			let t = N[e], n = t.rulerFactionId ? M[t.rulerFactionId] : null;
 			if (!n) return;
 			let r = n;
 			t.factionNameVi = r.nameVi, t.factionNameEn = r.nameEn, t.factionColor = r.colorHex, t.factionMilitaryPower = r.militaryPower;
 		});
-		let I = {};
-		Object.keys(F).forEach((e) => {
-			this.resolveMapNodeId(e) === e && (I[e] = this.mergeRecord(I[e], {
-				...F[e],
+		let P = {};
+		Object.keys(N).forEach((e) => {
+			this.resolveMapNodeId(e) === e && (P[e] = this.mergeRecord(P[e], {
+				...N[e],
 				sourceSettlementId: e
 			}));
-		}), Object.keys(F).forEach((e) => {
+		}), Object.keys(N).forEach((e) => {
 			let t = this.resolveMapNodeId(e);
-			I[t] || (I[t] = this.mergeRecord(I[t], {
-				...F[e],
+			P[t] || (P[t] = this.mergeRecord(P[t], {
+				...N[e],
 				sourceSettlementId: e
 			}));
-		}), this.state.bySettlement = F, this.state.byMapNode = I, this.state.activeExpeditions = x && x.activeExpeditions || [], this.state.player = x && x.commander || null, this.state.playerFaction = b.find((e) => e.leaderId === "PLY-0001") || null, this.state.factionsById = P;
-		let L = {};
-		S.forEach((e) => {
+		}), this.state.bySettlement = N, this.state.byMapNode = P, this.state.activeExpeditions = x && x.activeExpeditions || [], this.state.player = x && x.commander || null, this.state.playerFaction = b.find((e) => e.leaderId === "PLY-0001") || null, this.state.factionsById = M;
+		let F = {};
+		te.forEach((e) => {
 			let t = e.status, n = e.locationNear;
 			if (t !== "ACTIVE" || !n) return;
 			let r = this.resolveMapNodeId(n);
-			(L[r] ||= []).push(e);
+			(F[r] ||= []).push(e);
 		});
-		let R = {};
-		C.forEach((e) => {
+		let I = {};
+		S.forEach((e) => {
 			let t = e.settlementId;
 			if (!t) return;
 			let n = this.resolveMapNodeId(t);
-			(R[n] ||= []).push(e);
-		}), this.state.banditsByNode = L, this.state.crisesByNode = R;
-		let z = {}, B = {};
-		w.forEach((e) => {
+			(I[n] ||= []).push(e);
+		}), this.state.banditsByNode = F, this.state.crisesByNode = I;
+		let L = {}, R = {};
+		C.forEach((e) => {
 			let t = e.name, n = e.npc_id || e.npcId;
-			n && (B[n] = e), t && (z[this.normalizeName(t)] = e);
-		}), this.state.npcsByName = z, this.state.npcsById = B;
-		let V = Number(te?.player?.liquid_cash) || 0, re = {};
-		T.forEach((e) => {
+			n && (R[n] = e), t && (L[this.normalizeName(t)] = e);
+		}), this.state.npcsByName = L, this.state.npcsById = R;
+		let z = Number(ne?.player?.liquid_cash) || 0, B = {};
+		w.forEach((e) => {
 			let t = e.item_code || e.itemCode, n = Number(e.quantity) || 0;
-			t && (re[t] = n);
-		}), this.state.playerCash = V, this.state.inventory = re, this.state.guardTiers = ne;
-		let H = {};
-		E.forEach((e) => {
+			t && (B[t] = n);
+		}), this.state.playerCash = z, this.state.inventory = B, this.state.guardTiers = re;
+		let V = {};
+		T.forEach((e) => {
 			let t = e.nameVi;
-			t && (H[this.normalizeName(t)] = e);
-		}), this.state.specialistsByName = H, this.state.caravans = A, this.state.expeditions = j;
-		let U = {}, W = {};
-		M.forEach((e) => {
+			t && (V[this.normalizeName(t)] = e);
+		}), this.state.specialistsByName = V, this.state.caravans = k, this.state.expeditions = ie;
+		let H = {}, U = {};
+		A.forEach((e) => {
 			let t = String(e.settlementId || ""), n = this.resolveMapNodeId(t), r = String(e.resourceType || "");
-			n && r && (U[n] || (U[n] = {
+			n && r && (H[n] || (H[n] = {
 				types: {},
 				nodes: []
-			}), U[n].types[r] = (U[n].types[r] || 0) + 1, U[n].nodes.push(e), W[r] = (W[r] || 0) + 1);
-		}), this.state.resourcesByNode = U, this.state.resourceTotals = W;
-		let G = {};
-		k.forEach((e) => {
+			}), H[n].types[r] = (H[n].types[r] || 0) + 1, H[n].nodes.push(e), U[r] = (U[r] || 0) + 1);
+		}), this.state.resourcesByNode = H, this.state.resourceTotals = U;
+		let W = {};
+		O.forEach((e) => {
 			let t = e.locationId;
-			t && (G[t] = e);
-		}), this.state.locationsById = G;
-		let K = {};
+			t && (W[t] = e);
+		}), this.state.locationsById = W;
+		let G = {};
 		if (typeof window < "u") {
 			let e = window.SETTLEMENT_LABELS || {};
 			Object.keys(e).forEach((t) => {
 				if (t === "wu_wei") return;
 				let n = e[t] && e[t].vi;
-				n && (K[this.normalizeLocationLabel(n)] = t);
+				n && (G[this.normalizeLocationLabel(n)] = t);
 			});
 		}
-		let q = {};
-		k.forEach((e) => {
+		let K = {};
+		O.forEach((e) => {
 			let t = e.locationId, n = e.nameVi;
 			if (!t || !n) return;
-			let r = K[this.normalizeLocationLabel(n)];
-			r && (q[t] = r);
-		}), this.state.locToMapNode = q;
-		let J = {};
-		D.forEach((e) => {
-			let t = e.businessId, n = e.locationId;
-			t && n && (J[t] = n);
-		});
-		let Y = {};
+			let r = G[this.normalizeLocationLabel(n)];
+			r && (K[t] = r);
+		}), this.state.locToMapNode = K;
+		let q = {};
 		E.forEach((e) => {
-			let t = !!e.isHired, n = e.assignedBusinessId, r = n ? J[n] : null, i = e.baselineLocation, a = t && r ? r : i, o = a ? q[a] : null;
-			o && (Y[o] ||= []).push(e);
-		}), this.state.businesses = D, this.state.specialistsByMapNode = Y;
-		let X = {};
-		return O.forEach((e) => {
-			let t = q[e.sourceLocationId || ""], n = q[e.targetLocationId || ""];
+			let t = e.businessId, n = e.locationId;
+			t && n && (q[t] = n);
+		});
+		let J = {};
+		T.forEach((e) => {
+			let t = !!e.isHired, n = e.assignedBusinessId, r = n ? q[n] : null, i = e.baselineLocation, a = t && r ? r : i, o = a ? K[a] : null;
+			o && (J[o] ||= []).push(e);
+		}), this.state.businesses = E, this.state.specialistsByMapNode = J;
+		let Y = {};
+		return D.forEach((e) => {
+			let t = K[e.sourceLocationId || ""], n = K[e.targetLocationId || ""];
 			if (!t || !n) return;
 			let r = e.descriptionEn ? e.descriptionEn.trim() : "", i = r && !/^RT-/i.test(r) && /^[\x20-\x7E]+$/.test(r) ? r : void 0, a = {
 				from: t,
@@ -2806,12 +2932,12 @@ var Q = new class {
 				descVi: e.descriptionVi,
 				descEn: i
 			}, o = `${t}|${n}`, s = `${n}|${t}`;
-			X[o] || (X[o] = a), X[s] || (X[s] = {
+			Y[o] || (Y[o] = a), Y[s] || (Y[s] = {
 				...a,
 				from: n,
 				to: t
 			});
-		}), this.state.routesByKey = X, this.state.status = this.state.errors.length === 17 ? "error" : "ready", this.state.fetchedAt = Date.now(), this.state;
+		}), this.state.routesByKey = Y, this.state.status = this.state.errors.length === 17 ? "error" : "ready", this.state.fetchedAt = Date.now(), this.state;
 	}
 	getForMapNode(e) {
 		return e && (this.state.byMapNode[e] || this.state.bySettlement[e]) || null;
@@ -3009,62 +3135,62 @@ function ue() {
 		assignMentorDialog: (e) => x.assignMentorDialog(e),
 		executeSuccession: () => x.executeSuccession()
 	}, t.EquipmentUI = {
-		openEquipmentModal: (e, t) => T.open(e, t),
-		closeEquipmentModal: () => T.close(),
-		switchTab: (e) => T.modal.switchTab(e),
-		equip: (e, t, n) => T.equip(e, t, n),
-		unequip: (e, t) => T.unequip(e, t),
-		repairTool: (e) => T.repairTool(e),
-		executeForge: () => T.executeForge()
+		openEquipmentModal: (e, t) => w.open(e, t),
+		closeEquipmentModal: () => w.close(),
+		switchTab: (e) => w.modal.switchTab(e),
+		equip: (e, t, n) => w.equip(e, t, n),
+		unequip: (e, t) => w.unequip(e, t),
+		repairTool: (e) => w.repairTool(e),
+		executeForge: () => w.executeForge()
 	}, t.EnterpriseUI = {
-		openEnterpriseModal: (e) => O.open(e),
-		closeEnterpriseModal: () => O.close(),
-		depositSafeCash: (e) => O.depositSafeCash(e),
-		withdrawSafeCash: (e) => O.withdrawSafeCash(e),
-		executeWork: (e) => O.executeWork(e)
+		openEnterpriseModal: (e) => D.open(e),
+		closeEnterpriseModal: () => D.close(),
+		depositSafeCash: (e) => D.depositSafeCash(e),
+		withdrawSafeCash: (e) => D.withdrawSafeCash(e),
+		executeWork: (e) => D.executeWork(e)
 	}, t.ProtagonistDossierModal = {
-		open: () => M.openProtagonist(),
-		close: () => M.closeProtagonist()
+		open: () => A.openProtagonist(),
+		close: () => A.closeProtagonist()
 	}, t.NpcDossierModal = {
-		open: (e) => M.openNpc(e),
-		close: () => M.closeNpc()
+		open: (e) => A.openNpc(e),
+		close: () => A.closeNpc()
 	}, t.QuickTradeModal = {
-		open: (e, t, n, r) => P.open(e, t, n, r),
-		close: () => P.close(),
-		updateTotal: () => P.updateTotal(),
-		submit: () => P.submit()
+		open: (e, t, n, r) => M.open(e, t, n, r),
+		close: () => M.close(),
+		updateTotal: () => M.updateTotal(),
+		submit: () => M.submit()
 	}, t.MarketStallModal = {
-		open: (e = "stall") => K.open(e),
-		close: () => K.close()
+		open: (e = "stall") => G.open(e),
+		close: () => G.close()
 	}, t.TacticalBattleUI = {
-		startDuel: (e) => L.startDuel(e),
-		close: () => L.close(),
-		executeAction: (e) => L.executeAction(e)
+		startDuel: (e) => F.startDuel(e),
+		close: () => F.close(),
+		executeAction: (e) => F.executeAction(e)
 	}, t.TravelTransitUI = {
-		show: (e, t, n, r) => z.showTravelTransit(e, t, n, r),
-		close: () => z.closeTravel(),
-		openLegacy: () => z.openTravelTransitModal(),
-		closeLegacy: () => z.closeTravelTransitModal()
+		show: (e, t, n, r) => L.showTravelTransit(e, t, n, r),
+		close: () => L.closeTravel(),
+		openLegacy: () => L.openTravelTransitModal(),
+		closeLegacy: () => L.closeTravelTransitModal()
 	}, t.TurnAdvanceUI = {
-		show: (e, t, n) => z.showTurnAdvance(e, t, n),
-		close: () => z.closeTurn(),
-		openLegacy: () => z.openTurnAdvanceModal(),
-		closeLegacy: () => z.closeTurnAdvanceModal()
+		show: (e, t, n) => L.showTurnAdvance(e, t, n),
+		close: () => L.closeTurn(),
+		openLegacy: () => L.openTurnAdvanceModal(),
+		closeLegacy: () => L.closeTurnAdvanceModal()
 	}, t.QuestUI = {
-		open: () => H.open(),
-		close: () => H.close(),
-		accept: (e) => H.accept(e),
-		advance: (e) => H.advance(e),
-		payObligation: (e) => H.payObligation(e),
-		acceptContract: (e) => H.acceptContract(e),
-		deliverContract: (e) => H.deliverContract(e),
-		verifyIntel: (e) => H.verifyIntel(e),
-		rentFarm: (e) => H.rentFarm(e),
-		plantCrop: (e, t) => H.plantCrop(e, t),
-		harvestFarm: (e) => H.harvestFarm(e)
+		open: () => V.open(),
+		close: () => V.close(),
+		accept: (e) => V.accept(e),
+		advance: (e) => V.advance(e),
+		payObligation: (e) => V.payObligation(e),
+		acceptContract: (e) => V.acceptContract(e),
+		deliverContract: (e) => V.deliverContract(e),
+		verifyIntel: (e) => V.verifyIntel(e),
+		rentFarm: (e) => V.rentFarm(e),
+		plantCrop: (e, t) => V.plantCrop(e, t),
+		harvestFarm: (e) => V.harvestFarm(e)
 	}, t.WorldMapUI = {
-		open: () => J.open(),
-		close: () => J.close()
+		open: () => q.open(),
+		close: () => q.close()
 	}, t.WildernessMapUI = {
 		open: (e) => se.open(e),
 		close: () => se.close()
@@ -3368,6 +3494,6 @@ var de = new class {
 }, ge = new he();
 // src/client/main.ts
 ue();
-export { pe as CaravanLogisticsModal, fe as CaravanLogisticsService, _ as ClientApiClient, j as DossiersModal, k as DossiersService, ne as EnterpriseWorkshopModal, E as EnterpriseWorkshopService, te as EquipmentForgeModal, S as EquipmentForgeService, t as LEGACY_OWNED_MODAL_IDS, b as LineageFamilyModal, ee as LineageFamilyService, r as ModalShell, N as QuickTradeModal, I as TacticalBattleModal, he as TitleScreenModal, R as TransitTurnModals, oe as WildernessMapModal, Y as WildernessMapService, q as WorldMapModal, v as apiClient, me as caravanLogisticsModal, $ as caravanLogisticsService, i as createModalShell, M as dossiersModal, A as dossiersService, O as enterpriseWorkshopModal, D as enterpriseWorkshopService, T as equipmentForgeModal, C as equipmentForgeService, de as eventBus, n as isLegacyOwnedModalId, x as lineageFamilyModal, y as lineageFamilyService, e as modalStack, P as quickTradeModal, L as tacticalBattleModal, ge as titleScreenModal, z as transitTurnModals, se as wildernessMapModal, X as wildernessMapService, J as worldMapModal };
+export { pe as CaravanLogisticsModal, fe as CaravanLogisticsService, _ as ClientApiClient, ie as DossiersModal, O as DossiersService, re as EnterpriseWorkshopModal, T as EnterpriseWorkshopService, ne as EquipmentForgeModal, te as EquipmentForgeService, t as LEGACY_OWNED_MODAL_IDS, b as LineageFamilyModal, ee as LineageFamilyService, r as ModalShell, j as QuickTradeModal, P as TacticalBattleModal, he as TitleScreenModal, I as TransitTurnModals, oe as WildernessMapModal, J as WildernessMapService, K as WorldMapModal, v as apiClient, me as caravanLogisticsModal, $ as caravanLogisticsService, i as createModalShell, A as dossiersModal, k as dossiersService, D as enterpriseWorkshopModal, E as enterpriseWorkshopService, w as equipmentForgeModal, S as equipmentForgeService, de as eventBus, n as isLegacyOwnedModalId, x as lineageFamilyModal, y as lineageFamilyService, e as modalStack, M as quickTradeModal, F as tacticalBattleModal, ge as titleScreenModal, L as transitTurnModals, se as wildernessMapModal, Y as wildernessMapService, q as worldMapModal };
 
 //# sourceMappingURL=client-bundle.es.js.map

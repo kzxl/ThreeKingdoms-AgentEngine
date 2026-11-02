@@ -50,6 +50,22 @@ export class WildernessMapService {
       idempotencyKey: `wilderness-travel-${subLocationId}-${Date.now()}`
     });
   }
+
+  public async gather(nodeId: string, characterId = 'PLY-0001'): Promise<any> {
+    return apiClient.post('/api/professions/gather', {
+      characterId,
+      nodeId,
+      idempotencyKey: `wilderness-gather-${nodeId}-${Date.now()}`
+    });
+  }
+
+  public async getScene(subLocation: string, characterId = 'PLY-0001'): Promise<any> {
+    return apiClient.get('/api/scene', { subLocation, characterId });
+  }
+
+  public async dispatchAction(action: Record<string, unknown>): Promise<any> {
+    return apiClient.post('/api/action', action);
+  }
 }
 
 export const wildernessMapService = WildernessMapService.getInstance();
