@@ -101,3 +101,22 @@ window.API_BASE = API_BASE;
 window.storyChronicle = storyChronicle;
 window.activeSubLocation = activeSubLocation;
 window.lastEncounterSubLocation = lastEncounterSubLocation;
+
+/**
+ * Returns a z-index above every visible modal. Legacy IIFE modals are not in
+ * ModalStack, so a dossier opened from the map would otherwise sit under the
+ * shell-owned map backdrop (inline z-index 1010).
+ */
+function nextModalZIndex(base = 1000) {
+  let max = base;
+  if (typeof document === 'undefined') return max + 10;
+  document.querySelectorAll('.modal-backdrop, .modal-overlay, .modal-dialog').forEach((el) => {
+    if (el.classList && el.classList.contains('hidden')) return;
+    const inline = Number(el.style && el.style.zIndex);
+    const computed = Number(window.getComputedStyle(el).zIndex);
+    const value = Number.isFinite(inline) && inline > 0 ? inline : (Number.isFinite(computed) ? computed : 0);
+    if (value > max) max = value;
+  });
+  return max + 10;
+}
+window.nextModalZIndex = nextModalZIndex;

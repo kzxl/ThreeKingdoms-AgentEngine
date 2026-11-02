@@ -92,6 +92,9 @@
         </div>
       </div>
     `;
+    if (typeof nextModalZIndex === 'function') {
+      modalEl.style.zIndex = String(nextModalZIndex());
+    }
     modalEl.classList.remove('hidden');
 
     try {
@@ -806,6 +809,19 @@
     window.executeDossierAction = executeDossierAction;
     window.openNpcDossierModal = openNpcDossierModal;
     window.closeNpcDossierModal = closeNpcDossierModal;
+  }
+
+  // The dossier can sit above the shell-owned world map; Escape must close this
+  // top layer, not the map behind it.
+  if (typeof document !== 'undefined') {
+    document.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape' && event.keyCode !== 27) return;
+      const modalEl = document.getElementById('npc-dossier-modal');
+      if (!modalEl || modalEl.classList.contains('hidden')) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      closeNpcDossierModal();
+    }, true);
   }
 
   // Global exposure

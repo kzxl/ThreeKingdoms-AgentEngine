@@ -165,6 +165,9 @@
         </div>
       </div>
     `;
+    if (typeof nextModalZIndex === 'function') {
+      modalEl.style.zIndex = String(nextModalZIndex());
+    }
     modalEl.classList.remove('hidden');
 
     try {
@@ -643,6 +646,15 @@
 
     return '';
   }
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape' && event.keyCode !== 27) return;
+    const modalEl = document.getElementById('protagonist-dossier-modal');
+    if (!modalEl || modalEl.classList.contains('hidden')) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    closeProtagonistDossierModal();
+  }, true);
 
   window.ProtagonistDossierModal = {
     open: openProtagonistDossierModal,
