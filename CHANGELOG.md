@@ -7,6 +7,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.55.0] - 2026-11-02
+
+### Changed
+- The right deck is now **Túi Cá Nhân** (per-settlement personal bag), **Gia Đinh**
+  (retainers) and **Nhật Ký** (cashflow ledger). The separate `Sổ Cái TXN` and
+  `AI Feed` tabs are gone; the header **Nhật Ký** button opens the ledger log.
+- Retainer cards no longer carry a monthly-wage badge. Wages live in **Sản Nghiệp**:
+  each business now returns `staff_members` and the owner surface renders a payroll
+  roster with role, monthly wage, staff count, wage total and monthly overhead.
+  The classic enterprise renderer mirrors the same fields when the TS bundle is
+  unavailable.
+- The personal-bag tab shows the bag location, item count, per-item value and a
+  two-action trade row. The header metric is now **Giá Trị Túi** and is computed
+  from the current settlement bag (`financials.bagValue`) rather than the global
+  inventory aggregate.
+- Exploration discoveries are asserted to land in `player_bag_by_location` for the
+  current settlement. `/api/scene` now moves `current_sub_location` together with
+  `current_location`, so the bag anchor follows a walked local POI.
+- Removed the unused `/api/agent/logs` endpoint, its in-memory activity stream and
+  the client `apiFetchAgentLogs` wrapper.
+
+### Verification
+Typecheck, architecture guard, client syntax, UI/slop ratchets (debt reduced),
+client API contract, route-shadow report, 28 golden contracts and 8 write smokes
+pass. `verify-exploration` now covers the personal-bag credit. Five suites fail on
+the stale live save (`verify-civilian-courtship-lineage`, `verify-endowment-consumption`,
+`verify-freight`, `verify-market-price-book`, `verify-merchant-route`); the same
+failures reproduce without these changes, and the freight/market-price suites pass
+on `saves/backups/pre-verify-reset/session.db`.
+
+---
+
+## [1.54.0] - 2026-11-02
+
+### Changed
+- The key-relationship network now lives inside the protagonist sheet instead of a
+  separate deck card. Its header collapses the section and keeps `aria-expanded`
+  in sync, so the retainer/ledger tabs can reclaim vertical space when needed.
+- Each relationship row is now a five-tier ladder (`Sinh Tử` / `Tri Kỷ` /
+  `Thân Quen` / `Sơ Giao` / `Xa Lạ`) derived from the affinity score and sorted
+  by closeness. Name, score and tier share one line, the long sentiment text is
+  clamped to two lines, and a single meter replaces the overlapping layout.
+- Retainer cards truncate long names and roles, keep the monthly wage on one line
+  and stack stat labels above their values. Below 1180px the retainer/ledger pane
+  scrolls inside the card instead of stretching the page by one screen per NPC.
+
+### Verification
+Client syntax, UI consistency and anti-slop ratchets pass. Measured at 405px:
+right-deck `scrollWidth` 358 = `clientWidth`, page width 405 = viewport, no row
+overflow. `verify-freight` and the `/api/audit` golden assertion fail identically
+on `HEAD` (pre-existing data drift) and are unrelated to the UI files here.
+
+---
+
 ## [1.51.1] - 2026-11-02
 
 Fixed enterprise safe-cash deposits and withdrawals.

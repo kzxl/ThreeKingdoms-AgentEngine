@@ -56,7 +56,6 @@ async function loadAllData() {
       loadDeckInventory(),
       loadDeckNpcs(),
       loadDeckLedger(),
-      loadDeckAgentLogs(),
       checkAuditStatus()
     ]);
 
@@ -262,9 +261,12 @@ async function loadStatus() {  try {
       : `${Number(p.strategic_grain || 0).toFixed(2)} Thạch`;
 
     const valInv = document.getElementById('top-val-inv');
-    if (valInv) valInv.innerText = typeof formatMoney === 'function'
-      ? formatMoney(f.inventoryValue || 0)
-      : `${(f.inventoryValue || 0).toLocaleString()} Quan`;
+    if (valInv) {
+      const bagValue = Number(f.bagValue ?? f.inventoryValue ?? 0);
+      valInv.innerText = typeof formatMoney === 'function'
+        ? formatMoney(bagValue)
+        : `${bagValue.toLocaleString()} Quan`;
+    }
 
     const valNetworth = document.getElementById('top-val-networth');
     if (valNetworth) valNetworth.innerText = typeof formatMoney === 'function'
@@ -1201,12 +1203,12 @@ function initUIEventListeners() {
     });
   }
 
-  // Logs button click: Switches directly to Agent Activity Log Stream!
+  // Logs button click: opens the ledger log inside the right deck.
   const btnLogs = document.getElementById('btn-toggle-logs');
   if (btnLogs) {
     btnLogs.addEventListener('click', () => {
-      switchDeckTab('subtab-agent-log');
-      showToast('Đang hiển thị Nhật ký mô phỏng từ Agent!');
+      switchDeckTab('subtab-log');
+      showToast('Đang hiển thị nhật ký sổ cái!');
     });
   }
 

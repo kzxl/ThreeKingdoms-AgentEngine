@@ -9,7 +9,7 @@ const I18N_DICT = {
     dateChip: 'Ngày 2 Tháng 5 Năm 184 SCN (Lượt 6)',
     cashLabel: 'Tiền Mặt:',
     grainLabel: 'Lương Thảo:',
-    invLabel: 'Giá Trị Kho:',
+    invLabel: 'Giá Trị Túi:',
     netWorthLabel: 'Tài Sản Ròng:',
     bridgeLive: 'AI Bridge: LIVE',
     auditPassed: '100% Khớp',
@@ -46,20 +46,18 @@ const I18N_DICT = {
     attrCra: 'Khéo Léo',
     attrWar: 'Võ Lực',
     // Relations & Sentiment Network
-    relationsTitle: 'Mạng Lưới Quan Hệ Hào Kiệt (RELATIONS.md)',
-    relationsBadge: 'Tín Nhiệm / Hảo Cảm',
-    relationsHint: 'Mức độ tín nhiệm & hảo cảm của các nhân sĩ trọng yếu đối với Lương Diễn (-100 đến +100).',
+    relationsTitle: 'Mạng Lưới Quan Hệ Hào Kiệt',
+    relationsHint: 'Tín nhiệm & hảo cảm của các nhân sĩ trọng yếu (-100 đến +100).',
     completedTag: '(Đạt)',
     // Tabs
-    tabInv: 'Kho Xưởng',
-    tabNpc: 'Lương Nhân',
-    tabLedger: 'Sổ Cái TXN',
-    tabAiFeed: 'AI Feed',
+    tabInv: 'Túi Cá Nhân',
+    tabNpc: 'Gia Đinh',
+    tabLog: 'Nhật Ký',
     // Table
     thSku: 'Mã SKU',
-    thDesc: 'Mô tả',
+    thDesc: 'Vật Phẩm',
     thQty: 'Số Lượng',
-    thPrice: 'Đơn giá',
+    thPrice: 'Giá Trị',
     thAction: 'Thao tác',
     btnSell: 'Bán',
     btnBuy: 'Mua',
@@ -101,10 +99,17 @@ const I18N_DICT = {
     gmTabProfessions: 'Bách Nghệ & Khai Khoáng',
     gmTabEcology: 'Thiên Tai & Vận Tải',
     // Deck Labels & Empty States
-    deckEmptyInv: 'Kho hàng trống',
+    deckEmptyInv: 'Túi cá nhân trống tại địa điểm này',
     deckEmptyNpc: 'Chưa có gia nhân trực thuộc',
     deckEmptyLedger: 'Chưa có giao dịch sổ cái',
-    deckEmptyLogs: 'Chưa có dữ liệu mô phỏng từ Agent',
+    deckBagTitle: 'Túi cá nhân',
+    deckBagCount: 'vật phẩm',
+    deckLogTitle: 'Nhật Ký Sổ Cái',
+    deckLogBalance: 'Số dư sau giao dịch',
+    deckLogInflow: 'Thu',
+    deckLogOutflow: 'Chi',
+    deckEnterpriseLink: 'Sản Nghiệp',
+    deckWageNote: 'Lương nhân công được hạch toán trong Sản Nghiệp.',
     deckPostBal: 'Số dư sau TXN:',
     deckPersonality: 'Tính cách:',
     deckCraAttr: 'Khéo Léo:',
@@ -141,7 +146,7 @@ const I18N_DICT = {
     dateChip: 'May 2, 184 AD (Turn 6)',
     cashLabel: 'Cash:',
     grainLabel: 'Grain:',
-    invLabel: 'Warehouse:',
+    invLabel: 'Bag Value:',
     netWorthLabel: 'Net Worth:',
     bridgeLive: 'AI Bridge: LIVE',
     auditPassed: '100% Match',
@@ -178,20 +183,18 @@ const I18N_DICT = {
     attrCra: 'Craft',
     attrWar: 'Warfare',
     // Relations & Sentiment Network
-    relationsTitle: 'Key NPC Relationships (RELATIONS.md)',
-    relationsBadge: 'Sentiment Rating',
-    relationsHint: 'Trust & sentiment ratings of prominent figures toward Liang Yan (-100 to +100).',
+    relationsTitle: 'Key NPC Relationships',
+    relationsHint: 'Trust & sentiment of key figures (-100 to +100).',
     completedTag: '(Achieved)',
     // Tabs
-    tabInv: 'Warehouse',
+    tabInv: 'Personal Bag',
     tabNpc: 'Retainers',
-    tabLedger: 'TXN Ledger',
-    tabAiFeed: 'AI Feed',
+    tabLog: 'Log',
     // Table
     thSku: 'SKU Code',
-    thDesc: 'Description',
+    thDesc: 'Item',
     thQty: 'Quantity',
-    thPrice: 'Unit Price',
+    thPrice: 'Value',
     thAction: 'Actions',
     btnSell: 'Sell',
     btnBuy: 'Buy',
@@ -233,10 +236,17 @@ const I18N_DICT = {
     gmTabProfessions: 'Professions & Crafting',
     gmTabEcology: 'Crises & Logistics',
     // Deck Labels & Empty States
-    deckEmptyInv: 'Empty warehouse',
+    deckEmptyInv: 'Personal bag is empty at this location',
     deckEmptyNpc: 'No assigned retainers',
     deckEmptyLedger: 'No ledger transactions recorded',
-    deckEmptyLogs: 'No agent simulation logs recorded',
+    deckBagTitle: 'Personal bag',
+    deckBagCount: 'items',
+    deckLogTitle: 'Ledger Log',
+    deckLogBalance: 'Post-transaction balance',
+    deckLogInflow: 'Inflow',
+    deckLogOutflow: 'Outflow',
+    deckEnterpriseLink: 'Enterprises',
+    deckWageNote: 'Staff wages are accounted for inside Enterprises.',
     deckPostBal: 'Post-TXN Balance:',
     deckPersonality: 'Personality:',
     deckCraAttr: 'Craft:',
@@ -340,15 +350,18 @@ function applyLanguage() {
   const attrNameWar = document.getElementById('attr-name-war');
   if (attrNameWar) attrNameWar.innerText = dict.attrWar;
 
+  const thDesc = document.getElementById('th-desc');
+  if (thDesc) thDesc.innerText = dict.thDesc;
   const thQty = document.getElementById('th-qty');
   if (thQty) thQty.innerText = dict.thQty;
+  const thPrice = document.getElementById('th-price');
+  if (thPrice) thPrice.innerText = dict.thPrice;
+  const thAction = document.getElementById('th-action');
+  if (thAction) thAction.innerText = dict.thAction;
 
   // Relations & Sentiment Network Card
   const relTitle = document.getElementById('relations-card-title');
   if (relTitle) relTitle.innerText = dict.relationsTitle;
-
-  const relBadge = document.getElementById('relations-card-badge');
-  if (relBadge) relBadge.innerText = dict.relationsBadge;
 
   const relHint = document.getElementById('relations-card-hint');
   if (relHint) relHint.innerText = dict.relationsHint;
@@ -362,8 +375,7 @@ function applyLanguage() {
     const tabId = btn.getAttribute('data-subtab');
     if (tabId === 'subtab-inventory') btn.innerText = dict.tabInv;
     if (tabId === 'subtab-npcs') btn.innerText = dict.tabNpc;
-    if (tabId === 'subtab-ledger') btn.innerText = dict.tabLedger;
-    if (tabId === 'subtab-agent-log') btn.innerText = dict.tabAiFeed;
+    if (tabId === 'subtab-log') btn.innerText = dict.tabLog;
   });
 
   // World Map Button & Modal
@@ -503,7 +515,6 @@ function applyLanguage() {
   if (typeof loadDeckInventory === 'function') loadDeckInventory();
   if (typeof loadDeckNpcs === 'function') loadDeckNpcs();
   if (typeof loadDeckLedger === 'function') loadDeckLedger();
-  if (typeof loadDeckAgentLogs === 'function') loadDeckAgentLogs();
 }
 
 function toggleLanguage() {

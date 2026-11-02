@@ -1,51 +1,86 @@
 /**
  * RIGHT DECK MODULE
- * Tab deck handling: Inventory, Retinue/NPCs, Financial Ledger, and Agent Activity Logs
+ * Tab deck handling: Personal bag, retainers, and the ledger log.
  */
+
+function deckDict() {
+  return (typeof I18N_DICT !== 'undefined' && I18N_DICT[currentLang])
+    ? I18N_DICT[currentLang]
+    : (I18N_DICT?.vi || {});
+}
+
+function deckEscape(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function deckBagLocation() {
+  if (typeof activeSubLocation !== 'undefined' && activeSubLocation) return activeSubLocation;
+  if (typeof window !== 'undefined' && window.activeSubLocation) return window.activeSubLocation;
+  return (typeof currentLang !== 'undefined' && currentLang === 'en') ? 'Current settlement' : 'Thành hiện tại';
+}
 
 async function loadDeckInventory() {
   try {
     const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
-    const dict = (typeof I18N_DICT !== 'undefined' && I18N_DICT[currentLang]) ? I18N_DICT[currentLang] : (I18N_DICT?.vi || {});
+    const dict = deckDict();
 
     const data = await apiFetchInventory();
     currentInventory = data.items || [];
     const tbody = document.getElementById('deck-inventory-tbody');
     if (!tbody) return;
 
+    const locationEl = document.getElementById('deck-bag-location');
+    if (locationEl) {
+      locationEl.innerText = `${dict.deckBagTitle || 'Túi cá nhân'} • ${deckBagLocation()}`;
+    }
+    const countEl = document.getElementById('deck-bag-count');
+    if (countEl) {
+      countEl.innerText = `${currentInventory.length} ${dict.deckBagCount || 'vật phẩm'}`;
+    }
+
     if (currentInventory.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 12px;">${dict.deckEmptyInv || 'Kho hàng trống'}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="4" class="deck-empty-cell">${dict.deckEmptyInv || 'Túi cá nhân trống'}</td></tr>`;
       return;
     }
 
     tbody.innerHTML = currentInventory.map(item => {
-      const itemCodeEsc = item.item_code.replace(/'/g, "\\'");
-      const estSellPrice = item.estimatedSellPrice || Math.max(1, Math.round(item.unit_cost_basis * 1.25));
-      const desc = isEn ? (item.description_en || item.description) : item.description;
+      const itemCodeEsc = String(item.item_code).replace(/'/g, "\\'");
+      const sellPrice = Math.max(1, Math.round(Number(item.estimatedSellPrice || (item.unit_cost_basis * 1.25) || 1)));
+      const buyPrice = Math.max(1, Math.round(Number(item.estimatedBuyPrice || item.unit_cost_basis || 50)));
+      const name = isEn
+        ? (item.name_en || item.description_en || item.description || item.item_code)
+        : (item.name_vi || item.description || item.item_code);
       const localQty = Number(item.localQuantity ?? item.quantity ?? 0);
-      const globalQty = Number(item.globalQuantity ?? localQty);
+      const unitValue = Number(item.marketPrice || item.estimatedSellPrice || item.unit_cost_basis || 0);
+      const totalValue = unitValue > 0 ? Math.round(unitValue * localQty) : 0;
       return `
         <tr>
-          <td><code class="mono" style="font-size: 11px; color: #cbd5e1;">${item.item_code}</code></td>
-          <td><span title="${desc}" style="font-weight: 500;">${desc}</span></td>
-          <td class="num-col font-bold" title="${globalQty > localQty ? `Tổng toàn cục: ${globalQty}` : ''}">${localQty.toLocaleString()}</td>
-          <td class="num-col">${item.unit_cost_basis.toLocaleString()} ${item.stockPressure === 'SCARCE' ? '<span class="market-shock market-shock--scarce">Khan</span>' : item.stockPressure === 'SURPLUS' ? '<span class="market-shock market-shock--surplus">Dư</span>' : ''}</td>
-          <td style="text-align: center; white-space: nowrap;">
-            <button class="btn btn-sm btn-gold" onclick="openQuickTrade('SELL', '${itemCodeEsc}', ${Math.min(10, localQty)}, ${estSellPrice})">${dict.btnSell || 'Bán'}</button>
-            <button class="btn btn-sm btn-outline" onclick="openQuickTrade('BUY', '${itemCodeEsc}', 10, ${item.estimatedBuyPrice || item.unit_cost_basis || 50})">${dict.btnBuy || 'Mua'}</button>
+          <td>
+            <div class="deck-item-name" title="${deckEscape(name)}">${deckEscape(name)}</div>
+            <div class="deck-item-code">${deckEscape(item.item_code)}</div>
+          </td>
+          <td class="num-col font-bold">${localQty.toLocaleString()}</td>
+          <td class="num-col">${totalValue > 0 ? `${totalValue.toLocaleString()} <span class="deck-item-unit">Quan</span>` : '—'}</td>
+          <td class="deck-action-col">
+            <button class="ui-btn ui-btn--primary ui-btn--sm" onclick="openQuickTrade('SELL', '${itemCodeEsc}', ${Math.min(10, localQty)}, ${sellPrice})">${dict.btnSell || 'Bán'}</button>
+            <button class="ui-btn ui-btn--ghost ui-btn--sm" onclick="openQuickTrade('BUY', '${itemCodeEsc}', 10, ${buyPrice})">${dict.btnBuy || 'Mua'}</button>
           </td>
         </tr>
       `;
     }).join('');
   } catch (err) {
-    console.error('Failed to load inventory deck:', err);
+    console.error('Failed to load personal bag:', err);
   }
 }
 
 async function loadDeckNpcs() {
   try {
     const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
-    const dict = (typeof I18N_DICT !== 'undefined' && I18N_DICT[currentLang]) ? I18N_DICT[currentLang] : (I18N_DICT?.vi || {});
+    const dict = deckDict();
 
     const data = await apiFetchNpcs();
     const list = document.getElementById('deck-npcs-list');
@@ -53,30 +88,29 @@ async function loadDeckNpcs() {
 
     const npcs = data.npcs || [];
     if (npcs.length === 0) {
-      list.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 12px;">${dict.deckEmptyNpc || 'Chưa có gia nhân trực thuộc'}</div>`;
+      list.innerHTML = `<div class="deck-empty-cell">${dict.deckEmptyNpc || 'Chưa có gia nhân trực thuộc'}</div>`;
       return;
     }
 
-    list.innerHTML = npcs.map(npc => {
+    const cards = npcs.map(npc => {
       const initial = npc.name ? npc.name.charAt(0) : '人';
       const name = isEn ? (npc.name_en || npc.name) : npc.name;
       const role = isEn ? (npc.assigned_role_en || npc.assigned_role || 'Member') : (npc.assigned_role || 'Thành viên');
-      const inspectTitle = isEn ? 'Inspect Dossier & Fog of Information' : 'Xem Hồ Sơ & Sương Mù';
-      const wageUnit = isEn ? 'quan/mo' : 'quan/tháng';
+      const roleText = npc.assigned_business_id
+        ? `${role} @ ${npc.assigned_business_id}`
+        : (isEn ? 'Unassigned retainer' : 'Gia nhân chưa bổ nhiệm');
+      const inspectTitle = isEn ? 'Open dossier & fog of information' : 'Xem hồ sơ & sương mù';
 
       return `
         <div class="deck-npc-item">
           <div class="deck-npc-header">
             <div class="deck-npc-title-row">
-              <div class="deck-npc-avatar" style="cursor:pointer;" onclick="if(typeof openNpcDossierModal==='function')openNpcDossierModal('${npc.npc_id}')" title="${inspectTitle}">${initial}</div>
-              <div>
-                <div class="deck-npc-name" style="cursor:pointer; text-decoration: underline dotted;" onclick="if(typeof openNpcDossierModal==='function')openNpcDossierModal('${npc.npc_id}')" title="${inspectTitle}">${name} (${npc.npc_id})</div>
-                <div class="deck-npc-role">${role} @ ${npc.assigned_business_id || 'Trác Quận'}</div>
+              <div class="deck-npc-avatar" onclick="if(typeof openNpcDossierModal==='function')openNpcDossierModal('${npc.npc_id}')" title="${inspectTitle}">${initial}</div>
+              <div class="deck-npc-meta">
+                <div class="deck-npc-name" onclick="if(typeof openNpcDossierModal==='function')openNpcDossierModal('${npc.npc_id}')" title="${deckEscape(`${name} (${npc.npc_id})`)}">${deckEscape(name)}</div>
+                <div class="deck-npc-role" title="${deckEscape(roleText)}">${deckEscape(roleText)}</div>
               </div>
             </div>
-            <span class="badge" style="font-size: 9px; font-family: var(--font-mono); color: #fbbf24; background: rgba(245, 158, 11, 0.15); border: 1px solid var(--border-gold-subtle); padding: 1px 5px; border-radius: 2px;">
-              ${npc.monthly_wage} ${wageUnit}
-            </span>
           </div>
 
           <div class="deck-npc-stats">
@@ -86,87 +120,66 @@ async function loadDeckNpcs() {
           </div>
 
           <div class="deck-npc-footer">
-            <span style="color: var(--text-muted); font-size: 11px;">${dict.deckPersonality || 'Tính cách:'} <strong>${npc.personality || 'Chăm chỉ'}</strong></span>
-            <button class="btn btn-sm btn-gold" onclick="rewardNpc('${npc.npc_id}', 100)">
+            <span class="deck-npc-personality">${dict.deckPersonality || 'Tính cách:'} <strong>${deckEscape(npc.personality || 'Chăm chỉ')}</strong></span>
+            <button class="ui-btn ui-btn--primary ui-btn--sm" onclick="rewardNpc('${npc.npc_id}', 100)">
               ${dict.btnReward || 'Thưởng 100 Quan'}
             </button>
           </div>
         </div>
       `;
     }).join('');
+
+    list.innerHTML = `${cards}<div class="deck-hint">${dict.deckWageNote || 'Lương nhân công được hạch toán trong Sản Nghiệp.'}</div>`;
   } catch (err) {
-    console.error('Failed to load NPCs deck:', err);
+    console.error('Failed to load retainers:', err);
   }
 }
 
 async function loadDeckLedger() {
   try {
-    const dict = (typeof I18N_DICT !== 'undefined' && I18N_DICT[currentLang]) ? I18N_DICT[currentLang] : (I18N_DICT?.vi || {});
+    const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+    const dict = deckDict();
     const data = await apiFetchLedger();
     const list = document.getElementById('deck-transactions-list');
     if (!list) return;
 
+    const summary = data.summary || {};
+    const balanceEl = document.getElementById('deck-log-balance');
+    if (balanceEl) balanceEl.innerText = `${Number(summary.balance || 0).toLocaleString()} Quan`;
+    const inflowEl = document.getElementById('deck-log-inflow');
+    if (inflowEl) inflowEl.innerText = `${dict.deckLogInflow || 'Thu'} +${Number(summary.totalInflow || 0).toLocaleString()}`;
+    const outflowEl = document.getElementById('deck-log-outflow');
+    if (outflowEl) outflowEl.innerText = `${dict.deckLogOutflow || 'Chi'} -${Number(summary.totalOutflow || 0).toLocaleString()}`;
+
     const cashflow = (data.cashflow || []).slice(0, 15);
     if (cashflow.length === 0) {
-      list.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 12px;">${dict.deckEmptyLedger || 'Chưa có giao dịch sổ cái'}</div>`;
+      list.innerHTML = `<div class="deck-empty-cell">${dict.deckEmptyLedger || 'Chưa có giao dịch sổ cái'}</div>`;
       return;
     }
 
     list.innerHTML = cashflow.map(txn => {
-      const isInflow = txn.inflow > 0;
-      const amtStr = isInflow ? `+${txn.inflow.toLocaleString()}` : `-${txn.outflow.toLocaleString()}`;
+      const isInflow = Number(txn.inflow) > 0;
+      const amount = Number(isInflow ? txn.inflow : txn.outflow) || 0;
+      const amtStr = isInflow ? `+${amount.toLocaleString()}` : `-${amount.toLocaleString()}`;
       const amtColor = isInflow ? 'green-text' : 'red-text';
 
       return `
         <div class="deck-txn-item">
           <div class="deck-txn-top">
-            <span class="deck-txn-id">${txn.txn_id}</span>
+            <span class="deck-txn-id" title="${deckEscape(txn.txn_id || '')}">${deckEscape(txn.game_date || txn.txn_id || '')}</span>
             <span class="deck-txn-amt ${amtColor}">${amtStr} quan</span>
           </div>
           <div class="deck-txn-desc">
-            <strong>${txn.category}</strong>: ${txn.memo || txn.counterparty}
+            <strong>${deckEscape(txn.category || '')}</strong>: ${deckEscape(txn.memo || txn.counterparty || '')}
           </div>
           <div class="deck-txn-bal">
-            ${dict.deckPostBal || 'Số dư sau TXN:'} <strong>${txn.balance.toLocaleString()} quan</strong>
+            ${dict.deckPostBal || 'Số dư sau TXN:'} <strong>${Number(txn.balance || 0).toLocaleString()} quan</strong>
           </div>
         </div>
       `;
     }).join('');
   } catch (err) {
-    console.error('Failed to load ledger deck:', err);
-  }
-}
-
-async function loadDeckAgentLogs() {
-  try {
-    const dict = (typeof I18N_DICT !== 'undefined' && I18N_DICT[currentLang]) ? I18N_DICT[currentLang] : (I18N_DICT?.vi || {});
-    const data = await apiFetchAgentLogs();
-    const list = document.getElementById('deck-agent-log-list');
-    if (!list) return;
-
-    const logs = data.logs || [];
-    if (logs.length === 0) {
-      list.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 12px;">${dict.deckEmptyLogs || 'Chưa có dữ liệu mô phỏng từ Agent'}</div>`;
-      return;
-    }
-
-    list.innerHTML = logs.map((l, idx) => `
-      <div class="deck-agent-log-item ${idx === 0 ? 'highlight' : ''}">
-        <div class="deck-agent-log-top">
-          <span class="deck-agent-log-type">${l.type}</span>
-          <span class="deck-agent-log-time">${l.timestamp}</span>
-        </div>
-        <div class="deck-agent-log-prompt"><strong>Chỉ thị:</strong> ${l.prompt}</div>
-        <div class="deck-agent-log-reason"><strong>Luận cứ:</strong> ${l.reasoning}</div>
-        ${l.delta && Object.keys(l.delta).length > 0 ? `
-          <div class="deck-agent-log-delta">
-            ${Object.entries(l.delta).map(([k, v]) => `${k}: ${v}`).join(' • ')}
-          </div>
-        ` : ''}
-      </div>
-    `).join('');
-  } catch (err) {
-    console.error('Failed to load agent logs deck:', err);
+    console.error('Failed to load ledger log:', err);
   }
 }
 
@@ -181,8 +194,7 @@ function switchDeckTab(subtabId) {
 
   if (subtabId === 'subtab-inventory') loadDeckInventory();
   if (subtabId === 'subtab-npcs') loadDeckNpcs();
-  if (subtabId === 'subtab-ledger') loadDeckLedger();
-  if (subtabId === 'subtab-agent-log') loadDeckAgentLogs();
+  if (subtabId === 'subtab-log') loadDeckLedger();
 }
 
 // Global exposure
@@ -190,5 +202,5 @@ window.currentInventory = currentInventory;
 window.loadDeckInventory = loadDeckInventory;
 window.loadDeckNpcs = loadDeckNpcs;
 window.loadDeckLedger = loadDeckLedger;
-window.loadDeckAgentLogs = loadDeckAgentLogs;
+window.loadDeckLog = loadDeckLedger;
 window.switchDeckTab = switchDeckTab;

@@ -41,9 +41,9 @@ function run(): void {
     /data-subtab="subtab-npcs"[^>]*class="deck-tab-btn active"|class="deck-tab-btn active"[^>]*data-subtab="subtab-npcs"/.test(index),
     'right panel must default to the household/relations tab'
   );
-  assert(!/class="deck-tab-btn active"[^>]*data-subtab="subtab-ledger"/.test(index), 'ledger must not be the default tab');
+  assert(!/class="deck-tab-btn active"[^>]*data-subtab="subtab-log"/.test(index), 'log must not be the default tab');
   assert(index.includes('id="subtab-npcs" class="deck-tab-pane active"'), 'household pane must be visible by default');
-  assert(!index.includes('id="subtab-ledger" class="deck-tab-pane active"'), 'ledger pane must stay closed by default');
+  assert(!index.includes('id="subtab-log" class="deck-tab-pane active"'), 'log pane must stay closed by default');
 
   // The card header opens the dossier; nested path buttons must not bubble and
   // open a second modal on top of it.

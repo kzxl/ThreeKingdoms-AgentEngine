@@ -78,6 +78,14 @@ function run(): void {
     const stock = db.queryOne('SELECT quantity FROM inventory_items WHERE item_code = ?;', [result.item!.itemCode]);
     assert(Number(stock?.quantity) >= 1, 'discovered item must be in inventory');
 
+    const bag = db.queryOne(
+      `SELECT quantity FROM player_bag_by_location
+        WHERE location_id = (SELECT location_id FROM current_player_location)
+          AND item_code = ?;`,
+      [result.item!.itemCode]
+    );
+    assert(Number(bag?.quantity) >= 1, 'discovered item must land in the current city personal bag');
+
     const log = db.queryOne(
       'SELECT * FROM exploration_log WHERE item_code = ? ORDER BY rowid DESC LIMIT 1;',
       [result.item!.itemCode]

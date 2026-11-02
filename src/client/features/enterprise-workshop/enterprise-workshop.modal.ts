@@ -38,6 +38,26 @@ const HEALTH_LABELS: Record<string, string> = {
   PAUSED: 'Tạm dừng'
 };
 
+const STAFF_ROLE_LABELS: Record<string, string> = {
+  FOREMAN: 'Thợ cả',
+  CARPENTER: 'Thợ mộc',
+  CRAFTSMAN: 'Thợ thủ công',
+  MANAGER: 'Quản lý',
+  CHIEF_ARTISAN_PARTNER: 'Thợ cả đồng sáng lập',
+  ACCOUNTANT_MANAGER: 'Quản lý kế toán',
+  APPRENTICE_CARPENTER: 'Thợ mộc học việc',
+  APPRENTICE_WEAVER: 'Thợ dệt học việc',
+  SPECIALIST_OPERATOR: 'Chuyên viên vận hành',
+  CARAVAN_ESCORT_CHIEF: 'Đội trưởng hộ tống',
+  MASTER_BLACKSMITH: 'Thợ rèn bậc thầy',
+  FOUNDRY_MASTER: 'Chủ lò đúc',
+  ASSISTANT_WORKER: 'Phụ thợ'
+};
+
+function staffRoleLabel(role: string): string {
+  return STAFF_ROLE_LABELS[String(role || '').toUpperCase()] || String(role || 'Nhân công').replace(/_/g, ' ');
+}
+
 const TYPE_LABELS: Record<string, string> = {
   WORKSHOP: 'Xưởng thủ công',
   TAVERN: 'Tửu điếm',
@@ -172,6 +192,18 @@ export class EnterpriseWorkshopModal {
     const profit = Number(enterprise.accumulated_profit || 0);
     const safeCash = Number(enterprise.safe_cash || 0);
     const canCollect = profit > 0 || safeCash > 0;
+    const staffMembers = enterprise.staff_members || [];
+    const staffWages = Number(enterprise.staff_wages || 0);
+    const payrollRows = staffMembers.length > 0
+      ? staffMembers.map(member => `
+          <div class="enterprise-payroll-row">
+            <span class="enterprise-payroll-name" title="${esc(`${member.name} (${member.npc_id})`)}">
+              ${esc(member.name)} <span class="enterprise-payroll-role">• ${esc(staffRoleLabel(member.role))}</span>
+            </span>
+            <span class="enterprise-payroll-wage">${money(member.monthly_wage)} Quan/tháng</span>
+          </div>
+        `).join('')
+      : '<div class="enterprise-payroll-empty">Chưa bổ nhiệm gia nhân nào vào cơ sở này.</div>';
     return `
       <div class="enterprise-card">
         <div class="enterprise-card-head">
@@ -191,7 +223,16 @@ export class EnterpriseWorkshopModal {
           <div class="enterprise-stat"><span>Doanh thu/ngày</span><strong>${money(enterprise.daily_revenue)}</strong></div>
           <div class="enterprise-stat"><span>Lợi nhuận tích lũy</span><strong class="${profit > 0 ? 'is-positive' : ''}">${money(profit)}</strong></div>
           <div class="enterprise-stat"><span>Nhân sự</span><strong>${enterprise.staff_count ?? 0}/${enterprise.current_workforce ?? 0}</strong></div>
+          <div class="enterprise-stat"><span>Lương nhân công</span><strong>${money(staffWages)}</strong></div>
           <div class="enterprise-stat"><span>Lương + thuê</span><strong>${money(enterprise.monthly_overhead)}</strong></div>
+        </div>
+
+        <div class="enterprise-payroll">
+          <div class="enterprise-payroll-head">
+            <span>Bảng lương nhân công</span>
+            <strong>${staffMembers.length} người • ${money(staffWages)} Quan/tháng</strong>
+          </div>
+          <div class="enterprise-payroll-list">${payrollRows}</div>
         </div>
 
         <div class="enterprise-cash-row">

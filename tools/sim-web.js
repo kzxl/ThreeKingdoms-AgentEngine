@@ -130,31 +130,6 @@ const gameplayManager = new GameplayManager(DB_PATH);
 const eventManager = new EventManager(DB_PATH);
 const travelManager = new TravelManager(DB_PATH);
 
-// In-Memory Agent Simulation Activity Stream
-const agentActivityStream = [
-  {
-    timestamp: '08:00:00',
-    type: 'SESSION_START',
-    prompt: 'Khởi tạo phiên mô phỏng chiến dịch',
-    narrative: 'Lương Diễn hoàn tất giao dịch quân nhu cho Bắc Quân Lư Thực và trở về Huyện Trác củng cố hậu cần.',
-    reasoning: 'Thiết lập cân bằng sổ cái kép 70/70 Invariants và duy trì kết nối AI Bridge trực tiếp.',
-    delta: { cash: '+0 quan', inventory: '12 SKUs ổn định', relations: 'Trương Phi +25, Quan Vũ +10', audit: '70/70 Khớp 100%' }
-  }
-];
-
-function logAgentSimulationEvent(event) {
-  agentActivityStream.unshift({
-    timestamp: event.timestamp || new Date().toLocaleTimeString(),
-    type: event.type || 'SIMULATION_ACTION',
-    prompt: event.prompt || 'Chỉ thị mô phỏng',
-    narrative: event.narrative || '',
-    reasoning: event.reasoning || 'Thực thi quy tắc mô phỏng SQLite SimCore.',
-    delta: event.delta || {},
-    executedAction: event.executedAction || null
-  });
-  if (agentActivityStream.length > 50) agentActivityStream.pop();
-}
-
 /**
  * Read helper bound to the active playthrough instance.
  * Delegates to the in-process adapter; never spawns the sqlite3 CLI.
@@ -461,6 +436,23 @@ const server = http.createServer(async (req, res) => {
       player = processPassiveStaminaRecovery(player);
       const skills = runSqlJson(`SELECT * FROM player_skills ORDER BY tier DESC, current_exp DESC;`);
       const invSummary = runSqlJson(`SELECT COUNT(*) as item_count, TOTAL(quantity * unit_cost_basis) as inv_val FROM inventory_items;`)[0] || { item_count: 0, inv_val: 0 };
+      let bagSummary = null;
+      try {
+        bagSummary = runSqlJson(`
+          SELECT COUNT(*) AS item_count,
+                 TOTAL(b.quantity * CASE
+                   WHEN COALESCE(i.unit_cost_basis, 0) > 0 THEN i.unit_cost_basis
+                   ELSE COALESCE(m.current_market_price, 0)
+                 END) AS bag_val
+            FROM player_bag_by_location b
+            LEFT JOIN inventory_items i ON i.item_code = b.item_code
+            LEFT JOIN master_items m ON m.item_code = b.item_code
+           WHERE b.quantity > 0
+             AND b.location_id = (SELECT location_id FROM current_player_location);
+        `)[0] || null;
+      } catch (bagError) {
+        // Pre-084 saves keep the global inventory semantics.
+      }
       const bizCount = runSqlJson(`SELECT COUNT(*) as count FROM businesses;`)[0]?.count || 0;
       const npcs = runSqlJson(`SELECT COUNT(*) as count FROM npc_state;`)[0]?.count || 0;
 
@@ -504,6 +496,8 @@ const server = http.createServer(async (req, res) => {
       const liquidCash = Number(player.liquid_cash || 0);
       const safeCash = Number(player.safe_cash || 0);
       const invVal = Math.round(Number(invSummary.inv_val || 0));
+      const bagVal = bagSummary ? Math.round(Number(bagSummary.bag_val || 0)) : invVal;
+      const bagItemCount = bagSummary ? Number(bagSummary.item_count || 0) : Number(invSummary.item_count || 0);
       const fixedCap = Number(player.fixed_capital || 0);
       const netWorth = liquidCash + safeCash + invVal + fixedCap;
 
@@ -523,6 +517,8 @@ const server = http.createServer(async (req, res) => {
           safeCash,
           totalCash: liquidCash + safeCash,
           inventoryValue: invVal,
+          bagValue: bagVal,
+          bagItemCount,
           fixedCapital: fixedCap,
           netWorth,
           itemCount: invSummary.item_count,
@@ -911,12 +907,6 @@ const server = http.createServer(async (req, res) => {
     } catch (err) {
       sendJson(res, 500, { success: false, error: err.message });
     }
-    return;
-  }
-
-  // 5b. GET /api/agent/logs - Agent Simulation Activity Feed
-  if (req.method === 'GET' && pathname === '/api/agent/logs') {
-    sendJson(res, 200, { success: true, logs: agentActivityStream });
     return;
   }
 
@@ -1430,17 +1420,6 @@ const server = http.createServer(async (req, res) => {
         const payload = JSON.parse(body || '{}');
         const core = new SimulationCore(DB_PATH);
         const result = core.executeAction(payload);
-
-        if (result.success) {
-          logAgentSimulationEvent({
-            type: payload.type,
-            prompt: `Thao tác cơ học: ${payload.type}`,
-            narrative: `Hệ thống SimulationCore đã thực thi và cân bằng sổ cái kép cho điều lệnh ${payload.type}.`,
-            reasoning: `Xử lý tức thì qua SimCore. Kiểm toán 70/70 Invariants bảo toàn hoàn hảo.`,
-            delta: { action: payload.type, status: 'SUCCESS' },
-            executedAction: result
-          });
-        }
 
         sendJson(res, 200, result);
       } catch (err) {
@@ -2821,7 +2800,12 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
       const subLoc = parsedUrl.query.subLocation || 'Vườn Đào';
       try {
         const charId = parsedUrl.query.characterId || parsedUrl.query.playerId || 'PLY-0001';
-        runSql(`UPDATE player_state SET current_location = '${subLoc.replace(/'/g, "''")}' WHERE player_id = '${charId.replace(/'/g, "''")}';`);
+        // Walking a local POI must move the personal-bag anchor too: the
+        // current_player_location view resolves current_sub_location first.
+        runSql(`UPDATE player_state
+                   SET current_location = '${subLoc.replace(/'/g, "''")}',
+                       current_sub_location = '${subLoc.replace(/'/g, "''")}'
+                 WHERE player_id = '${charId.replace(/'/g, "''")}';`);
       } catch (e) {}
       const sceneData = generateDynamicScene(DB_PATH, subLoc);
       sendJson(res, 200, sceneData);
@@ -3268,15 +3252,6 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
           tacticalReasoning = `Đàm đạo chiến lược và thăm dò tình hình thời cuộc cùng các hào kiệt tại ${subLocation}.`;
           delta = { cash: '0 quan', inventory: 'Bảo toàn', relations: 'Hảo cảm +5', dispatch: '[TRỰC DIỆN] Đối thoại trực diện', audit: 'Bảo toàn trạng thái' };
         }
-
-        logAgentSimulationEvent({
-          type: actionToRun ? actionToRun.type : 'DIALOGUE',
-          prompt: payload.prompt || 'Chỉ thị chiến thuật',
-          narrative: replyNarrative,
-          reasoning: tacticalReasoning,
-          delta,
-          executedAction: execResult
-        });
 
         const updatedScene = generateDynamicScene(DB_PATH, subLocation, actionToRun, replyNarrative);
 

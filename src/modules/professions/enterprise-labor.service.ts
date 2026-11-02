@@ -943,17 +943,30 @@ export class EnterpriseLaborService {
    */
   public getEnterpriseStatus(characterId: string = 'PLY-0001') {
     // 1. Fetch owned businesses
-    const staffByBusiness = new Map<string, { count: number; wages: number }>();
+    interface StaffMember {
+      npc_id: string;
+      name: string;
+      role: string;
+      monthly_wage: number;
+    }
+    const staffByBusiness = new Map<string, { count: number; wages: number; members: StaffMember[] }>();
     for (const row of this.db.query<any>(
-      `SELECT assigned_business_id, COUNT(*) AS staff_count, COALESCE(SUM(monthly_wage), 0) AS staff_wages
+      `SELECT npc_id, name, assigned_business_id, assigned_role, monthly_wage
          FROM npc_state
         WHERE assigned_business_id IS NOT NULL AND assigned_business_id <> ''
-        GROUP BY assigned_business_id;`
+        ORDER BY monthly_wage DESC, name ASC;`
     )) {
-      staffByBusiness.set(String(row.assigned_business_id), {
-        count: Number(row.staff_count || 0),
-        wages: Number(row.staff_wages || 0)
+      const businessId = String(row.assigned_business_id);
+      const staff = staffByBusiness.get(businessId) || { count: 0, wages: 0, members: [] };
+      staff.count += 1;
+      staff.wages += Number(row.monthly_wage || 0);
+      staff.members.push({
+        npc_id: String(row.npc_id),
+        name: String(row.name || row.npc_id),
+        role: String(row.assigned_role || 'STAFF'),
+        monthly_wage: Number(row.monthly_wage || 0)
       });
+      staffByBusiness.set(businessId, staff);
     }
     const managerNames = new Map<string, string>();
     for (const row of this.db.query<any>('SELECT npc_id, name_vi FROM master_characters;')) {
@@ -970,7 +983,7 @@ export class EnterpriseLaborService {
        ORDER BY business_id ASC;`,
       [characterId]
     ).map(b => {
-      const staff = staffByBusiness.get(String(b.business_id)) || { count: 0, wages: 0 };
+      const staff = staffByBusiness.get(String(b.business_id)) || { count: 0, wages: 0, members: [] };
       const debt = Number(b.debt || 0);
       const rent = Number(b.monthly_rent || 200);
       const health = staff.count === 0
@@ -996,6 +1009,7 @@ export class EnterpriseLaborService {
         workforce_count: Number(b.current_workforce || 4),
         staff_count: staff.count,
         staff_wages: staff.wages,
+        staff_members: staff.members,
         monthly_capacity_hours: Number(b.monthly_capacity_hours || 800),
         monthly_rent: rent,
         monthly_overhead: rent + staff.wages,

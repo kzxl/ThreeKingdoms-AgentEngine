@@ -44,13 +44,6 @@ async function apiFetchLedger() {
   return data;
 }
 
-async function apiFetchAgentLogs() {
-  const res = await fetch(`${API_BASE}/api/agent/logs`);
-  const data = await res.json();
-  if (!data.success) throw new Error(data.error || 'Failed to fetch agent logs');
-  return data;
-}
-
 async function apiDispatchPrompt(payload) {
   const res = await fetch(`${API_BASE}/api/agent/prompt`, {
     method: 'POST',
@@ -457,7 +450,6 @@ window.apiFetchScene = apiFetchScene;
 window.apiFetchInventory = apiFetchInventory;
 window.apiFetchNpcs = apiFetchNpcs;
 window.apiFetchLedger = apiFetchLedger;
-window.apiFetchAgentLogs = apiFetchAgentLogs;
 async function apiPlanTravel(fromNodeId, toNodeId) {
   const res = await fetch(`${API_BASE}/api/travel/plan`, {
     method: 'POST',

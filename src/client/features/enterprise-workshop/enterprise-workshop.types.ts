@@ -3,6 +3,13 @@
  * (src/client/features/enterprise-workshop/enterprise-workshop.types.ts)
  */
 
+export interface EnterpriseStaffMember {
+  npc_id: string;
+  name: string;
+  role: string;
+  monthly_wage: number;
+}
+
 export interface EnterpriseRecord {
   business_id: string;
   name: string;
@@ -19,6 +26,7 @@ export interface EnterpriseRecord {
   workforce_count: number;
   staff_count?: number;
   staff_wages?: number;
+  staff_members?: EnterpriseStaffMember[];
   monthly_capacity_hours: number;
   monthly_rent: number;
   monthly_overhead?: number;
