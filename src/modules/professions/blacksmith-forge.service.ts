@@ -1310,6 +1310,15 @@ export class BlacksmithForgeService {
     return EnterpriseLaborService.getInstance(this.db).performLaborShift(characterId, shiftId);
   }
 
+  public manageSafeCash(
+    characterId: string,
+    businessId: string,
+    action: 'DEPOSIT' | 'WITHDRAW',
+    amount: number
+  ) {
+    return EnterpriseLaborService.getInstance(this.db).manageSafeCash(characterId, businessId, action, amount);
+  }
+
   /**
    * Opens a new business enterprise.
    */
@@ -1477,6 +1486,38 @@ export function registerBlacksmithForgeRoutes(router: Router): void {
       sendJson(res, 200, { success: true, status });
     } catch (err: any) {
       sendJson(res, 500, { success: false, error: err.message });
+    }
+  });
+
+  // 6b. POST /api/enterprise/manage-safe-cash
+  router.post('/api/enterprise/manage-safe-cash', async (_req: any, res: any, ctx: RouteContext) => {
+    try {
+      const body = ctx.body || {};
+      const characterId = String(body.characterId || 'PLY-0001');
+      const businessId = String(body.businessId || body.enterpriseId || '');
+      const action = String(body.action || '').toUpperCase() as 'DEPOSIT' | 'WITHDRAW';
+      const amount = Number(body.amount);
+      if (!businessId) {
+        sendJson(res, 400, { success: false, error: 'businessId là bắt buộc.' });
+        return;
+      }
+      const db = DatabaseService.getInstance();
+      const idempotencyKey = requestIdempotencyKey(ctx);
+      const prior = findIdempotentResult(db, idempotencyKey);
+      if (prior) {
+        sendJson(res, 200, { ...prior, idempotent: true });
+        return;
+      }
+      const result = service.manageSafeCash(characterId, businessId, action, amount);
+      recordAction(db, {
+        key: idempotencyKey,
+        actionType: 'ENTERPRISE_SAFE_CASH',
+        payload: { characterId, businessId, action, amount },
+        result
+      });
+      sendJson(res, 200, { success: true, ...result, idempotent: false });
+    } catch (err: any) {
+      sendJson(res, err.statusCode || 400, { success: false, error: err.message, code: err.code });
     }
   });
 

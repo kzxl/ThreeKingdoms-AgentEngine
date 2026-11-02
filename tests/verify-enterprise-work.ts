@@ -100,6 +100,59 @@ async function run(): Promise<void> {
   assert.strictEqual(replay.data.idempotent, true);
   assert.strictEqual(Number(replay.data.newLiquidCash), 1095, 'replay must not pay twice');
 
+  const safeBefore = Number(db.queryOne(
+    "SELECT safe_cash FROM businesses WHERE business_id = 'BIZ-0001';"
+  )?.safe_cash || 0);
+  const deposit = await request(router, 'POST', '/api/enterprise/manage-safe-cash', {
+    characterId: 'PLY-0001',
+    businessId: 'BIZ-0001',
+    action: 'DEPOSIT',
+    amount: 100,
+    idempotencyKey: 'TEST-SAFE-DEPOSIT'
+  });
+  assert.strictEqual(deposit.status, 200, JSON.stringify(deposit.data));
+  assert.strictEqual(deposit.data.businessSafeCash, safeBefore + 100);
+  assert.strictEqual(Number(deposit.data.ownerNewCash), 995);
+  assert.strictEqual(Number(db.queryOne(
+    "SELECT safe_cash FROM businesses WHERE business_id = 'BIZ-0001';"
+  )?.safe_cash), safeBefore + 100);
+
+  const depositReplay = await request(router, 'POST', '/api/enterprise/manage-safe-cash', {
+    characterId: 'PLY-0001',
+    businessId: 'BIZ-0001',
+    action: 'DEPOSIT',
+    amount: 100,
+    idempotencyKey: 'TEST-SAFE-DEPOSIT'
+  });
+  assert.strictEqual(depositReplay.data.idempotent, true);
+  assert.strictEqual(Number(depositReplay.data.ownerNewCash), 995, 'safe-cash replay must not move twice');
+
+  const withdraw = await request(router, 'POST', '/api/enterprise/manage-safe-cash', {
+    characterId: 'PLY-0001',
+    businessId: 'BIZ-0001',
+    action: 'WITHDRAW',
+    amount: 50,
+    idempotencyKey: 'TEST-SAFE-WITHDRAW'
+  });
+  assert.strictEqual(withdraw.status, 200, JSON.stringify(withdraw.data));
+  assert.strictEqual(withdraw.data.businessSafeCash, safeBefore + 50);
+  assert.strictEqual(Number(withdraw.data.ownerNewCash), 1045);
+
+  const oversized = await request(router, 'POST', '/api/enterprise/manage-safe-cash', {
+    characterId: 'PLY-0001',
+    businessId: 'BIZ-0001',
+    action: 'WITHDRAW',
+    amount: 999999,
+    idempotencyKey: 'TEST-SAFE-OVERSIZED'
+  });
+  assert.strictEqual(oversized.status, 400);
+  assert(db.queryOne("SELECT 1 AS ok FROM cashflow_ledger WHERE category = 'ENTERPRISE_SAFE_DEPOSIT';"));
+  assert(db.queryOne("SELECT 1 AS ok FROM cashflow_ledger WHERE category = 'ENTERPRISE_SAFE_WITHDRAW';"));
+  const journal = db.queryOne(
+    "SELECT COALESCE(SUM(debit), 0) AS deb, COALESCE(SUM(credit), 0) AS cred FROM account_journal WHERE txn_id LIKE 'TXN-SAFE-%';"
+  );
+  assert.strictEqual(Number(journal.deb), Number(journal.cred), 'safe-cash journal must balance');
+
   const legacyId = await request(router, 'POST', '/api/enterprise/work', {
     characterId: 'PLY-0001',
     shiftId: 'WOODCUT',

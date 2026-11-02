@@ -565,6 +565,104 @@ export class EnterpriseLaborService {
   }
 
   /**
+   * Moves owner cash into or out of one enterprise's safe reserve. This is a
+   * balance-sheet transfer, not income: the ledger records the paired cash and
+   * business-asset legs so player capital stays reconciled.
+   */
+  public manageSafeCash(
+    characterId: string,
+    businessId: string,
+    action: 'DEPOSIT' | 'WITHDRAW',
+    amount: number
+  ): any {
+    const normalizedAction = String(action || '').toUpperCase();
+    if (normalizedAction !== 'DEPOSIT' && normalizedAction !== 'WITHDRAW') {
+      throw new Error('action phải là DEPOSIT hoặc WITHDRAW.');
+    }
+    const cash = Math.floor(Number(amount));
+    if (!Number.isFinite(cash) || cash <= 0) {
+      throw new Error('Số tiền phải là số nguyên dương.');
+    }
+
+    const biz = this.getEnterpriseDetails(businessId);
+    if (String(biz.ownerCharacterId) !== String(characterId)) {
+      throw new Error('Bạn không sở hữu cơ sở này.');
+    }
+    const player = this.db.queryOne<{ liquid_cash: number; safe_cash: number }>(
+      'SELECT liquid_cash, safe_cash FROM player_state WHERE player_id = ?;',
+      [characterId]
+    );
+    if (!player) throw new Error(`Không tìm thấy nhân vật ${characterId}.`);
+
+    if (normalizedAction === 'DEPOSIT' && Number(player.liquid_cash || 0) < cash) {
+      throw new Error(`Không đủ tiền mặt: cần ${cash} Quan, hiện có ${Number(player.liquid_cash || 0)} Quan.`);
+    }
+    if (normalizedAction === 'WITHDRAW' && Number(biz.safeCash || 0) < cash) {
+      throw new Error(`Quỹ an toàn chỉ còn ${Number(biz.safeCash || 0)} Quan.`);
+    }
+
+    const currentDate = this.getGameDate();
+    return this.db.transaction(() => {
+      if (normalizedAction === 'DEPOSIT') {
+        this.db.execute(
+          'UPDATE player_state SET liquid_cash = liquid_cash - ? WHERE player_id = ?;',
+          [cash, characterId]
+        );
+        this.db.execute(
+          'UPDATE businesses SET safe_cash = safe_cash + ? WHERE business_id = ?;',
+          [cash, businessId]
+        );
+      } else {
+        this.db.execute(
+          'UPDATE businesses SET safe_cash = safe_cash - ? WHERE business_id = ?;',
+          [cash, businessId]
+        );
+        this.db.execute(
+          'UPDATE player_state SET liquid_cash = liquid_cash + ? WHERE player_id = ?;',
+          [cash, characterId]
+        );
+      }
+
+      const capital = getPlayerCapital(this.db, characterId);
+      const isDeposit = normalizedAction === 'DEPOSIT';
+      const txnId = nextSequentialId(
+        this.db,
+        'cashflow_ledger',
+        isDeposit ? 'TXN-SAFE-IN' : 'TXN-SAFE-OUT',
+        currentDate
+      );
+      postDoubleEntry(this.db, {
+        txnId,
+        gameDate: currentDate,
+        counterparty: biz.name,
+        category: isDeposit ? 'ENTERPRISE_SAFE_DEPOSIT' : 'ENTERPRISE_SAFE_WITHDRAW',
+        inflow: isDeposit ? 0 : cash,
+        outflow: isDeposit ? cash : 0,
+        balance: capital.total,
+        memo: isDeposit
+          ? `Nạp ${cash} Quan vào quỹ an toàn ${biz.name}`
+          : `Rút ${cash} Quan từ quỹ an toàn ${biz.name}`,
+        debitAccount: isDeposit ? ACCOUNT_CODES.fixedAssets : ACCOUNT_CODES.cashMobile,
+        creditAccount: isDeposit ? ACCOUNT_CODES.cashMobile : ACCOUNT_CODES.fixedAssets
+      });
+
+      const updated = this.getEnterpriseDetails(businessId);
+      return {
+        success: true,
+        businessId,
+        action: normalizedAction,
+        amount: cash,
+        businessSafeCash: Number(updated.safeCash || 0),
+        ownerNewCash: this.getPlayerCash(characterId),
+        balance: capital.total,
+        message: isDeposit
+          ? `Đã nạp ${cash} Quan vào quỹ an toàn ${biz.name}.`
+          : `Đã rút ${cash} Quan từ quỹ an toàn ${biz.name}.`
+      };
+    });
+  }
+
+  /**
    * Withdraws accumulated profits from the enterprise to the owner's personal cash.
    */
   public collectProfits(businessId: string, withdrawAmount?: number): CollectProfitsResult {

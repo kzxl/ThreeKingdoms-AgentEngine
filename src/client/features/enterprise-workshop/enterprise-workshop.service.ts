@@ -23,7 +23,7 @@ export class EnterpriseWorkshopService {
 
   public async manageSafeCash(enterpriseId: string, action: 'DEPOSIT' | 'WITHDRAW', amount: number): Promise<any> {
     return apiClient.post('/api/enterprise/manage-safe-cash', {
-      enterpriseId,
+      businessId: enterpriseId,
       action,
       amount,
       idempotencyKey: `enterprise-cash-${enterpriseId}-${action}-${Date.now()}`

@@ -1052,7 +1052,7 @@ var ne = class {
 	}
 	async manageSafeCash(e, t, n) {
 		return v.post("/api/enterprise/manage-safe-cash", {
-			enterpriseId: e,
+			businessId: e,
 			action: t,
 			amount: n,
 			idempotencyKey: `enterprise-cash-${e}-${t}-${Date.now()}`
