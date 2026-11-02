@@ -389,8 +389,18 @@ export function registerProfessionsRoutes(router: Router): void {
   });
 
   // -------------------------------------------------------------
-  // 4aa. Durable tool repair
+  // 4aa. Durable tools and repair
   // -------------------------------------------------------------
+  router.get('/api/professions/tools', (_req: any, res: any, ctx: RouteContext) => {
+    try {
+      const characterId = (ctx.query.characterId as string) || 'PLY-0001';
+      const tools = ResourceNodeService.forDatabase(db).listTools(characterId);
+      sendJson(res, 200, { success: true, tools });
+    } catch (err: any) {
+      sendJson(res, err.statusCode || 400, { success: false, error: err.message, code: err.code });
+    }
+  });
+
   router.post('/api/professions/tools/repair', async (_req: any, res: any, ctx: RouteContext) => {
     try {
       const { itemCode, characterId = 'PLY-0001' } = ctx.body || {};

@@ -61,6 +61,7 @@ export function setupLegacyBridge(): void {
     switchTab: (tab: string) => (equipmentForgeModal as any).modal.switchTab(tab),
     equip: (charId: string, slot: string, itemCode: string) => equipmentForgeModal.equip(charId, slot, itemCode),
     unequip: (charId: string, slot: string) => equipmentForgeModal.unequip(charId, slot),
+    repairTool: (itemCode: string) => equipmentForgeModal.repairTool(itemCode),
     executeForge: () => equipmentForgeModal.executeForge()
   };
 

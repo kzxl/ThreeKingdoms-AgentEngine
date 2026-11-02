@@ -70,6 +70,21 @@ export interface ToolStatus {
   quantity: number;
 }
 
+export interface ToolInventoryRow {
+  itemCode: string;
+  nameVi: string;
+  kind: 'CONSUMABLE' | 'DURABLE';
+  quantity: number;
+  usesLeft: number;
+  maxUses: number;
+  repairCash: number;
+  repairSkillCode: string | null;
+  repairMinTier: number;
+  skillTier: number;
+  needsRepair: boolean;
+  canRepair: boolean;
+}
+
 function seasonOf(date: string): string {
   const month = Number(String(date || '184-05-02').split('-')[1]) || 5;
   if (month <= 3) return 'SPRING';
@@ -235,6 +250,49 @@ export class ResourceNodeService {
       maxUses: rule.maxUses,
       quantity
     };
+  }
+
+  /**
+   * Lists owned tools with durability and repair eligibility so the UI can
+   * explain why a repair is unavailable before the player spends a day.
+   */
+  public listTools(characterId: string): ToolInventoryRow[] {
+    const rows = this.db.query<any>(
+      `SELECT t.item_code, t.kind, t.max_uses, t.repair_cash, t.repair_skill_code,
+              t.repair_min_tier, COALESCE(m.name_vi, i.description, t.item_code) AS name_vi,
+              COALESCE(i.quantity, 0) AS quantity, COALESCE(u.uses_left, t.max_uses) AS uses_left
+         FROM tool_rules t
+         LEFT JOIN inventory_items i ON i.item_code = t.item_code
+         LEFT JOIN master_items m ON m.item_code = t.item_code
+         LEFT JOIN character_tool_uses u
+                ON u.item_code = t.item_code AND u.character_id = ?
+        WHERE COALESCE(i.quantity, 0) > 0
+        ORDER BY CASE t.kind WHEN 'DURABLE' THEN 0 ELSE 1 END, t.item_code;`,
+      [characterId]
+    );
+
+    return rows.map(row => {
+      const kind: 'CONSUMABLE' | 'DURABLE' = row.kind === 'CONSUMABLE' ? 'CONSUMABLE' : 'DURABLE';
+      const maxUses = Number(row.max_uses || 1);
+      const usesLeft = Number(row.uses_left ?? maxUses);
+      const repairMinTier = Number(row.repair_min_tier || 0);
+      const skillTier = row.repair_skill_code ? this.skillTier(row.repair_skill_code) : 0;
+      const needsRepair = kind === 'DURABLE' && usesLeft < maxUses;
+      return {
+        itemCode: row.item_code,
+        nameVi: row.name_vi || row.item_code,
+        kind,
+        quantity: Number(row.quantity || 0),
+        usesLeft,
+        maxUses,
+        repairCash: Number(row.repair_cash || 0),
+        repairSkillCode: row.repair_skill_code || null,
+        repairMinTier,
+        skillTier,
+        needsRepair,
+        canRepair: needsRepair && (repairMinTier === 0 || skillTier >= repairMinTier)
+      };
+    });
   }
 
   /**

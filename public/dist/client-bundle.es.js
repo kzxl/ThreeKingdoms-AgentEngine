@@ -777,10 +777,26 @@ var g = {
 	async forgeBespokeWeapon(e) {
 		return v.post("/api/professions/forge/bespoke", e);
 	}
-}, C = S.getInstance(), te = class {
+	async getTools(e = "PLY-0001") {
+		return (await v.get("/api/professions/tools", { characterId: e })).tools || [];
+	}
+	async repairTool(e, t) {
+		return v.post("/api/professions/tools/repair", {
+			characterId: e,
+			itemCode: t,
+			idempotencyKey: `tool-repair-${e}-${t}-${Date.now()}`
+		});
+	}
+}, C = S.getInstance();
+// src/client/features/equipment-forge/equipment-forge.modal.ts
+function w(e) {
+	return String(e ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+var te = class {
 	modal;
 	currentCharacterId = "PLY-0001";
 	overview = null;
+	tools = [];
 	constructor() {
 		this.modal = i({
 			id: "equipment-forge-modal",
@@ -803,6 +819,11 @@ var g = {
 					id: "inventory",
 					label: "Kho Binh Khí",
 					seal: "貨"
+				},
+				{
+					id: "tools",
+					label: "Công Cụ & Sửa Chữa",
+					seal: "器"
 				}
 			],
 			activeTabId: "gear",
@@ -821,11 +842,8 @@ var g = {
 		await this.modal.close();
 	}
 	async refreshData() {
-		try {
-			this.overview = await C.getOverview(this.currentCharacterId);
-		} catch (e) {
-			console.error("[EquipmentForgeModal] Error refreshing data:", e);
-		}
+		let [e, t] = await Promise.all([C.getOverview(this.currentCharacterId).catch((e) => (console.error("[EquipmentForgeModal] Error refreshing overview:", e), null)), C.getTools(this.currentCharacterId).catch((e) => (console.error("[EquipmentForgeModal] Error refreshing tools:", e), []))]);
+		this.overview = e, this.tools = t;
 	}
 	async renderActiveTab() {
 		switch (this.modal.activeTab || "gear") {
@@ -835,7 +853,10 @@ var g = {
 			case "forge_bespoke":
 				this.renderForgeBespokeTab();
 				break;
-			case "inventory": this.renderInventoryTab();
+			case "inventory":
+				this.renderInventoryTab();
+				break;
+			case "tools": this.renderToolsTab();
 		}
 	}
 	renderGearTab() {
@@ -943,6 +964,48 @@ var g = {
     `;
 		this.modal.setContent(t);
 	}
+	renderToolsTab() {
+		let e = this.tools, t = e.length > 0 ? e.map((e) => {
+			let t = e.kind === "DURABLE" ? "Bền" : "Tiêu hao", n = e.repairSkillCode ? `${e.repairSkillCode} bậc ${e.repairMinTier}` : "Không yêu cầu kỹ năng", r = e.kind === "CONSUMABLE" ? "Vật phẩm tiêu hao — mua mới thay vì sửa." : e.needsRepair ? e.canRepair ? `Sửa tốn ${e.repairCash} Quan, hồi đầy ${e.maxUses} lượt.` : `Cần ${n} (hiện bậc ${e.skillTier}).` : "Đang ở độ bền tối đa.", i = e.needsRepair && e.canRepair;
+			return `
+          <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800">
+            <div class="flex justify-between items-start gap-3">
+              <div>
+                <div class="font-bold text-amber-200 text-sm">${w(e.nameVi)}</div>
+                <div class="text-xs text-muted">${w(e.itemCode)} • ${t} • SL: ${e.quantity}</div>
+              </div>
+              <button class="ui-btn ui-btn--primary ui-btn--sm" ${i ? "" : "disabled"}
+                onclick="window.EquipmentUI.repairTool('${w(e.itemCode)}')">Sửa Chữa</button>
+            </div>
+            <div class="text-[11px] text-slate-300 mt-2">
+              Độ bền: ${e.usesLeft}/${e.maxUses} lượt
+              <progress class="tool-durability-bar" max="${e.maxUses}" value="${e.usesLeft}"></progress>
+            </div>
+            <div class="text-[11px] text-muted mt-1">${w(r)}</div>
+          </div>
+        `;
+		}).join("") : "<div class=\"text-center py-8 text-muted\">\n          Kho chưa có công cụ nào. Chế tác tại Lò Rèn hoặc mua từ chợ phiên.\n        </div>";
+		this.modal.setContent(`
+      <div class="equipment-modal-content">
+        <div class="spatial-banner-lead">
+          <div class="lead-seal">器</div>
+          <div class="lead-text">
+            <h3>Công Cụ Nghề Nghiệp</h3>
+            <div class="text-muted text-sm">Công cụ bền mất lượt khi thu hoạch; sửa chữa hồi đầy độ bền nhưng tốn Quan và có thể cần kỹ năng.</div>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">${t}</div>
+      </div>
+    `);
+	}
+	async repairTool(e) {
+		try {
+			let t = await C.repairTool(this.currentCharacterId, e), n = t?.result || t;
+			typeof window.showToast == "function" && window.showToast(`Đã sửa ${e}: ${n?.usesBefore ?? "?"} → ${n?.usesAfter ?? "?"} lượt (${n?.cashPaid ?? 0} Quan).`), await this.refreshData(), await this.renderActiveTab();
+		} catch (e) {
+			typeof window.showToast == "function" && window.showToast(e.message || "Sửa công cụ thất bại!", !0);
+		}
+	}
 	async equip(e, t, n) {
 		try {
 			await C.equipItem(e, t, n), typeof window.showToast == "function" && window.showToast("Đã trang bị thành công!"), await this.refreshData(), await this.renderActiveTab();
@@ -973,7 +1036,7 @@ var g = {
 			typeof window.showToast == "function" && window.showToast(e.message || "Đúc rèn thất bại!", !0);
 		}
 	}
-}, w = new te(), T = class e {
+}, T = new te(), E = class e {
 	static instance;
 	static getInstance() {
 		return e.instance ||= new e(), e.instance;
@@ -992,7 +1055,7 @@ var g = {
 	async executeLaborShift(e, t) {
 		return v.post("/api/enterprise/work", { shiftId: e });
 	}
-}, E = T.getInstance(), D = class {
+}, D = E.getInstance(), ne = class {
 	modal;
 	enterprises = [];
 	laborOptions = [];
@@ -1029,7 +1092,7 @@ var g = {
 	}
 	async refreshData() {
 		try {
-			let e = await E.getStatus("PLY-0001");
+			let e = await D.getStatus("PLY-0001");
 			this.enterprises = e?.ownedBusinesses || e?.activeEnterprises || [], this.laborOptions = e?.laborOptions || [];
 		} catch (e) {
 			console.error("[EnterpriseWorkshopModal] Error refreshing data:", e);
@@ -1090,7 +1153,7 @@ var g = {
 		if (!t) return;
 		let n = parseInt(t, 10);
 		if (!(isNaN(n) || n <= 0)) try {
-			await E.manageSafeCash(e, "DEPOSIT", n), typeof window.showToast == "function" && window.showToast("Đã nạp tiền vào Quỹ an toàn!"), await this.refreshData(), await this.renderActiveTab();
+			await D.manageSafeCash(e, "DEPOSIT", n), typeof window.showToast == "function" && window.showToast("Đã nạp tiền vào Quỹ an toàn!"), await this.refreshData(), await this.renderActiveTab();
 		} catch (e) {
 			typeof window.showToast == "function" && window.showToast(e.message || "Lỗi nạp tiền!", !0);
 		}
@@ -1100,20 +1163,20 @@ var g = {
 		if (!t) return;
 		let n = parseInt(t, 10);
 		if (!(isNaN(n) || n <= 0)) try {
-			await E.manageSafeCash(e, "WITHDRAW", n), typeof window.showToast == "function" && window.showToast("Đã rút tiền từ Quỹ an toàn về ngân khố!"), await this.refreshData(), await this.renderActiveTab();
+			await D.manageSafeCash(e, "WITHDRAW", n), typeof window.showToast == "function" && window.showToast("Đã rút tiền từ Quỹ an toàn về ngân khố!"), await this.refreshData(), await this.renderActiveTab();
 		} catch (e) {
 			typeof window.showToast == "function" && window.showToast(e.message || "Lỗi rút tiền!", !0);
 		}
 	}
 	async executeWork(e) {
 		try {
-			let t = await E.executeLaborShift(e);
+			let t = await D.executeLaborShift(e);
 			typeof window.showToast == "function" && window.showToast(t.narrativeVi || "Lao động hoàn tất, nhận tiền công!"), await this.refreshData(), await this.renderActiveTab();
 		} catch (e) {
 			typeof window.showToast == "function" && window.showToast(e.message || "Không thể làm việc lúc này!", !0);
 		}
 	}
-}, O = new D(), k = class e {
+}, O = new ne(), k = class e {
 	static instance;
 	static getInstance() {
 		return e.instance ||= new e(), e.instance;
@@ -1516,7 +1579,7 @@ function B() {
 function V(e) {
 	return String(e ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
-function ne(e) {
+function re(e) {
 	if (!e || typeof e != "object") return "";
 	let t = [];
 	if (e.cash && t.push(`+${e.cash} Quan`), e.fame && t.push(`+${e.fame} ${B() ? "fame" : "danh vọng"}`), e.exp) for (let [n, r] of Object.entries(e.exp)) r && t.push(`+${r} ${String(n).toUpperCase()} EXP`);
@@ -1875,7 +1938,7 @@ var H = new class {
         <strong>${o.success ? s ? "Step succeeded" : "Bước thành công" : s ? "Step failed" : "Bước thất bại"}</strong>
         <div>${V(s ? o.narrativeEn : o.narrative)}</div>
         <div class="quest-meta">D20 ${o.roll} + ${o.mod} = ${o.total} / DC ${o.dc}</div>
-        <div class="quest-meta">${V(ne(o.rewards || {}))}</div>
+        <div class="quest-meta">${V(re(o.rewards || {}))}</div>
       </div>
     ` : "", l = e.map((e) => {
 			let t = e.status === "COMPLETED" ? s ? "Completed" : "Đã hoàn thành" : e.status === "ACTIVE" ? s ? "Active" : "Đang làm" : s ? "Available" : "Có thể nhận", n = e.steps.map((t) => `
@@ -2450,17 +2513,17 @@ var K = new class {
 function Z(e) {
 	return String(e ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
-function re(e, t = !1) {
+function ie(e, t = !1) {
 	typeof window.showToast == "function" && window.showToast(e, t);
 }
-var ie = {
+var ae = {
 	mountain: "山",
 	water: "水",
 	forest: "林",
 	lair: "寨",
 	farm: "田",
 	wild: "野"
-}, ae = class {
+}, oe = class {
 	modal;
 	view = null;
 	nodeId = null;
@@ -2517,7 +2580,7 @@ var ie = {
     `), this.bind();
 	}
 	renderSpot(e, t) {
-		let n = 40 + Number(e.localX ?? .5) * 520, r = 30 + Number(e.localY ?? .5) * 300, i = e.nameVi === t, a = ie[e.iconKey] || "野";
+		let n = 40 + Number(e.localX ?? .5) * 520, r = 30 + Number(e.localY ?? .5) * 300, i = e.nameVi === t, a = ae[e.iconKey] || "野";
 		return `
       <g class="wilderness-node${i ? " is-current" : ""}" data-wilderness-travel="${Z(e.subLocationId)}" tabindex="0" role="button" aria-label="${Z(e.nameVi)}">
         <circle class="wilderness-node-halo" cx="${n.toFixed(1)}" cy="${r.toFixed(1)}" r="22"></circle>
@@ -2534,9 +2597,9 @@ var ie = {
 				let t = e.dataset.wildernessTravel || "";
 				try {
 					let e = await X.travel(t), n = Number(e?.time?.advancedDays || 1);
-					re(`Đã tới ${e?.result?.nameVi || "địa danh"} sau ${n} ngày.`), await this.refresh(), this.render();
+					ie(`Đã tới ${e?.result?.nameVi || "địa danh"} sau ${n} ngày.`), await this.refresh(), this.render();
 				} catch (e) {
-					re(e.message || "Không thể di chuyển.", !0);
+					ie(e.message || "Không thể di chuyển.", !0);
 				}
 			};
 			e.addEventListener("click", t), e.addEventListener("keydown", (e) => {
@@ -2544,17 +2607,17 @@ var ie = {
 			});
 		});
 	}
-}, oe = new ae(), se = {
+}, se = new oe(), ce = {
 	wu_wei: "xi_liang",
 	he_fei: "shou_chun",
 	pu_yang: "ye_cheng",
 	wu_ling: "jiang_ling"
 };
-function ce(e) {
-	return se[e] || e;
+function le(e) {
+	return ce[e] || e;
 }
 var Q = new class {
-	ALIASES = se;
+	ALIASES = ce;
 	state = {
 		status: "idle",
 		fetchedAt: 0,
@@ -2585,7 +2648,7 @@ var Q = new class {
 		errors: []
 	};
 	resolveMapNodeId(e) {
-		return ce(e);
+		return le(e);
 	}
 	getSubLocationsForNode(e) {
 		return this.state.mapRegistry?.subLocationsByNode?.[e] || [];
@@ -2623,114 +2686,114 @@ var Q = new class {
 			this.readJson("/api/expeditions"),
 			this.readJson("/api/professions/nodes"),
 			this.readJson("/api/map/registry")
-		]), ee = t.status === "fulfilled" && t.value.success && t.value.garrisons || [], y = n.status === "fulfilled" && n.value.success && n.value.settlements || [], b = r.status === "fulfilled" && r.value.success && r.value.factions || [], x = i.status === "fulfilled" && i.value.success ? i.value : null, S = a.status === "fulfilled" && a.value.success && a.value.strongholds || [], C = o.status === "fulfilled" && o.value.success && o.value.crises || [], te = s.status === "fulfilled" && s.value.success && s.value.npcs || [], w = c.status === "fulfilled" && c.value.success ? c.value : null, T = l.status === "fulfilled" && l.value.success && l.value.items || [], E = u.status === "fulfilled" && u.value.success && u.value.specialists || [], D = d.status === "fulfilled" && d.value.success && d.value.businesses || [], O = f.status === "fulfilled" && f.value.success && f.value.tiers || [], k = p.status === "fulfilled" && p.value.success && p.value.routes || [], A = m.status === "fulfilled" && m.value.success && m.value.locations || [], j = h.status === "fulfilled" && h.value.success && h.value.caravans || [], M = g.status === "fulfilled" && g.value.success && g.value.expeditions || [], N = _.status === "fulfilled" && _.value.success && _.value.nodes || [], P = v.status === "fulfilled" && v.value.success ? v.value : null;
-		v.status === "rejected" && this.state.errors.push("map-registry"), t.status === "rejected" && this.state.errors.push("garrisons"), n.status === "rejected" && this.state.errors.push("factions/settlements"), r.status === "rejected" && this.state.errors.push("factions"), i.status === "rejected" && this.state.errors.push("military"), a.status === "rejected" && this.state.errors.push("strongholds"), o.status === "rejected" && this.state.errors.push("crises"), s.status === "rejected" && this.state.errors.push("npcs"), c.status === "rejected" && this.state.errors.push("status"), l.status === "rejected" && this.state.errors.push("inventory"), u.status === "rejected" && this.state.errors.push("workforce"), d.status === "rejected" && this.state.errors.push("businesses"), f.status === "rejected" && this.state.errors.push("guard-tiers"), p.status === "rejected" && this.state.errors.push("routes"), m.status === "rejected" && this.state.errors.push("locations"), h.status === "rejected" && this.state.errors.push("caravans"), g.status === "rejected" && this.state.errors.push("expeditions"), _.status === "rejected" && this.state.errors.push("resources"), this.state.mapRegistry = P ? {
-			nodes: P.nodes || [],
-			subLocationsByNode: P.subLocationsByNode || {},
-			poiScenesByNode: P.poiScenesByNode || {},
-			resourcesByNode: P.resourcesByNode || {},
-			orphans: P.orphans || []
+		]), ee = t.status === "fulfilled" && t.value.success && t.value.garrisons || [], y = n.status === "fulfilled" && n.value.success && n.value.settlements || [], b = r.status === "fulfilled" && r.value.success && r.value.factions || [], x = i.status === "fulfilled" && i.value.success ? i.value : null, S = a.status === "fulfilled" && a.value.success && a.value.strongholds || [], C = o.status === "fulfilled" && o.value.success && o.value.crises || [], w = s.status === "fulfilled" && s.value.success && s.value.npcs || [], te = c.status === "fulfilled" && c.value.success ? c.value : null, T = l.status === "fulfilled" && l.value.success && l.value.items || [], E = u.status === "fulfilled" && u.value.success && u.value.specialists || [], D = d.status === "fulfilled" && d.value.success && d.value.businesses || [], ne = f.status === "fulfilled" && f.value.success && f.value.tiers || [], O = p.status === "fulfilled" && p.value.success && p.value.routes || [], k = m.status === "fulfilled" && m.value.success && m.value.locations || [], A = h.status === "fulfilled" && h.value.success && h.value.caravans || [], j = g.status === "fulfilled" && g.value.success && g.value.expeditions || [], M = _.status === "fulfilled" && _.value.success && _.value.nodes || [], N = v.status === "fulfilled" && v.value.success ? v.value : null;
+		v.status === "rejected" && this.state.errors.push("map-registry"), t.status === "rejected" && this.state.errors.push("garrisons"), n.status === "rejected" && this.state.errors.push("factions/settlements"), r.status === "rejected" && this.state.errors.push("factions"), i.status === "rejected" && this.state.errors.push("military"), a.status === "rejected" && this.state.errors.push("strongholds"), o.status === "rejected" && this.state.errors.push("crises"), s.status === "rejected" && this.state.errors.push("npcs"), c.status === "rejected" && this.state.errors.push("status"), l.status === "rejected" && this.state.errors.push("inventory"), u.status === "rejected" && this.state.errors.push("workforce"), d.status === "rejected" && this.state.errors.push("businesses"), f.status === "rejected" && this.state.errors.push("guard-tiers"), p.status === "rejected" && this.state.errors.push("routes"), m.status === "rejected" && this.state.errors.push("locations"), h.status === "rejected" && this.state.errors.push("caravans"), g.status === "rejected" && this.state.errors.push("expeditions"), _.status === "rejected" && this.state.errors.push("resources"), this.state.mapRegistry = N ? {
+			nodes: N.nodes || [],
+			subLocationsByNode: N.subLocationsByNode || {},
+			poiScenesByNode: N.poiScenesByNode || {},
+			resourcesByNode: N.resourcesByNode || {},
+			orphans: N.orphans || []
 		} : null;
-		let F = {};
+		let P = {};
 		b.forEach((e) => {
 			let t = e && e.factionId;
-			t && (F[t] = e);
+			t && (P[t] = e);
 		});
-		let I = {};
+		let F = {};
 		ee.forEach((e) => {
-			e && e.settlementId && (I[e.settlementId] = this.mergeRecord(I[e.settlementId], e));
+			e && e.settlementId && (F[e.settlementId] = this.mergeRecord(F[e.settlementId], e));
 		}), y.forEach((e) => {
-			e && e.settlementId && (I[e.settlementId] = this.mergeRecord(I[e.settlementId], e));
-		}), Object.keys(I).forEach((e) => {
-			let t = I[e], n = t.rulerFactionId ? F[t.rulerFactionId] : null;
+			e && e.settlementId && (F[e.settlementId] = this.mergeRecord(F[e.settlementId], e));
+		}), Object.keys(F).forEach((e) => {
+			let t = F[e], n = t.rulerFactionId ? P[t.rulerFactionId] : null;
 			if (!n) return;
 			let r = n;
 			t.factionNameVi = r.nameVi, t.factionNameEn = r.nameEn, t.factionColor = r.colorHex, t.factionMilitaryPower = r.militaryPower;
 		});
-		let L = {};
-		Object.keys(I).forEach((e) => {
-			this.resolveMapNodeId(e) === e && (L[e] = this.mergeRecord(L[e], {
-				...I[e],
+		let I = {};
+		Object.keys(F).forEach((e) => {
+			this.resolveMapNodeId(e) === e && (I[e] = this.mergeRecord(I[e], {
+				...F[e],
 				sourceSettlementId: e
 			}));
-		}), Object.keys(I).forEach((e) => {
+		}), Object.keys(F).forEach((e) => {
 			let t = this.resolveMapNodeId(e);
-			L[t] || (L[t] = this.mergeRecord(L[t], {
-				...I[e],
+			I[t] || (I[t] = this.mergeRecord(I[t], {
+				...F[e],
 				sourceSettlementId: e
 			}));
-		}), this.state.bySettlement = I, this.state.byMapNode = L, this.state.activeExpeditions = x && x.activeExpeditions || [], this.state.player = x && x.commander || null, this.state.playerFaction = b.find((e) => e.leaderId === "PLY-0001") || null, this.state.factionsById = F;
-		let R = {};
+		}), this.state.bySettlement = F, this.state.byMapNode = I, this.state.activeExpeditions = x && x.activeExpeditions || [], this.state.player = x && x.commander || null, this.state.playerFaction = b.find((e) => e.leaderId === "PLY-0001") || null, this.state.factionsById = P;
+		let L = {};
 		S.forEach((e) => {
 			let t = e.status, n = e.locationNear;
 			if (t !== "ACTIVE" || !n) return;
 			let r = this.resolveMapNodeId(n);
-			(R[r] ||= []).push(e);
+			(L[r] ||= []).push(e);
 		});
-		let z = {};
+		let R = {};
 		C.forEach((e) => {
 			let t = e.settlementId;
 			if (!t) return;
 			let n = this.resolveMapNodeId(t);
-			(z[n] ||= []).push(e);
-		}), this.state.banditsByNode = R, this.state.crisesByNode = z;
-		let B = {}, V = {};
-		te.forEach((e) => {
+			(R[n] ||= []).push(e);
+		}), this.state.banditsByNode = L, this.state.crisesByNode = R;
+		let z = {}, B = {};
+		w.forEach((e) => {
 			let t = e.name, n = e.npc_id || e.npcId;
-			n && (V[n] = e), t && (B[this.normalizeName(t)] = e);
-		}), this.state.npcsByName = B, this.state.npcsById = V;
-		let ne = Number(w?.player?.liquid_cash) || 0, H = {};
+			n && (B[n] = e), t && (z[this.normalizeName(t)] = e);
+		}), this.state.npcsByName = z, this.state.npcsById = B;
+		let V = Number(te?.player?.liquid_cash) || 0, re = {};
 		T.forEach((e) => {
 			let t = e.item_code || e.itemCode, n = Number(e.quantity) || 0;
-			t && (H[t] = n);
-		}), this.state.playerCash = ne, this.state.inventory = H, this.state.guardTiers = O;
-		let U = {};
+			t && (re[t] = n);
+		}), this.state.playerCash = V, this.state.inventory = re, this.state.guardTiers = ne;
+		let H = {};
 		E.forEach((e) => {
 			let t = e.nameVi;
-			t && (U[this.normalizeName(t)] = e);
-		}), this.state.specialistsByName = U, this.state.caravans = j, this.state.expeditions = M;
-		let W = {}, G = {};
-		N.forEach((e) => {
+			t && (H[this.normalizeName(t)] = e);
+		}), this.state.specialistsByName = H, this.state.caravans = A, this.state.expeditions = j;
+		let U = {}, W = {};
+		M.forEach((e) => {
 			let t = String(e.settlementId || ""), n = this.resolveMapNodeId(t), r = String(e.resourceType || "");
-			n && r && (W[n] || (W[n] = {
+			n && r && (U[n] || (U[n] = {
 				types: {},
 				nodes: []
-			}), W[n].types[r] = (W[n].types[r] || 0) + 1, W[n].nodes.push(e), G[r] = (G[r] || 0) + 1);
-		}), this.state.resourcesByNode = W, this.state.resourceTotals = G;
-		let K = {};
-		A.forEach((e) => {
+			}), U[n].types[r] = (U[n].types[r] || 0) + 1, U[n].nodes.push(e), W[r] = (W[r] || 0) + 1);
+		}), this.state.resourcesByNode = U, this.state.resourceTotals = W;
+		let G = {};
+		k.forEach((e) => {
 			let t = e.locationId;
-			t && (K[t] = e);
-		}), this.state.locationsById = K;
-		let q = {};
+			t && (G[t] = e);
+		}), this.state.locationsById = G;
+		let K = {};
 		if (typeof window < "u") {
 			let e = window.SETTLEMENT_LABELS || {};
 			Object.keys(e).forEach((t) => {
 				if (t === "wu_wei") return;
 				let n = e[t] && e[t].vi;
-				n && (q[this.normalizeLocationLabel(n)] = t);
+				n && (K[this.normalizeLocationLabel(n)] = t);
 			});
 		}
-		let J = {};
-		A.forEach((e) => {
+		let q = {};
+		k.forEach((e) => {
 			let t = e.locationId, n = e.nameVi;
 			if (!t || !n) return;
-			let r = q[this.normalizeLocationLabel(n)];
-			r && (J[t] = r);
-		}), this.state.locToMapNode = J;
-		let Y = {};
+			let r = K[this.normalizeLocationLabel(n)];
+			r && (q[t] = r);
+		}), this.state.locToMapNode = q;
+		let J = {};
 		D.forEach((e) => {
 			let t = e.businessId, n = e.locationId;
-			t && n && (Y[t] = n);
+			t && n && (J[t] = n);
 		});
-		let X = {};
+		let Y = {};
 		E.forEach((e) => {
-			let t = !!e.isHired, n = e.assignedBusinessId, r = n ? Y[n] : null, i = e.baselineLocation, a = t && r ? r : i, o = a ? J[a] : null;
-			o && (X[o] ||= []).push(e);
-		}), this.state.businesses = D, this.state.specialistsByMapNode = X;
-		let Z = {};
-		return k.forEach((e) => {
-			let t = J[e.sourceLocationId || ""], n = J[e.targetLocationId || ""];
+			let t = !!e.isHired, n = e.assignedBusinessId, r = n ? J[n] : null, i = e.baselineLocation, a = t && r ? r : i, o = a ? q[a] : null;
+			o && (Y[o] ||= []).push(e);
+		}), this.state.businesses = D, this.state.specialistsByMapNode = Y;
+		let X = {};
+		return O.forEach((e) => {
+			let t = q[e.sourceLocationId || ""], n = q[e.targetLocationId || ""];
 			if (!t || !n) return;
 			let r = e.descriptionEn ? e.descriptionEn.trim() : "", i = r && !/^RT-/i.test(r) && /^[\x20-\x7E]+$/.test(r) ? r : void 0, a = {
 				from: t,
@@ -2743,12 +2806,12 @@ var Q = new class {
 				descVi: e.descriptionVi,
 				descEn: i
 			}, o = `${t}|${n}`, s = `${n}|${t}`;
-			Z[o] || (Z[o] = a), Z[s] || (Z[s] = {
+			X[o] || (X[o] = a), X[s] || (X[s] = {
 				...a,
 				from: n,
 				to: t
 			});
-		}), this.state.routesByKey = Z, this.state.status = this.state.errors.length === 17 ? "error" : "ready", this.state.fetchedAt = Date.now(), this.state;
+		}), this.state.routesByKey = X, this.state.status = this.state.errors.length === 17 ? "error" : "ready", this.state.fetchedAt = Date.now(), this.state;
 	}
 	getForMapNode(e) {
 		return e && (this.state.byMapNode[e] || this.state.bySettlement[e]) || null;
@@ -2929,7 +2992,7 @@ var Q = new class {
 	}
 }();
 // src/client/features/legacy-bridge.ts
-function le() {
+function ue() {
 	if (typeof window > "u") return;
 	let t = window;
 	t.ModalShellCore = {
@@ -2946,12 +3009,13 @@ function le() {
 		assignMentorDialog: (e) => x.assignMentorDialog(e),
 		executeSuccession: () => x.executeSuccession()
 	}, t.EquipmentUI = {
-		openEquipmentModal: (e, t) => w.open(e, t),
-		closeEquipmentModal: () => w.close(),
-		switchTab: (e) => w.modal.switchTab(e),
-		equip: (e, t, n) => w.equip(e, t, n),
-		unequip: (e, t) => w.unequip(e, t),
-		executeForge: () => w.executeForge()
+		openEquipmentModal: (e, t) => T.open(e, t),
+		closeEquipmentModal: () => T.close(),
+		switchTab: (e) => T.modal.switchTab(e),
+		equip: (e, t, n) => T.equip(e, t, n),
+		unequip: (e, t) => T.unequip(e, t),
+		repairTool: (e) => T.repairTool(e),
+		executeForge: () => T.executeForge()
 	}, t.EnterpriseUI = {
 		openEnterpriseModal: (e) => O.open(e),
 		closeEnterpriseModal: () => O.close(),
@@ -3002,8 +3066,8 @@ function le() {
 		open: () => J.open(),
 		close: () => J.close()
 	}, t.WildernessMapUI = {
-		open: (e) => oe.open(e),
-		close: () => oe.close()
+		open: (e) => se.open(e),
+		close: () => se.close()
 	}, t.MapLiveService = {
 		load: (e = !1) => Q.load(e),
 		getForMapNode: (e) => Q.getForMapNode(e),
@@ -3027,7 +3091,7 @@ function le() {
 		ALIASES: Q.ALIASES
 	}, console.log("[ThreeKingdoms-AgentEngine] All 14 client feature slices successfully bridged to window.*");
 }
-var ue = new class {
+var de = new class {
 	handlers = /* @__PURE__ */ new Map();
 	on(e, t) {
 		return this.handlers.has(e) || this.handlers.set(e, /* @__PURE__ */ new Set()), this.handlers.get(e).add(t), () => {
@@ -3048,7 +3112,7 @@ var ue = new class {
 			}
 		});
 	}
-}(), de = class e {
+}(), fe = class e {
 	static instance;
 	static getInstance() {
 		return e.instance ||= new e(), e.instance;
@@ -3068,7 +3132,7 @@ var ue = new class {
 			guardTier: e.escortLevel
 		});
 	}
-}, $ = de.getInstance(), fe = class {
+}, $ = fe.getInstance(), pe = class {
 	modal;
 	caravans = [];
 	routes = [];
@@ -3208,7 +3272,7 @@ var ue = new class {
 			typeof window.showToast == "function" && window.showToast(e.message || "Lỗi xuất thương đoàn!", !0);
 		}
 	}
-}, pe = new fe(), me = class {
+}, me = new pe(), he = class {
 	modal;
 	selectedScenario = "184_YELLOW_TURBAN";
 	constructor() {
@@ -3301,9 +3365,9 @@ var ue = new class {
 			typeof window.showToast == "function" && window.showToast(e.message || "Lỗi khởi tạo chiến dịch!", !0);
 		}
 	}
-}, he = new me();
+}, ge = new he();
 // src/client/main.ts
-le();
-export { fe as CaravanLogisticsModal, de as CaravanLogisticsService, _ as ClientApiClient, j as DossiersModal, k as DossiersService, D as EnterpriseWorkshopModal, T as EnterpriseWorkshopService, te as EquipmentForgeModal, S as EquipmentForgeService, t as LEGACY_OWNED_MODAL_IDS, b as LineageFamilyModal, ee as LineageFamilyService, r as ModalShell, N as QuickTradeModal, I as TacticalBattleModal, me as TitleScreenModal, R as TransitTurnModals, ae as WildernessMapModal, Y as WildernessMapService, q as WorldMapModal, v as apiClient, pe as caravanLogisticsModal, $ as caravanLogisticsService, i as createModalShell, M as dossiersModal, A as dossiersService, O as enterpriseWorkshopModal, E as enterpriseWorkshopService, w as equipmentForgeModal, C as equipmentForgeService, ue as eventBus, n as isLegacyOwnedModalId, x as lineageFamilyModal, y as lineageFamilyService, e as modalStack, P as quickTradeModal, L as tacticalBattleModal, he as titleScreenModal, z as transitTurnModals, oe as wildernessMapModal, X as wildernessMapService, J as worldMapModal };
+ue();
+export { pe as CaravanLogisticsModal, fe as CaravanLogisticsService, _ as ClientApiClient, j as DossiersModal, k as DossiersService, ne as EnterpriseWorkshopModal, E as EnterpriseWorkshopService, te as EquipmentForgeModal, S as EquipmentForgeService, t as LEGACY_OWNED_MODAL_IDS, b as LineageFamilyModal, ee as LineageFamilyService, r as ModalShell, N as QuickTradeModal, I as TacticalBattleModal, he as TitleScreenModal, R as TransitTurnModals, oe as WildernessMapModal, Y as WildernessMapService, q as WorldMapModal, v as apiClient, me as caravanLogisticsModal, $ as caravanLogisticsService, i as createModalShell, M as dossiersModal, A as dossiersService, O as enterpriseWorkshopModal, D as enterpriseWorkshopService, T as equipmentForgeModal, C as equipmentForgeService, de as eventBus, n as isLegacyOwnedModalId, x as lineageFamilyModal, y as lineageFamilyService, e as modalStack, P as quickTradeModal, L as tacticalBattleModal, ge as titleScreenModal, z as transitTurnModals, se as wildernessMapModal, X as wildernessMapService, J as worldMapModal };
 
 //# sourceMappingURL=client-bundle.es.js.map

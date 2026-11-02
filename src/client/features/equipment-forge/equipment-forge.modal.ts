@@ -5,12 +5,17 @@
 
 import { createModalShell, ModalShellInstance } from '../../core/modal-shell';
 import { equipmentForgeService } from './equipment-forge.service';
-import { BespokeForgePayload, EquipmentOverview } from './equipment-forge.types';
+import { BespokeForgePayload, EquipmentOverview, ToolInventoryRow } from './equipment-forge.types';
+
+function esc(value: unknown): string {
+  return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
 
 export class EquipmentForgeModal {
   private modal: ModalShellInstance;
   private currentCharacterId = 'PLY-0001';
   private overview: EquipmentOverview | null = null;
+  private tools: ToolInventoryRow[] = [];
 
   constructor() {
     this.modal = createModalShell({
@@ -22,7 +27,8 @@ export class EquipmentForgeModal {
       tabs: [
         { id: 'gear', label: 'Binh Khí & Giáp Trụ', seal: '武' },
         { id: 'forge_bespoke', label: 'Đúc Rèn Thần Binh', seal: '鍛' },
-        { id: 'inventory', label: 'Kho Binh Khí', seal: '貨' }
+        { id: 'inventory', label: 'Kho Binh Khí', seal: '貨' },
+        { id: 'tools', label: 'Công Cụ & Sửa Chữa', seal: '器' }
       ],
       activeTabId: 'gear',
       onOpen: async () => {
@@ -45,11 +51,18 @@ export class EquipmentForgeModal {
   }
 
   private async refreshData(): Promise<void> {
-    try {
-      this.overview = await equipmentForgeService.getOverview(this.currentCharacterId);
-    } catch (e) {
-      console.error('[EquipmentForgeModal] Error refreshing data:', e);
-    }
+    const [overview, tools] = await Promise.all([
+      equipmentForgeService.getOverview(this.currentCharacterId).catch(e => {
+        console.error('[EquipmentForgeModal] Error refreshing overview:', e);
+        return null;
+      }),
+      equipmentForgeService.getTools(this.currentCharacterId).catch(e => {
+        console.error('[EquipmentForgeModal] Error refreshing tools:', e);
+        return [] as ToolInventoryRow[];
+      })
+    ]);
+    this.overview = overview;
+    this.tools = tools;
   }
 
   private async renderActiveTab(): Promise<void> {
@@ -63,6 +76,9 @@ export class EquipmentForgeModal {
         break;
       case 'inventory':
         this.renderInventoryTab();
+        break;
+      case 'tools':
+        this.renderToolsTab();
         break;
     }
   }
@@ -234,6 +250,76 @@ export class EquipmentForgeModal {
     `;
 
     this.modal.setContent(html);
+  }
+
+  private renderToolsTab(): void {
+    const tools = this.tools;
+    const cards = tools.length > 0
+      ? tools.map(tool => {
+        const kindLabel = tool.kind === 'DURABLE' ? 'Bền' : 'Tiêu hao';
+        const skillReq = tool.repairSkillCode
+          ? `${tool.repairSkillCode} bậc ${tool.repairMinTier}`
+          : 'Không yêu cầu kỹ năng';
+        const repairNote = tool.kind === 'CONSUMABLE'
+          ? 'Vật phẩm tiêu hao — mua mới thay vì sửa.'
+          : !tool.needsRepair
+            ? 'Đang ở độ bền tối đa.'
+            : !tool.canRepair
+              ? `Cần ${skillReq} (hiện bậc ${tool.skillTier}).`
+              : `Sửa tốn ${tool.repairCash} Quan, hồi đầy ${tool.maxUses} lượt.`;
+        const canRepair = tool.needsRepair && tool.canRepair;
+        return `
+          <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800">
+            <div class="flex justify-between items-start gap-3">
+              <div>
+                <div class="font-bold text-amber-200 text-sm">${esc(tool.nameVi)}</div>
+                <div class="text-xs text-muted">${esc(tool.itemCode)} • ${kindLabel} • SL: ${tool.quantity}</div>
+              </div>
+              <button class="ui-btn ui-btn--primary ui-btn--sm" ${canRepair ? '' : 'disabled'}
+                onclick="window.EquipmentUI.repairTool('${esc(tool.itemCode)}')">Sửa Chữa</button>
+            </div>
+            <div class="text-[11px] text-slate-300 mt-2">
+              Độ bền: ${tool.usesLeft}/${tool.maxUses} lượt
+              <progress class="tool-durability-bar" max="${tool.maxUses}" value="${tool.usesLeft}"></progress>
+            </div>
+            <div class="text-[11px] text-muted mt-1">${esc(repairNote)}</div>
+          </div>
+        `;
+      }).join('')
+      : `<div class="text-center py-8 text-muted">
+          Kho chưa có công cụ nào. Chế tác tại Lò Rèn hoặc mua từ chợ phiên.
+        </div>`;
+
+    this.modal.setContent(`
+      <div class="equipment-modal-content">
+        <div class="spatial-banner-lead">
+          <div class="lead-seal">器</div>
+          <div class="lead-text">
+            <h3>Công Cụ Nghề Nghiệp</h3>
+            <div class="text-muted text-sm">Công cụ bền mất lượt khi thu hoạch; sửa chữa hồi đầy độ bền nhưng tốn Quan và có thể cần kỹ năng.</div>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">${cards}</div>
+      </div>
+    `);
+  }
+
+  public async repairTool(itemCode: string): Promise<void> {
+    try {
+      const res = await equipmentForgeService.repairTool(this.currentCharacterId, itemCode);
+      const result = res?.result || res;
+      if (typeof (window as any).showToast === 'function') {
+        (window as any).showToast(
+          `Đã sửa ${itemCode}: ${result?.usesBefore ?? '?'} → ${result?.usesAfter ?? '?'} lượt (${result?.cashPaid ?? 0} Quan).`
+        );
+      }
+      await this.refreshData();
+      await this.renderActiveTab();
+    } catch (e: any) {
+      if (typeof (window as any).showToast === 'function') {
+        (window as any).showToast(e.message || 'Sửa công cụ thất bại!', true);
+      }
+    }
   }
 
   public async equip(characterId: string, slot: string, itemCode: string): Promise<void> {

@@ -4,7 +4,7 @@
  */
 
 import { apiClient } from '../../core/api/client-api';
-import { BespokeForgePayload, EquipmentOverview } from './equipment-forge.types';
+import { BespokeForgePayload, EquipmentOverview, ToolInventoryRow } from './equipment-forge.types';
 
 export class EquipmentForgeService {
   private static instance: EquipmentForgeService;
@@ -31,6 +31,19 @@ export class EquipmentForgeService {
 
   public async forgeBespokeWeapon(payload: BespokeForgePayload): Promise<any> {
     return apiClient.post('/api/professions/forge/bespoke', payload);
+  }
+
+  public async getTools(characterId = 'PLY-0001'): Promise<ToolInventoryRow[]> {
+    const res = await apiClient.get('/api/professions/tools', { characterId });
+    return (res as any).tools || [];
+  }
+
+  public async repairTool(characterId: string, itemCode: string): Promise<any> {
+    return apiClient.post('/api/professions/tools/repair', {
+      characterId,
+      itemCode,
+      idempotencyKey: `tool-repair-${characterId}-${itemCode}-${Date.now()}`
+    });
   }
 }
 

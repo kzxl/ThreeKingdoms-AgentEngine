@@ -87,6 +87,20 @@ async function run(): Promise<void> {
   const router = createGrandStrategyRouter();
   const raw = new Database(TEST_DB);
 
+  const listed = await request(router, 'GET', '/api/professions/tools?characterId=PLY-0001');
+  assert.strictEqual(listed.status, 200, JSON.stringify(listed.data));
+  const axe = listed.data.tools.find((tool: any) => tool.itemCode === 'TOOL-AXE');
+  const net = listed.data.tools.find((tool: any) => tool.itemCode === 'TOOL-NET');
+  assert(axe, 'owned axe must be listed');
+  assert.strictEqual(axe.usesLeft, 5);
+  assert.strictEqual(axe.maxUses, 20);
+  assert.strictEqual(axe.needsRepair, true);
+  assert.strictEqual(axe.canRepair, true);
+  assert.strictEqual(axe.repairCash, 15);
+  assert(net, 'owned consumable must be listed');
+  assert.strictEqual(net.needsRepair, false);
+  assert.strictEqual(net.canRepair, false);
+
   const payload = { itemCode: 'TOOL-AXE', idempotencyKey: 'TEST-REPAIR-AXE' };
   const first = await request(router, 'POST', '/api/professions/tools/repair', payload);
   assert.strictEqual(first.status, 200, JSON.stringify(first.data));
@@ -95,6 +109,11 @@ async function run(): Promise<void> {
   assert.strictEqual(Number((raw.prepare("SELECT liquid_cash FROM player_state WHERE player_id = 'PLY-0001';").get() as any).liquid_cash), 985);
   assert.strictEqual(Number((raw.prepare("SELECT uses_left FROM character_tool_uses WHERE character_id = 'PLY-0001' AND item_code = 'TOOL-AXE';").get() as any).uses_left), 20);
   assert(raw.prepare("SELECT 1 AS ok FROM cashflow_ledger WHERE category = 'Livelihood/ToolRepair';").get());
+
+  const afterRepair = await request(router, 'GET', '/api/professions/tools?characterId=PLY-0001');
+  const repairedAxe = afterRepair.data.tools.find((tool: any) => tool.itemCode === 'TOOL-AXE');
+  assert.strictEqual(repairedAxe.usesLeft, 20);
+  assert.strictEqual(repairedAxe.needsRepair, false);
 
   const replay = await request(router, 'POST', '/api/professions/tools/repair', payload);
   assert.strictEqual(replay.data.idempotent, true);
