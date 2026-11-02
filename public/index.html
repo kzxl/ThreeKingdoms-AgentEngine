@@ -285,15 +285,15 @@
             </div>
             <div class="protagonist-title" id="protagonist-title">Bố Y Thường Dân • Khởi Đầu Tay Trắng</div>
             <div class="protagonist-career-badge-row">
-              <span class="career-stage-badge stage-pauper" id="protagonist-career-badge" onclick="if(window.GrandCommandHubUI){GrandCommandHubUI.open('career');}" title="Nhấn để xem Hành Trình Cuộc Đời & Ngũ Đại Phẩm Lộ">
+              <span class="career-stage-badge stage-pauper" id="protagonist-career-badge" onclick="event.stopPropagation(); if(window.GrandCommandHubUI){GrandCommandHubUI.open('career');}" title="Nhấn để xem Hành Trình Cuộc Đời & Ngũ Đại Phẩm Lộ">
                 <svg class="ui-icon"><use href="#icon-sprout"></use></svg> Bố Y Khởi Thủy
               </span>
               <div class="career-mini-icons" id="protagonist-paths-indicator" title="Tiến độ Ngũ Đại Phẩm Lộ: Thợ, Thương, Võ, Sĩ, Tông Tộc">
-                <span class="path-icon-dot" id="dot-path-artisan" title="Bách Nghệ / Thợ Cả" onclick="if(window.GrandCommandHubUI){GrandCommandHubUI.open('gear');}"><svg class="ui-icon"><use href="#icon-hammer"></use></svg></span>
-                <span class="path-icon-dot" id="dot-path-merchant" title="Hành Thương / Cự Phú" onclick="if(window.GrandCommandHubUI){GrandCommandHubUI.open('caravan');}"><svg class="ui-icon"><use href="#icon-coin"></use></svg></span>
-                <span class="path-icon-dot" id="dot-path-martial" title="Võ Hiệp / Quân Lữ" onclick="if(window.GrandCommandHubUI){GrandCommandHubUI.open('duel');}"><svg class="ui-icon"><use href="#icon-sword"></use></svg></span>
-                <span class="path-icon-dot" id="dot-path-scholar" title="Sĩ Đồ / Quân Sư" onclick="if(window.GrandCommandHubUI){GrandCommandHubUI.open('career');}"><svg class="ui-icon"><use href="#icon-scroll"></use></svg></span>
-                <span class="path-icon-dot" id="dot-path-lineage" title="Tông Tộc / Thế Gia" onclick="if(window.LineageFamilyUI){LineageFamilyUI.open('courtship');}else if(window.GrandCommandHubUI){GrandCommandHubUI.open('family');}"><svg class="ui-icon"><use href="#icon-users"></use></svg></span>
+                <span class="path-icon-dot" id="dot-path-artisan" title="Bách Nghệ / Thợ Cả" onclick="event.stopPropagation(); if(window.GrandCommandHubUI){GrandCommandHubUI.open('gear');}"><svg class="ui-icon"><use href="#icon-hammer"></use></svg></span>
+                <span class="path-icon-dot" id="dot-path-merchant" title="Hành Thương / Cự Phú" onclick="event.stopPropagation(); if(window.GrandCommandHubUI){GrandCommandHubUI.open('caravan');}"><svg class="ui-icon"><use href="#icon-coin"></use></svg></span>
+                <span class="path-icon-dot" id="dot-path-martial" title="Võ Hiệp / Quân Lữ" onclick="event.stopPropagation(); if(window.GrandCommandHubUI){GrandCommandHubUI.open('duel');}"><svg class="ui-icon"><use href="#icon-sword"></use></svg></span>
+                <span class="path-icon-dot" id="dot-path-scholar" title="Sĩ Đồ / Quân Sư" onclick="event.stopPropagation(); if(window.GrandCommandHubUI){GrandCommandHubUI.open('career');}"><svg class="ui-icon"><use href="#icon-scroll"></use></svg></span>
+                <span class="path-icon-dot" id="dot-path-lineage" title="Tông Tộc / Thế Gia" onclick="event.stopPropagation(); if(window.LineageFamilyUI){LineageFamilyUI.open('courtship');}else if(window.GrandCommandHubUI){GrandCommandHubUI.open('family');}"><svg class="ui-icon"><use href="#icon-users"></use></svg></span>
               </div>
             </div>
           </div>

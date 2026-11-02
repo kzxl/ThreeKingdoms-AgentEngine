@@ -45,6 +45,25 @@ function run(): void {
   assert(index.includes('id="subtab-npcs" class="deck-tab-pane active"'), 'household pane must be visible by default');
   assert(!index.includes('id="subtab-ledger" class="deck-tab-pane active"'), 'ledger pane must stay closed by default');
 
+  // The card header opens the dossier; nested path buttons must not bubble and
+  // open a second modal on top of it.
+  const headerStart = index.indexOf('class="protagonist-header"');
+  const headerEnd = index.indexOf('<!-- Vitals Bars', headerStart);
+  const header = index.slice(headerStart, headerEnd);
+  for (const id of [
+    'protagonist-career-badge',
+    'dot-path-artisan',
+    'dot-path-merchant',
+    'dot-path-martial',
+    'dot-path-scholar',
+    'dot-path-lineage'
+  ]) {
+    const start = header.indexOf(`id="${id}"`);
+    assert(start >= 0, `${id} must exist in the protagonist header`);
+    const tag = header.slice(start, header.indexOf('>', start) + 1);
+    assert(tag.includes('event.stopPropagation()'), `${id} must stop click bubbling to the dossier header`);
+  }
+
   const ratchet = JSON.parse(read('tools/ui-baseline.json'));
   assert.strictEqual(ratchet.nativeConfirmCalls, 0, 'native confirm budget must be locked at 0');
 
