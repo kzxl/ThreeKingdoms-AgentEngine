@@ -21,6 +21,13 @@ assert(js.includes('time-section-title'), 'sections must have clear titles');
 assert(js.includes('clock.phaseLabel'), 'phase label must be surfaced');
 assert(js.includes('daysLeft'), 'days until month close must be surfaced');
 assert(js.includes("'TRADE_BUY'") && js.includes("'START_TASK'"), 'action budget must cover canonical action types');
+assert(js.includes("ENTERPRISE_WORK: { vi: 'Ca làm việc'"), 'enterprise work must render a readable label');
+assert(js.includes("ENTERPRISE_SAFE_CASH: { vi: 'Nạp / rút quỹ xưởng'"), 'safe-cash actions must render a readable label');
+assert(js.includes("MONTH_CLOSE: { vi: 'Chốt tháng'"), 'month close must render a readable label');
+assert(js.includes("EXPLORE_POI: { vi: 'Khảo sát địa điểm'"), 'POI exploration must render a readable label');
+assert(js.includes('formatActionLabel(a.actionType'), 'turn report must use the label resolver');
+assert(js.includes('formatActionLabel(item.actionType'), 'time timeline must use the label resolver');
+assert(!js.includes('|| { vi: a.actionType, en: a.actionType }'), 'raw action codes must not fall through');
 assert(!js.includes('time-compare-grid'), 'old cramped two-column comparison must be gone');
 
 assert(css.includes('.modal-card.time-panel-card'), 'time panel must override the shared modal width');

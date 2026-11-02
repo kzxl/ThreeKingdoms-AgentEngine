@@ -213,14 +213,91 @@ function renderTurnAdvanceError(err) {
 const TURN_ACTION_LABELS = {
   TRADE_BUY: { vi: 'Thu mua vật tư', en: 'Procurement' },
   TRADE_SELL: { vi: 'Bán hàng hóa', en: 'Sale' },
+  TRADE: { vi: 'Giao dịch', en: 'Trade' },
   PRODUCTION_BATCH: { vi: 'Sản xuất lô hàng', en: 'Production batch' },
   PAY_WAGES: { vi: 'Chi trả lương', en: 'Wage payment' },
   RECORD_BOUNTY: { vi: 'Ghi nhận chiến lợi phẩm', en: 'Bounty recorded' },
   REWARD_NPC: { vi: 'Thưởng gia nhân', en: 'Retainer reward' },
   MOVE_LOCATION: { vi: 'Di chuyển', en: 'Travel' },
   PERSONAL_GROWTH: { vi: 'Tu dưỡng bản thân', en: 'Self-cultivation' },
-  KIZUNA_INTERACT: { vi: 'Giao lưu hào kiệt', en: 'Social interaction' }
+  KIZUNA_INTERACT: { vi: 'Giao lưu hào kiệt', en: 'Social interaction' },
+  KIZUNA_NATURAL_CHAT: { vi: 'Trò chuyện tự nhiên', en: 'Natural conversation' },
+  ENTERPRISE_WORK: { vi: 'Ca làm việc', en: 'Work shift' },
+  ENTERPRISE_SAFE_CASH: { vi: 'Nạp / rút quỹ xưởng', en: 'Enterprise safe cash' },
+  ENTERPRISE_COLLECT: { vi: 'Thu lợi nhuận xưởng', en: 'Collect enterprise profit' },
+  ENTERPRISE_OPEN: { vi: 'Mở cơ sở mới', en: 'Open enterprise' },
+  LABOR_WORK: { vi: 'Lao động công nhật', en: 'Wage labor' },
+  MONTH_CLOSE: { vi: 'Chốt tháng', en: 'Month close' },
+  BUSINESS_MONTHLY_ACCRUAL: { vi: 'Kết toán xưởng tháng', en: 'Monthly workshop settlement' },
+  EXPLORE_POI: { vi: 'Khảo sát địa điểm', en: 'Explore location' },
+  GATHER_RESOURCE: { vi: 'Khai thác tài nguyên', en: 'Gather resources' },
+  TOOL_REPAIR: { vi: 'Sửa công cụ', en: 'Repair tool' },
+  NODE_RESTORE: { vi: 'Phục hồi điểm tài nguyên', en: 'Restore resource node' },
+  WILDERNESS_TRAVEL: { vi: 'Đi tới địa danh dã ngoại', en: 'Wilderness travel' },
+  CITY_ENTER: { vi: 'Vào địa điểm nội thành', en: 'Enter city location' },
+  MARCH: { vi: 'Hành quân', en: 'March' },
+  PATROL: { vi: 'Tuần tra', en: 'Patrol' },
+  GARRISON_REINFORCE: { vi: 'Điều binh đồn trú', en: 'Reinforce garrison' },
+  EXPEDITION_START: { vi: 'Xuất chinh', en: 'Start expedition' },
+  SIEGE_START: { vi: 'Bắt đầu bao vây', en: 'Start siege' },
+  SIEGE_ASSAULT: { vi: 'Công thành', en: 'Siege assault' },
+  BANDIT_STRONGHOLD_ASSAULT: { vi: 'Đánh ổ phỉ', en: 'Assault bandit stronghold' },
+  DUEL_INITIATE: { vi: 'Khiêu chiến', en: 'Initiate duel' },
+  DUEL_ROUND: { vi: 'Hiệp đấu', en: 'Duel round' },
+  DUEL_SPAR: { vi: 'Tỉ thí', en: 'Sparring' },
+  DUEL_ARENA: { vi: 'Đấu trường', en: 'Arena duel' },
+  DUEL_CARAVAN_AMBUSH: { vi: 'Phục kích thương đoàn', en: 'Caravan ambush' },
+  BANQUET_HOST: { vi: 'Mở tiệc chiêu đãi', en: 'Host banquet' },
+  BANQUET_RECRUIT: { vi: 'Chiêu mộ tại tiệc', en: 'Recruit at banquet' },
+  BANQUET_BROTHERHOOD: { vi: 'Kết nghĩa huynh đệ', en: 'Sworn brotherhood' },
+  REST_WITH_SPOUSE: { vi: 'Nghỉ ngơi cùng phu nhân', en: 'Rest with spouse' },
+  FARM_RENT: { vi: 'Thuê ruộng', en: 'Rent farmland' },
+  FARM_PLANT: { vi: 'Gieo trồng', en: 'Plant crop' },
+  FARM_HARVEST: { vi: 'Thu hoạch', en: 'Harvest' },
+  CRAFT: { vi: 'Chế tác', en: 'Craft' },
+  CRAFT_RECIPE: { vi: 'Chế tác theo công thức', en: 'Craft recipe' },
+  FORGE_BESPOKE: { vi: 'Đúc thần binh', en: 'Bespoke forge' },
+  FORGE_BESPOKE_WEAPON: { vi: 'Đúc thần binh', en: 'Bespoke forge' },
+  FORGE_STANDARD: { vi: 'Rèn vũ khí tiêu chuẩn', en: 'Standard forge' },
+  STALL_OPEN: { vi: 'Mở quầy bán', en: 'Open stall' },
+  STALL_LIST: { vi: 'Niêm yết hàng', en: 'List goods' },
+  STALL_CLOSE: { vi: 'Đóng quầy bán', en: 'Close stall' },
+  CARAVAN_DISPATCH: { vi: 'Phái thương đoàn', en: 'Dispatch caravan' },
+  CARAVAN_CLAIM: { vi: 'Nhận thương đoàn', en: 'Claim caravan' },
+  MERCHANT_ROUTE_CREATE: { vi: 'Mở thương lộ', en: 'Create merchant route' },
+  MERCHANT_ROUTE_STATUS: { vi: 'Đổi trạng thái thương lộ', en: 'Update merchant route' },
+  CONTRACT_ACCEPT: { vi: 'Nhận hợp đồng', en: 'Accept contract' },
+  CONTRACT_DELIVER: { vi: 'Giao hợp đồng', en: 'Deliver contract' },
+  QUEST_ACCEPT: { vi: 'Nhận nhiệm vụ', en: 'Accept quest' },
+  QUEST_ADVANCE: { vi: 'Tiến bước nhiệm vụ', en: 'Advance quest' },
+  COURTSHIP_PROPOSE: { vi: 'Cầu hôn', en: 'Propose marriage' },
+  LINEAGE_SUCCESSION: { vi: 'Kế vị gia tộc', en: 'Lineage succession' },
+  WORKFORCE_HIRE: { vi: 'Chiêu mộ nhân sự', en: 'Hire specialist' },
+  PERK_CHOOSE: { vi: 'Chọn tuyệt kỹ', en: 'Choose perk' },
+  MENTORSHIP_TURN: { vi: 'Truyền nghề', en: 'Mentorship' },
+  CHILD_BIRTH: { vi: 'Sinh con', en: 'Childbirth' },
+  CHILD_AGE: { vi: 'Con lớn thêm', en: 'Child aging' },
+  PREGNANCY_TICK: { vi: 'Tiến trình thai nghén', en: 'Pregnancy progress' },
+  OBLIGATION_PAY: { vi: 'Trả nghĩa vụ', en: 'Pay obligation' },
+  ECOLOGY_RELIEF: { vi: 'Cứu trợ sinh thái', en: 'Ecology relief' },
+  ECOLOGY_TRANSPORT: { vi: 'Vận chuyển cứu trợ', en: 'Ecology transport' },
+  NPC_MARKET_BUY: { vi: 'NPC mua hàng', en: 'NPC market purchase' },
+  INTEL_VERIFY: { vi: 'Xác minh tình báo', en: 'Verify intel' },
+  STUDY: { vi: 'Học tập', en: 'Study' },
+  START_TASK: { vi: 'Khởi công công việc dài ngày', en: 'Start long task' },
+  CANCEL_TASK: { vi: 'Hủy công việc dài ngày', en: 'Cancel long task' },
+  ADMIN_ACTION: { vi: 'Thao tác hệ thống', en: 'System action' }
 };
+
+function formatActionLabel(actionType, isEn) {
+  const label = TURN_ACTION_LABELS[actionType];
+  if (label) return isEn ? label.en : label.vi;
+  const humanized = String(actionType || '')
+    .replace(/_/g, ' ')
+    .toLowerCase()
+    .replace(/(^|\s)\S/g, char => char.toUpperCase());
+  return isEn ? humanized || 'System action' : `Thao tác: ${humanized || 'hệ thống'}`;
+}
 
 function turnReportEmpty(isEn, vi, en) {
   return `<div class="turn-rpt-empty">${isEn ? en : vi}</div>`;
@@ -276,12 +353,12 @@ function renderTurnAdvanceReport(res) {
     : '';
 
   const actionHtml = actionList.length > 0 ? actionList.map(a => {
-    const label = TURN_ACTION_LABELS[a.actionType] || { vi: a.actionType, en: a.actionType };
+    const label = formatActionLabel(a.actionType, isEn);
     return `
       <div class="turn-rpt-timeline-item">
         <span class="turn-rpt-chip">${a.gameDate || ''}</span>
         <div>
-          <div class="turn-rpt-item-title">${isEn ? label.en : label.vi}${a.memo ? ` • ${a.memo}` : ''}</div>
+          <div class="turn-rpt-item-title">${label}${a.memo ? ` • ${a.memo}` : ''}</div>
           <div class="turn-rpt-item-meta">${a.status || 'SUCCESS'}</div>
         </div>
       </div>
@@ -600,11 +677,11 @@ async function renderTimePanel() {
     }).join('');
 
     const recentHtml = recent.length > 0 ? recent.map(item => {
-      const label = TURN_ACTION_LABELS[item.actionType] || { vi: item.actionType, en: item.actionType };
+      const label = formatActionLabel(item.actionType, isEn);
       return `
         <div class="time-timeline-row">
           <span class="turn-rpt-chip">${escapeTimeText(item.gameDate || '')}</span>
-          <span class="time-timeline-title">${escapeTimeText(isEn ? label.en : label.vi)}${item.memo ? ` • ${escapeTimeText(item.memo)}` : ''}</span>
+          <span class="time-timeline-title">${escapeTimeText(label)}${item.memo ? ` • ${escapeTimeText(item.memo)}` : ''}</span>
           <span class="time-timeline-real">${escapeTimeText(item.createdAt || '')}</span>
         </div>
       `;
