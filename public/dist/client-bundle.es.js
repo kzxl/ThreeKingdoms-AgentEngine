@@ -1485,28 +1485,66 @@ var re = {
 		return v.get("/api/banquet/status");
 	}
 	async drinkWine() {
-		return v.post("/api/banquet/drink", {});
-	}
-	async hostBanquet(e) {
-		return v.post("/api/banquet/host", { tierId: e });
-	}
-	async swearBrotherhood(e) {
-		return v.post("/api/banquet/brotherhood", { targetNpcId: e });
-	}
-	async getArenaRoster() {
-		return v.get("/api/arena/roster");
-	}
-	async startDuel(e) {
-		return v.post("/api/arena/duel/start", { opponentId: e });
-	}
-	async executeDuelRound(e, t) {
-		return v.post("/api/arena/duel/round", {
-			duelId: e,
-			action: t
+		return v.post("/api/action", {
+			type: "PERSONAL_GROWTH",
+			sub_type: "REST_RECOVERY",
+			fatigue_delta: 25,
+			morale_delta: 5,
+			memo: "Thưởng thức rượu tại tửu quán",
+			idempotencyKey: `tavern-drink-${Date.now()}`
 		});
 	}
+	async hostBanquet(e) {
+		return v.post("/api/banquet/host", {
+			tier: e,
+			idempotencyKey: `banquet-host-${e}-${Date.now()}`
+		});
+	}
+	async swearBrotherhood(e) {
+		return v.post("/api/banquet/brotherhood", {
+			npcId: e,
+			idempotencyKey: `banquet-brotherhood-${e}-${Date.now()}`
+		});
+	}
+	async getArenaRoster() {
+		let e = await v.get("/api/duel/arena/roster");
+		return { opponents: (Array.isArray(e.roster) ? e.roster : []).map((e) => ({
+			id: String(e.opponentId || e.id),
+			nameVi: String(e.nameVi || e.name || e.opponentId),
+			titleVi: String(e.titleVi || e.tierTitleVi || ""),
+			tier: e.tier === 3 || e.tierKey === "TIER_3" ? "CHAMPION" : e.tier === 2 || e.tierKey === "TIER_2" ? "VETERAN" : "NOVICE",
+			warAttr: Number(e.war || e.warAttr || 50),
+			weaponVi: String(e.descriptionVi || e.weaponVi || ""),
+			rewardQian: Number(e.prizeCash || e.rewardQian || 0),
+			rewardExp: Number(e.warExpReward || e.rewardExp || 0)
+		})) };
+	}
+	async startDuel(e) {
+		let t = (await v.post("/api/duel/initiate", {
+			opponentId: e,
+			context: "TOURNAMENT_ARENA",
+			maxRounds: 5,
+			idempotencyKey: `duel-initiate-${e}-${Date.now()}`
+		})).duel || {};
+		return {
+			duelId: String(t.duelId || ""),
+			state: t
+		};
+	}
+	async executeDuelRound(e, t) {
+		let n = await v.post("/api/duel/round", {
+			duelId: e,
+			action: t,
+			idempotencyKey: `duel-round-${e}-${t}-${Date.now()}`
+		});
+		return n.duel || n;
+	}
 	async restAtResidence(e = 1) {
-		return v.post("/api/character/rest", { days: e });
+		return v.post("/api/life/act", {
+			actionCode: "SLEEP",
+			days: e,
+			idempotencyKey: `residence-sleep-${Date.now()}`
+		});
 	}
 }.getInstance(), N = class {
 	modal;
@@ -3944,12 +3982,19 @@ var De = new class {
 		this.selectedScenario = e, this.renderContent();
 	}
 	async startCampaign() {
-		let e = document.getElementById("ts-player-name"), t = document.getElementById("ts-player-style");
+		let e = document.getElementById("ts-player-name"), t = document.getElementById("ts-player-style"), n = {
+			"184_YELLOW_TURBAN": "SCN-184-ZHOU",
+			"190_DONG_ZHUO": "SCN-190-DONG",
+			"200_GUANDU": "SCN-200-GUAN",
+			"208_CHIBI": "SCN-208-CHIB"
+		};
 		try {
-			await v.post("/api/session/new-game", {
-				scenario: this.selectedScenario,
-				playerName: e?.value || "Lương Diễn",
-				playerStyle: t?.value || "Chí Viễn"
+			await v.post("/api/game/new", {
+				scenarioId: n[this.selectedScenario] || "SCN-184-ZHOU",
+				archetypeId: "ARCH-COMMONER-YOUTH",
+				customPlayerName: e?.value || "Lương Diễn",
+				customStyleName: t?.value || "Chí Viễn",
+				idempotencyKey: `new-game-${this.selectedScenario}-${Date.now()}`
 			}), typeof window.showToast == "function" && window.showToast("Khởi tạo chiến dịch thành công!"), await this.modal.close(), window.location.reload();
 		} catch (e) {
 			typeof window.showToast == "function" && window.showToast(e.message || "Lỗi khởi tạo chiến dịch!", !0);

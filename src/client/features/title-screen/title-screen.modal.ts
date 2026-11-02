@@ -101,11 +101,20 @@ export class TitleScreenModal {
     const nameEl = document.getElementById('ts-player-name') as HTMLInputElement;
     const styleEl = document.getElementById('ts-player-style') as HTMLInputElement;
 
+    const scenarioMap: Record<string, string> = {
+      '184_YELLOW_TURBAN': 'SCN-184-ZHOU',
+      '190_DONG_ZHUO': 'SCN-190-DONG',
+      '200_GUANDU': 'SCN-200-GUAN',
+      '208_CHIBI': 'SCN-208-CHIB'
+    };
+
     try {
-      await apiClient.post('/api/session/new-game', {
-        scenario: this.selectedScenario,
-        playerName: nameEl?.value || 'Lương Diễn',
-        playerStyle: styleEl?.value || 'Chí Viễn'
+      await apiClient.post('/api/game/new', {
+        scenarioId: scenarioMap[this.selectedScenario] || 'SCN-184-ZHOU',
+        archetypeId: 'ARCH-COMMONER-YOUTH',
+        customPlayerName: nameEl?.value || 'Lương Diễn',
+        customStyleName: styleEl?.value || 'Chí Viễn',
+        idempotencyKey: `new-game-${this.selectedScenario}-${Date.now()}`
       });
       if (typeof (window as any).showToast === 'function') {
         (window as any).showToast('Khởi tạo chiến dịch thành công!');
