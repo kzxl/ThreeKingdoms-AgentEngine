@@ -10236,3 +10236,38 @@ textarea {
   color: #fca5a5;
   margin-bottom: 0.2rem;
 }
+
+/* Conditions: active wounds in dossiers and the journal */
+.condition-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  padding: 0.45rem 0.6rem;
+  border-bottom: 1px solid rgba(248, 113, 113, 0.25);
+  background: rgba(60, 15, 15, 0.35);
+}
+
+.condition-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid rgba(248, 113, 113, 0.45);
+  border-radius: 999px;
+  font-size: 0.7rem;
+  color: #fecaca;
+  background: rgba(30, 10, 10, 0.6);
+}
+
+.condition-chip strong {
+  color: #fca5a5;
+}
+
+.condition-chip.is-severity-3 {
+  border-color: rgba(239, 68, 68, 0.8);
+  color: #fee2e2;
+}
+
+.condition-source {
+  color: #94a3b8;
+}

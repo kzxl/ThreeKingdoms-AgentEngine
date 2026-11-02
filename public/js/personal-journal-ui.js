@@ -48,12 +48,13 @@
 
   async function getCharacterJournalState() {
     try {
-      const [statusRes, entRes, lineageRes, equipRes, progRes] = await Promise.all([
+      const [statusRes, entRes, lineageRes, equipRes, progRes, conditionRes] = await Promise.all([
         fetch('/api/status').then(r => r.json()).catch(() => ({ success: false })),
         fetch('/api/enterprise/status?characterId=PLY-0001').then(r => r.json()).catch(() => ({ success: false })),
         fetch('/api/lineage/status').then(r => r.json()).catch(() => ({ success: false })),
         fetch('/api/equipment?characterId=PLY-0001').then(r => r.json()).catch(() => ({ success: false })),
-        fetch('/api/progression/status?playerId=PLY-0001').then(r => r.json()).catch(() => ({ success: false }))
+        fetch('/api/progression/status?playerId=PLY-0001').then(r => r.json()).catch(() => ({ success: false })),
+        fetch('/api/conditions?characterId=PLY-0001').then(r => r.json()).catch(() => ({ success: false }))
       ]);
 
       const p = statusRes?.player || {};
@@ -122,7 +123,8 @@
         isMarried,
         spouses,
         equipmentOverview: equipRes?.overview || null,
-        recentLedger: statusRes?.recentLedger || []
+        recentLedger: statusRes?.recentLedger || [],
+        conditions: conditionRes?.conditions || []
       };
 
       return cachedProgressionState;
@@ -389,6 +391,8 @@
             </div>
           </div>
         </div>
+
+        ${typeof renderConditionChips === 'function' ? renderConditionChips(state.conditions, isEn) : ''}
 
         <!-- Spatial Grounding Rules Notice -->
         <div class="tactical-card" style="border-left: 3px solid #10b981; background: rgba(16, 185, 129, 0.05); margin-bottom: 16px; padding: 10px 14px;">

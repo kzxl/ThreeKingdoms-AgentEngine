@@ -25,6 +25,7 @@
 
   let activeNpcId = null;
   let currentDossierData = null;
+  let currentConditions = [];
   let activeDossierTab = 'stats'; // 'stats' | 'kizuna' | 'biography'
 
   /**
@@ -98,12 +99,16 @@
     modalEl.classList.remove('hidden');
 
     try {
-      const res = await fetch(`/api/kizuna/dossier/${encodeURIComponent(activeNpcId)}`);
-      const data = await res.json();
+      const [dossierRes, conditionRes] = await Promise.all([
+        fetch(`/api/kizuna/dossier/${encodeURIComponent(activeNpcId)}`).then(r => r.json()),
+        fetch(`/api/conditions?characterId=${encodeURIComponent(activeNpcId)}`).then(r => r.json()).catch(() => ({}))
+      ]);
+      const data = dossierRes;
       if (!data.success || !data.dossier) {
         throw new Error(data.error || (isEn ? 'Character dossier not found' : 'Không tìm thấy hồ sơ nhân vật'));
       }
       currentDossierData = data.dossier;
+      currentConditions = conditionRes.conditions || [];
       renderDossierContent(currentDossierData);
     } catch (err) {
       const errBadge = isEn ? '[INTEL ERROR]' : '[LỖI TÌNH BÁO]';
@@ -133,6 +138,7 @@
     if (modalEl) modalEl.classList.add('hidden');
     activeNpcId = null;
     currentDossierData = null;
+    currentConditions = [];
   }
 
   /**
@@ -611,6 +617,8 @@
               </div>
             </div>
           </div>
+
+          ${typeof renderConditionChips === 'function' ? renderConditionChips(currentConditions, isEn) : ''}
 
           <!-- Illustration is rendered only when the DB has an asset; no empty band. -->
           ${dossier.illustrationUrl

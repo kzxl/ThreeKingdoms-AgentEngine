@@ -20,6 +20,7 @@
   let cachedLineageData = null;
   let cachedSkills = [];
   let cachedTalents = [];
+  let cachedConditions = [];
 
   function isEnglish() {
     return window.currentLang === 'en';
@@ -171,11 +172,12 @@
     modalEl.classList.remove('hidden');
 
     try {
-      const [statusRes, eqRes, linRes, skillRes] = await Promise.all([
+      const [statusRes, eqRes, linRes, skillRes, conditionRes] = await Promise.all([
         fetch('/api/status').then((r) => r.json()),
         fetch('/api/equipment?characterId=PLY-0001').then((r) => r.json()).catch(() => ({})),
         fetch('/api/lineage/status').then((r) => r.json()).catch(() => ({})),
-        fetch('/api/skills').then((r) => r.json()).catch(() => ({}))
+        fetch('/api/skills').then((r) => r.json()).catch(() => ({})),
+        fetch('/api/conditions?characterId=PLY-0001').then((r) => r.json()).catch(() => ({}))
       ]);
 
       cachedPlayerData = statusRes.player || {};
@@ -183,6 +185,7 @@
       cachedLineageData = linRes.overview || {};
       cachedSkills = skillRes.skills || [];
       cachedTalents = skillRes.talents || [];
+      cachedConditions = conditionRes.conditions || [];
 
       renderModalContent(modalEl);
     } catch (err) {
@@ -283,6 +286,8 @@
           </div>
           <button class="btn-modal-close" onclick="closeProtagonistDossierModal()">&times;</button>
         </div>
+
+        ${typeof renderConditionChips === 'function' ? renderConditionChips(cachedConditions, isEn) : ''}
 
         <!-- Illustration slot: filled from player_state.illustration_url -->
         <div class="dossier-illustration-frame is-inset">

@@ -26,6 +26,36 @@ function uiIcon(name, className = '') {
 }
 window.uiIcon = uiIcon;
 
+// One renderer for the active injury/condition entries used by the protagonist
+// dossier, NPC dossier and personal journal. The server filters inactive rows.
+function renderConditionChips(conditions, isEn = false) {
+  if (!Array.isArray(conditions) || conditions.length === 0) return '';
+  return `
+    <div class="condition-strip" role="list" aria-label="${isEn ? 'Active wounds' : 'Vết thương đang hoạt động'}">
+      ${conditions.map(condition => {
+        const severity = Math.max(1, Math.min(3, Number(condition.severity || 1)));
+        const severityLabel = isEn
+          ? ['', 'Light', 'Serious', 'Critical'][severity]
+          : ['', 'Nhẹ', 'Nặng', 'Trọng thương'][severity];
+        const source = condition.source || (isEn ? 'Combat' : 'Giao chiến');
+        const narrative = isEn
+          ? (condition.narrativeEn || '')
+          : (condition.narrativeVi || '');
+        return `
+          <span class="condition-chip is-severity-${severity}" role="listitem"
+                title="${String(narrative).replace(/"/g, '&quot;')}">
+            <strong>${severityLabel}</strong>
+            <span>−${Number(condition.statPenalty || 0)} chiến lực</span>
+            <span>${Number(condition.daysRemaining || 0)} ${isEn ? 'days' : 'ngày'}</span>
+            <span class="condition-source">${source}</span>
+          </span>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+window.renderConditionChips = renderConditionChips;
+
 // Server policy cache. `/api/time/clock` returns the authoritative
 // `ACTION_TIME_POLICY`; the local table below is only an offline fallback so
 // the day chip can render before the first clock fetch.
