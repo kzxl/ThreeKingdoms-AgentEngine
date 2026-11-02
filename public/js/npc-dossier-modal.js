@@ -26,13 +26,17 @@
   let activeNpcId = null;
   let currentDossierData = null;
   let currentConditions = [];
-  let activeDossierTab = 'stats'; // 'stats' | 'kizuna' | 'biography'
+  let activeDossierTab = 'stats'; // 'stats' | 'kizuna' | 'biography' | 'assets'
 
   /**
    * Helper: Resolves active language safely
    */
   function isEnglish() {
     return (typeof currentLang !== 'undefined' && currentLang === 'en');
+  }
+
+  function formatNumber(value) {
+    return Number(value || 0).toLocaleString(isEnglish() ? 'en-US' : 'vi-VN');
   }
 
   /**

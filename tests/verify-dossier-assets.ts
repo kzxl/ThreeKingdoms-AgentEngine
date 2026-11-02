@@ -68,6 +68,7 @@ async function run(): Promise<void> {
   assert(modal.includes("switchDossierTab('assets')"), 'dossier must add the assets tab');
   assert(modal.includes('dossier-ledger-row'), 'dossier must render ledger rows');
   assert(modal.includes('dossier-asset-card'), 'dossier must render the business card');
+  assert(modal.includes('function formatNumber'), 'assets tab must define its number formatter');
   assert(stall.includes('getMerchantEvents'), 'logistics tab must read merchant events');
   assert(stallService.includes('/api/merchant/events'), 'merchant event client must call the API');
   assert(stall.includes('slice(0, 5)'), 'logistics event feed must be capped at 5');
