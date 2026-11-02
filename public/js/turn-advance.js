@@ -578,20 +578,23 @@ async function renderTimePanel() {
       `;
     }).join('') : `<div class="turn-rpt-empty">${isEn ? 'No multi-day tasks.' : 'Không có công việc dài ngày.'}</div>`;
 
-    const actionRows = [
-      ['TRADE_BUY', isEn ? 'Market transaction' : 'Giao dịch chợ'],
-      ['PERSONAL_GROWTH', isEn ? 'Training / rest' : 'Luyện tập / nghỉ'],
-      ['KIZUNA_INTERACT', isEn ? 'Social interaction' : 'Giao lưu'],
-      ['WORK_SHIFT', isEn ? 'Work shift' : 'Ca làm việc'],
-      ['MOVE_LOCATION', isEn ? 'Local travel' : 'Di chuyển'],
-      ['ENTERPRISE_MANAGE', isEn ? 'Enterprise / caravan' : 'Sản nghiệp / thương đoàn'],
-      ['START_TASK', isEn ? 'Start long task' : 'Khởi công task']
-    ].map(([type, label]) => {
+    const actionDefs = [
+      ['TRADE_BUY', 'Giao dịch chợ', 'Market trade', '市'],
+      ['PERSONAL_GROWTH', 'Luyện tập / nghỉ', 'Training / rest', '修'],
+      ['KIZUNA_INTERACT', 'Giao lưu', 'Social interaction', '交'],
+      ['WORK_SHIFT', 'Ca làm việc', 'Work shift', '工'],
+      ['MOVE_LOCATION', 'Di chuyển', 'Travel', '行'],
+      ['ENTERPRISE_MANAGE', 'Sản nghiệp / thương đoàn', 'Enterprise / caravan', '業'],
+      ['START_TASK', 'Khởi công task', 'Start long task', '計']
+    ];
+    const actionRows = actionDefs.map(([type, labelVi, labelEn, seal]) => {
       const cost = policy[type] || { days: 1, fatigue: 0 };
+      const fatigue = Number(cost.fatigue || 0);
       return `
-        <div class="turn-rpt-stat-row">
-          <span>${label}</span>
-          <strong>${cost.days} ${isEn ? 'day(s)' : 'ngày'} • ${cost.fatigue > 0 ? `-${cost.fatigue}` : '0'} ${isEn ? 'fatigue' : 'thể lực'}</strong>
+        <div class="time-cost-chip">
+          <span class="time-cost-seal">${seal}</span>
+          <span class="time-cost-name">${isEn ? labelEn : labelVi}</span>
+          <span class="time-cost-value">${cost.days} ${isEn ? 'day(s)' : 'ngày'}${fatigue > 0 ? ` • -${fatigue} ${isEn ? 'fatigue' : 'thể lực'}` : ''}</span>
         </div>
       `;
     }).join('');
@@ -605,61 +608,85 @@ async function renderTimePanel() {
           <span class="time-timeline-real">${escapeTimeText(item.createdAt || '')}</span>
         </div>
       `;
-    }).join('') : `<div class="turn-rpt-empty">${isEn ? 'No recorded actions yet.' : 'Chưa có thao tác nào được ghi nhận.'}</div>`;
+    }).join('') : `<div class="turn-rpt-empty">${isEn ? 'No recorded actions this month.' : 'Tháng này chưa có thao tác nào được ghi nhận.'}</div>`;
+
+    const fatigue = Math.max(0, Math.min(100, Number(clock.fatigue || 0)));
+    const stamina = Math.max(0, 100 - fatigue);
+    const phaseLabel = clock.phaseLabel || '';
+    const health = Number(clock.health ?? 100);
+    const morale = Number(clock.morale ?? 100);
+    const grain = Number(clock.grain || 0);
+    const dayOfMonth = Number(clock.dayOfMonth || 1);
+    const daysPerMonth = Number(clock.daysPerMonth || 30);
+    const daysLeft = Number(clock.daysLeft ?? Math.max(0, daysPerMonth - dayOfMonth));
 
     container.innerHTML = `
-      <div class="time-hero">
-        <div class="time-hero-date font-mono">${escapeTimeText(clock.currentDate || '—')}</div>
-        <div class="time-hero-meta">
-          ${isEn ? 'Day' : 'Ngày'} ${clock.dayOfMonth || 1}/${clock.daysPerMonth || 30} •
-          ${isEn ? 'Turn' : 'Lượt'} ${clock.activeTurn || 1} •
-          ${isEn ? 'Season' : 'Mùa'} ${escapeTimeText(clock.season || '—')}
-        </div>
-        <div class="time-progress"><span style="width:${dayPct}%"></span></div>
-        <div class="time-progress-labels">
-          <span>${isEn ? 'Day 1' : 'Ngày 1'}</span>
-          <span>${isEn ? `${clock.daysLeft || 0} days left` : `Còn ${clock.daysLeft || 0} ngày`}</span>
-          <span>${isEn ? 'Day 30' : 'Ngày 30'}</span>
-        </div>
-      </div>
-
-      <div class="time-stat-grid">
-        <div class="turn-rpt-kpi"><span class="turn-rpt-kpi-label">${uiIcon('sprout')} ${isEn ? 'Fatigue' : 'Thể lực'}</span><strong class="turn-rpt-kpi-value">${clock.fatigue ?? 0}/100</strong></div>
-        <div class="turn-rpt-kpi"><span class="turn-rpt-kpi-label">${uiIcon('grain')} ${isEn ? 'Grain' : 'Lương thảo'}</span><strong class="turn-rpt-kpi-value">${Number(clock.grain || 0).toFixed(2)}</strong></div>
-        <div class="turn-rpt-kpi"><span class="turn-rpt-kpi-label">${uiIcon('shield')} ${isEn ? 'Health / Morale' : 'Sinh lực / Sĩ khí'}</span><strong class="turn-rpt-kpi-value">${clock.health ?? 100} / ${clock.morale ?? 100}</strong></div>
-        <div class="turn-rpt-kpi"><span class="turn-rpt-kpi-label">${uiIcon('hourglass')} ${isEn ? 'Active tasks' : 'Task đang chạy'}</span><strong class="turn-rpt-kpi-value">${tasks.length}</strong></div>
-      </div>
-
-      <div class="time-compare-grid">
-        <div class="turn-rpt-card">
-          <div class="turn-rpt-card-hdr">${uiIcon('calendar')}<span class="title">${isEn ? 'Real-World Comparison' : 'Đối Chiếu Thực Tế'}</span></div>
-          <div class="turn-rpt-card-body">
-            <div class="time-real-date" id="time-real-clock">${formatRealDateTime()}</div>
-            <div class="turn-rpt-item-meta">${isEn ? '1 game day = 1 calendar day; a month is 30 game days. Moving to the 1st closes the month automatically.' : '1 ngày game = 1 ngày lịch; tháng game 30 ngày. Sang mùng 1 sẽ tự động chốt tháng.'}</div>
-            <div class="turn-rpt-stat-row"><span>${isEn ? 'Timezone' : 'Múi giờ'}</span><strong>UTC${(data.real?.timezoneOffsetMinutes || 0) <= 0 ? '+' : '-'}${Math.abs((data.real?.timezoneOffsetMinutes || 0) / 60)}</strong></div>
+      <div class="time-panel">
+        <div class="time-hero">
+          <div class="time-hero-top">
+            <div>
+              <div class="time-hero-date font-mono">${escapeTimeText(clock.currentDate || '—')}</div>
+              <div class="time-hero-meta">
+                ${isEn ? 'Turn' : 'Lượt'} ${clock.activeTurn || 1} •
+                ${isEn ? 'Season' : 'Mùa'} ${escapeTimeText(clock.season || '—')}
+                ${phaseLabel ? ` • ${escapeTimeText(phaseLabel)}` : ''}
+              </div>
+            </div>
+            <span class="time-phase-badge">${isEn ? 'Day' : 'Ngày'} ${dayOfMonth}/${daysPerMonth}</span>
+          </div>
+          <div class="time-progress"><span style="width:${dayPct}%"></span></div>
+          <div class="time-progress-labels">
+            <span>${isEn ? 'Month start' : 'Đầu tháng'}</span>
+            <span>${isEn ? `${daysLeft} days until close` : `Còn ${daysLeft} ngày tới chốt tháng`}</span>
+            <span>${isEn ? 'Month close' : 'Chốt tháng'}</span>
           </div>
         </div>
-        <div class="turn-rpt-card">
-          <div class="turn-rpt-card-hdr">${uiIcon('hourglass')}<span class="title">${isEn ? 'Action Time Budget' : 'Ngân Sách Hành Động'}</span></div>
-          <div class="turn-rpt-card-body">${actionRows}</div>
+
+        <div class="time-kpi-grid">
+          <div class="time-kpi is-fatigue"><span>${isEn ? 'Fatigue' : 'Mệt mỏi'}</span><strong>${fatigue}/100</strong></div>
+          <div class="time-kpi is-stamina"><span>${isEn ? 'Stamina left' : 'Thể lực còn'}</span><strong>${stamina}/100</strong></div>
+          <div class="time-kpi is-health"><span>${isEn ? 'Health' : 'Sinh lực'}</span><strong>${health}/100</strong></div>
+          <div class="time-kpi is-morale"><span>${isEn ? 'Morale' : 'Sĩ khí'}</span><strong>${morale}%</strong></div>
+          <div class="time-kpi is-grain"><span>${isEn ? 'Grain' : 'Lương thảo'}</span><strong>${grain.toFixed(2)} <small>${isEn ? 'piculs' : 'Thạch'}</small></strong></div>
+          <div class="time-kpi is-task"><span>${isEn ? 'Active tasks' : 'Task đang chạy'}</span><strong>${tasks.length}</strong></div>
         </div>
-      </div>
 
-      <div class="turn-rpt-card">
-        <div class="turn-rpt-card-hdr">${uiIcon('hourglass')}<span class="title">${isEn ? 'Multi-day Tasks' : 'Công Việc Dài Ngày'}</span></div>
-        <div class="turn-rpt-card-body">${taskHtml}</div>
-      </div>
+        <section class="time-section time-clock-section">
+          <div class="time-section-title">${uiIcon('calendar')} ${isEn ? 'Real-world clock' : 'Đối chiếu thời gian thực'}</div>
+          <div class="time-clock-row">
+            <div>
+              <div class="time-real-date" id="time-real-clock">${formatRealDateTime()}</div>
+              <div class="time-clock-meta">${isEn ? 'Your local clock' : 'Đồng hồ máy bạn'} • UTC${(data.real?.timezoneOffsetMinutes || 0) <= 0 ? '+' : '-'}${Math.abs((data.real?.timezoneOffsetMinutes || 0) / 60)}</div>
+            </div>
+            <div class="time-clock-rule">
+              ${isEn
+                ? '1 game day = 1 calendar day. A month is 30 game days; reaching the 1st closes the previous month automatically.'
+                : '1 ngày game = 1 ngày lịch. Tháng game 30 ngày; sang mùng 1, tháng trước tự chốt lương, thuê, hao hụt và hồi phục.'}
+            </div>
+          </div>
+        </section>
 
-      <div class="turn-rpt-card">
-        <div class="turn-rpt-card-hdr">${uiIcon('scroll')}<span class="title">${isEn ? 'Recent Time Log' : 'Dòng Thời Gian Gần Đây'}</span></div>
-        <div class="turn-rpt-card-body">${recentHtml}</div>
-      </div>
+        <section class="time-section">
+          <div class="time-section-title">${uiIcon('hourglass')} ${isEn ? 'Action time budget' : 'Ngân sách thời gian hành động'}</div>
+          <div class="time-cost-grid">${actionRows}</div>
+        </section>
 
-      <div class="turn-adv-action-bar">
-        <button class="btn btn-outline" onclick="closeTimePanel()">${isEn ? 'Close' : 'Đóng'}</button>
-        <button class="btn btn-primary font-bold" onclick="closeTimePanel(); advanceNextDayNow();">
-          ${uiIcon('hourglass')} ${isEn ? 'Next Day' : 'Ngày Tiếp'}
-        </button>
+        <section class="time-section">
+          <div class="time-section-title">${uiIcon('hourglass')} ${isEn ? 'Multi-day tasks' : 'Công việc dài ngày'}</div>
+          ${taskHtml}
+        </section>
+
+        <section class="time-section">
+          <div class="time-section-title">${uiIcon('scroll')} ${isEn ? 'Recent timeline' : 'Dòng thời gian gần đây'}</div>
+          ${recentHtml}
+        </section>
+
+        <div class="time-actions">
+          <button class="ui-btn ui-btn--ghost" onclick="closeTimePanel()">${isEn ? 'Close' : 'Đóng'}</button>
+          <button class="ui-btn ui-btn--primary font-bold" onclick="closeTimePanel(); advanceNextDayNow();">
+            ${uiIcon('hourglass')} ${isEn ? 'Next Day' : 'Ngày Tiếp'}
+          </button>
+        </div>
       </div>
     `;
   } catch (err) {

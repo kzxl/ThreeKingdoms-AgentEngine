@@ -1,9 +1,9 @@
 {
   "legacyButtonClassesDefined": 42,
-  "legacyButtonClassUsages": 90,
+  "legacyButtonClassUsages": 88,
   "legacyButtonClassesInClientTs": 0,
   "inlineStyleAttributes": 681,
   "tinyFontSizes": 0,
   "nativeConfirmCalls": 0,
-  "uiPrimitiveUsages": 405
+  "uiPrimitiveUsages": 415
 }
