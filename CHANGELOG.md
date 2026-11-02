@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.51.1] - 2026-11-02
+
+Fixed enterprise safe-cash deposits and withdrawals.
+
+### Fixed
+- `POST /api/enterprise/manage-safe-cash` was never registered, so the modal's
+  **Nạp quỹ** / **Rút quỹ** buttons always returned 404. The route now accepts
+  `businessId` (or `enterpriseId`), `DEPOSIT` / `WITHDRAW`, an idempotency key
+  and moves cash in one transaction.
+- Deposits debit the business asset and credit mobile cash; withdrawals reverse
+  it, and both write balanced `cashflow_ledger` + `account_journal` entries.
+- Invalid amounts, insufficient mobile cash and over-withdrawal are rejected;
+  moving funds costs no game day.
+- The lineage verification now snapshots and restores `npc_ledger` /
+  `npc_personal_progression`, so repeated runs no longer leave audit drift.
+
+### Verification
+`npm run verify` green: 110/110 suites. `npm run audit` passed 2,429 invariants
+with 0 discrepancies.
+
+---
+
 ## [1.52.0] - 2026-11-02
 
 Reworked the campaign time panel for readability.
