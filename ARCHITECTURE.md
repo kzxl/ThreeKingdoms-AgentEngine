@@ -1201,7 +1201,8 @@ Map Step A removes the four-source location split:
 
 The 20-node strategic graph remains the renderer; the registry is the source of
 truth for sub-locations and POIs. Step B (clickable Nội Thành / Dã Ngoại picker)
-is now a UI change, not a data change.
+is now a UI change, not a data change. The two-scale city mini-map + wilderness
+tile design is analyzed in `docs/MAP_TWO_SCALE_DESIGN_2026-11-01.md`.
 
 
 

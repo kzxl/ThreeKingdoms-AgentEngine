@@ -4,6 +4,8 @@ Date: 2026-11-01
 Status: **Step A implemented in 1.46.0 (`a6abaf6`).** 133 sub-locations are
 normalized in `location_sublocations`; `/api/map/registry` returns 20 nodes,
 133 sub-locations, 132 POIs, 23 resources and 23 settlements with zero orphans.
+The follow-up city mini-map + wilderness split is analyzed in
+`docs/MAP_TWO_SCALE_DESIGN_2026-11-01.md`.
 Scope: `public/js/map-data.js`, `public/js/world-map.js`,
 `src/client/features/world-map/map-live.service.ts`,
 `src/modules/ecology-logistics/spatial-registry.ts`, `master_locations`,
