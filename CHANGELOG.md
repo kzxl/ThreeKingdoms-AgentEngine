@@ -29,6 +29,20 @@ with 0 discrepancies.
 
 ---
 
+## [1.52.2] - 2026-11-02
+
+### Fixed
+- Opening an NPC dossier failed with `formatNumber is not defined` because the
+  Assets tab used a formatter that only existed in the protagonist file. The NPC
+  dossier now defines its own locale-aware `formatNumber`.
+- `verify-dossier-assets` asserts the helper exists, so the Assets tab cannot
+  regress to a runtime ReferenceError.
+
+### Verification
+`npm run verify` green: 110/110 suites.
+
+---
+
 ## [1.52.1] - 2026-11-02
 
 Readable action logs and a wage-ledger balance fix.
