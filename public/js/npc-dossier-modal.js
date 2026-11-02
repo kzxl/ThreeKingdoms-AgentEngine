@@ -136,95 +136,83 @@
   }
 
   /**
-   * Generates SVG 8-Axis Polygon Radar Chart (ROTK Classic)
+   * Generates an 8-axis radar with short labels. Exact values and ranks live in
+   * the stat grid; long "Khá Tốt (60-74)" strings must not sit on the axes.
    */
   function generateRadarChartSvg(stats, isEn) {
-    const cx = 135;
-    const cy = 105;
-    const r = 62;
+    const cx = 160;
+    const cy = 135;
+    const r = 78;
 
-    // Stat definitions in clockwise order starting from top
     const axes = [
-      { key: 'ldr', label: isEn ? 'Command' : 'Thống Soái', angle: -Math.PI / 2, color: '#c084fc' },
-      { key: 'war', label: isEn ? 'Warfare' : 'Võ Lực', angle: -Math.PI / 4, color: '#f87171' },
-      { key: 'cra', label: isEn ? 'Craft' : 'Khéo Léo', angle: 0, color: '#34d399' },
-      { key: 'log', label: isEn ? 'Logistics' : 'Hậu Cần', angle: Math.PI / 4, color: '#2dd4bf' },
-      { key: 'com', label: isEn ? 'Commerce' : 'Thương Nghiệp', angle: Math.PI / 2, color: '#fbbf24' },
-      { key: 'dip', label: isEn ? 'Diplomacy' : 'Ngoại Giao', angle: 3 * Math.PI / 4, color: '#f59e0b' },
-      { key: 'pol', label: isEn ? 'Politics' : 'Chính Trị', angle: Math.PI, color: '#60a5fa' },
-      { key: 'int', label: isEn ? 'Strategy' : 'Trí Lực', angle: -3 * Math.PI / 4, color: '#3b82f6' }
+      { key: 'ldr', label: isEn ? 'LDR' : 'LDR', angle: -Math.PI / 2 },
+      { key: 'war', label: isEn ? 'WAR' : 'WAR', angle: -Math.PI / 4 },
+      { key: 'cra', label: isEn ? 'CRA' : 'CRA', angle: 0 },
+      { key: 'log', label: isEn ? 'LOG' : 'LOG', angle: Math.PI / 4 },
+      { key: 'com', label: isEn ? 'COM' : 'COM', angle: Math.PI / 2 },
+      { key: 'dip', label: isEn ? 'DIP' : 'DIP', angle: 3 * Math.PI / 4 },
+      { key: 'pol', label: isEn ? 'POL' : 'POL', angle: Math.PI },
+      { key: 'int', label: isEn ? 'INT' : 'INT', angle: -3 * Math.PI / 4 }
     ];
 
-    // Background concentric polygon rings (25%, 50%, 75%, 100%)
     let gridSvg = '';
-    const rings = [0.25, 0.5, 0.75, 1.0];
-    rings.forEach((ringPct) => {
+    [0.25, 0.5, 0.75, 1.0].forEach((ringPct) => {
       const ringPoints = axes.map(a => {
         const x = cx + Math.cos(a.angle) * r * ringPct;
         const y = cy + Math.sin(a.angle) * r * ringPct;
         return `${x.toFixed(1)},${y.toFixed(1)}`;
       }).join(' ');
-      gridSvg += `<polygon points="${ringPoints}" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1" />`;
+      gridSvg += `<polygon points="${ringPoints}" fill="none" stroke="rgba(148,163,184,0.18)" stroke-width="1" />`;
     });
 
-    // Radial spokes from center
     axes.forEach(a => {
       const x = cx + Math.cos(a.angle) * r;
       const y = cy + Math.sin(a.angle) * r;
-      gridSvg += `<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,0.09)" stroke-width="1" />`;
+      gridSvg += `<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="rgba(148,163,184,0.18)" stroke-width="1" />`;
     });
 
-    // Calculate character stat polygon points
     const statPoints = [];
     const statDots = [];
     axes.forEach(a => {
       const sObj = stats[a.key] || {};
-      const val = typeof sObj.value === 'number' ? sObj.value : 50;
-      const normVal = Math.min(100, Math.max(15, val)) / 100;
+      const hasValue = typeof sObj.value === 'number';
+      const val = hasValue ? sObj.value : 0;
+      const normVal = hasValue ? Math.min(100, Math.max(15, val)) / 100 : 0.15;
       const px = cx + Math.cos(a.angle) * r * normVal;
       const py = cy + Math.sin(a.angle) * r * normVal;
       statPoints.push(`${px.toFixed(1)},${py.toFixed(1)}`);
-      statDots.push(`<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="3" fill="${a.color}" stroke="#0b0f19" stroke-width="1.5" />`);
+      statDots.push(
+        `<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="${hasValue ? 3 : 2}" fill="${hasValue ? '#f59e0b' : '#334155'}" stroke="#0b0f19" stroke-width="1.5" />`
+      );
     });
 
-    // Outer Axis Labels
     let labelsSvg = '';
     axes.forEach(a => {
       const sObj = stats[a.key] || {};
-      const dispVal = sObj.display || sObj.displayVi || '??';
+      const valueText = typeof sObj.value === 'number' ? String(Math.round(sObj.value)) : '?';
       const cos = Math.cos(a.angle);
       const sin = Math.sin(a.angle);
-
-      let lx, ly, textAnchor;
+      const labelRadius = r + 22;
+      let lx = cx + cos * labelRadius;
+      let ly = cy + sin * labelRadius + (sin < -0.9 ? -4 : sin > 0.9 ? 10 : 4);
       if (Math.abs(cos) < 0.15) {
-        // Vertical axes (Top / Bottom)
-        textAnchor = 'middle';
         lx = cx;
-        ly = sin < 0 ? (cy - r - 8) : (cy + r + 15);
       } else if (Math.abs(sin) < 0.15) {
-        // Horizontal axes (Right / Left)
-        textAnchor = cos > 0 ? 'start' : 'end';
-        lx = cos > 0 ? (cx + r + 8) : (cx - r - 8);
         ly = cy + 3.5;
-      } else {
-        // Diagonal axes
-        textAnchor = cos > 0 ? 'start' : 'end';
-        const labelRadius = r + 12;
-        lx = cx + cos * labelRadius;
-        ly = cy + sin * labelRadius + (sin > 0 ? 4 : -1);
       }
-
+      const anchor = Math.abs(cos) < 0.15 ? 'middle' : (cos > 0 ? 'start' : 'end');
       labelsSvg += `
-        <text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" font-size="9" font-family="var(--font-sans, -apple-system, sans-serif)" text-anchor="${textAnchor}">
-          <tspan fill="${a.color}" font-weight="600">${a.label}</tspan> <tspan fill="#f8fafc" font-weight="bold">${dispVal}</tspan>
+        <text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" font-size="10" font-family="var(--font-sans, -apple-system, sans-serif)" text-anchor="${anchor}">
+          <tspan fill="#94a3b8" font-weight="600">${a.label}</tspan>
+          <tspan fill="#f8fafc" font-weight="700"> ${valueText}</tspan>
         </text>
       `;
     });
 
     return `
-      <svg width="270" height="210" viewBox="0 0 270 210" style="display: block; margin: 0 auto; overflow: visible;">
+      <svg class="dossier-radar-svg" viewBox="0 0 320 270" role="img" aria-label="${isEn ? 'Eight attribute radar' : 'Biểu đồ bát vị'}">
         ${gridSvg}
-        <polygon points="${statPoints.join(' ')}" fill="rgba(217, 119, 6, 0.22)" stroke="#f59e0b" stroke-width="1.8" />
+        <polygon points="${statPoints.join(' ')}" fill="rgba(217, 119, 6, 0.18)" stroke="#d97706" stroke-width="1.6" />
         ${statDots.join('')}
         ${labelsSvg}
       </svg>
@@ -300,19 +288,19 @@
     let proximityBadgeHtml = '';
     if (isCoPresent) {
       proximityBadgeHtml = `
-        <span class="tactical-badge tactical-badge--success" style="border-color: #22c55e; color: #4ade80; font-size: 10px;">
+        <span class="tactical-badge tactical-badge--success" style="border-color: #22c55e; color: #4ade80; font-size: 11px;">
           ${isEn ? 'Co-Present (Same Scene)' : 'Đồng Hiện (Cùng Bối Cảnh)'}
         </span>
       `;
     } else if (isIntraSettlement) {
       proximityBadgeHtml = `
-        <span class="tactical-badge tactical-badge--warning" style="border-color: #f59e0b; color: #fbbf24; font-size: 10px;">
+        <span class="tactical-badge tactical-badge--warning" style="border-color: #f59e0b; color: #fbbf24; font-size: 11px;">
           ${isEn ? 'Intra-County (Approx 2 Li)' : 'Nội Huyện Cách Biệt (Cách 2 dặm)'}
         </span>
       `;
     } else {
       proximityBadgeHtml = `
-        <span class="tactical-badge tactical-badge--danger" style="border-color: #ef4444; color: #f87171; font-size: 10px;">
+        <span class="tactical-badge tactical-badge--danger" style="border-color: #ef4444; color: #f87171; font-size: 11px;">
           ${isEn ? 'Distant Province' : 'Viễn Phương Biệt Trấn'}
         </span>
       `;
@@ -323,22 +311,27 @@
     const modalTitle = `${primaryName}${styleName ? (isEn ? ' • Style: ' + styleName : ' • Tự: ' + styleName) : ''}${ageLabel}`;
 
     // 3. Tab 1: Octagonal Attributes & Stats HTML
-    const renderStatRow = (key, nameVi, nameEn, color) => {
+    const renderStatRow = (key, nameVi, nameEn) => {
       const s = stats[key] || {};
-      const val = typeof s.value === 'number' ? s.value : 50;
-      const rank = isEn ? (s.rankEn || s.rankVi || '') : (s.rankVi || '');
-      const disp = isEn ? (s.displayEn || s.display || '???') : (s.displayVi || s.display || '???');
+      const hasValue = typeof s.value === 'number';
+      const valueText = hasValue ? String(Math.round(s.value)) : '???';
+      const rawRank = isEn ? (s.rankEn || s.rankVi || '') : (s.rankVi || '');
+      const rankText = hasValue
+        ? rawRank.replace(/\s*\([^)]*\)/g, '').trim()
+        : (isEn ? 'Fogged' : 'Sương mù');
       const barColor = getStatColor(s.value);
       const label = isEn ? nameEn : nameVi;
+      const width = hasValue ? Math.max(0, Math.min(100, s.value)) : 0;
+      const aria = hasValue ? `${label}: ${valueText}, ${rankText}` : `${label}: hidden`;
 
       return `
-        <div class="dossier-stat-row">
+        <div class="dossier-stat-row" role="group" aria-label="${aria}">
           <span class="dossier-stat-name">${label}</span>
-          <span class="dossier-stat-val" style="color: ${barColor};">${disp}</span>
-          <div class="dossier-stat-bar-track">
-            <div class="dossier-stat-bar-fill" style="width: ${typeof s.value === 'number' ? s.value : 50}%; background-color: ${barColor};"></div>
+          <span class="dossier-stat-val" style="color: ${hasValue ? barColor : 'var(--text-muted)'};">${valueText}</span>
+          <div class="dossier-stat-bar-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${hasValue ? Math.round(s.value) : 0}">
+            <div class="dossier-stat-bar-fill" style="width: ${width}%; background-color: ${hasValue ? barColor : 'transparent'};"></div>
           </div>
-          <span class="dossier-stat-rank">${rank}</span>
+          <span class="dossier-stat-rank">${rankText}</span>
         </div>
       `;
     };
@@ -346,35 +339,22 @@
     const radarChartSvg = generateRadarChartSvg(stats, isEn);
 
     const tab1Html = `
-      <div style="display: grid; grid-template-columns: 275px 1fr; gap: 16px; align-items: center; padding: 4px 0;">
-        <div style="background: rgba(0,0,0,0.25); border: 1px solid var(--border-neutral); padding: 12px; border-radius: var(--radius-sm); text-align: center;">
-          <div style="font-size: 10.5px; font-weight: bold; color: var(--brand-primary); margin-bottom: 4px; letter-spacing: 0.05em;">
-            ${isEn ? 'OCTAGONAL TACTICAL RADAR' : 'ĐA GIÁC BÁT VỊ QUÂN LƯỢC'}
-          </div>
+      <div class="dossier-stats-layout">
+        <section class="dossier-radar-card">
+          <div class="dossier-section-title">${isEn ? 'OCTAGONAL TACTICAL RADAR' : 'ĐA GIÁC BÁT VỊ QUÂN LƯỢC'}</div>
           ${radarChartSvg}
-        </div>
-        <div style="display: flex; flex-direction: column; gap: 10px;">
-          <!-- Military & Combat Group -->
-          <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-subtle); padding: 8px 12px; border-radius: var(--radius-xs);">
-            <div style="font-size: 10px; font-weight: bold; color: #f87171; margin-bottom: 6px; text-transform: uppercase;">
-              ${isEn ? 'Command & Combat Virtues' : 'Quân Lược & Võ Nghệ'}
-            </div>
-            ${renderStatRow('ldr', 'Thống Soái', 'Command', '#c084fc')}
-            ${renderStatRow('war', 'Võ Lực', 'Warfare', '#f87171')}
-            ${renderStatRow('cra', 'Khéo Léo', 'Craft', '#34d399')}
-          </div>
-          <!-- Governance & Intellect Group -->
-          <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-subtle); padding: 8px 12px; border-radius: var(--radius-xs);">
-            <div style="font-size: 10px; font-weight: bold; color: #60a5fa; margin-bottom: 6px; text-transform: uppercase;">
-              ${isEn ? 'Strategy & Statecraft Virtues' : 'Trí Mưu & Văn Trị'}
-            </div>
-            ${renderStatRow('int', 'Trí Lực', 'Strategy', '#60a5fa')}
-            ${renderStatRow('pol', 'Chính Trị', 'Politics', '#93c5fd')}
-            ${renderStatRow('dip', 'Ngoại Giao', 'Diplomacy', '#f59e0b')}
-            ${renderStatRow('com', 'Thương Nghiệp', 'Commerce', '#fbbf24')}
-            ${renderStatRow('log', 'Hậu Cần', 'Logistics', '#2dd4bf')}
-          </div>
-        </div>
+          <div class="dossier-radar-note">${isEn ? 'Shape only; exact values are in the grid.' : 'Chỉ thể hiện hình dạng; số chính xác nằm ở bảng bên.'}</div>
+        </section>
+        <section class="dossier-stat-grid" aria-label="${isEn ? 'Eight attributes' : 'Bát vị quân lược'}">
+          ${renderStatRow('ldr', 'Thống Soái', 'Command')}
+          ${renderStatRow('war', 'Võ Lực', 'Warfare')}
+          ${renderStatRow('cra', 'Khéo Léo', 'Craft')}
+          ${renderStatRow('int', 'Trí Lực', 'Strategy')}
+          ${renderStatRow('pol', 'Chính Trị', 'Politics')}
+          ${renderStatRow('dip', 'Ngoại Giao', 'Diplomacy')}
+          ${renderStatRow('com', 'Thương Nghiệp', 'Commerce')}
+          ${renderStatRow('log', 'Hậu Cần', 'Logistics')}
+        </section>
       </div>
     `;
 
@@ -438,7 +418,7 @@
             <span style="font-size: 11px; font-weight: bold; color: var(--brand-primary);">
               ${isEn ? '[AMBITION & ASPIRATION]:' : '[CHÍ HƯỚNG & DÃ TÂM]:'}
             </span>
-            <span style="font-size: 10px; color: var(--text-muted); font-family: monospace;">${ambitionStatus}</span>
+            <span style="font-size: 11px; color: var(--text-muted); font-family: monospace;">${ambitionStatus}</span>
           </div>
           <div style="font-size: 11px; line-height: 1.5; color: ${dossier.ambition?.isRevealed ? 'var(--text-main)' : 'var(--text-muted)'}; margin-bottom: 10px;">
             ${ambitionText}
@@ -448,7 +428,7 @@
             <span style="font-size: 11px; font-weight: bold; color: #e879f9;">
               ${isEn ? '[PRIVATE SECRETS]:' : '[BÍ MẬT ĐỜI TƯ]:'}
             </span>
-            <span style="font-size: 10px; color: var(--text-muted); font-family: monospace;">${secretsStatus}</span>
+            <span style="font-size: 11px; color: var(--text-muted); font-family: monospace;">${secretsStatus}</span>
           </div>
           <div style="font-size: 11px; line-height: 1.5; color: ${dossier.secretStory?.isRevealed ? 'var(--text-main)' : 'var(--text-muted)'};">
             ${secretText}
@@ -475,19 +455,19 @@
 
         <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
           <div style="background: rgba(0,0,0,0.25); border: 1px solid var(--border-subtle); padding: 8px; text-align: center; border-radius: var(--radius-xs);">
-            <div style="font-size: 10px; color: var(--text-muted); margin-bottom: 2px;">Thương Binh (Spear)</div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 2px;">Thương Binh (Spear)</div>
             <div style="font-size: 14px; font-weight: bold; color: #ef4444; font-family: monospace;">Hạng S</div>
           </div>
           <div style="background: rgba(0,0,0,0.25); border: 1px solid var(--border-subtle); padding: 8px; text-align: center; border-radius: var(--radius-xs);">
-            <div style="font-size: 10px; color: var(--text-muted); margin-bottom: 2px;">Kỵ Binh (Cavalry)</div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 2px;">Kỵ Binh (Cavalry)</div>
             <div style="font-size: 14px; font-weight: bold; color: #f59e0b; font-family: monospace;">Hạng A</div>
           </div>
           <div style="background: rgba(0,0,0,0.25); border: 1px solid var(--border-subtle); padding: 8px; text-align: center; border-radius: var(--radius-xs);">
-            <div style="font-size: 10px; color: var(--text-muted); margin-bottom: 2px;">Bộ Binh (Infantry)</div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 2px;">Bộ Binh (Infantry)</div>
             <div style="font-size: 14px; font-weight: bold; color: #3b82f6; font-family: monospace;">Hạng B</div>
           </div>
           <div style="background: rgba(0,0,0,0.25); border: 1px solid var(--border-subtle); padding: 8px; text-align: center; border-radius: var(--radius-xs);">
-            <div style="font-size: 10px; color: var(--text-muted); margin-bottom: 2px;">Cung Nỏ (Archery)</div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 2px;">Cung Nỏ (Archery)</div>
             <div style="font-size: 14px; font-weight: bold; color: #94a3b8; font-family: monospace;">Hạng C</div>
           </div>
         </div>
@@ -571,19 +551,19 @@
 
     // Modal Assembly
     modalEl.innerHTML = `
-      <div class="modal-box modal-box--large" style="max-width: 860px;">
+      <div class="modal-box modal-box--large dossier-modal">
         <!-- Modal Top Bar -->
-        <div class="modal-header">
-          <div style="display: flex; align-items: center; gap: 8px;">
+        <div class="modal-header dossier-modal-header">
+          <div class="dossier-modal-title-row">
             <span class="tactical-badge tactical-badge--primary">${isEn ? '[OFFICER DOSSIER]' : '[HỒ SƠ VÕ TƯỚNG]'}</span>
-            <div class="modal-title" style="letter-spacing: 0.05em; font-size: 13.5px; font-weight: 700; color: #fbbf24;">${modalTitle}</div>
+            <div class="modal-title dossier-modal-title">${modalTitle}</div>
           </div>
           <button class="btn-modal-close" onclick="closeNpcDossierModal()" title="${isEn ? 'Close' : 'Đóng'}">&times;</button>
         </div>
 
-        <div class="modal-body" style="padding: 16px; display: flex; flex-direction: column; gap: 12px;">
+        <div class="modal-body dossier-body">
           <!-- 1. Fixed Header: Identity, Location, Proximity & Kizuna Aura -->
-          <div style="display: grid; grid-template-columns: 80px 1fr 1fr; gap: 16px; background: rgba(0, 0, 0, 0.28); padding: 12px 14px; border: 1px solid var(--border-neutral); border-radius: var(--radius-sm);">
+          <div class="dossier-header">
             <!-- Avatar Portrait (DB-driven, illustration-ready) -->
             <div class="dossier-portrait-frame ${dossier.intelLevel >= 4 ? 'is-unlocked' : ''}">
               ${dossier.portraitUrl
@@ -592,64 +572,55 @@
             </div>
 
             <!-- Identity Core -->
-            <div style="display: flex; flex-direction: column; justify-content: center;">
-              <div style="display: flex; align-items: baseline; gap: 6px;">
-                <span style="font-size: 17px; font-weight: 700; color: #f8fafc; font-family: var(--font-sans); letter-spacing: 0.02em;">${primaryName}</span>
-                ${dossier.nameHan ? `<span style="font-size: 13px; color: #94a3b8; font-family: 'Noto Serif SC', serif;">(${dossier.nameHan})</span>` : ''}
+            <div class="dossier-identity">
+              <div class="dossier-name-row">
+                <span class="dossier-name">${primaryName}</span>
+                ${dossier.nameHan ? `<span class="dossier-name-han">(${dossier.nameHan})</span>` : ''}
               </div>
-              <div style="font-size: 11.5px; color: var(--text-muted); margin: 3px 0 6px 0;">
+              <div class="dossier-meta">
                 ${styleName ? (isEn ? 'Style: ' + styleName + ' • ' : 'Tự: ' + styleName + ' • ') : ''}${position}
               </div>
-              <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                <span style="font-size: 11px; color: #93c5fd; font-family: var(--font-sans);">${location}</span>
+              <div class="dossier-chip-row">
+                <span class="dossier-chip">${location}</span>
                 ${proximityBadgeHtml}
+                <span class="dossier-chip dossier-chip--muted">${isEn ? 'Mood' : 'Khí sắc'}: ${moodLabel}</span>
+                <span class="dossier-pill-badge dossier-pill-badge--gold">${relTitle}</span>
               </div>
             </div>
 
             <!-- Kizuna & Disposition -->
-            <div style="display: flex; flex-direction: column; justify-content: center; gap: 5px;">
-              <div>
-                <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 2px;">
-                  <span style="color: var(--text-muted);">${isEn ? 'Affinity:' : 'Thiện cảm:'}</span>
-                  <span style="font-variant-numeric: tabular-nums; font-weight: bold; color: #34d399;">${affinityPct}/100</span>
+            <div class="dossier-kizuna">
+              <div class="dossier-meter">
+                <div class="dossier-meter-head">
+                  <span>${isEn ? 'Affinity' : 'Thiện cảm'}</span>
+                  <strong class="is-affinity">${affinityPct}/100</strong>
                 </div>
-                <div class="tactical-progress-track" style="height: 5px;">
-                  <div class="tactical-progress-fill" style="width: ${affinityPct}%; background-color: #10b981;"></div>
-                </div>
-              </div>
-
-              <div>
-                <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 2px;">
-                  <span style="color: var(--text-muted);">${isEn ? 'Respect:' : 'Kính trọng:'}</span>
-                  <span style="font-variant-numeric: tabular-nums; font-weight: bold; color: #fbbf24;">${respectPct}/100</span>
-                </div>
-                <div class="tactical-progress-track" style="height: 5px;">
-                  <div class="tactical-progress-fill" style="width: ${respectPct}%; background-color: #f59e0b;"></div>
+                <div class="dossier-meter-track">
+                  <div class="dossier-meter-fill is-affinity" style="width: ${affinityPct}%;"></div>
                 </div>
               </div>
 
-              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10.5px; margin-top: 3px; padding-top: 4px; border-top: 1px dashed rgba(255,255,255,0.08); gap: 6px;">
-                <div style="display: flex; align-items: center; gap: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                  <span style="color: var(--text-muted); font-size: 10px;">${isEn ? 'Bond:' : 'Quan hệ:'}</span>
-                  <span class="dossier-pill-badge dossier-pill-badge--gold" style="font-size: 10px; padding: 1px 7px; font-weight: 600;">${relTitle}</span>
+              <div class="dossier-meter">
+                <div class="dossier-meter-head">
+                  <span>${isEn ? 'Respect' : 'Kính trọng'}</span>
+                  <strong class="is-respect">${respectPct}/100</strong>
                 </div>
-                <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
-                  <span style="color: var(--text-muted); font-size: 10px;">${isEn ? 'Mood:' : 'Khí sắc:'}</span>
-                  <span style="color: #60a5fa; font-weight: 600; font-size: 10.5px;">${moodLabel}</span>
+                <div class="dossier-meter-track">
+                  <div class="dossier-meter-fill is-respect" style="width: ${respectPct}%;"></div>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- Illustration slot: filled from master_characters.illustration_url -->
-          <div class="dossier-illustration-frame">
-            ${dossier.illustrationUrl
-              ? `<img class="dossier-illustration-img" src="${dossier.illustrationUrl}" alt="${primaryName}" loading="lazy" />`
-              : `<div class="dossier-illustration-empty">${isEn ? 'Illustration slot — art can be added later' : 'Khung ảnh minh hoạ — có thể bổ sung sau'}</div>`}
-          </div>
+          <!-- Illustration is rendered only when the DB has an asset; no empty band. -->
+          ${dossier.illustrationUrl
+            ? `<div class="dossier-illustration-frame is-inset">
+                 <img class="dossier-illustration-img" src="${dossier.illustrationUrl}" alt="${primaryName}" loading="lazy" />
+               </div>`
+            : ''}
 
-          <!-- 2. ROTK 3-Tab Bar -->
-          <div class="dossier-tab-bar">
+          <!-- 2. ROTK 3-Tab Bar (sticky) -->
+          <div class="dossier-tab-bar dossier-tab-bar--sticky">
             <button class="dossier-tab-btn ${activeDossierTab === 'stats' ? 'active' : ''}" onclick="switchDossierTab('stats')">
               ${isEn ? 'Octagonal Stats' : 'Bát Vị Quân Lược'}
             </button>
@@ -662,28 +633,22 @@
           </div>
 
           <!-- 3. Active Tab Stage -->
-          <div id="dossier-tab-content">
+          <div id="dossier-tab-content" class="dossier-tab-content">
             ${activeDossierTab === 'stats' ? tab1Html : (activeDossierTab === 'kizuna' ? tab2Html : tab3Html)}
           </div>
 
-          <!-- 4. Dynamic Action Deck -->
-          <div style="border-top: 1px solid var(--border-neutral); padding-top: 10px;">
-            <div style="font-size: 11px; font-weight: bold; color: var(--text-main); margin-bottom: 6px; display: flex; justify-content: space-between;">
-              <span>${isEn ? '[AVAILABLE STRATEGIC INTERACTIONS]:' : '[HÀNH ĐỘNG GIAO TẾ KHẢ DĨ]:'}</span>
-              <span style="font-size: 10px; color: var(--text-muted); font-weight: normal;">
-                ${isCoPresent ? (isEn ? 'Direct (Face-to-Face)' : 'Trực Tiếp (Mặt Đối Mặt)') : (isEn ? 'Remote Logistics' : 'Viễn Giao / Di Chuyển')}
-              </span>
-            </div>
-            ${actionButtonsHtml}
-          </div>
-
           <!-- Dynamic Interaction Feedback Box -->
-          <div id="dossier-interaction-feedback" class="hidden" style="background: #111420; border: 1px solid var(--border-neutral); padding: 12px; margin-top: 4px; border-radius: var(--radius-xs);"></div>
+          <div id="dossier-interaction-feedback" class="hidden dossier-feedback"></div>
 
-          <!-- Footer Modal Controls -->
-          <div style="display: flex; justify-content: flex-end; margin-top: 6px; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.05);">
-            <button class="ui-btn" onclick="closeNpcDossierModal()" style="padding: 6px 16px; font-weight: 600;">
-              ${isEn ? '× Close Dossier' : '× Đóng Hồ Sơ'}
+          <!-- 4. Sticky Action Deck -->
+          <div class="dossier-action-footer">
+            <div class="dossier-action-copy">
+              <div class="dossier-action-title">${isEn ? 'AVAILABLE STRATEGIC INTERACTIONS' : 'HÀNH ĐỘNG GIAO TẾ KHẢ DĨ'}</div>
+              <div class="dossier-action-sub">${isCoPresent ? (isEn ? 'Direct (face-to-face)' : 'Trực tiếp (mặt đối mặt)') : (isEn ? 'Remote logistics' : 'Viễn giao / di chuyển')}</div>
+            </div>
+            <div class="dossier-action-buttons">${actionButtonsHtml}</div>
+            <button class="ui-btn dossier-close-btn" onclick="closeNpcDossierModal()">
+              ${isEn ? '× Close' : '× Đóng'}
             </button>
           </div>
         </div>
@@ -756,7 +721,7 @@
           <div style="font-size: 11px; line-height: 1.5; color: #cbd5e1; margin-bottom: 8px;">
             "${dialogueText}"
           </div>
-          <div style="font-size: 10px; color: #34d399; display: flex; gap: 12px; font-variant-numeric: tabular-nums; flex-wrap: wrap;">
+          <div style="font-size: 11px; color: #34d399; display: flex; gap: 12px; font-variant-numeric: tabular-nums; flex-wrap: wrap;">
             <span>${affinityLabel} ${r.deltas.affinityChange > 0 ? '+' : ''}${r.deltas.affinityChange}</span>
             <span>${respectLabel} ${r.deltas.respectChange > 0 ? '+' : ''}${r.deltas.respectChange}</span>
             ${staminaStr}

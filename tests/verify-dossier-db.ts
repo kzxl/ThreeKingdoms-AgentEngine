@@ -95,6 +95,9 @@ function run() {
   assert(npcUi.includes('dossier-portrait-frame'), 'NPC dossier must render a portrait frame');
   assert(npcUi.includes('dossier-illustration-frame'), 'NPC dossier must render an illustration slot');
   assert(playerUi.includes('dossier-illustration-frame'), 'protagonist dossier must render an illustration slot');
+  assert(npcUi.includes('dossier-stats-layout'), 'NPC dossier must use the compact stats layout');
+  assert(npcUi.includes('dossier-radar-svg'), 'NPC dossier must use the short-label radar');
+  assert(!npcUi.includes('displayVi || s.display'), 'the stat value slot must not print the rank label');
 
   console.log('✅ Dossier DB-first: roster fields win, portrait/illustration URLs flow to both UIs.');
 }
