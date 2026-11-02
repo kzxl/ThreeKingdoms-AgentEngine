@@ -50,6 +50,7 @@ carry it.
 | C2 | Injury strip in both dossiers and the journal | `8fb0936` |
 | C3 | NPC dossier assets tab and merchant event cap | `91af8ac` |
 | D | Shared confirms, onboarding card, relationship-first panel | `67fe17e` |
+| D+ | Protagonist dossier shares the NPC `.dossier-*` contract; duplicate TS renderer removed | `7a51ab9` |
 
 The frozen `public/js` count is unchanged: onboarding lives in
 `src/client/features/onboarding`. `nativeConfirmCalls` is locked at 0 and inline

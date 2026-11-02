@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.49.1] - 2026-11-02
+
+Unified the protagonist and NPC dossier surfaces.
+
+### Changed
+- The protagonist dossier now uses the same `.dossier-*` header, sticky tab
+  bar, 320×270 short-label radar, 2×4 stat grid and sticky action footer as the
+  NPC dossier.
+- The illustration band renders only when `player_state.illustration_url` is
+  present.
+- Removed the duplicate `src/client/features/dossiers` ModalShell, which mounted
+  the same `protagonist-dossier-modal` / `npc-dossier-modal` ids and shadowed the
+  detailed renderer through the legacy bridge.
+- Inline styles dropped from 740 to 681; the protagonist dossier no longer uses
+  `grand-hub-subnav-btn`.
+
+### Verification
+`npm run verify` green: 107/107 suites, 28/28 API contracts, 8/8 write smokes.
+New `verify-dossier-consistency` guards one renderer per modal id and the shared
+class contract.
+
+---
+
 ## [1.49.0] - 2026-11-02
 
 Closed the remaining UI surfaces from the 2026-11-01 plan.
