@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.50.0] - 2026-11-02
+
+Upgraded the local market price board from a five-column stub to a full
+trading surface.
+
+### Added
+- `GET /api/economy/market-board` returns all 160 master items for the player's
+  current settlement with local price, base price, change, stock/demand,
+  pressure, recent history, player stock and the best arbitrage destination.
+- Settlement resolution now follows names/sub-locations (`Vườn Đào` → `zhuo_xian`)
+  instead of only accepting `LOC-*` ids.
+- Board summary cards: total items, scarce/surplus counts, arbitrage count and
+  the best margin.
+- Search, category, pressure and sort filters; expandable rows with a larger
+  trend chart, item stats and arbitrage detail.
+- Buy/sell buttons on every row open the existing quick-trade dialog.
+
+### Changed
+- The market modal uses the full 1120px surface instead of the 440px shared
+  `modal-card` cap.
+- Supply pressure combines stock/demand with the settlement specialisation, so
+  surplus/deficit counts are not always zero.
+
+### Verification
+`npm run verify` green: 108/108 suites, 28/28 API contracts, 8/8 write smokes.
+`npm run audit` passed 2,313 invariants with 0 discrepancies.
+
+---
+
 ## [1.49.1] - 2026-11-02
 
 Unified the protagonist and NPC dossier surfaces.
