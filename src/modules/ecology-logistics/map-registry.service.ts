@@ -22,6 +22,11 @@ export interface MapRegistrySubLocation {
   nodeId: string;
   nameVi: string;
   kind: string;
+  mapScope: 'CITY' | 'WILDERNESS';
+  localX: number | null;
+  localY: number | null;
+  iconKey: string;
+  sceneKey: string | null;
   sortOrder: number;
 }
 
@@ -87,7 +92,8 @@ export class MapRegistryService {
     const nodeIds = new Set(nodes.map(node => node.nodeId));
 
     const rawSubLocations = this.db.query<any>(
-      `SELECT sub_location_id, location_id, name_vi, name_en, kind, sort_order
+      `SELECT sub_location_id, location_id, name_vi, name_en, kind, sort_order,
+              map_scope, local_x, local_y, icon_key, scene_key
        FROM location_sublocations ORDER BY location_id, sort_order;`
     );
     const subLocations: MapRegistrySubLocation[] = rawSubLocations.map(row => ({
@@ -96,6 +102,11 @@ export class MapRegistryService {
       nodeId: this.nodeForLocation(String(row.location_id)),
       nameVi: String(row.name_vi),
       kind: String(row.kind || 'URBAN'),
+      mapScope: row.map_scope === 'WILDERNESS' ? 'WILDERNESS' : 'CITY',
+      localX: row.local_x === null || row.local_x === undefined ? null : Number(row.local_x),
+      localY: row.local_y === null || row.local_y === undefined ? null : Number(row.local_y),
+      iconKey: String(row.icon_key || (row.kind === 'URBAN' ? 'city' : 'wild')),
+      sceneKey: row.scene_key || null,
       sortOrder: Number(row.sort_order || 0)
     }));
 
@@ -167,6 +178,11 @@ export class MapRegistryService {
 
   public getPoiScenesForNode(nodeId: string): MapRegistryPoi[] {
     return this.getRegistry().poiScenesByNode[nodeId] || [];
+  }
+
+  public getWildernessForNode(nodeId: string): MapRegistrySubLocation[] {
+    return (this.getRegistry().subLocationsByNode[nodeId] || [])
+      .filter(row => row.mapScope === 'WILDERNESS');
   }
 
   public getResourcesForNode(nodeId: string): MapRegistryResource[] {

@@ -68,6 +68,8 @@ const REQUIRED_COLUMNS: Record<string, string[]> = {
   businesses: ['tier', 'debt', 'business_type', 'owner_character_id', 'daily_revenue', 'accumulated_profit'],
   npc_state: ['int_exp', 'war_exp', 'ldr_exp', 'pol_exp', 'dip_exp', 'com_exp', 'log_exp', 'cra_exp'],
   player_life_state: ['stress', 'last_meal_date', 'last_rest_date', 'last_upkeep_month', 'routine_streak'],
+  player_state: ['current_sub_location'],
+  location_sublocations: ['map_scope', 'local_x', 'local_y', 'icon_key', 'scene_key'],
   master_crops: ['skill_code', 'rotation_group', 'soil_impact'],
   land_parcels: ['last_crop_code'],
   resource_node_rules: ['restore_item_code', 'restore_cash', 'restore_stock', 'restore_skill_code', 'alternate_tool_code'],

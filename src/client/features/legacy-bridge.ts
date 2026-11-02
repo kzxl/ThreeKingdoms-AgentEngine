@@ -19,6 +19,7 @@ import { transitTurnModals } from './transit-turn';
 import { questModal } from './quests/quest.modal';
 import { marketStallModal } from './market-stall';
 import { worldMapModal } from './world-map';
+import { wildernessMapModal } from './world-map/wilderness-map.modal';
 import { mapLiveService } from './world-map/map-live.service';
 
 export function setupLegacyBridge(): void {
@@ -148,9 +149,15 @@ export function setupLegacyBridge(): void {
     open: () => worldMapModal.open(),
     close: () => worldMapModal.close()
   };
+  w.WildernessMapUI = {
+    open: (nodeId?: string) => wildernessMapModal.open(nodeId),
+    close: () => wildernessMapModal.close()
+  };
   w.MapLiveService = {
     load: (force = false) => mapLiveService.load(force),
     getForMapNode: (nodeId: string) => mapLiveService.getForMapNode(nodeId),
+    getSubLocationsForNode: (nodeId: string) => mapLiveService.getSubLocationsForNode(nodeId),
+    getPoiScenesForNode: (nodeId: string) => mapLiveService.getPoiScenesForNode(nodeId),
     getStatusForMapNode: (nodeId: string) => mapLiveService.getStatusForMapNode(nodeId),
     getThreatForMapNode: (nodeId: string) => mapLiveService.getThreatForMapNode(nodeId),
     findNpcByName: (name: string) => mapLiveService.findNpcByName(name),

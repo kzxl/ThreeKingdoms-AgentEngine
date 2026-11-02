@@ -9746,3 +9746,79 @@ textarea {
 .dossier-skill-perk.is-locked {
   opacity: 0.55;
 }
+
+/* Wilderness local map (Map Step A/B) */
+.wilderness-map-frame {
+  border: 1px solid var(--border, #334155);
+  border-radius: 8px;
+  background: #141a13;
+  overflow: hidden;
+}
+.wilderness-map-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.wilderness-map-ground {
+  fill: #1b2319;
+  stroke: #3f4a36;
+  stroke-width: 1;
+}
+.wilderness-map-ring {
+  fill: none;
+  stroke: #33402c;
+  stroke-width: 1;
+  stroke-dasharray: 4 7;
+}
+.wilderness-map-road {
+  fill: none;
+  stroke: #514433;
+  stroke-width: 2;
+  stroke-dasharray: 6 5;
+}
+.wilderness-node {
+  cursor: pointer;
+}
+.wilderness-node-halo {
+  fill: transparent;
+  stroke: #4b5a40;
+  stroke-width: 1;
+  opacity: 0.55;
+}
+.wilderness-node-dot {
+  fill: #26301f;
+  stroke: #8a9a72;
+  stroke-width: 2;
+}
+.wilderness-node-seal {
+  fill: #d6c08a;
+  font-size: 13px;
+  font-family: inherit;
+  pointer-events: none;
+}
+.wilderness-node-label {
+  fill: #cbd5b8;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  pointer-events: none;
+}
+.wilderness-node.is-current .wilderness-node-dot {
+  fill: #6d5428;
+  stroke: #f0c96a;
+}
+.wilderness-node.is-current .wilderness-node-label {
+  fill: #f0c96a;
+}
+.wilderness-node:hover .wilderness-node-halo,
+.wilderness-node:focus-visible .wilderness-node-halo {
+  stroke: #e8c37a;
+  opacity: 1;
+}
+.wilderness-map-legend {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8px;
+  font-size: 11px;
+  color: #cbd5b8;
+}

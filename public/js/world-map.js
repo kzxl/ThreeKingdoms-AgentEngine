@@ -1631,6 +1631,7 @@ function renderWorldMapIntel(nodeId = selectedMapNodeId) {
         <button class="btn-march" onclick="executeMarchToSelectedNode('${nodeId}')"><span>${isEn ? 'March here' : 'Hành quân tới đây'}</span></button>
       `}
       <button class="intel-secondary-action" ${caravanDisabled ? 'disabled' : ''} onclick="openCaravanWithDestination('${nodeId}')" title="${caravanTitle}">${uiIcon('cart')} ${isEn ? 'Trade caravan' : 'Lập thương đoàn'}</button>
+      <button class="intel-secondary-action" onclick="openWildernessMap('${nodeId}')" title="${isEn ? 'Explore the wilderness around this city' : 'Khảo sát dã ngoại quanh thành này'}">${uiIcon('tree')} ${isEn ? 'Wilderness' : 'Dã Ngoại'}</button>
     </div>
 
     <!-- Connected Routes -->
@@ -1736,6 +1737,14 @@ function renderWorldMapIntel(nodeId = selectedMapNodeId) {
       </div>
     </details>
   `;
+}
+
+function openWildernessMap(nodeId) {
+  if (window.WildernessMapUI && typeof window.WildernessMapUI.open === 'function') {
+    window.WildernessMapUI.open(nodeId);
+    return;
+  }
+  showToast(currentLang === 'en' ? 'Wilderness map is loading, please retry.' : 'Bản đồ dã ngoại chưa sẵn sàng, thử lại sau.', true);
 }
 
 async function executeMarchToSelectedNode(nodeId) {
