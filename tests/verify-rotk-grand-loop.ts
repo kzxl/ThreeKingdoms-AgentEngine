@@ -62,7 +62,7 @@ async function runGrandLoopVerification(): Promise<void> {
   const originalEfficiency = primaryBiz.efficiencyMultiplier;
 
   // 1d. Execute hire transaction on an unhired candidate
-  const unhiredCandidate = candidates.find(c => !c.isHired);
+  const unhiredCandidate = candidates.find(c => !c.isHired && c.eligible !== false);
   if (unhiredCandidate) {
     console.log(`      Executing employment contract for ${unhiredCandidate.nameVi} -> ${primaryBiz.name}...`);
     const hireResult = workforceService.hireSpecialist({
