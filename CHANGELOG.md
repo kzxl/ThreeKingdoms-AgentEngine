@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.49.0] - 2026-11-02
+
+Closed the remaining UI surfaces from the 2026-11-01 plan.
+
+### Added
+- Warehouse renewal and merchant-route creation in the market modal; the
+  logistics tab shows the latest five `merchant_events`.
+- Durable-tool repair tab with usage bars, server price and skill gate.
+- Wilderness resource gather badges and POI scene survey; the city mini-map
+  exposes all 93 urban rows and opens contextual scenes without spending a day.
+- Hire quote modal with server price, fame/virtue/affinity gates and the
+  `retryAfterDate` for refusals.
+- Injury strip in the protagonist dossier, NPC dossier and journal, fed by
+  `/api/conditions`.
+- NPC dossier **Assets & Succession** tab with the latest `npc_ledger` entries
+  and assigned business/manager.
+- First-run onboarding card and a `?` header button to reopen it.
+
+### Changed
+- The local picker and region resolution read `MapLiveService` registry rows
+  first; `map-data.js` remains an offline fallback.
+- All native `confirm()` calls use `window.UI.confirm`/`confirmDialog`.
+- The right-panel deck defaults to the household tab instead of the raw ledger.
+- The frozen legacy script count is unchanged; onboarding is a TypeScript slice.
+- UI ratchet locks `nativeConfirmCalls` at 0 and inline styles at 740.
+
+### Verification
+`npm run verify` green: 106/106 suites, 28/28 API contracts, 8/8 write smokes.
+`npm run audit` passed 2,313 invariants with 0 discrepancies.
+
+---
+
 ## [1.48.0] - 2026-11-01
 
 Reworked the NPC dossier for readability.

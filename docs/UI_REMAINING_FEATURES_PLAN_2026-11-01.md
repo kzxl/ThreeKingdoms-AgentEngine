@@ -34,7 +34,31 @@ fallback only until their replacement passes the browser check.
 P0 means the backend feature cannot be used from the game. P1 means the feature
 works but is hidden or incomplete. P2 is observability/polish.
 
-## 3. Handling plan
+## 3. Implementation status (2026-11-02)
+
+All 11 gaps are closed; this section records what shipped and the commits that
+carry it.
+
+| Phase | Item | Commit |
+| :--- | :--- | :--- |
+| A1/A2 | Warehouse renewal, merchant route form, merchant event feed | `a203e0a` |
+| A3 | Durable-tool repair tab in the equipment modal | `2d2edd3` |
+| B1 | Wilderness gather badges and POI scene survey | `cd70899` |
+| B2 | City mini-map with 93 reachable urban rows | `fcb5493` |
+| B3 | Registry-driven local picker and region resolution | `f041e78` |
+| C1 | Hire quote modal with refusal retry date | `0a27fa2` |
+| C2 | Injury strip in both dossiers and the journal | `8fb0936` |
+| C3 | NPC dossier assets tab and merchant event cap | `91af8ac` |
+| D | Shared confirms, onboarding card, relationship-first panel | `67fe17e` |
+
+The frozen `public/js` count is unchanged: onboarding lives in
+`src/client/features/onboarding`. `nativeConfirmCalls` is locked at 0 and inline
+styles at 740 by `tools/ui-baseline.json`.
+
+Two earlier supply-chain items remain outside this plan: a per-city personal bag
+(W1-5) and multi-item merchant routes.
+
+## 4. Handling plan
 
 ### Phase A — Unblock backend features (P0)
 
@@ -138,7 +162,7 @@ works but is hidden or incomplete. P2 is observability/polish.
 - Add a first-run onboarding card: day loop, action cost, market, save/load.
 - Default the right panel to relations, not the raw ledger.
 
-## 4. Delivery order
+## 5. Delivery order
 
 1. **A1 warehouse renew** (smallest, removes a hard lock).
 2. **A2 merchant route form** + **A3 tool repair**.
@@ -151,7 +175,7 @@ works but is hidden or incomplete. P2 is observability/polish.
 Each item is one commit with its own suite or browser check. No item may add a
 second renderer for an existing modal id.
 
-## 5. Acceptance for the whole program
+## 6. Acceptance for the whole program
 
 - Every P0 backend feature is reachable from the UI.
 - Every `URBAN`/`WILDERNESS` row has exactly one map surface or a deliberate
