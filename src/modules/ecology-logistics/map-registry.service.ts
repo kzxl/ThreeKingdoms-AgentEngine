@@ -185,6 +185,11 @@ export class MapRegistryService {
       .filter(row => row.mapScope === 'WILDERNESS');
   }
 
+  public getCityForNode(nodeId: string): MapRegistrySubLocation[] {
+    return (this.getRegistry().subLocationsByNode[nodeId] || [])
+      .filter(row => row.mapScope === 'CITY');
+  }
+
   public getResourcesForNode(nodeId: string): MapRegistryResource[] {
     return this.getRegistry().resourcesByNode[nodeId] || [];
   }

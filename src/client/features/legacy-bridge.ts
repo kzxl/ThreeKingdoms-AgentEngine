@@ -20,6 +20,7 @@ import { questModal } from './quests/quest.modal';
 import { marketStallModal } from './market-stall';
 import { worldMapModal } from './world-map';
 import { wildernessMapModal } from './world-map/wilderness-map.modal';
+import { cityMapModal } from './world-map/city-map.modal';
 import { mapLiveService } from './world-map/map-live.service';
 
 export function setupLegacyBridge(): void {
@@ -153,6 +154,10 @@ export function setupLegacyBridge(): void {
   w.WildernessMapUI = {
     open: (nodeId?: string) => wildernessMapModal.open(nodeId),
     close: () => wildernessMapModal.close()
+  };
+  w.CityMapUI = {
+    open: (nodeId?: string) => cityMapModal.open(nodeId),
+    close: () => cityMapModal.close()
   };
   w.MapLiveService = {
     load: (force = false) => mapLiveService.load(force),

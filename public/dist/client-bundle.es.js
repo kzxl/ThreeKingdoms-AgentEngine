@@ -1579,14 +1579,14 @@ function R() {
 function z(e) {
 	return String(e ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
-function B(e) {
+function ae(e) {
 	if (!e || typeof e != "object") return "";
 	let t = [];
 	if (e.cash && t.push(`+${e.cash} Quan`), e.fame && t.push(`+${e.fame} ${R() ? "fame" : "danh vọng"}`), e.exp) for (let [n, r] of Object.entries(e.exp)) r && t.push(`+${r} ${String(n).toUpperCase()} EXP`);
 	if (Array.isArray(e.items)) for (let n of e.items) t.push(`${n.quantity}× ${n.code}`);
 	return t.join(" • ");
 }
-var V = new class {
+var B = new class {
 	modal;
 	constructor() {
 		this.modal = i({
@@ -1938,7 +1938,7 @@ var V = new class {
         <strong>${o.success ? s ? "Step succeeded" : "Bước thành công" : s ? "Step failed" : "Bước thất bại"}</strong>
         <div>${z(s ? o.narrativeEn : o.narrative)}</div>
         <div class="quest-meta">D20 ${o.roll} + ${o.mod} = ${o.total} / DC ${o.dc}</div>
-        <div class="quest-meta">${z(B(o.rewards || {}))}</div>
+        <div class="quest-meta">${z(ae(o.rewards || {}))}</div>
       </div>
     ` : "", l = e.map((e) => {
 			let t = e.status === "COMPLETED" ? s ? "Completed" : "Đã hoàn thành" : e.status === "ACTIVE" ? s ? "Active" : "Đang làm" : s ? "Available" : "Có thể nhận", n = e.steps.map((t) => `
@@ -1964,7 +1964,7 @@ var V = new class {
 		}).join("");
 		return `<div class="quest-body">${c}${this.renderObligations(t, n, s)}${this.renderContracts(r, s)}${this.renderFarm(a, s)}${this.renderIntel(i, s)}${l || `<div class="quest-empty">${s ? "No quests available." : "Chưa có nhiệm vụ."}</div>`}</div>`;
 	}
-}(), H = class e {
+}(), V = class e {
 	static instance;
 	static getInstance() {
 		return e.instance ||= new e(), e.instance;
@@ -2082,13 +2082,13 @@ var V = new class {
 	}
 }.getInstance();
 // src/client/features/market-stall/market-stall.modal.ts
-function U(e) {
+function H(e) {
 	return String(e ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
-function W(e, t = !1) {
+function U(e, t = !1) {
 	typeof window.showToast == "function" && window.showToast(e, t);
 }
-var G = new class {
+var W = new class {
 	modal;
 	stall = null;
 	offers = [];
@@ -2142,12 +2142,12 @@ var G = new class {
 		await this.modal.close();
 	}
 	async refresh() {
-		this.stall = await H.getStall("PLY-0001"), this.offers = await H.getOffers(this.stall?.settlementId), this.warehouses = await H.getWarehouses();
+		this.stall = await V.getStall("PLY-0001"), this.offers = await V.getOffers(this.stall?.settlementId), this.warehouses = await V.getWarehouses();
 		let [e, t, n, r] = await Promise.all([
-			H.getFreightContracts(this.stall?.settlementId).catch(() => []),
-			H.getFreightShipments().catch(() => []),
-			H.getMerchantRoutes().catch(() => []),
-			H.getMerchantEvents().catch(() => [])
+			V.getFreightContracts(this.stall?.settlementId).catch(() => []),
+			V.getFreightShipments().catch(() => []),
+			V.getMerchantRoutes().catch(() => []),
+			V.getMerchantEvents().catch(() => [])
 		]);
 		this.freightContracts = e, this.freightShipments = t, this.merchantRoutes = n, this.merchantEvents = r;
 	}
@@ -2161,13 +2161,13 @@ var G = new class {
 			let t = e.marketPrice > 0 ? Math.round((e.unitPrice / e.marketPrice - 1) * 100) : 0;
 			return `
           <div class="flex justify-between items-center text-[11px] border-b border-slate-800 py-1.5">
-            <span class="text-slate-200">${U(e.itemNameVi)} × ${e.quantity}</span>
+            <span class="text-slate-200">${H(e.itemNameVi)} × ${e.quantity}</span>
             <span class="font-mono text-amber-300">${e.unitPrice} Quan (${t >= 0 ? "+" : ""}${t}% chợ)</span>
           </div>
         `;
 		}).join("") : "<div class=\"text-muted text-xs\">Quầy chưa có hàng.</div>", t = this.stall.recentSales.length > 0 ? this.stall.recentSales.map((e) => `
         <div class="flex justify-between text-[11px] py-1">
-          <span class="text-slate-300">${U(e.npcNameVi)} mua ${e.quantity} ${U(e.itemCode)}</span>
+          <span class="text-slate-300">${H(e.npcNameVi)} mua ${e.quantity} ${H(e.itemCode)}</span>
           <span class="font-mono text-green-400">+${e.totalCash} Quan</span>
         </div>
       `).join("") : "<div class=\"text-muted text-xs\">Chưa có giao dịch.</div>";
@@ -2176,8 +2176,8 @@ var G = new class {
         <div class="spatial-banner-lead">
           <div class="lead-seal">攤</div>
           <div class="lead-text">
-            <h3>${U(this.stall.nameVi)}</h3>
-            <div class="text-muted text-sm">${U(this.stall.settlementId)} • Hàng đang bán: ${this.stall.listings.length} • NPC sẽ mua mỗi ngày nếu giá ≤ 115% giá chợ.</div>
+            <h3>${H(this.stall.nameVi)}</h3>
+            <div class="text-muted text-sm">${H(this.stall.settlementId)} • Hàng đang bán: ${this.stall.listings.length} • NPC sẽ mua mỗi ngày nếu giá ≤ 115% giá chợ.</div>
           </div>
         </div>
 
@@ -2193,7 +2193,7 @@ var G = new class {
             <input id="stall-source" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200" value="BAG" placeholder="BAG hoặc WAREHOUSE" />
             <input id="stall-warehouse" list="stall-warehouse-list" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200" placeholder="Mã kho (nếu lấy từ kho)" />
             <datalist id="stall-warehouse-list">
-              ${this.warehouses.filter((e) => e.settlementId === this.stall?.settlementId).map((e) => `<option value="${U(e.warehouseId)}">${U(e.nameVi)} (${e.usedCapacity}/${e.capacity})</option>`).join("")}
+              ${this.warehouses.filter((e) => e.settlementId === this.stall?.settlementId).map((e) => `<option value="${H(e.warehouseId)}">${H(e.nameVi)} (${e.usedCapacity}/${e.capacity})</option>`).join("")}
             </datalist>
           </div>
           <div class="text-muted text-[10px] mt-1">Giá thấp hơn 115% giá chợ thì NPC mua nhanh hơn; giá quá cao sẽ không có người mua.</div>
@@ -2231,12 +2231,12 @@ var G = new class {
         <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800 mb-2">
           <div class="flex justify-between items-center">
             <div>
-              <div class="text-sm font-bold text-slate-200">${U(e.nameVi)} • ${U(e.ownershipType)}</div>
-              <div class="text-[11px] text-muted">${U(e.settlementId)} • ${e.usedCapacity}/${e.capacity} • ${e.status}${e.leaseUntil ? ` • hết hạn ${U(e.leaseUntil)}` : ""}</div>
+              <div class="text-sm font-bold text-slate-200">${H(e.nameVi)} • ${H(e.ownershipType)}</div>
+              <div class="text-[11px] text-muted">${H(e.settlementId)} • ${e.usedCapacity}/${e.capacity} • ${e.status}${e.leaseUntil ? ` • hết hạn ${H(e.leaseUntil)}` : ""}</div>
             </div>
             <div class="flex gap-1">
-              ${e.ownershipType === "RENTED" ? `<button class="ui-btn ui-btn--primary ui-btn--sm" data-warehouse-action="renew" data-warehouse-id="${U(e.warehouseId)}" title="Cộng thêm 90 ngày từ hạn hiện tại">Gia hạn</button>` : ""}
-              <button class="ui-btn ui-btn--ghost ui-btn--sm" data-warehouse-action="withdraw" data-warehouse-id="${U(e.warehouseId)}">Rút hàng</button>
+              ${e.ownershipType === "RENTED" ? `<button class="ui-btn ui-btn--primary ui-btn--sm" data-warehouse-action="renew" data-warehouse-id="${H(e.warehouseId)}" title="Cộng thêm 90 ngày từ hạn hiện tại">Gia hạn</button>` : ""}
+              <button class="ui-btn ui-btn--ghost ui-btn--sm" data-warehouse-action="withdraw" data-warehouse-id="${H(e.warehouseId)}">Rút hàng</button>
             </div>
           </div>
         </div>
@@ -2246,7 +2246,7 @@ var G = new class {
           <div class="grid grid-cols-1 md:grid-cols-4 gap-2 text-[11px]">
             <input id="warehouse-id" list="warehouse-id-list" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200" placeholder="Mã kho" />
             <datalist id="warehouse-id-list">
-              ${this.warehouses.map((e) => `<option value="${U(e.warehouseId)}">${U(e.nameVi)}</option>`).join("") || "<option value=\"\">Chưa có kho</option>"}
+              ${this.warehouses.map((e) => `<option value="${H(e.warehouseId)}">${H(e.nameVi)}</option>`).join("") || "<option value=\"\">Chưa có kho</option>"}
             </datalist>
             <input id="warehouse-item" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200" value="COM-GRAIN" placeholder="Mã hàng" />
             <input id="warehouse-qty" type="number" min="1" step="1" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200" value="10" />
@@ -2273,10 +2273,10 @@ var G = new class {
           ${this.offers.map((e) => `
             <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800 flex justify-between items-center gap-3">
               <div>
-                <div class="text-sm font-bold text-slate-200">${U(e.itemNameVi)} × ${e.quantity}</div>
-                <div class="text-[11px] text-muted">${U(e.npcNameVi)} • ${e.unitPrice} Quan (${e.priceDeltaPct >= 0 ? "+" : ""}${e.priceDeltaPct}% chợ) • hết hạn ${U(e.expiresDate)}</div>
+                <div class="text-sm font-bold text-slate-200">${H(e.itemNameVi)} × ${e.quantity}</div>
+                <div class="text-[11px] text-muted">${H(e.npcNameVi)} • ${e.unitPrice} Quan (${e.priceDeltaPct >= 0 ? "+" : ""}${e.priceDeltaPct}% chợ) • hết hạn ${H(e.expiresDate)}</div>
               </div>
-              <button class="ui-btn ui-btn--primary ui-btn--sm" data-offer-buy="${U(e.offerId)}">Mua 1</button>
+              <button class="ui-btn ui-btn--primary ui-btn--sm" data-offer-buy="${H(e.offerId)}">Mua 1</button>
             </div>
           `).join("")}
         </div>
@@ -2288,43 +2288,43 @@ var G = new class {
         <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800 mb-2">
           <div class="flex justify-between items-start gap-3">
             <div>
-              <div class="text-sm font-bold text-slate-200">${U(e.itemCode)} × ${e.quantity}</div>
-              <div class="text-[11px] text-muted">${U(e.fromSettlementId)} → ${U(e.toSettlementId)} • thưởng ${e.rewardCash} Quan • còn ${e.daysLeft} ngày • đi ${e.travelDays} ngày</div>
+              <div class="text-sm font-bold text-slate-200">${H(e.itemCode)} × ${e.quantity}</div>
+              <div class="text-[11px] text-muted">${H(e.fromSettlementId)} → ${H(e.toSettlementId)} • thưởng ${e.rewardCash} Quan • còn ${e.daysLeft} ngày • đi ${e.travelDays} ngày</div>
             </div>
             <label class="text-[10px] text-slate-300 flex items-center gap-1">
-              <input type="checkbox" data-freight-insurance="${U(e.contractId)}" /> Bảo hiểm +4%
+              <input type="checkbox" data-freight-insurance="${H(e.contractId)}" /> Bảo hiểm +4%
             </label>
           </div>
           <div class="flex gap-1 mt-2">
-            <button class="ui-btn ui-btn--ghost ui-btn--sm" data-freight-accept data-contract-id="${U(e.contractId)}" data-guard-tier="MILITIA">Dân Dũng</button>
-            <button class="ui-btn ui-btn--primary ui-btn--sm" data-freight-accept data-contract-id="${U(e.contractId)}" data-guard-tier="VETERAN">Thiện Chiến</button>
-            <button class="ui-btn ui-btn--ghost ui-btn--sm" data-freight-accept data-contract-id="${U(e.contractId)}" data-guard-tier="ELITE_RETINUE">Tinh Nhuệ</button>
+            <button class="ui-btn ui-btn--ghost ui-btn--sm" data-freight-accept data-contract-id="${H(e.contractId)}" data-guard-tier="MILITIA">Dân Dũng</button>
+            <button class="ui-btn ui-btn--primary ui-btn--sm" data-freight-accept data-contract-id="${H(e.contractId)}" data-guard-tier="VETERAN">Thiện Chiến</button>
+            <button class="ui-btn ui-btn--ghost ui-btn--sm" data-freight-accept data-contract-id="${H(e.contractId)}" data-guard-tier="ELITE_RETINUE">Tinh Nhuệ</button>
           </div>
         </div>
       `).join("") : "<div class=\"text-muted text-sm mb-2\">Thành này chưa có hợp đồng vận chuyển.</div>", t = this.freightShipments.length > 0 ? this.freightShipments.map((e) => `
         <div class="flex justify-between items-center text-[11px] border-b border-slate-800 py-1.5 gap-2">
           <div>
-            <div class="text-slate-200">${U(e.itemCode)} × ${e.quantity} • ${U(e.status)}</div>
-            <div class="text-muted">${e.status === "ARRIVED" ? "Đã đến đích" : `Còn ${e.daysRemaining} ngày`} • ${U(e.guardTier)}${e.insured ? " • có bảo hiểm" : ""}${e.ambushLossQuantity > 0 ? ` • mất ${e.ambushLossQuantity} do phục kích` : ""}</div>
+            <div class="text-slate-200">${H(e.itemCode)} × ${e.quantity} • ${H(e.status)}</div>
+            <div class="text-muted">${e.status === "ARRIVED" ? "Đã đến đích" : `Còn ${e.daysRemaining} ngày`} • ${H(e.guardTier)}${e.insured ? " • có bảo hiểm" : ""}${e.ambushLossQuantity > 0 ? ` • mất ${e.ambushLossQuantity} do phục kích` : ""}</div>
           </div>
-          ${e.status === "ARRIVED" ? `<button class="ui-btn ui-btn--primary ui-btn--sm" data-freight-deliver="${U(e.shipmentId)}">Giao hàng</button>` : ""}
+          ${e.status === "ARRIVED" ? `<button class="ui-btn ui-btn--primary ui-btn--sm" data-freight-deliver="${H(e.shipmentId)}">Giao hàng</button>` : ""}
         </div>
       `).join("") : "<div class=\"text-muted text-sm mb-2\">Không có chuyến hàng đang chạy.</div>", n = this.merchantRoutes.length > 0 ? this.merchantRoutes.map((e) => `
         <div class="flex justify-between items-center text-[11px] border-b border-slate-800 py-1.5 gap-2">
           <div>
-            <div class="text-slate-200">${U(e.nameVi)} • ${U(e.itemCode)} × ${e.quantityPerRun}</div>
-            <div class="text-muted">${U(e.fromSettlementId)} → ${U(e.toSettlementId)} • ${U(e.status)} • mỗi ${e.frequencyDays} ngày</div>
+            <div class="text-slate-200">${H(e.nameVi)} • ${H(e.itemCode)} × ${e.quantityPerRun}</div>
+            <div class="text-muted">${H(e.fromSettlementId)} → ${H(e.toSettlementId)} • ${H(e.status)} • mỗi ${e.frequencyDays} ngày</div>
           </div>
-          <button class="ui-btn ui-btn--ghost ui-btn--sm" data-route-status data-route-id="${U(e.routeId)}" data-next-status="${e.status === "ACTIVE" ? "PAUSED" : "ACTIVE"}">
+          <button class="ui-btn ui-btn--ghost ui-btn--sm" data-route-status data-route-id="${H(e.routeId)}" data-next-status="${e.status === "ACTIVE" ? "PAUSED" : "ACTIVE"}">
             ${e.status === "ACTIVE" ? "Tạm Dừng" : "Tiếp Tục"}
           </button>
         </div>
       `).join("") : "<div class=\"text-muted text-sm\">Chưa có thương lộ tự động.</div>", r = this.merchantEvents.length > 0 ? this.merchantEvents.slice(0, 6).map((e) => `
         <div class="text-[11px] border-b border-slate-800 py-1">
-          <span class="text-slate-300">${U(e.eventType || e.event_type)}</span>
-          <span class="text-muted"> • ${U(e.gameDate || e.game_date || "")} • ${U(e.itemCode || e.item_code || "")}</span>
+          <span class="text-slate-300">${H(e.eventType || e.event_type)}</span>
+          <span class="text-muted"> • ${H(e.gameDate || e.game_date || "")} • ${H(e.itemCode || e.item_code || "")}</span>
         </div>
-      `).join("") : "<div class=\"text-muted text-sm\">Chưa có biến cố thương lộ.</div>", i = this.warehouses.map((e) => `<option value="${U(e.warehouseId)}">${U(e.nameVi)} (${U(e.settlementId)})</option>`).join(""), a = this.warehouses.length >= 2;
+      `).join("") : "<div class=\"text-muted text-sm\">Chưa có biến cố thương lộ.</div>", i = this.warehouses.map((e) => `<option value="${H(e.warehouseId)}">${H(e.nameVi)} (${H(e.settlementId)})</option>`).join(""), a = this.warehouses.length >= 2;
 		return `
       <div class="journal-modal-content">
         <div class="spatial-banner-lead">
@@ -2389,14 +2389,14 @@ var G = new class {
 				let n = t.dataset.stallAction;
 				t.setAttribute("disabled", "true");
 				try {
-					if (n === "open") await H.openStall(), W("Đã mở quầy.");
+					if (n === "open") await V.openStall(), U("Đã mở quầy.");
 					else if (n === "list") {
 						let t = e.querySelector("#stall-item-code")?.value.trim() || "", n = Number(e.querySelector("#stall-item-qty")?.value || 0), r = Number(e.querySelector("#stall-item-price")?.value || 0), i = (e.querySelector("#stall-source")?.value || "BAG").toUpperCase(), a = e.querySelector("#stall-warehouse")?.value || void 0;
-						await H.listItem(t, n, r, i, a, this.stall?.stallId), W(`Đã niêm yết ${n} ${t}.`);
-					} else n === "close" && (await H.closeStall(this.stall?.stallId), W("Đã đóng quầy và trả hàng về kho."));
+						await V.listItem(t, n, r, i, a, this.stall?.stallId), U(`Đã niêm yết ${n} ${t}.`);
+					} else n === "close" && (await V.closeStall(this.stall?.stallId), U("Đã đóng quầy và trả hàng về kho."));
 					await this.refresh(), this.render();
 				} catch (e) {
-					t.removeAttribute("disabled"), W(e.message || "Thao tác quầy thất bại.", !0);
+					t.removeAttribute("disabled"), U(e.message || "Thao tác quầy thất bại.", !0);
 				}
 			});
 		}), e.querySelectorAll("[data-offer-buy]").forEach((e) => {
@@ -2404,9 +2404,9 @@ var G = new class {
 				let t = e.dataset.offerBuy || "";
 				e.setAttribute("disabled", "true");
 				try {
-					await H.buyOffer(t, 1), W("Đã mua hàng từ NPC."), await this.refresh(), this.render();
+					await V.buyOffer(t, 1), U("Đã mua hàng từ NPC."), await this.refresh(), this.render();
 				} catch (t) {
-					e.removeAttribute("disabled"), W(t.message || "Mua hàng thất bại.", !0);
+					e.removeAttribute("disabled"), U(t.message || "Mua hàng thất bại.", !0);
 				}
 			});
 		}), e.querySelectorAll("[data-warehouse-action]").forEach((t) => {
@@ -2414,9 +2414,9 @@ var G = new class {
 				let n = t.dataset.warehouseAction || "", r = t.dataset.warehouseId || e.querySelector("#warehouse-id")?.value || "", i = e.querySelector("#warehouse-item")?.value.trim() || "COM-GRAIN", a = Number(e.querySelector("#warehouse-qty")?.value || 1);
 				t.setAttribute("disabled", "true");
 				try {
-					n === "rent" ? (await H.rentWarehouse(), W("Đã thuê kho tại thành hiện tại.")) : n === "buy" ? (await H.buyWarehouse(), W("Đã mua kho tại thành hiện tại.")) : n === "renew" ? W(`Đã gia hạn kho đến ${(await H.renewWarehouse(r))?.result?.leaseUntil || "hạn mới"}.`) : n === "deposit" ? (await H.deposit(r, i, a), W(`Đã nạp ${a} ${i} vào kho.`)) : (await H.withdraw(r, i, a), W(`Đã rút ${a} ${i} khỏi kho.`)), await this.refresh(), this.render();
+					n === "rent" ? (await V.rentWarehouse(), U("Đã thuê kho tại thành hiện tại.")) : n === "buy" ? (await V.buyWarehouse(), U("Đã mua kho tại thành hiện tại.")) : n === "renew" ? U(`Đã gia hạn kho đến ${(await V.renewWarehouse(r))?.result?.leaseUntil || "hạn mới"}.`) : n === "deposit" ? (await V.deposit(r, i, a), U(`Đã nạp ${a} ${i} vào kho.`)) : (await V.withdraw(r, i, a), U(`Đã rút ${a} ${i} khỏi kho.`)), await this.refresh(), this.render();
 				} catch (e) {
-					t.removeAttribute("disabled"), W(e.message || "Thao tác kho thất bại.", !0);
+					t.removeAttribute("disabled"), U(e.message || "Thao tác kho thất bại.", !0);
 				}
 			});
 		}), e.querySelectorAll("[data-freight-accept]").forEach((t) => {
@@ -2424,9 +2424,9 @@ var G = new class {
 				let n = t.dataset.contractId || "", r = t.dataset.guardTier || "VETERAN", i = e.querySelector(`[data-freight-insurance="${n}"]`)?.checked === !0;
 				t.setAttribute("disabled", "true");
 				try {
-					await H.acceptFreight(n, r, i), W(i ? "Đã nhận chuyến và mua bảo hiểm." : "Đã nhận chuyến hàng."), await this.refresh(), this.render();
+					await V.acceptFreight(n, r, i), U(i ? "Đã nhận chuyến và mua bảo hiểm." : "Đã nhận chuyến hàng."), await this.refresh(), this.render();
 				} catch (e) {
-					t.removeAttribute("disabled"), W(e.message || "Nhận chuyến thất bại.", !0);
+					t.removeAttribute("disabled"), U(e.message || "Nhận chuyến thất bại.", !0);
 				}
 			});
 		}), e.querySelectorAll("[data-freight-deliver]").forEach((e) => {
@@ -2434,20 +2434,20 @@ var G = new class {
 				let t = e.dataset.freightDeliver || "";
 				e.setAttribute("disabled", "true");
 				try {
-					await H.deliverFreight(t), W("Đã giao hàng và nhận phí vận chuyển."), await this.refresh(), this.render();
+					await V.deliverFreight(t), U("Đã giao hàng và nhận phí vận chuyển."), await this.refresh(), this.render();
 				} catch (t) {
-					e.removeAttribute("disabled"), W(t.message || "Giao hàng thất bại.", !0);
+					e.removeAttribute("disabled"), U(t.message || "Giao hàng thất bại.", !0);
 				}
 			});
 		}), e.querySelectorAll("[data-route-create]").forEach((t) => {
 			t.addEventListener("click", async () => {
 				let n = e.querySelector("#route-from")?.value || "", r = e.querySelector("#route-to")?.value || "", i = e.querySelector("#route-item")?.value.trim() || "", a = Number(e.querySelector("#route-qty")?.value || 0), o = Number(e.querySelector("#route-buy")?.value || 0), s = Number(e.querySelector("#route-sell")?.value || 0), c = Number(e.querySelector("#route-freq")?.value || 7), l = e.querySelector("#route-guard")?.value || "VETERAN";
-				if (!n || !r || n === r) W("Kho nguồn và kho đích phải khác nhau.", !0);
-				else if (!i || a <= 0 || o <= 0 || s <= o) W("Kiểm tra mã hàng, số lượng và giá bán sàn > giá mua trần.", !0);
+				if (!n || !r || n === r) U("Kho nguồn và kho đích phải khác nhau.", !0);
+				else if (!i || a <= 0 || o <= 0 || s <= o) U("Kiểm tra mã hàng, số lượng và giá bán sàn > giá mua trần.", !0);
 				else {
 					t.setAttribute("disabled", "true");
 					try {
-						await H.createMerchantRoute({
+						await V.createMerchantRoute({
 							fromWarehouseId: n,
 							toWarehouseId: r,
 							itemCode: i,
@@ -2456,9 +2456,9 @@ var G = new class {
 							minSellPrice: s,
 							frequencyDays: c,
 							guardTier: l
-						}), W("Đã mở thương lộ tự động."), await this.refresh(), this.render();
+						}), U("Đã mở thương lộ tự động."), await this.refresh(), this.render();
 					} catch (e) {
-						t.removeAttribute("disabled"), W(e.message || "Mở thương lộ thất bại.", !0);
+						t.removeAttribute("disabled"), U(e.message || "Mở thương lộ thất bại.", !0);
 					}
 				}
 			});
@@ -2467,14 +2467,14 @@ var G = new class {
 				let t = e.dataset.routeId || "", n = e.dataset.nextStatus || "PAUSED";
 				e.setAttribute("disabled", "true");
 				try {
-					await H.setMerchantRouteStatus(t, n), W(n === "ACTIVE" ? "Đã tiếp tục thương lộ." : "Đã tạm dừng thương lộ."), await this.refresh(), this.render();
+					await V.setMerchantRouteStatus(t, n), U(n === "ACTIVE" ? "Đã tiếp tục thương lộ." : "Đã tạm dừng thương lộ."), await this.refresh(), this.render();
 				} catch (t) {
-					e.removeAttribute("disabled"), W(t.message || "Đổi trạng thái thương lộ thất bại.", !0);
+					e.removeAttribute("disabled"), U(t.message || "Đổi trạng thái thương lộ thất bại.", !0);
 				}
 			});
 		}));
 	}
-}(), K = class {
+}(), G = class {
 	modal;
 	constructor() {
 		this.modal = i({
@@ -2494,7 +2494,7 @@ var G = new class {
 	async close() {
 		await this.modal.close();
 	}
-}, q = new K(), J = class e {
+}, K = new G(), q = class e {
 	static instance;
 	static getInstance() {
 		return e.instance ||= new e(), e.instance;
@@ -2524,22 +2524,22 @@ var G = new class {
 	async dispatchAction(e) {
 		return v.post("/api/action", e);
 	}
-}, Y = J.getInstance();
+}, J = q.getInstance();
 // src/client/features/world-map/wilderness-map.modal.ts
-function X(e) {
+function Y(e) {
 	return String(e ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
-function Z(e, t = !1) {
+function X(e, t = !1) {
 	typeof window.showToast == "function" && window.showToast(e, t);
 }
-var ae = {
+var oe = {
 	mountain: "山",
 	water: "水",
 	forest: "林",
 	lair: "寨",
 	farm: "田",
 	wild: "野"
-}, oe = class {
+}, se = class {
 	modal;
 	view = null;
 	nodeId = null;
@@ -2564,7 +2564,7 @@ var ae = {
 		await this.modal.close();
 	}
 	async refresh() {
-		this.view = await Y.get(this.nodeId || void 0), this.nodeId = this.view.nodeId;
+		this.view = await J.get(this.nodeId || void 0), this.nodeId = this.view.nodeId;
 	}
 	render() {
 		if (!this.view) {
@@ -2577,12 +2577,12 @@ var ae = {
         <div class="spatial-banner-lead">
           <div class="lead-seal">野</div>
           <div class="lead-text">
-            <h3>${X(i)} • Dã Ngoại</h3>
+            <h3>${Y(i)} • Dã Ngoại</h3>
             <div class="text-muted text-sm">${e.length} địa danh ngoài thành • ${o} điểm tài nguyên • ${s} POI. Mỗi lần di chuyển tốn 1 ngày và 5 thể lực.</div>
           </div>
         </div>
         <div class="wilderness-map-frame">
-          <svg class="wilderness-map-svg" viewBox="0 0 600 360" role="img" aria-label="Bản đồ dã ngoại ${X(i)}">
+          <svg class="wilderness-map-svg" viewBox="0 0 600 360" role="img" aria-label="Bản đồ dã ngoại ${Y(i)}">
             <rect class="wilderness-map-ground" x="0" y="0" width="600" height="360" rx="8"></rect>
             <circle class="wilderness-map-ring" cx="300" cy="180" r="130"></circle>
             <circle class="wilderness-map-ring" cx="300" cy="180" r="72"></circle>
@@ -2591,7 +2591,7 @@ var ae = {
           </svg>
         </div>
         <div class="wilderness-map-legend">
-          <span>Vị trí hiện tại: <strong>${X(r || "Trong thành")}</strong></span>
+          <span>Vị trí hiện tại: <strong>${Y(r || "Trong thành")}</strong></span>
           <span class="text-muted">Chọn một địa danh để đi bộ tới; quay lại thành bằng nút đóng.</span>
         </div>
         ${this.renderResourcesPanel(r)}
@@ -2611,16 +2611,16 @@ var ae = {
       <div class="wilderness-action-panel">
         <div class="flex justify-between items-center gap-3 mb-2">
           <div class="text-xs font-bold text-amber-200">Điểm Tài Nguyên</div>
-          <div class="text-[11px] text-muted">${n ? `Đang ở ${X(e || "")} — có thể khai thác.` : "Hãy đi tới một địa danh dã ngoại trước khi khai thác."}</div>
+          <div class="text-[11px] text-muted">${n ? `Đang ở ${Y(e || "")} — có thể khai thác.` : "Hãy đi tới một địa danh dã ngoại trước khi khai thác."}</div>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
           ${t.map((e) => `
             <div class="flex justify-between items-center gap-2 rounded border border-slate-800 bg-slate-900/70 p-2">
               <div>
-                <div class="text-sm text-slate-200">${X(e.nameVi)}</div>
-                <div class="text-[11px] text-muted">${X(e.resourceType)} • ${X(e.resourceNodeId)}</div>
+                <div class="text-sm text-slate-200">${Y(e.nameVi)}</div>
+                <div class="text-[11px] text-muted">${Y(e.resourceType)} • ${Y(e.resourceNodeId)}</div>
               </div>
-              <button class="ui-btn ui-btn--primary ui-btn--sm" data-wilderness-gather="${X(e.resourceNodeId)}" ${n ? "" : "disabled"}>
+              <button class="ui-btn ui-btn--primary ui-btn--sm" data-wilderness-gather="${Y(e.resourceNodeId)}" ${n ? "" : "disabled"}>
                 Khai Thác
               </button>
             </div>
@@ -2636,8 +2636,8 @@ var ae = {
         <div class="text-xs font-bold text-amber-200 mb-2">Khảo Sát Địa Điểm</div>
         <div class="flex flex-wrap gap-2">
           ${e.map((e) => `
-            <button class="ui-btn ui-btn--ghost ui-btn--sm" data-poi-scene="${X(e.poiName)}">
-              ${X(e.poiName)}
+            <button class="ui-btn ui-btn--ghost ui-btn--sm" data-poi-scene="${Y(e.poiName)}">
+              ${Y(e.poiName)}
             </button>
           `).join("")}
         </div>
@@ -2651,17 +2651,17 @@ var ae = {
       <div class="wilderness-scene-card">
         <div class="flex justify-between items-start gap-3">
           <div>
-            <div class="text-xs font-bold text-amber-200">${X(this.scenePoiName || this.scene.npc?.name || "Khảo sát")}</div>
-            <div class="text-[11px] text-muted">${X(this.scene.npc?.name || "")}${this.scene.npc?.title ? ` • ${X(this.scene.npc.title)}` : ""}</div>
+            <div class="text-xs font-bold text-amber-200">${Y(this.scenePoiName || this.scene.npc?.name || "Khảo sát")}</div>
+            <div class="text-[11px] text-muted">${Y(this.scene.npc?.name || "")}${this.scene.npc?.title ? ` • ${Y(this.scene.npc.title)}` : ""}</div>
           </div>
           <button class="ui-btn ui-btn--ghost ui-btn--sm" data-scene-close>Đóng</button>
         </div>
-        <p class="text-sm text-slate-300 mt-2">${X(this.scene.narrative || "")}</p>
+        <p class="text-sm text-slate-300 mt-2">${Y(this.scene.narrative || "")}</p>
         <div class="grid grid-cols-1 gap-2 mt-2">
           ${e.map((e, t) => `
             <button class="ui-btn ui-btn--ghost ui-btn--sm text-left" data-scene-option="${t}" ${e.disabled ? "disabled" : ""}>
-              <strong>${X(e.title || e.id || `Lựa chọn ${t + 1}`)}</strong>
-              ${e.desc ? `<span class="block text-[11px] text-muted">${X(e.desc)}</span>` : ""}
+              <strong>${Y(e.title || e.id || `Lựa chọn ${t + 1}`)}</strong>
+              ${e.desc ? `<span class="block text-[11px] text-muted">${Y(e.desc)}</span>` : ""}
             </button>
           `).join("")}
         </div>
@@ -2669,13 +2669,13 @@ var ae = {
     `;
 	}
 	renderSpot(e, t) {
-		let n = 40 + Number(e.localX ?? .5) * 520, r = 30 + Number(e.localY ?? .5) * 300, i = e.nameVi === t, a = ae[e.iconKey] || "野";
+		let n = 40 + Number(e.localX ?? .5) * 520, r = 30 + Number(e.localY ?? .5) * 300, i = e.nameVi === t, a = oe[e.iconKey] || "野";
 		return `
-      <g class="wilderness-node${i ? " is-current" : ""}" data-wilderness-travel="${X(e.subLocationId)}" tabindex="0" role="button" aria-label="${X(e.nameVi)}">
+      <g class="wilderness-node${i ? " is-current" : ""}" data-wilderness-travel="${Y(e.subLocationId)}" tabindex="0" role="button" aria-label="${Y(e.nameVi)}">
         <circle class="wilderness-node-halo" cx="${n.toFixed(1)}" cy="${r.toFixed(1)}" r="22"></circle>
         <circle class="wilderness-node-dot" cx="${n.toFixed(1)}" cy="${r.toFixed(1)}" r="14"></circle>
         <text class="wilderness-node-seal" x="${n.toFixed(1)}" y="${(r + 5).toFixed(1)}" text-anchor="middle">${a}</text>
-        <text class="wilderness-node-label" x="${n.toFixed(1)}" y="${(r + 33).toFixed(1)}" text-anchor="middle">${X(e.nameVi)}</text>
+        <text class="wilderness-node-label" x="${n.toFixed(1)}" y="${(r + 33).toFixed(1)}" text-anchor="middle">${Y(e.nameVi)}</text>
       </g>
     `;
 	}
@@ -2685,10 +2685,10 @@ var ae = {
 			let t = async () => {
 				let t = e.dataset.wildernessTravel || "";
 				try {
-					let e = await Y.travel(t), n = Number(e?.time?.advancedDays || 1);
-					Z(`Đã tới ${e?.result?.nameVi || "địa danh"} sau ${n} ngày.`), await this.refresh(), this.render();
+					let e = await J.travel(t), n = Number(e?.time?.advancedDays || 1);
+					X(`Đã tới ${e?.result?.nameVi || "địa danh"} sau ${n} ngày.`), await this.refresh(), this.render();
 				} catch (e) {
-					Z(e.message || "Không thể di chuyển.", !0);
+					X(e.message || "Không thể di chuyển.", !0);
 				}
 			};
 			e.addEventListener("click", t), e.addEventListener("keydown", (e) => {
@@ -2699,10 +2699,10 @@ var ae = {
 				let t = e.dataset.wildernessGather || "";
 				e.setAttribute("disabled", "true");
 				try {
-					let e = await Y.gather(t), n = e?.result || e, r = n?.itemNameVi || n?.itemCode || "tài nguyên", i = Number(n?.quantity || n?.yieldQuantity || 0);
-					Z(i > 0 ? `Khai thác được ${i} ${r}.` : "Khai thác thành công."), await this.refresh(), this.render();
+					let e = await J.gather(t), n = e?.result || e, r = n?.itemNameVi || n?.itemCode || "tài nguyên", i = Number(n?.quantity || n?.yieldQuantity || 0);
+					X(i > 0 ? `Khai thác được ${i} ${r}.` : "Khai thác thành công."), await this.refresh(), this.render();
 				} catch (t) {
-					e.removeAttribute("disabled"), Z(t.message || "Khai thác thất bại.", !0);
+					e.removeAttribute("disabled"), X(t.message || "Khai thác thất bại.", !0);
 				}
 			});
 		}), e.querySelectorAll("[data-poi-scene]").forEach((e) => {
@@ -2710,9 +2710,9 @@ var ae = {
 				let t = e.dataset.poiScene || "";
 				e.setAttribute("disabled", "true");
 				try {
-					this.scene = await Y.getScene(t), this.scenePoiName = t, this.render();
+					this.scene = await J.getScene(t), this.scenePoiName = t, this.render();
 				} catch (t) {
-					e.removeAttribute("disabled"), Z(t.message || "Không mở được địa điểm.", !0);
+					e.removeAttribute("disabled"), X(t.message || "Không mở được địa điểm.", !0);
 				}
 			});
 		}), e.querySelectorAll("[data-scene-close]").forEach((e) => {
@@ -2725,25 +2725,185 @@ var ae = {
 				if (n?.action) {
 					e.setAttribute("disabled", "true");
 					try {
-						Z((await Y.dispatchAction(n.action))?.message || "Đã thực hiện lựa chọn."), this.scene = null, this.scenePoiName = null, await this.refresh(), this.render();
+						X((await J.dispatchAction(n.action))?.message || "Đã thực hiện lựa chọn."), this.scene = null, this.scenePoiName = null, await this.refresh(), this.render();
 					} catch (t) {
-						e.removeAttribute("disabled"), Z(t.message || "Hành động thất bại.", !0);
+						e.removeAttribute("disabled"), X(t.message || "Hành động thất bại.", !0);
 					}
 				}
 			});
 		}));
 	}
-}, se = new oe(), ce = {
+}, ce = new se(), le = class e {
+	static instance;
+	static getInstance() {
+		return e.instance ||= new e(), e.instance;
+	}
+	async get(e) {
+		return await v.get("/api/map/city", e ? { nodeId: e } : void 0);
+	}
+	async enter(e) {
+		return v.post("/api/map/city/enter", {
+			subLocationId: e,
+			idempotencyKey: `city-enter-${e}-${Date.now()}`
+		});
+	}
+	async getScene(e, t = "PLY-0001") {
+		return v.get("/api/scene", {
+			subLocation: e,
+			characterId: t
+		});
+	}
+	async dispatchAction(e) {
+		return v.post("/api/action", e);
+	}
+}, Z = le.getInstance();
+// src/client/features/world-map/city-map.modal.ts
+function Q(e) {
+	return String(e ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+function ue(e, t = !1) {
+	typeof window.showToast == "function" && window.showToast(e, t);
+}
+var de = {
+	government: "府",
+	residence: "宅",
+	market: "市",
+	forge: "鍛",
+	tavern: "酒",
+	arena: "武",
+	city: "城",
+	temple: "寺",
+	gate: "門",
+	workshop: "坊"
+}, fe = class {
+	modal;
+	view = null;
+	nodeId = null;
+	scene = null;
+	sceneSpotName = null;
+	constructor() {
+		this.modal = i({
+			id: "city-map-modal",
+			title: "Nội Thành",
+			subtitle: "Đi lại giữa các địa điểm trong thành và khảo sát tại chỗ",
+			seal: "城",
+			size: "xl",
+			onOpen: async () => {
+				await this.refresh(), this.render();
+			}
+		});
+	}
+	async open(e) {
+		this.nodeId = e || null, await this.modal.open();
+	}
+	async close() {
+		await this.modal.close();
+	}
+	async refresh() {
+		this.view = await Z.get(this.nodeId || void 0), this.nodeId = this.view.nodeId;
+	}
+	render() {
+		if (!this.view) {
+			this.modal.setContent("<div class=\"journal-modal-content\"><div class=\"text-muted text-sm\">Không tải được nội thành.</div></div>"), this.bind();
+			return;
+		}
+		let { citySpots: e, city: t, currentSubLocation: n, poiScenes: r } = this.view, i = t?.nameVi || this.view.nodeId, a = e.find((e) => e.nameVi === n);
+		this.modal.setContent(`
+      <div class="journal-modal-content">
+        <div class="spatial-banner-lead">
+          <div class="lead-seal">城</div>
+          <div class="lead-text">
+            <h3>${Q(i)} • Nội Thành</h3>
+            <div class="text-muted text-sm">${e.length} địa điểm trong thành • ${r.length} POI. Đi lại nội thành không tốn ngày; mỗi địa điểm mở một cảnh ngữ cảnh.</div>
+          </div>
+        </div>
+        <div class="wilderness-map-legend">
+          <span>Vị trí hiện tại: <strong>${Q(a?.nameVi || n || "Cổng thành")}</strong></span>
+          <span class="text-muted">Chọn một địa điểm để vào và khảo sát.</span>
+        </div>
+        <div class="city-map-grid">
+          ${e.map((e) => this.renderSpot(e, n)).join("")}
+        </div>
+        ${this.renderScenePanel()}
+      </div>
+    `), this.bind();
+	}
+	renderSpot(e, t) {
+		let n = de[e.iconKey] || "城", r = e.nameVi === t;
+		return `
+      <button class="city-spot-card${r ? " is-current" : ""}" data-city-enter="${Q(e.subLocationId)}">
+        <span class="city-spot-seal">${n}</span>
+        <span class="city-spot-name">${Q(e.nameVi)}</span>
+        <span class="city-spot-kind">${Q(e.kind)}${r ? " • đang ở đây" : ""}</span>
+      </button>
+    `;
+	}
+	renderScenePanel() {
+		if (!this.scene) return "";
+		let e = Array.isArray(this.scene.options) ? this.scene.options : [];
+		return `
+      <div class="wilderness-scene-card">
+        <div class="flex justify-between items-start gap-3">
+          <div>
+            <div class="text-xs font-bold text-amber-200">${Q(this.sceneSpotName || this.scene.npc?.name || "Khảo sát")}</div>
+            <div class="text-[11px] text-muted">${Q(this.scene.npc?.name || "")}${this.scene.npc?.title ? ` • ${Q(this.scene.npc.title)}` : ""}</div>
+          </div>
+          <button class="ui-btn ui-btn--ghost ui-btn--sm" data-scene-close>Đóng</button>
+        </div>
+        <p class="text-sm text-slate-300 mt-2">${Q(this.scene.narrative || "")}</p>
+        <div class="grid grid-cols-1 gap-2 mt-2">
+          ${e.map((e, t) => `
+            <button class="ui-btn ui-btn--ghost ui-btn--sm text-left" data-scene-option="${t}" ${e.disabled ? "disabled" : ""}>
+              <strong>${Q(e.title || e.id || `Lựa chọn ${t + 1}`)}</strong>
+              ${e.desc ? `<span class="block text-[11px] text-muted">${Q(e.desc)}</span>` : ""}
+            </button>
+          `).join("")}
+        </div>
+      </div>
+    `;
+	}
+	bind() {
+		let e = this.modal.getBodyElement();
+		e && (e.querySelectorAll("[data-city-enter]").forEach((e) => {
+			e.addEventListener("click", async () => {
+				let t = e.dataset.cityEnter || "";
+				e.setAttribute("disabled", "true");
+				try {
+					let e = (await Z.enter(t))?.result?.nameVi || t;
+					this.scene = await Z.getScene(e), this.sceneSpotName = e, await this.refresh(), this.render();
+				} catch (t) {
+					e.removeAttribute("disabled"), ue(t.message || "Không vào được địa điểm.", !0);
+				}
+			});
+		}), e.querySelectorAll("[data-scene-close]").forEach((e) => {
+			e.addEventListener("click", () => {
+				this.scene = null, this.sceneSpotName = null, this.render();
+			});
+		}), e.querySelectorAll("[data-scene-option]").forEach((e) => {
+			e.addEventListener("click", async () => {
+				let t = Number(e.dataset.sceneOption || -1), n = this.scene?.options?.[t];
+				if (n?.action) {
+					e.setAttribute("disabled", "true");
+					try {
+						ue((await Z.dispatchAction(n.action))?.message || "Đã thực hiện lựa chọn."), this.scene = null, this.sceneSpotName = null, await this.refresh(), this.render();
+					} catch (t) {
+						e.removeAttribute("disabled"), ue(t.message || "Hành động thất bại.", !0);
+					}
+				}
+			});
+		}));
+	}
+}, pe = new fe(), me = {
 	wu_wei: "xi_liang",
 	he_fei: "shou_chun",
 	pu_yang: "ye_cheng",
 	wu_ling: "jiang_ling"
 };
-function le(e) {
-	return ce[e] || e;
+function he(e) {
+	return me[e] || e;
 }
-var Q = new class {
-	ALIASES = ce;
+var $ = new class {
+	ALIASES = me;
 	state = {
 		status: "idle",
 		fetchedAt: 0,
@@ -2774,7 +2934,7 @@ var Q = new class {
 		errors: []
 	};
 	resolveMapNodeId(e) {
-		return le(e);
+		return he(e);
 	}
 	getSubLocationsForNode(e) {
 		return this.state.mapRegistry?.subLocationsByNode?.[e] || [];
@@ -2868,58 +3028,58 @@ var Q = new class {
 			let t = e.name, n = e.npc_id || e.npcId;
 			n && (R[n] = e), t && (L[this.normalizeName(t)] = e);
 		}), this.state.npcsByName = L, this.state.npcsById = R;
-		let z = Number(ne?.player?.liquid_cash) || 0, B = {};
+		let z = Number(ne?.player?.liquid_cash) || 0, ae = {};
 		w.forEach((e) => {
 			let t = e.item_code || e.itemCode, n = Number(e.quantity) || 0;
-			t && (B[t] = n);
-		}), this.state.playerCash = z, this.state.inventory = B, this.state.guardTiers = re;
-		let V = {};
+			t && (ae[t] = n);
+		}), this.state.playerCash = z, this.state.inventory = ae, this.state.guardTiers = re;
+		let B = {};
 		T.forEach((e) => {
 			let t = e.nameVi;
-			t && (V[this.normalizeName(t)] = e);
-		}), this.state.specialistsByName = V, this.state.caravans = k, this.state.expeditions = ie;
-		let H = {}, U = {};
+			t && (B[this.normalizeName(t)] = e);
+		}), this.state.specialistsByName = B, this.state.caravans = k, this.state.expeditions = ie;
+		let V = {}, H = {};
 		A.forEach((e) => {
 			let t = String(e.settlementId || ""), n = this.resolveMapNodeId(t), r = String(e.resourceType || "");
-			n && r && (H[n] || (H[n] = {
+			n && r && (V[n] || (V[n] = {
 				types: {},
 				nodes: []
-			}), H[n].types[r] = (H[n].types[r] || 0) + 1, H[n].nodes.push(e), U[r] = (U[r] || 0) + 1);
-		}), this.state.resourcesByNode = H, this.state.resourceTotals = U;
-		let W = {};
+			}), V[n].types[r] = (V[n].types[r] || 0) + 1, V[n].nodes.push(e), H[r] = (H[r] || 0) + 1);
+		}), this.state.resourcesByNode = V, this.state.resourceTotals = H;
+		let U = {};
 		O.forEach((e) => {
 			let t = e.locationId;
-			t && (W[t] = e);
-		}), this.state.locationsById = W;
-		let G = {};
+			t && (U[t] = e);
+		}), this.state.locationsById = U;
+		let W = {};
 		if (typeof window < "u") {
 			let e = window.SETTLEMENT_LABELS || {};
 			Object.keys(e).forEach((t) => {
 				if (t === "wu_wei") return;
 				let n = e[t] && e[t].vi;
-				n && (G[this.normalizeLocationLabel(n)] = t);
+				n && (W[this.normalizeLocationLabel(n)] = t);
 			});
 		}
-		let K = {};
+		let G = {};
 		O.forEach((e) => {
 			let t = e.locationId, n = e.nameVi;
 			if (!t || !n) return;
-			let r = G[this.normalizeLocationLabel(n)];
-			r && (K[t] = r);
-		}), this.state.locToMapNode = K;
-		let q = {};
+			let r = W[this.normalizeLocationLabel(n)];
+			r && (G[t] = r);
+		}), this.state.locToMapNode = G;
+		let K = {};
 		E.forEach((e) => {
 			let t = e.businessId, n = e.locationId;
-			t && n && (q[t] = n);
+			t && n && (K[t] = n);
 		});
-		let J = {};
+		let q = {};
 		T.forEach((e) => {
-			let t = !!e.isHired, n = e.assignedBusinessId, r = n ? q[n] : null, i = e.baselineLocation, a = t && r ? r : i, o = a ? K[a] : null;
-			o && (J[o] ||= []).push(e);
-		}), this.state.businesses = E, this.state.specialistsByMapNode = J;
-		let Y = {};
+			let t = !!e.isHired, n = e.assignedBusinessId, r = n ? K[n] : null, i = e.baselineLocation, a = t && r ? r : i, o = a ? G[a] : null;
+			o && (q[o] ||= []).push(e);
+		}), this.state.businesses = E, this.state.specialistsByMapNode = q;
+		let J = {};
 		return D.forEach((e) => {
-			let t = K[e.sourceLocationId || ""], n = K[e.targetLocationId || ""];
+			let t = G[e.sourceLocationId || ""], n = G[e.targetLocationId || ""];
 			if (!t || !n) return;
 			let r = e.descriptionEn ? e.descriptionEn.trim() : "", i = r && !/^RT-/i.test(r) && /^[\x20-\x7E]+$/.test(r) ? r : void 0, a = {
 				from: t,
@@ -2932,12 +3092,12 @@ var Q = new class {
 				descVi: e.descriptionVi,
 				descEn: i
 			}, o = `${t}|${n}`, s = `${n}|${t}`;
-			Y[o] || (Y[o] = a), Y[s] || (Y[s] = {
+			J[o] || (J[o] = a), J[s] || (J[s] = {
 				...a,
 				from: n,
 				to: t
 			});
-		}), this.state.routesByKey = Y, this.state.status = this.state.errors.length === 17 ? "error" : "ready", this.state.fetchedAt = Date.now(), this.state;
+		}), this.state.routesByKey = J, this.state.status = this.state.errors.length === 17 ? "error" : "ready", this.state.fetchedAt = Date.now(), this.state;
 	}
 	getForMapNode(e) {
 		return e && (this.state.byMapNode[e] || this.state.bySettlement[e]) || null;
@@ -3118,7 +3278,7 @@ var Q = new class {
 	}
 }();
 // src/client/features/legacy-bridge.ts
-function ue() {
+function ge() {
 	if (typeof window > "u") return;
 	let t = window;
 	t.ModalShellCore = {
@@ -3160,8 +3320,8 @@ function ue() {
 		updateTotal: () => M.updateTotal(),
 		submit: () => M.submit()
 	}, t.MarketStallModal = {
-		open: (e = "stall") => G.open(e),
-		close: () => G.close()
+		open: (e = "stall") => W.open(e),
+		close: () => W.close()
 	}, t.TacticalBattleUI = {
 		startDuel: (e) => F.startDuel(e),
 		close: () => F.close(),
@@ -3177,47 +3337,50 @@ function ue() {
 		openLegacy: () => L.openTurnAdvanceModal(),
 		closeLegacy: () => L.closeTurnAdvanceModal()
 	}, t.QuestUI = {
-		open: () => V.open(),
-		close: () => V.close(),
-		accept: (e) => V.accept(e),
-		advance: (e) => V.advance(e),
-		payObligation: (e) => V.payObligation(e),
-		acceptContract: (e) => V.acceptContract(e),
-		deliverContract: (e) => V.deliverContract(e),
-		verifyIntel: (e) => V.verifyIntel(e),
-		rentFarm: (e) => V.rentFarm(e),
-		plantCrop: (e, t) => V.plantCrop(e, t),
-		harvestFarm: (e) => V.harvestFarm(e)
+		open: () => B.open(),
+		close: () => B.close(),
+		accept: (e) => B.accept(e),
+		advance: (e) => B.advance(e),
+		payObligation: (e) => B.payObligation(e),
+		acceptContract: (e) => B.acceptContract(e),
+		deliverContract: (e) => B.deliverContract(e),
+		verifyIntel: (e) => B.verifyIntel(e),
+		rentFarm: (e) => B.rentFarm(e),
+		plantCrop: (e, t) => B.plantCrop(e, t),
+		harvestFarm: (e) => B.harvestFarm(e)
 	}, t.WorldMapUI = {
-		open: () => q.open(),
-		close: () => q.close()
+		open: () => K.open(),
+		close: () => K.close()
 	}, t.WildernessMapUI = {
-		open: (e) => se.open(e),
-		close: () => se.close()
+		open: (e) => ce.open(e),
+		close: () => ce.close()
+	}, t.CityMapUI = {
+		open: (e) => pe.open(e),
+		close: () => pe.close()
 	}, t.MapLiveService = {
-		load: (e = !1) => Q.load(e),
-		getForMapNode: (e) => Q.getForMapNode(e),
-		getSubLocationsForNode: (e) => Q.getSubLocationsForNode(e),
-		getPoiScenesForNode: (e) => Q.getPoiScenesForNode(e),
-		getStatusForMapNode: (e) => Q.getStatusForMapNode(e),
-		getThreatForMapNode: (e) => Q.getThreatForMapNode(e),
-		findNpcByName: (e) => Q.findNpcByName(e),
-		findSpecialistByName: (e) => Q.findSpecialistByName(e),
-		getSpecialistsForMapNode: (e) => Q.getSpecialistsForMapNode(e),
-		getLocIdForNode: (e) => Q.getLocIdForNode(e),
-		getRecruitRequirement: (e) => Q.getRecruitRequirement(e),
-		getActionRequirements: () => Q.getActionRequirements(),
-		getRoute: (e, t) => Q.getRoute(e, t),
-		getLivingEntities: () => Q.getLivingEntities(),
-		getResourceDistribution: () => Q.getResourceDistribution(),
-		getResourceNodesForMapNode: (e) => Q.getResourceNodesForMapNode(e),
-		resolveMapNodeId: (e) => Q.resolveMapNodeId(e),
-		hasArmy: () => Q.hasArmy(),
-		getState: () => Q.getState(),
-		ALIASES: Q.ALIASES
+		load: (e = !1) => $.load(e),
+		getForMapNode: (e) => $.getForMapNode(e),
+		getSubLocationsForNode: (e) => $.getSubLocationsForNode(e),
+		getPoiScenesForNode: (e) => $.getPoiScenesForNode(e),
+		getStatusForMapNode: (e) => $.getStatusForMapNode(e),
+		getThreatForMapNode: (e) => $.getThreatForMapNode(e),
+		findNpcByName: (e) => $.findNpcByName(e),
+		findSpecialistByName: (e) => $.findSpecialistByName(e),
+		getSpecialistsForMapNode: (e) => $.getSpecialistsForMapNode(e),
+		getLocIdForNode: (e) => $.getLocIdForNode(e),
+		getRecruitRequirement: (e) => $.getRecruitRequirement(e),
+		getActionRequirements: () => $.getActionRequirements(),
+		getRoute: (e, t) => $.getRoute(e, t),
+		getLivingEntities: () => $.getLivingEntities(),
+		getResourceDistribution: () => $.getResourceDistribution(),
+		getResourceNodesForMapNode: (e) => $.getResourceNodesForMapNode(e),
+		resolveMapNodeId: (e) => $.resolveMapNodeId(e),
+		hasArmy: () => $.hasArmy(),
+		getState: () => $.getState(),
+		ALIASES: $.ALIASES
 	}, console.log("[ThreeKingdoms-AgentEngine] All 14 client feature slices successfully bridged to window.*");
 }
-var de = new class {
+var _e = new class {
 	handlers = /* @__PURE__ */ new Map();
 	on(e, t) {
 		return this.handlers.has(e) || this.handlers.set(e, /* @__PURE__ */ new Set()), this.handlers.get(e).add(t), () => {
@@ -3238,7 +3401,7 @@ var de = new class {
 			}
 		});
 	}
-}(), fe = class e {
+}(), ve = class e {
 	static instance;
 	static getInstance() {
 		return e.instance ||= new e(), e.instance;
@@ -3258,7 +3421,7 @@ var de = new class {
 			guardTier: e.escortLevel
 		});
 	}
-}, $ = fe.getInstance(), pe = class {
+}, ye = ve.getInstance(), be = class {
 	modal;
 	caravans = [];
 	routes = [];
@@ -3303,7 +3466,7 @@ var de = new class {
 	}
 	async refreshData() {
 		try {
-			let [e, t] = await Promise.all([$.getCaravans().catch(() => []), $.getArbitrageOpportunities().catch(() => [])]);
+			let [e, t] = await Promise.all([ye.getCaravans().catch(() => []), ye.getArbitrageOpportunities().catch(() => [])]);
 			this.caravans = e, this.routes = t, this.modal.updateTabBadge("active", e.length > 0 ? e.length : void 0);
 		} catch (e) {
 			console.error("[CaravanLogisticsModal] Error refreshing data:", e);
@@ -3392,13 +3555,13 @@ var de = new class {
 			escortLevel: r?.value || "MILITIA"
 		};
 		try {
-			let e = await $.dispatchCaravan(i);
+			let e = await ye.dispatchCaravan(i);
 			typeof window.showToast == "function" && window.showToast(e.narrativeVi || "Thương đoàn đã xuất phát!"), await this.refreshData(), await this.modal.switchTab("active");
 		} catch (e) {
 			typeof window.showToast == "function" && window.showToast(e.message || "Lỗi xuất thương đoàn!", !0);
 		}
 	}
-}, me = new pe(), he = class {
+}, xe = new be(), Se = class {
 	modal;
 	selectedScenario = "184_YELLOW_TURBAN";
 	constructor() {
@@ -3491,9 +3654,9 @@ var de = new class {
 			typeof window.showToast == "function" && window.showToast(e.message || "Lỗi khởi tạo chiến dịch!", !0);
 		}
 	}
-}, ge = new he();
+}, Ce = new Se();
 // src/client/main.ts
-ue();
-export { pe as CaravanLogisticsModal, fe as CaravanLogisticsService, _ as ClientApiClient, ie as DossiersModal, O as DossiersService, re as EnterpriseWorkshopModal, T as EnterpriseWorkshopService, ne as EquipmentForgeModal, te as EquipmentForgeService, t as LEGACY_OWNED_MODAL_IDS, b as LineageFamilyModal, ee as LineageFamilyService, r as ModalShell, j as QuickTradeModal, P as TacticalBattleModal, he as TitleScreenModal, I as TransitTurnModals, oe as WildernessMapModal, J as WildernessMapService, K as WorldMapModal, v as apiClient, me as caravanLogisticsModal, $ as caravanLogisticsService, i as createModalShell, A as dossiersModal, k as dossiersService, D as enterpriseWorkshopModal, E as enterpriseWorkshopService, w as equipmentForgeModal, S as equipmentForgeService, de as eventBus, n as isLegacyOwnedModalId, x as lineageFamilyModal, y as lineageFamilyService, e as modalStack, M as quickTradeModal, F as tacticalBattleModal, ge as titleScreenModal, L as transitTurnModals, se as wildernessMapModal, Y as wildernessMapService, q as worldMapModal };
+ge();
+export { be as CaravanLogisticsModal, ve as CaravanLogisticsService, fe as CityMapModal, le as CityMapService, _ as ClientApiClient, ie as DossiersModal, O as DossiersService, re as EnterpriseWorkshopModal, T as EnterpriseWorkshopService, ne as EquipmentForgeModal, te as EquipmentForgeService, t as LEGACY_OWNED_MODAL_IDS, b as LineageFamilyModal, ee as LineageFamilyService, r as ModalShell, j as QuickTradeModal, P as TacticalBattleModal, Se as TitleScreenModal, I as TransitTurnModals, se as WildernessMapModal, q as WildernessMapService, G as WorldMapModal, v as apiClient, xe as caravanLogisticsModal, ye as caravanLogisticsService, pe as cityMapModal, Z as cityMapService, i as createModalShell, A as dossiersModal, k as dossiersService, D as enterpriseWorkshopModal, E as enterpriseWorkshopService, w as equipmentForgeModal, S as equipmentForgeService, _e as eventBus, n as isLegacyOwnedModalId, x as lineageFamilyModal, y as lineageFamilyService, e as modalStack, M as quickTradeModal, F as tacticalBattleModal, Ce as titleScreenModal, L as transitTurnModals, ce as wildernessMapModal, J as wildernessMapService, K as worldMapModal };
 
 //# sourceMappingURL=client-bundle.es.js.map

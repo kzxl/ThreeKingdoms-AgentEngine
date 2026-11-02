@@ -10145,3 +10145,52 @@ textarea {
   border-radius: 8px;
   background: rgba(30, 20, 10, 0.55);
 }
+
+/* City mini-map: reachable urban sub-locations */
+.city-map-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 0.5rem;
+  margin-top: 0.9rem;
+}
+
+.city-spot-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.2rem;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid rgba(120, 90, 40, 0.35);
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.55);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.city-spot-card:hover,
+.city-spot-card:focus-visible {
+  border-color: rgba(217, 119, 6, 0.65);
+  background: rgba(30, 20, 10, 0.7);
+}
+
+.city-spot-card.is-current {
+  border-color: rgba(217, 119, 6, 0.9);
+  background: rgba(45, 30, 12, 0.8);
+}
+
+.city-spot-seal {
+  font-size: 1.1rem;
+  color: #fbbf24;
+}
+
+.city-spot-name {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.city-spot-kind {
+  font-size: 0.68rem;
+  color: #94a3b8;
+}
