@@ -52,6 +52,14 @@ async function runCivilianLineageVerification(): Promise<void> {
 
   const startPlayer = db.queryOne<any>('SELECT liquid_cash FROM player_state WHERE player_id = ?;', ['PLY-0001']);
   const baselineLiquidCash = Number(startPlayer?.liquid_cash || 8086);
+  // This suite runs on the live save; autonomous marriages post npc_ledger rows
+  // and move NPC progression cash. Snapshot both so teardown restores them.
+  const npcProgressionBaseline = db.query<any>(
+    'SELECT npc_id, personal_cash, personal_troops FROM npc_personal_progression;'
+  );
+  const npcLedgerMaxRowid = Number(
+    db.queryOne<any>('SELECT COALESCE(MAX(rowid), 0) AS max_rowid FROM npc_ledger;')?.max_rowid || 0
+  );
 
   try {
     // -----------------------------------------------------------------------
@@ -292,10 +300,7 @@ async function runCivilianLineageVerification(): Promise<void> {
     console.log('\n>>> [GROUP 7] Autonomous NPC Marriages Across Factions...');
 
     // Ensure officer NPC-0005 (Zhang Shiping - Merchant, Pragmatic, Cash 5000) has cash
-    db.execute(`
-      INSERT OR REPLACE INTO npc_personal_progression (npc_id, life_ambition, current_focus, personal_cash, prestige)
-      VALUES ('NPC-0005', 'WEALTH_ACCUMULATION', 'COMMERCE', 5000, 120);
-    `);
+    db.execute("UPDATE npc_personal_progression SET personal_cash = 5000 WHERE npc_id = 'NPC-0005';");
 
     const autoMarriages = lineageService.simulateAutonomousNpcMarriages(7, '184-05-15');
     assert(autoMarriages.length > 0, `Autonomous NPC marriage simulation executed (${autoMarriages.length} marriages arranged)`);
@@ -390,6 +395,15 @@ async function runCivilianLineageVerification(): Promise<void> {
       for (const t of testTxns) {
         db.execute('DELETE FROM account_journal WHERE txn_id = ?;', [t.txn_id]);
         db.execute('DELETE FROM cashflow_ledger WHERE txn_id = ?;', [t.txn_id]);
+      }
+
+      // Revert NPC cash changes and ledger rows written by autonomous marriages.
+      db.execute('DELETE FROM npc_ledger WHERE rowid > ?;', [npcLedgerMaxRowid]);
+      for (const row of npcProgressionBaseline) {
+        db.execute(
+          'UPDATE npc_personal_progression SET personal_cash = ?, personal_troops = ? WHERE npc_id = ?;',
+          [Number(row.personal_cash || 0), Number(row.personal_troops || 0), row.npc_id]
+        );
       }
 
       // Restore PLY-0001 liquid cash
