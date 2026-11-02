@@ -11,7 +11,7 @@ import { DatabaseService } from '../../core/database';
 import { ModuleRegistry } from '../../core/module-registry';
 import { EconomyModule } from './economy.module';
 import { RegionalMarketService, SETTLEMENT_PROFILES } from './regional-market.service';
-import { LOC_TO_NODE_MAP } from '../ecology-logistics/spatial-registry';
+import { LOC_TO_NODE_MAP, resolveNodeId } from '../ecology-logistics/spatial-registry';
 import { SettlementMarketService } from './settlement-market.service';
 import { CaravanLogisticsService } from '../ecology-logistics/caravan-logistics.service';
 import { postCashflowEntry, postDoubleEntry } from '../../shared/ledger';
@@ -96,6 +96,29 @@ function oneYearLater(gameDate: string): string {
 /**
  * Registers all Economy module routes into the provided Router instance.
  */
+function resolveSettlementId(db: DatabaseService, requested?: string): string {
+  const player = db.queryOne<{ current_location: string; current_sub_location: string }>(
+    'SELECT current_location, current_sub_location FROM player_state WHERE player_id = ?;',
+    ['PLY-0001']
+  );
+  const raw = requested || player?.current_sub_location || player?.current_location || 'LOC-0001';
+  if (LOC_TO_NODE_MAP[raw]) return LOC_TO_NODE_MAP[raw];
+  if (SETTLEMENT_PROFILES[raw]) return raw;
+
+  const subLocation = db.queryOne<{ location_id: string }>(
+    'SELECT location_id FROM location_sublocations WHERE name_vi = ? OR sub_location_id = ? LIMIT 1;',
+    [raw, raw]
+  );
+  if (subLocation) return resolveNodeId(subLocation.location_id);
+
+  const location = db.queryOne<{ location_id: string }>(
+    'SELECT location_id FROM master_locations WHERE name_vi = ? OR name_en = ? LIMIT 1;',
+    [raw, raw]
+  );
+  if (location) return resolveNodeId(location.location_id);
+  return resolveNodeId(raw);
+}
+
 export function registerEconomyRoutes(router: Router): void {
   const db = getDb();
 
@@ -169,6 +192,18 @@ export function registerEconomyRoutes(router: Router): void {
   router.get('/api/economy/market', handleGetMarket);
 
   // Market pulse: local stock/demand and the last 12 monthly points.
+  // Full price board: every item, local price, pressure, history, player stock
+  // and the best arbitrage destination in one payload.
+  router.get('/api/economy/market-board', (_req: any, res: any, ctx: RouteContext) => {
+    try {
+      const settlementId = resolveSettlementId(db, ctx.query.settlementId as string | undefined);
+      const board = SettlementMarketService.forDatabase(db).getMarketBoard(settlementId);
+      sendJson(res, 200, { success: true, ...board });
+    } catch (err: any) {
+      sendJson(res, 500, { success: false, error: err.message });
+    }
+  });
+
   router.get('/api/economy/settlement-market', (_req: any, res: any, ctx: RouteContext) => {
     try {
       const player = db.queryOne<{ current_location: string }>(

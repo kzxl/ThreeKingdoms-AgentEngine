@@ -9,7 +9,7 @@
 
 import { DatabaseService } from '../../core/database';
 import { RngService } from '../../core/rng';
-import { SETTLEMENT_PROFILES } from './regional-market.service';
+import { RegionalMarketService, SETTLEMENT_PROFILES } from './regional-market.service';
 import { nextId } from '../../shared/id-generator';
 import { hasProcessedDay, markProcessedDay } from '../../shared/day-ledger';
 
@@ -241,6 +241,109 @@ export class SettlementMarketService {
         history
       };
     });
+  }
+
+  /**
+   * Full price board for one settlement: every master item, local price,
+   * stock/demand pressure, recent history, player stock and the best arbitrage
+   * destination. One call feeds the market modal so the table is never empty.
+   */
+  public getMarketBoard(settlementId: string, playerId = 'PLY-0001'): any {
+    const regional = new RegionalMarketService(this.db);
+    const catalog = regional.getSettlementMarketCatalog(settlementId);
+
+    const stateByItem = new Map<string, { stock: number; demand: number }>();
+    for (const row of this.db.query<any>(
+      'SELECT item_code, stock, demand FROM settlement_market_state WHERE settlement_id = ?;',
+      [settlementId]
+    )) {
+      stateByItem.set(String(row.item_code), { stock: Number(row.stock), demand: Number(row.demand) });
+    }
+
+    const historyByItem = new Map<string, Array<{
+      gameDate: string;
+      stock: number;
+      demand: number;
+      stockMultiplier: number;
+    }>>();
+    for (const row of this.db.query<any>(
+      `SELECT item_code, game_date, stock, demand, stock_multiplier
+         FROM settlement_market_history WHERE settlement_id = ?
+        ORDER BY item_code, game_date DESC, rowid DESC;`,
+      [settlementId]
+    )) {
+      const key = String(row.item_code);
+      const list = historyByItem.get(key) || [];
+      if (list.length < 24) {
+        list.push({
+          gameDate: String(row.game_date),
+          stock: Number(row.stock),
+          demand: Number(row.demand),
+          stockMultiplier: Number(row.stock_multiplier)
+        });
+      }
+      historyByItem.set(key, list);
+    }
+    for (const list of historyByItem.values()) list.reverse();
+
+    const playerQuantity = new Map<string, number>();
+    for (const row of this.db.query<any>(
+      'SELECT item_code, quantity FROM inventory_items;'
+    )) {
+      playerQuantity.set(String(row.item_code), Number(row.quantity || 0));
+    }
+
+    const opportunities = regional.getArbitrageOpportunities(settlementId);
+    const opportunityByItem = new Map(opportunities.map(opportunity => [opportunity.itemCode, opportunity]));
+
+    const items = catalog.map(item => {
+      const state = stateByItem.get(item.itemCode) || { stock: 100, demand: 100 };
+      const pressure = state.stock < state.demand * 0.7 || item.supplyState === 'DEFICIT'
+        ? 'SCARCE'
+        : state.stock > state.demand * 1.3 || item.supplyState === 'SURPLUS'
+          ? 'SURPLUS'
+          : 'NORMAL';
+      const changePct = item.basePrice > 0
+        ? Math.round(((item.currentPrice - item.basePrice) / item.basePrice) * 100)
+        : 0;
+      return {
+        itemCode: item.itemCode,
+        nameVi: item.nameVi,
+        category: item.category,
+        basePrice: item.basePrice,
+        currentPrice: item.currentPrice,
+        changePct,
+        supplyState: item.supplyState,
+        crisisActive: item.crisisActive,
+        stock: state.stock,
+        demand: state.demand,
+        pressure,
+        playerQuantity: playerQuantity.get(item.itemCode) || 0,
+        history: historyByItem.get(item.itemCode) || [],
+        opportunity: opportunityByItem.get(item.itemCode) || null
+      };
+    });
+
+    const profile = SETTLEMENT_PROFILES[settlementId];
+    const summary = {
+      total: items.length,
+      scarce: items.filter(item => item.pressure === 'SCARCE').length,
+      surplus: items.filter(item => item.pressure === 'SURPLUS').length,
+      crisis: items.filter(item => item.crisisActive).length,
+      affordable: items.filter(item => item.currentPrice <= 100).length,
+      opportunities: opportunities.length,
+      bestOpportunity: opportunities[0] || null
+    };
+    return {
+      settlementId,
+      settlementNameVi: profile?.nameVi || settlementId,
+      provinceVi: profile?.provinceVi || '',
+      gameDate: this.currentDate(),
+      specialization: profile?.specialization || null,
+      categories: Array.from(new Set(items.map(item => item.category))).sort(),
+      summary,
+      items
+    };
   }
 
   private currentDate(): string {
