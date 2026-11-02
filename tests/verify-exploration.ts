@@ -105,6 +105,14 @@ function run(): void {
     }
   }
 
+  const ui = fs.readFileSync(path.join(ROOT, 'public/js/spatial-poi-controller.js'), 'utf8');
+  assert(ui.includes('const result = data.result || data;'), 'client must unwrap the explore response');
+  assert(ui.includes('result.narrativeVi'), 'client must use the server narrative for misses');
+  assert(!ui.includes('Danh vọng ${data.fame}'), 'client must not print undefined fame');
+  const index = fs.readFileSync(path.join(ROOT, 'public/index.html'), 'utf8');
+  assert(index.includes('Khảo Sát POI'), 'button label must say it explores the current POI');
+  assert(index.includes('muốn đi quanh thành hãy mở Dã Ngoại'), 'tooltip must distinguish POI survey from wilderness');
+
   console.log('   ✅ exploration costs a day, logs every roll and honors the pity floor');
 }
 

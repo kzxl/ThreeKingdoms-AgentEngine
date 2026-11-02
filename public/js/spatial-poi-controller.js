@@ -227,20 +227,24 @@
 
   async function exploreCurrentPoi() {
     try {
+      const currentName = currentSubLocation || window.activeSubLocation;
       const res = await fetch('/api/explore', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          location: currentSubLocation || window.activeSubLocation,
-          poiName: currentSubLocation || window.activeSubLocation
+          location: currentName,
+          poiName: currentName,
+          idempotencyKey: `explore-${currentName}-${Date.now()}`
         })
       });
       const data = await res.json();
       if (!data.success) throw new Error(data.error || 'Khảo sát thất bại');
-      const text = data.discovered
-        ? `Khám phá: ${data.item.nameVi} (cấp ${data.item.tier})`
-        : `Không tìm thấy gì. Danh vọng ${data.fame}.`;
-      if (typeof showToast === 'function') showToast(text, !data.discovered);
+      // The controller wraps the service payload in `result`.
+      const result = data.result || data;
+      const text = result.discovered
+        ? `Khám phá: ${result.item?.nameVi || result.item?.itemCode || 'vật phẩm'} (cấp ${result.item?.tier || 1})`
+        : (result.narrativeVi || `Không tìm thấy gì. Danh vọng ${Number(result.fame || 0)}.`);
+      if (typeof showToast === 'function') showToast(text, !result.discovered);
       if (typeof loadStatus === 'function') await loadStatus();
       if (typeof loadDeckInventory === 'function') await loadDeckInventory();
     } catch (err) {
