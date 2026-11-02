@@ -51,6 +51,7 @@ function seed(): void {
            ('OFFER-TEST-BAMBOO', 'zhuo_xian', 'NPC-0005', 'Trần Bảo', 'COM-BAMBOO',
       30, 20, 'ACTIVE', '185-06-01', '185-09-01');
   `).run();
+  db.prepare('DELETE FROM world_day_ledger;').run();
   db.prepare("DELETE FROM action_log WHERE idempotency_key LIKE 'TEST-MERCHANT%';").run();
   db.close();
 }
@@ -138,7 +139,8 @@ async function run(): Promise<void> {
   const { MerchantCompanyService } = require('../src/modules/market/merchant-company.service');
   const company = MerchantCompanyService.forDatabase(DatabaseService.getInstance(TEST_DB));
   const eventCount = num(raw, 'SELECT COUNT(*) FROM merchant_events;');
-  const replay = company.advanceByDays(1, '185-06-06');
+  const currentDate = String((raw.prepare('SELECT "current_date" AS d FROM campaign_meta LIMIT 1').get() as any)?.d || '185-06-06');
+  const replay = company.advanceByDays(1, currentDate);
   assert.strictEqual(replay.daysProcessed, 0, 'same-day merchant tick must be idempotent');
   assert.strictEqual(num(raw, 'SELECT COUNT(*) FROM merchant_events;'), eventCount);
 

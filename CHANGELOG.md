@@ -49,6 +49,9 @@ Supply-chain depth: per-city personal bag and multi-item merchant routes.
 - Trade pricing now resolves the player's `LOC-*` sub-location to the actual
   settlement node, so local specialisation is part of the quote.
 - Warehouse deposit/withdraw requires standing in the warehouse's city.
+- Migration 086–089 add a `BEFORE UPDATE` guard: an inventory reduction aborts
+  with `PLAYER_BAG_INSUFFICIENT` when the current city bag does not hold the
+  goods, and `current_player_location` prefers an explicit `LOC-*` id.
 - Audit block 1 checks that every city bag sum never exceeds aggregate
   inventory.
 

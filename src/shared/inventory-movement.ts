@@ -78,10 +78,20 @@ export function consumeInventoryItem(db: DatabaseService, input: InventoryConsum
     return 0;
   }
 
-  db.execute(
-    'UPDATE inventory_items SET quantity = quantity - ? WHERE item_code = ?;',
-    [quantity, input.itemCode]
-  );
+  try {
+    db.execute(
+      'UPDATE inventory_items SET quantity = quantity - ? WHERE item_code = ?;',
+      [quantity, input.itemCode]
+    );
+  } catch (error: any) {
+    const cause = String(error?.cause?.message || error?.message || '');
+    if (cause.includes('PLAYER_BAG_INSUFFICIENT')) {
+      throw new Error(
+        `Túi tại thành hiện tại không đủ ${input.itemCode}; hàng ở thành khác phải được vận chuyển tới trước.`
+      );
+    }
+    throw error;
+  }
   recordStockMovement(db, {
     itemCode: input.itemCode,
     delta: -quantity,

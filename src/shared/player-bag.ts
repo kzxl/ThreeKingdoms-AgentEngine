@@ -17,6 +17,10 @@ export function resolvePlayerLocationId(db: DatabaseService, playerId = 'PLY-000
   );
   if (!player) return 'LOC-0001';
 
+  // A canonical LOC id is an explicit city override used by travel/tests; a
+  // display name ("Vườn Đào") falls through to the sub-location lookup.
+  if (/^LOC-\d+/i.test(player.current_location || '')) return player.current_location;
+
   if (player.current_sub_location) {
     const sub = db.queryOne<{ location_id: string }>(
       'SELECT location_id FROM location_sublocations WHERE name_vi = ? OR sub_location_id = ? LIMIT 1;',

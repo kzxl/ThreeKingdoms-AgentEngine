@@ -44,6 +44,7 @@ function seed(): void {
   db.prepare("DELETE FROM stall_sales;").run();
   db.prepare("DELETE FROM npc_market_offers;").run();
   db.prepare("DELETE FROM npc_market_sales;").run();
+  db.prepare('DELETE FROM world_day_ledger;').run();
   db.prepare("DELETE FROM action_log WHERE idempotency_key LIKE 'TEST-STALL%';").run();
   db.close();
 }

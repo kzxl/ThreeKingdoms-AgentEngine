@@ -110,6 +110,20 @@ async function run(): Promise<void> {
   assert.strictEqual(bagQty(db, 'LOC-0002'), 5);
   assert.strictEqual(bagQty(db, 'LOC-0001'), 10);
 
+  // A city with no bamboo/grain bag must not be able to consume the aggregate.
+  setLocation(db, 'LOC-0003', 'Quảng Tông Tiền Tuyến Doanh');
+  let guardMessage = '';
+  try {
+    db.execute('UPDATE inventory_items SET quantity = quantity - 1 WHERE item_code = ?;', [ITEM]);
+  } catch (error: any) {
+    guardMessage = String(error?.cause?.message || error?.message || '');
+  }
+  assert(guardMessage.includes('PLAYER_BAG_INSUFFICIENT'), 'city without the goods must be blocked');
+  assert.strictEqual(Number(db.queryOne(
+    'SELECT quantity FROM inventory_items WHERE item_code = ?;',
+    [ITEM]
+  ).quantity), 15, 'blocked consumption must leave inventory unchanged');
+
   setLocation(db, 'LOC-0001', 'Tư Trạch Vườn Đào');
   const sell = await request(router, 'POST', '/api/trade', {
     action: 'SELL',

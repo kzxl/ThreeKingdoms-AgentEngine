@@ -46,6 +46,7 @@ module.exports = {
       db.exec(`
         CREATE VIEW current_player_location AS
         SELECT COALESCE(
+          CASE WHEN p.current_location LIKE 'LOC-%' THEN p.current_location END,
           (
             SELECT s.location_id FROM location_sublocations s
             WHERE s.name_vi = p.current_sub_location
@@ -58,7 +59,7 @@ module.exports = {
                OR m.name_vi = p.current_location
             LIMIT 1
           ),
-          CASE WHEN p.current_location LIKE 'LOC-%' THEN p.current_location ELSE 'LOC-0001' END
+          'LOC-0001'
         ) AS location_id
         FROM player_state p
         LIMIT 1;
