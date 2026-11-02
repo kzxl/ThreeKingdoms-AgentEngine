@@ -563,3 +563,13 @@ This document records the architectural choices, rationale, and alternatives con
 - **Consequences**:
   - Positive: Every sub-location/POI/resource resolves with zero orphans; Step B (clickable picker) becomes a UI change.
   - Negative: `master_locations.sub_locations` remains as the ingest source until the ingest tool writes the normalized table directly; rerunning migration 081 is required after a master re-ingest.
+
+---
+
+## ADR-054: Wilderness Gets Its Own Local Map First (2026-11-01)
+
+- **Context**: The two-scale design proposes a city mini-map for 93 urban rows and a local tile map for 40 wilderness rows. Building both at once would split effort before the player can enter the out-of-city space.
+- **Decision**: Implement the wilderness slice first. Migration 082 adds `map_scope`, local coordinates, icon/scene keys and `current_sub_location`; migration 083 backfills legacy place names. `WildernessService` lists and travels only within the current city, and `WildernessMapModal` renders the local SVG. The city mini-map remains a later UI phase on the same registry.
+- **Consequences**:
+  - Positive: The 40 wilderness points, resource nodes and POI scenes become reachable now; the server owns the sub-location.
+  - Negative: 93 URBAN rows are scoped but not rendered yet; the city intel panel has a wilderness entry without a city mini-map counterpart.

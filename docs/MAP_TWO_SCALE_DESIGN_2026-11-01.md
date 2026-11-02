@@ -1,8 +1,10 @@
 # Two-Scale Map Design — City Mini-Map + Wilderness Tile Layer
 
 Date: 2026-11-01
-Status: analysis and proposed sequencing. Builds on Map Step A (1.46.0):
-`location_sublocations`, `/api/map/registry`, 20 nodes with zero orphans.
+Status: **Wilderness slice implemented in 1.47.0 (`c8a8168`).** 40 WILDERNESS
+rows have local coordinates, `current_sub_location` is server-owned, and the
+wilderness modal/travel API are live. The city mini-map (93 URBAN rows) remains
+the next phase.
 
 ## 1. Verdict
 

@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.47.0] - 2026-11-01
+
+Wilderness local map (city mini-map remains for the next phase).
+
+### Added
+- Migration 082 adds `map_scope`, local coordinates, icon/scene keys to
+  `location_sublocations` and `player_state.current_sub_location`; migration 083
+  backfills legacy place names such as "Vườn Đào" → "Tư Trạch Vườn Đào".
+- `WildernessService`, `GET /api/map/wilderness` and
+  `POST /api/map/wilderness/travel`: only WILDERNESS rows in the current city are
+  reachable; each move charges one day through action time.
+- `WildernessMapModal` renders the 40 wilderness points on a local SVG with the
+  current position, resource nodes and POI scene keys; the world-map intel panel
+  gains a Dã Ngoại button.
+- `verify-wilderness-map.ts`; schema contract covers the new columns.
+
+### Verification
+`npm run verify` green: 100/100 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 2,313 invariants, 0 discrepancies.
+
+---
+
 ## [1.46.0] - 2026-11-01
 
 One map registry from SQLite (Map Step A).

@@ -6,23 +6,22 @@ Baseline HEAD: `c775225` (1.39.0; clean working tree)
 Source analyses: `docs/audit/*`, `docs/*_2026-10-29.md`, `docs/REFACTOR_2026-10.md`,
 `docs/PRESTIGE_SYSTEM.md`, plus the 2026-11-01 supply-chain re-check.
 
-Baseline gate after Wave 0–2, W3-1 and Map Step A:
+Baseline gate after Wave 0–2, W3-1, Map Step A and the wilderness slice:
 
 | Gate | Result |
 | :--- | :--- |
-| `npm run verify` | 99/99 suites, 28/28 API contracts, 8/8 write smokes |
+| `npm run verify` | 100/100 suites, 28/28 API contracts, 8/8 write smokes |
 | `npm run audit` | 2,313 invariants, 0 discrepancies |
 | Route shadow report | 48 live legacy handlers, 0 shadowed |
 
 Wave 0 (`c775225`), W1-1/W1-2/W1-6 (`43f22da`, `5346294`), W1-4 (`ea945f9`),
 W1-3 (`e4bb051`), the W1-7 warehouse/boat part (`d4228d9`), W2-1 (`e106118`),
-W2-2 (`6ed8c5f`), W2-3 (`71a3d5d`), W2-4 (`3ca03b2`), W3-1 (`08f2ec4`) and
-Map Step A (`a6abaf6`) are complete.
-W1-5, multi-item routes and W3-2–W3-7 remain.
+W2-2 (`6ed8c5f`), W2-3 (`71a3d5d`), W2-4 (`3ca03b2`), W3-1 (`08f2ec4`),
+Map Step A (`a6abaf6`) and the wilderness local map (`c8a8168`) are complete.
+W1-5, multi-item routes, the city mini-map and W3-2–W3-7 remain.
 
-Map direction: Step A is done (`location_sublocations`, `/api/map/registry`,
-zero orphans). Step B (clickable Nội Thành / Dã Ngoại picker) is the next map
-UI change; tiles stay in Wave 5.
+Map Step A (`a6abaf6`) and the wilderness local map (`c8a8168`) are done. The
+city mini-map is the next map UI phase; tiles stay in Wave 5.
 The rule for every item below: one feature per commit, `npm run verify` and
 `npm run audit` green before the commit, only task-scoped files staged.
 

@@ -1204,6 +1204,28 @@ truth for sub-locations and POIs. Step B (clickable Nội Thành / Dã Ngoại p
 is now a UI change, not a data change. The two-scale city mini-map + wilderness
 tile design is analyzed in `docs/MAP_TWO_SCALE_DESIGN_2026-11-01.md`.
 
+---
+
+## 29. Wilderness Local Map (1.47.0)
+
+The wilderness slice is implemented before the city mini-map:
+
+- Migration 082 adds `map_scope`, `local_x`, `local_y`, `icon_key` and
+  `scene_key` to `location_sublocations`, plus
+  `player_state.current_sub_location`.
+- Migration 083 backfills the sub-location from legacy place names.
+- `WildernessService` lists the WILDERNESS rows for a city and moves the player
+  only inside that city; an urban target or another city's wilderness is
+  rejected. Travel charges one day through `chargePlayerAction`.
+- `GET /api/map/wilderness` and `POST /api/map/wilderness/travel` are the server
+  surface.
+- `WildernessMapModal` renders the local SVG from `local_x/local_y`, highlights
+  the current sub-location and shows resource/POI counts. The world-map intel
+  panel opens it with a Dã Ngoại button.
+
+The city mini-map is still open: 93 urban rows are scoped but no city hotspot
+renderer exists yet.
+
 
 
 
