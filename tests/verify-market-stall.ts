@@ -25,7 +25,7 @@ function seed(): void {
   db.pragma('journal_mode = DELETE');
   db.prepare(`
     UPDATE campaign_meta
-    SET status = 'ACTIVE', "current_date" = '185-06-01', active_turn = 16, current_phase = 0
+    SET status = 'ACTIVE', "current_date" = COALESCE((SELECT MAX(game_date) FROM cashflow_ledger), '185-06-01'), active_turn = 16, current_phase = 0
     WHERE campaign_id = (SELECT campaign_id FROM campaign_meta LIMIT 1);
   `).run();
   db.prepare(`

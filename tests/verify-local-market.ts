@@ -31,7 +31,7 @@ function seed(): void {
   db.prepare(`
     UPDATE campaign_meta
     SET status = 'ACTIVE', defeat_reason = NULL, distress_months = 0,
-        "current_date" = '185-06-01', active_turn = 16
+        "current_date" = COALESCE((SELECT MAX(game_date) FROM cashflow_ledger), '185-06-01'), active_turn = 16
     WHERE campaign_id = (SELECT campaign_id FROM campaign_meta LIMIT 1);
   `).run();
   db.prepare(`
@@ -65,6 +65,9 @@ function run(): void {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const { SettlementMarketService } = require('../src/modules/economy/settlement-market.service');
   DatabaseService.resetInstance();
+  const dateDb = new Database(TEST_DB);
+  const TEST_DATE = String((dateDb.prepare('SELECT "current_date" AS d FROM campaign_meta LIMIT 1').get() as any).d);
+  dateDb.close();
   const market = SettlementMarketService.forDatabase(DatabaseService.getInstance(TEST_DB));
   const core = new SimulationCore(TEST_DB);
 
@@ -78,7 +81,7 @@ function run(): void {
     quantity: 10,
     unit_price: 1,
     counterparty: 'Test Market',
-    game_date: '185-06-01',
+    game_date: TEST_DATE,
     idempotency_key: 'market-buy-1'
   });
   assert.strictEqual(buy.success, true, `buy must succeed: ${JSON.stringify(buy)}`);
@@ -93,7 +96,7 @@ function run(): void {
     quantity: 4,
     unit_price: 1,
     counterparty: 'Test Market',
-    game_date: '185-06-03',
+    game_date: TEST_DATE,
     idempotency_key: 'market-sell-1'
   });
   assert.strictEqual(sell.success, true, `sell must succeed: ${JSON.stringify(sell)}`);
