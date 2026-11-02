@@ -24,7 +24,7 @@ web UI are read models.
 
 | Gate | Result |
 | :--- | :--- |
-| `npm run verify` | 100/100 suites (4 legacy + 96 modern), 28/28 API contracts, 8/8 write smokes |
+| `npm run verify` | 101/101 suites (4 legacy + 97 modern), 28/28 API contracts, 8/8 write smokes |
 | `npm run audit` | 2,313 SQLite invariants, 0 discrepancies |
 | `npm run routes:shadow` | 48 live legacy handlers, 0 shadowed |
 
@@ -34,7 +34,7 @@ its regression suite and the invariant audit are green.
 ## 3. Essential commands
 
 ```bash
-npm run verify          # typecheck, five lints, route shadow, 100 suites, golden, write smokes
+npm run verify          # typecheck, five lints, route shadow, 101 suites, golden, write smokes
 npm run audit           # 2,313 invariants against saves/session.db
 npm run migrate         # apply pending migrations (currently through 083)
 npm run migrate:status  # list applied/pending

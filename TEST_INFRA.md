@@ -148,6 +148,7 @@ primary truth:
 | `tests/verify-npc-refusal.ts` | Social: Hire refusal | — | Low-standing refusal, retry date, affinity-gated success |
 | `tests/verify-map-registry.ts` | Map: One registry | — | 20 nodes, 133 sub-locations, 132 POIs, 23 resources, zero orphans |
 | `tests/verify-wilderness-map.ts` | Map: Wilderness | — | 40 scoped rows, local coords, travel, urban/foreign guards |
+| `tests/verify-modal-priority.ts` | UI: Modal stacking | — | Dossier z-index above the map and Escape ownership |
 | `tools/sim-audit.js` | System: Autonomous Invariant Auditor | 2,313 | Nine blocks: accounting, inventory, journal, projection, enterprise, strategy, life-sim, clock, trade/warehouse/shipment |
 
 ---
@@ -165,7 +166,7 @@ npx tsx tests/verify-rotk-duels.ts
 
 ### Full Verification Pipeline
 ```bash
-# Single gate: typecheck → arch ratchet → 100 suites → API contract → write smoke
+# Single gate: typecheck → arch ratchet → 101 suites → API contract → write smoke
 npm run verify
 
 # Individually:

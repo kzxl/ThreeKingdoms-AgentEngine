@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.47.1] - 2026-11-01
+
+Fix modal priority when opening a dossier from the world map.
+
+### Fixed
+- `nextModalZIndex()` in `public/js/config.js` raises a legacy modal above the
+  highest visible modal. The world map is shell-owned with inline z-index 1010,
+  so the NPC/protagonist dossier previously rendered underneath it.
+- NPC and protagonist dossiers now set their z-index before opening and consume
+  Escape with `stopImmediatePropagation`, so the map behind them does not close.
+- `verify-modal-priority.ts`.
+
+### Verification
+`npm run verify` green: 101/101 suites, 28/28 contracts, 8/8 write smokes;
+`npm run audit` 2,313 invariants, 0 discrepancies.
+
+---
+
 ## [1.47.0] - 2026-11-01
 
 Wilderness local map (city mini-map remains for the next phase).

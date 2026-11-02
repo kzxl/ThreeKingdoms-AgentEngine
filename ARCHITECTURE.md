@@ -1226,6 +1226,12 @@ The wilderness slice is implemented before the city mini-map:
 The city mini-map is still open: 93 urban rows are scoped but no city hotspot
 renderer exists yet.
 
+Modal priority: the world map is shell-owned and receives an inline z-index
+(1010) from `ModalStack`. Legacy dossiers are not in that stack, so they call
+`nextModalZIndex()` (`public/js/config.js`) before opening and claim Escape with
+`stopImmediatePropagation`. A dossier opened from the map therefore renders
+above it and closes first.
+
 
 
 
