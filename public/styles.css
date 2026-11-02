@@ -10766,3 +10766,308 @@ textarea {
   width: min(1120px, 96vw);
   max-width: min(1120px, 96vw);
 }
+
+/* Enterprise & workshop: owner portfolio, opening catalog and wage work */
+.enterprise-modal-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.enterprise-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+}
+
+.enterprise-summary-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.55);
+}
+
+.enterprise-summary-card span {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.enterprise-summary-card strong {
+  font-size: 15px;
+  color: #e2e8f0;
+}
+
+.enterprise-summary-card.is-gold strong { color: #fbbf24; }
+.enterprise-summary-card.is-positive strong { color: #86efac; }
+.enterprise-summary-card.is-danger strong { color: #fca5a5; }
+
+.enterprise-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.enterprise-section-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #fbbf24;
+  letter-spacing: 0.03em;
+}
+
+.enterprise-section-title span {
+  margin-left: 4px;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.enterprise-grid,
+.enterprise-open-grid,
+.work-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 10px;
+}
+
+.enterprise-card,
+.enterprise-open-card,
+.work-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.55);
+}
+
+.enterprise-open-card {
+  border-color: rgba(217, 119, 6, 0.35);
+}
+
+.enterprise-card-head,
+.work-card-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.enterprise-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border: 1px solid rgba(217, 119, 6, 0.45);
+  border-radius: 7px;
+  color: #fbbf24;
+  background: rgba(45, 30, 12, 0.55);
+  font-size: 16px;
+}
+
+.enterprise-name-wrap {
+  flex: 1;
+  min-width: 0;
+}
+
+.enterprise-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+.enterprise-meta {
+  margin-top: 1px;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.enterprise-health {
+  flex-shrink: 0;
+  padding: 2px 7px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 999px;
+  font-size: 11px;
+  color: #cbd5e1;
+}
+
+.enterprise-health.is-profitable { color: #86efac; border-color: rgba(34, 197, 94, 0.45); }
+.enterprise-health.is-distressed { color: #fca5a5; border-color: rgba(239, 68, 68, 0.5); }
+.enterprise-health.is-closed { color: #94a3b8; border-color: rgba(148, 163, 184, 0.4); }
+.enterprise-health.is-break_even { color: #fde68a; border-color: rgba(245, 158, 11, 0.4); }
+
+.enterprise-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.enterprise-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 5px 6px;
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  border-radius: 5px;
+  background: rgba(2, 6, 23, 0.4);
+}
+
+.enterprise-stat span {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.enterprise-stat strong {
+  font-size: 12px;
+  color: #e2e8f0;
+}
+
+.enterprise-stat strong.is-danger { color: #fca5a5; }
+.enterprise-stat strong.is-positive { color: #86efac; }
+
+.enterprise-cash-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-top: 2px;
+}
+
+.enterprise-cash-input {
+  width: 90px;
+  padding: 5px 7px;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 5px;
+  background: rgba(2, 6, 23, 0.7);
+  color: #e2e8f0;
+  font-size: 12px;
+}
+
+.enterprise-open-desc {
+  font-size: 11px;
+  line-height: 1.45;
+  color: #94a3b8;
+}
+
+.enterprise-materials {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.enterprise-material {
+  padding: 2px 6px;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 999px;
+  font-size: 11px;
+}
+
+.enterprise-material.is-ready { color: #86efac; border-color: rgba(34, 197, 94, 0.4); }
+.enterprise-material.is-missing { color: #fca5a5; border-color: rgba(239, 68, 68, 0.45); }
+
+.enterprise-open-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: auto;
+}
+
+.enterprise-empty {
+  grid-column: 1 / -1;
+  padding: 18px;
+  text-align: center;
+  font-size: 12px;
+  color: #94a3b8;
+  border: 1px dashed rgba(148, 163, 184, 0.3);
+  border-radius: 8px;
+}
+
+.work-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+}
+
+.work-summary-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.55);
+}
+
+.work-summary-card span {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.work-summary-card strong {
+  font-size: 15px;
+  color: #fde68a;
+}
+
+.work-card.is-blocked {
+  border-color: rgba(239, 68, 68, 0.3);
+  opacity: 0.85;
+}
+
+.work-wage {
+  font-size: 22px;
+  font-weight: 800;
+  color: #fbbf24;
+  line-height: 1.1;
+}
+
+.work-wage span {
+  font-size: 11px;
+  font-weight: 400;
+  color: #94a3b8;
+}
+
+.work-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.work-meta span {
+  padding: 2px 6px;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 999px;
+  font-size: 11px;
+  color: #cbd5e1;
+}
+
+.work-note {
+  min-height: 30px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: #94a3b8;
+}
+
+@media (max-width: 720px) {
+  .enterprise-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.enterprise-summary-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 900px) {
+  .enterprise-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .enterprise-summary-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

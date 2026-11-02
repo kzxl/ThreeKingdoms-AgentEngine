@@ -757,7 +757,7 @@ var g = {
 			typeof window.showToast == "function" && window.showToast(e.message || "Kế thừa thất bại!", !0);
 		}
 	}
-}, x = new b(), S = class e {
+}, x = new b(), te = class e {
 	static instance;
 	static getInstance() {
 		return e.instance ||= new e(), e.instance;
@@ -792,12 +792,12 @@ var g = {
 			idempotencyKey: `tool-repair-${e}-${t}-${Date.now()}`
 		});
 	}
-}, C = S.getInstance();
+}, S = te.getInstance();
 // src/client/features/equipment-forge/equipment-forge.modal.ts
-function w(e) {
+function C(e) {
 	return String(e ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
-var te = class {
+var ne = class {
 	modal;
 	currentCharacterId = "PLY-0001";
 	overview = null;
@@ -847,7 +847,7 @@ var te = class {
 		await this.modal.close();
 	}
 	async refreshData() {
-		let [e, t] = await Promise.all([C.getOverview(this.currentCharacterId).catch((e) => (console.error("[EquipmentForgeModal] Error refreshing overview:", e), null)), C.getTools(this.currentCharacterId).catch((e) => (console.error("[EquipmentForgeModal] Error refreshing tools:", e), []))]);
+		let [e, t] = await Promise.all([S.getOverview(this.currentCharacterId).catch((e) => (console.error("[EquipmentForgeModal] Error refreshing overview:", e), null)), S.getTools(this.currentCharacterId).catch((e) => (console.error("[EquipmentForgeModal] Error refreshing tools:", e), []))]);
 		this.overview = e, this.tools = t;
 	}
 	async renderActiveTab() {
@@ -976,17 +976,17 @@ var te = class {
           <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800">
             <div class="flex justify-between items-start gap-3">
               <div>
-                <div class="font-bold text-amber-200 text-sm">${w(e.nameVi)}</div>
-                <div class="text-xs text-muted">${w(e.itemCode)} • ${t} • SL: ${e.quantity}</div>
+                <div class="font-bold text-amber-200 text-sm">${C(e.nameVi)}</div>
+                <div class="text-xs text-muted">${C(e.itemCode)} • ${t} • SL: ${e.quantity}</div>
               </div>
               <button class="ui-btn ui-btn--primary ui-btn--sm" ${i ? "" : "disabled"}
-                onclick="window.EquipmentUI.repairTool('${w(e.itemCode)}')">Sửa Chữa</button>
+                onclick="window.EquipmentUI.repairTool('${C(e.itemCode)}')">Sửa Chữa</button>
             </div>
             <div class="text-[11px] text-slate-300 mt-2">
               Độ bền: ${e.usesLeft}/${e.maxUses} lượt
               <progress class="tool-durability-bar" max="${e.maxUses}" value="${e.usesLeft}"></progress>
             </div>
-            <div class="text-[11px] text-muted mt-1">${w(r)}</div>
+            <div class="text-[11px] text-muted mt-1">${C(r)}</div>
           </div>
         `;
 		}).join("") : "<div class=\"text-center py-8 text-muted\">\n          Kho chưa có công cụ nào. Chế tác tại Lò Rèn hoặc mua từ chợ phiên.\n        </div>";
@@ -1005,7 +1005,7 @@ var te = class {
 	}
 	async repairTool(e) {
 		try {
-			let t = await C.repairTool(this.currentCharacterId, e), n = t?.result || t;
+			let t = await S.repairTool(this.currentCharacterId, e), n = t?.result || t;
 			typeof window.showToast == "function" && window.showToast(`Đã sửa ${e}: ${n?.usesBefore ?? "?"} → ${n?.usesAfter ?? "?"} lượt (${n?.cashPaid ?? 0} Quan).`), await this.refreshData(), await this.renderActiveTab();
 		} catch (e) {
 			typeof window.showToast == "function" && window.showToast(e.message || "Sửa công cụ thất bại!", !0);
@@ -1013,14 +1013,14 @@ var te = class {
 	}
 	async equip(e, t, n) {
 		try {
-			await C.equipItem(e, t, n), typeof window.showToast == "function" && window.showToast("Đã trang bị thành công!"), await this.refreshData(), await this.renderActiveTab();
+			await S.equipItem(e, t, n), typeof window.showToast == "function" && window.showToast("Đã trang bị thành công!"), await this.refreshData(), await this.renderActiveTab();
 		} catch (e) {
 			typeof window.showToast == "function" && window.showToast(e.message || "Lỗi trang bị!", !0);
 		}
 	}
 	async unequip(e, t) {
 		try {
-			await C.unequipItem(e, t), typeof window.showToast == "function" && window.showToast("Đã tháo trang bị về kho!"), await this.refreshData(), await this.renderActiveTab();
+			await S.unequipItem(e, t), typeof window.showToast == "function" && window.showToast("Đã tháo trang bị về kho!"), await this.refreshData(), await this.renderActiveTab();
 		} catch (e) {
 			typeof window.showToast == "function" && window.showToast(e.message || "Lỗi tháo trang bị!", !0);
 		}
@@ -1035,13 +1035,13 @@ var te = class {
 			destination: r?.value || "EQUIP"
 		};
 		try {
-			let e = await C.forgeBespokeWeapon(i);
+			let e = await S.forgeBespokeWeapon(i);
 			typeof window.showToast == "function" && window.showToast(e.narrativeVi || "Đúc rèn thần binh thành công!"), await this.refreshData(), await this.modal.switchTab("gear");
 		} catch (e) {
 			typeof window.showToast == "function" && window.showToast(e.message || "Đúc rèn thất bại!", !0);
 		}
 	}
-}, T = new te(), E = class e {
+}, w = new ne(), T = class e {
 	static instance;
 	static getInstance() {
 		return e.instance ||= new e(), e.instance;
@@ -1054,21 +1054,66 @@ var te = class {
 		return v.post("/api/enterprise/manage-safe-cash", {
 			enterpriseId: e,
 			action: t,
-			amount: n
+			amount: n,
+			idempotencyKey: `enterprise-cash-${e}-${t}-${Date.now()}`
 		});
 	}
-	async executeLaborShift(e, t) {
-		return v.post("/api/enterprise/work", { shiftId: e });
+	async executeLaborShift(e) {
+		return v.post("/api/enterprise/work", {
+			shiftId: e,
+			idempotencyKey: `enterprise-work-${e}-${Date.now()}`
+		});
 	}
-}, D = E.getInstance(), ne = class {
+	async collectProfits(e, t) {
+		return v.post("/api/enterprise/collect", {
+			businessId: e,
+			amount: t,
+			idempotencyKey: `enterprise-collect-${e}-${Date.now()}`
+		});
+	}
+	async openEnterprise(e, t = !0, n) {
+		return v.post("/api/enterprise/open", {
+			businessType: e,
+			turnkey: t,
+			customName: n,
+			idempotencyKey: `enterprise-open-${e}-${Date.now()}`
+		});
+	}
+}, E = T.getInstance();
+// src/client/features/enterprise-workshop/enterprise-workshop.modal.ts
+function D(e) {
+	return String(e ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+function O(e) {
+	return Number(e || 0).toLocaleString("vi-VN");
+}
+var re = {
+	cra: "Kỹ Nghệ",
+	com: "Thương Nghiệp",
+	int: "Trí Lực",
+	log: "Hậu Cần",
+	war: "Võ Lực",
+	ldr: "Thống Soái"
+}, ie = {
+	CLOSED: "Đóng cửa",
+	DISTRESSED: "Nợ xấu",
+	PROFITABLE: "Có lời",
+	BREAK_EVEN: "Hòa vốn",
+	PAUSED: "Tạm dừng"
+}, ae = {
+	WORKSHOP: "Xưởng thủ công",
+	TAVERN: "Tửu điếm",
+	APOTHECARY: "Dược đường",
+	FORGE: "Lò rèn",
+	BLACKSMITH: "Lò rèn"
+}, oe = class {
 	modal;
-	enterprises = [];
-	laborOptions = [];
+	status = null;
 	constructor() {
 		this.modal = i({
 			id: "enterprise-modal",
 			title: "Sản Nghiệp & Phường Xưởng Bách Nghệ",
-			subtitle: "Quản lý xưởng dệt, xưởng rèn, đi làm thuê công nhật tích lũy ngân lượng",
+			subtitle: "Quản lý xưởng, lao động thời vụ và mở cơ sở mới",
 			seal: "業",
 			size: "xl",
 			tabs: [{
@@ -1097,91 +1142,269 @@ var te = class {
 	}
 	async refreshData() {
 		try {
-			let e = await D.getStatus("PLY-0001");
-			this.enterprises = e?.ownedBusinesses || e?.activeEnterprises || [], this.laborOptions = e?.laborOptions || [];
+			this.status = await E.getStatus("PLY-0001");
 		} catch (e) {
-			console.error("[EnterpriseWorkshopModal] Error refreshing data:", e);
+			console.error("[EnterpriseWorkshopModal] Error refreshing data:", e), this.status = null;
 		}
 	}
 	async renderActiveTab() {
 		(this.modal.activeTab || "owner") === "owner" ? this.renderOwnerTab() : this.renderWorkTab();
 	}
+	renderSummary() {
+		let e = this.status;
+		return e ? `
+      <div class="enterprise-summary-grid">
+        ${[
+			{
+				label: "Tiền mặt",
+				value: `${O(e.playerCash)} Quan`,
+				tone: ""
+			},
+			{
+				label: "Quỹ an toàn xưởng",
+				value: `${O(e.totalSafeCash)} Quan`,
+				tone: "is-gold"
+			},
+			{
+				label: "Nợ xưởng",
+				value: `${O(e.totalDebt)} Quan`,
+				tone: e.totalDebt > 0 ? "is-danger" : ""
+			},
+			{
+				label: "Lương tháng",
+				value: `${O(e.totalStaffWages)} Quan`,
+				tone: ""
+			},
+			{
+				label: "Thuê xưởng",
+				value: `${O(e.totalMonthlyRent)} Quan`,
+				tone: ""
+			},
+			{
+				label: "Lợi nhuận tích lũy",
+				value: `${O(e.totalAccumulatedProfit)} Quan`,
+				tone: e.totalAccumulatedProfit > 0 ? "is-positive" : ""
+			}
+		].map((e) => `
+          <div class="enterprise-summary-card ${e.tone}">
+            <span>${e.label}</span>
+            <strong>${e.value}</strong>
+          </div>
+        `).join("")}
+      </div>
+    ` : "";
+	}
 	renderOwnerTab() {
-		let e = `
+		let e = this.status;
+		if (!e) {
+			this.modal.setContent("<div class=\"journal-modal-content\"><div class=\"text-muted text-sm\">Không tải được sản nghiệp.</div></div>");
+			return;
+		}
+		let t = e.ownedBusinesses || [], n = e.openableTypes || [], r = t.length > 0 ? t.map((e) => this.renderEnterpriseCard(e)).join("") : "<div class=\"enterprise-empty\">Chưa sở hữu cơ sở nào. Chọn một loại hình bên dưới để mở.</div>", i = n.length > 0 ? n.map((e) => this.renderOpenableCard(e)).join("") : "<div class=\"enterprise-empty\">Danh mục mở cơ sở chưa sẵn sàng.</div>";
+		this.modal.setContent(`
       <div class="enterprise-modal-content">
         <div class="spatial-banner-lead">
           <div class="lead-seal">業</div>
           <div class="lead-text">
-            <h3>Sản Nghiệp Sở Hữu (${this.enterprises.length} Cơ Sở)</h3>
-            <div class="text-muted text-sm">Các xưởng chế tác tự động vận hành chu kỳ sản xuất hàng tháng và tích lũy doanh thu vào Quỹ an toàn.</div>
+            <h3>Phường Xưởng Lương Gia</h3>
+            <div class="text-muted text-sm">Xưởng tự vận hành theo tháng. Lợi nhuận trả nợ trước, phần còn lại vào quỹ an toàn; thiếu nhân công thì sản lượng giảm.</div>
           </div>
         </div>
+        ${this.renderSummary()}
 
-        ${this.enterprises.length === 0 ? "\n          <div class=\"text-center py-10 text-muted\">\n            Hiện tại bạn chưa sở hữu sản nghiệp nào. Hãy tích lũy tiền tệ hoặc làm thuê để mua lại xưởng mộc, xưởng rèn tại Trác Huyện.\n          </div>\n        " : `
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            ${this.enterprises.map((e) => `
-              <div class="tactical-card p-4 bg-slate-900 rounded border border-slate-800">
-                <div class="flex justify-between items-start mb-2">
-                  <h4 class="text-amber-200 font-bold m-0 text-base">${e.name_vi}</h4>
-                  <span class="badge badge-success text-xs">${e.status || "VẬN HÀNH"}</span>
-                </div>
-                <div class="text-xs text-muted mb-3">Địa điểm: ${e.settlement_id} • Thợ xưởng: ${e.worker_count || 1}/${e.max_workers || 5}</div>
-
-                <div class="bg-slate-950/70 p-2.5 rounded font-mono text-xs mb-3 space-y-1">
-                  <div class="flex justify-between">
-                    <span class="text-muted">Quỹ An Toàn:</span>
-                    <span class="text-amber-400 font-bold">${Number(e.safe_cash || 0).toLocaleString()} Quan</span>
-                  </div>
-                  <div class="flex justify-between">
-                    <span class="text-muted">Chi Phí Tháng:</span>
-                    <span class="text-red-400 font-bold">${Number(e.monthly_overhead || 0).toLocaleString()} Quan</span>
-                  </div>
-                </div>
-
-                <div class="flex gap-2">
-                  <button class="ui-btn ui-btn--primary ui-btn--sm flex-1" onclick="window.EnterpriseUI.depositSafeCash('${e.enterprise_id}')">Nạp Quỹ</button>
-                  <button class="ui-btn ui-btn--ghost ui-btn--sm flex-1" onclick="window.EnterpriseUI.withdrawSafeCash('${e.enterprise_id}')">Rút Quan</button>
-                </div>
-              </div>
-            `).join("")}
+        <section class="enterprise-section">
+          <div class="enterprise-section-title">
+            Cơ sở đang sở hữu <span>${t.length}</span>
           </div>
-        `}
+          <div class="enterprise-grid">${r}</div>
+        </section>
+
+        <section class="enterprise-section">
+          <div class="enterprise-section-title">
+            Mở cơ sở mới <span>${n.length}</span>
+          </div>
+          <div class="enterprise-open-grid">${i}</div>
+        </section>
+      </div>
+    `), this.bindOwnerActions();
+	}
+	renderEnterpriseCard(e) {
+		let t = e.health || (e.status === "ACTIVE" ? "BREAK_EVEN" : "PAUSED"), n = Number(e.accumulated_profit || 0), r = Number(e.safe_cash || 0), i = n > 0 || r > 0;
+		return `
+      <div class="enterprise-card">
+        <div class="enterprise-card-head">
+          <div class="enterprise-icon">${e.business_type === "FORGE" || e.business_type === "BLACKSMITH" ? "鍛" : e.business_type === "TAVERN" ? "酒" : e.business_type === "APOTHECARY" ? "藥" : "工"}</div>
+          <div class="enterprise-name-wrap">
+            <div class="enterprise-name">${D(e.name)}</div>
+            <div class="enterprise-meta">${ae[e.business_type] || e.business_type} • ${D(e.location_id)} • Tier ${e.tier || 1}</div>
+          </div>
+          <span class="enterprise-health is-${t.toLowerCase()}">${ie[t] || t}</span>
+        </div>
+
+        <div class="enterprise-meta mt-1">Quản lý: ${D(e.manager_name || e.manager_npc_id)} • Hiệu suất ${Math.round(Number(e.efficiency_multiplier || 0) * 100)}% • ${e.auto_procure ? "Tự mua nguyên liệu" : "Mua tay"}</div>
+
+        <div class="enterprise-stats">
+          <div class="enterprise-stat"><span>Quỹ an toàn</span><strong>${O(r)}</strong></div>
+          <div class="enterprise-stat"><span>Nợ</span><strong class="${Number(e.debt || 0) > 0 ? "is-danger" : ""}">${O(e.debt)}</strong></div>
+          <div class="enterprise-stat"><span>Doanh thu/ngày</span><strong>${O(e.daily_revenue)}</strong></div>
+          <div class="enterprise-stat"><span>Lợi nhuận tích lũy</span><strong class="${n > 0 ? "is-positive" : ""}">${O(n)}</strong></div>
+          <div class="enterprise-stat"><span>Nhân sự</span><strong>${e.staff_count ?? 0}/${e.current_workforce ?? 0}</strong></div>
+          <div class="enterprise-stat"><span>Lương + thuê</span><strong>${O(e.monthly_overhead)}</strong></div>
+        </div>
+
+        <div class="enterprise-cash-row">
+          <input class="enterprise-cash-input" id="enterprise-cash-${D(e.business_id)}" type="number" min="1" step="50" value="500" aria-label="Số tiền nạp hoặc rút" />
+          <button class="ui-btn ui-btn--primary ui-btn--sm" data-enterprise-cash="DEPOSIT" data-business-id="${D(e.business_id)}">Nạp quỹ</button>
+          <button class="ui-btn ui-btn--ghost ui-btn--sm" data-enterprise-cash="WITHDRAW" data-business-id="${D(e.business_id)}">Rút quỹ</button>
+          <button class="ui-btn ui-btn--accent ui-btn--sm" data-enterprise-collect="${D(e.business_id)}" ${i ? "" : "disabled"}>Thu lợi nhuận</button>
+        </div>
       </div>
     `;
-		this.modal.setContent(e);
+	}
+	renderOpenableCard(e) {
+		let t = Number(e.startupCash || 0) + Number(e.effectiveTurnkeyCost || 0), n = (e.requiredMaterials || []).map((e) => `
+      <span class="enterprise-material ${e.hasEnough ? "is-ready" : "is-missing"}" title="${e.available}/${e.quantity}">
+        ${D(e.itemNameVi)} ${e.available}/${e.quantity}
+      </span>
+    `).join("");
+		return `
+      <div class="enterprise-open-card">
+        <div class="enterprise-card-head">
+          <div class="enterprise-icon">${e.icon || "業"}</div>
+          <div class="enterprise-name-wrap">
+            <div class="enterprise-name">${D(e.titleVi)}</div>
+            <div class="enterprise-meta">Thuê ${O(e.monthlyRent)}/tháng • ${e.baseWorkforce} nhân sự • ${O(e.projectedDailyRevenueMin)}–${O(e.projectedDailyRevenueMax)}/ngày</div>
+          </div>
+        </div>
+        <div class="enterprise-open-desc">${D(e.descriptionVi)}</div>
+        <div class="enterprise-materials">${n || "<span class=\"enterprise-material is-ready\">Không cần nguyên liệu</span>"}</div>
+        <div class="enterprise-open-actions">
+          <button class="ui-btn ui-btn--ghost ui-btn--sm" data-open-enterprise="${D(e.typeId)}" data-turnkey="false" ${e.canAffordCash ? "" : "disabled"}>
+            Mở chuẩn · ${O(e.startupCash)}
+          </button>
+          <button class="ui-btn ui-btn--primary ui-btn--sm" data-open-enterprise="${D(e.typeId)}" data-turnkey="true" ${e.canAffordTurnkey ? "" : "disabled"}>
+            Mở turnkey · ${O(t)}
+          </button>
+        </div>
+      </div>
+    `;
+	}
+	bindOwnerActions() {
+		let e = this.modal.getBodyElement();
+		e && (e.querySelectorAll("[data-enterprise-cash]").forEach((e) => {
+			e.addEventListener("click", async () => {
+				let t = e.dataset.businessId || "", n = e.dataset.enterpriseCash || "DEPOSIT", r = document.getElementById(`enterprise-cash-${t}`), i = Number(r?.value || 0);
+				if (!Number.isFinite(i) || i <= 0) this.toast("Số tiền phải lớn hơn 0.", !0);
+				else {
+					e.setAttribute("disabled", "true");
+					try {
+						await E.manageSafeCash(t, n, Math.round(i)), this.toast(n === "DEPOSIT" ? "Đã nạp tiền vào quỹ an toàn." : "Đã rút tiền về ngân khố."), await this.refreshData(), await this.renderActiveTab();
+					} catch (t) {
+						e.removeAttribute("disabled"), this.toast(t.message || "Thao tác quỹ thất bại.", !0);
+					}
+				}
+			});
+		}), e.querySelectorAll("[data-enterprise-collect]").forEach((e) => {
+			e.addEventListener("click", async () => {
+				let t = e.dataset.enterpriseCollect || "";
+				e.setAttribute("disabled", "true");
+				try {
+					let e = await E.collectProfits(t);
+					this.toast(e.message || `Đã thu ${O(e.collectedAmount)} Quan lợi nhuận.`, e.success === !1), await this.refreshData(), await this.renderActiveTab();
+				} catch (t) {
+					e.removeAttribute("disabled"), this.toast(t.message || "Thu lợi nhuận thất bại.", !0);
+				}
+			});
+		}), e.querySelectorAll("[data-open-enterprise]").forEach((e) => {
+			e.addEventListener("click", async () => {
+				let t = e.dataset.openEnterprise || "", n = e.dataset.turnkey === "true", r = (this.status?.openableTypes || []).find((e) => e.typeId === t);
+				if (!r) return;
+				let i = n ? Number(r.startupCash) + Number(r.effectiveTurnkeyCost) : Number(r.startupCash);
+				if (await h({
+					title: "Mở cơ sở mới",
+					message: `Mở ${r.titleVi} với chi phí ${O(i)} Quan${n ? " (turnkey, mua bù nguyên liệu thiếu)" : ""}? Mỗi lần mở tốn 2 ngày.`,
+					confirmLabel: "Mở cơ sở",
+					danger: !0
+				})) {
+					e.setAttribute("disabled", "true");
+					try {
+						await E.openEnterprise(t, n), this.toast(`Đã mở ${r.titleVi}.`), await this.refreshData(), await this.renderActiveTab();
+					} catch (t) {
+						e.removeAttribute("disabled"), this.toast(t.message || "Mở cơ sở thất bại.", !0);
+					}
+				}
+			});
+		}));
 	}
 	renderWorkTab() {
-		this.modal.setContent("\n      <div class=\"enterprise-modal-content\">\n        <div class=\"spatial-banner-lead\">\n          <div class=\"lead-seal\">工</div>\n          <div class=\"lead-text\">\n            <h3>Lao Động Làm Thuê Thời Vụ</h3>\n            <div class=\"text-muted text-sm\">Đi làm thuê tại các xưởng nghề, đồn điền nông nghiệp để kiếm tiền trang trải và rèn luyện kỹ năng.</div>\n          </div>\n        </div>\n\n        <div class=\"grid grid-cols-1 md:grid-cols-3 gap-3\">\n          <div class=\"tactical-card p-3 bg-slate-900 rounded border border-slate-800 text-center\">\n            <h4 class=\"text-amber-300 font-bold text-sm mb-1\">Đốn Củi & Tiêu Xa</h4>\n            <div class=\"text-xs text-muted mb-2\">Tiêu hao 15 Thể lực • Kiếm 40 Quan • Tăng EXP Võ/Thống</div>\n            <button class=\"ui-btn ui-btn--primary ui-btn--sm w-full\" onclick=\"window.EnterpriseUI.executeWork('WOODCUT')\">Nhận Việc</button>\n          </div>\n          <div class=\"tactical-card p-3 bg-slate-900 rounded border border-slate-800 text-center\">\n            <h4 class=\"text-amber-300 font-bold text-sm mb-1\">Đan Lát Chiếu Trúc</h4>\n            <div class=\"text-xs text-muted mb-2\">Tiêu hao 12 Thể lực • Kiếm 50 Quan • Tăng EXP Kỹ Nghệ</div>\n            <button class=\"ui-btn ui-btn--primary ui-btn--sm w-full\" onclick=\"window.EnterpriseUI.executeWork('WEAVE_MAT')\">Nhận Việc</button>\n          </div>\n          <div class=\"tactical-card p-3 bg-slate-900 rounded border border-slate-800 text-center\">\n            <h4 class=\"text-amber-300 font-bold text-sm mb-1\">Phụ Lò Rèn Thiết Điếm</h4>\n            <div class=\"text-xs text-muted mb-2\">Tiêu hao 20 Thể lực • Kiếm 65 Quan • Tăng EXP Kỹ Nghệ/Võ</div>\n            <button class=\"ui-btn ui-btn--accent ui-btn--sm w-full\" onclick=\"window.EnterpriseUI.executeWork('SMITH_ASSIST')\">Nhận Việc</button>\n          </div>\n        </div>\n      </div>\n    ");
+		let e = this.status, t = e?.laborShifts || [], n = Number(e?.playerFatigue || 0), r = t.filter((e) => n + Number(e.fatigueCost || 0) <= 100), i = t.reduce((e, t) => Number(t.wage) > Number(e?.wage || 0) ? t : e, t[0]), a = t.reduce((e, t) => Number(t.wage) / Math.max(1, Number(t.fatigueCost || 1)) > (e ? Number(e.wage) / Math.max(1, Number(e.fatigueCost || 1)) : 0) ? t : e, t[0]), o = `
+      <div class="work-summary-grid">
+        <div class="work-summary-card"><span>Mệt mỏi</span><strong>${n}/100</strong></div>
+        <div class="work-summary-card"><span>Ca khả dụng</span><strong>${r.length}/${t.length}</strong></div>
+        <div class="work-summary-card"><span>Lương cao nhất</span><strong>${i ? `${O(i.wage)} Quan` : "—"}</strong></div>
+        <div class="work-summary-card"><span>Hiệu quả nhất</span><strong>${a ? `${O(a.wage)} / ${a.fatigueCost} thể lực` : "—"}</strong></div>
+      </div>
+    `, s = t.length > 0 ? [...t].sort((e, t) => Number(t.wage) - Number(e.wage)).map((e) => {
+			let t = Number(e.fatigueCost ?? e.staminaCost ?? 0), r = n + t > 100, i = re[String(e.attributeTarget || "cra")] || String(e.attributeTarget || "").toUpperCase();
+			return `
+          <div class="work-card ${r ? "is-blocked" : ""}">
+            <div class="work-card-head">
+              <span class="enterprise-icon">${e.icon || "工"}</span>
+              <div>
+                <div class="enterprise-name">${D(e.titleVi)}</div>
+                <div class="enterprise-meta">${D(e.workplaceVi)} • ${D(e.professionNameVi)}</div>
+              </div>
+            </div>
+            <div class="work-wage">${O(e.wage)} <span>Quan / ca</span></div>
+            <div class="work-meta">
+              <span>${t} thể lực</span>
+              <span>+${e.expGain} EXP nghề</span>
+              <span>+${e.attributeExp} EXP ${i}</span>
+            </div>
+            <div class="work-note">${r ? `Cần nghỉ ngơi: đang mệt ${n}/100, ca này tốn ${t}.` : D(e.narrativeVi)}</div>
+            <button class="ui-btn ui-btn--primary ui-btn--sm w-full" data-work-shift="${D(e.shiftId)}" ${r ? "disabled" : ""}>Nhận việc · 1 ngày</button>
+          </div>
+        `;
+		}).join("") : "<div class=\"enterprise-empty md:col-span-3\">Chưa tải được danh mục ca làm việc.</div>";
+		this.modal.setContent(`
+      <div class="enterprise-modal-content">
+        <div class="spatial-banner-lead">
+          <div class="lead-seal">工</div>
+          <div class="lead-text">
+            <h3>Lao Động Làm Thuê Thời Vụ</h3>
+            <div class="text-muted text-sm">Mỗi ca tốn 1 ngày, trả tiền mặt ngay và tăng EXP nghề/thuộc tính. Mệt mỏi từ 100 trở lên sẽ chặn nhận ca.</div>
+          </div>
+        </div>
+        ${o}
+        <div class="work-grid">${s}</div>
+      </div>
+    `), this.modal.getBodyElement()?.querySelectorAll("[data-work-shift]").forEach((e) => {
+			e.addEventListener("click", async () => {
+				let t = e.dataset.workShift || "";
+				e.setAttribute("disabled", "true"), await this.executeWork(t), e.removeAttribute("disabled");
+			});
+		});
+	}
+	toast(e, t = !1) {
+		typeof window.showToast == "function" && window.showToast(e, t);
 	}
 	async depositSafeCash(e) {
-		let t = prompt("Nhập số tiền muốn nạp vào quỹ an toàn:", "500");
-		if (!t) return;
-		let n = parseInt(t, 10);
-		if (!(isNaN(n) || n <= 0)) try {
-			await D.manageSafeCash(e, "DEPOSIT", n), typeof window.showToast == "function" && window.showToast("Đã nạp tiền vào Quỹ an toàn!"), await this.refreshData(), await this.renderActiveTab();
-		} catch (e) {
-			typeof window.showToast == "function" && window.showToast(e.message || "Lỗi nạp tiền!", !0);
-		}
+		let t = document.getElementById(`enterprise-cash-${e}`), n = Number(t?.value || 0);
+		!Number.isFinite(n) || n <= 0 || (await E.manageSafeCash(e, "DEPOSIT", Math.round(n)), this.toast("Đã nạp tiền vào Quỹ an toàn."), await this.refreshData(), await this.renderActiveTab());
 	}
 	async withdrawSafeCash(e) {
-		let t = prompt("Nhập số tiền muốn rút từ quỹ an toàn:", "500");
-		if (!t) return;
-		let n = parseInt(t, 10);
-		if (!(isNaN(n) || n <= 0)) try {
-			await D.manageSafeCash(e, "WITHDRAW", n), typeof window.showToast == "function" && window.showToast("Đã rút tiền từ Quỹ an toàn về ngân khố!"), await this.refreshData(), await this.renderActiveTab();
-		} catch (e) {
-			typeof window.showToast == "function" && window.showToast(e.message || "Lỗi rút tiền!", !0);
-		}
+		let t = document.getElementById(`enterprise-cash-${e}`), n = Number(t?.value || 0);
+		!Number.isFinite(n) || n <= 0 || (await E.manageSafeCash(e, "WITHDRAW", Math.round(n)), this.toast("Đã rút tiền từ Quỹ an toàn về ngân khố."), await this.refreshData(), await this.renderActiveTab());
 	}
 	async executeWork(e) {
 		try {
-			let t = await D.executeLaborShift(e);
-			typeof window.showToast == "function" && window.showToast(t.narrativeVi || "Lao động hoàn tất, nhận tiền công!"), await this.refreshData(), await this.renderActiveTab();
+			let t = await E.executeLaborShift(e);
+			this.toast(t.messageVi || t.message || t.narrativeVi || "Lao động hoàn tất, nhận tiền công!"), await this.refreshData(), await this.renderActiveTab();
 		} catch (e) {
-			typeof window.showToast == "function" && window.showToast(e.message || "Không thể làm việc lúc này!", !0);
+			this.toast(e.message || "Không thể làm việc lúc này!", !0);
 		}
 	}
-}, O = new ne(), k = class {
+}, k = new oe(), A = class {
 	modal;
 	currentMode = "BUY";
 	currentItemCode = "COM-GRAIN";
@@ -1253,7 +1476,7 @@ var te = class {
 			typeof window.showToast == "function" && window.showToast(e.message || "Giao dịch thất bại!", !0);
 		}
 	}
-}, A = new k(), re = class e {
+}, j = new A(), M = class e {
 	static instance;
 	static getInstance() {
 		return e.instance ||= new e(), e.instance;
@@ -1285,7 +1508,7 @@ var te = class {
 	async restAtResidence(e = 1) {
 		return v.post("/api/character/rest", { days: e });
 	}
-}.getInstance(), j = class {
+}.getInstance(), N = class {
 	modal;
 	currentDuelId = null;
 	duelState = null;
@@ -1300,7 +1523,7 @@ var te = class {
 	}
 	async startDuel(e) {
 		try {
-			let t = await re.startDuel(e);
+			let t = await M.startDuel(e);
 			this.currentDuelId = t.duelId, this.duelState = t.state, this.renderDuel(), await this.modal.open();
 		} catch (e) {
 			typeof window.showToast == "function" && window.showToast(e.message || "Lỗi khởi động giao đấu!", !0);
@@ -1355,12 +1578,12 @@ var te = class {
 	}
 	async executeAction(e) {
 		if (this.currentDuelId) try {
-			this.duelState = await re.executeDuelRound(this.currentDuelId, e), this.renderDuel();
+			this.duelState = await M.executeDuelRound(this.currentDuelId, e), this.renderDuel();
 		} catch (e) {
 			typeof window.showToast == "function" && window.showToast(e.message || "Lỗi hiệp đấu!", !0);
 		}
 	}
-}, M = new j(), N = class {
+}, P = new N(), F = class {
 	travelModal;
 	turnModal;
 	constructor() {
@@ -1420,22 +1643,22 @@ var te = class {
 	async closeTurnAdvanceModal() {
 		await this.turnModal.close();
 	}
-}, P = new N();
+}, I = new F();
 // src/client/features/quests/quest.modal.ts
-function F() {
+function se() {
 	return window.currentLang === "en";
 }
-function I(e) {
+function L(e) {
 	return String(e ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
-function ie(e) {
+function ce(e) {
 	if (!e || typeof e != "object") return "";
 	let t = [];
-	if (e.cash && t.push(`+${e.cash} Quan`), e.fame && t.push(`+${e.fame} ${F() ? "fame" : "danh vọng"}`), e.exp) for (let [n, r] of Object.entries(e.exp)) r && t.push(`+${r} ${String(n).toUpperCase()} EXP`);
+	if (e.cash && t.push(`+${e.cash} Quan`), e.fame && t.push(`+${e.fame} ${se() ? "fame" : "danh vọng"}`), e.exp) for (let [n, r] of Object.entries(e.exp)) r && t.push(`+${r} ${String(n).toUpperCase()} EXP`);
 	if (Array.isArray(e.items)) for (let n of e.items) t.push(`${n.quantity}× ${n.code}`);
 	return t.join(" • ");
 }
-var L = new class {
+var R = new class {
 	modal;
 	constructor() {
 		this.modal = i({
@@ -1544,7 +1767,7 @@ var L = new class {
 			]);
 			this.modal.setContent(this.render(t, n.obligations, n.summary, r, i, a, e));
 		} catch (e) {
-			this.modal.setContent(`<div class="quest-empty">${I(e.message)}</div>`);
+			this.modal.setContent(`<div class="quest-empty">${L(e.message)}</div>`);
 		}
 	}
 	async accept(e) {
@@ -1674,12 +1897,12 @@ var L = new class {
       <div class="quest-item">
         <div class="quest-head">
           <div>
-            <div class="quest-title">${I(t ? e.itemNameEn : e.itemNameVi)} × ${e.quantity}</div>
-            <div class="quest-path">${I(e.rewardCash)} Quan • +${e.rewardFame} ${t ? "fame" : "danh vọng"} • ${t ? "by" : "hạn"} ${I(e.expiresDate)}</div>
+            <div class="quest-title">${L(t ? e.itemNameEn : e.itemNameVi)} × ${e.quantity}</div>
+            <div class="quest-path">${L(e.rewardCash)} Quan • +${e.rewardFame} ${t ? "fame" : "danh vọng"} • ${t ? "by" : "hạn"} ${L(e.expiresDate)}</div>
           </div>
-          <button class="quest-action" onclick="QuestUI.acceptContract('${I(e.offerId)}')">${t ? "Accept" : "Nhận"}</button>
+          <button class="quest-action" onclick="QuestUI.acceptContract('${L(e.offerId)}')">${t ? "Accept" : "Nhận"}</button>
         </div>
-        <div class="quest-desc">${I(t ? e.narrativeEn : e.narrativeVi)}</div>
+        <div class="quest-desc">${L(t ? e.narrativeEn : e.narrativeVi)}</div>
       </div>
     `).join(""), o = r.map((e) => {
 			let n = e.haveQuantity >= e.quantity, r = e.daysRemaining < 0;
@@ -1687,17 +1910,17 @@ var L = new class {
         <div class="quest-item">
           <div class="quest-head">
             <div>
-              <div class="quest-title">${I(t ? e.itemNameEn : e.itemNameVi)} ${e.haveQuantity}/${e.quantity}</div>
-              <div class="quest-path">${I(e.rewardCash)} Quan • ${t ? "due" : "hạn"} ${I(e.dueDate)}${r ? ` • ${t ? "late" : "quá hạn"}` : ""}</div>
+              <div class="quest-title">${L(t ? e.itemNameEn : e.itemNameVi)} ${e.haveQuantity}/${e.quantity}</div>
+              <div class="quest-path">${L(e.rewardCash)} Quan • ${t ? "due" : "hạn"} ${L(e.dueDate)}${r ? ` • ${t ? "late" : "quá hạn"}` : ""}</div>
             </div>
-            <button class="quest-action ${n ? "is-primary" : ""}" onclick="QuestUI.deliverContract('${I(e.contractId)}')">${t ? "Deliver" : "Giao"}</button>
+            <button class="quest-action ${n ? "is-primary" : ""}" onclick="QuestUI.deliverContract('${L(e.contractId)}')">${t ? "Deliver" : "Giao"}</button>
           </div>
         </div>
       `;
 		}).join("");
 		return `
       <div class="quest-section">
-        <div class="quest-section-title">${I(i)}</div>
+        <div class="quest-section-title">${L(i)}</div>
         ${o}${a}
       </div>
     `;
@@ -1706,17 +1929,17 @@ var L = new class {
 		if (!e.parcels || e.parcels.length === 0) return `<div class="quest-empty">${t ? "No farmland here." : "Không có ruộng ở đây."}</div>`;
 		let n = e.parcels.map((e) => {
 			let n = t ? e.nameEn : e.nameVi, r = "";
-			if (e.status === "IDLE") r = `<button class="quest-action" onclick="QuestUI.rentFarm('${I(e.parcelId)}')">${t ? "Rent" : "Thuê"} (${e.rentCash} Quan)</button>`;
+			if (e.status === "IDLE") r = `<button class="quest-action" onclick="QuestUI.rentFarm('${L(e.parcelId)}')">${t ? "Rent" : "Thuê"} (${e.rentCash} Quan)</button>`;
 			else if (e.status === "LEASED") {
 				let n = (e.availableCrops || []).filter((e) => e.inSeason);
-				r = n.length > 0 ? n.map((n) => `<button class="quest-action" onclick="QuestUI.plantCrop('${I(e.parcelId)}','${I(n.cropCode)}')">${t ? `Plant ${n.nameEn}` : `Trồng ${n.nameVi}`}</button>`).join(" ") : `<span class="quest-badge">${t ? "Out of season" : "Trái mùa"}</span>`;
-			} else e.status === "GROWING" && e.crop && (r = `<button class="quest-action ${e.crop.daysRemaining <= 0 ? "is-primary" : ""}" onclick="QuestUI.harvestFarm('${I(e.parcelId)}')">${t ? "Harvest" : "Thu hoạch"}</button>`);
-			let i = e.crop ? `${I(e.crop.nameVi)} • ${t ? "harvest" : "thu"} ${I(e.crop.harvestDate)} • ${e.crop.daysRemaining}${t ? "d" : " ngày"} • ${t ? "yield" : "dự kiến"} ${e.crop.expectedYield}` : `${e.areaMu} ${t ? "mu" : "mẫu"} • ${t ? "soil" : "đất"} ${e.soilQuality.toFixed(2)} • ${t ? "rent" : "tô"} ${e.rentCash} Quan${(e.rentDiscount || 0) > 0 ? ` (-${e.rentDiscount}%)` : ""}`;
+				r = n.length > 0 ? n.map((n) => `<button class="quest-action" onclick="QuestUI.plantCrop('${L(e.parcelId)}','${L(n.cropCode)}')">${t ? `Plant ${n.nameEn}` : `Trồng ${n.nameVi}`}</button>`).join(" ") : `<span class="quest-badge">${t ? "Out of season" : "Trái mùa"}</span>`;
+			} else e.status === "GROWING" && e.crop && (r = `<button class="quest-action ${e.crop.daysRemaining <= 0 ? "is-primary" : ""}" onclick="QuestUI.harvestFarm('${L(e.parcelId)}')">${t ? "Harvest" : "Thu hoạch"}</button>`);
+			let i = e.crop ? `${L(e.crop.nameVi)} • ${t ? "harvest" : "thu"} ${L(e.crop.harvestDate)} • ${e.crop.daysRemaining}${t ? "d" : " ngày"} • ${t ? "yield" : "dự kiến"} ${e.crop.expectedYield}` : `${e.areaMu} ${t ? "mu" : "mẫu"} • ${t ? "soil" : "đất"} ${e.soilQuality.toFixed(2)} • ${t ? "rent" : "tô"} ${e.rentCash} Quan${(e.rentDiscount || 0) > 0 ? ` (-${e.rentDiscount}%)` : ""}`;
 			return `
         <div class="quest-item">
           <div class="quest-head">
             <div>
-              <div class="quest-title">${I(n)}</div>
+              <div class="quest-title">${L(n)}</div>
               <div class="quest-path">${i}</div>
             </div>
             ${r}
@@ -1739,12 +1962,12 @@ var L = new class {
         <div class="quest-item">
           <div class="quest-head">
             <div>
-              <div class="quest-title">${I(e.subjectName)}</div>
-              <div class="quest-path">${I(e.subjectType)} • ${I(n)} • ${I(e.source)} • ${I(e.confidenceLabel)}</div>
+              <div class="quest-title">${L(e.subjectName)}</div>
+              <div class="quest-path">${L(e.subjectType)} • ${L(n)} • ${L(e.source)} • ${L(e.confidenceLabel)}</div>
             </div>
-            <button class="quest-action" onclick="QuestUI.verifyIntel('${I(e.reportId)}')">${t ? `Verify (${e.verificationDays}d)` : `Xác minh (${e.verificationDays} ngày)`}</button>
+            <button class="quest-action" onclick="QuestUI.verifyIntel('${L(e.reportId)}')">${t ? `Verify (${e.verificationDays}d)` : `Xác minh (${e.verificationDays} ngày)`}</button>
           </div>
-          <div class="quest-path">${t ? "Expires" : "Hết hạn"} ${I(e.expiresDate)}</div>
+          <div class="quest-path">${t ? "Expires" : "Hết hạn"} ${L(e.expiresDate)}</div>
         </div>
       `;
 		}).join("");
@@ -1764,56 +1987,56 @@ var L = new class {
         <div class="quest-item">
           <div class="quest-head">
             <div>
-              <div class="quest-title">${I((n ? e.narrativeEn : e.narrativeVi) || e.type)}</div>
-              <div class="quest-path">${I(e.type)} • ${I(e.dueDate)} • ${I(i)}</div>
+              <div class="quest-title">${L((n ? e.narrativeEn : e.narrativeVi) || e.type)}</div>
+              <div class="quest-path">${L(e.type)} • ${L(e.dueDate)} • ${L(i)}</div>
             </div>
-            <button class="quest-action ${t ? "is-primary" : ""}" onclick="QuestUI.payObligation('${I(e.obligationId)}')">${n ? "Pay" : "Nộp"}</button>
+            <button class="quest-action ${t ? "is-primary" : ""}" onclick="QuestUI.payObligation('${L(e.obligationId)}')">${n ? "Pay" : "Nộp"}</button>
           </div>
-          <div class="quest-meta">${I(a)}</div>
+          <div class="quest-meta">${L(a)}</div>
           <div class="quest-path"><span class="quest-badge">${r}</span></div>
         </div>
       `;
 		}).join("");
 		return `
       <div class="quest-section">
-        <div class="quest-section-title">${I(i)}</div>
+        <div class="quest-section-title">${L(i)}</div>
         ${a}
       </div>
     `;
 	}
 	render(e, t, n, r, i, a, o) {
-		let s = F(), c = o ? `
+		let s = se(), c = o ? `
       <div class="quest-result ${o.success ? "is-success" : "is-failure"}">
         <strong>${o.success ? s ? "Step succeeded" : "Bước thành công" : s ? "Step failed" : "Bước thất bại"}</strong>
-        <div>${I(s ? o.narrativeEn : o.narrative)}</div>
+        <div>${L(s ? o.narrativeEn : o.narrative)}</div>
         <div class="quest-meta">D20 ${o.roll} + ${o.mod} = ${o.total} / DC ${o.dc}</div>
-        <div class="quest-meta">${I(ie(o.rewards || {}))}</div>
+        <div class="quest-meta">${L(ce(o.rewards || {}))}</div>
       </div>
     ` : "", l = e.map((e) => {
 			let t = e.status === "COMPLETED" ? s ? "Completed" : "Đã hoàn thành" : e.status === "ACTIVE" ? s ? "Active" : "Đang làm" : s ? "Available" : "Có thể nhận", n = e.steps.map((t) => `
         <div class="quest-step ${t.index < e.currentStep ? "is-done" : t.index === e.currentStep && e.status === "ACTIVE" ? "is-current" : ""}">
           <span class="quest-step-index">${t.index + 1}</span>
-          <span class="quest-step-title">${I(s ? t.titleEn : t.titleVi)}</span>
-          <span class="quest-step-check">${I(String(t.stat).toUpperCase())} DC ${t.dc} • ${t.daysCost}${s ? "d" : " ngày"}</span>
+          <span class="quest-step-title">${L(s ? t.titleEn : t.titleVi)}</span>
+          <span class="quest-step-check">${L(String(t.stat).toUpperCase())} DC ${t.dc} • ${t.daysCost}${s ? "d" : " ngày"}</span>
         </div>
-      `).join(""), r = e.status === "AVAILABLE" ? `<button class="quest-action" onclick="QuestUI.accept('${I(e.questId)}')">${s ? "Accept" : "Nhận nhiệm vụ"}</button>` : e.status === "ACTIVE" ? `<button class="quest-action is-primary" onclick="QuestUI.advance('${I(e.questId)}')">${s ? `Advance step ${e.currentStep + 1}` : `Thực hiện bước ${e.currentStep + 1}`}</button>` : `<span class="quest-badge">${s ? "Completed" : "Hoàn thành"}</span>`;
+      `).join(""), r = e.status === "AVAILABLE" ? `<button class="quest-action" onclick="QuestUI.accept('${L(e.questId)}')">${s ? "Accept" : "Nhận nhiệm vụ"}</button>` : e.status === "ACTIVE" ? `<button class="quest-action is-primary" onclick="QuestUI.advance('${L(e.questId)}')">${s ? `Advance step ${e.currentStep + 1}` : `Thực hiện bước ${e.currentStep + 1}`}</button>` : `<span class="quest-badge">${s ? "Completed" : "Hoàn thành"}</span>`;
 			return `
         <div class="quest-item">
           <div class="quest-head">
             <div>
-              <div class="quest-title">${I(s ? e.titleEn : e.titleVi)}</div>
-              <div class="quest-path">${I(e.pathCode)} • ${t}</div>
+              <div class="quest-title">${L(s ? e.titleEn : e.titleVi)}</div>
+              <div class="quest-path">${L(e.pathCode)} • ${t}</div>
             </div>
             ${r}
           </div>
-          <div class="quest-desc">${I(s ? e.descriptionEn : e.descriptionVi)}</div>
+          <div class="quest-desc">${L(s ? e.descriptionEn : e.descriptionVi)}</div>
           <div class="quest-steps">${n}</div>
         </div>
       `;
 		}).join("");
 		return `<div class="quest-body">${c}${this.renderObligations(t, n, s)}${this.renderContracts(r, s)}${this.renderFarm(a, s)}${this.renderIntel(i, s)}${l || `<div class="quest-empty">${s ? "No quests available." : "Chưa có nhiệm vụ."}</div>`}</div>`;
 	}
-}(), R = class e {
+}(), z = class e {
 	static instance;
 	static getInstance() {
 		return e.instance ||= new e(), e.instance;
@@ -1931,13 +2154,13 @@ var L = new class {
 	}
 }.getInstance();
 // src/client/features/market-stall/market-stall.modal.ts
-function z(e) {
+function B(e) {
 	return String(e ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
-function B(e, t = !1) {
+function V(e, t = !1) {
 	typeof window.showToast == "function" && window.showToast(e, t);
 }
-var V = new class {
+var H = new class {
 	modal;
 	stall = null;
 	offers = [];
@@ -1991,12 +2214,12 @@ var V = new class {
 		await this.modal.close();
 	}
 	async refresh() {
-		this.stall = await R.getStall("PLY-0001"), this.offers = await R.getOffers(this.stall?.settlementId), this.warehouses = await R.getWarehouses();
+		this.stall = await z.getStall("PLY-0001"), this.offers = await z.getOffers(this.stall?.settlementId), this.warehouses = await z.getWarehouses();
 		let [e, t, n, r] = await Promise.all([
-			R.getFreightContracts(this.stall?.settlementId).catch(() => []),
-			R.getFreightShipments().catch(() => []),
-			R.getMerchantRoutes().catch(() => []),
-			R.getMerchantEvents().catch(() => [])
+			z.getFreightContracts(this.stall?.settlementId).catch(() => []),
+			z.getFreightShipments().catch(() => []),
+			z.getMerchantRoutes().catch(() => []),
+			z.getMerchantEvents().catch(() => [])
 		]);
 		this.freightContracts = e, this.freightShipments = t, this.merchantRoutes = n, this.merchantEvents = r;
 	}
@@ -2010,13 +2233,13 @@ var V = new class {
 			let t = e.marketPrice > 0 ? Math.round((e.unitPrice / e.marketPrice - 1) * 100) : 0;
 			return `
           <div class="flex justify-between items-center text-[11px] border-b border-slate-800 py-1.5">
-            <span class="text-slate-200">${z(e.itemNameVi)} × ${e.quantity}</span>
+            <span class="text-slate-200">${B(e.itemNameVi)} × ${e.quantity}</span>
             <span class="font-mono text-amber-300">${e.unitPrice} Quan (${t >= 0 ? "+" : ""}${t}% chợ)</span>
           </div>
         `;
 		}).join("") : "<div class=\"text-muted text-xs\">Quầy chưa có hàng.</div>", t = this.stall.recentSales.length > 0 ? this.stall.recentSales.map((e) => `
         <div class="flex justify-between text-[11px] py-1">
-          <span class="text-slate-300">${z(e.npcNameVi)} mua ${e.quantity} ${z(e.itemCode)}</span>
+          <span class="text-slate-300">${B(e.npcNameVi)} mua ${e.quantity} ${B(e.itemCode)}</span>
           <span class="font-mono text-green-400">+${e.totalCash} Quan</span>
         </div>
       `).join("") : "<div class=\"text-muted text-xs\">Chưa có giao dịch.</div>";
@@ -2025,8 +2248,8 @@ var V = new class {
         <div class="spatial-banner-lead">
           <div class="lead-seal">攤</div>
           <div class="lead-text">
-            <h3>${z(this.stall.nameVi)}</h3>
-            <div class="text-muted text-sm">${z(this.stall.settlementId)} • Hàng đang bán: ${this.stall.listings.length} • NPC sẽ mua mỗi ngày nếu giá ≤ 115% giá chợ.</div>
+            <h3>${B(this.stall.nameVi)}</h3>
+            <div class="text-muted text-sm">${B(this.stall.settlementId)} • Hàng đang bán: ${this.stall.listings.length} • NPC sẽ mua mỗi ngày nếu giá ≤ 115% giá chợ.</div>
           </div>
         </div>
 
@@ -2042,7 +2265,7 @@ var V = new class {
             <input id="stall-source" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200" value="BAG" placeholder="BAG hoặc WAREHOUSE" />
             <input id="stall-warehouse" list="stall-warehouse-list" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200" placeholder="Mã kho (nếu lấy từ kho)" />
             <datalist id="stall-warehouse-list">
-              ${this.warehouses.filter((e) => e.settlementId === this.stall?.settlementId).map((e) => `<option value="${z(e.warehouseId)}">${z(e.nameVi)} (${e.usedCapacity}/${e.capacity})</option>`).join("")}
+              ${this.warehouses.filter((e) => e.settlementId === this.stall?.settlementId).map((e) => `<option value="${B(e.warehouseId)}">${B(e.nameVi)} (${e.usedCapacity}/${e.capacity})</option>`).join("")}
             </datalist>
           </div>
           <div class="text-muted text-[10px] mt-1">Giá thấp hơn 115% giá chợ thì NPC mua nhanh hơn; giá quá cao sẽ không có người mua.</div>
@@ -2080,12 +2303,12 @@ var V = new class {
         <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800 mb-2">
           <div class="flex justify-between items-center">
             <div>
-              <div class="text-sm font-bold text-slate-200">${z(e.nameVi)} • ${z(e.ownershipType)}</div>
-              <div class="text-[11px] text-muted">${z(e.settlementId)} • ${e.usedCapacity}/${e.capacity} • ${e.status}${e.leaseUntil ? ` • hết hạn ${z(e.leaseUntil)}` : ""}</div>
+              <div class="text-sm font-bold text-slate-200">${B(e.nameVi)} • ${B(e.ownershipType)}</div>
+              <div class="text-[11px] text-muted">${B(e.settlementId)} • ${e.usedCapacity}/${e.capacity} • ${e.status}${e.leaseUntil ? ` • hết hạn ${B(e.leaseUntil)}` : ""}</div>
             </div>
             <div class="flex gap-1">
-              ${e.ownershipType === "RENTED" ? `<button class="ui-btn ui-btn--primary ui-btn--sm" data-warehouse-action="renew" data-warehouse-id="${z(e.warehouseId)}" title="Cộng thêm 90 ngày từ hạn hiện tại">Gia hạn</button>` : ""}
-              <button class="ui-btn ui-btn--ghost ui-btn--sm" data-warehouse-action="withdraw" data-warehouse-id="${z(e.warehouseId)}">Rút hàng</button>
+              ${e.ownershipType === "RENTED" ? `<button class="ui-btn ui-btn--primary ui-btn--sm" data-warehouse-action="renew" data-warehouse-id="${B(e.warehouseId)}" title="Cộng thêm 90 ngày từ hạn hiện tại">Gia hạn</button>` : ""}
+              <button class="ui-btn ui-btn--ghost ui-btn--sm" data-warehouse-action="withdraw" data-warehouse-id="${B(e.warehouseId)}">Rút hàng</button>
             </div>
           </div>
         </div>
@@ -2095,7 +2318,7 @@ var V = new class {
           <div class="grid grid-cols-1 md:grid-cols-4 gap-2 text-[11px]">
             <input id="warehouse-id" list="warehouse-id-list" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200" placeholder="Mã kho" />
             <datalist id="warehouse-id-list">
-              ${this.warehouses.map((e) => `<option value="${z(e.warehouseId)}">${z(e.nameVi)}</option>`).join("") || "<option value=\"\">Chưa có kho</option>"}
+              ${this.warehouses.map((e) => `<option value="${B(e.warehouseId)}">${B(e.nameVi)}</option>`).join("") || "<option value=\"\">Chưa có kho</option>"}
             </datalist>
             <input id="warehouse-item" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200" value="COM-GRAIN" placeholder="Mã hàng" />
             <input id="warehouse-qty" type="number" min="1" step="1" class="px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200" value="10" />
@@ -2122,10 +2345,10 @@ var V = new class {
           ${this.offers.map((e) => `
             <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800 flex justify-between items-center gap-3">
               <div>
-                <div class="text-sm font-bold text-slate-200">${z(e.itemNameVi)} × ${e.quantity}</div>
-                <div class="text-[11px] text-muted">${z(e.npcNameVi)} • ${e.unitPrice} Quan (${e.priceDeltaPct >= 0 ? "+" : ""}${e.priceDeltaPct}% chợ) • hết hạn ${z(e.expiresDate)}</div>
+                <div class="text-sm font-bold text-slate-200">${B(e.itemNameVi)} × ${e.quantity}</div>
+                <div class="text-[11px] text-muted">${B(e.npcNameVi)} • ${e.unitPrice} Quan (${e.priceDeltaPct >= 0 ? "+" : ""}${e.priceDeltaPct}% chợ) • hết hạn ${B(e.expiresDate)}</div>
               </div>
-              <button class="ui-btn ui-btn--primary ui-btn--sm" data-offer-buy="${z(e.offerId)}">Mua 1</button>
+              <button class="ui-btn ui-btn--primary ui-btn--sm" data-offer-buy="${B(e.offerId)}">Mua 1</button>
             </div>
           `).join("")}
         </div>
@@ -2137,43 +2360,43 @@ var V = new class {
         <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800 mb-2">
           <div class="flex justify-between items-start gap-3">
             <div>
-              <div class="text-sm font-bold text-slate-200">${z(e.itemCode)} × ${e.quantity}</div>
-              <div class="text-[11px] text-muted">${z(e.fromSettlementId)} → ${z(e.toSettlementId)} • thưởng ${e.rewardCash} Quan • còn ${e.daysLeft} ngày • đi ${e.travelDays} ngày</div>
+              <div class="text-sm font-bold text-slate-200">${B(e.itemCode)} × ${e.quantity}</div>
+              <div class="text-[11px] text-muted">${B(e.fromSettlementId)} → ${B(e.toSettlementId)} • thưởng ${e.rewardCash} Quan • còn ${e.daysLeft} ngày • đi ${e.travelDays} ngày</div>
             </div>
             <label class="text-[10px] text-slate-300 flex items-center gap-1">
-              <input type="checkbox" data-freight-insurance="${z(e.contractId)}" /> Bảo hiểm +4%
+              <input type="checkbox" data-freight-insurance="${B(e.contractId)}" /> Bảo hiểm +4%
             </label>
           </div>
           <div class="flex gap-1 mt-2">
-            <button class="ui-btn ui-btn--ghost ui-btn--sm" data-freight-accept data-contract-id="${z(e.contractId)}" data-guard-tier="MILITIA">Dân Dũng</button>
-            <button class="ui-btn ui-btn--primary ui-btn--sm" data-freight-accept data-contract-id="${z(e.contractId)}" data-guard-tier="VETERAN">Thiện Chiến</button>
-            <button class="ui-btn ui-btn--ghost ui-btn--sm" data-freight-accept data-contract-id="${z(e.contractId)}" data-guard-tier="ELITE_RETINUE">Tinh Nhuệ</button>
+            <button class="ui-btn ui-btn--ghost ui-btn--sm" data-freight-accept data-contract-id="${B(e.contractId)}" data-guard-tier="MILITIA">Dân Dũng</button>
+            <button class="ui-btn ui-btn--primary ui-btn--sm" data-freight-accept data-contract-id="${B(e.contractId)}" data-guard-tier="VETERAN">Thiện Chiến</button>
+            <button class="ui-btn ui-btn--ghost ui-btn--sm" data-freight-accept data-contract-id="${B(e.contractId)}" data-guard-tier="ELITE_RETINUE">Tinh Nhuệ</button>
           </div>
         </div>
       `).join("") : "<div class=\"text-muted text-sm mb-2\">Thành này chưa có hợp đồng vận chuyển.</div>", t = this.freightShipments.length > 0 ? this.freightShipments.map((e) => `
         <div class="flex justify-between items-center text-[11px] border-b border-slate-800 py-1.5 gap-2">
           <div>
-            <div class="text-slate-200">${z(e.itemCode)} × ${e.quantity} • ${z(e.status)}</div>
-            <div class="text-muted">${e.status === "ARRIVED" ? "Đã đến đích" : `Còn ${e.daysRemaining} ngày`} • ${z(e.guardTier)}${e.insured ? " • có bảo hiểm" : ""}${e.ambushLossQuantity > 0 ? ` • mất ${e.ambushLossQuantity} do phục kích` : ""}</div>
+            <div class="text-slate-200">${B(e.itemCode)} × ${e.quantity} • ${B(e.status)}</div>
+            <div class="text-muted">${e.status === "ARRIVED" ? "Đã đến đích" : `Còn ${e.daysRemaining} ngày`} • ${B(e.guardTier)}${e.insured ? " • có bảo hiểm" : ""}${e.ambushLossQuantity > 0 ? ` • mất ${e.ambushLossQuantity} do phục kích` : ""}</div>
           </div>
-          ${e.status === "ARRIVED" ? `<button class="ui-btn ui-btn--primary ui-btn--sm" data-freight-deliver="${z(e.shipmentId)}">Giao hàng</button>` : ""}
+          ${e.status === "ARRIVED" ? `<button class="ui-btn ui-btn--primary ui-btn--sm" data-freight-deliver="${B(e.shipmentId)}">Giao hàng</button>` : ""}
         </div>
       `).join("") : "<div class=\"text-muted text-sm mb-2\">Không có chuyến hàng đang chạy.</div>", n = this.merchantRoutes.length > 0 ? this.merchantRoutes.map((e) => `
         <div class="flex justify-between items-center text-[11px] border-b border-slate-800 py-1.5 gap-2">
           <div>
-            <div class="text-slate-200">${z(e.nameVi)} • ${z(e.itemCode)} × ${e.quantityPerRun}</div>
-            <div class="text-muted">${z(e.fromSettlementId)} → ${z(e.toSettlementId)} • ${z(e.status)} • mỗi ${e.frequencyDays} ngày</div>
+            <div class="text-slate-200">${B(e.nameVi)} • ${B(e.itemCode)} × ${e.quantityPerRun}</div>
+            <div class="text-muted">${B(e.fromSettlementId)} → ${B(e.toSettlementId)} • ${B(e.status)} • mỗi ${e.frequencyDays} ngày</div>
           </div>
-          <button class="ui-btn ui-btn--ghost ui-btn--sm" data-route-status data-route-id="${z(e.routeId)}" data-next-status="${e.status === "ACTIVE" ? "PAUSED" : "ACTIVE"}">
+          <button class="ui-btn ui-btn--ghost ui-btn--sm" data-route-status data-route-id="${B(e.routeId)}" data-next-status="${e.status === "ACTIVE" ? "PAUSED" : "ACTIVE"}">
             ${e.status === "ACTIVE" ? "Tạm Dừng" : "Tiếp Tục"}
           </button>
         </div>
       `).join("") : "<div class=\"text-muted text-sm\">Chưa có thương lộ tự động.</div>", r = this.merchantEvents.length > 0 ? this.merchantEvents.slice(0, 5).map((e) => `
         <div class="text-[11px] border-b border-slate-800 py-1">
-          <span class="text-slate-300">${z(e.eventType || e.event_type)}</span>
-          <span class="text-muted"> • ${z(e.gameDate || e.game_date || "")} • ${z(e.itemCode || e.item_code || "")}</span>
+          <span class="text-slate-300">${B(e.eventType || e.event_type)}</span>
+          <span class="text-muted"> • ${B(e.gameDate || e.game_date || "")} • ${B(e.itemCode || e.item_code || "")}</span>
         </div>
-      `).join("") : "<div class=\"text-muted text-sm\">Chưa có biến cố thương lộ.</div>", i = this.warehouses.map((e) => `<option value="${z(e.warehouseId)}">${z(e.nameVi)} (${z(e.settlementId)})</option>`).join(""), a = this.warehouses.length >= 2;
+      `).join("") : "<div class=\"text-muted text-sm\">Chưa có biến cố thương lộ.</div>", i = this.warehouses.map((e) => `<option value="${B(e.warehouseId)}">${B(e.nameVi)} (${B(e.settlementId)})</option>`).join(""), a = this.warehouses.length >= 2;
 		return `
       <div class="journal-modal-content">
         <div class="spatial-banner-lead">
@@ -2238,14 +2461,14 @@ var V = new class {
 				let n = t.dataset.stallAction;
 				t.setAttribute("disabled", "true");
 				try {
-					if (n === "open") await R.openStall(), B("Đã mở quầy.");
+					if (n === "open") await z.openStall(), V("Đã mở quầy.");
 					else if (n === "list") {
 						let t = e.querySelector("#stall-item-code")?.value.trim() || "", n = Number(e.querySelector("#stall-item-qty")?.value || 0), r = Number(e.querySelector("#stall-item-price")?.value || 0), i = (e.querySelector("#stall-source")?.value || "BAG").toUpperCase(), a = e.querySelector("#stall-warehouse")?.value || void 0;
-						await R.listItem(t, n, r, i, a, this.stall?.stallId), B(`Đã niêm yết ${n} ${t}.`);
-					} else n === "close" && (await R.closeStall(this.stall?.stallId), B("Đã đóng quầy và trả hàng về kho."));
+						await z.listItem(t, n, r, i, a, this.stall?.stallId), V(`Đã niêm yết ${n} ${t}.`);
+					} else n === "close" && (await z.closeStall(this.stall?.stallId), V("Đã đóng quầy và trả hàng về kho."));
 					await this.refresh(), this.render();
 				} catch (e) {
-					t.removeAttribute("disabled"), B(e.message || "Thao tác quầy thất bại.", !0);
+					t.removeAttribute("disabled"), V(e.message || "Thao tác quầy thất bại.", !0);
 				}
 			});
 		}), e.querySelectorAll("[data-offer-buy]").forEach((e) => {
@@ -2253,9 +2476,9 @@ var V = new class {
 				let t = e.dataset.offerBuy || "";
 				e.setAttribute("disabled", "true");
 				try {
-					await R.buyOffer(t, 1), B("Đã mua hàng từ NPC."), await this.refresh(), this.render();
+					await z.buyOffer(t, 1), V("Đã mua hàng từ NPC."), await this.refresh(), this.render();
 				} catch (t) {
-					e.removeAttribute("disabled"), B(t.message || "Mua hàng thất bại.", !0);
+					e.removeAttribute("disabled"), V(t.message || "Mua hàng thất bại.", !0);
 				}
 			});
 		}), e.querySelectorAll("[data-warehouse-action]").forEach((t) => {
@@ -2263,9 +2486,9 @@ var V = new class {
 				let n = t.dataset.warehouseAction || "", r = t.dataset.warehouseId || e.querySelector("#warehouse-id")?.value || "", i = e.querySelector("#warehouse-item")?.value.trim() || "COM-GRAIN", a = Number(e.querySelector("#warehouse-qty")?.value || 1);
 				t.setAttribute("disabled", "true");
 				try {
-					n === "rent" ? (await R.rentWarehouse(), B("Đã thuê kho tại thành hiện tại.")) : n === "buy" ? (await R.buyWarehouse(), B("Đã mua kho tại thành hiện tại.")) : n === "renew" ? B(`Đã gia hạn kho đến ${(await R.renewWarehouse(r))?.result?.leaseUntil || "hạn mới"}.`) : n === "deposit" ? (await R.deposit(r, i, a), B(`Đã nạp ${a} ${i} vào kho.`)) : (await R.withdraw(r, i, a), B(`Đã rút ${a} ${i} khỏi kho.`)), await this.refresh(), this.render();
+					n === "rent" ? (await z.rentWarehouse(), V("Đã thuê kho tại thành hiện tại.")) : n === "buy" ? (await z.buyWarehouse(), V("Đã mua kho tại thành hiện tại.")) : n === "renew" ? V(`Đã gia hạn kho đến ${(await z.renewWarehouse(r))?.result?.leaseUntil || "hạn mới"}.`) : n === "deposit" ? (await z.deposit(r, i, a), V(`Đã nạp ${a} ${i} vào kho.`)) : (await z.withdraw(r, i, a), V(`Đã rút ${a} ${i} khỏi kho.`)), await this.refresh(), this.render();
 				} catch (e) {
-					t.removeAttribute("disabled"), B(e.message || "Thao tác kho thất bại.", !0);
+					t.removeAttribute("disabled"), V(e.message || "Thao tác kho thất bại.", !0);
 				}
 			});
 		}), e.querySelectorAll("[data-freight-accept]").forEach((t) => {
@@ -2273,9 +2496,9 @@ var V = new class {
 				let n = t.dataset.contractId || "", r = t.dataset.guardTier || "VETERAN", i = e.querySelector(`[data-freight-insurance="${n}"]`)?.checked === !0;
 				t.setAttribute("disabled", "true");
 				try {
-					await R.acceptFreight(n, r, i), B(i ? "Đã nhận chuyến và mua bảo hiểm." : "Đã nhận chuyến hàng."), await this.refresh(), this.render();
+					await z.acceptFreight(n, r, i), V(i ? "Đã nhận chuyến và mua bảo hiểm." : "Đã nhận chuyến hàng."), await this.refresh(), this.render();
 				} catch (e) {
-					t.removeAttribute("disabled"), B(e.message || "Nhận chuyến thất bại.", !0);
+					t.removeAttribute("disabled"), V(e.message || "Nhận chuyến thất bại.", !0);
 				}
 			});
 		}), e.querySelectorAll("[data-freight-deliver]").forEach((e) => {
@@ -2283,20 +2506,20 @@ var V = new class {
 				let t = e.dataset.freightDeliver || "";
 				e.setAttribute("disabled", "true");
 				try {
-					await R.deliverFreight(t), B("Đã giao hàng và nhận phí vận chuyển."), await this.refresh(), this.render();
+					await z.deliverFreight(t), V("Đã giao hàng và nhận phí vận chuyển."), await this.refresh(), this.render();
 				} catch (t) {
-					e.removeAttribute("disabled"), B(t.message || "Giao hàng thất bại.", !0);
+					e.removeAttribute("disabled"), V(t.message || "Giao hàng thất bại.", !0);
 				}
 			});
 		}), e.querySelectorAll("[data-route-create]").forEach((t) => {
 			t.addEventListener("click", async () => {
 				let n = e.querySelector("#route-from")?.value || "", r = e.querySelector("#route-to")?.value || "", i = e.querySelector("#route-item")?.value.trim() || "", a = Number(e.querySelector("#route-qty")?.value || 0), o = Number(e.querySelector("#route-buy")?.value || 0), s = Number(e.querySelector("#route-sell")?.value || 0), c = Number(e.querySelector("#route-freq")?.value || 7), l = e.querySelector("#route-guard")?.value || "VETERAN";
-				if (!n || !r || n === r) B("Kho nguồn và kho đích phải khác nhau.", !0);
-				else if (!i || a <= 0 || o <= 0 || s <= o) B("Kiểm tra mã hàng, số lượng và giá bán sàn > giá mua trần.", !0);
+				if (!n || !r || n === r) V("Kho nguồn và kho đích phải khác nhau.", !0);
+				else if (!i || a <= 0 || o <= 0 || s <= o) V("Kiểm tra mã hàng, số lượng và giá bán sàn > giá mua trần.", !0);
 				else {
 					t.setAttribute("disabled", "true");
 					try {
-						await R.createMerchantRoute({
+						await z.createMerchantRoute({
 							fromWarehouseId: n,
 							toWarehouseId: r,
 							itemCode: i,
@@ -2305,9 +2528,9 @@ var V = new class {
 							minSellPrice: s,
 							frequencyDays: c,
 							guardTier: l
-						}), B("Đã mở thương lộ tự động."), await this.refresh(), this.render();
+						}), V("Đã mở thương lộ tự động."), await this.refresh(), this.render();
 					} catch (e) {
-						t.removeAttribute("disabled"), B(e.message || "Mở thương lộ thất bại.", !0);
+						t.removeAttribute("disabled"), V(e.message || "Mở thương lộ thất bại.", !0);
 					}
 				}
 			});
@@ -2316,14 +2539,14 @@ var V = new class {
 				let t = e.dataset.routeId || "", n = e.dataset.nextStatus || "PAUSED";
 				e.setAttribute("disabled", "true");
 				try {
-					await R.setMerchantRouteStatus(t, n), B(n === "ACTIVE" ? "Đã tiếp tục thương lộ." : "Đã tạm dừng thương lộ."), await this.refresh(), this.render();
+					await z.setMerchantRouteStatus(t, n), V(n === "ACTIVE" ? "Đã tiếp tục thương lộ." : "Đã tạm dừng thương lộ."), await this.refresh(), this.render();
 				} catch (t) {
-					e.removeAttribute("disabled"), B(t.message || "Đổi trạng thái thương lộ thất bại.", !0);
+					e.removeAttribute("disabled"), V(t.message || "Đổi trạng thái thương lộ thất bại.", !0);
 				}
 			});
 		}));
 	}
-}(), H = class {
+}(), U = class {
 	modal;
 	constructor() {
 		this.modal = i({
@@ -2343,7 +2566,7 @@ var V = new class {
 	async close() {
 		await this.modal.close();
 	}
-}, U = new H(), W = class e {
+}, W = new U(), G = class e {
 	static instance;
 	static getInstance() {
 		return e.instance ||= new e(), e.instance;
@@ -2373,22 +2596,22 @@ var V = new class {
 	async dispatchAction(e) {
 		return v.post("/api/action", e);
 	}
-}, G = W.getInstance();
+}, K = G.getInstance();
 // src/client/features/world-map/wilderness-map.modal.ts
-function K(e) {
+function q(e) {
 	return String(e ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
-function q(e, t = !1) {
+function J(e, t = !1) {
 	typeof window.showToast == "function" && window.showToast(e, t);
 }
-var ae = {
+var le = {
 	mountain: "山",
 	water: "水",
 	forest: "林",
 	lair: "寨",
 	farm: "田",
 	wild: "野"
-}, J = class {
+}, ue = class {
 	modal;
 	view = null;
 	nodeId = null;
@@ -2413,7 +2636,7 @@ var ae = {
 		await this.modal.close();
 	}
 	async refresh() {
-		this.view = await G.get(this.nodeId || void 0), this.nodeId = this.view.nodeId;
+		this.view = await K.get(this.nodeId || void 0), this.nodeId = this.view.nodeId;
 	}
 	render() {
 		if (!this.view) {
@@ -2426,12 +2649,12 @@ var ae = {
         <div class="spatial-banner-lead">
           <div class="lead-seal">野</div>
           <div class="lead-text">
-            <h3>${K(i)} • Dã Ngoại</h3>
+            <h3>${q(i)} • Dã Ngoại</h3>
             <div class="text-muted text-sm">${e.length} địa danh ngoài thành • ${o} điểm tài nguyên • ${s} POI. Mỗi lần di chuyển tốn 1 ngày và 5 thể lực.</div>
           </div>
         </div>
         <div class="wilderness-map-frame">
-          <svg class="wilderness-map-svg" viewBox="0 0 600 360" role="img" aria-label="Bản đồ dã ngoại ${K(i)}">
+          <svg class="wilderness-map-svg" viewBox="0 0 600 360" role="img" aria-label="Bản đồ dã ngoại ${q(i)}">
             <rect class="wilderness-map-ground" x="0" y="0" width="600" height="360" rx="8"></rect>
             <circle class="wilderness-map-ring" cx="300" cy="180" r="130"></circle>
             <circle class="wilderness-map-ring" cx="300" cy="180" r="72"></circle>
@@ -2440,7 +2663,7 @@ var ae = {
           </svg>
         </div>
         <div class="wilderness-map-legend">
-          <span>Vị trí hiện tại: <strong>${K(r || "Trong thành")}</strong></span>
+          <span>Vị trí hiện tại: <strong>${q(r || "Trong thành")}</strong></span>
           <span class="text-muted">Chọn một địa danh để đi bộ tới; quay lại thành bằng nút đóng.</span>
         </div>
         ${this.renderResourcesPanel(r)}
@@ -2460,16 +2683,16 @@ var ae = {
       <div class="wilderness-action-panel">
         <div class="flex justify-between items-center gap-3 mb-2">
           <div class="text-xs font-bold text-amber-200">Điểm Tài Nguyên</div>
-          <div class="text-[11px] text-muted">${n ? `Đang ở ${K(e || "")} — có thể khai thác.` : "Hãy đi tới một địa danh dã ngoại trước khi khai thác."}</div>
+          <div class="text-[11px] text-muted">${n ? `Đang ở ${q(e || "")} — có thể khai thác.` : "Hãy đi tới một địa danh dã ngoại trước khi khai thác."}</div>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
           ${t.map((e) => `
             <div class="flex justify-between items-center gap-2 rounded border border-slate-800 bg-slate-900/70 p-2">
               <div>
-                <div class="text-sm text-slate-200">${K(e.nameVi)}</div>
-                <div class="text-[11px] text-muted">${K(e.resourceType)} • ${K(e.resourceNodeId)}</div>
+                <div class="text-sm text-slate-200">${q(e.nameVi)}</div>
+                <div class="text-[11px] text-muted">${q(e.resourceType)} • ${q(e.resourceNodeId)}</div>
               </div>
-              <button class="ui-btn ui-btn--primary ui-btn--sm" data-wilderness-gather="${K(e.resourceNodeId)}" ${n ? "" : "disabled"}>
+              <button class="ui-btn ui-btn--primary ui-btn--sm" data-wilderness-gather="${q(e.resourceNodeId)}" ${n ? "" : "disabled"}>
                 Khai Thác
               </button>
             </div>
@@ -2485,8 +2708,8 @@ var ae = {
         <div class="text-xs font-bold text-amber-200 mb-2">Khảo Sát Địa Điểm</div>
         <div class="flex flex-wrap gap-2">
           ${e.map((e) => `
-            <button class="ui-btn ui-btn--ghost ui-btn--sm" data-poi-scene="${K(e.poiName)}">
-              ${K(e.poiName)}
+            <button class="ui-btn ui-btn--ghost ui-btn--sm" data-poi-scene="${q(e.poiName)}">
+              ${q(e.poiName)}
             </button>
           `).join("")}
         </div>
@@ -2500,17 +2723,17 @@ var ae = {
       <div class="wilderness-scene-card">
         <div class="flex justify-between items-start gap-3">
           <div>
-            <div class="text-xs font-bold text-amber-200">${K(this.scenePoiName || this.scene.npc?.name || "Khảo sát")}</div>
-            <div class="text-[11px] text-muted">${K(this.scene.npc?.name || "")}${this.scene.npc?.title ? ` • ${K(this.scene.npc.title)}` : ""}</div>
+            <div class="text-xs font-bold text-amber-200">${q(this.scenePoiName || this.scene.npc?.name || "Khảo sát")}</div>
+            <div class="text-[11px] text-muted">${q(this.scene.npc?.name || "")}${this.scene.npc?.title ? ` • ${q(this.scene.npc.title)}` : ""}</div>
           </div>
           <button class="ui-btn ui-btn--ghost ui-btn--sm" data-scene-close>Đóng</button>
         </div>
-        <p class="text-sm text-slate-300 mt-2">${K(this.scene.narrative || "")}</p>
+        <p class="text-sm text-slate-300 mt-2">${q(this.scene.narrative || "")}</p>
         <div class="grid grid-cols-1 gap-2 mt-2">
           ${e.map((e, t) => `
             <button class="ui-btn ui-btn--ghost ui-btn--sm text-left" data-scene-option="${t}" ${e.disabled ? "disabled" : ""}>
-              <strong>${K(e.title || e.id || `Lựa chọn ${t + 1}`)}</strong>
-              ${e.desc ? `<span class="block text-[11px] text-muted">${K(e.desc)}</span>` : ""}
+              <strong>${q(e.title || e.id || `Lựa chọn ${t + 1}`)}</strong>
+              ${e.desc ? `<span class="block text-[11px] text-muted">${q(e.desc)}</span>` : ""}
             </button>
           `).join("")}
         </div>
@@ -2518,13 +2741,13 @@ var ae = {
     `;
 	}
 	renderSpot(e, t) {
-		let n = 40 + Number(e.localX ?? .5) * 520, r = 30 + Number(e.localY ?? .5) * 300, i = e.nameVi === t, a = ae[e.iconKey] || "野";
+		let n = 40 + Number(e.localX ?? .5) * 520, r = 30 + Number(e.localY ?? .5) * 300, i = e.nameVi === t, a = le[e.iconKey] || "野";
 		return `
-      <g class="wilderness-node${i ? " is-current" : ""}" data-wilderness-travel="${K(e.subLocationId)}" tabindex="0" role="button" aria-label="${K(e.nameVi)}">
+      <g class="wilderness-node${i ? " is-current" : ""}" data-wilderness-travel="${q(e.subLocationId)}" tabindex="0" role="button" aria-label="${q(e.nameVi)}">
         <circle class="wilderness-node-halo" cx="${n.toFixed(1)}" cy="${r.toFixed(1)}" r="22"></circle>
         <circle class="wilderness-node-dot" cx="${n.toFixed(1)}" cy="${r.toFixed(1)}" r="14"></circle>
         <text class="wilderness-node-seal" x="${n.toFixed(1)}" y="${(r + 5).toFixed(1)}" text-anchor="middle">${a}</text>
-        <text class="wilderness-node-label" x="${n.toFixed(1)}" y="${(r + 33).toFixed(1)}" text-anchor="middle">${K(e.nameVi)}</text>
+        <text class="wilderness-node-label" x="${n.toFixed(1)}" y="${(r + 33).toFixed(1)}" text-anchor="middle">${q(e.nameVi)}</text>
       </g>
     `;
 	}
@@ -2534,10 +2757,10 @@ var ae = {
 			let t = async () => {
 				let t = e.dataset.wildernessTravel || "";
 				try {
-					let e = await G.travel(t), n = Number(e?.time?.advancedDays || 1);
-					q(`Đã tới ${e?.result?.nameVi || "địa danh"} sau ${n} ngày.`), await this.refresh(), this.render();
+					let e = await K.travel(t), n = Number(e?.time?.advancedDays || 1);
+					J(`Đã tới ${e?.result?.nameVi || "địa danh"} sau ${n} ngày.`), await this.refresh(), this.render();
 				} catch (e) {
-					q(e.message || "Không thể di chuyển.", !0);
+					J(e.message || "Không thể di chuyển.", !0);
 				}
 			};
 			e.addEventListener("click", t), e.addEventListener("keydown", (e) => {
@@ -2548,10 +2771,10 @@ var ae = {
 				let t = e.dataset.wildernessGather || "";
 				e.setAttribute("disabled", "true");
 				try {
-					let e = await G.gather(t), n = e?.result || e, r = n?.itemNameVi || n?.itemCode || "tài nguyên", i = Number(n?.quantity || n?.yieldQuantity || 0);
-					q(i > 0 ? `Khai thác được ${i} ${r}.` : "Khai thác thành công."), await this.refresh(), this.render();
+					let e = await K.gather(t), n = e?.result || e, r = n?.itemNameVi || n?.itemCode || "tài nguyên", i = Number(n?.quantity || n?.yieldQuantity || 0);
+					J(i > 0 ? `Khai thác được ${i} ${r}.` : "Khai thác thành công."), await this.refresh(), this.render();
 				} catch (t) {
-					e.removeAttribute("disabled"), q(t.message || "Khai thác thất bại.", !0);
+					e.removeAttribute("disabled"), J(t.message || "Khai thác thất bại.", !0);
 				}
 			});
 		}), e.querySelectorAll("[data-poi-scene]").forEach((e) => {
@@ -2559,9 +2782,9 @@ var ae = {
 				let t = e.dataset.poiScene || "";
 				e.setAttribute("disabled", "true");
 				try {
-					this.scene = await G.getScene(t), this.scenePoiName = t, this.render();
+					this.scene = await K.getScene(t), this.scenePoiName = t, this.render();
 				} catch (t) {
-					e.removeAttribute("disabled"), q(t.message || "Không mở được địa điểm.", !0);
+					e.removeAttribute("disabled"), J(t.message || "Không mở được địa điểm.", !0);
 				}
 			});
 		}), e.querySelectorAll("[data-scene-close]").forEach((e) => {
@@ -2574,15 +2797,15 @@ var ae = {
 				if (n?.action) {
 					e.setAttribute("disabled", "true");
 					try {
-						q((await G.dispatchAction(n.action))?.message || "Đã thực hiện lựa chọn."), this.scene = null, this.scenePoiName = null, await this.refresh(), this.render();
+						J((await K.dispatchAction(n.action))?.message || "Đã thực hiện lựa chọn."), this.scene = null, this.scenePoiName = null, await this.refresh(), this.render();
 					} catch (t) {
-						e.removeAttribute("disabled"), q(t.message || "Hành động thất bại.", !0);
+						e.removeAttribute("disabled"), J(t.message || "Hành động thất bại.", !0);
 					}
 				}
 			});
 		}));
 	}
-}, oe = new J(), se = class e {
+}, de = new ue(), fe = class e {
 	static instance;
 	static getInstance() {
 		return e.instance ||= new e(), e.instance;
@@ -2605,15 +2828,15 @@ var ae = {
 	async dispatchAction(e) {
 		return v.post("/api/action", e);
 	}
-}, Y = se.getInstance();
+}, Y = fe.getInstance();
 // src/client/features/world-map/city-map.modal.ts
 function X(e) {
 	return String(e ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
-function ce(e, t = !1) {
+function pe(e, t = !1) {
 	typeof window.showToast == "function" && window.showToast(e, t);
 }
-var le = {
+var me = {
 	government: "府",
 	residence: "宅",
 	market: "市",
@@ -2624,7 +2847,7 @@ var le = {
 	temple: "寺",
 	gate: "門",
 	workshop: "坊"
-}, ue = class {
+}, he = class {
 	modal;
 	view = null;
 	nodeId = null;
@@ -2678,7 +2901,7 @@ var le = {
     `), this.bind();
 	}
 	renderSpot(e, t) {
-		let n = le[e.iconKey] || "城", r = e.nameVi === t;
+		let n = me[e.iconKey] || "城", r = e.nameVi === t;
 		return `
       <button class="city-spot-card${r ? " is-current" : ""}" data-city-enter="${X(e.subLocationId)}">
         <span class="city-spot-seal">${n}</span>
@@ -2721,7 +2944,7 @@ var le = {
 					let e = (await Y.enter(t))?.result?.nameVi || t;
 					this.scene = await Y.getScene(e), this.sceneSpotName = e, await this.refresh(), this.render();
 				} catch (t) {
-					e.removeAttribute("disabled"), ce(t.message || "Không vào được địa điểm.", !0);
+					e.removeAttribute("disabled"), pe(t.message || "Không vào được địa điểm.", !0);
 				}
 			});
 		}), e.querySelectorAll("[data-scene-close]").forEach((e) => {
@@ -2734,15 +2957,15 @@ var le = {
 				if (n?.action) {
 					e.setAttribute("disabled", "true");
 					try {
-						ce((await Y.dispatchAction(n.action))?.message || "Đã thực hiện lựa chọn."), this.scene = null, this.sceneSpotName = null, await this.refresh(), this.render();
+						pe((await Y.dispatchAction(n.action))?.message || "Đã thực hiện lựa chọn."), this.scene = null, this.sceneSpotName = null, await this.refresh(), this.render();
 					} catch (t) {
-						e.removeAttribute("disabled"), ce(t.message || "Hành động thất bại.", !0);
+						e.removeAttribute("disabled"), pe(t.message || "Hành động thất bại.", !0);
 					}
 				}
 			});
 		}));
 	}
-}, de = new ue(), fe = class e {
+}, ge = new he(), _e = class e {
 	static instance;
 	static getInstance() {
 		return e.instance ||= new e(), e.instance;
@@ -2765,16 +2988,16 @@ var le = {
 function Z(e) {
 	return String(e ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
-function pe(e, t = !1) {
+function ve(e, t = !1) {
 	typeof window.showToast == "function" && window.showToast(e, t);
 }
-var me = {
+var ye = {
 	ACCOUNTANT_MANAGER: "Chưởng Quỹ",
 	MASTER_BLACKSMITH: "Thợ Cả Lò Rèn",
 	CARAVAN_ESCORT_CHIEF: "Tiêu Đầu Hộ Vệ",
 	MASTER_WEAVER: "Thợ Dệt Cả",
 	ASSISTANT_WORKER: "Phụ Việc"
-}, he = new class {
+}, be = new class {
 	modal;
 	candidateName = "";
 	quote = null;
@@ -2800,7 +3023,7 @@ var me = {
 	}
 	async load() {
 		try {
-			this.quote = await fe.quote(this.candidateName), this.error = "";
+			this.quote = await _e.quote(this.candidateName), this.error = "";
 		} catch (e) {
 			this.quote = null, this.error = e.message || "Không lấy được báo giá chiêu mộ.";
 		}
@@ -2819,7 +3042,7 @@ var me = {
 			this.modal.setContent("<div class=\"journal-modal-content\"><div class=\"text-muted text-sm\">Đang lấy báo giá...</div></div>");
 			return;
 		}
-		let e = this.quote, t = me[e.recommendedRole] || e.recommendedRole, n = Math.round((e.fameDiscount + e.virtueDiscount) * 100), r = e.canHire ? "" : `<div class="hire-refusal">
+		let e = this.quote, t = ye[e.recommendedRole] || e.recommendedRole, n = Math.round((e.fameDiscount + e.virtueDiscount) * 100), r = e.canHire ? "" : `<div class="hire-refusal">
           <div class="hire-refusal-title">${e.alreadyHired ? "Đã có chủ" : "Lời mời bị từ chối"}</div>
           <div class="text-sm">${Z(e.refusalReasonVi || "Chưa đủ điều kiện chiêu mộ.")}</div>
           ${e.retryAfterDate ? `<div class="text-sm mt-1">Có thể thử lại sau ngày <strong>${Z(e.retryAfterDate)}</strong>.</div>` : ""}
@@ -2870,16 +3093,16 @@ var me = {
 				if (!this.submitting) {
 					this.submitting = !0, this.render();
 					try {
-						let e = await fe.hire(this.candidateName);
-						pe(`Đã chiêu mộ ${e?.nameVi || this.candidateName} vào ${e?.businessName || "sản nghiệp"}.`), await this.close(), typeof window.refreshWorldMapLive == "function" && window.refreshWorldMapLive();
+						let e = await _e.hire(this.candidateName);
+						ve(`Đã chiêu mộ ${e?.nameVi || this.candidateName} vào ${e?.businessName || "sản nghiệp"}.`), await this.close(), typeof window.refreshWorldMapLive == "function" && window.refreshWorldMapLive();
 					} catch (e) {
-						this.submitting = !1, this.error = e.message || "Chiêu mộ thất bại.", await this.load(), this.render(), pe(this.error, !0);
+						this.submitting = !1, this.error = e.message || "Chiêu mộ thất bại.", await this.load(), this.render(), ve(this.error, !0);
 					}
 				}
 			});
 		}));
 	}
-}(), ge = "sim_onboarding_v1_done", _e = [
+}(), xe = "sim_onboarding_v1_done", Se = [
 	{
 		seal: "日",
 		titleVi: "Vòng ngày và tháng",
@@ -2908,7 +3131,7 @@ var me = {
 		bodyVi: "Mở menu hệ thống để lưu phiên chơi. Dữ liệu nằm trong SQLite; mỗi phiên chơi là một tệp riêng.",
 		bodyEn: "Open the system menu to save. Data lives in SQLite, and each campaign is its own file."
 	}
-], ve = new class {
+], Ce = new class {
 	modal;
 	constructor() {
 		this.modal = i({
@@ -2932,21 +3155,21 @@ var me = {
 	}
 	isDone() {
 		try {
-			return window.localStorage.getItem(ge) === "1";
+			return window.localStorage.getItem(xe) === "1";
 		} catch {
 			return !1;
 		}
 	}
 	markDone() {
 		try {
-			window.localStorage.setItem(ge, "1");
+			window.localStorage.setItem(xe, "1");
 		} catch {}
 	}
 	render() {
 		let e = this.isEnglish();
 		this.modal.setContent(`
       <div class="onboarding-grid">
-        ${_e.map((t) => `
+        ${Se.map((t) => `
           <div class="onboarding-step">
             <span class="onboarding-seal">${t.seal}</span>
             <div>
@@ -2968,20 +3191,20 @@ var me = {
 	}
 }();
 typeof window < "u" && window.setTimeout(() => {
-	ve.open(!1);
+	Ce.open(!1);
 }, 900);
 // src/shared/map-aliases.ts
-var ye = {
+var we = {
 	wu_wei: "xi_liang",
 	he_fei: "shou_chun",
 	pu_yang: "ye_cheng",
 	wu_ling: "jiang_ling"
 };
-function be(e) {
-	return ye[e] || e;
+function Te(e) {
+	return we[e] || e;
 }
 var Q = new class {
-	ALIASES = ye;
+	ALIASES = we;
 	state = {
 		status: "idle",
 		fetchedAt: 0,
@@ -3012,7 +3235,7 @@ var Q = new class {
 		errors: []
 	};
 	resolveMapNodeId(e) {
-		return be(e);
+		return Te(e);
 	}
 	getSubLocationsForNode(e) {
 		return this.state.mapRegistry?.subLocationsByNode?.[e] || [];
@@ -3050,114 +3273,114 @@ var Q = new class {
 			this.readJson("/api/expeditions"),
 			this.readJson("/api/professions/nodes"),
 			this.readJson("/api/map/registry")
-		]), ee = t.status === "fulfilled" && t.value.success && t.value.garrisons || [], y = n.status === "fulfilled" && n.value.success && n.value.settlements || [], b = r.status === "fulfilled" && r.value.success && r.value.factions || [], x = i.status === "fulfilled" && i.value.success ? i.value : null, S = a.status === "fulfilled" && a.value.success && a.value.strongholds || [], C = o.status === "fulfilled" && o.value.success && o.value.crises || [], w = s.status === "fulfilled" && s.value.success && s.value.npcs || [], te = c.status === "fulfilled" && c.value.success ? c.value : null, T = l.status === "fulfilled" && l.value.success && l.value.items || [], E = u.status === "fulfilled" && u.value.success && u.value.specialists || [], D = d.status === "fulfilled" && d.value.success && d.value.businesses || [], ne = f.status === "fulfilled" && f.value.success && f.value.tiers || [], O = p.status === "fulfilled" && p.value.success && p.value.routes || [], k = m.status === "fulfilled" && m.value.success && m.value.locations || [], A = h.status === "fulfilled" && h.value.success && h.value.caravans || [], re = g.status === "fulfilled" && g.value.success && g.value.expeditions || [], j = _.status === "fulfilled" && _.value.success && _.value.nodes || [], M = v.status === "fulfilled" && v.value.success ? v.value : null;
-		v.status === "rejected" && this.state.errors.push("map-registry"), t.status === "rejected" && this.state.errors.push("garrisons"), n.status === "rejected" && this.state.errors.push("factions/settlements"), r.status === "rejected" && this.state.errors.push("factions"), i.status === "rejected" && this.state.errors.push("military"), a.status === "rejected" && this.state.errors.push("strongholds"), o.status === "rejected" && this.state.errors.push("crises"), s.status === "rejected" && this.state.errors.push("npcs"), c.status === "rejected" && this.state.errors.push("status"), l.status === "rejected" && this.state.errors.push("inventory"), u.status === "rejected" && this.state.errors.push("workforce"), d.status === "rejected" && this.state.errors.push("businesses"), f.status === "rejected" && this.state.errors.push("guard-tiers"), p.status === "rejected" && this.state.errors.push("routes"), m.status === "rejected" && this.state.errors.push("locations"), h.status === "rejected" && this.state.errors.push("caravans"), g.status === "rejected" && this.state.errors.push("expeditions"), _.status === "rejected" && this.state.errors.push("resources"), this.state.mapRegistry = M ? {
-			nodes: M.nodes || [],
-			subLocationsByNode: M.subLocationsByNode || {},
-			poiScenesByNode: M.poiScenesByNode || {},
-			resourcesByNode: M.resourcesByNode || {},
-			orphans: M.orphans || []
+		]), ee = t.status === "fulfilled" && t.value.success && t.value.garrisons || [], y = n.status === "fulfilled" && n.value.success && n.value.settlements || [], b = r.status === "fulfilled" && r.value.success && r.value.factions || [], x = i.status === "fulfilled" && i.value.success ? i.value : null, te = a.status === "fulfilled" && a.value.success && a.value.strongholds || [], S = o.status === "fulfilled" && o.value.success && o.value.crises || [], C = s.status === "fulfilled" && s.value.success && s.value.npcs || [], ne = c.status === "fulfilled" && c.value.success ? c.value : null, w = l.status === "fulfilled" && l.value.success && l.value.items || [], T = u.status === "fulfilled" && u.value.success && u.value.specialists || [], E = d.status === "fulfilled" && d.value.success && d.value.businesses || [], D = f.status === "fulfilled" && f.value.success && f.value.tiers || [], O = p.status === "fulfilled" && p.value.success && p.value.routes || [], re = m.status === "fulfilled" && m.value.success && m.value.locations || [], ie = h.status === "fulfilled" && h.value.success && h.value.caravans || [], ae = g.status === "fulfilled" && g.value.success && g.value.expeditions || [], oe = _.status === "fulfilled" && _.value.success && _.value.nodes || [], k = v.status === "fulfilled" && v.value.success ? v.value : null;
+		v.status === "rejected" && this.state.errors.push("map-registry"), t.status === "rejected" && this.state.errors.push("garrisons"), n.status === "rejected" && this.state.errors.push("factions/settlements"), r.status === "rejected" && this.state.errors.push("factions"), i.status === "rejected" && this.state.errors.push("military"), a.status === "rejected" && this.state.errors.push("strongholds"), o.status === "rejected" && this.state.errors.push("crises"), s.status === "rejected" && this.state.errors.push("npcs"), c.status === "rejected" && this.state.errors.push("status"), l.status === "rejected" && this.state.errors.push("inventory"), u.status === "rejected" && this.state.errors.push("workforce"), d.status === "rejected" && this.state.errors.push("businesses"), f.status === "rejected" && this.state.errors.push("guard-tiers"), p.status === "rejected" && this.state.errors.push("routes"), m.status === "rejected" && this.state.errors.push("locations"), h.status === "rejected" && this.state.errors.push("caravans"), g.status === "rejected" && this.state.errors.push("expeditions"), _.status === "rejected" && this.state.errors.push("resources"), this.state.mapRegistry = k ? {
+			nodes: k.nodes || [],
+			subLocationsByNode: k.subLocationsByNode || {},
+			poiScenesByNode: k.poiScenesByNode || {},
+			resourcesByNode: k.resourcesByNode || {},
+			orphans: k.orphans || []
 		} : null;
-		let N = {};
+		let A = {};
 		b.forEach((e) => {
 			let t = e && e.factionId;
-			t && (N[t] = e);
+			t && (A[t] = e);
 		});
-		let P = {};
+		let j = {};
 		ee.forEach((e) => {
-			e && e.settlementId && (P[e.settlementId] = this.mergeRecord(P[e.settlementId], e));
+			e && e.settlementId && (j[e.settlementId] = this.mergeRecord(j[e.settlementId], e));
 		}), y.forEach((e) => {
-			e && e.settlementId && (P[e.settlementId] = this.mergeRecord(P[e.settlementId], e));
-		}), Object.keys(P).forEach((e) => {
-			let t = P[e], n = t.rulerFactionId ? N[t.rulerFactionId] : null;
+			e && e.settlementId && (j[e.settlementId] = this.mergeRecord(j[e.settlementId], e));
+		}), Object.keys(j).forEach((e) => {
+			let t = j[e], n = t.rulerFactionId ? A[t.rulerFactionId] : null;
 			if (!n) return;
 			let r = n;
 			t.factionNameVi = r.nameVi, t.factionNameEn = r.nameEn, t.factionColor = r.colorHex, t.factionMilitaryPower = r.militaryPower;
 		});
-		let F = {};
-		Object.keys(P).forEach((e) => {
-			this.resolveMapNodeId(e) === e && (F[e] = this.mergeRecord(F[e], {
-				...P[e],
+		let M = {};
+		Object.keys(j).forEach((e) => {
+			this.resolveMapNodeId(e) === e && (M[e] = this.mergeRecord(M[e], {
+				...j[e],
 				sourceSettlementId: e
 			}));
-		}), Object.keys(P).forEach((e) => {
+		}), Object.keys(j).forEach((e) => {
 			let t = this.resolveMapNodeId(e);
-			F[t] || (F[t] = this.mergeRecord(F[t], {
-				...P[e],
+			M[t] || (M[t] = this.mergeRecord(M[t], {
+				...j[e],
 				sourceSettlementId: e
 			}));
-		}), this.state.bySettlement = P, this.state.byMapNode = F, this.state.activeExpeditions = x && x.activeExpeditions || [], this.state.player = x && x.commander || null, this.state.playerFaction = b.find((e) => e.leaderId === "PLY-0001") || null, this.state.factionsById = N;
-		let I = {};
-		S.forEach((e) => {
+		}), this.state.bySettlement = j, this.state.byMapNode = M, this.state.activeExpeditions = x && x.activeExpeditions || [], this.state.player = x && x.commander || null, this.state.playerFaction = b.find((e) => e.leaderId === "PLY-0001") || null, this.state.factionsById = A;
+		let N = {};
+		te.forEach((e) => {
 			let t = e.status, n = e.locationNear;
 			if (t !== "ACTIVE" || !n) return;
 			let r = this.resolveMapNodeId(n);
-			(I[r] ||= []).push(e);
+			(N[r] ||= []).push(e);
 		});
-		let ie = {};
-		C.forEach((e) => {
+		let P = {};
+		S.forEach((e) => {
 			let t = e.settlementId;
 			if (!t) return;
 			let n = this.resolveMapNodeId(t);
-			(ie[n] ||= []).push(e);
-		}), this.state.banditsByNode = I, this.state.crisesByNode = ie;
-		let L = {}, R = {};
-		w.forEach((e) => {
+			(P[n] ||= []).push(e);
+		}), this.state.banditsByNode = N, this.state.crisesByNode = P;
+		let F = {}, I = {};
+		C.forEach((e) => {
 			let t = e.name, n = e.npc_id || e.npcId;
-			n && (R[n] = e), t && (L[this.normalizeName(t)] = e);
-		}), this.state.npcsByName = L, this.state.npcsById = R;
-		let z = Number(te?.player?.liquid_cash) || 0, B = {};
-		T.forEach((e) => {
+			n && (I[n] = e), t && (F[this.normalizeName(t)] = e);
+		}), this.state.npcsByName = F, this.state.npcsById = I;
+		let se = Number(ne?.player?.liquid_cash) || 0, L = {};
+		w.forEach((e) => {
 			let t = e.item_code || e.itemCode, n = Number(e.quantity) || 0;
-			t && (B[t] = n);
-		}), this.state.playerCash = z, this.state.inventory = B, this.state.guardTiers = ne;
-		let V = {};
-		E.forEach((e) => {
+			t && (L[t] = n);
+		}), this.state.playerCash = se, this.state.inventory = L, this.state.guardTiers = D;
+		let ce = {};
+		T.forEach((e) => {
 			let t = e.nameVi;
-			t && (V[this.normalizeName(t)] = e);
-		}), this.state.specialistsByName = V, this.state.caravans = A, this.state.expeditions = re;
-		let H = {}, U = {};
-		j.forEach((e) => {
+			t && (ce[this.normalizeName(t)] = e);
+		}), this.state.specialistsByName = ce, this.state.caravans = ie, this.state.expeditions = ae;
+		let R = {}, z = {};
+		oe.forEach((e) => {
 			let t = String(e.settlementId || ""), n = this.resolveMapNodeId(t), r = String(e.resourceType || "");
-			n && r && (H[n] || (H[n] = {
+			n && r && (R[n] || (R[n] = {
 				types: {},
 				nodes: []
-			}), H[n].types[r] = (H[n].types[r] || 0) + 1, H[n].nodes.push(e), U[r] = (U[r] || 0) + 1);
-		}), this.state.resourcesByNode = H, this.state.resourceTotals = U;
-		let W = {};
-		k.forEach((e) => {
+			}), R[n].types[r] = (R[n].types[r] || 0) + 1, R[n].nodes.push(e), z[r] = (z[r] || 0) + 1);
+		}), this.state.resourcesByNode = R, this.state.resourceTotals = z;
+		let B = {};
+		re.forEach((e) => {
 			let t = e.locationId;
-			t && (W[t] = e);
-		}), this.state.locationsById = W;
-		let G = {};
+			t && (B[t] = e);
+		}), this.state.locationsById = B;
+		let V = {};
 		if (typeof window < "u") {
 			let e = window.SETTLEMENT_LABELS || {};
 			Object.keys(e).forEach((t) => {
 				if (t === "wu_wei") return;
 				let n = e[t] && e[t].vi;
-				n && (G[this.normalizeLocationLabel(n)] = t);
+				n && (V[this.normalizeLocationLabel(n)] = t);
 			});
 		}
-		let K = {};
-		k.forEach((e) => {
+		let H = {};
+		re.forEach((e) => {
 			let t = e.locationId, n = e.nameVi;
 			if (!t || !n) return;
-			let r = G[this.normalizeLocationLabel(n)];
-			r && (K[t] = r);
-		}), this.state.locToMapNode = K;
-		let q = {};
-		D.forEach((e) => {
-			let t = e.businessId, n = e.locationId;
-			t && n && (q[t] = n);
-		});
-		let ae = {};
+			let r = V[this.normalizeLocationLabel(n)];
+			r && (H[t] = r);
+		}), this.state.locToMapNode = H;
+		let U = {};
 		E.forEach((e) => {
-			let t = !!e.isHired, n = e.assignedBusinessId, r = n ? q[n] : null, i = e.baselineLocation, a = t && r ? r : i, o = a ? K[a] : null;
-			o && (ae[o] ||= []).push(e);
-		}), this.state.businesses = D, this.state.specialistsByMapNode = ae;
-		let J = {};
+			let t = e.businessId, n = e.locationId;
+			t && n && (U[t] = n);
+		});
+		let W = {};
+		T.forEach((e) => {
+			let t = !!e.isHired, n = e.assignedBusinessId, r = n ? U[n] : null, i = e.baselineLocation, a = t && r ? r : i, o = a ? H[a] : null;
+			o && (W[o] ||= []).push(e);
+		}), this.state.businesses = E, this.state.specialistsByMapNode = W;
+		let G = {};
 		return O.forEach((e) => {
-			let t = K[e.sourceLocationId || ""], n = K[e.targetLocationId || ""];
+			let t = H[e.sourceLocationId || ""], n = H[e.targetLocationId || ""];
 			if (!t || !n) return;
 			let r = e.descriptionEn ? e.descriptionEn.trim() : "", i = r && !/^RT-/i.test(r) && /^[\x20-\x7E]+$/.test(r) ? r : void 0, a = {
 				from: t,
@@ -3170,12 +3393,12 @@ var Q = new class {
 				descVi: e.descriptionVi,
 				descEn: i
 			}, o = `${t}|${n}`, s = `${n}|${t}`;
-			J[o] || (J[o] = a), J[s] || (J[s] = {
+			G[o] || (G[o] = a), G[s] || (G[s] = {
 				...a,
 				from: n,
 				to: t
 			});
-		}), this.state.routesByKey = J, this.state.status = this.state.errors.length === 17 ? "error" : "ready", this.state.fetchedAt = Date.now(), this.state;
+		}), this.state.routesByKey = G, this.state.status = this.state.errors.length === 17 ? "error" : "ready", this.state.fetchedAt = Date.now(), this.state;
 	}
 	getForMapNode(e) {
 		return e && (this.state.byMapNode[e] || this.state.bySettlement[e]) || null;
@@ -3356,7 +3579,7 @@ var Q = new class {
 	}
 }();
 // src/client/features/legacy-bridge.ts
-function xe() {
+function Ee() {
 	if (typeof window > "u") return;
 	let t = window;
 	t.ModalShellCore = {
@@ -3373,68 +3596,68 @@ function xe() {
 		assignMentorDialog: (e) => x.assignMentorDialog(e),
 		executeSuccession: () => x.executeSuccession()
 	}, t.EquipmentUI = {
-		openEquipmentModal: (e, t) => T.open(e, t),
-		closeEquipmentModal: () => T.close(),
-		switchTab: (e) => T.modal.switchTab(e),
-		equip: (e, t, n) => T.equip(e, t, n),
-		unequip: (e, t) => T.unequip(e, t),
-		repairTool: (e) => T.repairTool(e),
-		executeForge: () => T.executeForge()
+		openEquipmentModal: (e, t) => w.open(e, t),
+		closeEquipmentModal: () => w.close(),
+		switchTab: (e) => w.modal.switchTab(e),
+		equip: (e, t, n) => w.equip(e, t, n),
+		unequip: (e, t) => w.unequip(e, t),
+		repairTool: (e) => w.repairTool(e),
+		executeForge: () => w.executeForge()
 	}, t.EnterpriseUI = {
-		openEnterpriseModal: (e) => O.open(e),
-		closeEnterpriseModal: () => O.close(),
-		depositSafeCash: (e) => O.depositSafeCash(e),
-		withdrawSafeCash: (e) => O.withdrawSafeCash(e),
-		executeWork: (e) => O.executeWork(e)
+		openEnterpriseModal: (e) => k.open(e),
+		closeEnterpriseModal: () => k.close(),
+		depositSafeCash: (e) => k.depositSafeCash(e),
+		withdrawSafeCash: (e) => k.withdrawSafeCash(e),
+		executeWork: (e) => k.executeWork(e)
 	}, t.QuickTradeModal = {
-		open: (e, t, n, r) => A.open(e, t, n, r),
-		close: () => A.close(),
-		updateTotal: () => A.updateTotal(),
-		submit: () => A.submit()
+		open: (e, t, n, r) => j.open(e, t, n, r),
+		close: () => j.close(),
+		updateTotal: () => j.updateTotal(),
+		submit: () => j.submit()
 	}, t.MarketStallModal = {
-		open: (e = "stall") => V.open(e),
-		close: () => V.close()
+		open: (e = "stall") => H.open(e),
+		close: () => H.close()
 	}, t.TacticalBattleUI = {
-		startDuel: (e) => M.startDuel(e),
-		close: () => M.close(),
-		executeAction: (e) => M.executeAction(e)
+		startDuel: (e) => P.startDuel(e),
+		close: () => P.close(),
+		executeAction: (e) => P.executeAction(e)
 	}, t.TravelTransitUI = {
-		show: (e, t, n, r) => P.showTravelTransit(e, t, n, r),
-		close: () => P.closeTravel(),
-		openLegacy: () => P.openTravelTransitModal(),
-		closeLegacy: () => P.closeTravelTransitModal()
+		show: (e, t, n, r) => I.showTravelTransit(e, t, n, r),
+		close: () => I.closeTravel(),
+		openLegacy: () => I.openTravelTransitModal(),
+		closeLegacy: () => I.closeTravelTransitModal()
 	}, t.TurnAdvanceUI = {
-		show: (e, t, n) => P.showTurnAdvance(e, t, n),
-		close: () => P.closeTurn(),
-		openLegacy: () => P.openTurnAdvanceModal(),
-		closeLegacy: () => P.closeTurnAdvanceModal()
+		show: (e, t, n) => I.showTurnAdvance(e, t, n),
+		close: () => I.closeTurn(),
+		openLegacy: () => I.openTurnAdvanceModal(),
+		closeLegacy: () => I.closeTurnAdvanceModal()
 	}, t.QuestUI = {
-		open: () => L.open(),
-		close: () => L.close(),
-		accept: (e) => L.accept(e),
-		advance: (e) => L.advance(e),
-		payObligation: (e) => L.payObligation(e),
-		acceptContract: (e) => L.acceptContract(e),
-		deliverContract: (e) => L.deliverContract(e),
-		verifyIntel: (e) => L.verifyIntel(e),
-		rentFarm: (e) => L.rentFarm(e),
-		plantCrop: (e, t) => L.plantCrop(e, t),
-		harvestFarm: (e) => L.harvestFarm(e)
+		open: () => R.open(),
+		close: () => R.close(),
+		accept: (e) => R.accept(e),
+		advance: (e) => R.advance(e),
+		payObligation: (e) => R.payObligation(e),
+		acceptContract: (e) => R.acceptContract(e),
+		deliverContract: (e) => R.deliverContract(e),
+		verifyIntel: (e) => R.verifyIntel(e),
+		rentFarm: (e) => R.rentFarm(e),
+		plantCrop: (e, t) => R.plantCrop(e, t),
+		harvestFarm: (e) => R.harvestFarm(e)
 	}, t.WorldMapUI = {
-		open: () => U.open(),
-		close: () => U.close()
+		open: () => W.open(),
+		close: () => W.close()
 	}, t.WildernessMapUI = {
-		open: (e) => oe.open(e),
-		close: () => oe.close()
-	}, t.CityMapUI = {
 		open: (e) => de.open(e),
 		close: () => de.close()
+	}, t.CityMapUI = {
+		open: (e) => ge.open(e),
+		close: () => ge.close()
 	}, t.WorkforceHireUI = {
-		open: (e) => he.open(e),
-		close: () => he.close()
+		open: (e) => be.open(e),
+		close: () => be.close()
 	}, t.OnboardingUI = {
-		open: (e = !1) => ve.open(e),
-		close: () => ve.close()
+		open: (e = !1) => Ce.open(e),
+		close: () => Ce.close()
 	}, t.MapLiveService = {
 		load: (e = !1) => Q.load(e),
 		getForMapNode: (e) => Q.getForMapNode(e),
@@ -3458,7 +3681,7 @@ function xe() {
 		ALIASES: Q.ALIASES
 	}, console.log("[ThreeKingdoms-AgentEngine] All 14 client feature slices successfully bridged to window.*");
 }
-var Se = new class {
+var De = new class {
 	handlers = /* @__PURE__ */ new Map();
 	on(e, t) {
 		return this.handlers.has(e) || this.handlers.set(e, /* @__PURE__ */ new Set()), this.handlers.get(e).add(t), () => {
@@ -3479,7 +3702,7 @@ var Se = new class {
 			}
 		});
 	}
-}(), Ce = class e {
+}(), Oe = class e {
 	static instance;
 	static getInstance() {
 		return e.instance ||= new e(), e.instance;
@@ -3499,7 +3722,7 @@ var Se = new class {
 			guardTier: e.escortLevel
 		});
 	}
-}, $ = Ce.getInstance(), we = class {
+}, $ = Oe.getInstance(), ke = class {
 	modal;
 	caravans = [];
 	routes = [];
@@ -3639,7 +3862,7 @@ var Se = new class {
 			typeof window.showToast == "function" && window.showToast(e.message || "Lỗi xuất thương đoàn!", !0);
 		}
 	}
-}, Te = new we(), Ee = class {
+}, Ae = new ke(), je = class {
 	modal;
 	selectedScenario = "184_YELLOW_TURBAN";
 	constructor() {
@@ -3732,9 +3955,9 @@ var Se = new class {
 			typeof window.showToast == "function" && window.showToast(e.message || "Lỗi khởi tạo chiến dịch!", !0);
 		}
 	}
-}, De = new Ee();
+}, Me = new je();
 // src/client/main.ts
-xe();
-export { we as CaravanLogisticsModal, Ce as CaravanLogisticsService, ue as CityMapModal, se as CityMapService, _ as ClientApiClient, ne as EnterpriseWorkshopModal, E as EnterpriseWorkshopService, te as EquipmentForgeModal, S as EquipmentForgeService, t as LEGACY_OWNED_MODAL_IDS, b as LineageFamilyModal, ee as LineageFamilyService, r as ModalShell, k as QuickTradeModal, j as TacticalBattleModal, Ee as TitleScreenModal, N as TransitTurnModals, J as WildernessMapModal, W as WildernessMapService, H as WorldMapModal, v as apiClient, Te as caravanLogisticsModal, $ as caravanLogisticsService, de as cityMapModal, Y as cityMapService, i as createModalShell, O as enterpriseWorkshopModal, D as enterpriseWorkshopService, T as equipmentForgeModal, C as equipmentForgeService, Se as eventBus, n as isLegacyOwnedModalId, x as lineageFamilyModal, y as lineageFamilyService, e as modalStack, A as quickTradeModal, M as tacticalBattleModal, De as titleScreenModal, P as transitTurnModals, oe as wildernessMapModal, G as wildernessMapService, U as worldMapModal };
+Ee();
+export { ke as CaravanLogisticsModal, Oe as CaravanLogisticsService, he as CityMapModal, fe as CityMapService, _ as ClientApiClient, oe as EnterpriseWorkshopModal, T as EnterpriseWorkshopService, ne as EquipmentForgeModal, te as EquipmentForgeService, t as LEGACY_OWNED_MODAL_IDS, b as LineageFamilyModal, ee as LineageFamilyService, r as ModalShell, A as QuickTradeModal, N as TacticalBattleModal, je as TitleScreenModal, F as TransitTurnModals, ue as WildernessMapModal, G as WildernessMapService, U as WorldMapModal, v as apiClient, Ae as caravanLogisticsModal, $ as caravanLogisticsService, ge as cityMapModal, Y as cityMapService, i as createModalShell, k as enterpriseWorkshopModal, E as enterpriseWorkshopService, w as equipmentForgeModal, S as equipmentForgeService, De as eventBus, n as isLegacyOwnedModalId, x as lineageFamilyModal, y as lineageFamilyService, e as modalStack, j as quickTradeModal, P as tacticalBattleModal, Me as titleScreenModal, I as transitTurnModals, de as wildernessMapModal, K as wildernessMapService, W as worldMapModal };
 
 //# sourceMappingURL=client-bundle.es.js.map

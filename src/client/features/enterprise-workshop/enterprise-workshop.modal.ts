@@ -4,19 +4,57 @@
  */
 
 import { createModalShell, ModalShellInstance } from '../../core/modal-shell';
+import { confirmDialog } from '../../core/ui';
 import { enterpriseWorkshopService } from './enterprise-workshop.service';
-import { EnterpriseRecord } from './enterprise-workshop.types';
+import {
+  EnterpriseRecord,
+  EnterpriseStatus,
+  LaborShift,
+  OpenableEnterpriseType
+} from './enterprise-workshop.types';
+
+function esc(value: unknown): string {
+  return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function money(value: unknown): string {
+  return Number(value || 0).toLocaleString('vi-VN');
+}
+
+const ATTR_LABELS: Record<string, string> = {
+  cra: 'Kỹ Nghệ',
+  com: 'Thương Nghiệp',
+  int: 'Trí Lực',
+  log: 'Hậu Cần',
+  war: 'Võ Lực',
+  ldr: 'Thống Soái'
+};
+
+const HEALTH_LABELS: Record<string, string> = {
+  CLOSED: 'Đóng cửa',
+  DISTRESSED: 'Nợ xấu',
+  PROFITABLE: 'Có lời',
+  BREAK_EVEN: 'Hòa vốn',
+  PAUSED: 'Tạm dừng'
+};
+
+const TYPE_LABELS: Record<string, string> = {
+  WORKSHOP: 'Xưởng thủ công',
+  TAVERN: 'Tửu điếm',
+  APOTHECARY: 'Dược đường',
+  FORGE: 'Lò rèn',
+  BLACKSMITH: 'Lò rèn'
+};
 
 export class EnterpriseWorkshopModal {
   private modal: ModalShellInstance;
-  private enterprises: EnterpriseRecord[] = [];
-  private laborOptions: any[] = [];
+  private status: EnterpriseStatus | null = null;
 
   constructor() {
     this.modal = createModalShell({
       id: 'enterprise-modal',
       title: 'Sản Nghiệp & Phường Xưởng Bách Nghệ',
-      subtitle: 'Quản lý xưởng dệt, xưởng rèn, đi làm thuê công nhật tích lũy ngân lượng',
+      subtitle: 'Quản lý xưởng, lao động thời vụ và mở cơ sở mới',
       seal: '業',
       size: 'xl',
       tabs: [
@@ -44,11 +82,10 @@ export class EnterpriseWorkshopModal {
 
   private async refreshData(): Promise<void> {
     try {
-      const data = await enterpriseWorkshopService.getStatus('PLY-0001');
-      this.enterprises = (data as any)?.ownedBusinesses || (data as any)?.activeEnterprises || [];
-      this.laborOptions = (data as any)?.laborOptions || [];
+      this.status = await enterpriseWorkshopService.getStatus('PLY-0001');
     } catch (e) {
       console.error('[EnterpriseWorkshopModal] Error refreshing data:', e);
+      this.status = null;
     }
   }
 
@@ -61,142 +98,320 @@ export class EnterpriseWorkshopModal {
     }
   }
 
+  private renderSummary(): string {
+    const status = this.status;
+    if (!status) return '';
+    const cards = [
+      { label: 'Tiền mặt', value: `${money(status.playerCash)} Quan`, tone: '' },
+      { label: 'Quỹ an toàn xưởng', value: `${money(status.totalSafeCash)} Quan`, tone: 'is-gold' },
+      { label: 'Nợ xưởng', value: `${money(status.totalDebt)} Quan`, tone: status.totalDebt > 0 ? 'is-danger' : '' },
+      { label: 'Lương tháng', value: `${money(status.totalStaffWages)} Quan`, tone: '' },
+      { label: 'Thuê xưởng', value: `${money(status.totalMonthlyRent)} Quan`, tone: '' },
+      { label: 'Lợi nhuận tích lũy', value: `${money(status.totalAccumulatedProfit)} Quan`, tone: status.totalAccumulatedProfit > 0 ? 'is-positive' : '' }
+    ];
+    return `
+      <div class="enterprise-summary-grid">
+        ${cards.map(card => `
+          <div class="enterprise-summary-card ${card.tone}">
+            <span>${card.label}</span>
+            <strong>${card.value}</strong>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
   private renderOwnerTab(): void {
-    const html = `
+    const status = this.status;
+    if (!status) {
+      this.modal.setContent('<div class="journal-modal-content"><div class="text-muted text-sm">Không tải được sản nghiệp.</div></div>');
+      return;
+    }
+    const enterprises = status.ownedBusinesses || [];
+    const openableTypes = status.openableTypes || [];
+
+    const enterpriseCards = enterprises.length > 0
+      ? enterprises.map(enterprise => this.renderEnterpriseCard(enterprise)).join('')
+      : `<div class="enterprise-empty">Chưa sở hữu cơ sở nào. Chọn một loại hình bên dưới để mở.</div>`;
+
+    const openCards = openableTypes.length > 0
+      ? openableTypes.map(type => this.renderOpenableCard(type)).join('')
+      : '<div class="enterprise-empty">Danh mục mở cơ sở chưa sẵn sàng.</div>';
+
+    this.modal.setContent(`
       <div class="enterprise-modal-content">
         <div class="spatial-banner-lead">
           <div class="lead-seal">業</div>
           <div class="lead-text">
-            <h3>Sản Nghiệp Sở Hữu (${this.enterprises.length} Cơ Sở)</h3>
-            <div class="text-muted text-sm">Các xưởng chế tác tự động vận hành chu kỳ sản xuất hàng tháng và tích lũy doanh thu vào Quỹ an toàn.</div>
+            <h3>Phường Xưởng Lương Gia</h3>
+            <div class="text-muted text-sm">Xưởng tự vận hành theo tháng. Lợi nhuận trả nợ trước, phần còn lại vào quỹ an toàn; thiếu nhân công thì sản lượng giảm.</div>
           </div>
         </div>
+        ${this.renderSummary()}
 
-        ${this.enterprises.length === 0 ? `
-          <div class="text-center py-10 text-muted">
-            Hiện tại bạn chưa sở hữu sản nghiệp nào. Hãy tích lũy tiền tệ hoặc làm thuê để mua lại xưởng mộc, xưởng rèn tại Trác Huyện.
+        <section class="enterprise-section">
+          <div class="enterprise-section-title">
+            Cơ sở đang sở hữu <span>${enterprises.length}</span>
           </div>
-        ` : `
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            ${this.enterprises.map(e => `
-              <div class="tactical-card p-4 bg-slate-900 rounded border border-slate-800">
-                <div class="flex justify-between items-start mb-2">
-                  <h4 class="text-amber-200 font-bold m-0 text-base">${e.name_vi}</h4>
-                  <span class="badge badge-success text-xs">${e.status || 'VẬN HÀNH'}</span>
-                </div>
-                <div class="text-xs text-muted mb-3">Địa điểm: ${e.settlement_id} • Thợ xưởng: ${e.worker_count || 1}/${e.max_workers || 5}</div>
+          <div class="enterprise-grid">${enterpriseCards}</div>
+        </section>
 
-                <div class="bg-slate-950/70 p-2.5 rounded font-mono text-xs mb-3 space-y-1">
-                  <div class="flex justify-between">
-                    <span class="text-muted">Quỹ An Toàn:</span>
-                    <span class="text-amber-400 font-bold">${Number(e.safe_cash || 0).toLocaleString()} Quan</span>
-                  </div>
-                  <div class="flex justify-between">
-                    <span class="text-muted">Chi Phí Tháng:</span>
-                    <span class="text-red-400 font-bold">${Number(e.monthly_overhead || 0).toLocaleString()} Quan</span>
-                  </div>
-                </div>
-
-                <div class="flex gap-2">
-                  <button class="ui-btn ui-btn--primary ui-btn--sm flex-1" onclick="window.EnterpriseUI.depositSafeCash('${e.enterprise_id}')">Nạp Quỹ</button>
-                  <button class="ui-btn ui-btn--ghost ui-btn--sm flex-1" onclick="window.EnterpriseUI.withdrawSafeCash('${e.enterprise_id}')">Rút Quan</button>
-                </div>
-              </div>
-            `).join('')}
+        <section class="enterprise-section">
+          <div class="enterprise-section-title">
+            Mở cơ sở mới <span>${openableTypes.length}</span>
           </div>
-        `}
+          <div class="enterprise-open-grid">${openCards}</div>
+        </section>
+      </div>
+    `);
+    this.bindOwnerActions();
+  }
+
+  private renderEnterpriseCard(enterprise: EnterpriseRecord): string {
+    const health = enterprise.health || (enterprise.status === 'ACTIVE' ? 'BREAK_EVEN' : 'PAUSED');
+    const profit = Number(enterprise.accumulated_profit || 0);
+    const safeCash = Number(enterprise.safe_cash || 0);
+    const canCollect = profit > 0 || safeCash > 0;
+    return `
+      <div class="enterprise-card">
+        <div class="enterprise-card-head">
+          <div class="enterprise-icon">${enterprise.business_type === 'FORGE' || enterprise.business_type === 'BLACKSMITH' ? '鍛' : enterprise.business_type === 'TAVERN' ? '酒' : enterprise.business_type === 'APOTHECARY' ? '藥' : '工'}</div>
+          <div class="enterprise-name-wrap">
+            <div class="enterprise-name">${esc(enterprise.name)}</div>
+            <div class="enterprise-meta">${TYPE_LABELS[enterprise.business_type] || enterprise.business_type} • ${esc(enterprise.location_id)} • Tier ${enterprise.tier || 1}</div>
+          </div>
+          <span class="enterprise-health is-${health.toLowerCase()}">${HEALTH_LABELS[health] || health}</span>
+        </div>
+
+        <div class="enterprise-meta mt-1">Quản lý: ${esc(enterprise.manager_name || enterprise.manager_npc_id)} • Hiệu suất ${Math.round(Number(enterprise.efficiency_multiplier || 0) * 100)}% • ${enterprise.auto_procure ? 'Tự mua nguyên liệu' : 'Mua tay'}</div>
+
+        <div class="enterprise-stats">
+          <div class="enterprise-stat"><span>Quỹ an toàn</span><strong>${money(safeCash)}</strong></div>
+          <div class="enterprise-stat"><span>Nợ</span><strong class="${Number(enterprise.debt || 0) > 0 ? 'is-danger' : ''}">${money(enterprise.debt)}</strong></div>
+          <div class="enterprise-stat"><span>Doanh thu/ngày</span><strong>${money(enterprise.daily_revenue)}</strong></div>
+          <div class="enterprise-stat"><span>Lợi nhuận tích lũy</span><strong class="${profit > 0 ? 'is-positive' : ''}">${money(profit)}</strong></div>
+          <div class="enterprise-stat"><span>Nhân sự</span><strong>${enterprise.staff_count ?? 0}/${enterprise.current_workforce ?? 0}</strong></div>
+          <div class="enterprise-stat"><span>Lương + thuê</span><strong>${money(enterprise.monthly_overhead)}</strong></div>
+        </div>
+
+        <div class="enterprise-cash-row">
+          <input class="enterprise-cash-input" id="enterprise-cash-${esc(enterprise.business_id)}" type="number" min="1" step="50" value="500" aria-label="Số tiền nạp hoặc rút" />
+          <button class="ui-btn ui-btn--primary ui-btn--sm" data-enterprise-cash="DEPOSIT" data-business-id="${esc(enterprise.business_id)}">Nạp quỹ</button>
+          <button class="ui-btn ui-btn--ghost ui-btn--sm" data-enterprise-cash="WITHDRAW" data-business-id="${esc(enterprise.business_id)}">Rút quỹ</button>
+          <button class="ui-btn ui-btn--accent ui-btn--sm" data-enterprise-collect="${esc(enterprise.business_id)}" ${canCollect ? '' : 'disabled'}>Thu lợi nhuận</button>
+        </div>
       </div>
     `;
+  }
 
-    this.modal.setContent(html);
+  private renderOpenableCard(type: OpenableEnterpriseType): string {
+    const turnkeyCost = Number(type.startupCash || 0) + Number(type.effectiveTurnkeyCost || 0);
+    const materials = (type.requiredMaterials || []).map(material => `
+      <span class="enterprise-material ${material.hasEnough ? 'is-ready' : 'is-missing'}" title="${material.available}/${material.quantity}">
+        ${esc(material.itemNameVi)} ${material.available}/${material.quantity}
+      </span>
+    `).join('');
+    return `
+      <div class="enterprise-open-card">
+        <div class="enterprise-card-head">
+          <div class="enterprise-icon">${type.icon || '業'}</div>
+          <div class="enterprise-name-wrap">
+            <div class="enterprise-name">${esc(type.titleVi)}</div>
+            <div class="enterprise-meta">Thuê ${money(type.monthlyRent)}/tháng • ${type.baseWorkforce} nhân sự • ${money(type.projectedDailyRevenueMin)}–${money(type.projectedDailyRevenueMax)}/ngày</div>
+          </div>
+        </div>
+        <div class="enterprise-open-desc">${esc(type.descriptionVi)}</div>
+        <div class="enterprise-materials">${materials || '<span class="enterprise-material is-ready">Không cần nguyên liệu</span>'}</div>
+        <div class="enterprise-open-actions">
+          <button class="ui-btn ui-btn--ghost ui-btn--sm" data-open-enterprise="${esc(type.typeId)}" data-turnkey="false" ${type.canAffordCash ? '' : 'disabled'}>
+            Mở chuẩn · ${money(type.startupCash)}
+          </button>
+          <button class="ui-btn ui-btn--primary ui-btn--sm" data-open-enterprise="${esc(type.typeId)}" data-turnkey="true" ${type.canAffordTurnkey ? '' : 'disabled'}>
+            Mở turnkey · ${money(turnkeyCost)}
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  private bindOwnerActions(): void {
+    const body = this.modal.getBodyElement();
+    if (!body) return;
+
+    body.querySelectorAll<HTMLElement>('[data-enterprise-cash]').forEach(button => {
+      button.addEventListener('click', async () => {
+        const businessId = button.dataset.businessId || '';
+        const action = (button.dataset.enterpriseCash || 'DEPOSIT') as 'DEPOSIT' | 'WITHDRAW';
+        const input = document.getElementById(`enterprise-cash-${businessId}`) as HTMLInputElement | null;
+        const amount = Number(input?.value || 0);
+        if (!Number.isFinite(amount) || amount <= 0) {
+          this.toast('Số tiền phải lớn hơn 0.', true);
+          return;
+        }
+        button.setAttribute('disabled', 'true');
+        try {
+          await enterpriseWorkshopService.manageSafeCash(businessId, action, Math.round(amount));
+          this.toast(action === 'DEPOSIT' ? 'Đã nạp tiền vào quỹ an toàn.' : 'Đã rút tiền về ngân khố.');
+          await this.refreshData();
+          await this.renderActiveTab();
+        } catch (e: any) {
+          button.removeAttribute('disabled');
+          this.toast(e.message || 'Thao tác quỹ thất bại.', true);
+        }
+      });
+    });
+
+    body.querySelectorAll<HTMLElement>('[data-enterprise-collect]').forEach(button => {
+      button.addEventListener('click', async () => {
+        const businessId = button.dataset.enterpriseCollect || '';
+        button.setAttribute('disabled', 'true');
+        try {
+          const result = await enterpriseWorkshopService.collectProfits(businessId);
+          this.toast(result.message || `Đã thu ${money(result.collectedAmount)} Quan lợi nhuận.`, result.success === false);
+          await this.refreshData();
+          await this.renderActiveTab();
+        } catch (e: any) {
+          button.removeAttribute('disabled');
+          this.toast(e.message || 'Thu lợi nhuận thất bại.', true);
+        }
+      });
+    });
+
+    body.querySelectorAll<HTMLElement>('[data-open-enterprise]').forEach(button => {
+      button.addEventListener('click', async () => {
+        const typeId = button.dataset.openEnterprise || '';
+        const turnkey = button.dataset.turnkey === 'true';
+        const type = (this.status?.openableTypes || []).find(row => row.typeId === typeId);
+        if (!type) return;
+        const cost = turnkey ? Number(type.startupCash) + Number(type.effectiveTurnkeyCost) : Number(type.startupCash);
+        const confirmed = await confirmDialog({
+          title: 'Mở cơ sở mới',
+          message: `Mở ${type.titleVi} với chi phí ${money(cost)} Quan${turnkey ? ' (turnkey, mua bù nguyên liệu thiếu)' : ''}? Mỗi lần mở tốn 2 ngày.`,
+          confirmLabel: 'Mở cơ sở',
+          danger: true
+        });
+        if (!confirmed) return;
+        button.setAttribute('disabled', 'true');
+        try {
+          await enterpriseWorkshopService.openEnterprise(typeId, turnkey);
+          this.toast(`Đã mở ${type.titleVi}.`);
+          await this.refreshData();
+          await this.renderActiveTab();
+        } catch (e: any) {
+          button.removeAttribute('disabled');
+          this.toast(e.message || 'Mở cơ sở thất bại.', true);
+        }
+      });
+    });
   }
 
   private renderWorkTab(): void {
-    const html = `
+    const status = this.status;
+    const shifts: LaborShift[] = status?.laborShifts || [];
+    const fatigue = Number(status?.playerFatigue || 0);
+    const available = shifts.filter(shift => fatigue + Number(shift.fatigueCost || 0) <= 100);
+    const bestWage = shifts.reduce((best, shift) => Number(shift.wage) > Number(best?.wage || 0) ? shift : best, shifts[0]);
+    const bestRate = shifts.reduce((best, shift) => {
+      const rate = Number(shift.wage) / Math.max(1, Number(shift.fatigueCost || 1));
+      const bestValue = best ? Number(best.wage) / Math.max(1, Number(best.fatigueCost || 1)) : 0;
+      return rate > bestValue ? shift : best;
+    }, shifts[0]);
+
+    const summary = `
+      <div class="work-summary-grid">
+        <div class="work-summary-card"><span>Mệt mỏi</span><strong>${fatigue}/100</strong></div>
+        <div class="work-summary-card"><span>Ca khả dụng</span><strong>${available.length}/${shifts.length}</strong></div>
+        <div class="work-summary-card"><span>Lương cao nhất</span><strong>${bestWage ? `${money(bestWage.wage)} Quan` : '—'}</strong></div>
+        <div class="work-summary-card"><span>Hiệu quả nhất</span><strong>${bestRate ? `${money(bestRate.wage)} / ${bestRate.fatigueCost} thể lực` : '—'}</strong></div>
+      </div>
+    `;
+
+    const cards = shifts.length > 0
+      ? [...shifts].sort((a, b) => Number(b.wage) - Number(a.wage)).map(shift => {
+        const fatigueCost = Number(shift.fatigueCost ?? shift.staminaCost ?? 0);
+        const blocked = fatigue + fatigueCost > 100;
+        const attr = ATTR_LABELS[String(shift.attributeTarget || 'cra')] || String(shift.attributeTarget || '').toUpperCase();
+        return `
+          <div class="work-card ${blocked ? 'is-blocked' : ''}">
+            <div class="work-card-head">
+              <span class="enterprise-icon">${shift.icon || '工'}</span>
+              <div>
+                <div class="enterprise-name">${esc(shift.titleVi)}</div>
+                <div class="enterprise-meta">${esc(shift.workplaceVi)} • ${esc(shift.professionNameVi)}</div>
+              </div>
+            </div>
+            <div class="work-wage">${money(shift.wage)} <span>Quan / ca</span></div>
+            <div class="work-meta">
+              <span>${fatigueCost} thể lực</span>
+              <span>+${shift.expGain} EXP nghề</span>
+              <span>+${shift.attributeExp} EXP ${attr}</span>
+            </div>
+            <div class="work-note">${blocked ? `Cần nghỉ ngơi: đang mệt ${fatigue}/100, ca này tốn ${fatigueCost}.` : esc(shift.narrativeVi)}</div>
+            <button class="ui-btn ui-btn--primary ui-btn--sm w-full" data-work-shift="${esc(shift.shiftId)}" ${blocked ? 'disabled' : ''}>Nhận việc · 1 ngày</button>
+          </div>
+        `;
+      }).join('')
+      : '<div class="enterprise-empty md:col-span-3">Chưa tải được danh mục ca làm việc.</div>';
+
+    this.modal.setContent(`
       <div class="enterprise-modal-content">
         <div class="spatial-banner-lead">
           <div class="lead-seal">工</div>
           <div class="lead-text">
             <h3>Lao Động Làm Thuê Thời Vụ</h3>
-            <div class="text-muted text-sm">Đi làm thuê tại các xưởng nghề, đồn điền nông nghiệp để kiếm tiền trang trải và rèn luyện kỹ năng.</div>
+            <div class="text-muted text-sm">Mỗi ca tốn 1 ngày, trả tiền mặt ngay và tăng EXP nghề/thuộc tính. Mệt mỏi từ 100 trở lên sẽ chặn nhận ca.</div>
           </div>
         </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800 text-center">
-            <h4 class="text-amber-300 font-bold text-sm mb-1">Đốn Củi & Tiêu Xa</h4>
-            <div class="text-xs text-muted mb-2">Tiêu hao 15 Thể lực • Kiếm 40 Quan • Tăng EXP Võ/Thống</div>
-            <button class="ui-btn ui-btn--primary ui-btn--sm w-full" onclick="window.EnterpriseUI.executeWork('WOODCUT')">Nhận Việc</button>
-          </div>
-          <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800 text-center">
-            <h4 class="text-amber-300 font-bold text-sm mb-1">Đan Lát Chiếu Trúc</h4>
-            <div class="text-xs text-muted mb-2">Tiêu hao 12 Thể lực • Kiếm 50 Quan • Tăng EXP Kỹ Nghệ</div>
-            <button class="ui-btn ui-btn--primary ui-btn--sm w-full" onclick="window.EnterpriseUI.executeWork('WEAVE_MAT')">Nhận Việc</button>
-          </div>
-          <div class="tactical-card p-3 bg-slate-900 rounded border border-slate-800 text-center">
-            <h4 class="text-amber-300 font-bold text-sm mb-1">Phụ Lò Rèn Thiết Điếm</h4>
-            <div class="text-xs text-muted mb-2">Tiêu hao 20 Thể lực • Kiếm 65 Quan • Tăng EXP Kỹ Nghệ/Võ</div>
-            <button class="ui-btn ui-btn--accent ui-btn--sm w-full" onclick="window.EnterpriseUI.executeWork('SMITH_ASSIST')">Nhận Việc</button>
-          </div>
-        </div>
+        ${summary}
+        <div class="work-grid">${cards}</div>
       </div>
-    `;
+    `);
 
-    this.modal.setContent(html);
+    const body = this.modal.getBodyElement();
+    body?.querySelectorAll<HTMLElement>('[data-work-shift]').forEach(button => {
+      button.addEventListener('click', async () => {
+        const shiftId = button.dataset.workShift || '';
+        button.setAttribute('disabled', 'true');
+        await this.executeWork(shiftId);
+        button.removeAttribute('disabled');
+      });
+    });
+  }
+
+  private toast(message: string, danger = false): void {
+    if (typeof (window as any).showToast === 'function') {
+      (window as any).showToast(message, danger);
+    }
   }
 
   public async depositSafeCash(enterpriseId: string): Promise<void> {
-    const amtStr = prompt('Nhập số tiền muốn nạp vào quỹ an toàn:', '500');
-    if (!amtStr) return;
-    const amt = parseInt(amtStr, 10);
-    if (isNaN(amt) || amt <= 0) return;
-
-    try {
-      await enterpriseWorkshopService.manageSafeCash(enterpriseId, 'DEPOSIT', amt);
-      if (typeof (window as any).showToast === 'function') {
-        (window as any).showToast('Đã nạp tiền vào Quỹ an toàn!');
-      }
-      await this.refreshData();
-      await this.renderActiveTab();
-    } catch (e: any) {
-      if (typeof (window as any).showToast === 'function') {
-        (window as any).showToast(e.message || 'Lỗi nạp tiền!', true);
-      }
-    }
+    const input = document.getElementById(`enterprise-cash-${enterpriseId}`) as HTMLInputElement | null;
+    const amount = Number(input?.value || 0);
+    if (!Number.isFinite(amount) || amount <= 0) return;
+    await enterpriseWorkshopService.manageSafeCash(enterpriseId, 'DEPOSIT', Math.round(amount));
+    this.toast('Đã nạp tiền vào Quỹ an toàn.');
+    await this.refreshData();
+    await this.renderActiveTab();
   }
 
   public async withdrawSafeCash(enterpriseId: string): Promise<void> {
-    const amtStr = prompt('Nhập số tiền muốn rút từ quỹ an toàn:', '500');
-    if (!amtStr) return;
-    const amt = parseInt(amtStr, 10);
-    if (isNaN(amt) || amt <= 0) return;
-
-    try {
-      await enterpriseWorkshopService.manageSafeCash(enterpriseId, 'WITHDRAW', amt);
-      if (typeof (window as any).showToast === 'function') {
-        (window as any).showToast('Đã rút tiền từ Quỹ an toàn về ngân khố!');
-      }
-      await this.refreshData();
-      await this.renderActiveTab();
-    } catch (e: any) {
-      if (typeof (window as any).showToast === 'function') {
-        (window as any).showToast(e.message || 'Lỗi rút tiền!', true);
-      }
-    }
+    const input = document.getElementById(`enterprise-cash-${enterpriseId}`) as HTMLInputElement | null;
+    const amount = Number(input?.value || 0);
+    if (!Number.isFinite(amount) || amount <= 0) return;
+    await enterpriseWorkshopService.manageSafeCash(enterpriseId, 'WITHDRAW', Math.round(amount));
+    this.toast('Đã rút tiền từ Quỹ an toàn về ngân khố.');
+    await this.refreshData();
+    await this.renderActiveTab();
   }
 
   public async executeWork(shiftType: string): Promise<void> {
     try {
       const res = await enterpriseWorkshopService.executeLaborShift(shiftType);
-      if (typeof (window as any).showToast === 'function') {
-        (window as any).showToast(res.narrativeVi || 'Lao động hoàn tất, nhận tiền công!');
-      }
+      this.toast(res.messageVi || res.message || res.narrativeVi || 'Lao động hoàn tất, nhận tiền công!');
       await this.refreshData();
       await this.renderActiveTab();
     } catch (e: any) {
-      if (typeof (window as any).showToast === 'function') {
-        (window as any).showToast(e.message || 'Không thể làm việc lúc này!', true);
-      }
+      this.toast(e.message || 'Không thể làm việc lúc này!', true);
     }
   }
 }

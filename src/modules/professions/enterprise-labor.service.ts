@@ -845,34 +845,71 @@ export class EnterpriseLaborService {
    */
   public getEnterpriseStatus(characterId: string = 'PLY-0001') {
     // 1. Fetch owned businesses
+    const staffByBusiness = new Map<string, { count: number; wages: number }>();
+    for (const row of this.db.query<any>(
+      `SELECT assigned_business_id, COUNT(*) AS staff_count, COALESCE(SUM(monthly_wage), 0) AS staff_wages
+         FROM npc_state
+        WHERE assigned_business_id IS NOT NULL AND assigned_business_id <> ''
+        GROUP BY assigned_business_id;`
+    )) {
+      staffByBusiness.set(String(row.assigned_business_id), {
+        count: Number(row.staff_count || 0),
+        wages: Number(row.staff_wages || 0)
+      });
+    }
+    const managerNames = new Map<string, string>();
+    for (const row of this.db.query<any>('SELECT npc_id, name_vi FROM master_characters;')) {
+      managerNames.set(String(row.npc_id), String(row.name_vi));
+    }
+
     const businesses = this.db.query<any>(
       `SELECT business_id, name, location_id, manager_npc_id, safe_cash, delegation_level, 
               efficiency_multiplier, current_workforce, monthly_capacity_hours, monthly_rent,
-              auto_procure, status, business_type, owner_character_id, daily_revenue, accumulated_profit
+              auto_procure, status, business_type, owner_character_id, daily_revenue, accumulated_profit,
+              tier, debt
        FROM businesses
        WHERE owner_character_id = ? OR owner_character_id IS NULL OR owner_character_id = 'PLY-0001'
        ORDER BY business_id ASC;`,
       [characterId]
-    ).map(b => ({
-      business_id: b.business_id,
-      name: b.name,
-      location_id: b.location_id || 'LOC-0001',
-      location: b.location_id || 'LOC-0001',
-      manager_npc_id: b.manager_npc_id || 'NPC-0007',
-      safe_cash: Number(b.safe_cash || 0),
-      delegation_level: Number(b.delegation_level || 2),
-      efficiency_multiplier: Number(b.efficiency_multiplier || 0.85),
-      current_workforce: Number(b.current_workforce || 4),
-      workforce_count: Number(b.current_workforce || 4),
-      monthly_capacity_hours: Number(b.monthly_capacity_hours || 800),
-      monthly_rent: Number(b.monthly_rent || 200),
-      auto_procure: Number(b.auto_procure || 1),
-      status: b.status || 'ACTIVE',
-      business_type: b.business_type || 'WORKSHOP',
-      daily_revenue: Number(b.daily_revenue || 0),
-      daily_revenue_avg: Number(b.daily_revenue || 0),
-      accumulated_profit: Number(b.accumulated_profit || 0)
-    }));
+    ).map(b => {
+      const staff = staffByBusiness.get(String(b.business_id)) || { count: 0, wages: 0 };
+      const debt = Number(b.debt || 0);
+      const rent = Number(b.monthly_rent || 200);
+      const health = staff.count === 0
+        ? 'CLOSED'
+        : debt > 0
+          ? 'DISTRESSED'
+          : Number(b.accumulated_profit || 0) > 0
+            ? 'PROFITABLE'
+            : 'BREAK_EVEN';
+      return {
+        business_id: b.business_id,
+        name: b.name,
+        location_id: b.location_id || 'LOC-0001',
+        location: b.location_id || 'LOC-0001',
+        manager_npc_id: b.manager_npc_id || 'NPC-0007',
+        manager_name: managerNames.get(String(b.manager_npc_id || 'NPC-0007')) || b.manager_npc_id || 'NPC-0007',
+        safe_cash: Number(b.safe_cash || 0),
+        debt,
+        tier: Number(b.tier || 1),
+        delegation_level: Number(b.delegation_level || 2),
+        efficiency_multiplier: Number(b.efficiency_multiplier || 0.85),
+        current_workforce: Number(b.current_workforce || 4),
+        workforce_count: Number(b.current_workforce || 4),
+        staff_count: staff.count,
+        staff_wages: staff.wages,
+        monthly_capacity_hours: Number(b.monthly_capacity_hours || 800),
+        monthly_rent: rent,
+        monthly_overhead: rent + staff.wages,
+        auto_procure: Number(b.auto_procure || 1),
+        status: b.status || 'ACTIVE',
+        health,
+        business_type: b.business_type || 'WORKSHOP',
+        daily_revenue: Number(b.daily_revenue || 0),
+        daily_revenue_avg: Number(b.daily_revenue || 0),
+        accumulated_profit: Number(b.accumulated_profit || 0)
+      };
+    });
 
     // 2. Fetch player state
     const player = this.db.queryOne<any>(
@@ -1013,6 +1050,10 @@ export class EnterpriseLaborService {
     const totalDailyRevenue = businesses.reduce((s, b) => s + (b.daily_revenue || 0), 0);
     const totalWorkforce = businesses.reduce((s, b) => s + (b.current_workforce || 0), 0);
     const totalAccumulatedProfit = businesses.reduce((s, b) => s + (b.accumulated_profit || 0), 0);
+    const totalSafeCash = businesses.reduce((s, b) => s + (b.safe_cash || 0), 0);
+    const totalDebt = businesses.reduce((s, b) => s + (b.debt || 0), 0);
+    const totalMonthlyRent = businesses.reduce((s, b) => s + (b.monthly_rent || 0), 0);
+    const totalStaffWages = businesses.reduce((s, b) => s + (b.staff_wages || 0), 0);
 
     return {
       characterId,
@@ -1024,6 +1065,11 @@ export class EnterpriseLaborService {
       totalDailyRevenue,
       totalWorkforce,
       totalAccumulatedProfit,
+      totalSafeCash,
+      totalDebt,
+      totalMonthlyRent,
+      totalStaffWages,
+      totalMonthlyOverhead: totalMonthlyRent + totalStaffWages,
       openableTypes,
       laborShifts
     };
