@@ -388,13 +388,10 @@ instead of the generic fallback.
 
 ### W6-0 True per-request multi-instance
 
-Implemented as one worker process per non-startup campaign. The main process
-keeps the title screen and instance admin, starts the selected instance with
-`SIM_DB_PATH`, learns its ephemeral port over IPC, and proxies `/api/*` by
-`x-instance-id`. The startup campaign still runs in-process. Workers are capped,
-idle-evicted and killed with the parent.
-**Test:** `verify-instance-hot-switch.ts` (create, select, legacy + modular
-routes, switch back, delete; no restart and no cross-write).
+Not active by product decision: the title screen uses one `saves/session.db` and
+resets it in place with an automatic backup. Reintroduce this wave only if
+multiple simultaneous campaigns are required.
+**Test when reintroduced:** two instances in one process, no cross-write.
 
 ### W6-1 P5 client consolidation
 

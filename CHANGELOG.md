@@ -9,21 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.56.0] - 2026-11-02
 
-### Added
-- **Hot instance switching without a server restart.** The main process keeps
-  the title screen and instance-admin endpoints; each non-startup campaign runs
-  in its own worker process with `SIM_DB_PATH` and reports its ephemeral port
-  over IPC. `/api/*` requests are proxied by `x-instance-id`, so the startup
-  campaign remains in-process and every module/service stays bound to exactly
-  one database.
-- Workers are capped at four, idle-evicted after 30 minutes, rejected when
-  nested, and terminated with the parent. Instance deletion stops the worker and
-  retries the unlink while Windows releases the file.
-- `/api/instances` now marks the server's active instance, and
-  `verify-instance-hot-switch.ts` covers create, select, legacy + modular routes,
-  switch-back and delete.
+### Changed
+- The product is now **single-session**: one active `saves/session.db` (or
+  `SIM_DB_PATH`). Starting a new campaign resets that database in place through
+  `initializeInstanceDatabase`, backs the previous file up to
+  `saves/backups/session-pre-reset-*.db`, and reloads the browser. No server
+  restart, no instance workers and no `x-instance-id` routing.
+- The title screen now offers **Khởi lập cơ nghiệp mới** and **Phiên hiện tại**
+  (continue). The multi-instance list, switch/delete/clone buttons and the
+  restart-command banner are removed. The header button is **Phiên Chơi**.
+- Added `POST /api/game/new-session` (in-place reset) and
+  `GET /api/game/archetypes` (static starting presets). Existing databases under
+  `saves/instances/` remain on disk but are ignored by the UI.
 
-The earlier restart notice remains as a fallback when a worker cannot boot.
+### Verification
+`verify-single-session-reset.ts` boots the real composition root on a sandbox
+database, resets it through HTTP, and proves the backup, the new player/turn,
+and both legacy and modular routes work without a restart. Typecheck, client
+syntax, UI/slop ratchet and the focused instance suites pass.
 
 ---
 

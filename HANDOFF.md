@@ -99,8 +99,8 @@ check; an old server keeps serving the old bundle.
 - Five services above 1,000 lines (`context-action`, `blacksmith-forge`,
   `single-combat-duel`, `enterprise-labor`, `courtship-betrothal`).
 - 366 `'PLY-0001'` literals across 65 files; no injected `ExecutionContext` yet.
-- Multi-instance uses one worker process per non-startup campaign; the main
-  server proxies `/api/*` by `x-instance-id` (no restart, no cross-DB writes).
+- Product uses one active `saves/session.db`; new campaigns reset it in place
+  with an automatic backup. Multi-instance switching is deferred, not exposed.
 - Map still has four data sources; only 20 citadel nodes are clickable and 132
   POI scene rows have no runtime consumer.
 

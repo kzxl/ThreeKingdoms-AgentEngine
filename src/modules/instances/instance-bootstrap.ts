@@ -104,7 +104,16 @@ const HISTORY_TABLES = [
   'world_day_ledger',
   'npc_ledger',
   'merchant_route_stock',
-  'settlement_consumption_log'
+  'settlement_consumption_log',
+  // Player-owned runtime state added after the original history list. The
+  // single-session reset reuses this bootstrap, so a new campaign must not
+  // inherit old tax bills, farmland, quest progress, injuries or contracts.
+  'obligations',
+  'land_parcels',
+  'player_quests',
+  'conditions',
+  'contract_offers',
+  'player_contracts'
 ];
 
 const START_DATE = '184-05-02';
