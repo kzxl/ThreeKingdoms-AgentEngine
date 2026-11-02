@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.56.0] - 2026-11-02
+
+### Added
+- **Hot instance switching without a server restart.** The main process keeps
+  the title screen and instance-admin endpoints; each non-startup campaign runs
+  in its own worker process with `SIM_DB_PATH` and reports its ephemeral port
+  over IPC. `/api/*` requests are proxied by `x-instance-id`, so the startup
+  campaign remains in-process and every module/service stays bound to exactly
+  one database.
+- Workers are capped at four, idle-evicted after 30 minutes, rejected when
+  nested, and terminated with the parent. Instance deletion stops the worker and
+  retries the unlink while Windows releases the file.
+- `/api/instances` now marks the server's active instance, and
+  `verify-instance-hot-switch.ts` covers create, select, legacy + modular routes,
+  switch-back and delete.
+
+The earlier restart notice remains as a fallback when a worker cannot boot.
+
+---
+
 ## [1.55.1] - 2026-11-02
 
 ### Fixed

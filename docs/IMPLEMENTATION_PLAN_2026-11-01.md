@@ -388,10 +388,13 @@ instead of the generic fallback.
 
 ### W6-0 True per-request multi-instance
 
-`tools/sim-web.js:270-300` returns 409 for a non-startup instance and asks for a
-restart. Rebind `ModuleRegistry` and per-path service singletons per request (or
-per instance worker) so the 409 disappears.
-**Test:** `verify-instance-manager.ts` two instances in one process, no cross-write.
+Implemented as one worker process per non-startup campaign. The main process
+keeps the title screen and instance admin, starts the selected instance with
+`SIM_DB_PATH`, learns its ephemeral port over IPC, and proxies `/api/*` by
+`x-instance-id`. The startup campaign still runs in-process. Workers are capped,
+idle-evicted and killed with the parent.
+**Test:** `verify-instance-hot-switch.ts` (create, select, legacy + modular
+routes, switch back, delete; no restart and no cross-write).
 
 ### W6-1 P5 client consolidation
 

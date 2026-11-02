@@ -283,7 +283,7 @@
                 <p>${isEn ? 'No saved instances found. Start a new campaign on the left!' : 'Chưa có phiên lưu nào. Hãy bắt đầu chiến dịch mới ở cột bên trái!'}</p>
               </div>
             ` : cachedInstances.map(inst => {
-              const isCur = Boolean(inst.isCurrent) || inst.id === activeInstanceId;
+              const isCur = Boolean(inst.isCurrent);
               const dateStr = new Date(inst.updatedAt).toLocaleDateString('vi-VN', {
                 hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric'
               });

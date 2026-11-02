@@ -42,16 +42,28 @@ function run(): void {
 
   const server = read('tools/sim-web.js');
   assert(
-    server.includes('const startupDbPath = path.resolve(DB_PATH)'),
-    'instance list must derive the current marker from the startup database'
+    server.includes('ensureInstanceWorker'),
+    'server must be able to boot a per-instance worker'
   );
   assert(
-    server.includes('restartRequired: path.resolve(newInst.filepath) !== path.resolve(DB_PATH)'),
-    'instance creation must report restartRequired'
+    server.includes('proxyToInstanceWorker'),
+    'server must proxy API requests to the selected instance worker'
   );
   assert(
-    server.includes('dbPath,'),
-    'select response must include the target database path'
+    server.includes("type: 'server-ready'"),
+    'instance workers must report their ephemeral port over IPC'
+  );
+  assert(
+    server.includes('restartRequired: false'),
+    'create/select must succeed without a manual restart when the worker starts'
+  );
+  assert(
+    server.includes('path.resolve(currentActiveDbPath) === path.resolve(DB_PATH)'),
+    'the main process must not open a non-startup database'
+  );
+  assert(
+    server.includes('restartRequired: true'),
+    'worker-start failure must keep the restart notice as a fallback'
   );
 
   console.log('   ✅ title screen stops on restartRequired and shows the SIM_DB_PATH command');
