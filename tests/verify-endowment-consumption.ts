@@ -26,6 +26,7 @@ function seed(): void {
     WHERE campaign_id = (SELECT campaign_id FROM campaign_meta LIMIT 1);
   `).run();
   db.prepare("DELETE FROM settlement_consumption_log;").run();
+  db.prepare("DELETE FROM world_day_ledger;").run();
   db.close();
 }
 

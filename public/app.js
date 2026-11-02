@@ -599,6 +599,7 @@ async function checkAuditStatus() {
 async function loadScene(targetSubLoc = activeSubLocation, customNarrative = null) {
   try {
     activeSubLocation = targetSubLoc;
+    window.activeSubLocation = targetSubLoc;
     const data = await apiFetchScene(targetSubLoc);
     currentScene = data;
     renderSceneFromData(data, customNarrative);

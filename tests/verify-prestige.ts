@@ -10,11 +10,6 @@ import assert from 'assert';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
-import { DatabaseService } from '../src/core/database';
-import { PrestigeService } from '../src/modules/progression/prestige.service';
-import { SpecialistWorkforceService } from '../src/modules/professions/features/workforce/specialist-workforce.service';
-import { FameAttractionService } from '../src/modules/progression/fame-attraction.service';
-import { RetainerLoyaltyService } from '../src/modules/progression/retainer-loyalty.service';
 import {
   applyFameDecay,
   effectiveFameGain,
@@ -35,6 +30,21 @@ function run(): void {
   for (const suffix of ['-wal', '-shm']) {
     if (fs.existsSync(`${LIVE_DB}${suffix}`)) fs.copyFileSync(`${LIVE_DB}${suffix}`, `${TEST_DB}${suffix}`);
   }
+
+  // Bind every DB-dependent service to the temp copy before any singleton is
+  // created. A static import would mutate the live save.
+  process.env.SIM_DB_PATH = TEST_DB;
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { DatabaseService } = require('../src/core/database');
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { PrestigeService } = require('../src/modules/progression/prestige.service');
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { SpecialistWorkforceService } = require('../src/modules/professions/features/workforce/specialist-workforce.service');
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { FameAttractionService } = require('../src/modules/progression/fame-attraction.service');
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { RetainerLoyaltyService } = require('../src/modules/progression/retainer-loyalty.service');
+  DatabaseService.resetInstance();
 
   // 1. Tier boundaries from config/prestige.json.
   assert.strictEqual(getFameTier(0).code, 'NOBODY');
@@ -61,8 +71,8 @@ function run(): void {
   const service = PrestigeService.forDatabase(db);
   try {
     // 4. The view unifies the player and every NPC without duplicating storage.
-    const view = db.queryOne<{ c: number }>('SELECT COUNT(*) AS c FROM character_prestige;');
-    const npcCount = db.queryOne<{ c: number }>('SELECT COUNT(*) AS c FROM npc_personal_progression;');
+    const view = db.queryOne('SELECT COUNT(*) AS c FROM character_prestige;');
+    const npcCount = db.queryOne('SELECT COUNT(*) AS c FROM npc_personal_progression;');
     assert.strictEqual(Number(view?.c), Number(npcCount?.c) + 1, 'view must contain player + NPC rows');
 
     const playerBefore = service.getFame('PLY-0001');
@@ -72,7 +82,7 @@ function run(): void {
     const gateWorkforce = new SpecialistWorkforceService(db);
     const lockedManager = gateWorkforce
       .getAvailableSpecialists(undefined, 'PLY-0001')
-      .find(candidate => candidate.recommendedRole === 'ACCOUNTANT_MANAGER' && !candidate.isHired);
+      .find((candidate: any) => candidate.recommendedRole === 'ACCOUNTANT_MANAGER' && !candidate.isHired);
     if (lockedManager) {
       assert.strictEqual(lockedManager.eligible, false, 'manager must be fame-gated at 500 fame');
       assert(lockedManager.minFame > playerBefore, 'locked reason must name a higher threshold');
@@ -98,7 +108,7 @@ function run(): void {
     assert(award.delta < 600, 'diminishing returns must reduce the raw gain');
     assert.strictEqual(service.getFame('PLY-0001'), award.after, 'player fame must persist');
 
-    const event = db.queryOne<any>(
+    const event = db.queryOne(
       'SELECT * FROM prestige_events WHERE character_id = ? ORDER BY rowid DESC LIMIT 1;',
       ['PLY-0001']
     );
@@ -119,7 +129,7 @@ function run(): void {
     service.award('PLY-0001', { rawGain: 2000, reason: 'TEST_RECOVERY', gameDate: '184-05-03' });
 
     // 6. NPC fame is written to the existing progression table.
-    const npcId = db.queryOne<any>('SELECT npc_id FROM npc_personal_progression LIMIT 1;')?.npc_id;
+    const npcId = db.queryOne('SELECT npc_id FROM npc_personal_progression LIMIT 1;')?.npc_id;
     assert(npcId, 'need at least one NPC progression row');
     const npcBefore = service.getFame(npcId);
     const npcAward = service.award(npcId, { rawGain: 100, reason: 'TEST_NPC_DEED', gameDate: '184-05-04' });
@@ -134,7 +144,7 @@ function run(): void {
       assert(candidate.effectiveSigningBonus <= candidate.signingBonus, 'fame discount must not raise the price');
       assert(candidate.effectiveSigningBonus >= 1, 'fame discount must not make hiring free');
     }
-    const hireable = candidates.find(candidate => !candidate.isHired);
+    const hireable = candidates.find((candidate: any) => !candidate.isHired);
     if (hireable) {
       const hired = workforce.hireSpecialist({
         characterId: 'PLY-0001',
@@ -150,25 +160,28 @@ function run(): void {
     // 8. Fame attracts people: at hero-tier fame three arrivals appear and are logged.
     //    Clear earlier rows first: the live template carries history from prior runs.
     db.execute('DELETE FROM fame_arrivals WHERE character_id = ?;', ['PLY-0001']);
+    // The live copy may already have every NPC-02xx hire; free one named
+    // specialist so the arrival pool is not empty.
+    db.execute("DELETE FROM npc_state WHERE npc_id = 'NPC-0220';");
     service.award('PLY-0001', { rawGain: 8000, reason: 'TEST_FAME_FOR_ARRIVALS', gameDate: '184-05-05' });
-    const militiaBefore = Number(db.queryOne<any>('SELECT militia FROM player_state WHERE player_id = ?;', ['PLY-0001'])?.militia || 0);
+    const militiaBefore = Number(db.queryOne('SELECT militia FROM player_state WHERE player_id = ?;', ['PLY-0001'])?.militia || 0);
     const arrivals = FameAttractionService.forDatabase(db).simulateMonthly('PLY-0001', '184-05-30');
     assert.strictEqual(arrivals.arrivals.length, 3, 'hero-tier fame must attract three arrivals');
     assert(arrivals.totalMilitia >= 0, 'arrivals may bring militia');
     assert(arrivals.totalGrain >= 0, 'arrivals may bring grain');
-    const militiaAfter = Number(db.queryOne<any>('SELECT militia FROM player_state WHERE player_id = ?;', ['PLY-0001'])?.militia || 0);
+    const militiaAfter = Number(db.queryOne('SELECT militia FROM player_state WHERE player_id = ?;', ['PLY-0001'])?.militia || 0);
     assert.strictEqual(militiaAfter, militiaBefore + arrivals.totalMilitia, 'volunteer militia must be added to player state');
-    const logged = db.queryOne<{ c: number }>('SELECT COUNT(*) AS c FROM fame_arrivals WHERE character_id = ?;', ['PLY-0001']);
+    const logged = db.queryOne('SELECT COUNT(*) AS c FROM fame_arrivals WHERE character_id = ?;', ['PLY-0001']);
     assert.strictEqual(logged?.c, 3, 'every arrival must be logged');
-    const specialist = arrivals.arrivals.find(arrival => arrival.kind === 'SPECIALIST');
+    const specialist = arrivals.arrivals.find((arrival: any) => arrival.kind === 'SPECIALIST');
     assert(specialist, 'fame must attract at least one named specialist from the available pool');
     assert(specialist!.assignedBusinessId, 'a named guest must be auto-assigned when a business exists');
-    const guest = db.queryOne<any>('SELECT assigned_role, assigned_business_id FROM npc_state WHERE npc_id = ?;', [specialist!.npcId]);
+    const guest = db.queryOne('SELECT assigned_role, assigned_business_id FROM npc_state WHERE npc_id = ?;', [specialist!.npcId]);
     assert(guest, 'named guest must become an npc_state retainer');
     assert.strictEqual(guest.assigned_business_id, specialist!.assignedBusinessId, 'guest must be assigned to the business');
 
     // 9. Low fame can drive an assigned retainer away; every departure is logged.
-    const retainer = db.queryOne<any>(
+    const retainer = db.queryOne(
       "SELECT npc_id, name FROM npc_state WHERE assigned_business_id IS NOT NULL AND assigned_role != 'DEPARTED' LIMIT 1;"
     );
     assert(retainer, 'test database must have at least one assigned retainer');
@@ -178,14 +191,14 @@ function run(): void {
     let departed = false;
     for (let month = 0; month < 60 && !departed; month += 1) {
       const report = loyalty.evaluateMonthly('PLY-0001', '184-05-30');
-      departed = report.departures.some(item => item.npcId === retainer.npc_id);
+      departed = report.departures.some((item: any) => item.npcId === retainer.npc_id);
     }
     assert(departed, 'low fame must be able to drive a retainer away');
-    const departedNpc = db.queryOne<any>('SELECT assigned_role FROM npc_state WHERE npc_id = ?;', [retainer.npc_id]);
+    const departedNpc = db.queryOne('SELECT assigned_role FROM npc_state WHERE npc_id = ?;', [retainer.npc_id]);
     assert.strictEqual(departedNpc.assigned_role, 'DEPARTED', 'departing retainer must lose the assignment');
-    const departureLog = db.queryOne<any>('SELECT * FROM retainer_departures WHERE npc_id = ?;', [retainer.npc_id]);
+    const departureLog = db.queryOne('SELECT * FROM retainer_departures WHERE npc_id = ?;', [retainer.npc_id]);
     assert(departureLog, 'departure must be logged');
-    const unrest = db.queryOne<any>(
+    const unrest = db.queryOne(
       "SELECT * FROM unrest_events WHERE npc_id = ? AND source = 'RETAINER' AND event_type = 'DEPARTURE';",
       [retainer.npc_id]
     );

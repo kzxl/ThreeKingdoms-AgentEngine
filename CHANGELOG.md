@@ -36,13 +36,20 @@ with 0 discrepancies.
   payload in `result`, but the client read `data.discovered`/`data.fame`.
   The client now unwraps `data.result || data`, uses `item?.nameVi` and the
   server `narrativeVi`, and sends an idempotency key.
-- The button is now labelled **Khảo Sát POI** and its tooltip states that it
-  surveys the current location inside the city; exploring around the city uses
-  **Dã Ngoại**.
+- The button is now labelled **Tản Bộ** and its tooltip states that it surveys
+  the current location inside the city; exploring farther uses **Dã Ngoại**.
+- Local walking now updates `window.activeSubLocation`, the action dock and the
+  persisted sub-location, so the next survey reports the place the player just
+  walked to instead of the stale initial "Vườn Đào". The walking call also uses
+  the correct `setProcessingLock(busy, null, text)` signature.
+- Exploration and prestige suites now run against a temp DB before any singleton
+  is constructed; endowment/freight/stall/merchant tests clear
+  `world_day_ledger` so live progress cannot turn their days into no-ops.
 
 ### Verification
-`npm run verify` green: 111/111 suites; `verify-exploration` guards the response
-unwrap and the button label.
+`npm run verify` green: 111/111 suites; `npm run audit` 2,815 invariants, 0
+discrepancies. `verify-exploration` guards the response unwrap, button label and
+walk-location refresh.
 
 ---
 

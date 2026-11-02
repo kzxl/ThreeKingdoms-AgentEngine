@@ -22,6 +22,15 @@
 
   let currentSubLocation = 'Vườn Đào';
 
+  // localStorage-backed `activeSubLocation` is the canonical walking target;
+  // the controller copy can lag if the dock was never re-rendered.
+  function currentLocationName() {
+    // `activeSubLocation` is a top-level `let` in config.js/map-data.js, so it
+    // is a lexical global, not necessarily a `window` property. Prefer it.
+    if (typeof activeSubLocation !== 'undefined' && activeSubLocation) return activeSubLocation;
+    return window.activeSubLocation || currentSubLocation || 'Vườn Đào';
+  }
+
   const POI_CONFIGS = {
     SMITHY: {
       key: 'SMITHY',
@@ -157,7 +166,7 @@
     return 'RESIDENCE';
   }
 
-  function updateActionDock(location = currentSubLocation) {
+  function updateActionDock(location = currentLocationName()) {
     currentSubLocation = location || 'Vườn Đào';
     const poiType = resolvePoiType(currentSubLocation);
     const config = POI_CONFIGS[poiType] || POI_CONFIGS.RESIDENCE;
@@ -178,7 +187,7 @@
   }
 
   function triggerActivePoiAction() {
-    const poiType = resolvePoiType(currentSubLocation || window.activeSubLocation);
+    const poiType = resolvePoiType(currentLocationName());
     const config = POI_CONFIGS[poiType] || POI_CONFIGS.RESIDENCE;
     if (typeof config.action === 'function') {
       config.action();
@@ -217,7 +226,7 @@
   }
 
   async function assertPresence(allowedPoiTypes, actionNameVi, defaultTargetLoc = 'Thiết Điếm Trác Huyện') {
-    const curType = resolvePoiType(currentSubLocation || window.activeSubLocation);
+    const curType = resolvePoiType(currentLocationName());
     if (!allowedPoiTypes.includes(curType)) {
       showFallbackToast(`[Khóa Chặn Không Gian] Đang ở [${currentSubLocation}]. Thao tác [${actionNameVi}] yêu cầu bước chân tới [${defaultTargetLoc}]!`);
       return false;
@@ -227,7 +236,7 @@
 
   async function exploreCurrentPoi() {
     try {
-      const currentName = currentSubLocation || window.activeSubLocation;
+      const currentName = currentLocationName();
       const res = await fetch('/api/explore', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -609,6 +618,6 @@
     exploreCurrentPoi,
     openMarketPulse,
     closeMarketPulse,
-    getCurrentSubLocation: () => currentSubLocation
+    getCurrentSubLocation: () => currentLocationName()
   };
 });
