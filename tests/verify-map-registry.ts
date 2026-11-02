@@ -59,6 +59,16 @@ function run(): void {
     .reduce((sum, rows) => sum + rows.length, 0);
   assert.strictEqual(totalByNode, registry.subLocations.length);
 
+  // The local picker reads the registry first; map-data stays an offline fallback.
+  const mapData = fs.readFileSync(path.join(ROOT, 'public/js/map-data.js'), 'utf8');
+  const pickerStart = mapData.indexOf('function renderLocalPoiNav');
+  const pickerBody = mapData.slice(pickerStart, pickerStart + 2600);
+  assert(pickerBody.includes('MapLiveService.getSubLocationsForNode'), 'local picker must read the registry');
+  assert(pickerBody.includes('registryRows.length > 0'), 'registry rows must override the static list');
+  const regionStart = mapData.indexOf('function getCurrentRegionNode');
+  const regionBody = mapData.slice(regionStart, regionStart + 900);
+  assert(regionBody.includes('getSubLocationsForNode'), 'region resolution must consult the registry');
+
   db.close();
   DatabaseService.resetInstance();
   console.log('  ✅ PASSED: one registry, 20 nodes, 133 sub-locations, 132 POIs, zero orphans.');
