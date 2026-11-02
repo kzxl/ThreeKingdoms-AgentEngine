@@ -138,6 +138,11 @@
             Chợ &amp; Giá
           </button>
 
+          <button class="ui-btn ui-btn--ghost ui-btn--sm" id="btn-onboarding" onclick="window.OnboardingUI && window.OnboardingUI.open(true)"
+                  title="Hướng dẫn vòng ngày, chi phí hành động, chợ và lưu trữ">
+            ? Hướng Dẫn
+          </button>
+
           <!-- World Map / Dư Đồ Tam Quốc Button -->
           <button class="btn-world-map" id="btn-open-worldmap" onclick="openWorldMap()" title="Mở Dư Đồ Tam Quốc / Open Strategic Campaign Map">
             <span id="txt-btn-worldmap">Dư Đồ Tam Quốc</span>
@@ -423,10 +428,10 @@
           <button class="deck-tab-btn" data-subtab="subtab-inventory" onclick="switchDeckTab('subtab-inventory')">
             Kho Xưởng
           </button>
-          <button class="deck-tab-btn" data-subtab="subtab-npcs" onclick="switchDeckTab('subtab-npcs')">
+          <button class="deck-tab-btn active" data-subtab="subtab-npcs" onclick="switchDeckTab('subtab-npcs')">
             Gia Đinh
           </button>
-          <button class="deck-tab-btn active" data-subtab="subtab-ledger" onclick="switchDeckTab('subtab-ledger')">
+          <button class="deck-tab-btn" data-subtab="subtab-ledger" onclick="switchDeckTab('subtab-ledger')">
             Sổ Cái TXN
           </button>
           <button class="deck-tab-btn" data-subtab="subtab-agent-log" onclick="switchDeckTab('subtab-agent-log')">
@@ -455,14 +460,14 @@
         </div>
 
         <!-- SUBTAB 2: LƯƠNG NHÂN (NPCS & WORKSHOP) -->
-        <div id="subtab-npcs" class="deck-tab-pane">
+        <div id="subtab-npcs" class="deck-tab-pane active">
           <div class="deck-npcs-list" id="deck-npcs-list">
             <!-- Dynamically populated from SQLite -->
           </div>
         </div>
 
         <!-- SUBTAB 3: SỔ CÁI DÒNG TIỀN (TXN LEDGER) -->
-        <div id="subtab-ledger" class="deck-tab-pane active">
+        <div id="subtab-ledger" class="deck-tab-pane">
           <div class="deck-transactions-list" id="deck-transactions-list">
             <!-- Dynamically populated from SQLite -->
           </div>

@@ -178,11 +178,17 @@ async function clearStoryChronicle() {
   showToast(currentLang === 'en' ? 'Chat chronicle cleared.' : 'Đã làm mới dòng đối thoại.');
 }
 
-function confirmClearChat() {
-  const msg = currentLang === 'en' 
-    ? 'Do you want to clear the entire chat chronicle and start fresh?' 
+async function confirmClearChat() {
+  const msg = currentLang === 'en'
+    ? 'Do you want to clear the entire chat chronicle and start fresh?'
     : 'Bạn có muốn làm mới và xóa toàn bộ lịch sử đối thoại chat không?';
-  if (window.confirm(msg)) {
+  const confirmed = await window.UI.confirm({
+    title: currentLang === 'en' ? 'Clear chronicle' : 'Xóa lịch sử đối thoại',
+    message: msg,
+    confirmLabel: currentLang === 'en' ? 'Clear' : 'Làm mới',
+    danger: true
+  });
+  if (confirmed) {
     clearStoryChronicle();
   }
 }

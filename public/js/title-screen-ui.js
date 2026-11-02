@@ -356,14 +356,13 @@
    */
   async function deleteInstance(instanceId) {
     const message = `Bạn có chắc chắn muốn xóa vĩnh viễn phiên chơi [${instanceId}] không? Hành động này không thể hoàn tác.`;
-    const confirmed = window.UI && typeof window.UI.confirm === 'function'
-      ? await window.UI.confirm({
-          title: 'Xóa phiên chơi',
-          message,
-          confirmLabel: 'Xóa vĩnh viễn',
-          danger: true
-        })
-      : confirm(message);
+    if (!window.UI || typeof window.UI.confirm !== 'function') return;
+    const confirmed = await window.UI.confirm({
+      title: 'Xóa phiên chơi',
+      message,
+      confirmLabel: 'Xóa vĩnh viễn',
+      danger: true
+    });
     if (!confirmed) {
       return;
     }

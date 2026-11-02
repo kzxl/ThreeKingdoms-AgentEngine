@@ -22,6 +22,7 @@ import { worldMapModal } from './world-map';
 import { wildernessMapModal } from './world-map/wilderness-map.modal';
 import { cityMapModal } from './world-map/city-map.modal';
 import { workforceHireModal } from './workforce';
+import { onboardingModal } from './onboarding';
 import { mapLiveService } from './world-map/map-live.service';
 
 export function setupLegacyBridge(): void {
@@ -163,6 +164,10 @@ export function setupLegacyBridge(): void {
   w.WorkforceHireUI = {
     open: (candidateName: string) => workforceHireModal.open(candidateName),
     close: () => workforceHireModal.close()
+  };
+  w.OnboardingUI = {
+    open: (force = false) => onboardingModal.open(force),
+    close: () => onboardingModal.close()
   };
   w.MapLiveService = {
     load: (force = false) => mapLiveService.load(force),

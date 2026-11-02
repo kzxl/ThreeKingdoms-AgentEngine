@@ -603,7 +603,13 @@ async function submitStartNewGame() {
     ? 'Are you sure you want to start a New Historical Campaign? Session state will be re-initialized from Master Blueprint with 100% ledger balance.'
     : 'Bạn có chắc chắn muốn Khởi Tạo Điển Tích Mới? Dữ liệu lượt chơi sẽ được thiết lập lại từ Master Blueprint và cân đối kế toán kép 100%.';
 
-  if (!window.confirm(msg)) return;
+  const confirmed = await window.UI.confirm({
+    title: currentLang === 'en' ? 'New campaign' : 'Khởi tạo màn chơi mới',
+    message: msg,
+    confirmLabel: currentLang === 'en' ? 'Start' : 'Khởi tạo',
+    danger: true
+  });
+  if (!confirmed) return;
 
   try {
     showToast(currentLang === 'en' ? 'Initializing New Campaign from Master Database...' : 'Đang khởi tạo Màn Chơi Mới từ Master Database...');
@@ -647,7 +653,12 @@ async function submitLoadSlot(slotName = 'slot_manual') {
   const msg = currentLang === 'en'
     ? `Restore playthrough from "${slotName}"?`
     : `Khôi phục màn chơi từ bản lưu "${slotName}"?`;
-  if (!window.confirm(msg)) return;
+  const confirmed = await window.UI.confirm({
+    title: currentLang === 'en' ? 'Load save' : 'Tải bản lưu',
+    message: msg,
+    confirmLabel: currentLang === 'en' ? 'Load' : 'Tải'
+  });
+  if (!confirmed) return;
 
   try {
     showToast(currentLang === 'en' ? `Restoring session from slot "${slotName}"...` : `Đang tải slot "${slotName}"...`);

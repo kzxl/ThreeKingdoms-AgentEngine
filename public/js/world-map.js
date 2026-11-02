@@ -1879,7 +1879,12 @@ async function promptReinforceGarrison(settlementId) {
   const confirmMsg = isEn
     ? `Station ${count} troops at ${settlementName} for ${cost} quan?\nConfirm deployment?`
     : `Điều phối ${count} binh sĩ đồn trú tại ${settlementName} với ngân sách ${cost} Quan?\nXác nhận điều quân?`;
-  if (!confirm(confirmMsg)) return;
+  const confirmed = await window.UI.confirm({
+    title: isEn ? 'Deploy garrison' : 'Điều binh đồn trú',
+    message: confirmMsg,
+    confirmLabel: isEn ? 'Deploy' : 'Điều quân'
+  });
+  if (!confirmed) return;
 
   try {
     if (typeof setProcessingLock === 'function') setProcessingLock(true, isEn ? 'Deploying garrison...' : 'Đang điều binh đồn trú...');
@@ -2017,7 +2022,13 @@ async function promptSiegeAssault(settlementId) {
     const confirmMsg = isEn
       ? `Launch assault on ${settlementName} with ${attackerTroops} troops?\nThis will initiate direct battlefield combat!`
       : `Quyết định đốc thúc ${attackerTroops} quân xuất kích công phạt ${settlementName}?\nHành động này sẽ kích hoạt giao tranh thực tế!`;
-    if (!confirm(confirmMsg)) return;
+    const confirmed = await window.UI.confirm({
+      title: isEn ? 'Launch assault' : 'Xuất quân công thành',
+      message: confirmMsg,
+      confirmLabel: isEn ? 'Assault' : 'Công phạt',
+      danger: true
+    });
+    if (!confirmed) return;
   }
 
   try {
