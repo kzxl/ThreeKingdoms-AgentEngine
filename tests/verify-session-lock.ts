@@ -28,7 +28,7 @@ function requestJson(
   port: number,
   urlPath: string,
   options: { method?: string; headers?: Record<string, string>; body?: unknown } = {}
-): Promise<{ status: number; body: any }> {
+): Promise<{ status: number; body: any; headers: Record<string, string | string[] | undefined> }> {
   return new Promise((resolve, reject) => {
     const payload = options.body === undefined ? null : JSON.stringify(options.body);
     const req = http.request({
@@ -47,7 +47,7 @@ function requestJson(
       res.on('end', () => {
         let parsed: any = null;
         try { parsed = body ? JSON.parse(body) : null; } catch { parsed = { __nonJson: body.slice(0, 200) }; }
-        resolve({ status: res.statusCode || 0, body: parsed });
+        resolve({ status: res.statusCode || 0, body: parsed, headers: res.headers });
       });
     });
     req.on('timeout', () => req.destroy(new Error(`timeout ${urlPath}`)));
@@ -149,6 +149,30 @@ async function verifyHttpLock(): Promise<void> {
       headers: { 'x-session-id': 'default', 'x-session-token': token }
     });
     assert.strictEqual(withToken.status, 200, 'holder request must pass');
+
+    const write1 = await requestJson(PORT, '/api/chat/turn', {
+      method: 'POST',
+      headers: {
+        'x-session-id': 'default',
+        'x-session-token': token,
+        'x-session-version': '1'
+      },
+      body: { text: 'version probe', type: 'narrative', gameDate: '184-05-02' }
+    });
+    assert.strictEqual(write1.status, 200, `first write must pass, got ${write1.status}: ${JSON.stringify(write1.body)}`);
+    assert.strictEqual(write1.headers['x-session-version'], '2', 'successful write must bump the version header');
+
+    const write2 = await requestJson(PORT, '/api/chat/turn', {
+      method: 'POST',
+      headers: {
+        'x-session-id': 'default',
+        'x-session-token': token,
+        'x-session-version': '1'
+      },
+      body: { text: 'stale version probe', type: 'narrative', gameDate: '184-05-02' }
+    });
+    assert.strictEqual(write2.status, 409, 'stale version must be refused');
+    assert.strictEqual(write2.body.code, 'SESSION_VERSION_CONFLICT', 'stale version code must be explicit');
 
     const wrongToken = await requestJson(PORT, '/api/status', {
       headers: { 'x-session-id': 'default', 'x-session-token': 'not-the-token' }
