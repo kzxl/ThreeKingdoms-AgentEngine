@@ -636,5 +636,202 @@ window.apiTickCaravanProgress = apiTickCaravanProgress;
 window.apiClaimCaravan = apiClaimCaravan;
 window.apiFetchPlayerCaravans = apiFetchPlayerCaravans;
 
+/**
+ * SESSION CLIENT
+ *
+ * Every tab owns one campaign lease. The selected id/token live in
+ * sessionStorage (not localStorage) so two tabs can intentionally play two
+ * different campaigns, while a second tab on the same campaign is refused by
+ * the server's 423 response.
+ */
+(function installSessionClient() {
+  const SESSION_KEY = 'sim.sessionId';
+  const TOKEN_KEY = 'sim.sessionToken';
+  const VERSION_KEY = 'sim.sessionVersion';
+  const OWNER_KEY = 'sim.clientId';
+  const LEASE_MS = 60000;
+  const HEARTBEAT_MS = 20000;
+  let heartbeatTimer = null;
+
+  function makeId() {
+    if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+      return window.crypto.randomUUID();
+    }
+    return `client-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+  }
+
+  function ownerId() {
+    let id = sessionStorage.getItem(OWNER_KEY);
+    if (!id) {
+      id = makeId();
+      sessionStorage.setItem(OWNER_KEY, id);
+    }
+    return id;
+  }
+
+  function getSession() {
+    return {
+      id: sessionStorage.getItem(SESSION_KEY) || '',
+      token: sessionStorage.getItem(TOKEN_KEY) || '',
+      version: Number(sessionStorage.getItem(VERSION_KEY) || 0)
+    };
+  }
+
+  function setSession(id, token, version) {
+    sessionStorage.setItem(SESSION_KEY, id);
+    sessionStorage.setItem(TOKEN_KEY, token);
+    if (version) sessionStorage.setItem(VERSION_KEY, String(version));
+  }
+
+  function clearSession() {
+    sessionStorage.removeItem(SESSION_KEY);
+    sessionStorage.removeItem(TOKEN_KEY);
+    sessionStorage.removeItem(VERSION_KEY);
+    if (heartbeatTimer) {
+      clearInterval(heartbeatTimer);
+      heartbeatTimer = null;
+    }
+  }
+
+  const originalFetch = window.fetch.bind(window);
+  window.fetch = function sessionAwareFetch(input, init) {
+    const asString = typeof input === 'string' ? input : (input && input.url) || '';
+    const isSessionAdmin = asString.startsWith('/api/sessions') || asString.startsWith('/api/instances');
+    let nextInit = init;
+    if (asString.startsWith('/api/') && !isSessionAdmin) {
+      const session = getSession();
+      if (session.id && session.token) {
+        nextInit = nextInit || {};
+        const headers = new Headers(nextInit.headers || {});
+        headers.set('x-session-id', session.id);
+        headers.set('x-session-token', session.token);
+        const method = String(nextInit.method || 'GET').toUpperCase();
+        if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+          headers.set('x-session-version', String(session.version || 0));
+        }
+        nextInit.headers = headers;
+      }
+    }
+    return originalFetch(input, nextInit).then(response => {
+      const version = response.headers.get('x-session-version');
+      if (version) sessionStorage.setItem(VERSION_KEY, version);
+      if (response.status === 423 && !isSessionAdmin) {
+        const session = getSession();
+        if (session.token) {
+          clearSession();
+          window.dispatchEvent(new CustomEvent('sim:session-lock-lost', {
+            detail: { status: response.status }
+          }));
+        }
+      } else if (response.status === 409 && !isSessionAdmin) {
+        response.clone().json().then(data => {
+          if (data && data.code === 'SESSION_VERSION_CONFLICT') {
+            if (data.currentVersion) sessionStorage.setItem(VERSION_KEY, String(data.currentVersion));
+            window.dispatchEvent(new CustomEvent('sim:session-version-conflict', {
+              detail: { currentVersion: data.currentVersion }
+            }));
+          }
+        }).catch(() => {});
+      }
+      return response;
+    });
+  };
+
+  async function readJson(response) {
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || data.success === false) {
+      const error = new Error(data.error || `HTTP ${response.status}`);
+      error.code = data.code;
+      error.holder = data.holder;
+      error.status = response.status;
+      throw error;
+    }
+    return data;
+  }
+
+  async function acquire(sessionId, force = false) {
+    const response = await fetch('/api/sessions/acquire', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId, ownerId: ownerId(), force: Boolean(force) })
+    });
+    const data = await readJson(response);
+    setSession(data.sessionId, data.token, data.version);
+    startHeartbeat();
+    return data;
+  }
+
+  async function heartbeat() {
+    const session = getSession();
+    if (!session.id || !session.token) return false;
+    try {
+      const response = await fetch('/api/sessions/heartbeat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId: session.id, token: session.token })
+      });
+      if (!response.ok) {
+        clearSession();
+        window.dispatchEvent(new CustomEvent('sim:session-lock-lost', {
+          detail: { status: response.status }
+        }));
+        return false;
+      }
+      const data = await response.json().catch(() => null);
+      if (data && data.version) sessionStorage.setItem(VERSION_KEY, String(data.version));
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function startHeartbeat() {
+    if (heartbeatTimer) clearInterval(heartbeatTimer);
+    heartbeatTimer = setInterval(heartbeat, HEARTBEAT_MS);
+    if (heartbeatTimer.unref) heartbeatTimer.unref();
+  }
+
+  async function release() {
+    const session = getSession();
+    if (!session.id || !session.token) return true;
+    try {
+      await fetch('/api/sessions/release', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId: session.id, token: session.token }),
+        keepalive: true
+      });
+    } catch (error) {
+      /* the lease expires on its own */
+    } finally {
+      clearSession();
+    }
+    return true;
+  }
+
+  window.addEventListener('pagehide', () => {
+    const session = getSession();
+    if (!session.id || !session.token) return;
+    const body = JSON.stringify({ sessionId: session.id, token: session.token });
+    if (navigator.sendBeacon) {
+      navigator.sendBeacon('/api/sessions/release', new Blob([body], { type: 'application/json' }));
+    }
+  });
+
+  window.SessionClient = {
+    ownerId,
+    getSession,
+    setSession,
+    clearSession,
+    acquire,
+    heartbeat,
+    release,
+    startHeartbeat,
+    leaseMs: LEASE_MS
+  };
+
+  if (getSession().token) startHeartbeat();
+})();
+
 
 

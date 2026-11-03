@@ -7,6 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.57.0] - 2026-11-03
+
+### Added
+- **Multi-session campaigns with exclusive leases.** `saves/registry.db` is the
+  shared control database; `session_locks` holds one 60-second lease per
+  campaign, refreshed by a 20-second heartbeat. A second client receives
+  `423 SESSION_LOCKED` instead of writing the same campaign.
+- `GET /api/sessions`, `POST /api/sessions/acquire`, `POST /api/sessions/heartbeat`
+  and `POST /api/sessions/release`. Acquire rotates the token for the same
+  client and reports the current holder when the lease belongs to another.
+- Per-session worker processes (max 4, 30-minute idle eviction). The broker
+  proxies `/api/*` by `x-session-id`; every worker boots the normal composition
+  root against its own database, so module state is never shared across
+  campaigns.
+- The title screen lists all campaigns with lock state, enters a selected
+  campaign, creates a separate campaign file and deletes an unlocked one. The
+  selected id/token live in `sessionStorage`, so two tabs can intentionally play
+  two different campaigns.
+- `SIM_SAVES_DIR` isolates all session files, backups and the registry in tests
+  or secondary deployments; `SIM_SESSION_REGISTRY` overrides the registry path.
+
+### Changed
+- A new campaign no longer resets `saves/session.db` in place. The title screen
+  calls `POST /api/instances/new`, which creates `saves/instances/<id>.db` and
+  warms a worker. `POST /api/game/new-session` remains as a compatibility
+  in-place reset endpoint.
+- Requests without a session header are treated as the startup campaign once a
+  lease exists, closing the browser bypass while keeping CLI and test clients
+  usable before the first acquire.
+- Deleting a campaign stops its worker, force-releases an expired lease and
+  refuses to delete a live locked campaign.
+
+### Verification
+`tests/verify-session-lock.ts` proves exclusive acquire, token rotation,
+heartbeat, release, expiry takeover, HTTP 423 for the second client, worker
+proxying for a second campaign, and clean deletion. `verify-single-session-reset.ts`
+still covers the compatibility reset endpoint. Typecheck, architecture guard,
+client syntax, UI ratchet, API contract, 28 golden contracts and 8 write smokes
+pass.
+
+---
+
 ## [1.56.0] - 2026-11-02
 
 ### Changed

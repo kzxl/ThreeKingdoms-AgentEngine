@@ -1,6 +1,6 @@
 # Agent Handoff Guide (HANDOFF.md)
 
-> Current as of 2026-11-01 on `feat/remaining-systems` at `c775225` (1.39.0).
+> Current as of 2026-11-03 on `feat/remaining-systems` at `069cd8c` (1.57.0).
 > Historical phase logs and dated audits are snapshots; this file points to the
 > current gates and structure.
 
@@ -14,11 +14,13 @@ web UI are read models.
   `engine/`, and a Vite client under `src/client/`.
 - **Entry point**: `src/server/main.ts` composes the module registry, router and
   HTTP server.
-- **Legacy surface**: `tools/sim-web.js` still serves 48 handlers that have not
+- **Legacy surface**: `tools/sim-web.js` still serves 53 handlers that have not
   moved to module controllers; `public/js/*.js` still contains 21 classic
   scripts loaded alongside the TS bundle.
-- **Data**: `tools/schema.sql` plus 83 numbered migrations in
+- **Data**: `tools/schema.sql` plus 89 numbered migrations in
   `tools/migrations/`. `saves/` is local and gitignored.
+- **Sessions**: `saves/registry.db` holds leases; each campaign is a separate
+  `saves/instances/<id>.db` (or `saves/session.db` for the startup campaign).
 
 ## 2. Verified gate (2026-11-01)
 
@@ -95,12 +97,14 @@ check; an old server keeps serving the old bundle.
 
 ## 6. Known structural debt
 
-- 48 legacy handlers in `tools/sim-web.js`; 21 legacy scripts in `public/js/`.
+- 53 legacy handlers in `tools/sim-web.js`; 21 legacy scripts in `public/js/`.
 - Five services above 1,000 lines (`context-action`, `blacksmith-forge`,
   `single-combat-duel`, `enterprise-labor`, `courtship-betrothal`).
 - 366 `'PLY-0001'` literals across 65 files; no injected `ExecutionContext` yet.
-- Product uses one active `saves/session.db`; new campaigns reset it in place
-  with an automatic backup. Multi-instance switching is deferred, not exposed.
+- Multi-session runs one broker plus one worker per active campaign (max 4). The
+  lease is in-memory/SQLite in `saves/registry.db`; a crash recovers after the
+  60-second TTL. The compatibility `POST /api/game/new-session` still resets the
+  startup database in place.
 - Map still has four data sources; only 20 citadel nodes are clickable and 132
   POI scene rows have no runtime consumer.
 

@@ -22,6 +22,21 @@ export class ClientApiClient {
     return ClientApiClient.instance;
   }
 
+  /**
+   * The campaign lease is per tab. The legacy API wrapper also injects these
+   * headers, but the bundled client must work even if it loads first.
+   */
+  private sessionHeaders(): Record<string, string> {
+    if (typeof window === 'undefined' || typeof window.sessionStorage === 'undefined') return {};
+    const sessionId = window.sessionStorage.getItem('sim.sessionId');
+    const token = window.sessionStorage.getItem('sim.sessionToken');
+    if (!sessionId || !token) return {};
+    return {
+      'x-session-id': sessionId,
+      'x-session-token': token
+    };
+  }
+
   public async get<T = any>(endpoint: string, params?: Record<string, string | number>): Promise<T> {
     let url = endpoint;
     if (params) {
@@ -35,7 +50,7 @@ export class ClientApiClient {
       if (qs) url += (url.includes('?') ? '&' : '?') + qs;
     }
 
-    const res = await fetch(url);
+    const res = await fetch(url, { headers: this.sessionHeaders() });
     if (!res.ok) {
       const errBody = await res.json().catch(() => ({}));
       throw new Error(errBody.error || `HTTP error ${res.status}: ${res.statusText}`);
@@ -47,7 +62,8 @@ export class ClientApiClient {
     const res = await fetch(endpoint, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        ...this.sessionHeaders()
       },
       body: data ? JSON.stringify(data) : undefined
     });

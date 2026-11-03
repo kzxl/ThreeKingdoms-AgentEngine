@@ -39,9 +39,20 @@ function prepareSandbox(runDir, sourceDb) {
  * Returns { child, logText }.
  */
 function bootServer({ port, dbPath, cwd = ROOT, env = {} }) {
+  const sandboxDir = path.dirname(dbPath);
   const child = spawn(process.execPath, [TSX_CLI, path.join(ROOT, 'src', 'server', 'main.ts')], {
     cwd,
-    env: { ...process.env, ...env, PORT: String(port), SIM_DB_PATH: dbPath, RUN_MAIN: 'true' },
+    env: {
+      ...process.env,
+      ...env,
+      PORT: String(port),
+      SIM_DB_PATH: dbPath,
+      RUN_MAIN: 'true',
+      // Each harness run gets its own lease registry and save root; otherwise a
+      // developer's live browser lease could block a test or golden probe.
+      SIM_SAVES_DIR: env.SIM_SAVES_DIR || sandboxDir,
+      SIM_SESSION_REGISTRY: env.SIM_SESSION_REGISTRY || path.join(sandboxDir, 'registry.db')
+    },
     stdio: 'pipe'
   });
 

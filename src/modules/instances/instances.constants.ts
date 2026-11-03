@@ -7,9 +7,18 @@
 
 import path from 'path';
 
+/**
+ * Saves live under the repository by default. Tests and secondary deployments
+ * can isolate every session file with SIM_SAVES_DIR; workers inherit the same
+ * value, so the broker and its workers agree on where a campaign lives.
+ */
+const SAVES_DIR = process.env.SIM_SAVES_DIR
+  ? path.resolve(process.env.SIM_SAVES_DIR)
+  : path.resolve(process.cwd(), 'saves');
+
 export const INSTANCE_PATHS = {
-  SAVES_DIR: path.resolve(process.cwd(), 'saves'),
-  INSTANCES_DIR: path.resolve(process.cwd(), 'saves', 'instances'),
+  SAVES_DIR,
+  INSTANCES_DIR: path.join(SAVES_DIR, 'instances'),
   DEFAULT_SESSION_FILE: 'session.db',
   TEMPLATE_FILE: 'session.db'
 } as const;

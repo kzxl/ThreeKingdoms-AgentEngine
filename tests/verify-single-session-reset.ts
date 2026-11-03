@@ -1,9 +1,9 @@
 /**
- * Single-session reset verification.
+ * In-place reset verification.
  *
- * The product uses one active `saves/session.db`. Starting a new campaign resets
- * that database in place (after a backup) and the browser reloads; the server is
- * never restarted and no per-instance worker is involved.
+ * Multi-session is the product default, but `POST /api/game/new-session` still
+ * resets the startup database in place after a backup. This suite keeps that
+ * endpoint honest while the title screen now creates separate campaign files.
  */
 
 import assert from 'assert';
@@ -55,28 +55,34 @@ function postJson(urlPath: string, body: unknown): Promise<{ status: number; bod
 }
 
 async function run(): Promise<void> {
-  console.log('=== Single-session reset ===');
+  console.log('=== In-place reset (compatibility endpoint) ===');
 
   const client = read('public/js/title-screen-ui.js');
-  assert(client.includes('/api/game/new-session'), 'title screen must reset the active session in place');
-  assert(client.includes('window.UI.confirm'), 'new campaign must use the shared confirm dialog');
-  assert(client.includes('window.location.reload'), 'new campaign must reload the browser, not the server');
-  assert(client.includes('continueCurrentSession'), 'title screen must continue the current session');
-  assert(!client.includes('x-instance-id'), 'single-session client must not send x-instance-id');
+  assert(client.includes('/api/sessions'), 'title screen must list playable sessions');
+  assert(client.includes('/api/instances/new'), 'title screen must create a separate campaign file');
+  assert(client.includes('SessionClient'), 'title screen must acquire a session lease');
+  assert(client.includes('window.UI.confirm'), 'delete campaign must use the shared confirm dialog');
+  assert(client.includes('window.location.reload'), 'entering a campaign must reload the browser, not the server');
+  assert(client.includes('enterSession'), 'title screen must enter a selected session');
 
   const server = read('tools/sim-web.js');
-  assert(server.includes('/api/game/new-session'), 'server must expose the in-place reset endpoint');
+  assert(server.includes('/api/game/new-session'), 'server must keep the in-place reset endpoint');
   assert(server.includes('initializeInstanceDatabase'), 'reset must use the instance bootstrap');
   assert(server.includes('session-pre-reset-'), 'reset must back up the previous database');
   assert(server.includes('foreign_key_check'), 'reset must verify the foreign-key graph');
-  assert(!server.includes('ensureInstanceWorker'), 'single-session mode must not spawn instance workers');
+  assert(server.includes('checkSessionLock'), 'session requests must require a lease');
+  assert(server.includes('ensureInstanceWorker'), 'non-startup campaigns must run in their own worker');
 
   const index = read('public/index.html');
-  assert(index.includes('Phiên Chơi'), 'header must open the single-session launcher');
+  assert(index.includes('Phiên Chơi'), 'header must open the session launcher');
 
   prepareSandbox(RUN_DIR, path.join(ROOT, 'saves', 'session.db'));
   const sandboxDb = path.join(RUN_DIR, 'session.db');
-  const { child } = bootServer({ port: PORT, dbPath: sandboxDb });
+  const { child } = bootServer({
+    port: PORT,
+    dbPath: sandboxDb,
+    env: { SIM_SAVES_DIR: RUN_DIR, SIM_SESSION_REGISTRY: path.join(RUN_DIR, 'registry.db') }
+  });
   let backupPath = '';
 
   try {

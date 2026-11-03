@@ -291,6 +291,14 @@ var g = {
 	static getInstance() {
 		return e.instance ||= new e(), e.instance;
 	}
+	sessionHeaders() {
+		if (typeof window > "u" || window.sessionStorage === void 0) return {};
+		let e = window.sessionStorage.getItem("sim.sessionId"), t = window.sessionStorage.getItem("sim.sessionToken");
+		return !e || !t ? {} : {
+			"x-session-id": e,
+			"x-session-token": t
+		};
+	}
 	async get(e, t) {
 		let n = e;
 		if (t) {
@@ -299,7 +307,7 @@ var g = {
 			let r = e.toString();
 			r && (n += (n.includes("?") ? "&" : "?") + r);
 		}
-		let r = await fetch(n);
+		let r = await fetch(n, { headers: this.sessionHeaders() });
 		if (!r.ok) {
 			let e = await r.json().catch(() => ({}));
 			throw Error(e.error || `HTTP error ${r.status}: ${r.statusText}`);
@@ -309,7 +317,10 @@ var g = {
 	async post(e, t) {
 		let n = await fetch(e, {
 			method: "POST",
-			headers: { "Content-Type": "application/json" },
+			headers: {
+				"Content-Type": "application/json",
+				...this.sessionHeaders()
+			},
 			body: t ? JSON.stringify(t) : void 0
 		}), r = await n.json().catch(() => ({}));
 		if (!n.ok || r && r.success === !1) throw Error(r.error || `HTTP error ${n.status}: ${n.statusText}`);

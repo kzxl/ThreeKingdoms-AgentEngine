@@ -124,7 +124,12 @@ export class InstanceManagerService {
    */
   public createInstance(dto: CreateInstanceDTO): InstanceSummaryDTO {
     this.ensureDirectories();
-    const templatePath = path.join(INSTANCE_PATHS.SAVES_DIR, INSTANCE_PATHS.TEMPLATE_FILE);
+    // Clone the campaign the server booted with (or an explicit template), not
+    // always saves/session.db: a custom SIM_DB_PATH deployment must branch its
+    // own data.
+    const templatePath = process.env.SIM_TEMPLATE_DB
+      || process.env.SIM_DB_PATH
+      || path.join(INSTANCE_PATHS.SAVES_DIR, INSTANCE_PATHS.TEMPLATE_FILE);
     if (!fs.existsSync(templatePath)) {
       throw new Error(`Template database not found at: ${templatePath}`);
     }
@@ -132,7 +137,16 @@ export class InstanceManagerService {
     const instanceId = `inst_${randomUUID()}`;
     const newDbPath = path.join(INSTANCE_PATHS.INSTANCES_DIR, `${instanceId}.db`);
 
-    // 1. Physical file clone
+    // 1. Physical file clone. The template may be the live startup campaign,
+    // so checkpoint its WAL first; copying only the main file would lose the
+    // most recent committed turns.
+    try {
+      const template = new Database(templatePath);
+      template.pragma('wal_checkpoint(TRUNCATE)');
+      template.close();
+    } catch {
+      // A read-only or already-closed template still copies safely.
+    }
     fs.copyFileSync(templatePath, newDbPath);
 
     // 2. Initialize and configure archetype

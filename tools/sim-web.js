@@ -10,6 +10,8 @@ const http = require('http');
 const url = require('url');
 const fs = require('fs');
 const path = require('path');
+const { spawn } = require('child_process');
+const TSX_CLI = require.resolve('tsx/cli');
 
 const { runSqlJson: querySqlJson, execSql } = require('../engine/db-adapter');
 const { SimulationCore } = require('../engine/sim-core');
@@ -77,6 +79,50 @@ function getInstanceManagerService() {
   return instanceManagerService;
 }
 
+let sessionLockRegistry = null;
+function getSessionLockRegistry() {
+  if (!sessionLockRegistry) {
+    try {
+      require('tsx/cjs');
+      const { SessionRegistry } = require('../src/core/session-registry.ts');
+      sessionLockRegistry = SessionRegistry.getInstance();
+    } catch (e) {
+      console.warn('[sim-web.js] SessionRegistry initialization note:', e.message);
+    }
+  }
+  return sessionLockRegistry;
+}
+
+/**
+ * Validates the per-tab campaign lease carried by a gameplay request.
+ * No session header means a local tool (golden/smoke) using the startup DB.
+ */
+function checkSessionLock(req) {
+  const sessionId = String(req.headers['x-session-id'] || '').trim();
+  const registry = getSessionLockRegistry();
+  if (!registry) {
+    return { ok: false, status: 503, code: 'SESSION_REGISTRY_UNAVAILABLE', error: 'Session registry unavailable.' };
+  }
+  if (!sessionId) {
+    // No explicit campaign means the startup one. Once a browser holds its
+    // lease, an unheadered request must not write that campaign behind its back.
+    const startupLock = registry.status(STARTUP_INSTANCE_ID);
+    if (startupLock && !startupLock.expired) {
+      return { ok: false, status: 423, code: 'SESSION_LOCK_REQUIRED', error: 'Phiên khởi động đang được chơi bởi client khác.' };
+    }
+    return { ok: true, lock: null, sessionId: '', token: '' };
+  }
+  const lock = registry.status(sessionId);
+  const token = String(req.headers['x-session-token'] || '').trim();
+  if (!lock || lock.expired) {
+    return { ok: false, status: 423, code: 'SESSION_LOCK_REQUIRED', error: 'Phiên chưa được giữ hoặc lease đã hết hạn.' };
+  }
+  if (!token || lock.token !== token) {
+    return { ok: false, status: 423, code: 'SESSION_LOCK_REQUIRED', error: 'Lease không hợp lệ hoặc thuộc về client khác.' };
+  }
+  return { ok: true, lock, sessionId, token };
+}
+
 let characterStatsModule = null;
 function getCharacterStatsModule() {
   if (!characterStatsModule) {
@@ -106,9 +152,19 @@ function getSpatialGuardService() {
 
 const ROOT_DIR = path.resolve(__dirname, '..');
 const PUBLIC_DIR = path.join(ROOT_DIR, 'public');
-const SAVES_DIR = path.join(ROOT_DIR, 'saves');
-const DB_PATH = process.env.SIM_DB_PATH || path.join(SAVES_DIR, 'session.db');
+const SAVES_DIR = process.env.SIM_SAVES_DIR
+  ? path.resolve(process.env.SIM_SAVES_DIR)
+  : path.join(ROOT_DIR, 'saves');
+const DEFAULT_DB_PATH = path.join(SAVES_DIR, 'session.db');
+const DB_PATH = process.env.SIM_DB_PATH || DEFAULT_DB_PATH;
 const DEFAULT_PORT = parseInt(process.env.PORT || process.argv[2] || '3300', 10);
+
+// Identity of the campaign this process booted with. A per-request
+// `x-instance-id` only selects a proxied worker; it never changes this marker.
+const STARTUP_INSTANCE_ID = path.resolve(DB_PATH) === path.resolve(DEFAULT_DB_PATH)
+  ? 'default'
+  : path.basename(DB_PATH, '.db');
+let activeInstanceId = STARTUP_INSTANCE_ID;
 
 let currentActiveDbPath = DB_PATH;
 
@@ -125,6 +181,220 @@ function resolveRequestDbPath(req) {
   // request's instance sticky (it caused cross-request leaks).
   return DB_PATH;
 }
+
+// -----------------------------------------------------------------------------
+// Instance workers: one full server process per non-startup campaign.
+// The main server stays on the original port and proxies `/api/*` to the
+// worker selected by `x-instance-id`. This keeps every module/service bound to
+// exactly one database, which is the contract the modular router was built on.
+// -----------------------------------------------------------------------------
+const INSTANCE_WORKERS = new Map();
+const MAX_INSTANCE_WORKERS = 4;
+const WORKER_IDLE_MS = 30 * 60 * 1000;
+const WORKER_START_TIMEOUT_MS = 60000;
+const IS_INSTANCE_WORKER = process.env.SIM_INSTANCE_WORKER === 'true';
+
+function stopInstanceWorker(instanceId) {
+  const worker = INSTANCE_WORKERS.get(instanceId);
+  if (!worker) return;
+  INSTANCE_WORKERS.delete(instanceId);
+  try { worker.child.kill(); } catch { /* already gone */ }
+}
+
+function stopAllInstanceWorkers() {
+  for (const id of [...INSTANCE_WORKERS.keys()]) stopInstanceWorker(id);
+}
+
+function evictIdleInstanceWorkers(exceptId = null) {
+  const now = Date.now();
+  for (const [id, worker] of INSTANCE_WORKERS.entries()) {
+    if (id === exceptId || worker.inFlight > 0) continue;
+    if (worker.status === 'ready' && now - worker.lastUsed > WORKER_IDLE_MS) {
+      stopInstanceWorker(id);
+    }
+  }
+}
+
+async function ensureInstanceWorker(instanceId) {
+  if (!instanceId) return null;
+  if (IS_INSTANCE_WORKER) {
+    throw new Error('Không thể mở phiên lồng nhau từ một instance worker.');
+  }
+
+  const existing = INSTANCE_WORKERS.get(instanceId);
+  if (existing) {
+    existing.lastUsed = Date.now();
+    if (existing.status === 'ready') return existing;
+    if (existing.promise) return existing.promise;
+  }
+
+  const instSvc = getInstanceManagerService();
+  if (!instSvc) throw new Error('InstanceManagerService unavailable.');
+  const instance = instSvc.getInstance(instanceId);
+  if (!instance || !fs.existsSync(instance.filepath)) {
+    throw new Error(`Không tìm thấy database của phiên [${instanceId}].`);
+  }
+  const dbPath = instance.filepath;
+
+  evictIdleInstanceWorkers(instanceId);
+  if (INSTANCE_WORKERS.size >= MAX_INSTANCE_WORKERS) {
+    const idle = [...INSTANCE_WORKERS.entries()]
+      .filter(([id, worker]) => id !== instanceId && worker.inFlight === 0 && worker.status === 'ready')
+      .sort((a, b) => a[1].lastUsed - b[1].lastUsed)[0];
+    if (idle) stopInstanceWorker(idle[0]);
+    else {
+      throw new Error(`Đã mở tối đa ${MAX_INSTANCE_WORKERS} phiên cùng lúc. Hãy đóng bớt một phiên.`);
+    }
+  }
+
+  const child = spawn(process.execPath, [TSX_CLI, path.join(ROOT_DIR, 'src', 'server', 'main.ts')], {
+    cwd: ROOT_DIR,
+    env: {
+      ...process.env,
+      PORT: '0',
+      SIM_DB_PATH: dbPath,
+      RUN_MAIN: 'true',
+      SIM_HOST: '127.0.0.1',
+      SIM_INSTANCE_WORKER: 'true'
+    },
+    stdio: ['ignore', 'pipe', 'pipe', 'ipc']
+  });
+
+  const worker = {
+    instanceId,
+    dbPath,
+    child,
+    status: 'starting',
+    port: null,
+    inFlight: 0,
+    lastUsed: Date.now(),
+    lastLog: '',
+    promise: null
+  };
+
+  const promise = new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(`Phiên [${instanceId}] không khởi động kịp sau ${Math.round(WORKER_START_TIMEOUT_MS / 1000)} giây.`));
+    }, WORKER_START_TIMEOUT_MS);
+
+    const finish = () => clearTimeout(timer);
+
+    child.on('message', (message) => {
+      if (message && message.type === 'server-ready' && message.port) {
+        worker.port = Number(message.port);
+        worker.status = 'ready';
+        worker.lastUsed = Date.now();
+        finish();
+        resolve(worker);
+      }
+    });
+    child.on('error', (error) => {
+      worker.status = 'error';
+      finish();
+      reject(error);
+    });
+    child.on('exit', (code, signal) => {
+      const wasStarting = worker.status === 'starting';
+      worker.status = 'exited';
+      finish();
+      if (INSTANCE_WORKERS.get(instanceId) === worker) INSTANCE_WORKERS.delete(instanceId);
+      if (wasStarting) reject(new Error(`Phiên [${instanceId}] thoát khi khởi động (${code ?? signal}).`));
+    });
+  });
+  worker.promise = promise;
+  INSTANCE_WORKERS.set(instanceId, worker);
+
+  const forward = (stream, suffix) => {
+    stream.on('data', (chunk) => {
+      const text = chunk.toString();
+      worker.lastLog = `${worker.lastLog}${text}`.slice(-12000);
+      if (text.trim()) console.log(`[instance ${instanceId}]${suffix} ${text.trim()}`);
+    });
+  };
+  forward(child.stdout, '');
+  forward(child.stderr, ' [stderr]');
+
+  try {
+    await promise;
+  } catch (error) {
+    stopInstanceWorker(instanceId);
+    throw error;
+  }
+  return worker;
+}
+
+function proxyToInstanceWorker(req, res, worker, leaseContext = null) {
+  worker.inFlight += 1;
+  worker.lastUsed = Date.now();
+  let finished = false;
+  const finish = () => {
+    if (finished) return;
+    finished = true;
+    worker.inFlight = Math.max(0, worker.inFlight - 1);
+  };
+  const headers = { ...req.headers, host: `127.0.0.1:${worker.port}` };
+  const proxyReq = http.request({
+    host: '127.0.0.1',
+    port: worker.port,
+    method: req.method,
+    path: req.url,
+    headers,
+    timeout: 120000
+  }, (proxyRes) => {
+    worker.lastUsed = Date.now();
+    const status = proxyRes.statusCode || 502;
+    let version = leaseContext ? leaseContext.version : undefined;
+    let leaseLost = false;
+    if (leaseContext && status >= 200 && status < 300 && leaseContext.mutating) {
+      const bumped = leaseContext.registry?.bumpVersion(leaseContext.sessionId, leaseContext.leaseToken);
+      if (bumped == null) {
+        leaseLost = true;
+      } else {
+        version = bumped;
+        leaseContext.version = bumped;
+      }
+    }
+    if (leaseContext) {
+      const headersOut = { ...proxyRes.headers };
+      if (version != null) headersOut['x-session-version'] = String(version);
+      if (leaseLost) headersOut['x-session-lease-lost'] = '1';
+      res.writeHead(status, headersOut);
+    } else {
+      res.writeHead(status, proxyRes.headers);
+    }
+    proxyRes.pipe(res);
+    proxyRes.on('end', finish);
+    res.on('close', finish);
+  });
+  proxyReq.on('timeout', () => proxyReq.destroy(new Error('instance worker timeout')));
+  proxyReq.on('error', (error) => {
+    finish();
+    if (!res.headersSent) {
+      sendJson(res, 502, {
+        success: false,
+        code: 'INSTANCE_WORKER_UNAVAILABLE',
+        error: `Không kết nối được phiên [${worker.instanceId}]: ${error.message}`
+      });
+    } else {
+      res.destroy(error);
+    }
+  });
+  req.on('aborted', () => proxyReq.destroy());
+  req.pipe(proxyReq);
+}
+
+if (!IS_INSTANCE_WORKER) {
+  setInterval(() => evictIdleInstanceWorkers(), 5 * 60 * 1000).unref();
+}
+process.once('exit', stopAllInstanceWorkers);
+process.once('SIGINT', () => {
+  stopAllInstanceWorkers();
+  process.exit(0);
+});
+process.once('SIGTERM', () => {
+  stopAllInstanceWorkers();
+  process.exit(0);
+});
 
 const gameplayManager = new GameplayManager(DB_PATH);
 const eventManager = new EventManager(DB_PATH);
@@ -241,11 +511,84 @@ if (!globalThis.__GRAND_STRATEGY_ROUTER__) {
 }
 
 const server = http.createServer(async (req, res) => {
+  const requestedUrl = url.parse(req.url, true);
+  const requestedPath = requestedUrl.pathname || '/';
+  const requestedInstanceId = req.headers['x-instance-id'] || requestedUrl.query.instanceId;
+  const requestedSessionId = req.headers['x-session-id'] || requestedInstanceId;
+
+  // Gameplay requests are served by the worker that owns the selected save.
+  // The lease is per request, never a process-wide "active database".
+  const isGameplayPath = requestedPath.startsWith('/api/')
+    && !requestedPath.startsWith('/api/instances')
+    && !requestedPath.startsWith('/api/sessions');
+  if (isGameplayPath && !requestedSessionId) {
+    const startupCheck = checkSessionLock(req);
+    if (!startupCheck.ok) {
+      sendJson(res, startupCheck.status || 423, {
+        success: false,
+        code: startupCheck.code,
+        error: startupCheck.error
+      });
+      return;
+    }
+  }
+  if (
+    requestedSessionId &&
+    requestedPath.startsWith('/api/') &&
+    !requestedPath.startsWith('/api/instances') &&
+    !requestedPath.startsWith('/api/sessions') &&
+    (requestedSessionId !== STARTUP_INSTANCE_ID || !IS_INSTANCE_WORKER)
+  ) {
+    const check = checkSessionLock(req);
+    if (!check.ok) {
+      sendJson(res, check.status || 423, { success: false, code: check.code, error: check.error });
+      return;
+    }
+    const method = String(req.method || 'GET').toUpperCase();
+    const mutating = !['GET', 'HEAD', 'OPTIONS'].includes(method);
+    const providedVersion = Number(req.headers['x-session-version'] || 0);
+    if (mutating && providedVersion !== check.lock.version) {
+      sendJson(res, 409, {
+        success: false,
+        code: 'SESSION_VERSION_CONFLICT',
+        error: `Phiên đã thay đổi (bạn đang ở version ${providedVersion || '?'}, hiện tại ${check.lock.version}). Hãy tải lại trạng thái.`,
+        currentVersion: check.lock.version
+      });
+      return;
+    }
+
+    try {
+      const worker = await ensureInstanceWorker(requestedSessionId);
+      if (worker) {
+        proxyToInstanceWorker(req, res, worker, {
+          registry: getSessionLockRegistry(),
+          sessionId: requestedSessionId,
+          leaseToken: check.token,
+          mutating,
+          version: check.lock.version
+        });
+        return;
+      }
+    } catch (error) {
+      sendJson(res, 503, {
+        success: false,
+        code: 'INSTANCE_WORKER_UNAVAILABLE',
+        error: error.message
+      });
+      return;
+    }
+  }
+
   currentActiveDbPath = resolveRequestDbPath(req);
-  try {
-    const { DatabaseService } = require('../src/core/database.ts');
-    DatabaseService.getInstance(currentActiveDbPath);
-  } catch (e) {}
+  // The main process owns only its startup campaign. Non-startup databases are
+  // opened inside their instance worker, so opening them here would create a
+  // second writer and block deletion on Windows.
+  if (path.resolve(currentActiveDbPath) === path.resolve(DB_PATH)) {
+    try {
+      const { DatabaseService } = require('../src/core/database.ts');
+      DatabaseService.getInstance(currentActiveDbPath);
+    } catch (e) {}
+  }
 
   // Delegate to Modular Controller Router if present
   if (globalThis.__GRAND_STRATEGY_ROUTER__) {
@@ -253,7 +596,7 @@ const server = http.createServer(async (req, res) => {
       // The modular modules are initialized against the startup DB. Serving a
       // modular route for another instance would silently write the wrong
       // database, so fail loud instead.
-      if (currentActiveDbPath !== DB_PATH && globalThis.__GRAND_STRATEGY_ROUTER__.matches(req)) {
+      if (path.resolve(currentActiveDbPath) !== path.resolve(DB_PATH) && globalThis.__GRAND_STRATEGY_ROUTER__.matches(req)) {
         sendJson(res, 409, {
           success: false,
           code: 'INSTANCE_NOT_ACTIVE',
@@ -288,6 +631,112 @@ const server = http.createServer(async (req, res) => {
   // API ROUTING
   // -------------------------------------------------------------
 
+  // 0. Session lock registry (no auth yet: owner ids are opaque tab ids)
+  // -------------------------------------------------------------------
+  const sanitizeLock = (lock) => {
+    if (!lock) return null;
+    const { token, ...safe } = lock;
+    return safe;
+  };
+
+  if (req.method === 'GET' && pathname === '/api/sessions') {
+    const registry = getSessionLockRegistry();
+    if (!registry) {
+      sendJson(res, 503, { success: false, error: 'Session registry unavailable.' });
+      return;
+    }
+    sendJson(res, 200, { success: true, sessions: registry.list().map(sanitizeLock) });
+    return;
+  }
+
+  if (req.method === 'POST' && pathname === '/api/sessions/acquire') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', async () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        const sessionId = String(payload.sessionId || '');
+        const ownerId = String(payload.ownerId || '');
+        if (!sessionId || !ownerId) {
+          sendJson(res, 400, { success: false, error: 'sessionId và ownerId là bắt buộc.' });
+          return;
+        }
+        const registry = getSessionLockRegistry();
+        if (!registry) throw new Error('Session registry unavailable.');
+        const result = registry.acquire(sessionId, ownerId, undefined, Boolean(payload.force));
+        if (!result.ok) {
+          const status = result.code === 'SESSION_LOCKED' ? 423 : 400;
+          sendJson(res, status, {
+            success: false,
+            code: result.code,
+            error: result.message,
+            holder: sanitizeLock(result.holder)
+          });
+          return;
+        }
+        try {
+          await ensureInstanceWorker(sessionId);
+        } catch (workerError) {
+          registry.release(sessionId, result.lock.token);
+          throw workerError;
+        }
+        activeInstanceId = sessionId;
+        sendJson(res, 200, {
+          success: true,
+          sessionId,
+          token: result.lock.token,
+          expiresAt: result.lock.expiresAt,
+          version: result.lock.version
+        });
+      } catch (error) {
+        sendJson(res, 503, { success: false, code: 'SESSION_ACQUIRE_FAILED', error: error.message });
+      }
+    });
+    return;
+  }
+
+  if (req.method === 'POST' && pathname === '/api/sessions/heartbeat') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        const registry = getSessionLockRegistry();
+        if (!registry) throw new Error('Session registry unavailable.');
+        const result = registry.heartbeat(String(payload.sessionId || ''), String(payload.token || ''));
+        if (!result.ok) {
+          sendJson(res, 423, { success: false, code: result.code, error: result.message });
+          return;
+        }
+        sendJson(res, 200, {
+          success: true,
+          expiresAt: result.lock.expiresAt,
+          version: result.lock.version
+        });
+      } catch (error) {
+        sendJson(res, 400, { success: false, error: error.message });
+      }
+    });
+    return;
+  }
+
+  if (req.method === 'POST' && pathname === '/api/sessions/release') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        const registry = getSessionLockRegistry();
+        if (!registry) throw new Error('Session registry unavailable.');
+        const released = registry.release(String(payload.sessionId || ''), String(payload.token || ''));
+        sendJson(res, 200, { success: true, released });
+      } catch (error) {
+        sendJson(res, 400, { success: false, error: error.message });
+      }
+    });
+    return;
+  }
+
   // 0a. GET /api/instances - List all playthrough instances
   if (req.method === 'GET' && pathname === '/api/instances') {
     const instSvc = getInstanceManagerService();
@@ -295,15 +744,26 @@ const server = http.createServer(async (req, res) => {
       sendJson(res, 500, { success: false, error: 'InstanceManagerService unavailable' });
       return;
     }
-    // The "currently playing" marker reflects the campaign this process was
-    // started with. The per-request `x-instance-id` header only selects the DB
-    // for that request; it must not relabel another instance as active.
-    const startupDbPath = path.resolve(DB_PATH);
-    const defaultDbPath = path.resolve(path.join(SAVES_DIR, 'session.db'));
-    const currentId = startupDbPath === defaultDbPath
-      ? 'default'
-      : path.basename(startupDbPath, '.db');
+    // The "currently playing" marker is the instance this server session last
+    // activated, not the per-request `x-instance-id` proxy header.
+    const currentId = activeInstanceId;
     const list = instSvc.listInstances(currentId);
+    const lockRegistry = getSessionLockRegistry();
+    for (const inst of list) {
+      const lock = lockRegistry?.status(inst.id);
+      inst.ownerId = lock?.ownerId || null;
+      inst.ownerLabel = lock?.ownerId ? `Khách-${String(lock.ownerId).replace(/-/g, '').slice(0, 4)}` : null;
+      inst.version = lock?.version || 1;
+      inst.lease = lock
+        ? {
+            clientId: lock.ownerId,
+            clientLabel: inst.ownerLabel,
+            active: !lock.expired,
+            expiresAt: lock.expiresAt,
+            version: lock.version
+          }
+        : null;
+    }
     let archetypes = [];
     try {
       const { ARCHETYPE_PRESETS } = require('../src/modules/instances/instances.constants.ts');
@@ -328,17 +788,16 @@ const server = http.createServer(async (req, res) => {
         const instSvc = getInstanceManagerService();
         if (!instSvc) throw new Error('InstanceManagerService unavailable');
         const newInst = instSvc.createInstance(payload);
-        currentActiveDbPath = newInst.filepath;
-        try {
-          const { DatabaseService } = require('../src/core/database.ts');
-          DatabaseService.getInstance(currentActiveDbPath);
-        } catch (e) {}
+        // Ownership is recorded by the first successful lease acquisition.
+        // Warm the worker in the background; the client calls select next and
+        // will await the same start promise if it is still booting.
+        ensureInstanceWorker(newInst.id).catch(() => { /* select retries / reports */ });
         sendJson(res, 200, {
           success: true,
           instanceId: newInst.id,
           instance: newInst,
           dbPath: newInst.filepath,
-          restartRequired: path.resolve(newInst.filepath) !== path.resolve(DB_PATH),
+          restartRequired: false,
           messageVi: `Khởi tạo thành công phiên chơi mới [${newInst.name}] (${newInst.archetypeNameVi})!`
         });
       } catch (err) {
@@ -352,32 +811,55 @@ const server = http.createServer(async (req, res) => {
   if (req.method === 'POST' && pathname === '/api/instances/select') {
     let body = '';
     req.on('data', chunk => { body += chunk; });
-    req.on('end', () => {
+    req.on('end', async () => {
+      const payload = (() => {
+        try { return JSON.parse(body || '{}'); } catch { return {}; }
+      })();
+      const instId = payload.instanceId || 'default';
+      const instSvc = getInstanceManagerService();
+      if (!instSvc) {
+        sendJson(res, 500, { success: false, error: 'InstanceManagerService unavailable' });
+        return;
+      }
+      const instance = instSvc.getInstance(instId);
+      const dbPath = instance?.filepath || instSvc.resolveDbPath(instId);
+
+      if (instId === STARTUP_INSTANCE_ID || path.resolve(dbPath) === path.resolve(DB_PATH)) {
+        activeInstanceId = STARTUP_INSTANCE_ID;
+        sendJson(res, 200, {
+          success: true,
+          instanceId: STARTUP_INSTANCE_ID,
+          instance,
+          dbPath: DB_PATH,
+          restartRequired: false,
+          messageVi: `Đã kích hoạt phiên chơi [${instance?.name || instId}]!`
+        });
+        return;
+      }
+
       try {
-        const payload = JSON.parse(body || '{}');
-        const instId = payload.instanceId || 'default';
-        const instSvc = getInstanceManagerService();
-        if (!instSvc) throw new Error('InstanceManagerService unavailable');
-        const dbPath = instSvc.resolveDbPath(instId);
-        currentActiveDbPath = dbPath;
-        try {
-          const { DatabaseService } = require('../src/core/database.ts');
-          DatabaseService.getInstance(currentActiveDbPath);
-        } catch (e) {}
-        const instance = instSvc.getInstance(instId);
-        const restartRequired = dbPath !== DB_PATH;
+        await ensureInstanceWorker(instId);
+        activeInstanceId = instId;
         sendJson(res, 200, {
           success: true,
           instanceId: instId,
           instance,
           dbPath,
-          restartRequired,
-          messageVi: restartRequired
-            ? `Đã chọn phiên [${instance?.name || instId}]. Server đang chạy phiên khởi động; khởi động lại với SIM_DB_PATH=${dbPath} để dùng các tính năng mô-đun.`
-            : `Đã kích hoạt phiên chơi [${instance?.name || instId}]!`
+          restartRequired: false,
+          messageVi: `Đã kích hoạt phiên chơi [${instance?.name || instId}]!`
         });
-      } catch (err) {
-        sendJson(res, 400, { success: false, error: err.message });
+      } catch (error) {
+        // The worker could not boot. Keep the restart notice as a safe fallback
+        // instead of leaving the title screen in a half-selected state.
+        sendJson(res, 200, {
+          success: true,
+          instanceId: instId,
+          instance,
+          dbPath,
+          restartRequired: true,
+          workerError: error.message,
+          messageVi: `Phiên [${instance?.name || instId}] chưa khởi động được worker: ${error.message}`
+        });
       }
     });
     return;
@@ -386,11 +868,44 @@ const server = http.createServer(async (req, res) => {
   // 0d. DELETE /api/instances/:id or POST /api/instances/delete - Delete instance
   if ((req.method === 'DELETE' && pathname.startsWith('/api/instances/')) || (req.method === 'POST' && pathname === '/api/instances/delete')) {
     let instId = pathname.replace('/api/instances/', '');
-    const doDelete = (id) => {
+    const doDelete = async (id) => {
       try {
         const instSvc = getInstanceManagerService();
         if (!instSvc) throw new Error('InstanceManagerService unavailable');
-        const deleted = instSvc.deleteInstance(id);
+
+        // A live lease belongs to a player; refuse to unlink under them.
+        const lock = getSessionLockRegistry()?.status(id);
+        if (lock && !lock.expired) {
+          sendJson(res, 423, {
+            success: false,
+            code: 'SESSION_LOCKED',
+            error: 'Phiên đang được chơi. Hãy thoát phiên trước khi xóa.'
+          });
+          return;
+        }
+
+        // The worker owns the SQLite connection; stop it and give Windows a
+        // moment to release the file before unlinking.
+        stopInstanceWorker(id);
+        await new Promise(resolve => setTimeout(resolve, 250));
+
+        let deleted = false;
+        let lastError = null;
+        for (let attempt = 0; attempt < 20; attempt += 1) {
+          try {
+            deleted = instSvc.deleteInstance(id);
+            lastError = null;
+            break;
+          } catch (error) {
+            lastError = error;
+            if (error.code !== 'EBUSY' && error.code !== 'EPERM') break;
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+        }
+        if (lastError) throw lastError;
+
+        try { getSessionLockRegistry()?.forceRelease(id); } catch { /* lock may not exist */ }
+        if (id === activeInstanceId) activeInstanceId = STARTUP_INSTANCE_ID;
         sendJson(res, 200, { success: deleted, messageVi: `Đã xóa phiên chơi [${id}].` });
       } catch (err) {
         sendJson(res, 400, { success: false, error: err.message });
@@ -400,10 +915,10 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'POST') {
       let body = '';
       req.on('data', chunk => { body += chunk; });
-      req.on('end', () => {
+      req.on('end', async () => {
         try {
           const payload = JSON.parse(body || '{}');
-          doDelete(payload.instanceId || instId);
+          await doDelete(payload.instanceId || instId);
         } catch (err) {
           sendJson(res, 400, { success: false, error: err.message });
         }
@@ -411,7 +926,7 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    doDelete(instId);
+    void doDelete(instId);
     return;
   }
 
@@ -1018,7 +1533,7 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // 5f-1. GET /api/game/archetypes - Static starting presets for the single-session creator.
+  // 5f-1. GET /api/game/archetypes - Static starting presets for the creator.
   if (req.method === 'GET' && pathname === '/api/game/archetypes') {
     try {
       require('tsx/cjs');
@@ -1030,25 +1545,9 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // 5g. POST /api/game/new - Start New Campaign Playthrough from Master Data
-  if (req.method === 'POST' && pathname === '/api/game/new') {
-    let body = '';
-    req.on('data', chunk => { body += chunk; });
-    req.on('end', () => {
-      try {
-        const payload = JSON.parse(body || '{}');
-        const result = gameplayManager.startNewGame(payload);
-        sendJson(res, 200, { success: true, result });
-      } catch (err) {
-        sendJson(res, 400, { success: false, error: err.message });
-      }
-    });
-    return;
-  }
-
-  // 5g-1. POST /api/game/new-session - Reset the single active session in place.
-  // The database path never changes, so the modular engine keeps serving the
-  // same connection and the browser only needs a refresh, never a server restart.
+  // 5f-2. POST /api/game/new-session - Compatibility reset of the startup DB.
+  // The title screen creates separate campaign files, but tools and existing
+  // deployments still use this in-place reset endpoint.
   if (req.method === 'POST' && pathname === '/api/game/new-session') {
     let body = '';
     req.on('data', chunk => { body += chunk; });
@@ -1103,6 +1602,20 @@ const server = http.createServer(async (req, res) => {
           backupPath,
           messageVi: `Đã tạo phiên mới [${playerName}] và sao lưu phiên cũ vào ${backupPath}.`
         });
+      } catch (err) {
+        sendJson(res, 400, { success: false, error: err.message });
+      }
+    });
+    return;
+  }
+  if (req.method === 'POST' && pathname === '/api/game/new') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        const result = gameplayManager.startNewGame(payload);
+        sendJson(res, 200, { success: true, result });
       } catch (err) {
         sendJson(res, 400, { success: false, error: err.message });
       }
@@ -3516,15 +4029,23 @@ function generateDynamicScene(dbPath, subLocation = 'Vườn Đào', lastAction 
 });
 
 function startServer(port = DEFAULT_PORT) {
-  server.listen(port, '0.0.0.0', () => {
+  const host = process.env.SIM_HOST || '0.0.0.0';
+  server.listen(port, host, () => {
+    const address = server.address();
+    const actualPort = address && typeof address === 'object' ? address.port : port;
     console.log('====================================================');
     console.log(` [軍機] ThreeKingdoms-AgentEngine: Web UI Server`);
     console.log('====================================================');
-    console.log(` URL (Local)   : http://localhost:${port}`);
-    console.log(` URL (IPv4)    : http://127.0.0.1:${port}`);
+    console.log(` URL (Local)   : http://localhost:${actualPort}`);
+    console.log(` URL (IPv4)    : http://127.0.0.1:${actualPort}`);
     console.log(` Database      : ${DB_PATH}`);
     console.log(` Status        : [ONLINE] READY`);
     console.log('====================================================');
+    // The instance supervisor spawns this server with IPC so it can learn the
+    // actual ephemoral port (PORT=0) before proxying requests to it.
+    if (typeof process.send === 'function') {
+      process.send({ type: 'server-ready', port: actualPort, dbPath: DB_PATH, instanceId: STARTUP_INSTANCE_ID });
+    }
   });
 
   server.on('error', (err) => {

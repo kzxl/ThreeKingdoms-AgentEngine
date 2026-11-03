@@ -41,7 +41,10 @@ import { CaravanLogisticsService } from '../modules/ecology-logistics/caravan-lo
 
 // Resolve database path
 const ROOT_DIR = path.resolve(__dirname, '../..');
-const DB_PATH = process.env.SIM_DB_PATH || path.join(ROOT_DIR, 'saves', 'session.db');
+const SAVES_DIR = process.env.SIM_SAVES_DIR
+  ? path.resolve(process.env.SIM_SAVES_DIR)
+  : path.join(ROOT_DIR, 'saves');
+const DB_PATH = process.env.SIM_DB_PATH || path.join(SAVES_DIR, 'session.db');
 
 export async function bootstrapGrandStrategy() {
   console.log('[Bootstrap] Initializing AgentOption Universe Modular Engine...');

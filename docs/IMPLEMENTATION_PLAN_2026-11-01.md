@@ -388,10 +388,13 @@ instead of the generic fallback.
 
 ### W6-0 True per-request multi-instance
 
-Not active by product decision: the title screen uses one `saves/session.db` and
-resets it in place with an automatic backup. Reintroduce this wave only if
-multiple simultaneous campaigns are required.
-**Test when reintroduced:** two instances in one process, no cross-write.
+Implemented as a broker plus one worker process per campaign. `saves/registry.db`
+holds a 60-second exclusive lease per campaign; the broker proxies `/api/*` by
+`x-session-id` and `x-session-token`, and each worker boots the normal
+composition root against its own database. A campaign version increments on
+successful writes for stale-tab detection.
+**Test:** `verify-session-lock.ts` (exclusive lease, token rotation, heartbeat,
+release, expiry takeover, 423 for the second client, worker isolation).
 
 ### W6-1 P5 client consolidation
 
