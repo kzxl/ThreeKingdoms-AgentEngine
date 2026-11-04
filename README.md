@@ -1,4 +1,13 @@
-# ThreeKingdoms-AgentEngine
+# [ARCHIVED] ThreeKingdoms-AgentEngine (Simulator)
+
+> [!IMPORTANT]
+> ⚠️ **DỰ ÁN ĐÃ CHUYỂN ĐỔI VÀ TIẾP TỤC PHÁT TRIỂN TẠI REPO MỚI**:
+> Repository web simulation engine này hiện đã được lưu trữ (archived). Toàn bộ hệ thống mô phỏng đại chiến lược, kinh tế thương gia, nhân duyên, thế thái và võ nghiệp Tam Quốc đã được tái cấu trúc và phát triển toàn diện thành game desktop offline độc lập:
+> 👉 **[Một Ngày Ở Tam Quốc (mot-ngay-o-tam-quoc)](https://github.com/kzxl/mot-ngay-o-tam-quoc)** (.NET 8 WPF, Core + DLC Modular Monolith).
+>
+> Vui lòng truy cập **[https://github.com/kzxl/mot-ngay-o-tam-quoc](https://github.com/kzxl/mot-ngay-o-tam-quoc)** để trải nghiệm phiên bản game hoàn chỉnh mới nhất, tải bản cài đặt và theo dõi lộ trình phát triển.
+
+---
 
 [![Audit Status](https://img.shields.io/badge/Audit-2%2C313%2F2%2C313%20Passed-emerald.svg)](tools/sim-audit.js)
 [![Architecture](https://img.shields.io/badge/Architecture-Universe%20v4.0%20Modular-blueviolet.svg)](src/core/module-registry.ts)
